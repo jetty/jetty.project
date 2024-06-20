@@ -33,7 +33,7 @@ These are the URLs to the GIT repositories for the Jetty code.
 They are for people who are working on the Jetty project, as well as for people who are interested in examining or modifying the Jetty code for their own projects.
 
 Jetty Project Repository::
-  https://github.com/eclipse/jetty.project
+  https://github.com/jetty/jetty.project
 
 ===== Build and Project Infrastructure SCM URLs
 
@@ -58,7 +58,7 @@ Building Jetty should simply be a matter of changing into the relevant directory
 [source, screen]
 ----
 
-$ git clone https://github.com/eclipse/jetty.project.git
+$ git clone https://github.com/jetty/jetty.project.git
 $ cd jetty.project
 $ mvn install
 

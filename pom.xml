@@ -167,9 +167,9 @@
   </licenses>
 
   <scm>
-    <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
+    <connection>scm:git:https://github.com/jetty/jetty.project.git</connection>
     <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
-    <url>https://github.com/eclipse/jetty.project</url>
+    <url>https://github.com/jetty/jetty.project</url>
   </scm>
 
   <modules>
@@ -1748,7 +1748,7 @@
 
   <issueManagement>
     <system>github</system>
-    <url>https://github.com/eclipse/jetty.project/issues</url>
+    <url>https://github.com/jetty/jetty.project/issues</url>
   </issueManagement>
 
   <mailingLists>

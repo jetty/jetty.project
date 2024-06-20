@@ -104,7 +104,7 @@ If many responses are to be sent (e.g., a chat room), then writing one response 
 
 ==== Examples
 
-* The https://github.com/eclipse/jetty.project/blob/jetty-9.4.x/tests/test-webapps/test-jetty-webapp/src/main/java/com/acme/ChatServlet.java[ChatServlet example]
+* The https://github.com/jetty/jetty.project/blob/jetty-9.4.x/tests/test-webapps/test-jetty-webapp/src/main/java/com/acme/ChatServlet.java[ChatServlet example]
 shows how to make a chat room using Async Servlets.
 The same principles are applied to frameworks like http://cometd.org/[cometd] which provide an richer environment for such applications, based on Continuations.
 
