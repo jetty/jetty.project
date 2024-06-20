@@ -53,8 +53,8 @@ This release process will produce releases:
 - [ ] Promote staged releases.
 - [ ] Merge release branches back to main branches and delete release branches.
 - [ ] Verify release existence in Maven Central by triggering the Jenkins builds of CometD.
-- [ ] Update Jetty versions on the website ( follow instructions in [jetty-website](https://github.com/eclipse/jetty-website/blob/master/README.md) ).
-  + [ ] Update (or check) [Download](https://eclipse.dev/jetty/download.php) page is updated.
+- [ ] Update Jetty versions on the website ( follow instructions in [jetty.website](https://github.com/eclipse/jetty.website/blob/master/README.md) ).
+  + [ ] Update (or check) [Download](https://jetty.org/download.html) page is updated.
   + [ ] Update (or check) documentation page(s) are updated.
 - [ ] Publish GitHub Releases.
 - [ ] Prepare release announcement for mailing lists.

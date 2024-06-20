@@ -42,7 +42,7 @@ Start with the custom Jetty XML file, `$JETTY_BASE/etc/custom-ssl.xml`:
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 <Configure>
   <Ref refid="sslContextFactory"> <!--1-->
     <Set name="CipherComparator"> <!--2-->
@@ -158,7 +158,7 @@ Next, let's write the Jetty XML file that wires the auditing component to the `S
 [,xml,subs=verbatim,options=nowrap]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 <Configure>
   <Ref refid="httpConnector"> <!--1-->
     <Call name="addBean"> <!--2-->

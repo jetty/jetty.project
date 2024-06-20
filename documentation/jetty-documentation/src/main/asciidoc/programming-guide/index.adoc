@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-:doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Programming Guide
+:doctitle: link:https://jetty.org[Eclipse Jetty]: Programming Guide
 :toc-title: Jetty Programming Guide
 :idprefix: pg-
 :docinfo: private-head

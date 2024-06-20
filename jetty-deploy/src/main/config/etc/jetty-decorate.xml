@@ -1,4 +1,4 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/configure_9_3.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <!-- Bind the jetty-web-decorate.xml to every deployed webapp -->
