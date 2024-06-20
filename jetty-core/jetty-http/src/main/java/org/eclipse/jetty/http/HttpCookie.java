@@ -128,7 +128,7 @@ public interface HttpCookie
      */
     default boolean isSecure()
     {
-        return Boolean.parseBoolean(getAttributes().get(SECURE_ATTRIBUTE));
+        return isSetToNotFalse(SECURE_ATTRIBUTE);
     }
 
     /**
@@ -146,7 +146,7 @@ public interface HttpCookie
      */
     default boolean isHttpOnly()
     {
-        return Boolean.parseBoolean(getAttributes().get(HTTP_ONLY_ATTRIBUTE));
+        return isSetToNotFalse(HTTP_ONLY_ATTRIBUTE);
     }
 
     /**
@@ -155,8 +155,13 @@ public interface HttpCookie
      */
     default boolean isPartitioned()
     {
-        String partitioned = getAttributes().get(PARTITIONED_ATTRIBUTE);
-        return partitioned != null && !StringUtil.asciiEqualsIgnoreCase("false", partitioned);
+        return isSetToNotFalse(PARTITIONED_ATTRIBUTE);
+    }
+
+    private boolean isSetToNotFalse(String attribute)
+    {
+        String value = getAttributes().get(attribute);
+        return value != null && !StringUtil.asciiEqualsIgnoreCase("false", value);
     }
 
     /**
