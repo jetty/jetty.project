@@ -14,13 +14,13 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import org.eclipse.jetty.http3.qpack.internal.instruction.DuplicateInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -119,10 +119,8 @@ public class DecoderInstructionParserTest
 
     private ByteBuffer getEncodedValue(Instruction instruction)
     {
-        ByteBufferPool.Accumulator lease = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.DynamicCapacity lease = new RetainableByteBuffer.DynamicCapacity();
         instruction.encode(bufferPool, lease);
-        List<ByteBuffer> byteBuffers = lease.getByteBuffers();
-        assertThat(byteBuffers.size(), equalTo(1));
-        return byteBuffers.get(0);
+        return lease.getByteBuffer();
     }
 }

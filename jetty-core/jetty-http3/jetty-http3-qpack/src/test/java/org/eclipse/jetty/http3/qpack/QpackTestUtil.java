@@ -22,29 +22,24 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matcher;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class QpackTestUtil
 {
     public static ByteBuffer toBuffer(Instruction... instructions)
     {
         ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator(); // TODO
+        RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity();
         for (Instruction instruction : instructions)
         {
             instruction.encode(bufferPool, accumulator);
         }
-        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.getTotalLength()));
+        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.size()));
         BufferUtil.clearToFill(combinedBuffer);
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
-        {
-            combinedBuffer.put(buffer);
-        }
+        accumulator.putTo(combinedBuffer);
         BufferUtil.flipToFlush(combinedBuffer, 0);
         return combinedBuffer;
     }
@@ -58,12 +53,11 @@ public class QpackTestUtil
     public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
         ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator(); // TODO
+        RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity();
         instructions.forEach(i -> i.encode(bufferPool, accumulator));
-        assertThat(accumulator.getSize(), is(instructions.size()));
-        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.getTotalLength()), false);
+        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.size()), false);
         BufferUtil.clearToFill(combinedBuffer);
-        accumulator.getByteBuffers().forEach(combinedBuffer::put);
+        accumulator.putTo(combinedBuffer);
         BufferUtil.flipToFlush(combinedBuffer, 0);
         return combinedBuffer;
     }

@@ -53,7 +53,7 @@ public class LiteralNameEntryInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
     {
         int size = NBitStringEncoder.octetsNeeded(6, _name, _huffmanName) +
             NBitStringEncoder.octetsNeeded(8, _value, _huffmanValue);

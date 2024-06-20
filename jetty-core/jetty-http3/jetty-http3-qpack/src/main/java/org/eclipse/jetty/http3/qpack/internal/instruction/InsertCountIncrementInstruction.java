@@ -36,7 +36,7 @@ public class InsertCountIncrementInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _increment);
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);

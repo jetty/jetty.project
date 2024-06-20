@@ -31,7 +31,7 @@ public class StreamCancellationInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _streamId);
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
