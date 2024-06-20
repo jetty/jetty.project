@@ -76,7 +76,6 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
         List<Arguments> plans = new ArrayList<>();
 
         List<String> disabledTests = new ArrayList<>();
-        disabledTests.add("ee10-session-ee8-ee9-ee8.txt"); // causes an ISE
 
         Path testPlansDir = MavenPaths.findTestResourceDir("plans");
         try (Stream<Path> plansStream = Files.list(testPlansDir))
