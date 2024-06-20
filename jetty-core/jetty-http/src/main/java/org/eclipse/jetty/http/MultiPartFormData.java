@@ -110,14 +110,7 @@ public class MultiPartFormData
                 try
                 {
                     // No existing core parts, so we need to configure the parser.
-                    parser.setMaxParts(config.getMaxParts());
-                    parser.setMaxMemoryFileSize(config.getMaxMemoryPartSize());
-                    parser.setMaxFileSize(config.getMaxPartSize());
-                    parser.setMaxLength(config.getMaxSize());
-                    parser.setPartHeadersMaxLength(config.getMaxHeadersSize());
-                    parser.setUseFilesForPartsWithoutFileName(config.isUseFilesForPartsWithoutFileName());
-                    if (config.getLocation() != null)
-                        parser.setFilesDirectory(config.getLocation());
+                    parser.configure(config);
 
                     // parse the core parts.
                     return parser.parse(content);
@@ -493,6 +486,21 @@ public class MultiPartFormData
             parser.setMaxParts(maxParts);
         }
 
+        /**
+         * Configure the Parser given a {@link MultiPartConfig} instance.
+         * @param config the configuration.
+         */
+        public void configure(MultiPartConfig config)
+        {
+            parser.setMaxParts(config.getMaxParts());
+            maxMemoryFileSize = config.getMaxMemoryPartSize();
+            maxFileSize = config.getMaxPartSize();
+            maxLength = config.getMaxSize();
+            parser.setPartHeadersMaxLength(config.getMaxHeadersSize());
+            useFilesForPartsWithoutFileName = config.isUseFilesForPartsWithoutFileName();
+            filesDirectory = config.getLocation();
+        }
+
         // Only used for testing.
         int getPartsSize()
         {
@@ -513,21 +521,21 @@ public class MultiPartFormData
             public void onPartContent(Content.Chunk chunk)
             {
                 ByteBuffer buffer = chunk.getByteBuffer();
-                long maxFileSize = getMaxFileSize();
+                long maxPartSize = getMaxFileSize();
                 size += buffer.remaining();
-                if (maxFileSize >= 0 && size > maxFileSize)
+                if (maxPartSize >= 0 && size > maxPartSize)
                 {
-                    onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxFileSize)));
+                    onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxPartSize)));
                     return;
                 }
 
                 String fileName = getFileName();
                 if (fileName != null || isUseFilesForPartsWithoutFileName())
                 {
-                    long maxMemoryFileSize = getMaxMemoryFileSize();
-                    if (maxMemoryFileSize >= 0)
+                    long maxMemoryPartSize = getMaxMemoryFileSize();
+                    if (maxMemoryPartSize >= 0)
                     {
-                        if (size > maxMemoryFileSize)
+                        if (size > maxMemoryPartSize)
                         {
                             try
                             {
@@ -564,12 +572,12 @@ public class MultiPartFormData
                 }
                 else
                 {
-                    long maxMemoryFileSize = getMaxMemoryFileSize();
-                    if (maxMemoryFileSize >= 0)
+                    long maxMemoryPartSize = getMaxMemoryFileSize();
+                    if (maxMemoryPartSize >= 0)
                     {
-                        if (size > maxMemoryFileSize)
+                        if (size > maxMemoryPartSize)
                         {
-                            onFailure(new IllegalStateException("max memory file size exceeded: %d".formatted(maxFileSize)));
+                            onFailure(new IllegalStateException("max memory file size exceeded: %d".formatted(maxPartSize)));
                             return;
                         }
                     }
