@@ -21,7 +21,7 @@ import javax.servlet.ServletException;
 /**
  * A SCI that tosses an Error to intentionally to cause issues with the DeploymentManager
  *
- * @see <a href="https://github.com/eclipse/jetty.project/issues/1602">Issue #1602</a>
+ * @see <a href="https://github.com/jetty/jetty.project/issues/1602">Issue #1602</a>
  */
 public class DeploymentErrorInitializer implements ServletContainerInitializer
 {

@@ -31,7 +31,7 @@ The Jetty XML elements define attributes such as `id`, `name`, `class`, etc. tha
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Get id="stderr" class="java.lang.System" name="err">
@@ -43,7 +43,7 @@ The Jetty XML elements define attributes such as `id`, `name`, `class`, etc. tha
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Get>
@@ -70,7 +70,7 @@ The following Jetty XML creates an empty `String` and assigns it the id `mystrin
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="mystring" class="java.lang.String" />
 ----
@@ -98,7 +98,7 @@ The following example creates a minimal Jetty `Server`:
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.server.Server">
   <Arg type="int">8080</Arg>
@@ -112,7 +112,7 @@ Arguments may also have a `name` attribute, which is matched with the correspond
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.server.Server">
   <Arg name="port" type="int">8080</Arg>
@@ -132,7 +132,7 @@ The following example creates an `ArrayList`:
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <New id="mylist" class="java.util.ArrayList">
@@ -159,7 +159,7 @@ Within element `<Call>` the return value, if the return type is not `void`, is i
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <New class="java.util.ArrayList">
@@ -183,7 +183,7 @@ It is possible to call `static` methods by specifying the `class` attribute:
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Call id="myhost" name="getByName" class="java.net.InetAddress">
@@ -206,7 +206,7 @@ For example:
 [,xml,subs=normal]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Call class="java.util.concurrent.Executors" name="newSingleThreadScheduledExecutor">
@@ -235,7 +235,7 @@ If the JavaBean property is `foo` (or `Foo`), `<Get>` first attempts to invoke _
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <!-- Invokes getter method server.getVersion() -->
@@ -262,7 +262,7 @@ If the JavaBean property is `foo` (or `Foo`), `<Set>` first attempts to invoke _
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <!-- The value in the <Set> scope is the string "true" -->
@@ -287,7 +287,7 @@ The map entries are specified with a sequence of `<Entry>` elements, each with e
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Map class="java.util.concurrent.ConcurrentHashMap">
@@ -312,7 +312,7 @@ You can only specify the key value via the `name` attribute, so the key can only
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <New class="java.util.Properties">
@@ -333,7 +333,7 @@ Element `<Array>` creates a new array, whose component type may be specified by 
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Array type="java.lang.Object">
@@ -357,7 +357,7 @@ You must give a unique `id` attribute to the objects you want to reference.
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <!-- The Jetty Server has id="server" -->
 <Configure id="server" class="org.eclipse.jetty.server.Server">
@@ -391,7 +391,7 @@ For example, you may want to configure the context path of your web application 
 [,xml,subs=normal]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">
@@ -417,7 +417,7 @@ The following example creates a minimal Jetty `Server` that listens on a port sp
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Arg type="int">
@@ -440,7 +440,7 @@ The following example creates a minimal Jetty `Server` that listens on a port sp
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Arg type="int">
@@ -472,7 +472,7 @@ The following example illustrates how scopes work:
 [,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="server" class="org.eclipse.jetty.server.Server">
   <Arg type="int">8080</Arg>

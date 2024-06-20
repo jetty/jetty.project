@@ -96,7 +96,7 @@ Here's an example of this type of XML file:
 [source,xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
     <Arg>
@@ -114,7 +114,7 @@ Here's an example of this type of XML file:
 [source,xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="securityHandler">
     <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
