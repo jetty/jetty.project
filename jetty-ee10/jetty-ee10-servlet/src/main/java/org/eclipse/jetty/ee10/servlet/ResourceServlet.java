@@ -124,6 +124,11 @@ import org.slf4j.LoggerFactory;
  *     gzipped.
  *     Defaults to {@code .svgz}.
  *   </dd>
+ *   <dt>pathInfoOnly</dt>
+ *   <dd>
+ *     Use {@code true} to use only the pathInfo portion of a PATH (aka prefix) match.
+ *     Defaults to {@code true}.
+ *   </dd>
  *   <dt>precompressed</dt>
  *   <dd>
  *     Omitted by default, so that no pre-compressed content will be served.
@@ -166,7 +171,7 @@ public class ResourceServlet extends HttpServlet
 
     private ServletResourceService _resourceService;
     private WelcomeServletMode _welcomeServletMode;
-    private boolean _pathInfoOnly = true;
+    private boolean _pathInfoOnly;
 
     public ResourceService getResourceService()
     {
@@ -306,6 +311,8 @@ public class ResourceServlet extends HttpServlet
         }
         _resourceService.setGzipEquivalentFileExtensions(gzipEquivalentFileExtensions);
 
+        _pathInfoOnly = getInitBoolean("pathInfoOnly", true);
+
         if (LOG.isDebugEnabled())
         {
             LOG.debug("  .baseResource = {}", baseResource);
@@ -422,8 +429,6 @@ public class ResourceServlet extends HttpServlet
         boolean included = httpServletRequest.getDispatcherType() == DispatcherType.INCLUDE;
         String encodedPathInContext = getEncodedPathInContext(httpServletRequest, included);
 
-        System.err.printf("%s <=%b= %s\n", encodedPathInContext, included, httpServletRequest);
-
         if (LOG.isDebugEnabled())
             LOG.debug("doGet(hsReq={}, hsResp={}) pathInContext={}, included={}", httpServletRequest, httpServletResponse, encodedPathInContext, included);
 
@@ -515,12 +520,32 @@ public class ResourceServlet extends HttpServlet
 
     protected String getEncodedPathInContext(HttpServletRequest request, boolean included)
     {
-        HttpServletMapping mapping = included ? (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING) : request.getHttpServletMapping();
-        System.err.println(mapping);
+        HttpServletMapping mapping = request.getHttpServletMapping();
+        if (included)
+        {
+            if (request.getAttribute(Dispatcher.INCLUDE_MAPPING) instanceof HttpServletMapping httpServletMapping)
+            {
+                mapping = httpServletMapping;
+            }
+            else
+            {
+                // must be an include of a named dispatcher.  Just use the whole URI
+                return URIUtil.encodePath(URIUtil.addPaths(request.getServletPath(), request.getPathInfo()));
+            }
+        }
+
         return switch (mapping.getMappingMatch())
         {
             case CONTEXT_ROOT -> "/";
-            case DEFAULT, EXTENSION, EXACT -> included ? (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH) : request.getServletPath();
+            case DEFAULT, EXTENSION, EXACT ->
+            {
+                if (included)
+                    yield URIUtil.encodePath((String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
+                else if (request instanceof ServletApiRequest apiRequest)
+                    yield Context.getPathInContext(request.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
+                else
+                    yield URIUtil.encodePath(request.getServletPath());
+            }
             case PATH ->
             {
                 if (_pathInfoOnly)

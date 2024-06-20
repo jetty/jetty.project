@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
+import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,6 +124,7 @@ public class DefaultServlet extends ResourceServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
+    private AtomicBoolean warned = new AtomicBoolean(false);
 
     /**
      * <p>
@@ -148,7 +153,30 @@ public class DefaultServlet extends ResourceServlet
     protected String getEncodedPathInContext(HttpServletRequest request, boolean included)
     {
         String deprecatedPath =  getEncodedPathInContext(request, (String)(included ? request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH) : null));
-        return deprecatedPath == null ? super.getEncodedPathInContext(request, included) : deprecatedPath;
+        if (deprecatedPath != null)
+            return deprecatedPath;
+
+        if (request.getPathInfo() != null)
+        {
+            if (warned.compareAndSet(false, true))
+                LOG.warn("Incorrect mapping for DefaultServlet at %s. Use ResourceServlet".formatted(request.getHttpServletMapping().getPattern()));
+            return super.getEncodedPathInContext(request, included);
+        }
+
+        if (included)
+        {
+            if (request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH) instanceof String servletPath)
+                return URIUtil.encodePath(servletPath);
+
+            // must be an include of a named dispatcher.  Just use the whole URI
+            return URIUtil.encodePath(request.getServletPath());
+        }
+
+        if (request instanceof ServletApiRequest apiRequest)
+            return Context.getPathInContext(request.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
+
+
+        return URIUtil.encodePath(request.getServletPath());
     }
 
     @Deprecated(forRemoval = true)

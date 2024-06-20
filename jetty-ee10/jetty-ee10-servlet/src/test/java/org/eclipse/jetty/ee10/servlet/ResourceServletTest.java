@@ -3436,7 +3436,7 @@ public class ResourceServletTest
     }
 
     @Test
-    public void testPathInfoOnly() throws Exception
+    public void testNotPathInfoOnly() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler("/c1", ServletContextHandler.NO_SESSIONS);
         context.setWelcomeFiles(new String[]{"index.y", "index.x"});
@@ -3459,27 +3459,27 @@ public class ResourceServletTest
         context.getServletHandler().addServlet(indexServlet);
         context.getServletHandler().addServletMapping(indexMapping);
 
-        Path pathTest = MavenTestingUtils.getTestResourcePath("pathTest");
+        Path docroot = MavenTestingUtils.getTestResourcePath("docroot");
 
-        Path defaultDir = pathTest.resolve("default");
         ServletHolder slashHolder = new ServletHolder("default", new ResourceServlet());
         slashHolder.setInitParameter("redirectWelcome", "false");
         slashHolder.setInitParameter("welcomeServlets", "true");
-        slashHolder.setInitParameter("baseResource", defaultDir.toAbsolutePath().toString());
+        slashHolder.setInitParameter("baseResource", docroot.toAbsolutePath().toString());
         context.addServlet(slashHolder, "/");
 
-        Path rDir = pathTest.resolve("rdir");
-        ServletHolder rHolder = new ServletHolder("rdefault", new ResourceServlet());
+        Path altroot = MavenTestingUtils.getTestResourcePath("altroot");
+        ServletHolder rHolder = new ServletHolder("alt", new ResourceServlet());
         rHolder.setInitParameter("redirectWelcome", "false");
         rHolder.setInitParameter("welcomeServlets", "true");
-        rHolder.setInitParameter("baseResource", rDir.toAbsolutePath().toString());
-        context.addServlet(rHolder, "/r/*");
+        rHolder.setInitParameter("pathInfoOnly", "false");
+        rHolder.setInitParameter("baseResource", altroot.toAbsolutePath().toString());
+        context.addServlet(rHolder, "/all/*");
 
         server.stop();
         server.setHandler(context);
         server.start();
         String rawRequest = """
-            GET /c1/r/ HTTP/1.1\r
+            GET /c1/all/index.html HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
             \r
@@ -3487,7 +3487,7 @@ public class ResourceServletTest
 
         String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("testPathInfoOnly-OK"));
+        assertThat(response.getContent(), containsString("this is alternate index content"));
     }
 
     @Test
