@@ -93,7 +93,7 @@ public class HttpCookieTest
     }
 
     @Test
-    public void testSetRFC2965Cookie() throws Exception
+    public void testSetRFC2965Cookie()
     {
         HttpCookie httpCookie;
 
@@ -162,10 +162,12 @@ public class HttpCookieTest
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly; Partitioned; SameSite=Strict", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
 
         httpCookie = HttpCookie.from("everything", "value", Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), HttpCookie.SAME_SITE_ATTRIBUTE, SameSite.STRICT.getAttributeValue(), HttpCookie.PARTITIONED_ATTRIBUTE, Boolean.toString(true)));
-
         String rfc6265SetCookie = HttpCookieUtils.getRFC6265SetCookie(httpCookie);
         assertThat(rfc6265SetCookie, startsWith("everything=value; Path=path; Domain=domain; Expires="));
         assertThat(rfc6265SetCookie, endsWith(" GMT; Max-Age=1; Secure; HttpOnly; Partitioned; SameSite=Strict"));
+
+        httpCookie = HttpCookie.from("everything", "value", -1, Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain", HttpCookie.PATH_ATTRIBUTE, "path", HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0), HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true), HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true), "Other", "attribute", "Single", ""));
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly; Other=attribute; Single", HttpCookieUtils.getRFC6265SetCookie(httpCookie));
     }
 
     public static Stream<String> rfc6265BadNameSource()

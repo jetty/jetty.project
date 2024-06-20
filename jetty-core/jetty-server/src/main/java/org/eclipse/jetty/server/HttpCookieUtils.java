@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>Utility methods for server-side HTTP cookie handling.</p>
@@ -291,8 +292,9 @@ public final class HttpCookieUtils
         {
             if (KNOWN_ATTRIBUTES.contains(e.getKey()))
                 continue;
-            builder.append("; ").append(e.getKey()).append("=");
-            builder.append(e.getValue());
+            builder.append("; ").append(e.getKey());
+            if (StringUtil.isNotBlank(e.getValue()))
+                builder.append("=").append(e.getValue());
         }
 
         return builder.toString();
