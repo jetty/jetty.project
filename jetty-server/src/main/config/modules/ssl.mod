@@ -1,4 +1,4 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://jetty.org/docs/9/startup-modules.html
 
 [description]
 Enables a TLS(SSL) Connector on the server.
@@ -124,7 +124,7 @@ basehome:modules/ssl/keystore|etc/keystore
 # jetty.sslContext.useCipherSuitesOrder=true
 
 ## To configure Includes / Excludes for Cipher Suites or Protocols see tweak-ssl.xml example at
-## https://www.eclipse.org/jetty/documentation/current/configuring-ssl.html#configuring-sslcontextfactory-cipherSuites
+## https://jetty.org/docs/9/configuring-ssl.html#configuring-sslcontextfactory-cipherSuites
 
 ## Set the size of the SslSession cache
 # jetty.sslContext.sslSessionCacheSize=-1

@@ -544,7 +544,7 @@ public class Runner
     {
         System.err.println("WARNING: jetty-runner is deprecated.");
         System.err.println("         See Jetty Documentation for startup options");
-        System.err.println("         https://www.eclipse.org/jetty/documentation/");
+        System.err.println("         https://jetty.org/docs/");
 
         Runner runner = new Runner();
 

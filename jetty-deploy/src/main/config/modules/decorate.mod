@@ -1,4 +1,4 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://jetty.org/docs/9/startup-modules.html
 
 [description]
 Jetty setup to support Decoration of Listeners, Filters and Servlets within a deployed webapp.
