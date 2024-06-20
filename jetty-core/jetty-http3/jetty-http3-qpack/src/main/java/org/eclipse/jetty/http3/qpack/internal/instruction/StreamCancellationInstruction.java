@@ -40,7 +40,7 @@ public class StreamCancellationInstruction implements Instruction
         buffer.put((byte)0x40);
         NBitIntegerEncoder.encode(buffer, 6, _streamId);
         BufferUtil.flipToFlush(buffer, 0);
-        accumulator.append(retainableByteBuffer);
+        accumulator.add(retainableByteBuffer);
     }
 
     @Override

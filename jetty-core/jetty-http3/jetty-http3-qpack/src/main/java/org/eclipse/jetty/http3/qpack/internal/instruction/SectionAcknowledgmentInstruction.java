@@ -45,7 +45,7 @@ public class SectionAcknowledgmentInstruction implements Instruction
         buffer.put((byte)0x80);
         NBitIntegerEncoder.encode(buffer, 7, _streamId);
         BufferUtil.flipToFlush(buffer, 0);
-        accumulator.append(retainableByteBuffer);
+        accumulator.add(retainableByteBuffer);
     }
 
     @Override

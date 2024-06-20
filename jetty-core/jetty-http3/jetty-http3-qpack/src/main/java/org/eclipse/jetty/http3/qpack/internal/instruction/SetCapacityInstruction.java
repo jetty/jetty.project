@@ -45,7 +45,7 @@ public class SetCapacityInstruction implements Instruction
         buffer.put((byte)0x20);
         NBitIntegerEncoder.encode(buffer, 5, _capacity);
         BufferUtil.flipToFlush(buffer, 0);
-        accumulator.append(retainableByteBuffer);
+        accumulator.add(retainableByteBuffer);
     }
 
     @Override

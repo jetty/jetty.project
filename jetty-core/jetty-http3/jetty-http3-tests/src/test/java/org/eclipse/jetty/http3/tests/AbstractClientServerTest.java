@@ -30,6 +30,7 @@ import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.ClientConnectionFactoryOverHTTP3;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
@@ -48,6 +49,9 @@ import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 @ExtendWith(WorkDirExtension.class)
 public class AbstractClientServerTest
 {
@@ -57,6 +61,7 @@ public class AbstractClientServerTest
     public final BeforeTestExecutionCallback printMethodName = context ->
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected Server server;
+    protected ArrayByteBufferPool.Tracking serverBufferPool;
     protected QuicServerConnector connector;
     protected HTTP3Client http3Client;
     protected HttpClient httpClient;
@@ -95,7 +100,8 @@ public class AbstractClientServerTest
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        server = new Server(serverThreads);
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(serverThreads, null, serverBufferPool);
         connector = new QuicServerConnector(server, quicConfiguration, serverConnectionFactory);
         server.addConnector(connector);
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -144,8 +150,15 @@ public class AbstractClientServerTest
     @AfterEach
     public void dispose()
     {
-        LifeCycle.stop(http3Client);
-        LifeCycle.stop(httpClient);
-        LifeCycle.stop(server);
+        try
+        {
+            assertThat("Server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(http3Client);
+            LifeCycle.stop(httpClient);
+            LifeCycle.stop(server);
+        }
     }
 }

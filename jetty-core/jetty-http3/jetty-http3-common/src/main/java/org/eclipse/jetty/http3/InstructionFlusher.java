@@ -51,7 +51,7 @@ public class InstructionFlusher extends IteratingCallback
     public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, long streamType)
     {
         this.bufferPool = session.getByteBufferPool();
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity();
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool);
         this.endPoint = endPoint;
         this.streamType = streamType;
     }
@@ -83,8 +83,6 @@ public class InstructionFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("flushing {} on {}", instructions, this);
 
-        instructions.forEach(i -> i.encode(bufferPool, accumulator));
-
         if (!initialized)
         {
             initialized = true;
@@ -96,6 +94,8 @@ public class InstructionFlusher extends IteratingCallback
             accumulator.add(buffer);
         }
 
+        instructions.forEach(i -> i.encode(bufferPool, accumulator));
+
         if (LOG.isDebugEnabled())
             LOG.debug("writing buffers ({} bytes) on {}", accumulator.size(), this);
         accumulator.writeTo(endPoint, false, this);
@@ -103,14 +103,12 @@ public class InstructionFlusher extends IteratingCallback
     }
 
     @Override
-    public void succeeded()
+    protected void onCompleteSuccess()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write buffers on {}", this);
 
         accumulator.release();
-
-        super.succeeded();
     }
 
     @Override

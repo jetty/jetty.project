@@ -45,7 +45,7 @@ public class InsertCountIncrementInstruction implements Instruction
         buffer.put((byte)0x00);
         NBitIntegerEncoder.encode(buffer, 6, _increment);
         BufferUtil.flipToFlush(buffer, 0);
-        accumulator.append(retainableByteBuffer);
+        accumulator.add(retainableByteBuffer);
     }
 
     @Override

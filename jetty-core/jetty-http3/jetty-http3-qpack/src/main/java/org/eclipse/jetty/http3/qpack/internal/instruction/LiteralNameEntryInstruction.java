@@ -66,7 +66,7 @@ public class LiteralNameEntryInstruction implements Instruction
         NBitStringEncoder.encode(buffer, 8, _value, _huffmanValue);
 
         BufferUtil.flipToFlush(buffer, 0);
-        accumulator.append(retainableByteBuffer);
+        accumulator.add(retainableByteBuffer);
     }
 
     @Override
