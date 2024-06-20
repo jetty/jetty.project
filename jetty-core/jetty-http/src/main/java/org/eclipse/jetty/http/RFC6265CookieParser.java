@@ -23,6 +23,7 @@ import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_SEPARATOR;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.ESCAPE_IN_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.INVALID_COOKIES;
+import static org.eclipse.jetty.http.CookieCompliance.Violation.MAINTAIN_QUOTES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.OPTIONAL_WHITE_SPACE;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPACE_IN_VALUES;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN_QUOTES;
@@ -194,6 +195,8 @@ public class RFC6265CookieParser implements CookieParser
                     string.setLength(0);
                     if (c == '"')
                     {
+                        if (_complianceMode.allows(MAINTAIN_QUOTES))
+                            string.append(c);
                         state = State.IN_QUOTED_VALUE;
                     }
                     else if (c == ';')
@@ -276,7 +279,16 @@ public class RFC6265CookieParser implements CookieParser
                 case IN_QUOTED_VALUE:
                     if (c == '"')
                     {
-                        value = string.toString();
+                        if (_complianceMode.allows(MAINTAIN_QUOTES))
+                        {
+                            string.append(c);
+                            value = string.toString();
+                            reportComplianceViolation(MAINTAIN_QUOTES, value);
+                        }
+                        else
+                        {
+                            value = string.toString();
+                        }
                         state = State.AFTER_QUOTED_VALUE;
                     }
                     else if (c == '\\' && _complianceMode.allows(ESCAPE_IN_QUOTES))

@@ -22,6 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 
 public class RFC6265CookieParserTest
@@ -76,12 +77,12 @@ public class RFC6265CookieParserTest
         parser = new TestCookieParser(CookieCompliance.RFC6265_STRICT);
         cookies = parser.parseFields(rawCookie);
         assertThat("Cookies.length", cookies.size(), is(3));
-        assertCookie("Cookies[0]", cookies.get(0), "$Version", "1", 0, null);
-        assertCookie("Cookies[1]", cookies.get(1), "Customer", "WILE_E_COYOTE", 0, null);
-        assertCookie("Cookies[2]", cookies.get(2), "$Path", "/acme", 0, null);
+        assertCookie("Cookies[0]", cookies.get(0), "$Version", "\"1\"", 0, null);
+        assertCookie("Cookies[1]", cookies.get(1), "Customer", "\"WILE_E_COYOTE\"", 0, null);
+        assertCookie("Cookies[2]", cookies.get(2), "$Path", "\"/acme\"", 0, null);
 
-        // Normal cookies with attributes, so no violations
-        assertThat(parser.violations.size(), is(0));
+        // Three violations for each of the maintained quotes
+        assertThat(parser.violations.size(), is(3));
     }
 
     /**
@@ -297,6 +298,20 @@ public class RFC6265CookieParserTest
     }
 
     @Test
+    public void testRFC6265QuotesMaintained()
+    {
+        String rawCookie = "A=\"quotedValue\"";
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[0]", cookies[0], "A", "quotedValue", 0, null);
+
+        cookies = parseCookieHeaders(CookieCompliance.RFC6265_QUOTED, rawCookie);
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[0]", cookies[0], "A", "\"quotedValue\"", 0, null);
+    }
+
+    @Test
     public void testRFC2965QuotedEscape()
     {
         String rawCookie = "A=\"double\\\"quote\"";
@@ -357,6 +372,23 @@ public class RFC6265CookieParserTest
         {
             Cookie cookie = cookies[i];
             assertThat(cookie.getName() + "=" + cookie.getValue(), is(param.expected.get(i)));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("parameters")
+    public void testRFC6265QuotedCookie(Param param)
+    {
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265_QUOTED, param.input);
+
+        assertThat("Cookies.length", cookies.length, is(param.expected.size()));
+        boolean quoted = param.input.contains("\"");
+
+        for (int i = 0; i < cookies.length; i++)
+        {
+            Cookie cookie = cookies[i];
+            String value = cookie.getValue();
+            assertThat(param.expected.get(i), anyOf(is(cookie.getName() + "=" + value), is(cookie.getName() + "=" + QuotedCSV.unquote(value))));
         }
     }
 
@@ -462,7 +494,7 @@ public class RFC6265CookieParserTest
         }
     }
 
-    private static class Param
+    public static class Param
     {
         private final String input;
         private final List<String> expected;
