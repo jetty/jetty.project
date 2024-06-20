@@ -205,7 +205,7 @@ There are no configuration properties associated with this module.
 
 From jetty-9.4.13 onwards, we have changed the format of the serialized session when using a remote cache (ie using hotrod).
 Prior to release 9.4.13 we used the default Infinispan serialization, however this was not able to store sufficient information to allow jetty to properly deserialize session attributes in all circumstances.
-See issue https://github.com/eclipse/jetty.project/issues/2919 for more background.
+See issue https://github.com/jetty/jetty.project/issues/2919 for more background.
 
 We have provided a conversion program which will convert any sessions stored in Infinispan to the new format.
 [IMPORTANT]

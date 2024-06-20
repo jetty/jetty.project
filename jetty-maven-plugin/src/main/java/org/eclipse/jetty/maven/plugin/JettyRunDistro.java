@@ -78,7 +78,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  * This goal does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
  *
- * See <a href="https://www.eclipse.org/jetty/documentation/">https://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
+ * See <a href="https://jetty.org/docs/">https://jetty.org/docs/</a> for more information on this and other jetty plugins.
  *
  * Runs unassembled webapp in a locally installed jetty distro
  */

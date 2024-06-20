@@ -23,7 +23,7 @@ Documentation
 
 Project documentation is available on the Jetty Eclipse website.
 
-- [https://www.eclipse.org/jetty/documentation](https://www.eclipse.org/jetty/documentation)
+- [https://jetty.org/docs/](https://jetty.org/docs/)
 
 Building
 ========

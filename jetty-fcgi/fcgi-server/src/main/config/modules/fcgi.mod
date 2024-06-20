@@ -1,4 +1,4 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://jetty.org/docs/9/startup-modules.html
 
 [description]
 Adds the FastCGI implementation to the classpath.
@@ -13,4 +13,4 @@ lib/fcgi/*.jar
 
 [ini-template]
 ## For configuration of FastCGI contexts, see
-## https://www.eclipse.org/jetty/documentation/current/fastcgi.html
+## https://jetty.org/docs/9/fastcgi.html

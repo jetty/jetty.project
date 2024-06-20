@@ -83,7 +83,7 @@ public class RolloverFileOutputStreamTest
     }
 
     /**
-     * <a href="Issue #1507">https://github.com/eclipse/jetty.project/issues/1507</a>
+     * <a href="Issue #1507">https://github.com/jetty/jetty.project/issues/1507</a>
      */
     @Test
     public void testMidnightRolloverCalcPDTIssue1507()

@@ -172,11 +172,10 @@ public class DemoBaseTests extends AbstractDistributionTest
             assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
             startHttpClient(true);
-            ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/current/");
+            ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/jetty-12/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String body = response.getContentAsString();
-            assertThat("Expecting APIdoc contents", body, containsString("All&nbsp;Classes"));
-            assertThat("Expecting APIdoc contents", body, containsString("<title>Overview (Jetty :: Project 9."));
+            assertThat("Expecting APIdoc contents", body, containsString("<title>Overview (Eclipse Jetty API Doc"));
         }
     }
 

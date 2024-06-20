@@ -1,4 +1,4 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 
 <!-- ============================================================= -->
 <!-- SSL ContextFactory configuration                              -->
@@ -6,7 +6,7 @@
 
 <!-- 
   To configure Includes / Excludes for Cipher Suites or Protocols see tweak-ssl.xml example at 
-     https://www.eclipse.org/jetty/documentation/current/configuring-ssl.html#configuring-sslcontextfactory-cipherSuites
+     https://jetty.org/documentation/current/configuring-ssl.html#configuring-sslcontextfactory-cipherSuites
 -->
 
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">

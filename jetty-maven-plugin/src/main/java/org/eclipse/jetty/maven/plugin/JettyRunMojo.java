@@ -61,7 +61,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
  * This can be used, for example, to deploy a static webapp that is not part of your maven build.
  * <p>
- * There is a <a href="https://www.eclipse.org/jetty/documentation/current/maven-and-jetty.html">reference guide</a> to the configuration parameters for this plugin.
+ * There is a <a href="https://jetty.org/docs/9/maven-and-jetty.html">reference guide</a> to the configuration parameters for this plugin.
  *
  * Runs jetty directly from a maven project
  */

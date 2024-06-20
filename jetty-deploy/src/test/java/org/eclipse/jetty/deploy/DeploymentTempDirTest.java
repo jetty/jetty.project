@@ -103,7 +103,7 @@ public class DeploymentTempDirTest
         Path warPath = MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war");
         String deploymentXml =
             "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://eclipse.dev/jetty/configure.dtd\">\n" +
+            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure.dtd\">\n" +
             "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
             "<Set name=\"war\">" + warPath + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
@@ -146,7 +146,7 @@ public class DeploymentTempDirTest
         Path warPath = MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war");
         String deploymentXml =
             "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://eclipse.dev/jetty/configure.dtd\">\n" +
+            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure.dtd\">\n" +
             "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
             "<Set name=\"war\">" + warPath + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +

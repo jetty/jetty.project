@@ -8,7 +8,7 @@
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
-  <url>https://eclipse.org/jetty</url>
+  <url>https://jetty.org/</url>
   <inceptionYear>1995</inceptionYear>
 
   <properties>
@@ -16,7 +16,7 @@
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
-    <jetty.url>https://eclipse.org/jetty</jetty.url>
+    <jetty.url>https://jetty.org/</jetty.url>
     <jmhjar.name>benchmarks</jmhjar.name>
     <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -167,9 +167,9 @@
   </licenses>
 
   <scm>
-    <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
+    <connection>scm:git:https://github.com/jetty/jetty.project.git</connection>
     <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
-    <url>https://github.com/eclipse/jetty.project</url>
+    <url>https://github.com/jetty/jetty.project</url>
   </scm>
 
   <modules>
@@ -1748,7 +1748,7 @@
 
   <issueManagement>
     <system>github</system>
-    <url>https://github.com/eclipse/jetty.project/issues</url>
+    <url>https://github.com/jetty/jetty.project/issues</url>
   </issueManagement>
 
   <mailingLists>

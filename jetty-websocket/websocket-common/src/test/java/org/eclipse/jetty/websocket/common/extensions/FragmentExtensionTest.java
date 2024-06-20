@@ -330,7 +330,7 @@ public class FragmentExtensionTest
     /**
      * Ensure that FragmentExtension honors the correct order of websocket frames.
      *
-     * @see <a href="https://github.com/eclipse/jetty.project/issues/2491">eclipse/jetty.project#2491</a>
+     * @see <a href="https://github.com/jetty/jetty.project/issues/2491">eclipse/jetty.project#2491</a>
      */
     @Test
     public void testLargeSmallTextAlternating() throws Exception

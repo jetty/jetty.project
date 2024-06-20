@@ -14,9 +14,9 @@ Developer resources
 --------------------
 Information regarding source code management, builds, coding standards, and more.
 
-- [https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html](https://www.eclipse.org/jetty/documentation/current/advanced-contributing.html)
+- [https://jetty.org/docs/contribution-guide/index.html](https://jetty.org/docs/contribution-guide/index.html)
 
-The canonical Jetty git repository is located at [GitHub.](https://github.com/eclipse/jetty.project) Providing you have
+The canonical Jetty git repository is located at [GitHub.](https://github.com/jetty/jetty.project) Providing you have
 completed the contributors agreement mentioned below we will endeavor to pull your commit into Jetty proper.
 
 Eclipse Contributor Agreement
@@ -43,13 +43,13 @@ Search for bugs
 ----------------
 This project uses GitHub Issues to track ongoing development and issues.
 
-- [https://github.com/eclipse/jetty.project/issues](https://github.com/eclipse/jetty.project/issues)
+- [https://github.com/jetty/jetty.project/issues](https://github.com/jetty/jetty.project/issues)
 
 Create a new bug
 -----------------
 Be sure to search for existing bugs before you create another one. Remember that contributions are always welcome!
 
-- [https://github.com/eclipse/jetty.project/issues](https://github.com/eclipse/jetty.project/issues)
+- [https://github.com/jetty/jetty.project/issues](https://github.com/jetty/jetty.project/issues)
 
 Reporting Security Issues
 -----------------
