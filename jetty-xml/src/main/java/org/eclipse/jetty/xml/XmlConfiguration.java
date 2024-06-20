@@ -1970,8 +1970,8 @@ public class XmlConfiguration
 
             // Register all variations of DOCTYPE entity references for Config 9.3
             String[] schemes = {"http", "https"};
-            String[] hosts = {"www.eclipse.org", "eclipse.org", "www.eclipse.dev", "eclipse.dev"};
-            String[] paths = {"/jetty/configure.dtd", "/jetty/configure_9_3.dtd"};
+            String[] hosts = {"www.eclipse.org/jetty", "eclipse.org/jetty", "www.eclipse.dev/jetty", "eclipse.dev/jetty", "jetty.org"};
+            String[] paths = {"/configure.dtd", "/configure_9_3.dtd"};
 
             for (String scheme : schemes)
             {

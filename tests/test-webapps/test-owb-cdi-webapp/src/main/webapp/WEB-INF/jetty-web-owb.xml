@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 
 <Configure id="wac" class="org.eclipse.jetty.webapp.WebAppContext">
   <!-- Rename this file to jetty-web.xml if the cdi-spi module is not used-->
