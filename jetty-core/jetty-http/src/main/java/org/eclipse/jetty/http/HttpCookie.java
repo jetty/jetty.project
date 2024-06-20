@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>Implementation of RFC6265 HTTP Cookies (with fallback support for RFC2965).</p>
@@ -154,7 +155,8 @@ public interface HttpCookie
      */
     default boolean isPartitioned()
     {
-        return Boolean.parseBoolean(getAttributes().get(PARTITIONED_ATTRIBUTE));
+        String partitioned = getAttributes().get(PARTITIONED_ATTRIBUTE);
+        return partitioned != null && !StringUtil.asciiEqualsIgnoreCase("false", partitioned);
     }
 
     /**
