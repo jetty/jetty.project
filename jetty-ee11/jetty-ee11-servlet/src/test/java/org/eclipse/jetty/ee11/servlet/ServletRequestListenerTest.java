@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import jakarta.servlet.AsyncContext;
@@ -31,6 +32,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
@@ -108,6 +110,7 @@ public class ServletRequestListenerTest
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), equalTo("success"));
 
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> _events.contains("requestDestroyed /"));
         assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "doFilter /", "FORWARD /", "requestDestroyed /");
     }
 
@@ -135,6 +138,7 @@ public class ServletRequestListenerTest
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), equalTo("success"));
 
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> _events.contains("requestDestroyed /"));
         assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "doFilter /", "INCLUDE /", "requestDestroyed /");
     }
 
@@ -165,6 +169,7 @@ public class ServletRequestListenerTest
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), equalTo("success"));
 
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> _events.contains("requestDestroyed /"));
         assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "requestDestroyed /",
             "requestInitialized /", "doFilter /", "ASYNC /", "requestDestroyed /");
     }
@@ -201,6 +206,7 @@ public class ServletRequestListenerTest
         assertThat(response.getStatus(), equalTo(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContentAsString(), equalTo("error handled"));
 
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> _events.contains("requestDestroyed /"));
         assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "requestDestroyed /",
             "requestInitialized /", "doFilter /error", "ERROR /error", "requestDestroyed /");
     }
@@ -240,6 +246,7 @@ public class ServletRequestListenerTest
         assertThat(response.getStatus(), equalTo(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContentAsString(), equalTo("error handled"));
 
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> _events.contains("errorHandler"));
         assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "requestDestroyed /", "errorHandler");
     }
 
@@ -270,6 +277,7 @@ public class ServletRequestListenerTest
         ContentResponse response = _httpClient.GET("http://localhost:" + _connector.getLocalPort());
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), equalTo("from servlet"));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> _events.contains("requestDestroyed /"));
         assertEvents("requestInitialized /", "doFilter /", "REQUEST /", "requestDestroyed /");
 
         response = _httpClient.GET("http://localhost:" + _connector.getLocalPort() + "/authed");
