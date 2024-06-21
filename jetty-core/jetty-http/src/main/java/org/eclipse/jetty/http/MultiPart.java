@@ -306,7 +306,7 @@ public class MultiPart
             Path path = getPath();
             if (path != null)
             {
-                Files.delete(path);
+                Files.deleteIfExists(path);
                 try (AutoLock ignored = lock.lock())
                 {
                     this.path = null;
@@ -338,7 +338,7 @@ public class MultiPart
                 if (source != null)
                     source.fail(t);
                 if (path != null)
-                    Files.delete(path);
+                    Files.deleteIfExists(path);
             }
             catch (Throwable x)
             {
