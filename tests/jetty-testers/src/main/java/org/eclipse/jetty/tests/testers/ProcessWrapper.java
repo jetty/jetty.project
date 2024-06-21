@@ -161,10 +161,10 @@ public class ProcessWrapper implements AutoCloseable
     public void close()
     {
         stop().join();
-        LOG.info("Process exit with value {}", getProcess().exitValue());
+        LOG.info("Process exit with value {}", this.process.exitValue());
         if (getProcess().exitValue() != 0)
         {
-            LOG.info("Process exit with value !=0 -> {}, still alive {}", getProcess().exitValue(), getProcess().isAlive());
+            LOG.info("Process exit with value !=0 -> {}, still alive {}", this.process.exitValue(), this.process.isAlive());
         }
     }
 
