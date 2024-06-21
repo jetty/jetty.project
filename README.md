@@ -48,7 +48,7 @@ server.start();
 ## Building Jetty from Source
 
 ```shell
-$ git clone https://github.com/eclipse/jetty.project.git
+$ git clone https://github.com/jetty/jetty.project.git
 $ cd jetty.project
 $ mvn -Pfast clean install # fast build bypasses tests and other checks
 ```

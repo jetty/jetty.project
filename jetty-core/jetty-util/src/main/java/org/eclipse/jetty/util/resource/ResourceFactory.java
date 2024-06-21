@@ -115,7 +115,7 @@ import org.slf4j.LoggerFactory;
  *     urlResourceFactory.setConnectTimeout(1000);
  *     ResourceFactory.registerResourceFactory("https", urlResourceFactory);
  *
- *     URI web = URI.create("https://eclipse.dev/jetty/");
+ *     URI web = URI.create("https://jetty.org/");
  *     Resource resource = ResourceFactory.root().newResource(web);
  * </pre>
  */
