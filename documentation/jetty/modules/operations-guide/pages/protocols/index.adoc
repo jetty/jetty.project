@@ -498,7 +498,7 @@ You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following templ
 [,xml,subs=verbatim]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Ref refid="sslContextFactory">
@@ -524,7 +524,7 @@ To explicitly add the exclusion of TLSv1.0 and TLSv1.1 (that are also vulnerable
 [,xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Ref refid="sslContextFactory">
@@ -549,7 +549,7 @@ You can precisely set the list of excluded ciphers, completely overriding Jetty'
 [,xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
   <Ref refid="sslContextFactory">

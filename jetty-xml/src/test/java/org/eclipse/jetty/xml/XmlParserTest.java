@@ -45,7 +45,7 @@ public class XmlParserTest
 
         URL configURL = XmlConfiguration.class.getResource("configure_10_0.dtd");
         parser.redirectEntity("configure_10_0.dtd", configURL);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", configURL);
+        parser.redirectEntity("https://jetty.org/configure_10_0.dtd", configURL);
         parser.redirectEntity("-//Jetty//Configure//EN", configURL);
 
         URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configureWithAttr.xml");

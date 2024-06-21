@@ -3,7 +3,7 @@ version: '11'
 title: Eclipse Jetty
 asciidoc:
   attributes:
-    javadoc-url: https://eclipse.dev/jetty/javadoc/jetty-11
+    javadoc-url: https://jetty.org/javadoc/jetty-11
     jdurl: '{javadoc-url}'
     jetty-home: ${jetty.home}@
     version: 11.0.21-SNAPSHOT

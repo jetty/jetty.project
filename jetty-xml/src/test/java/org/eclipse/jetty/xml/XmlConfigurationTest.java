@@ -286,7 +286,7 @@ public class XmlConfigurationTest
     {
         if (!rawXml.contains("!DOCTYPE"))
             rawXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">\n" +
                 rawXml;
         return asXmlConfiguration("raw.xml", rawXml);
     }
@@ -295,7 +295,7 @@ public class XmlConfigurationTest
     {
         if (!rawXml.contains("!DOCTYPE"))
             rawXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">\n" +
                 rawXml;
         Path testFile = workDir.getEmptyPathDir().resolve(filename);
         try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
