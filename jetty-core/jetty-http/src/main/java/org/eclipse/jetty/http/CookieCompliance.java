@@ -102,9 +102,9 @@ public class CookieCompliance implements ComplianceViolation.Mode
         SPACE_IN_VALUES("https://www.rfc-editor.org/rfc/rfc6265#section-5.2", "Space in value"),
 
         /**
-         * Maintain quotes around values .
+         * Allows quotes to be stripped from values.
          */
-        MAINTAIN_QUOTES("https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1", "Quotes are part of the cookie value");
+        STRIPPED_QUOTES("https://www.rfc-editor.org/rfc/rfc6265#section-4.1.1", "Strip quotes from the cookie value");
 
         private final String url;
         private final String description;
@@ -141,10 +141,11 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * <li>{@link Violation#INVALID_COOKIES}</li>
      * <li>{@link Violation#OPTIONAL_WHITE_SPACE}</li>
      * <li>{@link Violation#SPACE_IN_VALUES}</li>
+     * <li>{@link Violation#STRIPPED_QUOTES}</li>
      * </ul>
      */
     public static final CookieCompliance RFC6265 = new CookieCompliance("RFC6265", of(
-        Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPACE_IN_VALUES)
+        Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPACE_IN_VALUES, Violation.STRIPPED_QUOTES)
     );
 
     /**
@@ -154,17 +155,16 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * <li>{@link Violation#INVALID_COOKIES}</li>
      * <li>{@link Violation#OPTIONAL_WHITE_SPACE}</li>
      * <li>{@link Violation#SPACE_IN_VALUES}</li>
-     * <li>{@link Violation#MAINTAIN_QUOTES}</li>
      * </ul>
      */
     public static final CookieCompliance RFC6265_QUOTED = new CookieCompliance("RFC6265_QUOTED", of(
-        Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPACE_IN_VALUES, Violation.MAINTAIN_QUOTES)
+        Violation.INVALID_COOKIES, Violation.OPTIONAL_WHITE_SPACE, Violation.SPACE_IN_VALUES)
     );
 
     /**
      * A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance.
      */
-    public static final CookieCompliance RFC6265_STRICT = new CookieCompliance("RFC6265_STRICT", of(Violation.MAINTAIN_QUOTES));
+    public static final CookieCompliance RFC6265_STRICT = new CookieCompliance("RFC6265_STRICT", noneOf(Violation.class));
 
     /**
      * <p>A CookieCompliance mode that enforces <a href="https://tools.ietf.org/html/rfc6265">RFC 6265</a> compliance,
@@ -195,11 +195,10 @@ public class CookieCompliance implements ComplianceViolation.Mode
      * <li>{@link Violation#BAD_QUOTES}</li>
      * <li>{@link Violation#COMMA_NOT_VALID_OCTET}</li>
      * <li>{@link Violation#RESERVED_NAMES_NOT_DOLLAR_PREFIXED}</li>
-     * <li>{@link Violation#MAINTAIN_QUOTES}</li>
      * </ul>
      */
     public static final CookieCompliance RFC2965 = new CookieCompliance("RFC2965", complementOf(of(
-        Violation.BAD_QUOTES, Violation.COMMA_NOT_VALID_OCTET, Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED, Violation.MAINTAIN_QUOTES)
+        Violation.BAD_QUOTES, Violation.COMMA_NOT_VALID_OCTET, Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED)
     ));
 
     private static final List<CookieCompliance> KNOWN_MODES = Arrays.asList(RFC6265, RFC6265_QUOTED, RFC6265_STRICT, RFC6265_LEGACY, RFC2965, RFC2965_LEGACY);
