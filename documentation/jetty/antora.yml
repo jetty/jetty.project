@@ -6,12 +6,12 @@ asciidoc:
     javadoc-url: https://eclipse.dev/jetty/javadoc/jetty-12
     jdurl: '{javadoc-url}'
     jetty-home: ${jetty.home}@
-    version: 12.0.10-SNAPSHOT
+    version: 12.1.0-SNAPSHOT
     idprefix: ''
     idseparator: ''
-    ee-all: ee{8,9,10}
-    ee-current: ee10
-    ee-current-caps: EE 10
+    ee-all: ee{8,9,10,11}
+    ee-current: ee11
+    ee-current-caps: EE 11
     run-jetty-classpath: ${settings.localRepository}/org/eclipse/jetty/tests/jetty-testers/${project.version}/jetty-testers-${project.version}.jar${path.separator}${run.jetty.classpath}
 nav:
 - modules/operations-guide/nav.adoc
