@@ -6,7 +6,7 @@ The link:https://eclipse.dev/jetty/[Eclipse Jetty] Project provides a:
 * Servlet Container
 * Java HTTP & WebSocket Client
 
-Jetty is available under an open source link:LICENSE.txt[LICENSE], and the full source code is available at link:https://github.com/eclipse/jetty.project[GitHub].
+Jetty is available under an open source link:LICENSE.txt[LICENSE], and the full source code is available at link:https://github.com/jetty/jetty.project[GitHub].
 
 The Jetty documentation is available at link:https://eclipse.dev/jetty/documentation/[].
 

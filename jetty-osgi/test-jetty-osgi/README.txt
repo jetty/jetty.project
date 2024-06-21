@@ -143,7 +143,7 @@ If you've upgraded the jetty jar and that's all you've changed, then more than l
 Also, if you don't see any test failures with unresolved jar messages, then it's also a good indicator that the problem is with SpiFly versioning. Unfortunately, when the problem is a jvm/SpiFly versioning mismatch, the osgi paxexam environment doesn't output any good log messages. There is a java.lang.Error that is thrown from inside asm that the environment doesn't pass on in any useful fashion.
 
 To try and catch this error, you can modify the ServletInstanceWrapper at line 163 to catch Throwable instead of Exception:
-https://github.com/eclipse/jetty.project/blob/jetty-10.0.x/jetty-osgi/jetty-osgi-boot/src/main/java/org/eclipse/jetty/osgi/boot/internal/serverfactory/ServerInstanceWrapper.java#L163
+https://github.com/jetty/jetty.project/blob/jetty-10.0.x/jetty-osgi/jetty-osgi-boot/src/main/java/org/eclipse/jetty/osgi/boot/internal/serverfactory/ServerInstanceWrapper.java#L163
 
 When you do this, you get output like the following:
 

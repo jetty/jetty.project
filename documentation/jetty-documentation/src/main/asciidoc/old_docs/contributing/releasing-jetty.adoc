@@ -230,7 +230,7 @@ There are two git repositories you need to be aware of for releasing jetty-docum
 jetty-documentation::
 https://github.com/jetty-project/jetty-documentation
 jetty-website::
-http://git.eclipse.org/c/www.eclipse.org/jetty.git
+http://github.com/jetty/jetty.website
 
 Do the following steps to publish documentation for the release:
 

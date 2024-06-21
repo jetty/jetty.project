@@ -1894,16 +1894,16 @@ public class XmlConfigurationTest
         List<Arguments> ids = new ArrayList<>();
 
         String[] schemes = {"http", "https"};
-        String[] hosts = {"eclipse.org", "www.eclipse.org", "eclipse.dev", "www.eclipse.dev"};
-        String[] paths = {"/jetty/configure.dtd", "/jetty/configure_9_3.dtd", "/jetty/configure_10_0.dtd"};
+        String[] contexts = {"eclipse.org/jetty", "www.eclipse.org/jetty", "eclipse.dev/jetty", "www.eclipse.dev/jetty", "jetty.org"};
+        String[] paths = {"configure.dtd", "configure_9_3.dtd", "configure_10_0.dtd"};
 
         for (String scheme: schemes)
         {
-            for (String host: hosts)
+            for (String host: contexts)
             {
                 for (String path: paths)
                 {
-                    ids.add(Arguments.of(String.format("%s://%s%s", scheme, host, path)));
+                    ids.add(Arguments.of(String.format("%s://%s/%s", scheme, host, path)));
                 }
             }
         }

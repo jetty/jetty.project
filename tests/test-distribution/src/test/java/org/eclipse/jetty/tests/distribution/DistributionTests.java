@@ -859,7 +859,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             String message = "test-log-line";
             String xml = "" +
                 "<?xml version=\"1.0\"?>" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">" +
                 "<Configure>" +
                 "  <Call name=\"getLogger\" class=\"java.util.logging.Logger\">" +
                 "    <Arg>" + loggerName + "</Arg>" +
@@ -920,7 +920,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             String nextProtocol = "fcgi/1.0";
             String xml = "" +
                 "<?xml version=\"1.0\"?>" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">" +
                 "<Configure id=\"sslConnector\" class=\"org.eclipse.jetty.server.ServerConnector\">" +
                 "  <Call name=\"addIfAbsentConnectionFactory\">" +
                 "    <Arg>" +

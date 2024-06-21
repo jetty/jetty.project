@@ -17,5 +17,5 @@
 As with any constantly evolving software project, there will be issues, features, and bugs.
 We want to know whats bugging you!
 
-File bugs as Issues in our Github repository http://github.com/eclipse/jetty.project[Issues at Github]
+File bugs as Issues in our Github repository http://github.com/jetty/jetty.project[Issues at Github]
 

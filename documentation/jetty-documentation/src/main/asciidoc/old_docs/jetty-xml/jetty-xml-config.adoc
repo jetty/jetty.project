@@ -26,7 +26,7 @@
 
 Not all Jetty features are configured in `jetty.xml`.
 There are several optional configuration files that share the same format as `jetty.xml` and, if specified, concatenate to it.
-These configuration files are also stored in `$JETTY_HOME/etc/`, and examples of them are in http://github.com/eclipse/jetty.project/jetty-server/src/main/config/etc/[Github Repository].
+These configuration files are also stored in `$JETTY_HOME/etc/`, and examples of them are in http://github.com/jetty/jetty.project/jetty-server/src/main/config/etc/[Github Repository].
 The selection of which configuration files to use is controlled by `start.jar` and the process of merging configuration is described in xref:jetty-xml-usage[].
 
 [[root-element-jetty-xml]]
@@ -38,7 +38,7 @@ The selection of which configuration files to use is controlled by `start.jar` a
 ----
 
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
  ...

@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-All [stable versions](https://eclipse.dev/jetty/download.php) of jetty are actively supported for security issues. [Deprecated versions](https://eclipse.dev/jetty/download.php) may be supported for serious security issues or on a commercial support basis.
+All [stable versions](https://jetty.org/download.html) of jetty are actively supported for security issues. [Deprecated versions](https://jetty.org/download.html) may be supported for serious security issues or on a commercial support basis.
 
 ## Reporting a Vulnerability
 

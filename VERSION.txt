@@ -90,6 +90,8 @@ jetty-10.0.18 - 26 October 2023
  + 10537 HTTP/3: Incomplete Data Transfer When Used with Spring Boot WebFlux
  + 10696 jetty.sh doesn't work with JETTY_USER in Jetty 10.0.17 thru Jetty
    12.0.2
+ + 10669 Provide ability to defer initial deployment of webapps until after
+   Server has started
  + 10705 Creating a `HTTP3ServerConnector` with a `SslContextFactory` that has
    a non-null `SSLContext` makes the server fail to start with an unclear error
    message

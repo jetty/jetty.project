@@ -1949,54 +1949,49 @@ public class XmlConfiguration
             _entry = entry;
 
             Class<?> klass = XmlConfiguration.class;
+
             URL config60 = klass.getResource("configure_6_0.dtd");
             URL config76 = klass.getResource("configure_7_6.dtd");
             URL config90 = klass.getResource("configure_9_0.dtd");
             URL config93 = klass.getResource("configure_9_3.dtd");
             URL config100 = klass.getResource("configure_10_0.dtd");
 
-            redirectEntity("configure.dtd", config93);
-            redirectEntity("configure_1_0.dtd", config60);
-            redirectEntity("configure_1_1.dtd", config60);
-            redirectEntity("configure_1_2.dtd", config60);
-            redirectEntity("configure_1_3.dtd", config60);
-            redirectEntity("configure_6_0.dtd", config60);
-            redirectEntity("configure_7_6.dtd", config76);
-            redirectEntity("configure_9_0.dtd", config90);
-            redirectEntity("configure_9_3.dtd", config93);
-            redirectEntity("configure_10_0.dtd", config100);
+            Map<String, URL> dtdRefMap = new HashMap<>();
+            dtdRefMap.put("configure.dtd", config93);
+            dtdRefMap.put("configure_1_0.dtd", config60);
+            dtdRefMap.put("configure_1_1.dtd", config60);
+            dtdRefMap.put("configure_1_2.dtd", config60);
+            dtdRefMap.put("configure_1_3.dtd", config60);
+            dtdRefMap.put("configure_6_0.dtd", config60);
+            dtdRefMap.put("configure_7_6.dtd", config76);
+            dtdRefMap.put("configure_9_0.dtd", config90);
+            dtdRefMap.put("configure_9_3.dtd", config93);
+            dtdRefMap.put("configure_10_0.dtd", config100);
 
-            redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
-            redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
-            redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("http://eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("https://eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.dev/jetty/configure.dtd", config93);
-            redirectEntity("https://www.eclipse.dev/jetty/configure.dtd", config93);
-            redirectEntity("http://eclipse.dev/jetty/configure.dtd", config93);
-            redirectEntity("https://eclipse.dev/jetty/configure.dtd", config93);
+            dtdRefMap.forEach(this::redirectEntity);
 
-            redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
-            redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd", config93);
-            redirectEntity("http://eclipse.org/jetty/configure_9_3.dtd", config93);
-            redirectEntity("https://eclipse.org/jetty/configure_9_3.dtd", config93);
-            redirectEntity("http://www.eclipse.dev/jetty/configure_9_3.dtd", config93);
-            redirectEntity("https://www.eclipse.dev/jetty/configure_9_3.dtd", config93);
-            redirectEntity("http://eclipse.dev/jetty/configure_9_3.dtd", config93);
-            redirectEntity("https://eclipse.dev/jetty/configure_9_3.dtd", config93);
+            // Register all variations of DOCTYPE entity references for Configure
+            List<String> schemes = List.of("http", "https");
+            List<String> contexts = List.of(
+                "jetty.mortbay.org",
+                "jetty.eclipse.org",
+                "www.eclipse.org/jetty",
+                "eclipse.org/jetty",
+                "www.eclipse.dev/jetty",
+                "eclipse.dev/jetty",
+                "jetty.org");
 
-            redirectEntity("http://www.eclipse.org/jetty/configure_10_0.dtd", config100);
-            redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", config100);
-            redirectEntity("http://eclipse.org/jetty/configure_10_0.dtd", config100);
-            redirectEntity("https://eclipse.org/jetty/configure_10_0.dtd", config100);
-            redirectEntity("http://www.eclipse.dev/jetty/configure_10_0.dtd", config100);
-            redirectEntity("https://www.eclipse.dev/jetty/configure_10_0.dtd", config100);
-            redirectEntity("http://eclipse.dev/jetty/configure_10_0.dtd", config100);
-            redirectEntity("https://eclipse.dev/jetty/configure_10_0.dtd", config100);
-
+            for (String scheme : schemes)
+            {
+                for (String context : contexts)
+                {
+                    dtdRefMap.forEach((dtdName, dtdUrl) ->
+                    {
+                        String refUrl = String.format("%s://%s/%s", scheme, context, dtdName);
+                        redirectEntity(refUrl, dtdUrl);
+                    });
+                }
+            }
             redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config100);
             redirectEntity("-//Jetty//Configure//EN", config100);
         }
