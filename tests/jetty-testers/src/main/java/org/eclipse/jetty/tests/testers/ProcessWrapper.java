@@ -162,6 +162,10 @@ public class ProcessWrapper implements AutoCloseable
     {
         stop().join();
         LOG.info("Process exit with value {}", getProcess().exitValue());
+        if (getProcess().exitValue() != 0)
+        {
+            LOG.info("Process exit with value !=0 -> {}, still alive {}", getProcess().exitValue(), getProcess().isAlive());
+        }
     }
 
     private ConsoleStreamer startConsoleStreamer(String mode, InputStream stream)
