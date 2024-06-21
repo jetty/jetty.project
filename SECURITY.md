@@ -10,7 +10,7 @@ Do not open a public issue to report a security vulnerability.  Please send a me
 
 ## Handling a Vulnerability
 
-The [following checklist](https://jetty.org/security_processes.php) is used to handle security issues:
+The following checklist is used to handle security issues:
 
 - [ ] On receipt of a security report via security@webtide.com or other channels, if it cannot be trivially dismissed (already fixed, known not a problem, etc.), then a Github security advisory is created by project leadership.
 - [ ] Copy this list as a markdown in the security advisory for tracking the completion of various tasks.
