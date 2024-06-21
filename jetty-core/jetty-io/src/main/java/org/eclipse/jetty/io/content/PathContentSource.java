@@ -59,15 +59,18 @@ public class PathContentSource implements Content.Source
 
     public PathContentSource(Path path, ByteBufferPool byteBufferPool)
     {
-        this(path, new ByteBufferPool.Sized(byteBufferPool, true, -1));
+        this(path,
+            byteBufferPool instanceof ByteBufferPool.Sized sized ? sized.getWrapped() : byteBufferPool,
+            byteBufferPool instanceof ByteBufferPool.Sized sized ? sized.isDirect() : true,
+            byteBufferPool instanceof ByteBufferPool.Sized sized ? sized.getSize() : -1);
     }
 
-    public PathContentSource(Path path, ByteBufferPool.Sized byteBufferPool)
+    public PathContentSource(Path path, ByteBufferPool.Sized sizedBufferPool)
     {
         this(path,
-            byteBufferPool == null ? null : byteBufferPool.getWrapped(),
-            byteBufferPool == null || byteBufferPool.isDirect(),
-            byteBufferPool == null ? -1 : byteBufferPool.getSize());
+            sizedBufferPool == null ? null : sizedBufferPool.getWrapped(),
+            sizedBufferPool == null ? true : sizedBufferPool.isDirect(),
+            sizedBufferPool == null ? -1 : sizedBufferPool.getSize());
     }
 
     private PathContentSource(Path path, ByteBufferPool byteBufferPool, boolean direct, int bufferSize)
