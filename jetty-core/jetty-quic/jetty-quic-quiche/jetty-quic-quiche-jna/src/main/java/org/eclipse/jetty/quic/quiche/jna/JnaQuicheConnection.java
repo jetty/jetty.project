@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.quiche.jna;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -413,6 +414,7 @@ public class JnaQuicheConnection extends QuicheConnection
         }
     }
 
+    @Override
     public byte[] getPeerCertificate()
     {
         try (AutoLock ignore = lock.lock())
@@ -424,6 +426,8 @@ public class JnaQuicheConnection extends QuicheConnection
             size_t_pointer out_len = new size_t_pointer();
             LibQuiche.INSTANCE.quiche_conn_peer_cert(quicheConn, out, out_len);
             int len = out_len.getPointee().intValue();
+            if (len <= 0)
+                return null;
             return out.getValueAsBytes(len);
         }
     }
@@ -744,6 +748,8 @@ public class JnaQuicheConnection extends QuicheConnection
             int read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin).intValue();
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
+            if (read == quiche_error.QUICHE_ERR_STREAM_RESET)
+                throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             if (read < 0L)
                 throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             buffer.position(buffer.position() + read);

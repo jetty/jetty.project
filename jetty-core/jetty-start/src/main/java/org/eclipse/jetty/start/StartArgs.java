@@ -1426,9 +1426,11 @@ public class StartArgs
     {
         for (String moduleName : moduleNames)
         {
-            modules.add(moduleName);
-            Set<String> set = sources.computeIfAbsent(moduleName, k -> new HashSet<>());
-            set.add(source);
+            if (modules.add(moduleName))
+            {
+                Set<String> set = sources.computeIfAbsent(moduleName, k -> new HashSet<>());
+                set.add(source);
+            }
         }
     }
 
