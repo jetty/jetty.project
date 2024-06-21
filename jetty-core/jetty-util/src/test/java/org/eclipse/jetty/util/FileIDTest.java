@@ -108,7 +108,8 @@ public class FileIDTest
             Arguments.of(URI.create("file:///path/to/test.txt"), "test.txt"),
             Arguments.of(URI.create("file:///path/to/dir/"), "dir"),
             Arguments.of(URI.create("jar:file:///home/user/libs/jetty-server-12.jar!/org/eclipse/jetty/server/jetty-dir.css"), "jetty-dir.css"),
-            Arguments.of(URI.create("https://jetty.org/"), "jetty"),
+            Arguments.of(URI.create("https://jetty.org/"), ""),
+            Arguments.of(URI.create("https://jetty.org/docs/"), "docs"),
             Arguments.of(URI.create("https://jetty.org/index.html"), "index.html"),
             Arguments.of(URI.create("https://jetty.org/docs.html?query=val#anchor"), "docs.html")
         );
