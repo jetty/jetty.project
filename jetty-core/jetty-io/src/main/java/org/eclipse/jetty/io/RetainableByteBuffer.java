@@ -911,10 +911,7 @@ public interface RetainableByteBuffer extends Retainable
             builder.append("[");
             builder.append(size());
             builder.append("/");
-            if (maxSize() >= Integer.MAX_VALUE)
-                builder.append("-");
-            else
-                builder.append(maxSize());
+            builder.append(maxSize());
             builder.append(",d=");
             builder.append(isDirect());
             addExtraStringInfo(builder);
@@ -1850,10 +1847,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public long space()
         {
-            long space = maxSize() - size();
-            if (space > Integer.MAX_VALUE)
-                return Integer.MAX_VALUE;
-            return space;
+            return maxSize() - size();
         }
 
         @Override

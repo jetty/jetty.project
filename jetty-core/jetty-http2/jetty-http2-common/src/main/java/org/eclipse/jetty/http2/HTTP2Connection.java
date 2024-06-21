@@ -407,7 +407,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                 throw new IllegalStateException();
 
             currentBuffer.release();
-            networkBuffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
+            networkBuffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
                 LOG.debug("Reacquired {}<-{}", currentBuffer, networkBuffer);
         }

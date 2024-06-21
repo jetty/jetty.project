@@ -24,6 +24,7 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -324,17 +325,23 @@ public interface EndPoint extends Closeable, Content.Sink
         if (last)
         {
             write(Callback.from(() ->
-            {
-                try
                 {
-                    close();
-                    callback.succeeded();
-                }
-                catch (Throwable t)
+                    try
+                    {
+                        close();
+                        callback.succeeded();
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                    }
+                },
+                x ->
                 {
-                    callback.failed(t);
-                }
-            }, callback::failed), byteBuffer);
+                    IO.close(this);
+                    callback.failed(x);
+                }),
+                byteBuffer);
         }
         else
         {

@@ -59,7 +59,7 @@ public class IOResources
 
         long longLength = resource.length();
 
-        bufferPool = bufferPool == null ? new ByteBufferPool.NonPooling() : bufferPool;
+        bufferPool = bufferPool == null ? ByteBufferPool.NON_POOLING : bufferPool;
 
         // Optimize for PathResource.
         Path path = resource.getPath();
