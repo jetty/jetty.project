@@ -14,7 +14,7 @@ Developer resources
 --------------------
 Information regarding source code management, builds, coding standards, and more.
 
-- [https://eclipse.dev/jetty/documentation/](https://eclipse.dev/jetty/documentation/)
+- [https://jetty.org/docs/](https://jetty.org/docs/)
 
 The canonical Jetty git repository is located at [GitHub.](https://github.com/jetty/jetty.project) Providing you have
 completed the contributors agreement mentioned below we will endeavor to pull your commit into Jetty proper.

@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * Note that the same java compiler will be used as for on-the-fly compiled
  * jsps, which will be the Eclipse java compiler.
  * <p>
- * See <a href="https://eclipse.dev/jetty/documentation/">Usage Guide</a> for
+ * See <a href="https://jetty.org/docs/">Usage Guide</a> for
  * instructions on using this plugin.
  * </p>
  * Runs jspc compiler to produce .java and .class files
