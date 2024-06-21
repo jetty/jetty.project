@@ -39,7 +39,7 @@ Using the Jetty WebSocket APIs allows your applications to be more efficient and
 
 If your application needs specific features that are not provided by the standard APIs, the Jetty WebSocket APIs may provide such features.
 
-TIP: If the feature you are looking for is not present, you may ask for these features by https://github.com/eclipse/jetty.project/issues[submitting an issue] to the Jetty Project without waiting for the standard Jakarta EE process to approve them and release a new version of the Jakarta EE WebSocket specification.
+TIP: If the feature you are looking for is not present, you may ask for these features by https://github.com/jetty/jetty.project/issues[submitting an issue] to the Jetty Project without waiting for the standard Jakarta EE process to approve them and release a new version of the Jakarta EE WebSocket specification.
 
 [[standard]]
 == Standard APIs Implementation
