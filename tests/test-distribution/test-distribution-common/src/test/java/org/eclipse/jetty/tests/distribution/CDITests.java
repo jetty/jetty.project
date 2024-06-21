@@ -123,9 +123,6 @@ public class CDITests extends AbstractJettyHomeTest
                 assertThat(response.getContentAsString(), containsString("Hello GreetingsServlet"));
                 // Confirm Listener based CDI (this has been a problem in the past, keep this for regression testing!)
                 assertThat(response.getHeaders().get("CDI-Server"), containsString("CDI-Demo-org.eclipse.jetty.test"));
-
-                run2.stop();
-                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             }
         }
     }

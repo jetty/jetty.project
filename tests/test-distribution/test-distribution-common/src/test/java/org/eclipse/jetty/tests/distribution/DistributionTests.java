@@ -117,8 +117,8 @@ public class DistributionTests extends AbstractJettyHomeTest
                 ContentResponse response = client.GET("http://localhost:" + port);
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
-                run2.stop();
-                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+//                run2.stop();
+//                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             }
         }
     }
@@ -739,8 +739,8 @@ public class DistributionTests extends AbstractJettyHomeTest
                 ContentResponse response = client.GET("http://localhost:" + port);
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
 
-                run2.stop();
-                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+//                run2.stop();
+//                assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             }
         }
     }

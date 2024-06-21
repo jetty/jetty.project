@@ -148,6 +148,11 @@ public class ProcessWrapper implements AutoCloseable
         return whenExit();
     }
 
+    public Process forceStop()
+    {
+        return getProcess().destroyForcibly();
+    }
+
     /**
      * <p>Calls {@link #stop()} and blocks via
      * {@link CompletableFuture#join()} until the process has exited.</p>
