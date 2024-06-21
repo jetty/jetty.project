@@ -161,6 +161,7 @@ public class ProcessWrapper implements AutoCloseable
     public void close()
     {
         stop().join();
+        LOG.info("Process exit with value {}", getProcess().exitValue());
     }
 
     private ConsoleStreamer startConsoleStreamer(String mode, InputStream stream)
