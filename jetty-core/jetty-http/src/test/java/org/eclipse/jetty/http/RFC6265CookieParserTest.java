@@ -309,6 +309,10 @@ public class RFC6265CookieParserTest
         cookies = parseCookieHeaders(CookieCompliance.RFC6265_QUOTED, rawCookie);
         assertThat("Cookies.length", cookies.length, is(1));
         assertCookie("Cookies[0]", cookies[0], "A", "\"quotedValue\"", 0, null);
+
+        cookies = parseCookieHeaders(CookieCompliance.RFC6265_STRICT, rawCookie);
+        assertThat("Cookies.length", cookies.length, is(1));
+        assertCookie("Cookies[0]", cookies[0], "A", "\"quotedValue\"", 0, null);
     }
 
     @Test
