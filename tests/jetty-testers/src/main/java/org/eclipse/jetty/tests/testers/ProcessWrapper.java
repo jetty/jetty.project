@@ -22,6 +22,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.IO;
 import org.slf4j.Logger;
@@ -161,11 +162,17 @@ public class ProcessWrapper implements AutoCloseable
     public void close()
     {
         stop().join();
-        LOG.info("Process exit with value {}", this.process.exitValue());
-        if (getProcess().exitValue() != 0)
+        LOG.info("Process exit with value !=0 -> {}, still alive {}", this.process.exitValue(), this.process.isAlive());
+        displayChildren(this.process.children());
+    }
+
+    private void displayChildren(Stream<ProcessHandle> processHandleStream)
+    {
+        processHandleStream.forEach(processHandle ->
         {
-            LOG.info("Process exit with value !=0 -> {}, still alive {}", this.process.exitValue(), this.process.isAlive());
-        }
+            LOG.info("Process with command -> {}, still alive {}", processHandle.info().command().orElse("<null>"), this.process.isAlive());
+            displayChildren(processHandle.children());
+        });
     }
 
     private ConsoleStreamer startConsoleStreamer(String mode, InputStream stream)
