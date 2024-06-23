@@ -663,7 +663,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/eclipse/jetty.project/issues/9206
+    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82ExpectInvalid() throws Exception
     {
@@ -688,7 +688,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/eclipse/jetty.project/issues/9206
+    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82ExpectWithBody() throws Exception
     {
@@ -717,7 +717,7 @@ public abstract class RFC2616BaseTest
      * @throws Exception failure
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/eclipse/jetty.project/issues/9206
+    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82UnexpectWithBody() throws Exception
     {
@@ -753,7 +753,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/eclipse/jetty.project/issues/9206
+    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82ExpectNormal() throws Exception
     {

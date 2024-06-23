@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -41,6 +42,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
     private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
+    private static final ByteBuffer EMPTY_WRITABLE_BUFFER = ByteBuffer.allocate(0);
 
     private final QuicSession session;
     private final long streamId;
@@ -265,12 +267,25 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         }
         else
         {
-            QuicStreamEndPoint streamEndPoint = getQuicSession().getStreamEndPoint(streamId);
-            if (streamEndPoint.isStreamFinished())
+            if (isStreamFinished())
             {
-                EofException e = new EofException();
-                streamEndPoint.getFillInterest().onFail(e);
-                streamEndPoint.getQuicSession().onFailure(e);
+                // Check if the stream was finished normally.
+                try
+                {
+                    fill(EMPTY_WRITABLE_BUFFER);
+                }
+                catch (EOFException x)
+                {
+                    // Got reset.
+                    getFillInterest().onFail(x);
+                    getQuicSession().onFailure(x);
+                }
+                catch (Throwable x)
+                {
+                    EofException e = new EofException(x);
+                    getFillInterest().onFail(e);
+                    getQuicSession().onFailure(e);
+                }
             }
         }
         return interested;

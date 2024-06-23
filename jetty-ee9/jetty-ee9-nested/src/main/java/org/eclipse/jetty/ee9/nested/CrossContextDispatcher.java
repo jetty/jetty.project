@@ -248,6 +248,13 @@ class CrossContextDispatcher implements RequestDispatcher
         org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
         baseResponse.resetForForward();
 
+        //if forwarding to the same environment we must mutate this request for Object wrapper identity
+        if (_targetContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
+        {
+            new Dispatcher(coreContextHandler.getContextHandler(), _uri, _decodedPathInContext).forward(httpServletRequest, httpServletResponse, DispatcherType.FORWARD);
+            return;
+        }
+
         ForwardRequest forwardRequest = new ForwardRequest(coreContextRequest, baseRequest, httpServletRequest);
         ServletCoreResponse servletCoreResponse = new ServletCoreResponse(forwardRequest, httpServletResponse, baseResponse, coreResponse, false);
 
@@ -288,6 +295,13 @@ class CrossContextDispatcher implements RequestDispatcher
 
         ContextHandler.CoreContextRequest coreContextRequest = baseRequest.getCoreRequest();
         org.eclipse.jetty.server.Response coreResponse = coreContextRequest.getHttpChannel().getCoreResponse();
+
+        //if including to the same environment we must mutate this request for Object wrapper identity
+        if (_targetContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
+        {
+            new Dispatcher(coreContextHandler.getContextHandler(), _uri, _decodedPathInContext).include(httpServletRequest, httpServletResponse);
+            return;
+        }
 
         IncludeRequest includeRequest = new IncludeRequest(coreContextRequest, baseRequest, httpServletRequest);
         IncludeResponse includeResponse = new IncludeResponse(includeRequest, httpServletResponse, baseResponse, coreResponse);

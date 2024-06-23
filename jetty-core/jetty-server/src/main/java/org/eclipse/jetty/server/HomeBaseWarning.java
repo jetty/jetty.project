@@ -63,7 +63,7 @@ public class HomeBaseWarning
         {
             StringBuilder warn = new StringBuilder();
             warn.append("This instance of Jetty is not running from a separate {jetty.base} directory");
-            warn.append(", this is not recommended.  See documentation at https://eclipse.dev/jetty/documentation/");
+            warn.append(", this is not recommended.  See documentation at https://jetty.org/docs/");
             LOG.warn("{}", warn.toString());
         }
     }
