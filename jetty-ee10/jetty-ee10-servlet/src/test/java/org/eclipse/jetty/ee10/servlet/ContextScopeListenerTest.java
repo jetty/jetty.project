@@ -17,6 +17,8 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.servlet.AsyncContext;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextScopeListenerTest
 {
@@ -93,6 +96,8 @@ public class ContextScopeListenerTest
             }
         }), "/");
 
+        CountDownLatch complete = new CountDownLatch(3);
+
         _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
             // Use a lock to prevent the async thread running the listener concurrently.
@@ -112,12 +117,15 @@ public class ContextScopeListenerTest
                 String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
                 _history.add("exitScope " + pathInContext);
                 _lock.unlock();
+                complete.countDown();
             }
         });
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/initialPath");
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+
+        assertTrue(complete.await(5, TimeUnit.SECONDS));
         assertHistory(
             "enterScope /initialPath",
             "doGet",
