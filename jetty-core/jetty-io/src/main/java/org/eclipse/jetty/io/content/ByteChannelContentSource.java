@@ -255,13 +255,13 @@ public class ByteChannelContentSource implements Content.Source
 
         public PathContentSource(Path path)
         {
-            super(new ByteBufferPool.Sized(null), null, 0, -1);
+            super(new ByteBufferPool.Sized(null), null, 0, size(path));
             _path = path;
         }
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path)
         {
-            super(byteBufferPool, null, 0, -1);
+            super(byteBufferPool, null, 0, size(path));
             _path = path;
         }
 
