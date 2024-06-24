@@ -507,7 +507,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         if (!_request.hasMetaData())
                             throw new IllegalStateException("state=" + _state);
 
-                        dispatch(DispatcherType.REQUEST, _requestDispatcher);
+                        String dispatchType = _coreRequest.getContext().getCrossContextDispatchType(_coreRequest);
+                        dispatch(dispatchType == null ? DispatcherType.REQUEST : DispatcherType.valueOf(dispatchType), _requestDispatcher);
 
                         break;
                     }

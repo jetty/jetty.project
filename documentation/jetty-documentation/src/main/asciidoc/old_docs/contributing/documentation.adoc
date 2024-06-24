@@ -49,7 +49,7 @@ Clone the repository:
 
 [source, screen, subs="{sub-order}"]
 ....
-$ git clone https://github.com/eclipse/jetty.project.git
+$ git clone https://github.com/jetty/jetty.project.git
 ....
 
 You will now have a local directory with all of jetty, including the jetty-documentation.
@@ -109,7 +109,7 @@ Obviously we can not allow anyone immediate access to this repository so you mus
 In English that means that you would go to the url of the documentation in github:
 
 ....
-https://github.com/eclipse/jetty.project
+https://github.com/jetty/jetty.project
 ....
 
 When you are on this page you will see a little button called 'Fork' which you can click and you will be taken back to your main page on github where you have a new repository.

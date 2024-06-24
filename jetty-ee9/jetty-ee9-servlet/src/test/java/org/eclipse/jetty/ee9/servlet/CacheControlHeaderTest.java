@@ -95,7 +95,7 @@ public class CacheControlHeaderTest
         servletHolder.setServlet(new DefaultServlet());
         servletHolder.setInitParameter("cacheControl", "max-age=3600,public");
         Path resBase = MavenTestingUtils.getTargetPath("test-classes/contextResources");
-        servletHolder.setInitParameter("resourceBase", resBase.toFile().toURI().toASCIIString());
+        servletHolder.setInitParameter("baseResource", resBase.toFile().toURI().toASCIIString());
         context.addServlet(servletHolder, "/*");
         if (forceFilter)
         {

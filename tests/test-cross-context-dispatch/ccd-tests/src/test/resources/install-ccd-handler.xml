@@ -1,0 +1,11 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.tests.ccd.common.DispatchPlanHandler">
+        <Set name="plansDir"><Property name="ccd-plans-dir"/></Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

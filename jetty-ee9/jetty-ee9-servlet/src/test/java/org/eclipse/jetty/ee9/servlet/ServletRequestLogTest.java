@@ -366,6 +366,7 @@ public class ServletRequestLogTest
         server.setConnectors(new Connector[]{connector});
 
         ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setServer(server);
         server.addBean(errorHandler);
 
         // First the behavior as defined in etc/jetty.xml
