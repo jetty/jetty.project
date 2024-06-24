@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -153,6 +154,16 @@ public class ExceptionUtil
      * @param t2 Another Throwable or null
      * @return true iff the exceptions are not associated by being the same instance, sharing a cause or one suppressing the other.
      */
+    public static boolean areAssociated(Throwable t1, Throwable t2)
+    {
+        return t1 != null && t2 != null && !areNotAssociated(t1, t2);
+    }
+
+    /** Check if two {@link Throwable}s are associated.
+     * @param t1 A Throwable or null
+     * @param t2 Another Throwable or null
+     * @return true iff the exceptions are not associated by being the same instance, sharing a cause or one suppressing the other.
+     */
     public static boolean areNotAssociated(Throwable t1, Throwable t2)
     {
         if (t1 == null || t2 == null)
@@ -256,15 +267,7 @@ public class ExceptionUtil
 
         public void callAndCatch(Invocable.Callable task)
         {
-            try
-            {
-                if (task != null)
-                    task.call();
-            }
-            catch (Throwable t)
-            {
-                add(t);
-            }
+            ExceptionUtil.call(task, this::add);
         }
     }
 
@@ -300,8 +303,102 @@ public class ExceptionUtil
         return t1;
     }
 
-    private ExceptionUtil()
+    public static void callAndThen(Throwable cause, Consumer<Throwable> first, Consumer<Throwable> second)
     {
+        try
+        {
+            first.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            second.accept(cause);
+        }
+    }
+
+    public static void callAndThen(Throwable cause, Consumer<Throwable> first, Runnable second)
+    {
+        try
+        {
+            first.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            second.run();
+        }
+    }
+
+    public static void callAndThen(Runnable first, Runnable second)
+    {
+        try
+        {
+            first.run();
+        }
+        catch (Throwable t)
+        {
+            // ignored
+        }
+        finally
+        {
+            second.run();
+        }
+    }
+
+    /**
+     * Call a {@link Invocable.Callable} and handle failures
+     * @param callable The runnable to call
+     * @param failure The handling of failures
+     */
+    public static void call(Invocable.Callable callable, Consumer<Throwable> failure)
+    {
+        try
+        {
+            callable.call();
+        }
+        catch (Throwable thrown)
+        {
+            try
+            {
+                failure.accept(thrown);
+            }
+            catch (Throwable alsoThrown)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
+                ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
+            }
+        }
+    }
+
+    /**
+     * Call a {@link Runnable} and handle failures
+     * @param runnable The runnable to call
+     * @param failure The handling of failures
+     */
+    public static void run(Runnable runnable, Consumer<Throwable> failure)
+    {
+        try
+        {
+            runnable.run();
+        }
+        catch (Throwable thrown)
+        {
+            try
+            {
+                failure.accept(thrown);
+            }
+            catch (Throwable alsoThrown)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
+                ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
+            }
+        }
     }
 
     /**
@@ -325,5 +422,9 @@ public class ExceptionUtil
         {
             throw new RuntimeException(e.getCause());
         }
+    }
+
+    private ExceptionUtil()
+    {
     }
 }

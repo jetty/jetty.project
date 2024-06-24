@@ -36,15 +36,15 @@ In particular, the https://stackoverflow.com/questions/tagged/jetty[`jetty`] and
 [[cg-intro-filing-issues]]
 === Filing Issues
 
-You can flag potential bugs or suggest new Jetty features on our https://github.com/eclipse/jetty.project/issues[issue tracker].
+You can flag potential bugs or suggest new Jetty features on our https://github.com/jetty/jetty.project/issues[issue tracker].
 
-Before filing a new issue, https://github.com/eclipse/jetty.project/issues[check the tracker] to see if it's already been filed by someone else.
+Before filing a new issue, https://github.com/jetty/jetty.project/issues[check the tracker] to see if it's already been filed by someone else.
 If you do file an issue, make sure to label it appropriately, as this will help the development team (and other users) find it more easily.
 
 
 [[cg-intro-help-wanted]]
 === Help Wanted
-If you want to contribute to Jetty but don't have a specific task or goal in mind, consider looking through our https://github.com/eclipse/jetty.project/issues?q=is%3Aopen+is%3Aissue+label%3A%22Help+Wanted%22["Help Wanted" issue backlog].
+If you want to contribute to Jetty but don't have a specific task or goal in mind, consider looking through our https://github.com/jetty/jetty.project/issues?q=is%3Aopen+is%3Aissue+label%3A%22Help+Wanted%22["Help Wanted" issue backlog].
 These tasks range from the simple to the complex, but they're all ones we've identified as being particularly well-suited for new contributors to tackle.
 
 

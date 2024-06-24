@@ -54,7 +54,7 @@ public class RedispatchTests extends AbstractRedispatchTest
         // Now add the filter to the webapp xml init
         String xml = """
             <?xml version="1.0"?>
-            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
             <Configure class="org.eclipse.jetty.ee8.webapp.WebAppContext">
               <Set name="contextPath">/ccd-ee8</Set>
               <Set name="war"><Property name="jetty.webapps" default="." />/ccd-ee8</Set>

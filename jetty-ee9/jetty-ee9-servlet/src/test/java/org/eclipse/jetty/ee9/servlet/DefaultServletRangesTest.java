@@ -66,7 +66,7 @@ public class DefaultServletRangesTest
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("acceptRanges", "true");
-        defholder.setInitParameter("resourceBase", resBasePath);
+        defholder.setInitParameter("baseResource", resBasePath);
 
         server.start();
     }

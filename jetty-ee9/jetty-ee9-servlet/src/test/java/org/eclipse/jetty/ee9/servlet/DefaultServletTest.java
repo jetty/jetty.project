@@ -301,7 +301,7 @@ public class DefaultServletTest
             defholder.setInitParameter("redirectWelcome", "false");
             defholder.setInitParameter("gzip", "false");
 
-            defholder.setInitParameter("resourceBase", resBasePath);
+            defholder.setInitParameter("baseResource", resBasePath);
         });
 
         String req1 = "GET /context/one/deep/ HTTP/1.0\n\n";
@@ -341,7 +341,7 @@ public class DefaultServletTest
             context.setClassLoader(extraClassLoader);
 
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/extra/*");
-            defholder.setInitParameter("resourceBase", extraResourceBaseString);
+            defholder.setInitParameter("baseResource", extraResourceBaseString);
             defholder.setInitParameter("pathInfoOnly", "true");
             defholder.setInitParameter("dirAllowed", "true");
             defholder.setInitParameter("redirectWelcome", "false");
@@ -806,7 +806,7 @@ public class DefaultServletTest
         startServer((context) ->
         {
             ServletHolder altholder = context.addServlet(DefaultServlet.class, "/alt/*");
-            altholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+            altholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
             altholder.setInitParameter("pathInfoOnly", "true");
             altholder.setInitParameter("dirAllowed", "false");
             altholder.setInitParameter("redirectWelcome", "false");
@@ -814,7 +814,7 @@ public class DefaultServletTest
             altholder.setInitParameter("gzip", "false");
 
             ServletHolder otherholder = context.addServlet(DefaultServlet.class, "/other/*");
-            otherholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+            otherholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
             otherholder.setInitParameter("pathInfoOnly", "true");
             otherholder.setInitParameter("dirAllowed", "true");
             otherholder.setInitParameter("redirectWelcome", "false");
@@ -933,7 +933,7 @@ public class DefaultServletTest
         startServer((context) ->
         {
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
-            defholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+            defholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
             defholder.setInitParameter("dirAllowed", "false");
             defholder.setInitParameter("redirectWelcome", "false");
             defholder.setInitParameter("welcomeServlets", "true");
@@ -2243,7 +2243,7 @@ public class DefaultServletTest
         {
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
             defholder.setInitParameter("precompressed", "true");
-            defholder.setInitParameter("resourceBase", docRoot.toString());
+            defholder.setInitParameter("baseResource", docRoot.toString());
         });
 
         String rawResponse;
@@ -2296,7 +2296,7 @@ public class DefaultServletTest
         {
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
             defholder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
-            defholder.setInitParameter("resourceBase", docRoot.toString());
+            defholder.setInitParameter("baseResource", docRoot.toString());
         });
 
         String rawResponse;
@@ -2336,7 +2336,7 @@ public class DefaultServletTest
         {
             connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-            defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
+            defholder.setInitParameter("baseResource", docRoot.toFile().getAbsolutePath());
         });
 
         try (StacklessLogging ignore = new StacklessLogging(ResourceService.class))
