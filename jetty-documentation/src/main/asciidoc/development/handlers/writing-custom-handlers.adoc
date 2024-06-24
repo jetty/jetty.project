@@ -179,7 +179,7 @@ Then it can be added to the server, either by overriding some existing XML confi
 [source, xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
     <Call name="setHandler">
         <Arg>

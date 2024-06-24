@@ -34,7 +34,7 @@ Jetty applies `jetty-env.xml` on a per-webapp basis, and configures an instance 
 ----
 
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
  ..
@@ -56,7 +56,7 @@ Place the `jetty-env.xml` file in your web application's WEB-INF folder.
 ----
 
  <?xml version="1.0"?>
- <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+ <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 
  <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 

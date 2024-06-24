@@ -34,7 +34,7 @@ The following XML configuration file creates some Java objects and sets some att
 [source, xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 <Configure id="foo" class="com.acme.Foo">
   <Set name="name">demo</Set>
   <Set name="nested">
@@ -89,7 +89,7 @@ The first two lines of an XML must reference the DTD to be used to validate the 
 [source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 ...
 ----
 

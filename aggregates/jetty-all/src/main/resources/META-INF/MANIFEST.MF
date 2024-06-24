@@ -4,5 +4,5 @@ Implementation-Title: Jetty Uber All
 Implementation-Vendor: Eclipse Jetty Project
 Implementation-Vendor-Id: org.eclipse.jetty
 Implementation-Version: @project.version@
-X-License: https://www.eclipse.org/jetty/licenses.php
+X-License: https://jetty.org/licenses.html
 

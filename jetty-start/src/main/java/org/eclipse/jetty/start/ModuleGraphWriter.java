@@ -123,7 +123,7 @@ public class ModuleGraphWriter
         out.println("/*");
         out.println(" * GraphViz Graph of Jetty Modules");
         out.println(" * ");
-        out.println(" * Jetty: https://eclipse.org/jetty/");
+        out.println(" * Jetty: https://jetty.org/");
         out.println(" * GraphViz: http://graphviz.org/");
         out.println(" * ");
         out.println(" * To Generate Graph image using graphviz:");
