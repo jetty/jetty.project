@@ -543,7 +543,7 @@ public abstract class HttpSender
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             boolean proceed = true;
             if (committed)
@@ -588,8 +588,6 @@ public abstract class HttpSender
                 // There was some concurrent error, terminate.
                 complete = true;
             }
-
-            super.succeeded();
         }
 
         @Override

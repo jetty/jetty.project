@@ -372,17 +372,9 @@ public abstract class QuicConnection extends AbstractConnection
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             entry.callback.succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            entry.callback.failed(x);
-            super.failed(x);
         }
 
         @Override
@@ -394,10 +386,11 @@ public abstract class QuicConnection extends AbstractConnection
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            entry.callback.failed(cause);
             QuicConnection.this.close();
         }
 
-        private class Entry
+        private static class Entry
         {
             private final Callback callback;
             private final SocketAddress address;

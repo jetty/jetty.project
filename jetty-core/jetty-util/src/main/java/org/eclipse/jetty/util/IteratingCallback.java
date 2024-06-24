@@ -168,6 +168,13 @@ public abstract class IteratingCallback implements Callback
     protected abstract Action process() throws Throwable;
 
     /**
+     * Invoked when one task has completed successfully.
+     */
+    protected void onSuccess()
+    {
+    }
+
+    /**
      * Invoked when the overall task has completed successfully.
      *
      * @see #onCompleteFailure(Throwable)
@@ -239,6 +246,7 @@ public abstract class IteratingCallback implements Callback
         boolean notifyCompleteSuccess = false;
         Throwable notifyCompleteFailure = null;
 
+        boolean callOnSuccess = false;
         // While we are processing
         processing:
         while (true)
@@ -247,6 +255,11 @@ public abstract class IteratingCallback implements Callback
             Action action = null;
             try
             {
+                if (callOnSuccess)
+                {
+                    onSuccess();
+                    callOnSuccess = false;
+                }
                 action = process();
             }
             catch (Throwable x)
@@ -309,6 +322,7 @@ public abstract class IteratingCallback implements Callback
                             throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                         // we lost the race, so we have to keep processing
                         _state = State.PROCESSING;
+                        callOnSuccess = true;
                         continue;
                     }
 
@@ -374,7 +388,10 @@ public abstract class IteratingCallback implements Callback
             }
         }
         if (process)
+        {
+            onSuccess();
             processing();
+        }
     }
 
     /**

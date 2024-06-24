@@ -89,7 +89,7 @@ public class MessageFlusher extends IteratingCallback
     }
 
     @Override
-    public void succeeded()
+    protected void onSuccess()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entry, this);
@@ -98,19 +98,17 @@ public class MessageFlusher extends IteratingCallback
 
         entry.callback.succeeded();
         entry = null;
-
-        super.succeeded();
     }
 
     @Override
-    public void failed(Throwable x)
+    protected void onCompleteFailure(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to write {} on {}", entry, this, x);
+            LOG.debug("failed to write {} on {}", entry, this, cause);
 
         accumulator.release();
 
-        entry.callback.failed(x);
+        entry.callback.failed(cause);
         entry = null;
 
         // Continue the iteration.
