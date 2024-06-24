@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -36,13 +38,15 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
  */
 public class PathContentSource implements Content.Source
 {
+    // TODO in 12.1.x reimplement this class based on ByteChannelContentSource
+
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final Path path;
     private final long length;
     private final ByteBufferPool byteBufferPool;
-    private int bufferSize = 4096;
-    private boolean useDirectByteBuffers = true;
+    private int bufferSize;
+    private boolean useDirectByteBuffers;
     private SeekableByteChannel channel;
     private long totalRead;
     private Runnable demandCallback;
@@ -50,10 +54,26 @@ public class PathContentSource implements Content.Source
 
     public PathContentSource(Path path)
     {
-        this(path, null);
+        this(path, null, true, -1);
     }
 
     public PathContentSource(Path path, ByteBufferPool byteBufferPool)
+    {
+        this(path,
+            byteBufferPool instanceof ByteBufferPool.Sized sized ? sized.getWrapped() : byteBufferPool,
+            byteBufferPool instanceof ByteBufferPool.Sized sized ? sized.isDirect() : true,
+            byteBufferPool instanceof ByteBufferPool.Sized sized ? sized.getSize() : -1);
+    }
+
+    public PathContentSource(Path path, ByteBufferPool.Sized sizedBufferPool)
+    {
+        this(path,
+            sizedBufferPool == null ? null : sizedBufferPool.getWrapped(),
+            sizedBufferPool == null ? true : sizedBufferPool.isDirect(),
+            sizedBufferPool == null ? -1 : sizedBufferPool.getSize());
+    }
+
+    private PathContentSource(Path path, ByteBufferPool byteBufferPool, boolean direct, int bufferSize)
     {
         try
         {
@@ -63,7 +83,10 @@ public class PathContentSource implements Content.Source
                 throw new AccessDeniedException(path.toString());
             this.path = path;
             this.length = Files.size(path);
+
             this.byteBufferPool = byteBufferPool != null ? byteBufferPool : ByteBufferPool.NON_POOLING;
+            this.useDirectByteBuffers = direct;
+            this.bufferSize = bufferSize > 0 ? bufferSize : 4096;
         }
         catch (IOException x)
         {
@@ -87,6 +110,11 @@ public class PathContentSource implements Content.Source
         return bufferSize;
     }
 
+    /**
+     * @param bufferSize The size of the buffer
+     * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
+     */
+    @Deprecated(forRemoval = true)
     public void setBufferSize(int bufferSize)
     {
         this.bufferSize = bufferSize;
@@ -97,6 +125,11 @@ public class PathContentSource implements Content.Source
         return useDirectByteBuffers;
     }
 
+    /**
+     * @param useDirectByteBuffers {@code true} if direct buffers should be used
+     * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
+     */
+    @Deprecated(forRemoval = true)
     public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
         this.useDirectByteBuffers = useDirectByteBuffers;
@@ -190,19 +223,7 @@ public class PathContentSource implements Content.Source
             this.demandCallback = null;
         }
         if (demandCallback != null)
-            runDemandCallback(demandCallback);
-    }
-
-    private void runDemandCallback(Runnable demandCallback)
-    {
-        try
-        {
-            demandCallback.run();
-        }
-        catch (Throwable x)
-        {
-            fail(x);
-        }
+            ExceptionUtil.run(demandCallback, this::fail);
     }
 
     @Override

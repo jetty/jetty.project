@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -285,8 +286,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        PathRequestContent content = new PathRequestContent(contentType, tmpPath, client.getByteBufferPool());
-        content.setUseDirectByteBuffers(client.isUseOutputDirectByteBuffers());
+        PathRequestContent content = new PathRequestContent(contentType, tmpPath, new ByteBufferPool.Sized(client.getByteBufferPool(), client.isUseOutputDirectByteBuffers(), -1));
         multiPart.addPart(new MultiPart.ContentSourcePart(name, tmpPath.getFileName().toString(), null, content));
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
