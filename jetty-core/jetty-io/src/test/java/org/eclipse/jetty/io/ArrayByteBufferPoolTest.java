@@ -365,6 +365,7 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
+    @Deprecated(forRemoval = true)
     public void testQuadraticPool()
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic();
@@ -438,9 +439,9 @@ public class ArrayByteBufferPoolTest
         Collections.reverse(buffers);
         buffers.forEach(RetainableByteBuffer::release);
 
-        Pool<RetainableByteBuffer> bucketPool = pool.poolFor(maxCapacity, true);
+        Pool<RetainableByteBuffer.Pooled> bucketPool = pool.poolFor(maxCapacity, true);
         assertThat(bucketPool, instanceOf(CompoundPool.class));
-        CompoundPool<RetainableByteBuffer> compoundPool = (CompoundPool<RetainableByteBuffer>)bucketPool;
+        CompoundPool<RetainableByteBuffer.Pooled> compoundPool = (CompoundPool<RetainableByteBuffer.Pooled>)bucketPool;
         assertThat(compoundPool.getPrimaryPool().size(), is(ConcurrentPool.OPTIMAL_MAX_SIZE));
         assertThat(compoundPool.getSecondaryPool().size(), is(0));
     }

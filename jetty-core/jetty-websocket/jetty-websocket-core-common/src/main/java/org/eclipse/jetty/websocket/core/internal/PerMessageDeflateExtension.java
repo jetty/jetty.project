@@ -303,7 +303,6 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             RetainableByteBuffer buffer = getByteBufferPool().acquire(bufferSize, false);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             callback = Callback.from(callback, buffer::release);
-            buffer.clear();
 
             // Fill up the buffer with a max length of bufferSize;
             boolean finished = false;
@@ -430,7 +429,6 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             RetainableByteBuffer payload = getByteBufferPool().acquire(bufferSize, false);
             _payloadRef = new AtomicReference<>(payload);
             ByteBuffer byteBuffer = payload.getByteBuffer();
-            payload.clear();
 
             // Fill up the ByteBuffer with a max length of bufferSize;
             Inflater inflater = getInflater();

@@ -106,7 +106,16 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         try
         {
-            onRequestRead(wrapped, chunk == null ? null : chunk.asReadOnly());
+            if (chunk == null)
+            {
+                onRequestRead(wrapped, null);
+                return;
+            }
+
+            Content.Chunk readOnlyChunk = chunk.canRetain()
+                ? Content.Chunk.asChunk(chunk.getByteBuffer().asReadOnlyBuffer(), chunk.isLast(), chunk)
+                : Content.Chunk.from(chunk.getByteBuffer().asReadOnlyBuffer(), chunk.isLast());
+            onRequestRead(wrapped, readOnlyChunk);
         }
         catch (Throwable x)
         {

@@ -47,14 +47,15 @@ public class HeadersGenerator extends FrameGenerator
 
     private int generateHeadersFrame(ByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
+        RetainableByteBuffer buffer;
+        // Reserve initial bytes for the frame header bytes.
+        int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
+        int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
+        // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
+        int maxLength = encoder.getMaxHeadersSize();
+        buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
         try
         {
-            // Reserve initial bytes for the frame header bytes.
-            int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
-            int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
-            // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
-            int maxLength = encoder.getMaxHeadersSize();
-            RetainableByteBuffer buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);
             byteBuffer.position(maxHeaderLength);
@@ -75,6 +76,7 @@ public class HeadersGenerator extends FrameGenerator
         }
         catch (QpackException x)
         {
+            buffer.release();
             if (fail != null)
                 fail.accept(x);
             return -1;

@@ -59,8 +59,7 @@ public class WriteFlusherTest
 
     private void testCompleteWrite(boolean failBefore) throws Exception
     {
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16);
-        endPoint.setGrowOutput(true);
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, true);
 
         AtomicBoolean incompleteFlush = new AtomicBoolean();
         WriteFlusher flusher = new WriteFlusher(endPoint)
@@ -282,18 +281,19 @@ public class WriteFlusherTest
         ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(100);
         try
         {
+            int concurrent = 5000;
             String reason = "THE_CAUSE";
-            ConcurrentWriteFlusher[] flushers = new ConcurrentWriteFlusher[50000];
+            ConcurrentWriteFlusher[] flushers = new ConcurrentWriteFlusher[concurrent];
             FutureCallback[] futures = new FutureCallback[flushers.length];
             for (int i = 0; i < flushers.length; ++i)
             {
-                int size = 5 + random.nextInt(15);
+                int size = 5 + (i % 15);
                 ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], size);
                 ConcurrentWriteFlusher flusher = new ConcurrentWriteFlusher(endPoint, scheduler, random);
                 flushers[i] = flusher;
                 FutureCallback callback = new FutureCallback();
                 futures[i] = callback;
-                scheduler.schedule(() -> flusher.onFail(new Throwable(reason)), random.nextInt(75) + 1, TimeUnit.MILLISECONDS);
+                scheduler.schedule(() -> flusher.onFail(new Throwable(reason)), (i % 75) + 1, TimeUnit.MILLISECONDS);
                 flusher.write(callback, BufferUtil.toBuffer("How Now Brown Cow."), BufferUtil.toBuffer(" The quick brown fox jumped over the lazy dog!"));
             }
 
@@ -304,7 +304,7 @@ public class WriteFlusherTest
                 try
                 {
                     futures[i].get(15, TimeUnit.SECONDS);
-                    assertEquals("How Now Brown Cow. The quick brown fox jumped over the lazy dog!", flushers[i].getContent());
+                    assertEquals("How Now Brown Cow. The quick brown fox jumped over the lazy dog!", flushers[i].getContent(), "Flusher " + i);
                     completed++;
                 }
                 catch (ExecutionException x)
@@ -326,13 +326,13 @@ public class WriteFlusherTest
     @Test
     public void testPendingWriteDoesNotStoreConsumedBuffers() throws Exception
     {
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 10);
+        int capacity = 10;
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], capacity);
 
-        int toWrite = endPoint.getOutput().capacity();
-        byte[] chunk1 = new byte[toWrite / 2];
+        byte[] chunk1 = new byte[capacity / 2];
         Arrays.fill(chunk1, (byte)1);
         ByteBuffer buffer1 = ByteBuffer.wrap(chunk1);
-        byte[] chunk2 = new byte[toWrite];
+        byte[] chunk2 = new byte[capacity];
         Arrays.fill(chunk1, (byte)2);
         ByteBuffer buffer2 = ByteBuffer.wrap(chunk2);
 

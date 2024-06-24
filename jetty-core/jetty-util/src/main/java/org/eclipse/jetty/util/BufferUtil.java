@@ -21,6 +21,7 @@ import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
@@ -430,41 +431,38 @@ public class BufferUtil
     /**
      * Put data from one buffer into another, avoiding over/under flows
      *
-     * @param from Buffer to take bytes from in flush mode
+     * @param from Buffer to take bytes from in flush mode, whose position is modified with the bytes taken.
      * @param to Buffer to put bytes to in fill mode.
      * @return number of bytes moved
+     * @throws ReadOnlyBufferException if the buffer is read only
      */
-    public static int put(ByteBuffer from, ByteBuffer to)
+    public static int put(ByteBuffer from, ByteBuffer to) throws ReadOnlyBufferException
     {
-        int put;
-        int remaining = from.remaining();
-        if (remaining > 0)
+        int length = from.remaining();
+        if (length == 0)
+            return 0;
+
+        int space = to.remaining();
+        if (space >= length)
         {
-            if (remaining <= to.remaining())
-            {
-                to.put(from);
-                put = remaining;
-                from.position(from.limit());
-            }
-            else if (from.hasArray())
-            {
-                put = to.remaining();
-                to.put(from.array(), from.arrayOffset() + from.position(), put);
-                from.position(from.position() + put);
-            }
-            else
-            {
-                put = to.remaining();
-                ByteBuffer slice = from.slice();
-                slice.limit(put);
-                to.put(slice);
-                from.position(from.position() + put);
-            }
+            to.put(from);
+            return length;
+        }
+
+        if (from.hasArray())
+        {
+            to.put(from.array(), from.arrayOffset() + from.position(), space);
+            from.position(from.position() + space);
         }
         else
-            put = 0;
+        {
+            ByteBuffer slice = from.slice();
+            slice.limit(slice.position() + space);
+            to.put(slice);
+            from.position(from.position() + space);
+        }
 
-        return put;
+        return space;
     }
 
     /**
@@ -475,8 +473,9 @@ public class BufferUtil
      * @param off offset into byte
      * @param len length to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
-    public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException
+    public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException, ReadOnlyBufferException
     {
         int pos = flipToFill(to);
         try
@@ -495,8 +494,9 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param b bytes to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
-    public static void append(ByteBuffer to, byte[] b) throws BufferOverflowException
+    public static void append(ByteBuffer to, byte[] b) throws BufferOverflowException, ReadOnlyBufferException
     {
         append(to, b, 0, b.length);
     }
@@ -507,8 +507,9 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param s String to append as UTF8
      * @throws BufferOverflowException if unable to append buffer due to space limits
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
-    public static void append(ByteBuffer to, String s) throws BufferOverflowException
+    public static void append(ByteBuffer to, String s) throws BufferOverflowException, ReadOnlyBufferException
     {
         byte[] b = s.getBytes(StandardCharsets.UTF_8);
         append(to, b, 0, b.length);
@@ -520,8 +521,9 @@ public class BufferUtil
      * @param to Buffer is flush mode
      * @param b byte to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
-    public static void append(ByteBuffer to, byte b)
+    public static void append(ByteBuffer to, byte b) throws BufferOverflowException, ReadOnlyBufferException
     {
         int pos = flipToFill(to);
         try
@@ -537,11 +539,12 @@ public class BufferUtil
     /**
      * Appends a buffer to a buffer
      *
-     * @param to Buffer is flush mode
-     * @param b buffer to append
-     * @return The position of the valid data before the flipped position.
+     * @param to Buffer in flush mode, whose position will be incremented by the number of bytes appended
+     * @param b buffer to append to in flush mode, whose limit will be incremented by the number of bytes appended.
+     * @return The number of bytes appended.
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
-    public static int append(ByteBuffer to, ByteBuffer b)
+    public static int append(ByteBuffer to, ByteBuffer b) throws ReadOnlyBufferException
     {
         int pos = flipToFill(to);
         try
@@ -562,8 +565,9 @@ public class BufferUtil
      * @param off offset into bytes
      * @param len length to fill
      * @return the number of bytes taken from the buffer.
+     * @throws ReadOnlyBufferException if the {@code to} buffer is read only
      */
-    public static int fill(ByteBuffer to, byte[] b, int off, int len)
+    public static int fill(ByteBuffer to, byte[] b, int off, int len) throws ReadOnlyBufferException
     {
         int pos = flipToFill(to);
         try
@@ -687,6 +691,12 @@ public class BufferUtil
         }
     }
 
+    /**
+     * Write a {@link ByteBuffer} to an {@link OutputStream}, updating the position for the bytes written.
+     * @param buffer The buffer to write
+     * @param out The output stream
+     * @throws IOException if there was a problem writing.
+     */
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
@@ -1256,15 +1266,16 @@ public class BufferUtil
         return buf.toString();
     }
 
-    private static void appendDebugString(StringBuilder buf, ByteBuffer buffer)
+    public static void appendDebugString(StringBuilder buf, ByteBuffer buffer)
     {
         // Take a readonly copy so we can adjust the limit
         buffer = buffer.asReadOnlyBuffer();
+        int limit = -1;
         try
         {
             for (int i = 0; i < buffer.position(); i++)
             {
-                appendContentChar(buf, buffer.get(i));
+                appendDebugByte(buf, buffer.get(i));
                 if (i == 8 && buffer.position() > 16)
                 {
                     buf.append("...");
@@ -1274,7 +1285,7 @@ public class BufferUtil
             buf.append("<<<");
             for (int i = buffer.position(); i < buffer.limit(); i++)
             {
-                appendContentChar(buf, buffer.get(i));
+                appendDebugByte(buf, buffer.get(i));
                 if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 48)
                 {
                     buf.append("...");
@@ -1282,11 +1293,11 @@ public class BufferUtil
                 }
             }
             buf.append(">>>");
-            int limit = buffer.limit();
+            limit = buffer.limit();
             buffer.limit(buffer.capacity());
             for (int i = limit; i < buffer.capacity(); i++)
             {
-                appendContentChar(buf, buffer.get(i));
+                appendDebugByte(buf, buffer.get(i));
                 if (i == limit + 8 && buffer.capacity() > limit + 16)
                 {
                     buf.append("...");
@@ -1300,9 +1311,14 @@ public class BufferUtil
             LOG.trace("IGNORED", x);
             buf.append("!!concurrent mod!!");
         }
+        finally
+        {
+            if (limit >= 0)
+                buffer.limit(limit);
+        }
     }
 
-    private static void appendContentChar(StringBuilder buf, byte b)
+    public static void appendDebugByte(StringBuilder buf, byte b)
     {
         if (b == '\\')
             buf.append("\\\\");

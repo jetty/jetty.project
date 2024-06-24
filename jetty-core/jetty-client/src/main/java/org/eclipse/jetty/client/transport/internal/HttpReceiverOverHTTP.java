@@ -245,7 +245,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             while (true)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Parsing {} in {}", BufferUtil.toDetailString(networkBuffer.getByteBuffer()), this);
+                    LOG.debug("Parsing {} in {}", networkBuffer, this);
                 // Always parse even empty buffers to advance the parser.
                 if (parse())
                 {
@@ -347,7 +347,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 if (getHttpChannel().isTunnel(method, status))
                     return true;
 
-                if (!networkBuffer.hasRemaining())
+                if (networkBuffer.isEmpty())
                     return false;
 
                 if (!HttpStatus.isInformational(status))
@@ -359,7 +359,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 return false;
             }
 
-            if (!networkBuffer.hasRemaining())
+            if (networkBuffer.isEmpty())
                 return false;
         }
     }

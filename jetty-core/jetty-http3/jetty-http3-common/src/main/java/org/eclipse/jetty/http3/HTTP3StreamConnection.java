@@ -264,7 +264,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         {
             if (inputBuffer.hasRemaining() && force)
                 inputBuffer.clear();
-            if (!inputBuffer.hasRemaining())
+            if (inputBuffer.isEmpty())
             {
                 inputBuffer.release();
                 if (LOG.isDebugEnabled())
@@ -435,6 +435,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         public boolean canRetain()
         {
             return retainable.canRetain();
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return retainable.isRetained();
         }
 
         @Override

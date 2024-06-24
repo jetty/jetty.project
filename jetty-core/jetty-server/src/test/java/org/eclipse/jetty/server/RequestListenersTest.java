@@ -448,10 +448,9 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        try (LocalConnector.LocalEndPoint endPoint = connector.connect())
+        // Do not grow the output so the response will be congested.
+        try (LocalConnector.LocalEndPoint endPoint = connector.connect(1024))
         {
-            // Do not grow the output so the response will be congested.
-            endPoint.setGrowOutput(false);
             endPoint.addInputAndExecute("""
                 POST / HTTP/1.1
                 Host: localhost

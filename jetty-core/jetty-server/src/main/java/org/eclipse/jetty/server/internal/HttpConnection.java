@@ -337,7 +337,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     void releaseRequestBuffer()
     {
-        if (_retainableByteBuffer != null && !_retainableByteBuffer.hasRemaining())
+        if (_retainableByteBuffer != null && _retainableByteBuffer.isEmpty())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("releaseRequestBuffer {}", this);
@@ -357,7 +357,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     public boolean isRequestBufferEmpty()
     {
-        return _retainableByteBuffer == null || !_retainableByteBuffer.hasRemaining();
+        return _retainableByteBuffer == null || _retainableByteBuffer.isEmpty();
     }
 
     @Override
@@ -800,7 +800,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (_head || _generator.isNoContent())
                         {
                             if (_chunk != null)
-                                _chunk.clear();
+                                BufferUtil.clear(chunkByteBuffer);
                             BufferUtil.clear(_content);
                         }
 

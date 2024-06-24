@@ -109,6 +109,13 @@ public class LocalConnector extends AbstractConnector
         return endp;
     }
 
+    public LocalEndPoint connect(int maxSize)
+    {
+        LocalEndPoint endp = new LocalEndPoint(maxSize);
+        _connects.add(endp);
+        return endp;
+    }
+
     @Override
     protected void accept(int acceptorID) throws InterruptedException
     {
@@ -235,8 +242,12 @@ public class LocalConnector extends AbstractConnector
 
         public LocalEndPoint()
         {
-            super(LocalConnector.this.getScheduler(), LocalConnector.this.getIdleTimeout());
-            setGrowOutput(true);
+            this(-1);
+        }
+
+        public LocalEndPoint(int maxSize)
+        {
+            super(LocalConnector.this.getScheduler(), LocalConnector.this.getIdleTimeout(), null, maxSize, maxSize <= 0);
         }
 
         @Override

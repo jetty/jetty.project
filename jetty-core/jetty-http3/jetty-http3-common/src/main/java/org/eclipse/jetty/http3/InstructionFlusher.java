@@ -42,7 +42,7 @@ public class InstructionFlusher extends IteratingCallback
     private final AutoLock lock = new AutoLock();
     private final Queue<Instruction> queue = new ArrayDeque<>();
     private final ByteBufferPool bufferPool;
-    private final ByteBufferPool.Accumulator accumulator;
+    private final RetainableByteBuffer.DynamicCapacity accumulator;
     private final QuicStreamEndPoint endPoint;
     private final long streamType;
     private boolean initialized;
@@ -51,7 +51,7 @@ public class InstructionFlusher extends IteratingCallback
     public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, long streamType)
     {
         this.bufferPool = session.getByteBufferPool();
-        this.accumulator = new ByteBufferPool.Accumulator();
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool);
         this.endPoint = endPoint;
         this.streamType = streamType;
     }
@@ -83,8 +83,6 @@ public class InstructionFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("flushing {} on {}", instructions, this);
 
-        instructions.forEach(i -> i.encode(bufferPool, accumulator));
-
         if (!initialized)
         {
             initialized = true;
@@ -93,32 +91,31 @@ public class InstructionFlusher extends IteratingCallback
             BufferUtil.clearToFill(byteBuffer);
             VarLenInt.encode(byteBuffer, streamType);
             byteBuffer.flip();
-            accumulator.insert(0, buffer);
+            accumulator.add(buffer);
         }
 
-        List<ByteBuffer> buffers = accumulator.getByteBuffers();
+        instructions.forEach(i -> i.encode(bufferPool, accumulator));
+
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), accumulator.getTotalLength(), this);
-        endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
+            LOG.debug("writing buffers ({} bytes) on {}", accumulator.size(), this);
+        accumulator.writeTo(endPoint, false, this);
         return Action.SCHEDULED;
     }
 
     @Override
-    public void succeeded()
+    protected void onCompleteSuccess()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("succeeded to write {} buffers on {}", accumulator.getByteBuffers().size(), this);
+            LOG.debug("succeeded to write buffers on {}", this);
 
         accumulator.release();
-
-        super.succeeded();
     }
 
     @Override
     protected void onCompleteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to write {} buffers on {}", accumulator.getByteBuffers().size(), this, failure);
+            LOG.debug("failed to write buffers on {}", this, failure);
 
         accumulator.release();
 

@@ -35,7 +35,7 @@ public class GoAwayGenerateParseTest
         GoAwayFrame input = GoAwayFrame.CLIENT_GRACEFUL;
 
         ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator(); // TODO remove
         new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
         List<GoAwayFrame> frames = new ArrayList<>();

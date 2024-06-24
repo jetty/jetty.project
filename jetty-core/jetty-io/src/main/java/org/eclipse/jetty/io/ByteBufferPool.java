@@ -54,7 +54,7 @@ public interface ByteBufferPool
      * @param direct true if a direct memory buffer is needed, false otherwise.
      * @return a {@link RetainableByteBuffer} with position and limit set to 0.
      */
-    RetainableByteBuffer acquire(int size, boolean direct);
+    RetainableByteBuffer.Mutable acquire(int size, boolean direct);
 
     /**
      * <p>Removes all {@link RetainableByteBuffer#isRetained() non-retained}
@@ -80,7 +80,7 @@ public interface ByteBufferPool
         }
 
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
             return getWrapped().acquire(size, direct);
         }
@@ -107,23 +107,14 @@ public interface ByteBufferPool
     class NonPooling implements ByteBufferPool
     {
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
-            return new Buffer(BufferUtil.allocate(size, direct));
+            return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct)).asMutable();
         }
 
         @Override
         public void clear()
         {
-        }
-
-        private static class Buffer extends AbstractRetainableByteBuffer
-        {
-            private Buffer(ByteBuffer byteBuffer)
-            {
-                super(byteBuffer);
-                acquire();
-            }
         }
     }
 
@@ -135,7 +126,9 @@ public interface ByteBufferPool
      * or {@link #insert(int, RetainableByteBuffer) inserted} at a
      * specific position in the sequence, and then
      * {@link #release() released} when they are consumed.</p>
+     * @deprecated use {@link RetainableByteBuffer.DynamicCapacity}
      */
+    @Deprecated (forRemoval = true)
     class Accumulator
     {
         private final List<RetainableByteBuffer> buffers = new ArrayList<>();
