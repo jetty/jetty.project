@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -27,13 +29,13 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
-import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourcePublisher;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
+import org.eclipse.jetty.io.internal.ByteChannelContentSource;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
@@ -209,6 +211,30 @@ public class Content
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
             return new ByteChannelContentSource.PathContentSource(byteBufferPool, path, offset, length);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link ByteChannel}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteChannel The {@link ByteChannel}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
+        {
+            return new ByteChannelContentSource(byteBufferPool, byteChannel);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link ByteChannel}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param seekableByteChannel The {@link ByteChannel}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
+        {
+            return new ByteChannelContentSource(byteBufferPool, seekableByteChannel, offset, length);
         }
 
         static Content.Source from(InputStream inputStream)

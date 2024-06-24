@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io.content;
+package org.eclipse.jetty.io.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -246,9 +246,7 @@ public class ByteChannelContentSource implements Content.Source
 
     /**
      * A {@link ByteChannelContentSource} for a {@link Path}
-     * @deprecated To be replaced by an updated {@link org.eclipse.jetty.io.content.PathContentSource} in 12.1.0
      */
-    @Deprecated(forRemoval = true, since = "12.0.11")
     public static class PathContentSource extends ByteChannelContentSource
     {
         private final Path _path;
