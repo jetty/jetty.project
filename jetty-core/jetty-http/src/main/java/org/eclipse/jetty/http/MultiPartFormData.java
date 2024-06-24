@@ -126,7 +126,9 @@ public class MultiPartFormData
 
     /**
      * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
+     * @deprecated use {@link #from(Content.Source, Attributes, String, MultiPartConfig)}.
      */
+    @Deprecated
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         return from(attributes, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP, boundary, parse);
@@ -141,7 +143,9 @@ public class MultiPartFormData
      * @param boundary the boundary for the {@code multipart/form-data} parts
      * @param parse the parser completable future
      * @return the future parts
+     * @deprecated use {@link #from(Content.Source, Attributes, String, MultiPartConfig)}.
      */
+    @Deprecated
     public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
     {
         CompletableFuture<Parts> futureParts = get(attributes);
