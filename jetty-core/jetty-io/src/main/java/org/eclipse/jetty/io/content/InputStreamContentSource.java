@@ -47,7 +47,7 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream)
     {
-        this(inputStream, new ByteBufferPool.Sized(null));
+        this(inputStream, null);
     }
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)

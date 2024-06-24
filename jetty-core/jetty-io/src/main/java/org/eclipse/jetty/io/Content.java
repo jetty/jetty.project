@@ -254,6 +254,41 @@ public class Content
         }
 
         /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param inputStream The {@link InputStream}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
+        {
+            return new InputStreamContentSource(inputStream, byteBufferPool)
+            {
+                private long skip = offset;
+                private long toRead = length;
+
+                @Override
+                protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
+                {
+                    if (skip > 0)
+                    {
+                        inputStream.skipNBytes(skip);
+                        skip = 0;
+                    }
+
+                    if (toRead == 0)
+                        return -1;
+                    int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
+                    int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
+                    int read = inputStream.read(buffer, 0, len);
+                    toRead -= read;
+                    return read;
+                }
+            };
+        }
+
+        /**
          * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
          *
          * @param source the source to read

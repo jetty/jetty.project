@@ -185,7 +185,7 @@ public class IOResources
 
         // Try an optimization for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
-            return new ByteBufferContentSource(ByteBuffer.wrap(memoryResource.getBytes()));
+            return Content.Source.from(ByteBuffer.wrap(memoryResource.getBytes()));
 
         // Fallback to InputStream.
         try
@@ -193,7 +193,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            return new RangedInputStreamContentSource(inputStream, new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, first, length);
         }
         catch (IOException e)
         {
@@ -408,35 +408,6 @@ public class IOResources
                 retainableByteBuffer.release();
             IO.close(channel);
             super.onCompleteFailure(x);
-        }
-    }
-
-    /**
-     * <p>A specialized {@link InputStreamContentSource}
-     * whose content is sliced by a byte range.</p>
-     */
-    private static class RangedInputStreamContentSource extends InputStreamContentSource
-    {
-        private long toRead;
-
-        public RangedInputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool, long first, long length) throws IOException
-        {
-            super(inputStream, bufferPool);
-            inputStream.skipNBytes(first);
-            // TODO perform sanity checks on length?
-            this.toRead = length;
-        }
-
-        @Override
-        protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
-        {
-            if (toRead == 0)
-                return -1;
-            int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
-            int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
-            int read = inputStream.read(buffer, 0, len);
-            toRead -= read;
-            return read;
         }
     }
 }

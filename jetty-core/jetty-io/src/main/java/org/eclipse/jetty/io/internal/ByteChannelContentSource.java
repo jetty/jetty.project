@@ -51,7 +51,7 @@ public class ByteChannelContentSource implements Content.Source
 
     public ByteChannelContentSource(SeekableByteChannel seekableByteChannel, long offset, long length)
     {
-        this(new ByteBufferPool.Sized(null), seekableByteChannel, offset, length);
+        this(null, seekableByteChannel, offset, length);
     }
 
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
@@ -73,7 +73,7 @@ public class ByteChannelContentSource implements Content.Source
 
     public ByteChannelContentSource(ByteChannel byteChannel)
     {
-        this(new ByteBufferPool.Sized(null), byteChannel, -1L, -1L);
+        this(null, byteChannel, -1L, -1L);
     }
 
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
