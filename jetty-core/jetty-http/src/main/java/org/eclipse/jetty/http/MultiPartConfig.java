@@ -31,7 +31,7 @@ public class MultiPartConfig
     private static final int DEFAULT_MAX_PART_SIZE = 10 * 1024 * 1024;
     private static final int DEFAULT_MAX_MEMORY_PART_SIZE = 1024;
     private static final int DEFAULT_MAX_HEADERS_SIZE = 8 * 1024;
-    private static final boolean DEFAULT_USE_FILES_FOR_PARTS_WITHOUT_FILE_NAME = false;
+    private static final boolean DEFAULT_USE_FILES_FOR_PARTS_WITHOUT_FILE_NAME = true;
 
     public static class Builder
     {
