@@ -58,9 +58,8 @@ public class MultiPartCaptureTest
         FS.ensureDirExists(tempDir);
 
         MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
-        parser.setUseFilesForPartsWithoutFileName(false);
-        parser.setFilesDirectory(tempDir);
         parser.setUseFilesForPartsWithoutFileName(true);
+        parser.setFilesDirectory(tempDir);
         ByteBufferContentSource contentSource = new ByteBufferContentSource(formRequest.asByteBuffer());
         MultiPartFormData.Parts parts = parser.parse(contentSource).get();
         formExpectations.assertParts(mapActualResults(parts), defaultCharset);

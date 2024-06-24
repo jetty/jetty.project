@@ -577,7 +577,7 @@ public class MultiPartFormData
                     {
                         if (size > maxMemoryPartSize)
                         {
-                            onFailure(new IllegalStateException("max memory file size exceeded: %d".formatted(maxPartSize)));
+                            onFailure(new IllegalStateException("max memory file size exceeded: %d".formatted(maxMemoryPartSize)));
                             return;
                         }
                     }
