@@ -253,7 +253,7 @@ public class ByteChannelContentSource implements Content.Source
 
         public PathContentSource(Path path)
         {
-            this(ByteBufferPool.SIZED_NON_POOLING, path, 0, -1);
+            this(null, path, 0, -1);
         }
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path)
