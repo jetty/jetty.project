@@ -104,22 +104,11 @@ public class MultiPartFormData
             if (boundary == null)
                 return CompletableFuture.failedFuture(new IllegalStateException("No multipart boundary parameter in Content-Type"));
 
-            // Look for an existing future MultiPartFormData.Parts
-            futureParts = MultiPartFormData.from(attributes, config.getMultiPartCompliance(), config.getViolationListener(), boundary, parser ->
-            {
-                try
-                {
-                    // No existing core parts, so we need to configure the parser.
-                    parser.configure(config);
-
-                    // parse the core parts.
-                    return parser.parse(content);
-                }
-                catch (Throwable failure)
-                {
-                    return CompletableFuture.failedFuture(failure);
-                }
-            });
+            Parser parser = new Parser(boundary);
+            parser.configure(config);
+            futureParts = parser.parse(content);
+            attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
+            return futureParts;
         }
         return futureParts;
     }
@@ -280,8 +269,8 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
-        private final MultiPartCompliance compliance;
-        private final ComplianceViolation.Listener complianceListener;
+        private MultiPartCompliance compliance;
+        private ComplianceViolation.Listener complianceListener;
         private boolean useFilesForPartsWithoutFileName = true;
         private Path filesDirectory;
         private long maxFileSize = -1;
@@ -295,6 +284,10 @@ public class MultiPartFormData
             this(boundary, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP);
         }
 
+        /**
+         * @deprecated use {@link Parser#Parser(String)} with {@link #configure(MultiPartConfig)}.
+         */
+        @Deprecated
         public Parser(String boundary, MultiPartCompliance multiPartCompliance, ComplianceViolation.Listener complianceViolationListener)
         {
             compliance = Objects.requireNonNull(multiPartCompliance);
@@ -503,6 +496,8 @@ public class MultiPartFormData
             parser.setPartHeadersMaxLength(config.getMaxHeadersSize());
             useFilesForPartsWithoutFileName = config.isUseFilesForPartsWithoutFileName();
             filesDirectory = config.getLocation();
+            complianceListener = config.getViolationListener();
+            compliance = config.getMultiPartCompliance();
         }
 
         // Only used for testing.
