@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -89,6 +90,56 @@ public interface ByteBufferPool
         public void clear()
         {
             getWrapped().clear();
+        }
+    }
+
+    /**
+     * A ByteBufferPool with an additional no-args {@link #acquire()} method to obtain a buffer of a
+     * preconfigured specific size and type.
+     */
+    class Sized extends Wrapper
+    {
+        private final boolean _direct;
+        private final int _size;
+
+        /**
+         * Create a sized pool for non direct buffers of a default size from a wrapped pool.
+         * @param wrapped The actual {@link ByteBufferPool}
+         */
+        public Sized(ByteBufferPool wrapped)
+        {
+            this(wrapped, false, -1);
+        }
+
+        /**
+         * Create a sized pool for a give directness and size from a wrapped pool.
+         * @param wrapped The actual {@link ByteBufferPool}
+         * @param direct {@code true} for direct buffers.
+         * @param size The specified size in bytes of the buffer, or -1 for a default
+         */
+        public Sized(ByteBufferPool wrapped, boolean direct, int size)
+        {
+            super(Objects.requireNonNullElse(wrapped, NON_POOLING));
+            _direct = direct;
+            _size = size > 0 ? size : 4096;
+        }
+
+        public boolean isDirect()
+        {
+            return _direct;
+        }
+
+        public int getSize()
+        {
+            return _size;
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured size and type.
+         */
+        public RetainableByteBuffer acquire()
+        {
+            return getWrapped().acquire(_size, _direct);
         }
     }
 
