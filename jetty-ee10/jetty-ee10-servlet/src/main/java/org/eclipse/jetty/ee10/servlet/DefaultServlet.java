@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.server.Context;
@@ -125,7 +126,7 @@ public class DefaultServlet extends ResourceServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
-    private AtomicBoolean warned = new AtomicBoolean(false);
+    private final AtomicBoolean warned = new AtomicBoolean(false);
 
     /**
      * <p>
@@ -148,6 +149,14 @@ public class DefaultServlet extends ResourceServlet
         if (value == null)
             value = super.getInitParameter(name);
         return value;
+    }
+
+    @Override
+    public void init() throws ServletException
+    {
+        if ("true".equalsIgnoreCase(getInitParameter("pathInfoOnly")))
+            LOG.warn("DefaultServlet pathInfoOnly is set to true");
+        super.init();
     }
 
     @Override

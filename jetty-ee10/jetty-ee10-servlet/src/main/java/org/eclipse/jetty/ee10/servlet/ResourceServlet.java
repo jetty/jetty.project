@@ -63,7 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>The default Servlet, normally mapped to {@code /}, that handles static resources.</p>
+ * <p>A Servlet that handles static resources.</p>
  * <p>The following init parameters are supported:</p>
  * <dl>
  *   <dt>acceptRanges</dt>
@@ -786,11 +786,10 @@ public class ResourceServlet extends HttpServlet
         }
     }
 
-    static String getIncludedPathInContext(HttpServletRequest request, String includedServletPath, boolean isPathInfoOnly)
+    static String getIncludedPathInContext(HttpServletRequest request, String includedServletPath)
     {
-        String servletPath = isPathInfoOnly ? "/" : includedServletPath;
         String pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
-        return URIUtil.addPaths(servletPath, pathInfo);
+        return URIUtil.addPaths(includedServletPath, pathInfo);
     }
 
     private static boolean isIncluded(HttpServletRequest request)
