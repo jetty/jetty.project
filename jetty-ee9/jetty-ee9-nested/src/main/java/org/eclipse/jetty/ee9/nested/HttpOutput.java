@@ -739,7 +739,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             catch (Throwable t)
             {
                 onWriteComplete(false, t);
-                throw t;
+                if (t instanceof IOException)
+                    throw t;
+                throw new IOException(t);
             }
         }
     }

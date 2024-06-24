@@ -15,35 +15,25 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 
-import org.eclipse.jetty.deploy.AppProvider;
-import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.BarContextHandler;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -77,7 +67,10 @@ public class ContextProviderStartupTest
 
         // Should not throw an Exception
         jetty.load();
+    }
 
+    public void startJetty() throws Exception
+    {
         // Start it
         jetty.start();
     }
@@ -89,9 +82,47 @@ public class ContextProviderStartupTest
     }
 
     @Test
-    public void testStartupContext()
+    public void testStartupContext() throws Exception
     {
+        startJetty();
+
         // Check Server for Handlers
         jetty.assertContextHandlerExists("/bar");
+
+    }
+
+    @Test
+    public void testStartupWithRelativeEnvironmentContext() throws Exception
+    {
+        Path jettyBase = jetty.getJettyBasePath();
+        Path propsFile = Files.writeString(jettyBase.resolve("webapps/core.properties"), Deployable.ENVIRONMENT_XML + " = etc/core-context.xml", StandardOpenOption.CREATE_NEW);
+        assertTrue(Files.exists(propsFile));
+        Files.copy(MavenPaths.findTestResourceFile("etc/core-context.xml"), jettyBase.resolve("etc/core-context.xml"), StandardCopyOption.REPLACE_EXISTING);
+        jetty.copyWebapp("bar-core-context.properties", "bar.properties");
+        startJetty();
+
+        //check environment context xml was applied to the produced context
+        ContextHandler context = jetty.getContextHandler("/bar");
+        assertNotNull(context);
+        assertThat(context.getAttribute("somename"), equalTo("somevalue"));
+        assertTrue(context instanceof BarContextHandler);
+
+    }
+
+    @Test
+    public void testStartupWithAbsoluteEnvironmentContext() throws Exception
+    {
+        Path jettyBase = jetty.getJettyBasePath();
+        Path propsFile = Files.writeString(jettyBase.resolve("webapps/core.properties"), Deployable.ENVIRONMENT_XML + " = " +
+            MavenPaths.findTestResourceFile("etc/core-context.xml"), StandardOpenOption.CREATE_NEW);
+        assertTrue(Files.exists(propsFile));
+        Files.copy(MavenPaths.findTestResourceFile("etc/core-context.xml"), jettyBase.resolve("etc/core-context.xml"), StandardCopyOption.REPLACE_EXISTING);
+        jetty.copyWebapp("bar-core-context.properties", "bar-core-context.properties");
+        startJetty();
+
+        //check environment context xml was applied to the produced context
+        ContextHandler context = jetty.getContextHandler("/bar");
+        assertNotNull(context);
+        assertThat(context.getAttribute("somename"), equalTo("somevalue"));
     }
 }

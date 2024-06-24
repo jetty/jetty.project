@@ -58,7 +58,12 @@ public class AbstractTest
 
     protected void start(Handler handler) throws Exception
     {
-        HTTP2CServerConnectionFactory connectionFactory = new HTTP2CServerConnectionFactory(new HttpConfiguration());
+        start(handler, new HttpConfiguration());
+    }
+
+    protected void start(Handler handler, HttpConfiguration httpConfiguration) throws Exception
+    {
+        HTTP2CServerConnectionFactory connectionFactory = new HTTP2CServerConnectionFactory(httpConfiguration);
         connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         prepareServer(connectionFactory);

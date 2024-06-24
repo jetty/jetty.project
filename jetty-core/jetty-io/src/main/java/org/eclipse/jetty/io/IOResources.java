@@ -21,8 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
-import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -137,13 +137,7 @@ public class IOResources
         Path path = resource.getPath();
         if (path != null)
         {
-            PathContentSource pathContentSource = new PathContentSource(path, bufferPool);
-            if (bufferSize > 0)
-            {
-                pathContentSource.setBufferSize(bufferSize);
-                pathContentSource.setUseDirectByteBuffers(direct);
-            }
-            return pathContentSource;
+            return new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path);
         }
         if (resource instanceof MemoryResource memoryResource)
         {
@@ -187,13 +181,7 @@ public class IOResources
         Path path = resource.getPath();
         if (path != null)
         {
-            RangedPathContentSource contentSource = new RangedPathContentSource(path, bufferPool, first, length);
-            if (bufferSize > 0)
-            {
-                contentSource.setBufferSize(bufferSize);
-                contentSource.setUseDirectByteBuffers(direct);
-            }
-            return contentSource;
+            return new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, first, length);
         }
 
         // Try an optimization for MemoryResource.
@@ -206,13 +194,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            RangedInputStreamContentSource contentSource = new RangedInputStreamContentSource(inputStream, bufferPool, first, length);
-            if (bufferSize > 0)
-            {
-                contentSource.setBufferSize(bufferSize);
-                contentSource.setUseDirectByteBuffers(direct);
-            }
-            return contentSource;
+            return new RangedInputStreamContentSource(inputStream, new ByteBufferPool.Sized(bufferPool, direct, bufferSize), first, length);
         }
         catch (IOException e)
         {
@@ -427,57 +409,6 @@ public class IOResources
                 retainableByteBuffer.release();
             IO.close(channel);
             super.onCompleteFailure(x);
-        }
-    }
-
-    /**
-     * <p>A specialized {@link PathContentSource}
-     * whose content is sliced by a byte range.</p>
-     */
-    private static class RangedPathContentSource extends PathContentSource
-    {
-        private final long first;
-        private final long length;
-        private long toRead;
-
-        public RangedPathContentSource(Path path, ByteBufferPool bufferPool, long first, long length)
-        {
-            super(path, bufferPool);
-            // TODO perform sanity checks on first and length?
-            this.first = first;
-            this.length = length;
-        }
-
-        @Override
-        protected SeekableByteChannel open() throws IOException
-        {
-            SeekableByteChannel channel = super.open();
-            if (first > -1)
-                channel.position(first);
-            toRead = length;
-            return channel;
-        }
-
-        @Override
-        protected int read(SeekableByteChannel channel, ByteBuffer byteBuffer) throws IOException
-        {
-            int read = super.read(channel, byteBuffer);
-            if (read <= 0)
-                return read;
-
-            read = (int)Math.min(read, toRead);
-            if (read > -1)
-            {
-                toRead -= read;
-                byteBuffer.position(read);
-            }
-            return read;
-        }
-
-        @Override
-        protected boolean isReadComplete(long read)
-        {
-            return read == length;
         }
     }
 

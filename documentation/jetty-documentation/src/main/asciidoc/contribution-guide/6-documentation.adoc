@@ -32,7 +32,7 @@ Targets developers and writers who want to make contributions to the Jetty proje
 [[cg-documentation-toolchain]]
 === The documentation toolchain
 Jetty follows a https://www.writethedocs.org/guide/docs-as-code/["docs as code"] philosophy, meaning *we use the same tools to write and build our code and docs*.
-As such, the docs are maintained directly within the Jetty codebase at https://github.com/eclipse/jetty.project/tree/jetty-12.0.x/documentation/jetty-documentation/src/main/asciidoc[`documentation/jetty-documentation/src/main/asciidoc/`].
+As such, the docs are maintained directly within the Jetty codebase at https://github.com/jetty/jetty.project/tree/jetty-12.0.x/documentation/jetty-documentation/src/main/asciidoc[`documentation/jetty-documentation/src/main/asciidoc/`].
 
 [[cg-documentation-asciidoc]]
 ==== AsciiDoc
@@ -83,13 +83,13 @@ When the build completes, you can view the generated docs in your preferred web 
 [[cg-documentation-build-structure]]
 ==== Documentation project structure
 
-The documentation root is https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/documentation/jetty-documentation[`documentation/jetty-documentation/`].
+The documentation root is https://github.com/jetty/jetty.project/tree/jetty-10.0.x/documentation/jetty-documentation[`documentation/jetty-documentation/`].
 Within this root directory are some files and subdirectories of note:
 
-https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/documentation/jetty-documentation/src/main/asciidoc[`src/main/asciidoc`]::
+https://github.com/jetty/jetty.project/tree/jetty-10.0.x/documentation/jetty-documentation/src/main/asciidoc[`src/main/asciidoc`]::
 The primary root for all documentation content.
 
-https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/documentation/jetty-documentation/src/main/asciidoc/config.adoc[`src/main/asciidoc/config.adoc`]::
+https://github.com/jetty/jetty.project/tree/jetty-10.0.x/documentation/jetty-documentation/src/main/asciidoc/config.adoc[`src/main/asciidoc/config.adoc`]::
 This file contains metadata and global variables shared across all the xref:cg-documentation-guides[documentation guides].
 This configuration is used by Asciidoctor to correctly render the final docs.
 

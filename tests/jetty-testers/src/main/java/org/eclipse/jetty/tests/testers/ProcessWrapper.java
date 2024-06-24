@@ -200,7 +200,7 @@ public class ProcessWrapper implements AutoCloseable
                 String line;
                 while ((line = reader.readLine()) != null)
                 {
-                    LOG.info(line);
+                    LOG.debug(line);
                     logs.add(line);
                 }
             }
