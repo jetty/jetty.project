@@ -19,16 +19,20 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.BufferedContentSink;
+import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourcePublisher;
+import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
@@ -151,6 +155,78 @@ public class Content
      */
     public interface Source
     {
+        /**
+         * Create a {@code Content.Source} from zero or more {@link ByteBuffer}s
+         * @param byteBuffers The {@link ByteBuffer}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBuffer... byteBuffers)
+        {
+            return new ByteBufferContentSource(byteBuffers);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param path The {@link Path}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(Path path)
+        {
+            return from(null, path, 0, -1);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param path The {@link Path}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(Path path, long offset, long length)
+        {
+            return from(null, path, offset, length);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param path The {@link Path}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path)
+        {
+            return from(byteBufferPool, path, 0, -1);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param path The {@link Path}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
+        {
+            return new ByteChannelContentSource.PathContentSource(byteBufferPool, path, offset, length);
+        }
+
+        static Content.Source from(InputStream inputStream)
+        {
+            return from(null, inputStream);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param inputStream The {@link InputStream}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream)
+        {
+            return new InputStreamContentSource(inputStream, byteBufferPool);
+        }
+
         /**
          * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
          *

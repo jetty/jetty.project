@@ -83,7 +83,7 @@ public class ByteChannelContentSource implements Content.Source
 
     private ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
     {
-        _byteBufferPool = Objects.requireNonNull(byteBufferPool);
+        _byteBufferPool = Objects.requireNonNullElse(byteBufferPool, ByteBufferPool.SIZED_NON_POOLING);
         _byteChannel = byteChannel;
         _offset = offset < 0 ? 0 : offset;
         _length = length;
@@ -255,19 +255,17 @@ public class ByteChannelContentSource implements Content.Source
 
         public PathContentSource(Path path)
         {
-            super(new ByteBufferPool.Sized(null), null, 0, size(path));
-            _path = path;
+            this(ByteBufferPool.SIZED_NON_POOLING, path, 0, -1);
         }
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path)
         {
-            super(byteBufferPool, null, 0, size(path));
-            _path = path;
+            this(byteBufferPool, path, 0, -1);
         }
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
-            super(byteBufferPool, null, offset, length);
+            super(byteBufferPool, null, offset, length < 0 ? size(path) : length);
             _path = path;
         }
 

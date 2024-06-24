@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
-import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -137,7 +136,7 @@ public class IOResources
         Path path = resource.getPath();
         if (path != null)
         {
-            return new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path);
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, 0, -1);
         }
         if (resource instanceof MemoryResource memoryResource)
         {
@@ -181,7 +180,7 @@ public class IOResources
         Path path = resource.getPath();
         if (path != null)
         {
-            return new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, first, length);
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, first, length);
         }
 
         // Try an optimization for MemoryResource.
