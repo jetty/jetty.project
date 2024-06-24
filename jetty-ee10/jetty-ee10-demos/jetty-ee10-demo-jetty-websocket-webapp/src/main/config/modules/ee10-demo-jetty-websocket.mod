@@ -17,5 +17,5 @@ ee10-websocket-jetty
 
 [files]
 basehome:modules/demo.d/ee10-demo-jetty-websocket.xml|webapps/ee10-demo-jetty-websocket.xml
-basehome:modules/demo.d/ee10-demo-jetty.properties|webapps/ee10-demo-jetty-websocket.properties
+basehome:modules/demo.d/ee10-demo-jetty-websocket.properties|webapps/ee10-demo-jetty-websocket.properties
 maven://org.eclipse.jetty.demos/jetty-ee10-demo-jetty-websocket/webapp/${jetty.version}/war|webapps/ee10-demo-jetty-websocket.war
