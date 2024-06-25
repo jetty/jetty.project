@@ -17,6 +17,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.servlet.AsyncContext;
@@ -24,6 +25,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
@@ -118,6 +120,7 @@ public class ContextScopeListenerTest
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/initialPath");
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS).until(() -> _history.size() == 9);
         assertHistory(
             "enterScope /initialPath",
             "doGet",
