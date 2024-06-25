@@ -715,7 +715,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             if (!Resources.isReadable(baseResource))
                 throw new IllegalArgumentException("Base Resource is not valid: " + baseResource);
             if (baseResource.isAlias())
-                LOG.warn("Base Resource should not be an alias");
+            {
+                URI realUri = baseResource.getRealURI();
+                if (realUri == null)
+                    LOG.warn("Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {}", baseResource);
+                else
+                    LOG.warn("Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {} points to {}",
+                        baseResource, realUri.toASCIIString());
+            }
         }
 
         _availability.set(Availability.STARTING);
