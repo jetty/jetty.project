@@ -782,7 +782,8 @@ public class ServletApiRequest implements HttpServletRequest
                 if (httpCookie == null)
                     continue;
 
-                if (httpCookie.isExpired())
+                // this should be httpCookie.isExpired(), but because of an error in the servlet spec it is
+                if (httpCookie.isExpired() || (httpCookie.getMaxAge() < 0))
                 {
                     for (Iterator<Object> i = cookies.iterator(); i.hasNext();)
                     {
