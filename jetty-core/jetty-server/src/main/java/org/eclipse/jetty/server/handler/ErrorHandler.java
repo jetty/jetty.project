@@ -258,7 +258,7 @@ public class ErrorHandler implements Request.Handler
         catch (Throwable x)
         {
             if (buffer != null)
-                request.getComponents().getByteBufferPool().remove(buffer);
+                buffer.remove();
             throw x;
         }
     }

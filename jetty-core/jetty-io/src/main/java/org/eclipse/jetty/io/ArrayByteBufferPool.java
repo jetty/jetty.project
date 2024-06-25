@@ -604,8 +604,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         @Override
         public boolean remove()
         {
-            super.release();
-            return _removed.compareAndSet(false, true);
+            _removed.compareAndSet(false, true);
+            return super.release();
         }
     }
 
@@ -634,9 +634,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         @Override
         public boolean remove()
         {
-            boolean removed = ArrayByteBufferPool.this.remove(_bucket, _entry);
-            super.release();
-            return removed;
+            ArrayByteBufferPool.this.remove(_bucket, _entry);
+            return super.release();
         }
 
         private int use()
