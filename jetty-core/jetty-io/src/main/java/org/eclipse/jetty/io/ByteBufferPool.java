@@ -59,17 +59,6 @@ public interface ByteBufferPool
     RetainableByteBuffer acquire(int size, boolean direct);
 
     /**
-     * Remove a buffer from the pool.
-     * <p>Calling this method includes an implicit release of the buffer.</p>
-     * @param buffer The buffer to be removed from the pool
-     * @return {@code true} if the buffer can be removed.
-     */
-    default boolean remove(RetainableByteBuffer buffer)
-    {
-        return false;
-    }
-
-    /**
      * <p>Removes all {@link RetainableByteBuffer#isRetained() non-retained}
      * pooled instances from this pool.</p>
      */
@@ -96,12 +85,6 @@ public interface ByteBufferPool
         public RetainableByteBuffer acquire(int size, boolean direct)
         {
             return getWrapped().acquire(size, direct);
-        }
-
-        @Override
-        public boolean remove(RetainableByteBuffer buffer)
-        {
-            return getWrapped().remove(buffer);
         }
 
         @Override

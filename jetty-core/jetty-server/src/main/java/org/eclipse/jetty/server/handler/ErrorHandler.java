@@ -40,13 +40,13 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -257,7 +257,8 @@ public class ErrorHandler implements Request.Handler
         }
         catch (Throwable x)
         {
-            buffer.release();
+            if (buffer != null)
+                request.getComponents().getByteBufferPool().remove(buffer);
             throw x;
         }
     }
@@ -581,18 +582,30 @@ public class ErrorHandler implements Request.Handler
      */
     private static class WriteErrorCallback extends Callback.Nested
     {
-        private final Retainable _retainable;
+        private final RetainableByteBuffer _buffer;
 
-        public WriteErrorCallback(Callback callback, Retainable retainable)
+        public WriteErrorCallback(Callback callback, RetainableByteBuffer retainable)
         {
             super(callback);
-            _retainable = retainable;
+            _buffer = retainable;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            ExceptionUtil.callAndThen(_buffer::release, super::succeeded);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            ExceptionUtil.callAndThen(_buffer::remove, super::succeeded);
         }
 
         @Override
         public void completed()
         {
-            _retainable.release();
+            _buffer.release();
         }
     }
 }

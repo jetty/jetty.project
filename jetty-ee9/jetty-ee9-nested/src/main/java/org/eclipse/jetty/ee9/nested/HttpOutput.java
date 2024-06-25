@@ -292,7 +292,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                releaseBuffer();
+                releaseBuffer(failure != null);
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -513,7 +513,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             _state = State.CLOSED;
-            releaseBuffer();
+            releaseBuffer(failure != null);
         }
     }
 
@@ -653,11 +653,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _aggregate;
     }
 
-    private void releaseBuffer()
+    private void releaseBuffer(boolean failure)
     {
         if (_aggregate != null)
         {
-            _aggregate.release();
+            if (failure)
+                _aggregate.remove();
+            else
+                _aggregate.release();
             _aggregate = null;
         }
     }
@@ -1431,6 +1434,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (AutoLock l = _channelState.lock())
         {
+            releaseBuffer(_state != State.CLOSED);
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
             _softClose = true; // Stay closed until next request
@@ -1440,7 +1444,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _commitSize = config.getOutputAggregationSize();
             if (_commitSize > _bufferSize)
                 _commitSize = _bufferSize;
-            releaseBuffer();
             _written = 0;
             _writeListener = null;
             _onError = null;

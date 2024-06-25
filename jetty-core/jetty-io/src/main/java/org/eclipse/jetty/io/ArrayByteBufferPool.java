@@ -214,21 +214,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (entry == null)
         {
             ByteBuffer buffer = BufferUtil.allocate(bucket.getCapacity(), direct);
-            ReservedBuffer reserved = new ReservedBuffer(buffer, bucket);
-            reserved.acquire();
-            return reserved;
+            return new ReservedBuffer(buffer, bucket);
         }
 
         bucket.recordPooled();
         RetainableByteBuffer buffer = entry.getPooled();
         ((Buffer)buffer).acquire();
         return buffer;
-    }
-
-    @Override
-    public boolean remove(RetainableByteBuffer buffer)
-    {
-        return buffer instanceof Removable removable && removable.remove();
     }
 
     private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
@@ -588,12 +580,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private interface Removable
-    {
-        boolean remove();
-    }
-
-    private class ReservedBuffer extends AbstractRetainableByteBuffer implements Removable
+    private class ReservedBuffer extends AbstractRetainableByteBuffer
     {
         private final RetainedBucket _bucket;
         private final AtomicBoolean _removed = new AtomicBoolean();
@@ -602,6 +589,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             super(buffer);
             _bucket = Objects.requireNonNull(bucket);
+            acquire();
         }
 
         @Override
@@ -621,7 +609,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private class Buffer extends AbstractRetainableByteBuffer implements Removable
+    private class Buffer extends AbstractRetainableByteBuffer
     {
         private final RetainedBucket _bucket;
         private final Pool.Entry<RetainableByteBuffer> _entry;
@@ -647,7 +635,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public boolean remove()
         {
             boolean removed = ArrayByteBufferPool.this.remove(_bucket, _entry);
-            release();
+            super.release();
             return removed;
         }
 

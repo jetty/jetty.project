@@ -594,7 +594,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (_aggregate != null)
         {
             if (failure)
-                _servletChannel.getRequest().getComponents().getByteBufferPool().remove(_aggregate);
+                _aggregate.remove();
             else
                 _aggregate.release();
             _aggregate = null;

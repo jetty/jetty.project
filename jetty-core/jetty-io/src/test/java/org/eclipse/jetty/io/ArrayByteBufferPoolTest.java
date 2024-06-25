@@ -470,9 +470,9 @@ public class ArrayByteBufferPoolTest
         retained1 = pool.acquire(1024, false);
         retained1.retain();
 
-        assertTrue(pool.remove(reserved1));
-        assertTrue(pool.remove(acquired1));
-        assertTrue(pool.remove(retained1));
+        assertTrue(reserved1.remove());
+        assertTrue(acquired1.remove());
+        assertTrue(retained1.remove());
 
         retained1.release();
 
