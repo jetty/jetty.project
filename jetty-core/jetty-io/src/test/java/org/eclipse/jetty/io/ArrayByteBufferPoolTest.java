@@ -472,9 +472,8 @@ public class ArrayByteBufferPoolTest
 
         assertTrue(reserved1.remove());
         assertTrue(acquired1.remove());
-        assertTrue(retained1.remove());
-
-        retained1.release();
+        assertFalse(retained1.remove());
+        assertTrue(retained1.release());
 
         assertThat(pool.getHeapByteBufferCount(), is(2L));
         assertTrue(reserved0.release());
