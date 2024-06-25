@@ -73,6 +73,14 @@ public class ErrorHandler implements Request.Handler
         };
     }
 
+    private static Object getRequestErrorAttribute(HttpServletRequest request, String servletApiName, String jettyName)
+    {
+        Object o = request.getAttribute(servletApiName);
+        if (o == null)
+            o = request.getAttribute(jettyName);
+        return o;
+    }
+
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
@@ -126,7 +134,7 @@ public class ErrorHandler implements Request.Handler
             }
         }
 
-        String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
+        String message = (String)getRequestErrorAttribute(httpServletRequest, Dispatcher.ERROR_MESSAGE, org.eclipse.jetty.server.handler.ErrorHandler.ERROR_MESSAGE);
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
         generateAcceptableResponse(servletContextRequest, httpServletRequest, httpServletResponse, response.getStatus(), message);
@@ -416,7 +424,7 @@ public class ErrorHandler implements Request.Handler
         {
             htmlRow(writer, "SERVLET", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
         }
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable cause = (Throwable)getRequestErrorAttribute(request, Dispatcher.ERROR_EXCEPTION, org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
         while (cause != null)
         {
             htmlRow(writer, "CAUSED BY", cause);
@@ -451,7 +459,7 @@ public class ErrorHandler implements Request.Handler
         {
             writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
         }
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable cause = (Throwable)getRequestErrorAttribute(request, Dispatcher.ERROR_EXCEPTION, org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
         while (cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
@@ -465,7 +473,7 @@ public class ErrorHandler implements Request.Handler
 
     protected void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
     {
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable cause = (Throwable)getRequestErrorAttribute(request, Dispatcher.ERROR_EXCEPTION, org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
         Map<String, String> json = new HashMap<>();
 
@@ -490,7 +498,7 @@ public class ErrorHandler implements Request.Handler
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer) throws IOException
     {
-        Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+        Throwable th = (Throwable)getRequestErrorAttribute(request, RequestDispatcher.ERROR_EXCEPTION, org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
         if (th != null)
         {
             writer.write("<h3>Caused by:</h3><pre>");
