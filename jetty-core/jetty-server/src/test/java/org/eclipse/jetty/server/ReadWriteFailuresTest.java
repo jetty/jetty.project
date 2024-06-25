@@ -202,7 +202,7 @@ public class ReadWriteFailuresTest
             POST / HTTP/1.1
             Host: localhost
             Content-Length: 1
-                        
+            
             """;
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
@@ -234,7 +234,7 @@ public class ReadWriteFailuresTest
             POST / HTTP/1.1
             Host: localhost
             Content-Length: %d
-                        
+            
             %s
             """.formatted(content.length(), content);
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
