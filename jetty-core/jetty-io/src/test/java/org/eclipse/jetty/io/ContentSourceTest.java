@@ -38,11 +38,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
-import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.content.PathContentSource;
+import org.eclipse.jetty.io.internal.ByteChannelContentSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -141,8 +141,7 @@ public class ContentSourceTest
         Files.writeString(path0123, "zeroonetwothree", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
         PathContentSource path0 = new PathContentSource(path12, byteBufferPool);
-        PathContentSource path1 = new PathContentSource(path12, byteBufferPool);
-        path1.setBufferSize(3);
+        PathContentSource path1 = new PathContentSource(path12, new ByteBufferPool.Sized(byteBufferPool, false, 3));
 
         InputStreamContentSource inputSource = new InputStreamContentSource(new ByteArrayInputStream("onetwo".getBytes(UTF_8)));
         InputStreamContentSource inputSource2 =
