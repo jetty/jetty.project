@@ -75,7 +75,7 @@ public class MessageFlusher extends IteratingCallback
             return Action.SCHEDULED;
         }
 
-        int generated = generator.generate(accumulator, entry.endPoint.getStreamId(), frame, this::failed);
+        int generated = generator.generate(accumulator, entry.endPoint.getStreamId(), frame, this::onGenerateFailure);
         if (generated < 0)
             return Action.SCHEDULED;
 
@@ -88,6 +88,20 @@ public class MessageFlusher extends IteratingCallback
         return Action.SCHEDULED;
     }
 
+    private void onGenerateFailure(Throwable cause)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failed to generate {} on {}", entry, this, cause);
+
+        accumulator.release();
+
+        entry.callback.failed(cause);
+        entry = null;
+
+        // Continue the iteration.
+        succeeded();
+    }
+
     @Override
     protected void onSuccess()
     {
@@ -96,8 +110,11 @@ public class MessageFlusher extends IteratingCallback
 
         accumulator.release();
 
-        entry.callback.succeeded();
-        entry = null;
+        if (entry != null)
+        {
+            entry.callback.succeeded();
+            entry = null;
+        }
     }
 
     @Override
@@ -108,11 +125,11 @@ public class MessageFlusher extends IteratingCallback
 
         accumulator.release();
 
-        entry.callback.failed(cause);
-        entry = null;
-
-        // Continue the iteration.
-        super.succeeded();
+        if (entry != null)
+        {
+            entry.callback.failed(cause);
+            entry = null;
+        }
     }
 
     @Override
