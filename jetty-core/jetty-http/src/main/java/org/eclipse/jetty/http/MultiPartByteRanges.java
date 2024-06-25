@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
-import org.eclipse.jetty.io.content.ByteChannelContentSource;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -164,14 +163,55 @@ public class MultiPartByteRanges
     }
 
     /**
-     * <p>A specialized {@link org.eclipse.jetty.io.content.ByteChannelContentSource.PathContentSource}
-     * whose content is sliced by a byte range.</p>
+     * <p>A specialized {@link Content.Source}
+     * whose {@link Path} content is sliced by a byte range.</p>
+     *
+     * @deprecated use {@link Content.Source#from(ByteBufferPool.Sized, Path, long, long)}
      */
-    public static class PathContentSource extends ByteChannelContentSource.PathContentSource
+    @Deprecated(forRemoval = true, since = "12.0.11")
+    public static class PathContentSource implements Content.Source
     {
+        private final Content.Source contentSource;
+
         public PathContentSource(Path path, ByteRange byteRange)
         {
-            super(new ByteBufferPool.Sized(null), path, byteRange.first(), byteRange.getLength());
+            contentSource = Content.Source.from(null, path, byteRange.first(), byteRange.getLength());
+        }
+
+        @Override
+        public void demand(Runnable demandCallback)
+        {
+            contentSource.demand(demandCallback);
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            contentSource.fail(failure);
+        }
+
+        @Override
+        public void fail(Throwable failure, boolean last)
+        {
+            contentSource.fail(failure, last);
+        }
+
+        @Override
+        public long getLength()
+        {
+            return contentSource.getLength();
+        }
+
+        @Override
+        public Content.Chunk read()
+        {
+            return contentSource.read();
+        }
+
+        @Override
+        public boolean rewind()
+        {
+            return contentSource.rewind();
         }
     }
 

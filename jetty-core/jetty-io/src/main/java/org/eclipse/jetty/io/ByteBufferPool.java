@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public interface ByteBufferPool
 {
     ByteBufferPool NON_POOLING = new NonPooling();
+    ByteBufferPool.Sized SIZED_NON_POOLING = new Sized(ByteBufferPool.NON_POOLING);
 
     /**
      * <p>Acquires a {@link RetainableByteBuffer} from this pool.</p>
