@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io.content;
+package org.eclipse.jetty.io.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -51,7 +51,7 @@ public class ByteChannelContentSource implements Content.Source
 
     public ByteChannelContentSource(SeekableByteChannel seekableByteChannel, long offset, long length)
     {
-        this(new ByteBufferPool.Sized(null), seekableByteChannel, offset, length);
+        this(null, seekableByteChannel, offset, length);
     }
 
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
@@ -73,7 +73,7 @@ public class ByteChannelContentSource implements Content.Source
 
     public ByteChannelContentSource(ByteChannel byteChannel)
     {
-        this(new ByteBufferPool.Sized(null), byteChannel, -1L, -1L);
+        this(null, byteChannel, -1L, -1L);
     }
 
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
@@ -83,7 +83,7 @@ public class ByteChannelContentSource implements Content.Source
 
     private ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
     {
-        _byteBufferPool = Objects.requireNonNull(byteBufferPool);
+        _byteBufferPool = Objects.requireNonNullElse(byteBufferPool, ByteBufferPool.SIZED_NON_POOLING);
         _byteChannel = byteChannel;
         _offset = offset < 0 ? 0 : offset;
         _length = length;
@@ -246,28 +246,24 @@ public class ByteChannelContentSource implements Content.Source
 
     /**
      * A {@link ByteChannelContentSource} for a {@link Path}
-     * @deprecated To be replaced by an updated {@link org.eclipse.jetty.io.content.PathContentSource} in 12.1.0
      */
-    @Deprecated(forRemoval = true, since = "12.0.11")
     public static class PathContentSource extends ByteChannelContentSource
     {
         private final Path _path;
 
         public PathContentSource(Path path)
         {
-            super(new ByteBufferPool.Sized(null), null, 0, size(path));
-            _path = path;
+            this(null, path, 0, -1);
         }
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path)
         {
-            super(byteBufferPool, null, 0, size(path));
-            _path = path;
+            this(byteBufferPool, path, 0, -1);
         }
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
-            super(byteBufferPool, null, offset, length);
+            super(byteBufferPool, null, offset, length < 0 ? size(path) : length);
             _path = path;
         }
 
