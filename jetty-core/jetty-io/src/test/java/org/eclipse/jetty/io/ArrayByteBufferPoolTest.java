@@ -32,6 +32,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -443,5 +444,45 @@ public class ArrayByteBufferPoolTest
         CompoundPool<RetainableByteBuffer> compoundPool = (CompoundPool<RetainableByteBuffer>)bucketPool;
         assertThat(compoundPool.getPrimaryPool().size(), is(ConcurrentPool.OPTIMAL_MAX_SIZE));
         assertThat(compoundPool.getSecondaryPool().size(), is(0));
+    }
+
+    @Test
+    public void testRemove()
+    {
+        ArrayByteBufferPool pool = new ArrayByteBufferPool();
+
+        RetainableByteBuffer reserved0 = pool.acquire(1024, false);
+        RetainableByteBuffer reserved1 = pool.acquire(1024, false);
+
+        RetainableByteBuffer acquired0 = pool.acquire(1024, false);
+        acquired0.release();
+        acquired0 = pool.acquire(1024, false);
+        RetainableByteBuffer acquired1 = pool.acquire(1024, false);
+        acquired1.release();
+        acquired1 = pool.acquire(1024, false);
+
+        RetainableByteBuffer retained0 = pool.acquire(1024, false);
+        retained0.release();
+        retained0 = pool.acquire(1024, false);
+        retained0.retain();
+        RetainableByteBuffer retained1 = pool.acquire(1024, false);
+        retained1.release();
+        retained1 = pool.acquire(1024, false);
+        retained1.retain();
+
+        assertTrue(pool.remove(reserved1));
+        assertTrue(pool.remove(acquired1));
+        assertTrue(pool.remove(retained1));
+
+        retained1.release();
+
+        assertThat(pool.getHeapByteBufferCount(), is(2L));
+        assertTrue(reserved0.release());
+        assertThat(pool.getHeapByteBufferCount(), is(3L));
+        assertTrue(acquired0.release());
+        assertThat(pool.getHeapByteBufferCount(), is(3L));
+        assertFalse(retained0.release());
+        assertTrue(retained0.release());
+        assertThat(pool.getHeapByteBufferCount(), is(3L));
     }
 }

@@ -20,13 +20,13 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
 
@@ -205,24 +205,33 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         // No bucket, return non-pooled.
         if (bucket == null)
-            return newRetainableByteBuffer(size, direct, null);
+            return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
 
         bucket.recordAcquire();
 
         // Try to acquire a pooled entry.
         Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().acquire();
-        if (entry != null)
+        if (entry == null)
         {
-            bucket.recordPooled();
-            RetainableByteBuffer buffer = entry.getPooled();
-            ((Buffer)buffer).acquire();
-            return buffer;
+            ByteBuffer buffer = BufferUtil.allocate(bucket.getCapacity(), direct);
+            ReservedBuffer reserved = new ReservedBuffer(buffer, bucket);
+            reserved.acquire();
+            return reserved;
         }
 
-        return newRetainableByteBuffer(bucket.getCapacity(), direct, buffer -> reserve(bucket, buffer));
+        bucket.recordPooled();
+        RetainableByteBuffer buffer = entry.getPooled();
+        ((Buffer)buffer).acquire();
+        return buffer;
     }
 
-    private void reserve(RetainedBucket bucket, RetainableByteBuffer buffer)
+    @Override
+    public boolean remove(RetainableByteBuffer buffer)
+    {
+        return buffer instanceof Removable removable && removable.remove();
+    }
+
+    private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
     {
         bucket.recordRelease();
 
@@ -235,12 +244,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         // Add the buffer to the new entry.
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.reset(byteBuffer);
-        Buffer pooledBuffer = new Buffer(byteBuffer, b -> release(bucket, entry));
+        Buffer pooledBuffer = new Buffer(byteBuffer, bucket, entry);
         if (entry.enable(pooledBuffer, false))
         {
-            checkMaxMemory(bucket, buffer.isDirect());
+            checkMaxMemory(bucket, byteBuffer.isDirect());
             return;
         }
 
@@ -268,6 +276,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         // Cannot release, discard this buffer.
         bucket.recordRemove();
         entry.remove();
+    }
+
+    private boolean remove(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer> entry)
+    {
+        // Cannot release, discard this buffer.
+        bucket.recordRemove();
+        return entry.remove();
     }
 
     private void checkMaxMemory(RetainedBucket bucket, boolean direct)
@@ -307,14 +322,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             if (excessMemory <= 0)
                 return;
         }
-    }
-
-    private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer> releaser)
-    {
-        ByteBuffer buffer = BufferUtil.allocate(capacity, direct);
-        Buffer retainableByteBuffer = new Buffer(buffer, releaser);
-        retainableByteBuffer.acquire();
-        return retainableByteBuffer;
     }
 
     public Pool<RetainableByteBuffer> poolFor(int capacity, boolean direct)
@@ -581,15 +588,50 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private static class Buffer extends AbstractRetainableByteBuffer
+    private interface Removable
     {
-        private final Consumer<RetainableByteBuffer> _releaser;
-        private int _usages;
+        boolean remove();
+    }
 
-        private Buffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
+    private class ReservedBuffer extends AbstractRetainableByteBuffer implements Removable
+    {
+        private final RetainedBucket _bucket;
+        private final AtomicBoolean _removed = new AtomicBoolean();
+
+        private ReservedBuffer(ByteBuffer buffer, RetainedBucket bucket)
         {
             super(buffer);
-            this._releaser = releaser;
+            _bucket = Objects.requireNonNull(bucket);
+        }
+
+        @Override
+        public boolean release()
+        {
+            boolean released = super.release();
+            if (released && _removed.compareAndSet(false, true))
+                reserve(_bucket, getByteBuffer());
+            return released;
+        }
+
+        @Override
+        public boolean remove()
+        {
+            super.release();
+            return _removed.compareAndSet(false, true);
+        }
+    }
+
+    private class Buffer extends AbstractRetainableByteBuffer implements Removable
+    {
+        private final RetainedBucket _bucket;
+        private final Pool.Entry<RetainableByteBuffer> _entry;
+        private int _usages;
+
+        private Buffer(ByteBuffer buffer, RetainedBucket bucket, Pool.Entry<RetainableByteBuffer> entry)
+        {
+            super(buffer);
+            _bucket = Objects.requireNonNull(bucket);
+            _entry = Objects.requireNonNull(entry);
         }
 
         @Override
@@ -597,11 +639,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             boolean released = super.release();
             if (released)
-            {
-                if (_releaser != null)
-                    _releaser.accept(this);
-            }
+                ArrayByteBufferPool.this.release(_bucket, _entry);
             return released;
+        }
+
+        @Override
+        public boolean remove()
+        {
+            boolean removed = ArrayByteBufferPool.this.remove(_bucket, _entry);
+            release();
+            return removed;
         }
 
         private int use()
