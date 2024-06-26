@@ -223,6 +223,30 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return buffer;
     }
 
+    @Override
+    public boolean removeAndRelease(RetainableByteBuffer buffer)
+    {
+        RetainableByteBuffer actual = buffer;
+        while (actual instanceof RetainableByteBuffer.Wrapper wrapper)
+            actual = wrapper.getWrapped();
+
+        if (actual instanceof ReservedBuffer reservedBuffer)
+        {
+            // remove the actual reserved buffer, but release the wrapped buffer
+            reservedBuffer.remove();
+            return buffer.release();
+        }
+
+        if (actual instanceof Buffer poolBuffer)
+        {
+            // remove the actual pool buffer, but release the wrapped buffer
+            poolBuffer.remove();
+            return buffer.release();
+        }
+
+        return ByteBufferPool.super.removeAndRelease(buffer);
+    }
+
     private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
     {
         bucket.recordRelease();
@@ -601,11 +625,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return released;
         }
 
-        @Override
-        public boolean remove()
+        boolean remove()
         {
-            _removed.compareAndSet(false, true);
-            return super.release();
+            // Buffer never added to pool, so just prevent future reservation
+            return _removed.compareAndSet(false, true);
         }
     }
 
@@ -631,11 +654,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return released;
         }
 
-        @Override
-        public boolean remove()
+        boolean remove()
         {
-            ArrayByteBufferPool.this.remove(_bucket, _entry);
-            return super.release();
+            return ArrayByteBufferPool.this.remove(_bucket, _entry);
         }
 
         private int use()
@@ -778,29 +799,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                         buffers.remove(this);
                         if (LOG.isDebugEnabled())
                             LOG.debug("released {}", this);
-                    }
-                    releaseStacks.add(new Throwable());
-                    return released;
-                }
-                catch (IllegalStateException e)
-                {
-                    buffers.add(this);
-                    overReleaseStacks.add(new Throwable());
-                    throw e;
-                }
-            }
-
-            @Override
-            public boolean remove()
-            {
-                try
-                {
-                    boolean released = super.remove();
-                    if (released)
-                    {
-                        buffers.remove(this);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("removed {}", this);
                     }
                     releaseStacks.add(new Throwable());
                     return released;

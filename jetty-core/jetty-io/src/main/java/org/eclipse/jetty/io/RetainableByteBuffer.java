@@ -160,18 +160,6 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * {@link #release() Release} the buffer in a way that will remove it from any pool that it may be in.
-     * If the buffer is not in a pool, calling this method is equivalent to calling {@link #release()}.
-     * Calling this method satisfies any contract that requires a call to {@link #release()}.
-     * @return {@code true} if a call to {@link #release()} would have returned {@code true}.
-     * @see #release()
-     */
-    default boolean remove()
-    {
-        return release();
-    }
-
-    /**
      * A wrapper for {@link RetainableByteBuffer} instances
      */
     class Wrapper extends Retainable.Wrapper implements RetainableByteBuffer
@@ -226,12 +214,6 @@ public interface RetainableByteBuffer extends Retainable
         public void clear()
         {
             getWrapped().clear();
-        }
-
-        @Override
-        public boolean remove()
-        {
-            return getWrapped().remove();
         }
     }
 }

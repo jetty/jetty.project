@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpException;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
@@ -198,7 +200,8 @@ public class ErrorHandler implements Request.Handler
 
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         bufferSize = Math.min(8192, bufferSize); // TODO ?
-        RetainableByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
+        ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
+        RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
 
         try
         {
@@ -251,14 +254,14 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
+            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, byteBufferPool, buffer));
 
             return true;
         }
         catch (Throwable x)
         {
             if (buffer != null)
-                buffer.remove();
+                byteBufferPool.removeAndRelease(buffer);
             throw x;
         }
     }
@@ -582,25 +585,31 @@ public class ErrorHandler implements Request.Handler
      */
     private static class WriteErrorCallback implements Callback
     {
-        private final Callback _callback;
+        private final AtomicReference<Callback>  _callback;
+        private final ByteBufferPool _pool;
         private final RetainableByteBuffer _buffer;
 
-        public WriteErrorCallback(Callback callback, RetainableByteBuffer retainable)
+        public WriteErrorCallback(Callback callback, ByteBufferPool pool, RetainableByteBuffer retainable)
         {
-            _callback = callback;
+            _callback = new AtomicReference<>(callback);
+            _pool = pool;
             _buffer = retainable;
         }
 
         @Override
         public void succeeded()
         {
-            ExceptionUtil.callAndThen(_buffer::release, _callback::succeeded);
+            Callback callback = _callback.getAndSet(null);
+            if (callback != null)
+                ExceptionUtil.callAndThen(_buffer::release, callback::succeeded);
         }
 
         @Override
         public void failed(Throwable x)
         {
-            ExceptionUtil.callAndThen(x, t -> _buffer.remove(), _callback::failed);
+            Callback callback = _callback.getAndSet(null);
+            if (callback != null)
+                ExceptionUtil.callAndThen(x, t -> _pool.removeAndRelease(_buffer), callback::failed);
         }
     }
 }
