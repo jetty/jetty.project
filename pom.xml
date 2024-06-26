@@ -273,7 +273,7 @@
     <mina.core.version>2.2.3</mina.core.version>
     <mongo.docker.version>3.2.20</mongo.docker.version>
     <mongodb.version>3.12.14</mongodb.version>
-    <netty.version>4.1.107.Final</netty.version>
+    <netty.version>4.1.109.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -313,7 +313,7 @@
     <tinybundles.version>3.0.0</tinybundles.version>
     <versions.maven.plugin.version>2.16.2</versions.maven.plugin.version>
     <wildfly.common.version>1.7.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.4.1.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.4.2.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.8</xmemcached.version>
   </properties>
 
