@@ -580,32 +580,27 @@ public class ErrorHandler implements Request.Handler
      * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
      * so that the {@link RetainableByteBuffer} used can be released.
      */
-    private static class WriteErrorCallback extends Callback.Nested
+    private static class WriteErrorCallback implements Callback
     {
+        private final Callback _callback;
         private final RetainableByteBuffer _buffer;
 
         public WriteErrorCallback(Callback callback, RetainableByteBuffer retainable)
         {
-            super(callback);
+            _callback = callback;
             _buffer = retainable;
         }
 
         @Override
         public void succeeded()
         {
-            ExceptionUtil.callAndThen(_buffer::release, super::succeeded);
+            ExceptionUtil.callAndThen(_buffer::release, _callback::succeeded);
         }
 
         @Override
         public void failed(Throwable x)
         {
-            ExceptionUtil.callAndThen(_buffer::remove, super::succeeded);
-        }
-
-        @Override
-        public void completed()
-        {
-            _buffer.release();
+            ExceptionUtil.callAndThen(x, t -> _buffer.remove(), _callback::failed);
         }
     }
 }
