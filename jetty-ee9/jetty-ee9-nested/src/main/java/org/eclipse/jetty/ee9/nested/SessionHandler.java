@@ -47,7 +47,6 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
-import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionConfig;
