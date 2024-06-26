@@ -800,7 +800,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     {
                         buffers.remove(this);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("released {}", this);
+                            LOG.debug("removed {}", this);
                     }
                     releaseStacks.add(new Throwable());
                     return released;
