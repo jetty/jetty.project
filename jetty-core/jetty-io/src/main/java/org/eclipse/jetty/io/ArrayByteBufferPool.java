@@ -790,6 +790,29 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 }
             }
 
+            @Override
+            public boolean remove()
+            {
+                try
+                {
+                    boolean released = super.remove();
+                    if (released)
+                    {
+                        buffers.remove(this);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("released {}", this);
+                    }
+                    releaseStacks.add(new Throwable());
+                    return released;
+                }
+                catch (IllegalStateException e)
+                {
+                    buffers.add(this);
+                    overReleaseStacks.add(new Throwable());
+                    throw e;
+                }
+            }
+
             public String dump()
             {
                 StringWriter w = new StringWriter();
