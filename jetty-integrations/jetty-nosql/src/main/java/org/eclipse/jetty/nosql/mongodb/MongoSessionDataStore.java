@@ -182,11 +182,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             if (sessionDocument == null)
                 return null;
 
-            boolean valid = (Boolean)sessionDocument.get(__VALID);
+            Boolean valid = (Boolean)sessionDocument.get(__VALID);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("id={} valid={}", id, valid);
-            if (!valid)
+            if (valid == null || !valid)
                 return null;
 
             Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
