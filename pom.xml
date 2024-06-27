@@ -243,6 +243,7 @@
     <ee8.jsp.impl.version>9.0.90</ee8.jsp.impl.version>
     <ee8.weld.version>3.1.9.Final</ee8.weld.version>-->
 
+<!--
     <ee9.jakarta.activation.api.version>2.0.1</ee9.jakarta.activation.api.version>
     <ee9.jakarta.annotation.api.version>2.0.0</ee9.jakarta.annotation.api.version>
     <ee9.jakarta.authentication.api.version>2.0.0</ee9.jakarta.authentication.api.version>
@@ -257,19 +258,20 @@
     <ee9.jakarta.servlet.jsp.jstl.impl.version>2.0.0</ee9.jakarta.servlet.jsp.jstl.impl.version>
     <ee9.jakarta.transaction-api.version>2.0.1</ee9.jakarta.transaction-api.version>
     <ee9.jakarta.websocket.api.version>2.0.0</ee9.jakarta.websocket.api.version>
-    <!-- TODO: remove? -->
+    &lt;!&ndash; TODO: remove? &ndash;&gt;
     <ee9.jakarta.ws.rs.api.version>3.0.0</ee9.jakarta.ws.rs.api.version>
     <ee9.jakarta.xml.bind.api.version>3.0.1</ee9.jakarta.xml.bind.api.version>
     <ee9.jakarta.xml.bind.impl.version>3.0.2</ee9.jakarta.xml.bind.impl.version>
     <ee9.jakarta.xml.jaxws.impl.version>3.0.2</ee9.jakarta.xml.jaxws.impl.version>
     <ee9.jakarta.xml.ws.api.version>3.0.1</ee9.jakarta.xml.ws.api.version>
-    <!-- TODO: Remove these javax.* entries? -->
+    &lt;!&ndash; TODO: Remove these javax.* entries? &ndash;&gt;
     <ee9.javax.activation.impl.version>1.1.0.v201105071233</ee9.javax.activation.impl.version>
     <ee9.javax.mail.glassfish.version>1.4.1.v201005082020</ee9.javax.mail.glassfish.version>
-    <!-- FIXME we need a separate property for this one -->
+    &lt;!&ndash; FIXME we need a separate property for this one &ndash;&gt;
     <ee9.jetty.servlet.api.version>5.0.2</ee9.jetty.servlet.api.version>
     <ee9.jsp.impl.version>10.0.27</ee9.jsp.impl.version>
     <ee9.weld.version>4.0.3.Final</ee9.weld.version>
+-->
 
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
