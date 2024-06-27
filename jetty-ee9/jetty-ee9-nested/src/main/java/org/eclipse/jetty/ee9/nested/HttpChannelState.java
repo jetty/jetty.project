@@ -158,6 +158,11 @@ public class HttpChannelState
         return _lock.lock();
     }
 
+    boolean isLockHeldByCurrentThread()
+    {
+        return _lock.isHeldByCurrentThread();
+    }
+
     public State getState()
     {
         try (AutoLock l = lock())

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpException;
@@ -39,14 +40,15 @@ import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -198,7 +200,8 @@ public class ErrorHandler implements Request.Handler
 
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         bufferSize = Math.min(8192, bufferSize); // TODO ?
-        RetainableByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
+        ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
+        RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
 
         try
         {
@@ -251,13 +254,14 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
+            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, byteBufferPool, buffer));
 
             return true;
         }
         catch (Throwable x)
         {
-            buffer.release();
+            if (buffer != null)
+                byteBufferPool.removeAndRelease(buffer);
             throw x;
         }
     }
@@ -579,21 +583,33 @@ public class ErrorHandler implements Request.Handler
      * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
      * so that the {@link RetainableByteBuffer} used can be released.
      */
-    private static class WriteErrorCallback extends Callback.Nested
+    private static class WriteErrorCallback implements Callback
     {
-        private final Retainable _retainable;
+        private final AtomicReference<Callback>  _callback;
+        private final ByteBufferPool _pool;
+        private final RetainableByteBuffer _buffer;
 
-        public WriteErrorCallback(Callback callback, Retainable retainable)
+        public WriteErrorCallback(Callback callback, ByteBufferPool pool, RetainableByteBuffer retainable)
         {
-            super(callback);
-            _retainable = retainable;
+            _callback = new AtomicReference<>(callback);
+            _pool = pool;
+            _buffer = retainable;
         }
 
         @Override
-        protected void onCompleted(Throwable cause)
+        public void succeeded()
         {
-            _retainable.release();
-            super.onCompleted(cause);
+            Callback callback = _callback.getAndSet(null);
+            if (callback != null)
+                ExceptionUtil.callAndThen(_buffer::release, callback::succeeded);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            Callback callback = _callback.getAndSet(null);
+            if (callback != null)
+                ExceptionUtil.callAndThen(x, t -> _pool.removeAndRelease(_buffer), callback::failed);
         }
     }
 }
