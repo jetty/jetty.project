@@ -28,6 +28,12 @@
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
       <artifactId>apache-jsp</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.toolchain</groupId>
+          <artifactId>jetty-schemas</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
