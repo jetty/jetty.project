@@ -78,7 +78,7 @@
         <version>1.0.10</version>
         <configuration>
           <h2specContainerName>olamy/h2spec</h2specContainerName>
-          <h2specVersion>latest</h2specVersion>
+          <h2specVersion>2.6.1</h2specVersion>
           <mainClass>org.eclipse.jetty.http2.tests.H2SpecServer</mainClass>
           <skip>${h2spec.skip}</skip>
           <junitPackage>org.eclipse.jetty.h2spec</junitPackage>
