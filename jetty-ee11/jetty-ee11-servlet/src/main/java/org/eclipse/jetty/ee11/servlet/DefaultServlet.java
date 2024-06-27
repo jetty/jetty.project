@@ -53,6 +53,7 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -724,7 +725,7 @@ public class DefaultServlet extends HttpServlet
                 if (isIncluded(request))
                     return;
                 if (cause != null)
-                    request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, cause);
+                    request.setAttribute(ErrorHandler.ERROR_EXCEPTION, cause);
                 response.sendError(statusCode, reason);
             }
             catch (IOException e)

@@ -48,29 +48,19 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ErrorHandler implements Request.Handler
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_MESSAGE;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION;
+
+public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
 {
-    // TODO This class's API needs to be majorly refactored/cleanup
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_CHARSET = "org.eclipse.jetty.server.error_charset";
 
-    boolean _showServlet = true;
-    boolean _showStacks = true;
-    boolean _disableStacks = false;
-    boolean _showMessageInTitle = true;
-    String _cacheControl = "must-revalidate,no-cache,no-store";
-
     public ErrorHandler()
     {
-    }
-
-    public boolean errorPageForMethod(String method)
-    {
-        return switch (method)
-        {
-            case "GET", "POST", "HEAD" -> true;
-            default -> false;
-        };
+        setShowOrigin(true);
+        setShowStacks(true);
+        setShowMessageInTitle(true);
     }
 
     @Override
@@ -82,13 +72,12 @@ public class ErrorHandler implements Request.Handler
             return true;
         }
 
+        generateCacheControl(response);
+
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
         ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
-        String cacheControl = getCacheControl();
-        if (cacheControl != null)
-            response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
 
         // Look for an error page dispatcher
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
@@ -126,7 +115,8 @@ public class ErrorHandler implements Request.Handler
             }
         }
 
-        String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
+        //TODO call core ErrorHandler methods from here on to generate the default error page. Can we even use the methods that pass in the callback??
+        String message = (String)request.getAttribute(ERROR_MESSAGE);
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
         generateAcceptableResponse(servletContextRequest, httpServletRequest, httpServletResponse, response.getStatus(), message);
@@ -166,52 +156,6 @@ public class ErrorHandler implements Request.Handler
                     break;
             }
         }
-    }
-
-    /**
-     * Returns an acceptable writer for an error page.
-     * <p>Uses the user-agent's <code>Accept-Charset</code> to get response
-     * {@link Writer}.  The acceptable charsets are tested in quality order
-     * if they are known to the JVM and the first known is set on
-     * {@link HttpServletResponse#setCharacterEncoding(String)} and the
-     * {@link HttpServletResponse#getWriter()} method used to return a writer.
-     * If there is no <code>Accept-Charset</code> header then
-     * <code>ISO-8859-1</code> is used.  If '*' is the highest quality known
-     * charset, then <code>utf-8</code> is used.
-     * </p>
-     *
-     * @param baseRequest The base request
-     * @param request The servlet request (may be wrapped)
-     * @param response The response (may be wrapped)
-     * @return A {@link Writer} if there is a known acceptable charset or null
-     * @throws IOException if a Writer cannot be returned
-     */
-    @Deprecated
-    protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
-        List<String> acceptable = baseRequest.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
-        if (acceptable.isEmpty())
-        {
-            response.setCharacterEncoding(StandardCharsets.ISO_8859_1.name());
-            return response.getWriter();
-        }
-
-        for (String charset : acceptable)
-        {
-            try
-            {
-                if ("*".equals(charset))
-                    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-                else
-                    response.setCharacterEncoding(Charset.forName(charset).name());
-                return response.getWriter();
-            }
-            catch (Exception e)
-            {
-                LOG.trace("IGNORED", e);
-            }
-        }
-        return null;
     }
 
     /**
@@ -333,12 +277,6 @@ public class ErrorHandler implements Request.Handler
                 else
                     LOG.warn("Error page too large: {} {} {}", code, message, request);
                 baseRequest.getServletContextResponse().resetContent();
-                if (!_disableStacks)
-                {
-                    LOG.info("Disabling showsStacks for {}", this);
-                    _disableStacks = true;
-                    continue;
-                }
                 break;
             }
         }
@@ -349,7 +287,7 @@ public class ErrorHandler implements Request.Handler
 
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message) throws IOException
     {
-        writeErrorPage(request, writer, code, message, _showStacks);
+        writeErrorPage(request, writer, code, message, isShowStacks());
     }
 
     protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks) throws IOException
@@ -390,7 +328,7 @@ public class ErrorHandler implements Request.Handler
         String uri = request.getRequestURI();
 
         writeErrorPageMessage(request, writer, code, message, uri);
-        if (showStacks && !_disableStacks)
+        if (showStacks)
             writeErrorPageStacks(request, writer);
 
         ((ServletApiRequest)request).getServletRequestInfo().getServletChannel().getHttpConfiguration()
@@ -412,7 +350,7 @@ public class ErrorHandler implements Request.Handler
         htmlRow(writer, "URI", uri);
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
-        if (isShowServlet())
+        if (isShowOrigin())
         {
             htmlRow(writer, "SERVLET", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
         }
@@ -447,7 +385,7 @@ public class ErrorHandler implements Request.Handler
         writer.printf("URI: %s%n", request.getRequestURI());
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
-        if (isShowServlet())
+        if (isShowOrigin())
         {
             writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
         }
@@ -455,7 +393,7 @@ public class ErrorHandler implements Request.Handler
         while (cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
-            if (isShowStacks() && !_disableStacks)
+            if (isShowStacks())
             {
                 cause.printStackTrace(writer);
             }
@@ -472,7 +410,7 @@ public class ErrorHandler implements Request.Handler
         json.put("url", request.getRequestURI());
         json.put("status", Integer.toString(code));
         json.put("message", message);
-        if (isShowServlet() && servlet != null)
+        if (isShowOrigin() && servlet != null)
         {
             json.put("servlet", servlet.toString());
         }
@@ -504,103 +442,6 @@ public class ErrorHandler implements Request.Handler
             }
             writer.write("</pre>\n");
         }
-    }
-
-    /**
-     * Bad Message Error body
-     * <p>Generate an error response body to be sent for a bad message.
-     * In this case there is something wrong with the request, so either
-     * a request cannot be built, or it is not safe to build a request.
-     * This method allows for a simple error page body to be returned
-     * and some response headers to be set.
-     *
-     * @param status The error code that will be sent
-     * @param reason The reason for the error code (may be null)
-     * @param fields The header fields that will be sent with the response.
-     * @return The content as a ByteBuffer, or null for no body.
-     */
-    public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)
-    {
-        if (reason == null)
-            reason = HttpStatus.getMessage(status);
-        if (HttpStatus.hasNoBody(status))
-            return BufferUtil.EMPTY_BUFFER;
-        fields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.asString());
-        return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
-    }
-
-    /**
-     * Get the cacheControl.
-     *
-     * @return the cacheControl header to set on error responses.
-     */
-    public String getCacheControl()
-    {
-        return _cacheControl;
-    }
-
-    /**
-     * Set the cacheControl.
-     *
-     * @param cacheControl the cacheControl header to set on error responses.
-     */
-    public void setCacheControl(String cacheControl)
-    {
-        _cacheControl = cacheControl;
-    }
-
-    /**
-     * @return True if the error page will show the Servlet that generated the error
-     */
-    public boolean isShowServlet()
-    {
-        return _showServlet;
-    }
-
-    /**
-     * @param showServlet True if the error page will show the Servlet that generated the error
-     */
-    public void setShowServlet(boolean showServlet)
-    {
-        _showServlet = showServlet;
-    }
-
-    /**
-     * @return True if stack traces are shown in the error pages
-     */
-    public boolean isShowStacks()
-    {
-        return _showStacks;
-    }
-
-    /**
-     * @param showStacks True if stack traces are shown in the error pages
-     */
-    public void setShowStacks(boolean showStacks)
-    {
-        _showStacks = showStacks;
-    }
-
-    /**
-     * Set if true, the error message appears in page title.
-     * @param showMessageInTitle if true, the error message appears in page title
-     */
-    public void setShowMessageInTitle(boolean showMessageInTitle)
-    {
-        _showMessageInTitle = showMessageInTitle;
-    }
-
-    public boolean getShowMessageInTitle()
-    {
-        return _showMessageInTitle;
-    }
-
-    protected void write(Writer writer, String string) throws IOException
-    {
-        if (string == null)
-            return;
-
-        writer.write(StringUtil.sanitizeXmlString(string));
     }
 
     public interface ErrorPageMapper

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpException;
@@ -67,12 +68,14 @@ public class ErrorHandler implements Request.Handler
     public static final String ERROR_MESSAGE = "org.eclipse.jetty.server.error_message";
     public static final String ERROR_EXCEPTION = "org.eclipse.jetty.server.error_exception";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
+    public static final String ERROR_ORIGIN = "org.eclipse.jetty.server.error_origin";
     public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD");
     public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     boolean _showStacks = false;
     boolean _showCauses = false;
     boolean _showMessageInTitle = true;
+    boolean _showOrigin = false;
     String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
@@ -90,8 +93,8 @@ public class ErrorHandler implements Request.Handler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("handle({}, {}, {})", request, response, callback);
-        if (_cacheControl != null)
-            response.getHeaders().put(_cacheControl);
+
+        generateCacheControl(response);
 
         int code = response.getStatus();
         String message = (String)request.getAttribute(ERROR_MESSAGE);
@@ -115,6 +118,12 @@ public class ErrorHandler implements Request.Handler
             generateResponse(request, response, code, message, cause, callback);
         }
         return true;
+    }
+
+    protected void generateCacheControl(Response response)
+    {
+        if (_cacheControl != null && response != null)
+            response.getHeaders().put(_cacheControl);
     }
 
     protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
@@ -322,6 +331,8 @@ public class ErrorHandler implements Request.Handler
         htmlRow(writer, "URI", uri);
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
+        if (_showOrigin)
+            htmlRow(writer, "ORIGIN", request.getAttribute(ERROR_ORIGIN));
         while (_showCauses && cause != null)
         {
             htmlRow(writer, "CAUSED BY", cause);
@@ -355,6 +366,8 @@ public class ErrorHandler implements Request.Handler
         writer.printf("URI: %s%n", request.getHttpURI());
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
+        writeErrorOrigin(writer, (String)request.getAttribute(ERROR_ORIGIN), (o) -> writer.printf("ORIGIN: %s%n", o));
+
         while (_showCauses && cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
@@ -364,6 +377,12 @@ public class ErrorHandler implements Request.Handler
         }
     }
 
+    protected void writeErrorOrigin(String origin, Consumer<String> consumer)
+    {
+        if (_showOrigin && origin != null)
+            consumer.accept(origin);
+    }
+
     protected void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
     {
         Map<String, String> json = new HashMap<>();
@@ -371,6 +390,8 @@ public class ErrorHandler implements Request.Handler
         json.put("url", request.getHttpURI().toString());
         json.put("status", Integer.toString(code));
         json.put("message", message);
+        if (_showOrigin)
+            json.put("origin", (String)request.getAttribute(ERROR_ORIGIN));
         int c = 0;
         while (_showCauses && cause != null)
         {
@@ -489,6 +510,16 @@ public class ErrorHandler implements Request.Handler
     public void setShowMessageInTitle(boolean showMessageInTitle)
     {
         _showMessageInTitle = showMessageInTitle;
+    }
+
+    public boolean isShowOrigin()
+    {
+        return _showOrigin;
+    }
+
+    public void setShowOrigin(boolean showOrigin)
+    {
+        _showOrigin = showOrigin;
     }
 
     /**
