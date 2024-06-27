@@ -287,7 +287,7 @@
     <jolokia.version>1.7.2</jolokia.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.5.1</json-smart.version>
-    <jsp.impl.version>9.0.83.1</jsp.impl.version>
+    <jsp.impl.version>9.0.90</jsp.impl.version>
     <junit.version>5.10.2</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <license.maven.plugin.version>4.5</license.maven.plugin.version>
