@@ -53,7 +53,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -77,6 +76,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -92,6 +92,7 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerVal
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -102,7 +103,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class ResourceServletTest
+public class DefaultServletTest
 {
     public WorkDir workDir;
 
@@ -150,125 +151,68 @@ public class ResourceServletTest
         server.join();
     }
 
-    public static Stream<Arguments> getTests()
+    @Test
+    public void testGet() throws Exception
     {
-        return Stream.of(
-            Arguments.of(null, "file.txt", "/", null, "file.txt"),
-            Arguments.of(null, "dir/file.txt", "/", null, "dir/file.txt"),
+        Path file = docRoot.resolve("file.txt");
 
-            Arguments.of(null, "file.txt", "/*", null, "file.txt"),
-            Arguments.of(null, "dir/file.txt", "/*", null, "dir/file.txt"),
-
-            Arguments.of("dir", "dir/file.txt", "/dir/*", null, "dir/file.txt"),
-            Arguments.of("dir", "dir/file.txt", "/dir/*", true, "dir/file.txt"),
-            Arguments.of(null, "dir/file.txt", "/dir/*", false, "dir/file.txt"),
-            Arguments.of(".", "dir/file.txt", "/dir/*", false, "dir/file.txt"),
-
-            Arguments.of(null, "file.txt", "/file.txt", null, "file.txt"),
-            Arguments.of(null, "dir/file.txt", "/dir/file.txt", null, "dir/file.txt"),
-
-            Arguments.of(null, "file.txt", "*.txt", null, "file.txt"),
-            Arguments.of(null, "dir/file.txt", "*.txt", null, "dir/file.txt")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("getTests")
-    public void testGet(String baseResource, String resourceInContext, String mapping, Boolean pathInfoOnly, String pathInContext) throws Exception
-    {
-        Path file = docRoot.resolve(resourceInContext);
-        Path directory = file.getParent();
-        if (!directory.equals(docRoot) && !Files.exists(directory))
-            Files.createDirectories(directory);
-
-        ServletHolder servletHolder = context.addServlet(ResourceServlet.class, mapping);
-        if (StringUtil.isNotBlank(baseResource))
-            servletHolder.getInitParameters().put("baseResource", baseResource);
-        if (pathInfoOnly != null)
-            servletHolder.getInitParameters().put("pathInfoOnly", String.valueOf(pathInfoOnly));
+        context.addServlet(DefaultServlet.class, "/");
 
         String rawResponse;
         HttpTester.Response response;
 
         rawResponse = connector.getResponse("""
-            GET /context/%s HTTP/1.1\r
+            GET /context/file.txt HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
-            """.formatted(pathInContext));
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         Files.writeString(file, "How now brown cow", UTF_8);
 
         rawResponse = connector.getResponse("""
-            GET /context/%s HTTP/1.1\r
+            GET /context/file.txt HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
-            """.formatted(pathInContext));
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("How now brown cow"));
     }
 
-    @ParameterizedTest
-    @MethodSource("getTests")
-    public void testHead(String baseResource, String resourceInContext, String mapping, Boolean pathInfoOnly, String pathInContext) throws Exception
+    @Test
+    public void testHead() throws Exception
     {
-        Path file = docRoot.resolve(resourceInContext);
-        Path directory = file.getParent();
-        if (!directory.equals(docRoot) && !Files.exists(directory))
-            Files.createDirectories(directory);
+        Path file = docRoot.resolve("file.txt");
 
-        ServletHolder servletHolder = context.addServlet(ResourceServlet.class, mapping);
-        if (StringUtil.isNotBlank(baseResource))
-            servletHolder.getInitParameters().put("baseResource", baseResource);
-        if (pathInfoOnly != null)
-            servletHolder.getInitParameters().put("pathInfoOnly", String.valueOf(pathInfoOnly));
+        context.addServlet(DefaultServlet.class, "/");
 
         String rawResponse;
-        String headResponse;
         HttpTester.Response response;
 
         rawResponse = connector.getResponse("""
-            GET /context/%s HTTP/1.1\r
+            HEAD /context/file.txt HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
-            """.formatted(pathInContext));
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-
-        headResponse = connector.getResponse("""
-            HEAD /context/%s HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """.formatted(pathInContext));
-
-        assertThat(rawResponse.replaceFirst("Date: .* GMT", "Date: yyyy-mm-dd"), startsWith(headResponse.replaceFirst("Date: .* GMT", "Date: yyyy-mm-dd")));
-
 
         Files.writeString(file, "How now brown cow", UTF_8);
 
         rawResponse = connector.getResponse("""
-            GET /context/%s HTTP/1.1\r
+            HEAD /context/file.txt HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
-            """.formatted(pathInContext));
+            """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
-
-        headResponse = connector.getResponse("""
-            HEAD /context/%s HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """.formatted(pathInContext));
-        assertThat(rawResponse.replaceFirst("Date: .* GMT", "Date: yyyy-mm-dd"), startsWith(headResponse.replaceFirst("Date: .* GMT", "Date: yyyy-mm-dd")));
+        assertThat(response.toString(), response.getContent(), emptyString());
     }
 
     @Test
@@ -276,7 +220,7 @@ public class ResourceServletTest
     {
         Path file = docRoot.resolve("file.txt");
 
-        context.addServlet(ResourceServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/");
 
         String rawResponse;
         HttpTester.Response response;
@@ -309,7 +253,7 @@ public class ResourceServletTest
     @Test
     public void testTrace() throws Exception
     {
-        context.addServlet(ResourceServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/");
 
         String rawResponse;
         HttpTester.Response response;
@@ -327,7 +271,7 @@ public class ResourceServletTest
     @Test
     public void testOptions() throws Exception
     {
-        context.addServlet(ResourceServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/");
 
         String rawResponse;
         HttpTester.Response response;
@@ -359,7 +303,7 @@ public class ResourceServletTest
         }
 
         context.setDefaultResponseCharacterEncoding("utf-8");
-        context.addServlet(ResourceServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/");
 
         String rawResponse;
         HttpTester.Response response;
@@ -385,7 +329,7 @@ public class ResourceServletTest
         Path file = docRoot.resolve("file.txt");
         Files.writeString(file, "How now brown cow", UTF_8);
 
-        context.addServlet(ResourceServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/");
 
         String rawResponse;
         HttpTester.Response response;
@@ -433,10 +377,10 @@ public class ResourceServletTest
     @Test
     public void testListingWithSession() throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
 
         /* create some content in the docroot */
         FS.ensureDirExists(docRoot.resolve("one"));
@@ -464,10 +408,10 @@ public class ResourceServletTest
     @Test
     public void testListingXSS() throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
 
         /* create some content in the docroot */
         Path one = docRoot.resolve("one");
@@ -512,10 +456,10 @@ public class ResourceServletTest
     @Test
     public void testListingWithQuestionMarks() throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
 
         /* create some content in the docroot */
         FS.ensureDirExists(docRoot.resolve("one"));
@@ -540,8 +484,8 @@ public class ResourceServletTest
     @Test
     public void testSimpleListing() throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
+        defHolder.setInitParameter("dirAllowed", "true");
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -560,8 +504,8 @@ public class ResourceServletTest
     @Test
     public void testIncludeListingAllowed() throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
+        defHolder.setInitParameter("dirAllowed", "true");
 
         /* create a file with a non-fully ASCII name in the docroot */
         Files.writeString(docRoot.resolve("numéros-en-français.txt"), "un deux trois", StandardCharsets.ISO_8859_1);
@@ -600,8 +544,8 @@ public class ResourceServletTest
     @Test
     public void testIncludeListingForbidden() throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
+        defHolder.setInitParameter("dirAllowed", "false");
 
         ServletHolder incHolder = new ServletHolder();
         incHolder.setInstance(new HttpServlet()
@@ -640,10 +584,10 @@ public class ResourceServletTest
     @Test
     public void testListingFilenamesOnly() throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
 
         /* create some content in the docroot */
         FS.ensureDirExists(docRoot);
@@ -656,7 +600,7 @@ public class ResourceServletTest
         FS.ensureDirExists(docRoot.resolve("three"));
 
         String resBasePath = docRoot.toAbsolutePath().toString();
-        holder.setInitParameter("baseResource", resBasePath);
+        defholder.setInitParameter("baseResource", resBasePath);
 
         String req1 = """
             GET /context/one/deep/ HTTP/1.1\r
@@ -687,11 +631,11 @@ public class ResourceServletTest
         String extraResourceBaseString = extraResource.toURI().toASCIIString();
         extraResourceBaseString = extraResourceBaseString.substring(0, extraResourceBaseString.length() - "/one".length());
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/extra/*");
-        holder.setInitParameter("resourceBase", extraResourceBaseString);
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/extra/*");
+        defholder.setInitParameter("resourceBase", extraResourceBaseString);
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
 
         String rawRequest;
         String rawResponse;
@@ -778,10 +722,10 @@ public class ResourceServletTest
     @Test
     public void testListingProperUrlEncoding() throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
 
         /* create some content in the docroot */
 
@@ -1058,11 +1002,11 @@ public class ResourceServletTest
     @MethodSource("contextBreakoutScenarios")
     public void testListingContextBreakout(Scenario scenario) throws Exception
     {
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("gzip", "false");
-        holder.setInitParameter("aliases", "true");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("gzip", "false");
+        defholder.setInitParameter("aliases", "true");
 
         /* create some content in the docroot */
 
@@ -1177,15 +1121,15 @@ public class ResourceServletTest
         Files.writeString(three.resolve("index.html"), "<h1>Three Index</h1>", UTF_8);
         Files.writeString(three.resolve("index.htm"), "<h1>Three Inde</h1>", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
 
-        holder.setInitParameter("maxCacheSize", "1024000");
-        holder.setInitParameter("maxCachedFileSize", "512000");
-        holder.setInitParameter("maxCachedFiles", "100");
+        defholder.setInitParameter("maxCacheSize", "1024000");
+        defholder.setInitParameter("maxCachedFileSize", "512000");
+        defholder.setInitParameter("maxCachedFiles", "100");
 
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
         context.addServlet(jspholder, "/index.jsp");
@@ -1198,7 +1142,7 @@ public class ResourceServletTest
     }
 
     @Test
-    public void testWelcomeMultipleResourceServletsDifferentBases() throws Exception
+    public void testWelcomeMultipleDefaultServletsDifferentBases() throws Exception
     {
         Path dir = docRoot.resolve("dir");
         FS.ensureDirExists(dir);
@@ -1211,25 +1155,25 @@ public class ResourceServletTest
         Path altInde = altDir.resolve("index.htm");
         Path altIndex = altDir.resolve("index.html");
 
-        ServletHolder altholder = context.addServlet(ResourceServlet.class, "/alt/*");
+        ServletHolder altholder = context.addServlet(DefaultServlet.class, "/alt/*");
         altholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
         altholder.setInitParameter("dirAllowed", "false");
         altholder.setInitParameter("redirectWelcome", "false");
         altholder.setInitParameter("welcomeServlets", "false");
         altholder.setInitParameter("gzip", "false");
 
-        ServletHolder otherholder = context.addServlet(ResourceServlet.class, "/other/*");
+        ServletHolder otherholder = context.addServlet(DefaultServlet.class, "/other/*");
         otherholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
         otherholder.setInitParameter("dirAllowed", "true");
         otherholder.setInitParameter("redirectWelcome", "false");
         otherholder.setInitParameter("welcomeServlets", "false");
         otherholder.setInitParameter("gzip", "false");
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
 
         @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
@@ -1392,8 +1336,8 @@ public class ResourceServletTest
         Path altRoot = workDir.getEmptyPathDir().resolve("altroot");
         FS.ensureDirExists(altRoot);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/alt/*");
-        holder.setInitParameter("resourceBase", altRoot.toAbsolutePath().toUri().toASCIIString());
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        defholder.setInitParameter("resourceBase", altRoot.toAbsolutePath().toUri().toASCIIString());
 
         Path file = altRoot.resolve("file.txt");
         Files.writeString(file, "How now brown cow", UTF_8);
@@ -1415,8 +1359,8 @@ public class ResourceServletTest
         Path alt = docRoot.resolve("alt");
         FS.ensureDirExists(alt);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/alt/*");
-        holder.setInitParameter("resourceBase", "alt");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        defholder.setInitParameter("resourceBase", "alt");
 
         Path file = alt.resolve("file.txt");
         Files.writeString(file, "How now brown cow", UTF_8);
@@ -1438,11 +1382,11 @@ public class ResourceServletTest
         Path altRoot = workDir.getPath().resolve("altroot");
         FS.ensureDirExists(altRoot);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/alt/*");
-        holder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "true");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        defholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "true");
 
         ServletHolder gwholder = new ServletHolder("gateway", new HttpServlet()
         {
@@ -1513,14 +1457,14 @@ public class ResourceServletTest
         Path inde = dir.resolve("index.htm");
         Path index = dir.resolve("index.html");
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "true");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
-        holder.setInitParameter("maxCacheSize", "1024000");
-        holder.setInitParameter("maxCachedFileSize", "512000");
-        holder.setInitParameter("maxCachedFiles", "100");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
+        defholder.setInitParameter("maxCacheSize", "1024000");
+        defholder.setInitParameter("maxCachedFileSize", "512000");
+        defholder.setInitParameter("maxCachedFiles", "100");
 
         @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
@@ -1606,15 +1550,15 @@ public class ResourceServletTest
         context.addAliasCheck((p, r) -> true);
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(true);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "true");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
 
-        holder.setInitParameter("maxCacheSize", "1024000");
-        holder.setInitParameter("maxCachedFileSize", "512000");
-        holder.setInitParameter("maxCachedFiles", "100");
+        defholder.setInitParameter("maxCacheSize", "1024000");
+        defholder.setInitParameter("maxCachedFileSize", "512000");
+        defholder.setInitParameter("maxCachedFiles", "100");
 
         String rawResponse;
         HttpTester.Response response;
@@ -1662,11 +1606,11 @@ public class ResourceServletTest
         Path index = dir.resolve("index.html");
         Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "true");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
 
         String rawResponse;
         HttpTester.Response response;
@@ -1713,11 +1657,11 @@ public class ResourceServletTest
         Path index = dir.resolve("index.html");
         Files.writeString(index, "<h1>Hello Index</h1>", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "true");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
 
         String rawResponse;
         HttpTester.Response response;
@@ -1749,11 +1693,11 @@ public class ResourceServletTest
         Path inde = docRoot.resolve("index.htm");
         Path index = docRoot.resolve("index.html");
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "true");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "true");
+        defholder.setInitParameter("gzip", "false");
 
         @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
@@ -1833,8 +1777,8 @@ public class ResourceServletTest
         Path rLink = dir.resolve("rlink.txt");
         Files.writeString(foobar, "Foo Bar", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("gzip", "false");
 
         String rawResponse;
         HttpTester.Response response;
@@ -2014,11 +1958,11 @@ public class ResourceServletTest
         Files.writeString(three.resolve("index.html"), "<h1>Three Index</h1>", UTF_8);
         Files.writeString(three.resolve("index.htm"), "<h1>Three Inde</h1>", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "exact");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "exact");
+        defholder.setInitParameter("gzip", "false");
 
         ServletHolder jspholder = context.addServlet(NoJspServlet.class, "*.jsp");
         context.addServlet(jspholder, "/index.jsp");
@@ -2030,6 +1974,7 @@ public class ResourceServletTest
             scenario.extraAsserts.accept(response);
     }
 
+    @Disabled("Disabled until fix for HttpContent merged")
     @Test
     public void testDirectFromResourceHttpContent() throws Exception
     {
@@ -2037,13 +1982,13 @@ public class ResourceServletTest
         Path index = docRoot.resolve("index.html");
         Files.writeString(index, "<h1>Hello World</h1>", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("useFileMappedBuffer", "true");
-        holder.setInitParameter("welcomeServlets", "exact");
-        holder.setInitParameter("gzip", "false");
-        holder.setInitParameter("resourceCache", "resourceCache");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "true");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("useFileMappedBuffer", "true");
+        defholder.setInitParameter("welcomeServlets", "exact");
+        defholder.setInitParameter("gzip", "false");
+        defholder.setInitParameter("resourceCache", "resourceCache");
 
         String rawResponse;
         HttpTester.Response response;
@@ -2058,10 +2003,9 @@ public class ResourceServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
 
-        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
-
         /*
         TODO: fix after HttpContent changes.
+        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
         HttpContent content = factory.getContent("/index.html", 200);
         ByteBuffer buffer = content.getDirectBuffer();
         assertThat("Buffer is direct", buffer.isDirect(), is(true));
@@ -2316,12 +2260,12 @@ public class ResourceServletTest
         Path nofilesuffix = docRoot.resolve("nofilesuffix");
         Files.writeString(nofilesuffix, "01234567890123456789012345678901234567890123456789012345678901234567890123456789", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
-        holder.setInitParameter("acceptRanges", "true");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
+        defholder.setInitParameter("acceptRanges", "true");
 
         String rawResponse = connector.getResponse(scenario.rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -2340,18 +2284,18 @@ public class ResourceServletTest
     }
 
     /**
-     * Test ResourceServlet responses that are not influenced by Servlet Filters.
+     * Test DefaultServlet responses that are not influenced by Servlet Filters.
      */
     @Test
     public void testNotFiltered() throws Exception
     {
         setupFilteredContent(docRoot);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
 
         String rawResponse = connector.getResponse("""
             GET /context/data0.txt HTTP/1.1\r
@@ -2371,18 +2315,18 @@ public class ResourceServletTest
     }
 
     /**
-     * Test ResourceServlet responses that are influenced by Servlet Filters.
+     * Test DefaultServlet responses that are influenced by Servlet Filters.
      */
     @Test
     public void testOutputStreamAndCharsetFiltered() throws Exception
     {
         setupFilteredContent(docRoot);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
 
         context.addFilter(OutputFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
@@ -2414,18 +2358,18 @@ public class ResourceServletTest
     }
 
     /**
-     * Test ResourceServlet responses that are influenced by Servlet Filters.
+     * Test DefaultServlet responses that are influenced by Servlet Filters.
      */
     @Test
     public void testWriterAndCharsetFiltered() throws Exception
     {
         setupFilteredContent(docRoot);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "false");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
 
         context.addFilter(WriterFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         server.start();
@@ -2452,12 +2396,12 @@ public class ResourceServletTest
         Path file0gz = docRoot.resolve("data0.txt.gz");
         Files.writeString(file0gz, "fake gzip", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "true");
-        holder.setInitParameter("etags", "true");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "true");
+        defholder.setInitParameter("etags", "true");
 
         String rawResponse;
         HttpTester.Response response;
@@ -2602,16 +2546,16 @@ public class ResourceServletTest
         Path file0gz = docRoot.resolve("data0.txt.gz");
         Files.writeString(file0gz, "fake gzip", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("gzip", "true");
-        holder.setInitParameter("etags", "true");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "true");
+        defholder.setInitParameter("etags", "true");
 
-        holder.setInitParameter("maxCachedFiles", "1024");
-        holder.setInitParameter("maxCachedFileSize", "200000000");
-        holder.setInitParameter("maxCacheSize", "256000000");
+        defholder.setInitParameter("maxCachedFiles", "1024");
+        defholder.setInitParameter("maxCachedFileSize", "200000000");
+        defholder.setInitParameter("maxCacheSize", "256000000");
 
         String rawResponse;
         HttpTester.Response response;
@@ -2725,12 +2669,12 @@ public class ResourceServletTest
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
         Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("precompressed", "true");
-        holder.setInitParameter("etags", "true");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("precompressed", "true");
+        defholder.setInitParameter("etags", "true");
 
         String rawResponse;
         HttpTester.Response response;
@@ -2862,16 +2806,16 @@ public class ResourceServletTest
         Files.writeString(docRoot.resolve("data0.txt"), "Hello Text 0", UTF_8);
         Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "false");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("welcomeServlets", "false");
-        holder.setInitParameter("precompressed", "true");
-        holder.setInitParameter("etags", "true");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("precompressed", "true");
+        defholder.setInitParameter("etags", "true");
 
-        holder.setInitParameter("maxCachedFiles", "1024");
-        holder.setInitParameter("maxCachedFileSize", "200000000");
-        holder.setInitParameter("maxCacheSize", "256000000");
+        defholder.setInitParameter("maxCachedFiles", "1024");
+        defholder.setInitParameter("maxCachedFileSize", "200000000");
+        defholder.setInitParameter("maxCacheSize", "256000000");
 
         String rawResponse;
         HttpTester.Response response;
@@ -2986,9 +2930,9 @@ public class ResourceServletTest
         Files.writeString(docRoot.resolve("data0.txt.br"), "fake brotli", UTF_8);
         Files.writeString(docRoot.resolve("data0.txt.gz"), "fake gzip", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("precompressed", "true");
-        holder.setInitParameter("resourceBase", docRoot.toString());
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("precompressed", "true");
+        defholder.setInitParameter("resourceBase", docRoot.toString());
 
         String rawResponse;
         HttpTester.Response response;
@@ -3035,9 +2979,9 @@ public class ResourceServletTest
         Files.writeString(docRoot.resolve("data0.txt.gz"), "fake gzip", UTF_8);
         Files.writeString(docRoot.resolve("data0.txt.bz2"), "fake bzip2", UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
-        holder.setInitParameter("resourceBase", docRoot.toString());
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
+        defholder.setInitParameter("resourceBase", docRoot.toString());
 
         String rawResponse;
         HttpTester.Response response;
@@ -3085,14 +3029,14 @@ public class ResourceServletTest
         Files.writeString(docRoot.resolve("data0.txt.gz"), "fake gzip", UTF_8);
         Files.writeString(docRoot.resolve("data0.txt.bz2"), "fake bzip2", UTF_8);
 
-        ResourceServlet resourceServlet = new ResourceServlet();
-        ServletHolder holder = new ServletHolder(resourceServlet)
+        DefaultServlet defaultServlet = new DefaultServlet();
+        ServletHolder defholder = new ServletHolder(defaultServlet)
         {
             @Override
             public void initialize() throws Exception
             {
                 super.initialize();
-                ResourceService resourceService = resourceServlet.getResourceService();
+                ResourceService resourceService = defaultServlet.getResourceService();
                 resourceService.setPrecompressedFormats(List.of(
                     new CompressedContentFormat("bzip2", ".bz2"),
                     new CompressedContentFormat("gzip", ".gz"),
@@ -3101,8 +3045,8 @@ public class ResourceServletTest
             }
         };
 
-        context.addServlet(holder, "/");
-        holder.setInitParameter("resourceBase", docRoot.toString());
+        context.addServlet(defholder, "/");
+        defholder.setInitParameter("resourceBase", docRoot.toString());
 
         String rawResponse;
         HttpTester.Response response;
@@ -3147,8 +3091,8 @@ public class ResourceServletTest
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         FS.ensureDirExists(docRoot);
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
 
         try (StacklessLogging ignore = new StacklessLogging(ResourceService.class))
         {
@@ -3173,12 +3117,12 @@ public class ResourceServletTest
     {
         Path file = docRoot.resolve("file.txt");
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
 
-        holder.setInitParameter("maxCacheSize", "4096");
-        holder.setInitParameter("maxCachedFileSize", "25");
-        holder.setInitParameter("maxCachedFiles", "100");
-        holder.setInitParameter("cacheValidationTime", "0");
+        defholder.setInitParameter("maxCacheSize", "4096");
+        defholder.setInitParameter("maxCachedFileSize", "25");
+        defholder.setInitParameter("maxCachedFiles", "100");
+        defholder.setInitParameter("cacheValidationTime", "0");
 
         String rawResponse;
         HttpTester.Response response;
@@ -3266,12 +3210,12 @@ public class ResourceServletTest
     {
         Files.writeString(docRoot.resolve("file.txt"), content, UTF_8);
 
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
 
-        holder.setInitParameter("maxCacheSize", "4096");
-        holder.setInitParameter("maxCachedFileSize", "25");
-        holder.setInitParameter("maxCachedFiles", "100");
-        holder.setInitParameter("etags", "true");
+        defholder.setInitParameter("maxCacheSize", "4096");
+        defholder.setInitParameter("maxCachedFileSize", "25");
+        defholder.setInitParameter("maxCachedFiles", "100");
+        defholder.setInitParameter("etags", "true");
 
         String rawResponse;
         HttpTester.Response response;
@@ -3374,7 +3318,7 @@ public class ResourceServletTest
     {
         FS.ensureEmpty(docRoot);
 
-        context.addServlet(ResourceServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/");
         context.addAliasCheck(new AllowedResourceAliasChecker(context));
 
         // Create file with UTF-8 NFC format
@@ -3424,7 +3368,7 @@ public class ResourceServletTest
     {
         FS.ensureEmpty(docRoot);
 
-        context.addServlet(ResourceServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/");
         context.addAliasCheck(new AllowedResourceAliasChecker(context));
 
         // Create file with UTF-8 NFD format
@@ -3492,7 +3436,7 @@ public class ResourceServletTest
         ServletHolder indexServlet = new ServletHolder("index-servlet", new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.setContentType("text/plain");
                 resp.setCharacterEncoding("UTF-8");
@@ -3510,14 +3454,14 @@ public class ResourceServletTest
 
         Path docroot = MavenTestingUtils.getTestResourcePath("docroot");
 
-        ServletHolder slashHolder = new ServletHolder("default", new ResourceServlet());
+        ServletHolder slashHolder = new ServletHolder("default", new DefaultServlet());
         slashHolder.setInitParameter("redirectWelcome", "false");
         slashHolder.setInitParameter("welcomeServlets", "true");
         slashHolder.setInitParameter("baseResource", docroot.toAbsolutePath().toString());
         context.addServlet(slashHolder, "/");
 
         Path altroot = MavenTestingUtils.getTestResourcePath("altroot");
-        ServletHolder rHolder = new ServletHolder("alt", new ResourceServlet());
+        ServletHolder rHolder = new ServletHolder("alt", new DefaultServlet());
         rHolder.setInitParameter("redirectWelcome", "false");
         rHolder.setInitParameter("welcomeServlets", "true");
         rHolder.setInitParameter("pathInfoOnly", "false");
@@ -3548,9 +3492,9 @@ public class ResourceServletTest
         ResourceFactory resourceFactory = ResourceFactory.of(context);
         context.setBaseResource(resourceFactory.newResource(suffixroot.toUri()));
 
-        ServletHolder holderAlt = new ServletHolder("static-js", ResourceServlet.class);
+        ServletHolder holderAlt = new ServletHolder("static-js", DefaultServlet.class);
         context.addServlet(holderAlt, "*.js");
-        ServletHolder holderDef = new ServletHolder("default", ResourceServlet.class);
+        ServletHolder holderDef = new ServletHolder("default", DefaultServlet.class);
         holderDef.setInitParameter("dirAllowed", "true");
         context.addServlet(holderDef, "/");
 
@@ -3563,9 +3507,9 @@ public class ResourceServletTest
     public void testMemoryResourceRange() throws Exception
     {
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
-        ResourceServlet resourceServlet = new ResourceServlet();
-        context.addServlet(new ServletHolder(resourceServlet), "/");
-        resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3584,9 +3528,9 @@ public class ResourceServletTest
     public void testMemoryResourceRangeUsingBufferedHttpContent() throws Exception
     {
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
-        ResourceServlet resourceServlet = new ResourceServlet();
-        context.addServlet(new ServletHolder(resourceServlet), "/");
-        resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
             final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
@@ -3614,9 +3558,9 @@ public class ResourceServletTest
     public void testMemoryResourceMultipleRanges() throws Exception
     {
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
-        ResourceServlet resourceServlet = new ResourceServlet();
-        context.addServlet(new ServletHolder(resourceServlet), "/");
-        resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3638,9 +3582,9 @@ public class ResourceServletTest
     public void testMemoryResourceMultipleRangesUsingBufferedHttpContent() throws Exception
     {
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
-        ResourceServlet resourceServlet = new ResourceServlet();
-        context.addServlet(new ServletHolder(resourceServlet), "/");
-        resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
             final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
@@ -3671,10 +3615,10 @@ public class ResourceServletTest
     public void testNotAcceptRanges() throws Exception
     {
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
-        ResourceServlet resourceServlet = new ResourceServlet();
-        context.addServlet(new ServletHolder(resourceServlet), "/");
-        resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
-        resourceServlet.getResourceService().setAcceptRanges(false);
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setAcceptRanges(false);
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3703,11 +3647,6 @@ public class ResourceServletTest
             response.getWriter().println("Extra Info");
             response.setCharacterEncoding("utf-8");
             chain.doFilter(request, response);
-        }
-
-        @Override
-        public void destroy()
-        {
         }
     }
 

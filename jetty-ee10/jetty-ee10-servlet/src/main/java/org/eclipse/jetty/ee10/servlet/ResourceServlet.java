@@ -191,7 +191,9 @@ public class ResourceServlet extends HttpServlet
         {
             try
             {
-                baseResource = URIUtil.isRelative(rb) ? contextHandler.getBaseResource().resolve(rb) :  contextHandler.newResource(rb);
+                baseResource = URIUtil.isRelative(rb) ? baseResource.resolve(rb) :  contextHandler.newResource(rb);
+                if (baseResource.isAlias())
+                    baseResource = contextHandler.newResource(baseResource.getRealURI());
             }
             catch (Exception e)
             {
