@@ -1,4 +1,5 @@
-jetty-10.0.22-SNAPSHOT
+jetty-10.0.22 - 27 June 2024
+ + 11917 Update XML configure.dtd locations to new jetty.org website
 
 jetty-10.0.21 - 14 May 2024
  + 10805 Jetty response with an invalid HTTP2 packet if the client set the
