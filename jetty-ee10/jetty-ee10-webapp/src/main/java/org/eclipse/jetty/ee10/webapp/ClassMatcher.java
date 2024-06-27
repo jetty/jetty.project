@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.net.URI;
 import java.util.Map;
+import java.lang.reflect.Constructor;
 
 import org.eclipse.jetty.util.IncludeExcludeSet;
 
