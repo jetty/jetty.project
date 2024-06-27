@@ -15,13 +15,12 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-websocket-api</artifactId>
-      <version>${ee9.jakarta.websocket.api.version}</version>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <version>${ee9.jetty.servlet.api.version}</version>
+      <artifactId>jetty-jakarta-websocket-api</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>

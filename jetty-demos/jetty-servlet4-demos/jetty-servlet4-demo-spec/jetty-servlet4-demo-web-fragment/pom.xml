@@ -20,7 +20,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-servlet-api</artifactId>
-      <version>${ee8.jetty.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
