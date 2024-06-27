@@ -251,7 +251,6 @@ public abstract class IteratingCallback implements Callback
         boolean notifyCompleteSuccess = false;
         Throwable notifyCompleteFailure = null;
 
-        boolean callOnSuccess = false;
         // While we are processing
         processing:
         while (true)
@@ -260,11 +259,6 @@ public abstract class IteratingCallback implements Callback
             Action action = null;
             try
             {
-                if (callOnSuccess)
-                {
-                    onSuccess();
-                    callOnSuccess = false;
-                }
                 action = process();
             }
             catch (Throwable x)
@@ -273,6 +267,7 @@ public abstract class IteratingCallback implements Callback
                 // Fall through to possibly invoke onCompleteFailure().
             }
 
+            boolean callOnSuccess = false;
             // acted on the action we have just received
             try (AutoLock ignored = _lock.lock())
             {
@@ -323,11 +318,11 @@ public abstract class IteratingCallback implements Callback
 
                     case CALLED:
                     {
+                        callOnSuccess = true;
                         if (action != Action.SCHEDULED)
                             throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                         // we lost the race, so we have to keep processing
                         _state = State.PROCESSING;
-                        callOnSuccess = true;
                         continue;
                     }
 
@@ -345,6 +340,11 @@ public abstract class IteratingCallback implements Callback
                     default:
                         throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                 }
+            }
+            finally
+            {
+                if (callOnSuccess)
+                    onSuccess();
             }
         }
 
