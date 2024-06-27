@@ -230,7 +230,7 @@
     <ee11.mail.impl.version>2.0.1</ee11.mail.impl.version>
     <ee11.weld.version>6.0.0.Beta1</ee11.weld.version>
 
-    <ee8.jakarta.activation.api.version>1.2.2</ee8.jakarta.activation.api.version>
+<!--    <ee8.jakarta.activation.api.version>1.2.2</ee8.jakarta.activation.api.version>
     <ee8.jakarta.annotation.api.version>1.3.5</ee8.jakarta.annotation.api.version>
     <ee8.jakarta.servlet.jsp.api.version>2.3.6</ee8.jakarta.servlet.jsp.api.version>
     <ee8.jakarta.servlet.jsp.jstl.api.version>1.2.7</ee8.jakarta.servlet.jsp.jstl.api.version>
@@ -241,7 +241,7 @@
     <ee8.javax.servlet.jsp.jstl.impl.version>1.2.5</ee8.javax.servlet.jsp.jstl.impl.version>
     <ee8.jetty.servlet.api.version>4.0.6</ee8.jetty.servlet.api.version>
     <ee8.jsp.impl.version>9.0.90</ee8.jsp.impl.version>
-    <ee8.weld.version>3.1.9.Final</ee8.weld.version>
+    <ee8.weld.version>3.1.9.Final</ee8.weld.version>-->
 
     <ee9.jakarta.activation.api.version>2.0.1</ee9.jakarta.activation.api.version>
     <ee9.jakarta.annotation.api.version>2.0.0</ee9.jakarta.annotation.api.version>
