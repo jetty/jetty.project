@@ -133,6 +133,9 @@
         <configuration>
           <debug>${it.debug}</debug>
           <addTestClassPath>true</addTestClassPath>
+          <extraArtifacts>
+            <extraArtifact>org.eclipse.jetty:jetty-client:${project.version}</extraArtifact>
+          </extraArtifacts>
           <junitPackageName>org.eclipse.jetty.maven.its.ee9.runner</junitPackageName>
           <scriptVariables>
             <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
