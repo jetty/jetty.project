@@ -287,13 +287,12 @@ public class BufferedContentSink implements Content.Sink
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             _buffer = null;
             Callback callback = _callback;
             _callback = null;
             callback.succeeded();
-            super.succeeded();
         }
 
         @Override

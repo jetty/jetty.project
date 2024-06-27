@@ -41,6 +41,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IteratingCallbackTest
@@ -871,5 +872,29 @@ public class IteratingCallbackTest
             super.onCompleted(causeOrNull);
             _completed.countDown();
         }
+    }
+
+    @Test
+    public void testOnSuccessCalledDespiteISE() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                succeeded();
+                return Action.IDLE; // illegal action
+            }
+
+            @Override
+            protected void onSuccess()
+            {
+                latch.countDown();
+            }
+        };
+
+        assertThrows(IllegalStateException.class, icb::iterate);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

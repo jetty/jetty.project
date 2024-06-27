@@ -168,6 +168,18 @@ public abstract class IteratingCallback implements Callback
     protected abstract Action process() throws Throwable;
 
     /**
+     * Invoked when one task has completed successfully, either by the
+     * caller thread or by the processing thread. This invocation is
+     * always serialized w.r.t the execution of {@link #process()}.
+     * <p>
+     * This method is not invoked when a call to {@link #abort(Throwable)}
+     * is made before the {@link #succeeded()} callback happens.
+     */
+    protected void onSuccess()
+    {
+    }
+
+    /**
      * Invoked when the overall task has completed successfully.
      * <p>
      * Calls to this method are serialized with respect to {@link #process()}, {@link #onAborted(Throwable)}
@@ -301,6 +313,7 @@ public abstract class IteratingCallback implements Callback
                 // Fall through to possibly invoke onCompleteFailure().
             }
 
+            boolean callOnSuccess = false;
             // acted on the action we have just received
             try (AutoLock ignored = _lock.lock())
             {
@@ -378,12 +391,14 @@ public abstract class IteratingCallback implements Callback
                         if (_failure != null)
                         {
                             if (_aborted)
+                                // TODO should onSuccess be called?
                                 onAbortDoCompleteFailure = _failure;
                             else
                                 doCompleteFailure = _failure;
                             _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
                             break processing;
                         }
+                        callOnSuccess = true;
                         _state = State.PROCESSING;
                         break;
                     }
@@ -391,6 +406,11 @@ public abstract class IteratingCallback implements Callback
                     default:
                         throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                 }
+            }
+            finally
+            {
+                if (callOnSuccess)
+                    onSuccess();
             }
         }
         if (onAbortDoCompleteFailure != null)
@@ -412,6 +432,9 @@ public abstract class IteratingCallback implements Callback
      * Such overridden methods are not serialized with respect to {@link #process()}, {@link #onCompleteSuccess()},
      * {@link #onCompleteFailure(Throwable)}, nor {@link #onAborted(Throwable)}. They should not act on nor change any
      * fields that may be used by those methods.
+     * Eventually, {@link #onSuccess()} is
+     * called, either by the caller thread or by the processing
+     * thread.
      */
     @Override
     public void succeeded()
@@ -466,9 +489,14 @@ public abstract class IteratingCallback implements Callback
             }
         }
         if (process)
-            processing();
+        {
+            ExceptionUtil.callAndThen(this::onSuccess, this::processing);
+        }
         else if (doCompleteFailure != null)
+        {
+            // TODO should onSuccess be called here?
             doCompleteFailure(doCompleteFailure);
+        }
     }
 
     /**

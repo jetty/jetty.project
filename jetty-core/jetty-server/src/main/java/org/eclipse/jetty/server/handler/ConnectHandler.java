@@ -764,6 +764,14 @@ public class ConnectHandler extends Handler.Wrapper
             }
 
             @Override
+            protected void onSuccess()
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Wrote {} bytes {}", filled, TunnelConnection.this);
+                buffer.release();
+            }
+
+            @Override
             protected void onAborted(Throwable cause)
             {
                 disconnect(cause);

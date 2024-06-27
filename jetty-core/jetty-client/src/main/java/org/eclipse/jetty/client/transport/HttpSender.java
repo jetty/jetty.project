@@ -543,7 +543,7 @@ public abstract class HttpSender
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             // TODO This logic should be moved to process() and/or onCompleteSuccess()
             //      Anything executed here is not mutually excluded from other threads in process() and/or onCompleteSuccess() and/or onCompleteFailure()
@@ -592,8 +592,6 @@ public abstract class HttpSender
                 // There was some concurrent error, terminate.
                 complete = true;
             }
-
-            super.succeeded();
         }
 
         @Override
