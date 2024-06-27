@@ -650,6 +650,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private RetainableByteBuffer lockedAcquireBuffer()
     {
+        assert _channelState.isLockHeldByCurrentThread();
+
         if (_aggregate == null)
         {
             _pool = _channel.getByteBufferPool();
@@ -660,6 +662,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private void lockedReleaseBuffer(boolean failure)
     {
+        assert _channelState.isLockHeldByCurrentThread();
+
         if (_aggregate != null)
         {
             if (failure && _pool != null)
