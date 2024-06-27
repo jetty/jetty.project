@@ -8,7 +8,7 @@
     -->
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>build-resources</artifactId>
-  <version>11.0.22</version>
+  <version>11.0.22-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Jetty :: Build Resources</name>
 

@@ -1,5 +1,4 @@
-jetty-11.0.22 - 27 June 2024
- + 11917 Update XML configure.dtd locations to new jetty.org website
+jetty-11.0.22-SNAPSHOT
 
 jetty-11.0.21 - 14 May 2024
  + 10805 Jetty response with an invalid HTTP2 packet if the client set the
@@ -7,7 +6,7 @@ jetty-11.0.21 - 14 May 2024
  + 11527 Reduce ByteBuffer churning in HttpOutput
  + 11634 Socks5Proxy does not support IP addresses with IP segments above 127
  + 11656 Upgrade jetty-quiche-native to version 0.21.0
- + 11782 HttpExchange retained by HttpSenderOverHTTP which caused memory leak
+ + 11782 HttpExchange retained by HttpSenderOverHTTP which caused memory leak 
 
 jetty-11.0.20 - 29 January 2024
  + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
