@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -224,9 +225,9 @@ public class ErrorHandler implements Request.Handler
 
                     switch (type)
                     {
-                        case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
-                        case TEXT_JSON, APPLICATION_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
-                        case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause, showStacks);
+                        case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause);
+                        case TEXT_JSON, APPLICATION_JSON -> writeErrorJson(request, writer, code, message, cause);
+                        case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause);
                         default -> throw new IllegalStateException();
                     }
 
@@ -271,7 +272,7 @@ public class ErrorHandler implements Request.Handler
         }
     }
 
-    protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks) throws IOException
+    protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause) throws IOException
     {
         if (message == null)
             message = HttpStatus.getMessage(code);
@@ -280,7 +281,7 @@ public class ErrorHandler implements Request.Handler
         writeErrorHtmlMeta(request, writer, charset);
         writeErrorHtmlHead(request, writer, code, message);
         writer.write("</head>\n<body>\n");
-        writeErrorHtmlBody(request, writer, code, message, cause, showStacks);
+        writeErrorHtmlBody(request, writer, code, message, cause);
         writer.write("\n</body>\n</html>\n");
     }
 
@@ -304,12 +305,12 @@ public class ErrorHandler implements Request.Handler
         writer.write("</title>\n");
     }
 
-    protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
+    protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause) throws IOException
     {
         String uri = request.getHttpURI().toString();
 
         writeErrorHtmlMessage(request, writer, code, message, cause, uri);
-        if (showStacks)
+        if (isShowStacks())
             writeErrorHtmlStacks(request, writer);
 
         request.getConnectionMetaData().getHttpConfiguration()
@@ -331,8 +332,18 @@ public class ErrorHandler implements Request.Handler
         htmlRow(writer, "URI", uri);
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
-        if (_showOrigin)
-            htmlRow(writer, "ORIGIN", request.getAttribute(ERROR_ORIGIN));
+        writeErrorOrigin((String)request.getAttribute(ERROR_ORIGIN), (o) ->
+        {
+            try
+            {
+                htmlRow(writer, "ORIGIN", o);
+            }
+            catch (IOException x)
+            {
+                throw new UncheckedIOException(x);
+            }
+        });
+
         while (_showCauses && cause != null)
         {
             htmlRow(writer, "CAUSED BY", cause);
@@ -341,7 +352,7 @@ public class ErrorHandler implements Request.Handler
         writer.write("</table>\n");
     }
 
-    private void htmlRow(Writer writer, String tag, Object value) throws IOException
+    protected void htmlRow(Writer writer, String tag, Object value) throws IOException
     {
         writer.write("<tr><th>");
         writer.write(tag);
@@ -353,7 +364,7 @@ public class ErrorHandler implements Request.Handler
         writer.write("</td></tr>\n");
     }
 
-    protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause)
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
@@ -366,12 +377,13 @@ public class ErrorHandler implements Request.Handler
         writer.printf("URI: %s%n", request.getHttpURI());
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
-        writeErrorOrigin(writer, (String)request.getAttribute(ERROR_ORIGIN), (o) -> writer.printf("ORIGIN: %s%n", o));
+
+        writeErrorOrigin((String)request.getAttribute(ERROR_ORIGIN), (o) -> writer.printf("ORIGIN: %s%n", o));
 
         while (_showCauses && cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
-            if (showStacks)
+            if (isShowStacks())
                 cause.printStackTrace(writer);
             cause = cause.getCause();
         }
@@ -383,15 +395,14 @@ public class ErrorHandler implements Request.Handler
             consumer.accept(origin);
     }
 
-    protected void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause)
     {
         Map<String, String> json = new HashMap<>();
 
         json.put("url", request.getHttpURI().toString());
         json.put("status", Integer.toString(code));
         json.put("message", message);
-        if (_showOrigin)
-            json.put("origin", (String)request.getAttribute(ERROR_ORIGIN));
+        writeErrorOrigin((String)request.getAttribute(ERROR_ORIGIN), (o) -> json.put("origin", o));
         int c = 0;
         while (_showCauses && cause != null)
         {

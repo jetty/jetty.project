@@ -256,12 +256,12 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
                         break;
                     case TEXT_JSON:
                         response.setContentType(contentType);
-                        writeErrorJson(request, writer, code, message);
+                        writeErrorJson(baseRequest, writer, code, message, (Throwable)baseRequest.getAttribute(ERROR_EXCEPTION));
                         break;
                     case TEXT_PLAIN:
                         response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
                         response.setCharacterEncoding(charset.name());
-                        writeErrorPlain(request, writer, code, message);
+                        writeErrorPlain(baseRequest, writer, code, message, (Throwable)baseRequest.getAttribute(ERROR_EXCEPTION));
                         break;
                     default:
                         throw new IllegalStateException();
@@ -361,69 +361,6 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
             cause = cause.getCause();
         }
         writer.write("</table>\n");
-    }
-
-    private void htmlRow(Writer writer, String tag, Object value) throws IOException
-    {
-        writer.write("<tr><th>");
-        writer.write(tag);
-        writer.write(":</th><td>");
-        if (value == null)
-            writer.write("-");
-        else
-            writer.write(StringUtil.sanitizeXmlString(value.toString()));
-        writer.write("</td></tr>\n");
-    }
-
-    protected void writeErrorPlain(HttpServletRequest request, PrintWriter writer, int code, String message)
-    {
-        writer.write("HTTP ERROR ");
-        writer.write(Integer.toString(code));
-        writer.write(' ');
-        writer.write(StringUtil.sanitizeXmlString(message));
-        writer.write("\n");
-        writer.printf("URI: %s%n", request.getRequestURI());
-        writer.printf("STATUS: %s%n", code);
-        writer.printf("MESSAGE: %s%n", message);
-        if (isShowOrigin())
-        {
-            writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
-        }
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
-        while (cause != null)
-        {
-            writer.printf("CAUSED BY %s%n", cause);
-            if (isShowStacks())
-            {
-                cause.printStackTrace(writer);
-            }
-            cause = cause.getCause();
-        }
-    }
-
-    protected void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
-    {
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
-        Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
-        Map<String, String> json = new HashMap<>();
-
-        json.put("url", request.getRequestURI());
-        json.put("status", Integer.toString(code));
-        json.put("message", message);
-        if (isShowOrigin() && servlet != null)
-        {
-            json.put("servlet", servlet.toString());
-        }
-        int c = 0;
-        while (cause != null)
-        {
-            json.put("cause" + c++, cause.toString());
-            cause = cause.getCause();
-        }
-
-        writer.append(json.entrySet().stream()
-            .map(e -> HttpField.NAME_VALUE_TOKENIZER.quote(e.getKey()) + ":" + HttpField.NAME_VALUE_TOKENIZER.quote(StringUtil.sanitizeXmlString((e.getValue()))))
-            .collect(Collectors.joining(",\n", "{\n", "\n}")));
     }
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer) throws IOException
