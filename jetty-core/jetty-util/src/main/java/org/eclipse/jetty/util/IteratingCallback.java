@@ -364,7 +364,7 @@ public abstract class IteratingCallback implements Callback
      * thread.
      */
     @Override
-    public final void succeeded()
+    public void succeeded()
     {
         boolean process = false;
         try (AutoLock ignored = _lock.lock())
@@ -416,7 +416,7 @@ public abstract class IteratingCallback implements Callback
      * @see #isFailed()
      */
     @Override
-    public final void failed(Throwable x)
+    public void failed(Throwable x)
     {
         boolean failure = false;
         try (AutoLock ignored = _lock.lock())
