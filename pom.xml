@@ -178,7 +178,7 @@
     <conscrypt.version>2.5.2</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.8.0</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
-    <eclipse.jdt.ecj.version>3.37.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.38.0</eclipse.jdt.ecj.version>
 
     <ee10.jakarta.activation.api.version>2.1.3</ee10.jakarta.activation.api.version>
     <ee10.jakarta.annotation.api.version>2.1.1</ee10.jakarta.annotation.api.version>
