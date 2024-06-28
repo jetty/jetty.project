@@ -90,7 +90,7 @@ public interface RetainableByteBuffer extends Retainable
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
-     * @see ByteBufferPool.NonPooling
+     * @see ByteBufferPool#NON_POOLING
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
     {
@@ -104,7 +104,7 @@ public interface RetainableByteBuffer extends Retainable
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @param retainable the associated {@link Retainable}.
      * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
-     * @see ByteBufferPool.NonPooling
+     * @see ByteBufferPool#NON_POOLING
      */
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
     {
@@ -1417,7 +1417,7 @@ public interface RetainableByteBuffer extends Retainable
         private DynamicCapacity(List<RetainableByteBuffer> buffers, ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
         {
             super();
-            _pool = pool == null ? new ByteBufferPool.NonPooling() : pool;
+            _pool = pool == null ? ByteBufferPool.NON_POOLING : pool;
             _direct = direct;
             _maxSize = maxSize < 0 ? Long.MAX_VALUE : maxSize;
             _buffers = buffers;

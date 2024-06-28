@@ -303,58 +303,28 @@ public class ExceptionUtil
         return t1;
     }
 
-    public static void callAndThen(Throwable cause, Consumer<Throwable> first, Consumer<Throwable> second)
+    /** Call a method that handles a {@link Throwable}, catching and associating any exception that it throws.
+     * @param cause The {@link Throwable} to pass to the consumer
+     * @param consumer The handler of a {@link Throwable}
+     */
+    public static void call(Throwable cause, Consumer<Throwable> consumer)
     {
         try
         {
-            first.accept(cause);
+            consumer.accept(cause);
         }
         catch (Throwable t)
         {
-            addSuppressedIfNotAssociated(cause, t);
-        }
-        finally
-        {
-            second.accept(cause);
-        }
-    }
-
-    public static void callAndThen(Throwable cause, Consumer<Throwable> first, Runnable second)
-    {
-        try
-        {
-            first.accept(cause);
-        }
-        catch (Throwable t)
-        {
-            addSuppressedIfNotAssociated(cause, t);
-        }
-        finally
-        {
-            second.run();
-        }
-    }
-
-    public static void callAndThen(Runnable first, Runnable second)
-    {
-        try
-        {
-            first.run();
-        }
-        catch (Throwable t)
-        {
-            // ignored
-        }
-        finally
-        {
-            second.run();
+            ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
+            throw t;
         }
     }
 
     /**
-     * Call a {@link Invocable.Callable} and handle failures
-     * @param callable The runnable to call
-     * @param failure The handling of failures
+     * Call a {@link Invocable.Callable} and handle any resulting failures
+     * @param callable The {@link org.eclipse.jetty.util.thread.Invocable.Callable} to call
+     * @param failure A handler of failures from the call
+     * @see #run(Runnable, Consumer)
      */
     public static void call(Invocable.Callable callable, Consumer<Throwable> failure)
     {
@@ -380,6 +350,7 @@ public class ExceptionUtil
      * Call a {@link Runnable} and handle failures
      * @param runnable The runnable to call
      * @param failure The handling of failures
+     * @see #call(Throwable, Consumer)
      */
     public static void run(Runnable runnable, Consumer<Throwable> failure)
     {
@@ -398,6 +369,71 @@ public class ExceptionUtil
                 ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
                 ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
             }
+        }
+    }
+
+    /**
+     * Call a handler of {@link Throwable} and then always call another, suppressing any exceptions thrown.
+     * @param cause The {@link Throwable} to be passed to both consumers.
+     * @param call The first {@link Consumer} of {@link Throwable} to call.
+     * @param then The second {@link Consumer} of {@link Throwable} to call.
+     */
+    public static void callAndThen(Throwable cause, Consumer<Throwable> call, Consumer<Throwable> then)
+    {
+        try
+        {
+            call.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            then.accept(cause);
+        }
+    }
+
+    /**
+     * Call a handler of {@link Throwable} and then always call a {@link Runnable}, suppressing any exceptions thrown.
+     * @param cause The {@link Throwable} to be passed to both consumers.
+     * @param call The {@link Consumer} of {@link Throwable} to call.
+     * @param then The {@link Runnable} to call.
+     */
+    public static void callAndThen(Throwable cause, Consumer<Throwable> call, Runnable then)
+    {
+        try
+        {
+            call.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            then.run();
+        }
+    }
+
+    /**
+     * Call a {@link Runnable} and then always call another, ignoring any exceptions thrown.
+     * @param call The first {@link Runnable} to call.
+     * @param then The second {@link Runnable} to call.
+     */
+    public static void callAndThen(Runnable call, Runnable then)
+    {
+        try
+        {
+            call.run();
+        }
+        catch (Throwable t)
+        {
+            // ignored
+        }
+        finally
+        {
+            then.run();
         }
     }
 
