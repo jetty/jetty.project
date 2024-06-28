@@ -125,8 +125,8 @@ def mavenBuild(jdk, cmdline, mvnName) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
-          sh "launchable verify"
-          sh "launchable record build --name $jdk-$BUILD_TAG"
+          sh "/home/jenkins/.local/bin/launchable verify"
+          sh "/home/jenkins/.local/bin/launchable record build --name $jdk-$BUILD_TAG"
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
@@ -137,7 +137,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
-      sh "launchable record tests --build $jdk-$BUILD_TAG maven '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml'"
+      sh "/home/jenkins/.local/bin/launchable record tests --build $jdk-$BUILD_TAG maven '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml'"
     }
   }
 }
