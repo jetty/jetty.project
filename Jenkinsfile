@@ -137,6 +137,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      echo "Launchable record tests"
       sh "launchable record tests --build $jdk-$BUILD_TAG maven '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml'"
     }
   }
