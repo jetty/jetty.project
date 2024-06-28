@@ -136,7 +136,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      junit testDataPublishers: [[$class: 'JUnitFlakyTestDataPublisher']], testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
       echo "Launchable record tests"
       runLaunchable ("record tests --build $BRANCH_NAME maven '**/target/surefire-reports/**/*.xml' '**/target/invoker-reports/TEST*.xml'")
     }
