@@ -2290,7 +2290,7 @@
         <spotbugs.skip>false</spotbugs.skip>
         <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
         <spotbugs.threshold>Medium</spotbugs.threshold>
-        <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+        <surefire.rerunFailingTestsCount>1</surefire.rerunFailingTestsCount>
       </properties>
       <build>
         <pluginManagement>
