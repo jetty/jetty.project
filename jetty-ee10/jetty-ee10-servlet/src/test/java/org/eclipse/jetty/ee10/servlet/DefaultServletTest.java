@@ -1395,7 +1395,6 @@ public class DefaultServletTest
             {
                 String includeTarget = req.getParameter("includeTarget");
                 RequestDispatcher requestDispatcher = req.getRequestDispatcher(includeTarget);
-                System.err.printf("include %s -> %s\n", includeTarget, requestDispatcher);
                 requestDispatcher.include(req, resp);
             }
         });
