@@ -165,7 +165,7 @@
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctor.maven.plugin.version>3.0.0</asciidoctor.maven.plugin.version>
     <asciidoctor.skip>false</asciidoctor.skip>
-    <asciidoctorj-diagram.version>2.3.0</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.3.1</asciidoctorj-diagram.version>
     <asciidoctorj.version>3.0.0-alpha.2</asciidoctorj.version>
     <asm.version>9.7</asm.version>
     <awaitility.version>4.2.1</awaitility.version>
@@ -173,10 +173,10 @@
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <checkstyle.version>10.16.0</checkstyle.version>
+    <checkstyle.version>10.17.0</checkstyle.version>
     <commons-codec.version>1.17.0</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
-    <commons.compress.version>1.26.1</commons.compress.version>
+    <commons.compress.version>1.26.2</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
@@ -184,17 +184,17 @@
     <conscrypt.version>2.5.2</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.8.0</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
-    <eclipse.jdt.ecj.version>3.37.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.38.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.27.1</google.errorprone.version>
+    <google.errorprone.version>2.28.0</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
-    <grpc.version>1.63.0</grpc.version>
+    <grpc.version>1.65.0</grpc.version>
     <gson.version>2.11.0</gson.version>
-    <guava.version>33.1.0-jre</guava.version>
+    <guava.version>33.2.1-jre</guava.version>
     <guice.version>7.0.0</guice.version>
-    <h2spec.maven.plugin.version>1.0.11</h2spec.maven.plugin.version>
+    <h2spec.maven.plugin.version>1.0.12</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hazelcast.version>5.4.0</hazelcast.version>
     <hibernate.search.version>7.1.1.Final</hibernate.search.version>
@@ -238,7 +238,7 @@
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
-    <junit.version>5.10.2</junit.version>
+    <junit.version>5.10.3</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <license.maven.plugin.version>4.5</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
@@ -249,7 +249,7 @@
     <mariadb.version>3.4.0</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.0</maven-build-cache.version>
-    <maven-plugin.plugin.version>3.12.0</maven-plugin.plugin.version>
+    <maven-plugin.plugin.version>3.13.1</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
@@ -259,7 +259,7 @@
     <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.7.1</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.2</maven.deploy.plugin.version>
-    <maven.deps.version>3.9.6</maven.deps.version>
+    <maven.deps.version>3.9.8</maven.deps.version>
     <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.3.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.2.4</maven.gpg.plugin.version>
@@ -268,7 +268,7 @@
     <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.7.0</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.13.1</maven.plugin-tools.version>
-    <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
+    <maven.release.plugin.version>3.1.0</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.2.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.20</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
@@ -331,6 +331,13 @@
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -433,11 +440,6 @@
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>${grpc.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-handler</artifactId>
-        <version>${netty.version}</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
