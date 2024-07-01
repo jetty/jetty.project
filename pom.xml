@@ -1405,6 +1405,7 @@
               <manifestEntries>
                 <Implementation-Version>${project.version}</Implementation-Version>
                 <Implementation-Vendor>Eclipse Jetty Project</Implementation-Vendor>
+                <SPDX-License-Identifier>EPL-2.0 OR Apache-2.0</SPDX-License-Identifier>
                 <url>${jetty.url}</url>
               </manifestEntries>
             </archive>

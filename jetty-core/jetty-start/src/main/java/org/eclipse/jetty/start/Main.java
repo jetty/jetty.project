@@ -203,7 +203,7 @@ public class Main
     private static boolean isLicenseFile(JarEntry entry)
     {
         String name = entry.getName();
-        return name.matches("(?i)^(META-INF/)?LICENSE.*") || name.matches("(?i)^LICENSE.*");
+        return name.matches("(?i)^(META-INF/)?LICEN[SC]E.*") || name.matches("(?i)^LICEN[SC]E.*");
     }
 
     private String getLicenceFromFile(JarFile jarFile, JarEntry entry)
