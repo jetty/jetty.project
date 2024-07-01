@@ -48,6 +48,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public interface Retainable
 {
+    Retainable NON_RETAINABLE = new Retainable()
+    {
+    };
+
     /**
      * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
      * and {@link #release()}.</p>
@@ -58,6 +62,15 @@ public interface Retainable
      * @return true if calls to {@link #retain()} are reference counted.
      */
     default boolean canRetain()
+    {
+        return false;
+    }
+
+    /**
+     * <p>Returns whether {@link #retain()} has been called at least one more time than {@link #release()}.</p>
+     * @return whether this buffer is retained
+     */
+    default boolean isRetained()
     {
         return false;
     }
@@ -81,6 +94,15 @@ public interface Retainable
     }
 
     /**
+     * <p>Get the retained count. This value is volatile and should only be used for informational/debugging purposes.</p>
+     * @return the retained count
+     */
+    default int getRetained()
+    {
+        return -1;
+    }
+
+    /**
      * A wrapper of {@link Retainable} instances.
      */
     class Wrapper implements Retainable
@@ -101,6 +123,18 @@ public interface Retainable
         public boolean canRetain()
         {
             return getWrapped().canRetain();
+        }
+
+        @Override
+        public int getRetained()
+        {
+            return getWrapped().getRetained();
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return getWrapped().isRetained();
         }
 
         @Override
@@ -168,7 +202,7 @@ public interface Retainable
         @Override
         public boolean canRetain()
         {
-            return true;
+            return get() > 0;
         }
 
         @Override
@@ -195,14 +229,16 @@ public interface Retainable
             return ref == 0;
         }
 
-        /**
-         * <p>Returns whether {@link #retain()} has been called at least one more time than {@link #release()}.</p>
-         *
-         * @return whether this buffer is retained
-         */
+        @Override
         public boolean isRetained()
         {
             return references.get() > 1;
+        }
+
+        @Override
+        public int getRetained()
+        {
+            return references.get();
         }
 
         @Override

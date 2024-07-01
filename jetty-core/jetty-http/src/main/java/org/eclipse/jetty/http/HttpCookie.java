@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>Implementation of RFC6265 HTTP Cookies (with fallback support for RFC2965).</p>
@@ -127,7 +128,7 @@ public interface HttpCookie
      */
     default boolean isSecure()
     {
-        return Boolean.parseBoolean(getAttributes().get(SECURE_ATTRIBUTE));
+        return isSetToNotFalse(SECURE_ATTRIBUTE);
     }
 
     /**
@@ -145,7 +146,7 @@ public interface HttpCookie
      */
     default boolean isHttpOnly()
     {
-        return Boolean.parseBoolean(getAttributes().get(HTTP_ONLY_ATTRIBUTE));
+        return isSetToNotFalse(HTTP_ONLY_ATTRIBUTE);
     }
 
     /**
@@ -154,7 +155,13 @@ public interface HttpCookie
      */
     default boolean isPartitioned()
     {
-        return Boolean.parseBoolean(getAttributes().get(PARTITIONED_ATTRIBUTE));
+        return isSetToNotFalse(PARTITIONED_ATTRIBUTE);
+    }
+
+    private boolean isSetToNotFalse(String attribute)
+    {
+        String value = getAttributes().get(attribute);
+        return value != null && !StringUtil.asciiEqualsIgnoreCase("false", value);
     }
 
     /**

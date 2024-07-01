@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -182,5 +183,28 @@ public class MainTest
             baseHome.getBase(), System.getProperty("java.version")
         );
         assertThat(commandLine, containsString(expectedExpansion));
+    }
+
+    @Test
+    public void testModulesDeclaredTwice() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+
+        Path homePath = MavenPaths.findTestResourceDir("dist-home");
+        Path basePath = MavenPaths.findTestResourceDir("overdeclared-modules");
+        cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("user.dir=" + basePath);
+
+        Main main = new Main();
+
+        cmdLineArgs.add("--module=main");
+
+        // The "main" module is enabled in both ...
+        // 1) overdeclared-modules/start.d/config.ini
+        // 2) command-line
+        // This shouldn't result in an error
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
+
+        assertThat(args.getSelectedModules(), hasItem("main"));
     }
 }

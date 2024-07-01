@@ -1266,6 +1266,18 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
         }
 
+        //try getting a session id for our context that has been newly created by another context
+        if (request.getContext().isCrossContextDispatch(request))
+        {
+            String tmp = (String)request.getAttribute(DefaultSessionIdManager.__NEW_SESSION_ID);
+            if (!StringUtil.isEmpty(tmp))
+            {
+                if (ids == null)
+                    ids = new ArrayList<>();
+                ids.add(tmp);
+            }
+        }
+
         if (ids == null)
             return NO_REQUESTED_SESSION;
 
@@ -1425,7 +1437,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
     /**
      * StreamWrapper to intercept commit and complete events to ensure
-     * session handling happens in context, with request available.
+     * session handling happens in context, with the request available.
+     * This implementation assumes that a request only has a single session.
      */
     private class SessionStreamWrapper extends HttpStream.Wrapper
     {

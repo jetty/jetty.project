@@ -384,7 +384,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 case NOT_DEMANDING ->
                 {
                     fillingAndParsing = false;
-                    if (networkBuffer != null && !networkBuffer.hasRemaining())
+                    if (networkBuffer != null && networkBuffer.isEmpty())
                         releaseNetworkBuffer();
                     return false;
                 }

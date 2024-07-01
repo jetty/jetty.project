@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,9 +26,11 @@ import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpStatus;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,19 +56,32 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
+                Cookie cookie0 = new Cookie("C0", "v0");
+                cookie0.setMaxAge(-1);
+                response.addCookie(cookie0);
+                Cookie cookie1 = new Cookie("C1", "v1");
+                cookie1.setMaxAge(1);
+                response.addCookie(cookie1);
+
                 String target = request.getRequestURI();
                 if (target.equals(path1))
                 {
+                    assertThat(request.getHeader("H1"), Matchers.equalTo("V1"));
+                    assertThat(request.getHeader("Cookie"), Matchers.equalTo("C1=v1"));
                     response.getOutputStream().write(pushBytes1);
                 }
                 else if (target.equals(path2))
                 {
+                    assertThat(request.getHeader("H1"), Matchers.nullValue());
+                    assertThat(request.getHeader("Cookie"), Matchers.equalTo("C1=v1"));
                     response.getOutputStream().write(pushBytes2);
                 }
                 else
                 {
+                    assertThat(request.getHeader("Cookie"), Matchers.equalTo("C0=toBeRemoved"));
                     request.newPushBuilder()
                         .path(path1)
+                        .addHeader("H1", "V1")
                         .push();
                     request.newPushBuilder()
                         .path(path2)
@@ -78,6 +94,7 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
         ContentResponse response = client.newRequest(newURI(transport))
+            .headers(h -> h.add("Cookie", "C0=toBeRemoved"))
             .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
             {
                 @Override

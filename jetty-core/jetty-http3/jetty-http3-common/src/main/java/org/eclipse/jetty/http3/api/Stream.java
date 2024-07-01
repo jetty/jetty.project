@@ -384,7 +384,7 @@ public interface Stream
      *
      * @see Stream#readData()
      */
-    public abstract static class Data implements Retainable
+    abstract class Data implements Retainable
     {
         public static final Data EOF = new EOFData();
 

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 

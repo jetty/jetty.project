@@ -13,26 +13,36 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousByteChannel;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.CompletionHandler;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.BufferedContentSink;
+import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourcePublisher;
+import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
+import org.eclipse.jetty.io.internal.ByteChannelContentSource;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
+import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -152,6 +162,137 @@ public class Content
     public interface Source
     {
         /**
+         * Create a {@code Content.Source} from zero or more {@link ByteBuffer}s
+         * @param byteBuffers The {@link ByteBuffer}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBuffer... byteBuffers)
+        {
+            return new ByteBufferContentSource(byteBuffers);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param path The {@link Path}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(Path path)
+        {
+            return from(null, path, 0, -1);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param path The {@link Path}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(Path path, long offset, long length)
+        {
+            return from(null, path, offset, length);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param path The {@link Path}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path)
+        {
+            return from(byteBufferPool, path, 0, -1);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param path The {@link Path}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
+        {
+            return new ByteChannelContentSource.PathContentSource(byteBufferPool, path, offset, length);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link ByteChannel}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteChannel The {@link ByteChannel}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
+        {
+            return new ByteChannelContentSource(byteBufferPool, byteChannel);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link ByteChannel}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param seekableByteChannel The {@link ByteChannel}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
+        {
+            return new ByteChannelContentSource(byteBufferPool, seekableByteChannel, offset, length);
+        }
+
+        static Content.Source from(InputStream inputStream)
+        {
+            return from(null, inputStream);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param inputStream The {@link InputStream}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream)
+        {
+            return new InputStreamContentSource(inputStream, byteBufferPool);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param inputStream The {@link InputStream}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
+        {
+            return new InputStreamContentSource(inputStream, byteBufferPool)
+            {
+                private long skip = offset;
+                private long toRead = length;
+
+                @Override
+                protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
+                {
+                    if (skip > 0)
+                    {
+                        inputStream.skipNBytes(skip);
+                        skip = 0;
+                    }
+
+                    if (toRead == 0)
+                        return -1;
+                    int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
+                    int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
+                    int read = inputStream.read(buffer, 0, len);
+                    toRead -= read;
+                    return read;
+                }
+            };
+        }
+
+        /**
          * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
          *
          * @param source the source to read
@@ -193,7 +334,13 @@ public class Content
          */
         static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
         {
-            return new ChunkAccumulator().readAll(source, maxSize);
+            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb ->
+            {
+                int remaining = rbb.remaining();
+                byte[] bytes = new byte[remaining];
+                rbb.get(bytes, 0, remaining);
+                return bytes;
+            });
         }
 
         /**
@@ -216,7 +363,12 @@ public class Content
          */
         static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
         {
-            return asByteArrayAsync(source, maxSize).thenApply(ByteBuffer::wrap);
+            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb ->
+            {
+               ByteBuffer byteBuffer = rbb.getByteBuffer();
+               rbb.release(); // safe as the buffer is known not to be pooled
+               return byteBuffer;
+            });
         }
 
         /**
@@ -231,7 +383,31 @@ public class Content
          */
         static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
         {
-            return new ChunkAccumulator().readAll(source, pool, direct, maxSize);
+            Promise.Completable<RetainableByteBuffer> promise = new Promise.Completable<>()
+            {
+                @Override
+                public void succeeded(RetainableByteBuffer result)
+                {
+                    result.retain();
+                    super.succeeded(result);
+                }
+            };
+            asRetainableByteBuffer(source, pool, direct, maxSize, promise);
+            return promise;
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
+         * @param direct True if the buffer should be direct.
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @param promise the promise to notify when the whole content has been read into a RetainableByteBuffer.
+         */
+        static void asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<RetainableByteBuffer> promise)
+        {
+            new ContentSourceRetainableByteBuffer(source, pool, direct, maxSize, promise).run();
         }
 
         /**
@@ -472,6 +648,144 @@ public class Content
     public interface Sink
     {
         /**
+         * <p>Wraps the given {@link OutputStream} as a {@link Sink}.
+         * @param out The stream to wrap
+         * @return A sink wrapping the stream
+         */
+        static Sink from(OutputStream out)
+        {
+            return new Sink()
+            {
+                boolean closed;
+
+                @Override
+                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                {
+                    if (closed)
+                    {
+                        callback.failed(new EOFException());
+                        return;
+                    }
+                    try
+                    {
+                        BufferUtil.writeTo(byteBuffer, out);
+                        if (last)
+                        {
+                            closed = true;
+                            out.close();
+                        }
+                        callback.succeeded();
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                    }
+                }
+            };
+        }
+
+        /**
+         * <p>Wraps the given {@link ByteChannel} as a {@link Sink}.
+         * @param channel The {@link ByteChannel} to wrap
+         * @return A sink wrapping the stream
+         */
+        static Sink from(ByteChannel channel)
+        {
+            return new Sink()
+            {
+                boolean closed;
+
+                @Override
+                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                {
+                    if (closed)
+                    {
+                        callback.failed(new EOFException());
+                        return;
+                    }
+                    try
+                    {
+                        int remaining = byteBuffer.remaining();
+                        int tries = 0;
+                        while (remaining > 0)
+                        {
+                            int written = channel.write(byteBuffer);
+                            if (written > 0)
+                                remaining -= written;
+                            else if (tries++ > 2)
+                                throw new IllegalStateException("ByteChannel in async mode");
+                        }
+
+                        if (last)
+                        {
+                            closed = true;
+                            channel.close();
+                        }
+                        callback.succeeded();
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                    }
+                }
+            };
+        }
+
+        /**
+         * <p>Wraps the given {@link AsynchronousByteChannel} as a {@link Sink}.
+         * @param channel The {@link AsynchronousByteChannel} to wrap
+         * @return A sink wrapping the stream
+         */
+        static Sink from(AsynchronousByteChannel channel)
+        {
+            return new Sink()
+            {
+                boolean closed;
+
+                @Override
+                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                {
+                    if (closed)
+                    {
+                        callback.failed(new EOFException());
+                        return;
+                    }
+                    try
+                    {
+                        channel.write(byteBuffer, byteBuffer, new CompletionHandler<>()
+                        {
+                            @Override
+                            public void completed(Integer written, ByteBuffer buffer)
+                            {
+                                if (buffer.hasRemaining())
+                                    channel.write(buffer, buffer, this);
+                                else
+                                {
+                                    if (last)
+                                    {
+                                        closed = true;
+                                        IO.close(channel);
+                                    }
+                                    callback.succeeded();
+                                }
+                            }
+
+                            @Override
+                            public void failed(Throwable x, ByteBuffer buffer)
+                            {
+                                callback.failed(x);
+                            }
+                        });
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                    }
+                }
+            };
+        }
+
+        /**
          * <p>Wraps the given content sink with a buffering sink.</p>
          *
          * @param sink the sink to write to
@@ -562,19 +876,34 @@ public class Content
      * to release the {@code ByteBuffer} back into a pool), or the
      * {@link #release()} method overridden.</p>
      */
-    public interface Chunk extends Retainable
+    public interface Chunk extends RetainableByteBuffer
     {
         /**
-         * <p>An empty, non-last, chunk.</p>
+         * <p>An empty chunk implementation.</p>
          */
-        Chunk EMPTY = new Chunk()
+        abstract class Empty implements Chunk
         {
+            protected Empty()
+            {}
+
             @Override
             public ByteBuffer getByteBuffer()
             {
                 return BufferUtil.EMPTY_BUFFER;
             }
 
+            @Override
+            public RetainableByteBuffer slice(long length)
+            {
+                return this;
+            }
+        }
+
+        /**
+         * <p>An empty, non-last, chunk instance.</p>
+         */
+        Chunk EMPTY = new Empty()
+        {
             @Override
             public boolean isLast()
             {
@@ -591,14 +920,8 @@ public class Content
         /**
          * <p>An empty, last, chunk.</p>
          */
-        Content.Chunk EOF = new Chunk()
+        Content.Chunk EOF = new Empty()
         {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return BufferUtil.EMPTY_BUFFER;
-            }
-
             @Override
             public boolean isLast()
             {
@@ -713,17 +1036,11 @@ public class Content
          */
         static Chunk from(Throwable failure, boolean last)
         {
-            return new Chunk()
+            return new Empty()
             {
                 public Throwable getFailure()
                 {
                     return failure;
-                }
-
-                @Override
-                public ByteBuffer getByteBuffer()
-                {
-                    return BufferUtil.EMPTY_BUFFER;
                 }
 
                 @Override
@@ -806,11 +1123,6 @@ public class Content
         }
 
         /**
-         * @return the ByteBuffer of this Chunk
-         */
-        ByteBuffer getByteBuffer();
-
-        /**
          * Get a failure (which may be from a {@link Source#fail(Throwable) failure} or
          * a {@link Source#fail(Throwable, boolean) warning}), if any, associated with the chunk.
          * <ul>
@@ -833,58 +1145,9 @@ public class Content
         boolean isLast();
 
         /**
-         * @return the number of bytes remaining in this Chunk
-         */
-        default int remaining()
-        {
-            return getByteBuffer().remaining();
-        }
-
-        /**
-         * @return whether this Chunk has remaining bytes
-         */
-        default boolean hasRemaining()
-        {
-            return getByteBuffer().hasRemaining();
-        }
-
-        /**
-         * <p>Copies the bytes from this Chunk to the given byte array.</p>
-         *
-         * @param bytes the byte array to copy the bytes into
-         * @param offset the offset within the byte array
-         * @param length the maximum number of bytes to copy
-         * @return the number of bytes actually copied
-         */
-        default int get(byte[] bytes, int offset, int length)
-        {
-            ByteBuffer b = getByteBuffer();
-            if (b == null || !b.hasRemaining())
-                return 0;
-            length = Math.min(length, b.remaining());
-            b.get(bytes, offset, length);
-            return length;
-        }
-
-        /**
-         * <p>Skips, advancing the ByteBuffer position, the given number of bytes.</p>
-         *
-         * @param length the maximum number of bytes to skip
-         * @return the number of bytes actually skipped
-         */
-        default int skip(int length)
-        {
-            if (length == 0)
-                return 0;
-            ByteBuffer byteBuffer = getByteBuffer();
-            length = Math.min(byteBuffer.remaining(), length);
-            byteBuffer.position(byteBuffer.position() + length);
-            return length;
-        }
-
-        /**
          * @return an immutable version of this Chunk
          */
+        @Deprecated(forRemoval = true, since = "12.1.0")
         default Chunk asReadOnly()
         {
             if (getByteBuffer().isReadOnly())

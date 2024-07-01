@@ -20,13 +20,13 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
 
@@ -199,35 +199,60 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     }
 
     @Override
-    public RetainableByteBuffer acquire(int size, boolean direct)
+    public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
     {
         RetainedBucket bucket = bucketFor(size, direct);
 
         // No bucket, return non-pooled.
         if (bucket == null)
-            return newRetainableByteBuffer(size, direct, null);
+            return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
 
         bucket.recordAcquire();
 
         // Try to acquire a pooled entry.
-        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().acquire();
-        if (entry != null)
+        Pool.Entry<RetainableByteBuffer.Pooled> entry = bucket.getPool().acquire();
+        if (entry == null)
         {
-            bucket.recordPooled();
-            RetainableByteBuffer buffer = entry.getPooled();
-            ((Buffer)buffer).acquire();
-            return buffer;
+            ByteBuffer buffer = BufferUtil.allocate(bucket.getCapacity(), direct);
+            return new ReservedBuffer(buffer, bucket);
         }
 
-        return newRetainableByteBuffer(bucket.getCapacity(), direct, buffer -> reserve(bucket, buffer));
+        bucket.recordPooled();
+        RetainableByteBuffer.Pooled buffer = entry.getPooled();
+        ((PooledBuffer)buffer).acquire();
+        return buffer;
     }
 
-    private void reserve(RetainedBucket bucket, RetainableByteBuffer buffer)
+    @Override
+    public boolean removeAndRelease(RetainableByteBuffer buffer)
+    {
+        RetainableByteBuffer actual = buffer;
+        while (actual instanceof RetainableByteBuffer.Wrapper wrapper)
+            actual = wrapper.getWrapped();
+
+        if (actual instanceof ReservedBuffer reservedBuffer)
+        {
+            // remove the actual reserved buffer, but release the wrapped buffer
+            reservedBuffer.remove();
+            return buffer.release();
+        }
+
+        if (actual instanceof PooledBuffer poolBuffer)
+        {
+            // remove the actual pool buffer, but release the wrapped buffer
+            poolBuffer.remove();
+            return buffer.release();
+        }
+
+        return ByteBufferPool.super.removeAndRelease(buffer);
+    }
+
+    private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
     {
         bucket.recordRelease();
 
         // Try to reserve an entry to put the buffer into the pool.
-        Pool.Entry<RetainableByteBuffer> entry = bucket.getPool().reserve();
+        Pool.Entry<RetainableByteBuffer.Pooled> entry = bucket.getPool().reserve();
         if (entry == null)
         {
             bucket.recordNonPooled();
@@ -235,12 +260,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         // Add the buffer to the new entry.
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
         BufferUtil.reset(byteBuffer);
-        Buffer pooledBuffer = new Buffer(byteBuffer, b -> release(bucket, entry));
+        PooledBuffer pooledBuffer = new PooledBuffer(byteBuffer, bucket, entry);
         if (entry.enable(pooledBuffer, false))
         {
-            checkMaxMemory(bucket, buffer.isDirect());
+            checkMaxMemory(bucket, byteBuffer.isDirect());
             return;
         }
 
@@ -249,7 +273,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         entry.remove();
     }
 
-    private void release(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer> entry)
+    private void release(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer.Pooled> entry)
     {
         bucket.recordRelease();
 
@@ -257,7 +281,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         BufferUtil.reset(buffer.getByteBuffer());
 
         // Release the buffer and check the memory 1% of the times.
-        int used = ((Buffer)buffer).use();
+        int used = ((PooledBuffer)buffer).use();
         if (entry.release())
         {
             if (used % 100 == 0)
@@ -268,6 +292,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         // Cannot release, discard this buffer.
         bucket.recordRemove();
         entry.remove();
+    }
+
+    private boolean remove(RetainedBucket bucket, Pool.Entry<RetainableByteBuffer.Pooled> entry)
+    {
+        // Cannot release, discard this buffer.
+        bucket.recordRemove();
+        return entry.remove();
     }
 
     private void checkMaxMemory(RetainedBucket bucket, boolean direct)
@@ -309,15 +340,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private RetainableByteBuffer newRetainableByteBuffer(int capacity, boolean direct, Consumer<RetainableByteBuffer> releaser)
-    {
-        ByteBuffer buffer = BufferUtil.allocate(capacity, direct);
-        Buffer retainableByteBuffer = new Buffer(buffer, releaser);
-        retainableByteBuffer.acquire();
-        return retainableByteBuffer;
-    }
-
-    public Pool<RetainableByteBuffer> poolFor(int capacity, boolean direct)
+    public Pool<RetainableByteBuffer.Pooled> poolFor(int capacity, boolean direct)
     {
         RetainedBucket bucket = bucketFor(capacity, direct);
         return bucket == null ? null : bucket.getPool();
@@ -445,7 +468,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private final LongAdder _evicts = new LongAdder();
         private final LongAdder _removes = new LongAdder();
         private final LongAdder _releases = new LongAdder();
-        private final Pool<RetainableByteBuffer> _pool;
+        private final Pool<RetainableByteBuffer.Pooled> _pool;
         private final int _capacity;
 
         private RetainedBucket(int capacity, int poolSize)
@@ -501,14 +524,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return _capacity;
         }
 
-        private Pool<RetainableByteBuffer> getPool()
+        private Pool<RetainableByteBuffer.Pooled> getPool()
         {
             return _pool;
         }
 
         private int evict()
         {
-            Pool.Entry<RetainableByteBuffer> entry;
+            Pool.Entry<RetainableByteBuffer.Pooled> entry;
             if (_pool instanceof BucketCompoundPool compound)
                 entry = compound.evict();
             else
@@ -539,7 +562,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             int entries = 0;
             int inUse = 0;
-            for (Pool.Entry<RetainableByteBuffer> entry : getPool().stream().toList())
+            for (Pool.Entry<RetainableByteBuffer.Pooled> entry : getPool().stream().toList())
             {
                 entries++;
                 if (entry.isInUse())
@@ -564,16 +587,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             );
         }
 
-        private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer>
+        private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer.Pooled>
         {
-            private BucketCompoundPool(ConcurrentPool<RetainableByteBuffer> concurrentBucket, QueuedPool<RetainableByteBuffer> queuedBucket)
+            private BucketCompoundPool(ConcurrentPool<RetainableByteBuffer.Pooled> concurrentBucket, QueuedPool<RetainableByteBuffer.Pooled> queuedBucket)
             {
                 super(concurrentBucket, queuedBucket);
             }
 
-            private Pool.Entry<RetainableByteBuffer> evict()
+            private Pool.Entry<RetainableByteBuffer.Pooled> evict()
             {
-                Entry<RetainableByteBuffer> entry = getSecondaryPool().acquire();
+                Entry<RetainableByteBuffer.Pooled> entry = getSecondaryPool().acquire();
                 if (entry == null)
                     entry = getPrimaryPool().acquire();
                 return entry;
@@ -581,15 +604,49 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private static class Buffer extends AbstractRetainableByteBuffer
+    private class ReservedBuffer extends RetainableByteBuffer.Pooled
     {
-        private final Consumer<RetainableByteBuffer> _releaser;
+        private final RetainedBucket _bucket;
+        private final AtomicBoolean _removed = new AtomicBoolean();
+
+        private ReservedBuffer(ByteBuffer buffer, RetainedBucket bucket)
+        {
+            super(ArrayByteBufferPool.this, buffer);
+            _bucket = Objects.requireNonNull(bucket);
+        }
+
+        @Override
+        public boolean release()
+        {
+            boolean released = super.release();
+            if (released && _removed.compareAndSet(false, true))
+                reserve(_bucket, getByteBuffer());
+            return released;
+        }
+
+        void remove()
+        {
+            // Buffer never added to pool, so just prevent future reservation
+            _removed.compareAndSet(false, true);
+        }
+    }
+
+    private class PooledBuffer extends RetainableByteBuffer.Pooled
+    {
+        private final ReferenceCounter _referenceCounter;
+        private final RetainedBucket _bucket;
+        private final Pool.Entry<RetainableByteBuffer.Pooled> _entry;
         private int _usages;
 
-        private Buffer(ByteBuffer buffer, Consumer<RetainableByteBuffer> releaser)
+        private PooledBuffer(ByteBuffer buffer, RetainedBucket bucket, Pool.Entry<RetainableByteBuffer.Pooled> entry)
         {
-            super(buffer);
-            this._releaser = releaser;
+            super(ArrayByteBufferPool.this, buffer, new ReferenceCounter(0));
+            if (getWrapped() instanceof  ReferenceCounter referenceCounter)
+                _referenceCounter = referenceCounter;
+            else
+                throw new IllegalArgumentException();
+            _bucket = Objects.requireNonNull(bucket);
+            _entry = Objects.requireNonNull(entry);
         }
 
         @Override
@@ -597,11 +654,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             boolean released = super.release();
             if (released)
-            {
-                if (_releaser != null)
-                    _releaser.accept(this);
-            }
+                ArrayByteBufferPool.this.release(_bucket, _entry);
             return released;
+        }
+
+        void remove()
+        {
+            ArrayByteBufferPool.this.remove(_bucket, _entry);
         }
 
         private int use()
@@ -610,13 +669,24 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 _usages = 0;
             return _usages;
         }
+
+        /**
+         * @see ReferenceCounter#acquire()
+         */
+        protected void acquire()
+        {
+            _referenceCounter.acquire();
+        }
     }
 
     /**
      * A variant of the {@link ArrayByteBufferPool} that
      * uses buckets of buffers that increase in size by a power of
      * 2 (e.g. 1k, 2k, 4k, 8k, etc.).
+     * @deprecated Usage of {@code Quadratic} is often wasteful of additional space and can increase contention on
+     * the larger buffers.
      */
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public static class Quadratic extends ArrayByteBufferPool
     {
         public Quadratic()
@@ -647,14 +717,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * <p>A variant of {@link ArrayByteBufferPool} that tracks buffer
      * acquires/releases, useful to identify buffer leaks.</p>
      * <p>Use {@link #getLeaks()} when the system is idle to get
-     * the {@link Buffer}s that have been leaked, which contain
+     * the {@link TrackedBuffer}s that have been leaked, which contain
      * the stack trace information of where the buffer was acquired.</p>
      */
     public static class Tracking extends ArrayByteBufferPool
     {
         private static final Logger LOG = LoggerFactory.getLogger(Tracking.class);
 
-        private final Set<Buffer> buffers = ConcurrentHashMap.newKeySet();
+        private final Set<TrackedBuffer> buffers = ConcurrentHashMap.newKeySet();
 
         public Tracking()
         {
@@ -666,23 +736,33 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             super(minCapacity, maxCapacity, maxBucketSize);
         }
 
+        public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize);
+        }
+
         public Tracking(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
             super(minCapacity, -1, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
         }
 
-        @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
-            RetainableByteBuffer buffer = super.acquire(size, direct);
-            Buffer wrapper = new Buffer(buffer, size);
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
+        }
+
+        @Override
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+        {
+            RetainableByteBuffer.Mutable buffer = super.acquire(size, direct);
+            TrackedBuffer wrapper = new TrackedBuffer(buffer, size);
             if (LOG.isDebugEnabled())
                 LOG.debug("acquired {}", wrapper);
             buffers.add(wrapper);
             return wrapper;
         }
 
-        public Set<Buffer> getLeaks()
+        public Set<TrackedBuffer> getLeaks()
         {
             return buffers;
         }
@@ -690,11 +770,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public String dumpLeaks()
         {
             return getLeaks().stream()
-                .map(Buffer::dump)
+                .map(TrackedBuffer::dump)
                 .collect(Collectors.joining(System.lineSeparator()));
         }
 
-        public class Buffer extends RetainableByteBuffer.Wrapper
+        public class TrackedBuffer extends RetainableByteBuffer.FixedCapacity
         {
             private final int size;
             private final Instant acquireInstant;
@@ -703,12 +783,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             private final List<Throwable> releaseStacks = new CopyOnWriteArrayList<>();
             private final List<Throwable> overReleaseStacks = new CopyOnWriteArrayList<>();
 
-            private Buffer(RetainableByteBuffer wrapped, int size)
+            private TrackedBuffer(RetainableByteBuffer.Mutable wrapped, int size)
             {
-                super(wrapped);
+                super(wrapped.getByteBuffer(), wrapped);
                 this.size = size;
                 this.acquireInstant = Instant.now();
-                this.acquireStack = new Throwable();
+                this.acquireStack = new Throwable(Thread.currentThread().getName());
             }
 
             public int getSize()
@@ -727,10 +807,38 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             }
 
             @Override
+            public RetainableByteBuffer slice()
+            {
+                RetainableByteBuffer slice = super.slice();
+                return new Mutable.Wrapper(slice)
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        return TrackedBuffer.this.release();
+                    }
+                };
+            }
+
+            @Override
+            public RetainableByteBuffer slice(long length)
+            {
+                RetainableByteBuffer slice = super.slice(length);
+                return new Mutable.Wrapper(slice)
+                {
+                    @Override
+                    public boolean release()
+                    {
+                        return TrackedBuffer.this.release();
+                    }
+                };
+            }
+
+            @Override
             public void retain()
             {
                 super.retain();
-                retainStacks.add(new Throwable());
+                retainStacks.add(new Throwable(Thread.currentThread().getName()));
             }
 
             @Override
@@ -751,9 +859,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 catch (IllegalStateException e)
                 {
                     buffers.add(this);
-                    overReleaseStacks.add(new Throwable());
+                    overReleaseStacks.add(new Throwable(Thread.currentThread().getName()));
                     throw e;
                 }
+            }
+
+            @Override
+            protected void addExtraStringInfo(StringBuilder builder)
+            {
+                builder.append(",@");
+                builder.append(Integer.toHexString(System.identityHashCode(getWrapped())));
             }
 
             public String dump()
@@ -776,7 +891,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 {
                     overReleaseStack.printStackTrace(pw);
                 }
-                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getWrapped(), w);
+                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getRetained(), w);
             }
         }
     }

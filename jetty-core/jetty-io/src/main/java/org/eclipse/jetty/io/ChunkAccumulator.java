@@ -27,10 +27,12 @@ import org.eclipse.jetty.util.CompletableTask;
 /**
  * An accumulator of {@link Content.Chunk}s used to facilitate minimal copy
  * aggregation of multiple chunks.
+ * @deprecated use {@link RetainableByteBuffer.DynamicCapacity}
  */
+@Deprecated (forRemoval = true, since = "12.1.0")
 public class ChunkAccumulator
 {
-    private static final ByteBufferPool NON_POOLING = new ByteBufferPool.NonPooling();
+    private static final ByteBufferPool NON_POOLING = ByteBufferPool.NON_POOLING;
     private final List<Chunk> _chunks = new ArrayList<>();
     private int _length;
 

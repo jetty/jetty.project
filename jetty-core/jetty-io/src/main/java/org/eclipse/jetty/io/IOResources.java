@@ -22,7 +22,6 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
-import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -58,23 +57,21 @@ public class IOResources
             return RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
 
         long longLength = resource.length();
-        if (longLength > Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Resource length exceeds 2 GiB: " + resource);
-        int length = (int)longLength;
 
         bufferPool = bufferPool == null ? ByteBufferPool.NON_POOLING : bufferPool;
 
         // Optimize for PathResource.
         Path path = resource.getPath();
-        if (path != null)
+        if (path != null && longLength < Integer.MAX_VALUE)
         {
-            RetainableByteBuffer retainableByteBuffer = bufferPool.acquire(length, direct);
+            // TODO convert to a Dynamic once HttpContent uses writeTo semantics
+            RetainableByteBuffer retainableByteBuffer = bufferPool.acquire((int)longLength, direct);
             try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
             {
                 long totalRead = 0L;
                 ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
                 int pos = BufferUtil.flipToFill(byteBuffer);
-                while (totalRead < length)
+                while (totalRead < longLength)
                 {
                     int read = seekableByteChannel.read(byteBuffer);
                     if (read == -1)
@@ -92,25 +89,38 @@ public class IOResources
         }
 
         // Fallback to InputStream.
+        RetainableByteBuffer buffer = null;
         try (InputStream inputStream = resource.newInputStream())
         {
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
 
-            ByteBufferAggregator aggregator = new ByteBufferAggregator(bufferPool, direct, length > -1 ? length : 4096, length > -1 ? length : Integer.MAX_VALUE);
-            byte[] byteArray = new byte[4096];
+            RetainableByteBuffer.DynamicCapacity retainableByteBuffer = new RetainableByteBuffer.DynamicCapacity(bufferPool, direct, longLength);
             while (true)
             {
-                int read = inputStream.read(byteArray);
+                if (buffer == null)
+                    buffer = bufferPool.acquire(8192, false);
+                int read = inputStream.read(buffer.getByteBuffer().array());
                 if (read == -1)
                     break;
-                aggregator.aggregate(ByteBuffer.wrap(byteArray, 0, read));
+                buffer.getByteBuffer().limit(read);
+                retainableByteBuffer.append(buffer);
+                if (buffer.isRetained())
+                {
+                    buffer.release();
+                    buffer = null;
+                }
             }
-            return aggregator.takeRetainableByteBuffer();
+            return retainableByteBuffer;
         }
         catch (IOException e)
         {
             throw new RuntimeIOException(e);
+        }
+        finally
+        {
+            if (buffer != null)
+                buffer.release();
         }
     }
 
@@ -137,13 +147,7 @@ public class IOResources
         Path path = resource.getPath();
         if (path != null)
         {
-            PathContentSource pathContentSource = new PathContentSource(path, bufferPool);
-            if (bufferSize > 0)
-            {
-                pathContentSource.setBufferSize(bufferSize);
-                pathContentSource.setUseDirectByteBuffers(direct);
-            }
-            return pathContentSource;
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, 0, -1);
         }
         if (resource instanceof MemoryResource memoryResource)
         {
@@ -187,18 +191,12 @@ public class IOResources
         Path path = resource.getPath();
         if (path != null)
         {
-            RangedPathContentSource contentSource = new RangedPathContentSource(path, bufferPool, first, length);
-            if (bufferSize > 0)
-            {
-                contentSource.setBufferSize(bufferSize);
-                contentSource.setUseDirectByteBuffers(direct);
-            }
-            return contentSource;
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), path, first, length);
         }
 
         // Try an optimization for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
-            return new ByteBufferContentSource(ByteBuffer.wrap(memoryResource.getBytes()));
+            return Content.Source.from(ByteBuffer.wrap(memoryResource.getBytes()));
 
         // Fallback to InputStream.
         try
@@ -206,13 +204,7 @@ public class IOResources
             InputStream inputStream = resource.newInputStream();
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
-            RangedInputStreamContentSource contentSource = new RangedInputStreamContentSource(inputStream, bufferPool, first, length);
-            if (bufferSize > 0)
-            {
-                contentSource.setBufferSize(bufferSize);
-                contentSource.setUseDirectByteBuffers(direct);
-            }
-            return contentSource;
+            return Content.Source.from(new ByteBufferPool.Sized(bufferPool, direct, bufferSize), inputStream, first, length);
         }
         catch (IOException e)
         {
@@ -427,86 +419,6 @@ public class IOResources
                 retainableByteBuffer.release();
             IO.close(channel);
             super.onCompleteFailure(x);
-        }
-    }
-
-    /**
-     * <p>A specialized {@link PathContentSource}
-     * whose content is sliced by a byte range.</p>
-     */
-    private static class RangedPathContentSource extends PathContentSource
-    {
-        private final long first;
-        private final long length;
-        private long toRead;
-
-        public RangedPathContentSource(Path path, ByteBufferPool bufferPool, long first, long length)
-        {
-            super(path, bufferPool);
-            // TODO perform sanity checks on first and length?
-            this.first = first;
-            this.length = length;
-        }
-
-        @Override
-        protected SeekableByteChannel open() throws IOException
-        {
-            SeekableByteChannel channel = super.open();
-            if (first > -1)
-                channel.position(first);
-            toRead = length;
-            return channel;
-        }
-
-        @Override
-        protected int read(SeekableByteChannel channel, ByteBuffer byteBuffer) throws IOException
-        {
-            int read = super.read(channel, byteBuffer);
-            if (read <= 0)
-                return read;
-
-            read = (int)Math.min(read, toRead);
-            if (read > -1)
-            {
-                toRead -= read;
-                byteBuffer.position(read);
-            }
-            return read;
-        }
-
-        @Override
-        protected boolean isReadComplete(long read)
-        {
-            return read == length;
-        }
-    }
-
-    /**
-     * <p>A specialized {@link InputStreamContentSource}
-     * whose content is sliced by a byte range.</p>
-     */
-    private static class RangedInputStreamContentSource extends InputStreamContentSource
-    {
-        private long toRead;
-
-        public RangedInputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool, long first, long length) throws IOException
-        {
-            super(inputStream, bufferPool);
-            inputStream.skipNBytes(first);
-            // TODO perform sanity checks on length?
-            this.toRead = length;
-        }
-
-        @Override
-        protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
-        {
-            if (toRead == 0)
-                return -1;
-            int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
-            int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
-            int read = inputStream.read(buffer, 0, len);
-            toRead -= read;
-            return read;
         }
     }
 }

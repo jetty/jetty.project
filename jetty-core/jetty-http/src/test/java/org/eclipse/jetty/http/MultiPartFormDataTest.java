@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -1601,24 +1602,17 @@ public class MultiPartFormDataTest
         }
     }
 
-    private static class NonRetainableChunk implements Content.Chunk
+    private static class NonRetainableChunk extends RetainableByteBuffer.NonRetainableByteBuffer implements Content.Chunk
     {
-        private final ByteBuffer _content;
         private final boolean _isLast;
         private final Throwable _failure;
 
         public NonRetainableChunk(Content.Chunk chunk)
         {
-            _content = BufferUtil.copy(chunk.getByteBuffer());
+            super(BufferUtil.copy(chunk.getByteBuffer()));
             _isLast = chunk.isLast();
             _failure = chunk.getFailure();
             chunk.release();
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return _content;
         }
 
         @Override

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +21,7 @@ import org.eclipse.jetty.http2.generator.WindowUpdateGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,17 +52,12 @@ public class WindowUpdateGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
             generator.generateWindowUpdate(accumulator, streamId, windowUpdate);
 
             frames.clear();
-            for (ByteBuffer buffer : accumulator.getByteBuffers())
-            {
-                while (buffer.hasRemaining())
-                {
-                    parser.parse(buffer);
-                }
-            }
+            UnknownParseTest.parse(parser, accumulator);
+            accumulator.release();
         }
 
         assertEquals(1, frames.size());
@@ -93,17 +88,12 @@ public class WindowUpdateGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
             generator.generateWindowUpdate(accumulator, streamId, windowUpdate);
 
             frames.clear();
-            for (ByteBuffer buffer : accumulator.getByteBuffers())
-            {
-                while (buffer.hasRemaining())
-                {
-                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-                }
-            }
+            parser.parse(accumulator.getByteBuffer());
+            accumulator.release();
 
             assertEquals(1, frames.size());
             WindowUpdateFrame frame = frames.get(0);

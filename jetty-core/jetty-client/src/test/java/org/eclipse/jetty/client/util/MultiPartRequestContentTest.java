@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -52,8 +53,10 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.eclipse.jetty.io.Content.Source.asByteBuffer;
 import static org.eclipse.jetty.toolchain.test.StackUtils.supply;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.eclipse.jetty.util.BufferUtil.toBuffer;
+import static org.eclipse.jetty.util.BufferUtil.toHexString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -169,7 +172,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 MultiPart.Part part = parts.iterator().next();
                 assertEquals(name, part.getName());
                 assertEquals("text/plain", part.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                assertArrayEquals(data, Content.Source.asByteBuffer(part.getContentSource()).array());
+                assertEquals(toHexString(toBuffer(data)), toHexString(asByteBuffer(part.getContentSource())));
             }
         });
 
@@ -222,7 +225,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 assertEquals(contentType, part.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 assertEquals(fileName, part.getFileName());
                 assertEquals(data.length, part.getContentSource().getLength());
-                assertArrayEquals(data, Content.Source.asByteBuffer(part.getContentSource()).array());
+                assertEquals(toHexString(toBuffer(data)), toHexString(asByteBuffer(part.getContentSource())));
             }
         });
 
@@ -283,8 +286,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        PathRequestContent content = new PathRequestContent(contentType, tmpPath, client.getByteBufferPool());
-        content.setUseDirectByteBuffers(client.isUseOutputDirectByteBuffers());
+        PathRequestContent content = new PathRequestContent(contentType, tmpPath, new ByteBufferPool.Sized(client.getByteBufferPool(), client.isUseOutputDirectByteBuffers(), -1));
         multiPart.addPart(new MultiPart.ContentSourcePart(name, tmpPath.getFileName().toString(), null, content));
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
@@ -336,7 +338,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 assertEquals("application/octet-stream", filePart.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 assertEquals(tmpPath.getFileName().toString(), filePart.getFileName());
                 assertEquals(Files.size(tmpPath), filePart.getContentSource().getLength());
-                assertArrayEquals(data, Content.Source.asByteBuffer(filePart.getContentSource()).array());
+                assertEquals(toHexString(toBuffer(data)), toHexString(asByteBuffer(filePart.getContentSource())));
             }
         });
 
@@ -377,7 +379,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
                 assertEquals("file", filePart.getName());
                 assertEquals("application/octet-stream", filePart.getHeaders().get(HttpHeader.CONTENT_TYPE));
                 assertEquals("fileName", filePart.getFileName());
-                assertArrayEquals(fileData, Content.Source.asByteBuffer(filePart.getContentSource()).array());
+                assertEquals(toHexString(toBuffer(fileData)), toHexString(asByteBuffer(filePart.getContentSource())));
             }
         });
 

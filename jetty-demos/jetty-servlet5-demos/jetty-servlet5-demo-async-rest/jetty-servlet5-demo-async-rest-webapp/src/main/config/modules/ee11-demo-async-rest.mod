@@ -14,5 +14,6 @@ webapp
 ee11-deploy
 
 [files]
+basehome:modules/demo.d/ee11-demo-async-rest.properties|webapps/ee11-demo-async-rest.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-async-rest-webapp/${jetty.version}/war|webapps/ee11-demo-async-rest.war
 

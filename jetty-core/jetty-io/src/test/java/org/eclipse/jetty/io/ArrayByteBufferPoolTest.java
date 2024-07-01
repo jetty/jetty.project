@@ -32,6 +32,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -365,6 +366,7 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
+    @Deprecated(forRemoval = true)
     public void testQuadraticPool()
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic();
@@ -438,10 +440,49 @@ public class ArrayByteBufferPoolTest
         Collections.reverse(buffers);
         buffers.forEach(RetainableByteBuffer::release);
 
-        Pool<RetainableByteBuffer> bucketPool = pool.poolFor(maxCapacity, true);
+        Pool<RetainableByteBuffer.Pooled> bucketPool = pool.poolFor(maxCapacity, true);
         assertThat(bucketPool, instanceOf(CompoundPool.class));
-        CompoundPool<RetainableByteBuffer> compoundPool = (CompoundPool<RetainableByteBuffer>)bucketPool;
+        CompoundPool<RetainableByteBuffer.Pooled> compoundPool = (CompoundPool<RetainableByteBuffer.Pooled>)bucketPool;
         assertThat(compoundPool.getPrimaryPool().size(), is(ConcurrentPool.OPTIMAL_MAX_SIZE));
         assertThat(compoundPool.getSecondaryPool().size(), is(0));
+    }
+
+    @Test
+    public void testRemoveAndRelease()
+    {
+        ArrayByteBufferPool pool = new ArrayByteBufferPool();
+
+        RetainableByteBuffer reserved0 = pool.acquire(1024, false);
+        RetainableByteBuffer reserved1 = pool.acquire(1024, false);
+
+        RetainableByteBuffer acquired0 = pool.acquire(1024, false);
+        acquired0.release();
+        acquired0 = pool.acquire(1024, false);
+        RetainableByteBuffer acquired1 = pool.acquire(1024, false);
+        acquired1.release();
+        acquired1 = pool.acquire(1024, false);
+
+        RetainableByteBuffer retained0 = pool.acquire(1024, false);
+        retained0.release();
+        retained0 = pool.acquire(1024, false);
+        retained0.retain();
+        RetainableByteBuffer retained1 = pool.acquire(1024, false);
+        retained1.release();
+        retained1 = pool.acquire(1024, false);
+        retained1.retain();
+
+        assertTrue(pool.removeAndRelease(reserved1));
+        assertTrue(pool.removeAndRelease(acquired1));
+        assertFalse(pool.removeAndRelease(retained1));
+        assertTrue(retained1.release());
+
+        assertThat(pool.getHeapByteBufferCount(), is(2L));
+        assertTrue(reserved0.release());
+        assertThat(pool.getHeapByteBufferCount(), is(3L));
+        assertTrue(acquired0.release());
+        assertThat(pool.getHeapByteBufferCount(), is(3L));
+        assertFalse(retained0.release());
+        assertTrue(retained0.release());
+        assertThat(pool.getHeapByteBufferCount(), is(3L));
     }
 }

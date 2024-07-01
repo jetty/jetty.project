@@ -15,8 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -165,46 +163,55 @@ public class MultiPartByteRanges
     }
 
     /**
-     * <p>A specialized {@link org.eclipse.jetty.io.content.PathContentSource}
-     * whose content is sliced by a byte range.</p>
+     * <p>A specialized {@link Content.Source}
+     * whose {@link Path} content is sliced by a byte range.</p>
+     *
+     * @deprecated use {@link Content.Source#from(ByteBufferPool.Sized, Path, long, long)}
      */
-    public static class PathContentSource extends org.eclipse.jetty.io.content.PathContentSource
+    @Deprecated(forRemoval = true, since = "12.0.11")
+    public static class PathContentSource implements Content.Source
     {
-        private final ByteRange byteRange;
-        private long toRead;
+        private final Content.Source contentSource;
 
         public PathContentSource(Path path, ByteRange byteRange)
         {
-            super(path);
-            this.byteRange = byteRange;
+            contentSource = Content.Source.from(null, path, byteRange.first(), byteRange.getLength());
         }
 
         @Override
-        protected SeekableByteChannel open() throws IOException
+        public void demand(Runnable demandCallback)
         {
-            SeekableByteChannel channel = super.open();
-            channel.position(byteRange.first());
-            toRead = byteRange.getLength();
-            return channel;
+            contentSource.demand(demandCallback);
         }
 
         @Override
-        protected int read(SeekableByteChannel channel, ByteBuffer byteBuffer) throws IOException
+        public void fail(Throwable failure)
         {
-            int read = super.read(channel, byteBuffer);
-            if (read <= 0)
-                return read;
-
-            read = (int)Math.min(read, toRead);
-            toRead -= read;
-            byteBuffer.position(read);
-            return read;
+            contentSource.fail(failure);
         }
 
         @Override
-        protected boolean isReadComplete(long read)
+        public void fail(Throwable failure, boolean last)
         {
-            return read == byteRange.getLength();
+            contentSource.fail(failure, last);
+        }
+
+        @Override
+        public long getLength()
+        {
+            return contentSource.getLength();
+        }
+
+        @Override
+        public Content.Chunk read()
+        {
+            return contentSource.read();
+        }
+
+        @Override
+        public boolean rewind()
+        {
+            return contentSource.rewind();
         }
     }
 

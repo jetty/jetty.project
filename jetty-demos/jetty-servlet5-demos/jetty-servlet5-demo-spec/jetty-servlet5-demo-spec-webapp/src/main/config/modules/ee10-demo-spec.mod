@@ -21,4 +21,5 @@ ee10-demo-mock-resources
 
 [files]
 basehome:modules/demo.d/ee10-demo-spec.xml|webapps/ee10-demo-spec.xml
+basehome:modules/demo.d/ee10-demo-spec.properties|webapps/ee10-demo-spec.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-spec-webapp/${jetty.version}/war|webapps/ee10-demo-spec.war

@@ -21,4 +21,6 @@ ext
 
 [files]
 basehome:modules/demo.d/ee10-demo-jaas.xml|webapps/ee10-demo-jaas.xml
+basehome:modules/demo.d/ee10-demo-jaas.properties|webapps/ee10-demo-jaas.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-jaas-webapp/${jetty.version}/war|webapps/ee10-demo-jaas.war
+

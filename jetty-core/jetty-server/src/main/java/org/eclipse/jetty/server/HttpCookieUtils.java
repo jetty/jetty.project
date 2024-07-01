@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>Utility methods for server-side HTTP cookie handling.</p>
@@ -106,16 +107,16 @@ public final class HttpCookieUtils
 
     public static String getSetCookie(HttpCookie httpCookie, CookieCompliance compliance)
     {
-        if (compliance == null || CookieCompliance.RFC6265_LEGACY.compliesWith(compliance))
-            return getRFC6265SetCookie(httpCookie);
-        return getRFC2965SetCookie(httpCookie);
+        if (compliance != null && compliance.getName().contains("RFC2965"))
+            return getRFC2965SetCookie(httpCookie);
+        return getRFC6265SetCookie(httpCookie);
     }
 
     public static String getRFC2965SetCookie(HttpCookie httpCookie)
     {
         // Check arguments
         String name = httpCookie.getName();
-        if (name == null || name.length() == 0)
+        if (name == null || name.isEmpty())
             throw new IllegalArgumentException("Invalid cookie name");
 
         StringBuilder builder = new StringBuilder();
@@ -129,11 +130,11 @@ public final class HttpCookieUtils
 
         // Look for domain and path fields and check if they need to be quoted.
         String domain = httpCookie.getDomain();
-        boolean hasDomain = domain != null && domain.length() > 0;
+        boolean hasDomain = domain != null && !domain.isEmpty();
         boolean quoteDomain = hasDomain && isQuoteNeeded(domain);
 
         String path = httpCookie.getPath();
-        boolean hasPath = path != null && path.length() > 0;
+        boolean hasPath = path != null && !path.isEmpty();
         boolean quotePath = hasPath && isQuoteNeeded(path);
 
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
@@ -209,7 +210,7 @@ public final class HttpCookieUtils
     {
         // Check arguments
         String name = httpCookie.getName();
-        if (name == null || name.length() == 0)
+        if (name == null || name.isEmpty())
             throw new IllegalArgumentException("Bad cookie name");
 
         try
@@ -233,12 +234,12 @@ public final class HttpCookieUtils
 
         // Append path
         String path = httpCookie.getPath();
-        if (path != null && path.length() > 0)
+        if (path != null && !path.isEmpty())
             builder.append("; Path=").append(path);
 
         // Append domain
         String domain = httpCookie.getDomain();
-        if (domain != null && domain.length() > 0)
+        if (domain != null && !domain.isEmpty())
             builder.append("; Domain=").append(domain);
 
         // Handle max-age and/or expires
@@ -253,8 +254,11 @@ public final class HttpCookieUtils
             else
                 builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
 
-            builder.append("; Max-Age=");
-            builder.append(maxAge);
+            if (maxAge > 0)
+            {
+                builder.append("; Max-Age=");
+                builder.append(maxAge);
+            }
         }
 
         // add the other fields
@@ -288,8 +292,9 @@ public final class HttpCookieUtils
         {
             if (KNOWN_ATTRIBUTES.contains(e.getKey()))
                 continue;
-            builder.append("; ").append(e.getKey()).append("=");
-            builder.append(e.getValue());
+            builder.append("; ").append(e.getKey());
+            if (StringUtil.isNotBlank(e.getValue()))
+                builder.append("=").append(e.getValue());
         }
 
         return builder.toString();
@@ -304,7 +309,7 @@ public final class HttpCookieUtils
      */
     private static boolean isQuoteNeeded(String text)
     {
-        if (text == null || text.length() == 0)
+        if (text == null || text.isEmpty())
             return true;
 
         if (QuotedStringTokenizer.isQuoted(text))

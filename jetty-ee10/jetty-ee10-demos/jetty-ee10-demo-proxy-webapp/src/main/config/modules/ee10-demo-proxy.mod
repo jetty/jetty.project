@@ -14,4 +14,5 @@ webapp
 ee10-deploy
 
 [files]
+basehome:modules/demo.d/ee10-demo-proxy.properties|webapps/ee10-demo-proxy.properties
 maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-proxy-webapp/${jetty.version}/war|webapps/ee10-demo-proxy.war

@@ -2048,7 +2048,7 @@ public class ServletContextHandler extends ContextHandler
     public class ServletContextApi implements jakarta.servlet.ServletContext
     {
         public static final int SERVLET_MAJOR_VERSION = 6;
-        public static final int SERVLET_MINOR_VERSION = 0;
+        public static final int SERVLET_MINOR_VERSION = 1;
 
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
         private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;

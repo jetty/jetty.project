@@ -277,4 +277,10 @@ public class SelectiveJarResource extends Resource
             }
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return "(Selective Jar/Maven) " + _delegate.toString();
+    }
 }

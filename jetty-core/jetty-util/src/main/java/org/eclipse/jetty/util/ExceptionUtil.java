@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -153,6 +154,16 @@ public class ExceptionUtil
      * @param t2 Another Throwable or null
      * @return true iff the exceptions are not associated by being the same instance, sharing a cause or one suppressing the other.
      */
+    public static boolean areAssociated(Throwable t1, Throwable t2)
+    {
+        return t1 != null && t2 != null && !areNotAssociated(t1, t2);
+    }
+
+    /** Check if two {@link Throwable}s are associated.
+     * @param t1 A Throwable or null
+     * @param t2 Another Throwable or null
+     * @return true iff the exceptions are not associated by being the same instance, sharing a cause or one suppressing the other.
+     */
     public static boolean areNotAssociated(Throwable t1, Throwable t2)
     {
         if (t1 == null || t2 == null)
@@ -256,15 +267,7 @@ public class ExceptionUtil
 
         public void callAndCatch(Invocable.Callable task)
         {
-            try
-            {
-                if (task != null)
-                    task.call();
-            }
-            catch (Throwable t)
-            {
-                add(t);
-            }
+            ExceptionUtil.call(task, this::add);
         }
     }
 
@@ -300,8 +303,138 @@ public class ExceptionUtil
         return t1;
     }
 
-    private ExceptionUtil()
+    /** Call a method that handles a {@link Throwable}, catching and associating any exception that it throws.
+     * @param cause The {@link Throwable} to pass to the consumer
+     * @param consumer The handler of a {@link Throwable}
+     */
+    public static void call(Throwable cause, Consumer<Throwable> consumer)
     {
+        try
+        {
+            consumer.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
+            throw t;
+        }
+    }
+
+    /**
+     * Call a {@link Invocable.Callable} and handle any resulting failures
+     * @param callable The {@link org.eclipse.jetty.util.thread.Invocable.Callable} to call
+     * @param failure A handler of failures from the call
+     * @see #run(Runnable, Consumer)
+     */
+    public static void call(Invocable.Callable callable, Consumer<Throwable> failure)
+    {
+        try
+        {
+            callable.call();
+        }
+        catch (Throwable thrown)
+        {
+            try
+            {
+                failure.accept(thrown);
+            }
+            catch (Throwable alsoThrown)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
+                ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
+            }
+        }
+    }
+
+    /**
+     * Call a {@link Runnable} and handle failures
+     * @param runnable The runnable to call
+     * @param failure The handling of failures
+     * @see #call(Throwable, Consumer)
+     */
+    public static void run(Runnable runnable, Consumer<Throwable> failure)
+    {
+        try
+        {
+            runnable.run();
+        }
+        catch (Throwable thrown)
+        {
+            try
+            {
+                failure.accept(thrown);
+            }
+            catch (Throwable alsoThrown)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(alsoThrown, thrown);
+                ExceptionUtil.ifExceptionThrowUnchecked(alsoThrown);
+            }
+        }
+    }
+
+    /**
+     * Call a handler of {@link Throwable} and then always call another, suppressing any exceptions thrown.
+     * @param cause The {@link Throwable} to be passed to both consumers.
+     * @param call The first {@link Consumer} of {@link Throwable} to call.
+     * @param then The second {@link Consumer} of {@link Throwable} to call.
+     */
+    public static void callAndThen(Throwable cause, Consumer<Throwable> call, Consumer<Throwable> then)
+    {
+        try
+        {
+            call.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            then.accept(cause);
+        }
+    }
+
+    /**
+     * Call a handler of {@link Throwable} and then always call a {@link Runnable}, suppressing any exceptions thrown.
+     * @param cause The {@link Throwable} to be passed to both consumers.
+     * @param call The {@link Consumer} of {@link Throwable} to call.
+     * @param then The {@link Runnable} to call.
+     */
+    public static void callAndThen(Throwable cause, Consumer<Throwable> call, Runnable then)
+    {
+        try
+        {
+            call.accept(cause);
+        }
+        catch (Throwable t)
+        {
+            addSuppressedIfNotAssociated(cause, t);
+        }
+        finally
+        {
+            then.run();
+        }
+    }
+
+    /**
+     * Call a {@link Runnable} and then always call another, ignoring any exceptions thrown.
+     * @param call The first {@link Runnable} to call.
+     * @param then The second {@link Runnable} to call.
+     */
+    public static void callAndThen(Runnable call, Runnable then)
+    {
+        try
+        {
+            call.run();
+        }
+        catch (Throwable t)
+        {
+            // ignored
+        }
+        finally
+        {
+            then.run();
+        }
     }
 
     /**
@@ -325,5 +458,9 @@ public class ExceptionUtil
         {
             throw new RuntimeException(e.getCause());
         }
+    }
+
+    private ExceptionUtil()
+    {
     }
 }

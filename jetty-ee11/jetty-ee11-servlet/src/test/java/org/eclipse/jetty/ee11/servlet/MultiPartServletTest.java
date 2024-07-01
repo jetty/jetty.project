@@ -472,6 +472,7 @@ public class MultiPartServletTest
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setMaxParts(1);
+        formData.setMaxMemoryFileSize(-1);
         MultiPartFormData.Parts parts = formData.parse(new InputStreamContentSource(inputStream)).join();
 
         assertThat(parts.size(), is(1));

@@ -63,6 +63,7 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -861,7 +862,7 @@ public class StreamResetTest extends AbstractTest
             socket.connect(new InetSocketAddress(host, port));
 
             Generator generator = new Generator(bufferPool);
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -876,18 +877,16 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            List<ByteBuffer> buffers = accumulator.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.writeTo(Content.Sink.from(socket), false);
 
             // Wait until the server is TCP congested.
             assertTrue(flusherLatch.await(5, TimeUnit.SECONDS));
             WriteFlusher flusher = flusherRef.get();
             waitUntilTCPCongested(flusher);
 
-            accumulator.release();
+            accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            buffers = accumulator.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.writeTo(Content.Sink.from(socket), false);
             accumulator.release();
 
             assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
@@ -953,7 +952,7 @@ public class StreamResetTest extends AbstractTest
             socket.connect(new InetSocketAddress(host, port));
 
             Generator generator = new Generator(bufferPool);
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -967,8 +966,7 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(3, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            List<ByteBuffer> buffers = accumulator.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.writeTo(Content.Sink.from(socket), false);
 
             waitUntilTCPCongested(exchanger.exchange(null));
 
@@ -978,15 +976,13 @@ public class StreamResetTest extends AbstractTest
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
-            buffers = accumulator.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.writeTo(Content.Sink.from(socket), false);
             assertTrue(requestLatch1.await(5, TimeUnit.SECONDS));
 
             // Now reset the second request, which has not started writing yet.
-            accumulator.release();
+            accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            buffers = accumulator.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.writeTo(Content.Sink.from(socket), false);
             accumulator.release();
             // Wait to be sure that the server processed the reset.
             Thread.sleep(1000);

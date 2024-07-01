@@ -438,7 +438,7 @@ public class FrameFlusher extends IteratingCallback
 
     private void releaseAggregate()
     {
-        if (batchBuffer != null && !batchBuffer.hasRemaining())
+        if (batchBuffer != null && batchBuffer.isEmpty())
         {
             batchBuffer.release();
             batchBuffer = null;
