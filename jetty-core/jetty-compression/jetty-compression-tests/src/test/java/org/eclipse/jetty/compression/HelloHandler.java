@@ -13,15 +13,18 @@
 
 package org.eclipse.jetty.compression;
 
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
-public interface DynamicCompressionCoding
+public class HelloHandler extends Handler.Abstract
 {
-    void setDynamicCompressionHandler(DynamicCompressionHandler dynamicCompressionHandler);
-
-    DynamicDecompressionRequest newDecompressionRequest(Request request, CompressionConfig config);
-
-    DynamicCompressionResponse newCompressionResponse(Request request, Response response, Callback callback, CompressionConfig config);
+    @Override
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    {
+        Content.Sink.write(response, true, "Hello World", callback);
+        return true;
+    }
 }

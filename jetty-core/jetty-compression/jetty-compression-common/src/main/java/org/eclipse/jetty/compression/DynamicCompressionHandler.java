@@ -38,8 +38,48 @@ public class DynamicCompressionHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(DynamicCompressionHandler.class);
 
-    private final Map<String, DynamicCompressionCoding> supportedCompressions = new HashMap<>();
+    private final Map<String, DynamicCompressionCodec> supportedCodecs = new HashMap<>();
     private final PathMappings<CompressionConfig> pathConfigs = new PathMappings<CompressionConfig>();
+
+    public void addCodec(DynamicCompressionCodec codec)
+    {
+        if (isRunning())
+            throw new IllegalStateException("Unable to add DynamicCompressionCodec on running DynamicCompressionHandler");
+
+        supportedCodecs.put(codec.getName(), codec);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (pathConfigs.isEmpty())
+        {
+            pathConfigs.put("/", new CompressionConfig());
+        }
+
+        supportedCodecs.values().forEach(
+            (codec) ->
+            {
+                codec.setDynamicCompressionHandler(this);
+                addBean(codec);
+            }
+        );
+
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+
+        supportedCodecs.values().forEach(
+            (codec) ->
+            {
+                removeBean(codec);
+            }
+        );
+    }
 
     @Override
     public boolean handle(final Request request, final Response response, final Callback callback) throws Exception
@@ -87,7 +127,7 @@ public class DynamicCompressionHandler extends Handler.Wrapper
                 case CONTENT_ENCODING ->
                 {
                     String contentEncoding = field.getLowerCaseName();
-                    if (supportedCompressions.containsKey(contentEncoding))
+                    if (supportedCodecs.containsKey(contentEncoding))
                         requestContentEncoding = contentEncoding;
                 }
                 case ACCEPT_ENCODING ->
@@ -100,7 +140,7 @@ public class DynamicCompressionHandler extends Handler.Wrapper
                         {
                             String lvalue = StringUtil.asciiToLowerCase(value);
                             // only track encodings that are supported by this handler
-                            if (supportedCompressions.containsKey(lvalue))
+                            if (supportedCodecs.containsKey(lvalue))
                             {
                                 if (requestAcceptEncoding == null)
                                     requestAcceptEncoding = new ArrayList<>();
@@ -167,33 +207,33 @@ public class DynamicCompressionHandler extends Handler.Wrapper
 
     private Response newCompressionResponse(DynamicCompressionHandler dynamicCompressionHandler, Request request, Response response, Callback callback, String compressEncoding, CompressionConfig config)
     {
-        DynamicCompressionCoding dynamicCompressionCoding = supportedCompressions.get(compressEncoding);
-        if (dynamicCompressionCoding == null)
+        DynamicCompressionCodec dynamicCompressionCodec = supportedCodecs.get(compressEncoding);
+        if (dynamicCompressionCodec == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("No Dynamic Compression Coding for encoding type {}", compressEncoding);
             return response;
         }
 
-        return dynamicCompressionCoding.newCompressionResponse(request, response, callback, config);
+        return dynamicCompressionCodec.newCompressionResponse(request, response, callback, config);
     }
 
     private Request newDecompressionRequest(Request request, String decompressEncoding, CompressionConfig config)
     {
-        DynamicCompressionCoding dynamicCompressionCoding = supportedCompressions.get(decompressEncoding);
-        if (dynamicCompressionCoding == null)
+        DynamicCompressionCodec dynamicCompressionCodec = supportedCodecs.get(decompressEncoding);
+        if (dynamicCompressionCodec == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("No Dynamic Decompression Coding for encoding type {}", decompressEncoding);
             return request;
         }
 
-        return dynamicCompressionCoding.newDecompressionRequest(request, config);
+        return dynamicCompressionCodec.newDecompressionRequest(request, config);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,supported=%s}", getClass().getSimpleName(), hashCode(), getState(), String.join(",", supportedCompressions.keySet()));
+        return String.format("%s@%x{%s,supported=%s}", getClass().getSimpleName(), hashCode(), getState(), String.join(",", supportedCodecs.keySet()));
     }
 }

@@ -68,14 +68,14 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
 
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
     private final CRC32 _crc = new CRC32();
-    private final GzipDynamicCompressionCoding _gzipCoding;
+    private final GzipDynamicCompressionCodec _gzipCoding;
     private final int _bufferSize;
     private final boolean _syncFlush;
     private DeflaterPool.Entry _deflaterEntry;
     private RetainableByteBuffer _buffer;
     private boolean _last;
 
-    public GzipDynamicCompressionResponse(GzipDynamicCompressionCoding gzipCoding, Request request, Response response, Callback callback, CompressionConfig config)
+    public GzipDynamicCompressionResponse(GzipDynamicCompressionCodec gzipCoding, Request request, Response response, Callback callback, CompressionConfig config)
     {
         super(request, response, callback, config);
         _gzipCoding = gzipCoding;
@@ -177,7 +177,7 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
 
             if (sc == HttpStatus.NOT_MODIFIED_304)
             {
-                String requestEtags = (String)request.getAttribute(GzipDynamicCompressionCoding.GZIP_HANDLER_ETAGS);
+                String requestEtags = (String)request.getAttribute(GzipDynamicCompressionCodec.GZIP_HANDLER_ETAGS);
                 String responseEtag = fields.get(HttpHeader.ETAG);
                 if (requestEtags != null && responseEtag != null)
                 {

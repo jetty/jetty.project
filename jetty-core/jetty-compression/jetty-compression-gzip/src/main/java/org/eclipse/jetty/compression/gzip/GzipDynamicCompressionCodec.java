@@ -16,7 +16,7 @@ package org.eclipse.jetty.compression.gzip;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.compression.CompressionConfig;
-import org.eclipse.jetty.compression.DynamicCompressionCoding;
+import org.eclipse.jetty.compression.DynamicCompressionCodec;
 import org.eclipse.jetty.compression.DynamicCompressionHandler;
 import org.eclipse.jetty.compression.DynamicCompressionResponse;
 import org.eclipse.jetty.compression.DynamicDecompressionRequest;
@@ -27,21 +27,60 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GzipDynamicCompressionCoding extends ContainerLifeCycle implements DynamicCompressionCoding
+public class GzipDynamicCompressionCodec extends ContainerLifeCycle implements DynamicCompressionCodec
 {
-    public static final String GZIP_HANDLER_ETAGS = GzipDynamicCompressionCoding.class.getPackageName() + ".ETag";
-    private static final Logger LOG = LoggerFactory.getLogger(GzipDynamicCompressionCoding.class);
-
+    public static final String GZIP_HANDLER_ETAGS = GzipDynamicCompressionCodec.class.getPackageName() + ".ETag";
     public static final int DEFAULT_MIN_GZIP_SIZE = 32;
     public static final int BREAK_EVEN_GZIP_SIZE = 23;
+    private static final Logger LOG = LoggerFactory.getLogger(GzipDynamicCompressionCodec.class);
     private int _minGzipSize = DEFAULT_MIN_GZIP_SIZE;
 
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
     private Server server;
+
+    public CompressionPool<Deflater>.Entry getDeflaterEntry(Request request, long contentLength)
+    {
+        if (contentLength >= 0 && contentLength < _minGzipSize)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} excluded minGzipSize {}", this, request);
+            return null;
+        }
+
+        // check the accept encoding header
+        if (!request.getHeaders().contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} excluded not gzip accept {}", this, request);
+            return null;
+        }
+
+        return deflaterPool.acquire();
+    }
+
+    @Override
+    public String getName()
+    {
+        return "gzip";
+    }
+
+    @Override
+    public DynamicCompressionResponse newCompressionResponse(Request request, Response response, Callback callback, CompressionConfig config)
+    {
+        return new GzipDynamicCompressionResponse(this, request, response, callback, config);
+    }
+
+    @Override
+    public DynamicDecompressionRequest newDecompressionRequest(Request request, CompressionConfig config)
+    {
+        return new GzipDynamicDecompressionRequest(request, config);
+    }
 
     @Override
     public void setDynamicCompressionHandler(DynamicCompressionHandler dynamicCompressionHandler)
@@ -76,37 +115,5 @@ public class GzipDynamicCompressionCoding extends ContainerLifeCycle implements 
         inflaterPool = null;
         removeBean(deflaterPool);
         deflaterPool = null;
-    }
-
-    public CompressionPool<Deflater>.Entry getDeflaterEntry(Request request, long contentLength)
-    {
-        if (contentLength >= 0 && contentLength < _minGzipSize)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded minGzipSize {}", this, request);
-            return null;
-        }
-
-        // check the accept encoding header
-        if (!request.getHeaders().contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded not gzip accept {}", this, request);
-            return null;
-        }
-
-        return deflaterPool.acquire();
-    }
-
-    @Override
-    public DynamicDecompressionRequest newDecompressionRequest(Request request, CompressionConfig config)
-    {
-        return new GzipDynamicDecompressionRequest(request, config);
-    }
-
-    @Override
-    public DynamicCompressionResponse newCompressionResponse(Request request, Response response, Callback callback, CompressionConfig config)
-    {
-        return new GzipDynamicCompressionResponse(this, request, response, callback, config);
     }
 }
