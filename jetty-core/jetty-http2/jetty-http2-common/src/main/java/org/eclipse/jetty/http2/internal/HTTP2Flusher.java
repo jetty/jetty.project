@@ -295,7 +295,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     }
 
     @Override
-    public void succeeded()
+    protected void onSuccess()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Written - entries processed/pending {}/{}: {}/{}",
@@ -304,7 +304,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 processedEntries,
                 pendingEntries);
         finish();
-        super.succeeded();
     }
 
     private void finish()

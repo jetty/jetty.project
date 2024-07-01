@@ -521,12 +521,11 @@ public abstract class QuicSession extends ContainerLifeCycle
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("written cipher bytes on {}", QuicSession.this);
             cipherBuffer.release();
-            super.succeeded();
         }
 
         @Override

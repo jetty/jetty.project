@@ -92,7 +92,7 @@ public interface RetainableByteBuffer extends Retainable
      * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
      * @see ByteBufferPool#NON_POOLING
      */
-    static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
+    static RetainableByteBuffer.Mutable wrap(ByteBuffer byteBuffer)
     {
         return new FixedCapacity(byteBuffer);
     }
@@ -106,7 +106,7 @@ public interface RetainableByteBuffer extends Retainable
      * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
      * @see ByteBufferPool#NON_POOLING
      */
-    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
+    static RetainableByteBuffer.Mutable wrap(ByteBuffer byteBuffer, Retainable retainable)
     {
         return new FixedCapacity(byteBuffer, retainable);
     }
@@ -119,7 +119,7 @@ public interface RetainableByteBuffer extends Retainable
      * @param releaser a {@link Runnable} to call when the buffer is released.
      * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
      */
-    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
+    static RetainableByteBuffer.Mutable wrap(ByteBuffer byteBuffer, Runnable releaser)
     {
         return new FixedCapacity(byteBuffer)
         {
@@ -2009,7 +2009,7 @@ public interface RetainableByteBuffer extends Retainable
                 byteBuffer.limit(limit + Math.toIntExact(space));
                 byteBuffer = byteBuffer.slice();
                 byteBuffer.limit(limit);
-                _aggregate = RetainableByteBuffer.wrap(byteBuffer, _aggregate).asMutable();
+                _aggregate = RetainableByteBuffer.wrap(byteBuffer, _aggregate);
             }
         }
 

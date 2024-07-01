@@ -59,6 +59,20 @@ public interface ByteBufferPool
     RetainableByteBuffer.Mutable acquire(int size, boolean direct);
 
     /**
+     * {@link RetainableByteBuffer#release() Release} the buffer in a way that will remove it from any pool that it may be in.
+     * If the buffer is not in a pool, calling this method is equivalent to calling {@link RetainableByteBuffer#release()}.
+     * Calling this method satisfies any contract that requires a call to {@link RetainableByteBuffer#release()}.
+     * @return {@code true} if a call to {@link RetainableByteBuffer#release()} would have returned {@code true}.
+     * @see RetainableByteBuffer#release()
+     * @deprecated This API is experimental and may be removed in future releases
+     */
+    @Deprecated
+    default boolean removeAndRelease(RetainableByteBuffer buffer)
+    {
+        return buffer != null && buffer.release();
+    }
+
+    /**
      * <p>Removes all {@link RetainableByteBuffer#isRetained() non-retained}
      * pooled instances from this pool.</p>
      */
@@ -161,7 +175,7 @@ public interface ByteBufferPool
         @Override
         public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
-            return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct)).asMutable();
+            return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
         }
 
         @Override
