@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.compress;
 
-import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.zip.Deflater;
@@ -33,7 +32,6 @@ import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.component.Destroyable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

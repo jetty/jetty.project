@@ -9,17 +9,17 @@
   </parent>
 
   <groupId>org.eclipse.jetty.compress</groupId>
-  <artifactId>jetty-compress</artifactId>
+  <artifactId>jetty-compression</artifactId>
   <packaging>pom</packaging>
-  <name>Core :: Compress</name>
-  <description>Jetty Core Compress</description>
+  <name>Core :: Compression</name>
+  <description>Jetty Core Compression</description>
 
   <modules>
-    <module>jetty-compress-common</module>
-    <module>jetty-compress-gzip</module>
-    <module>jetty-compress-brotli</module>
-    <module>jetty-compress-zstd</module>
-    <module>jetty-compress-tests</module>
+    <module>jetty-compression-common</module>
+    <module>jetty-compression-gzip</module>
+    <module>jetty-compression-brotli</module>
+    <module>jetty-compression-zstd</module>
+    <module>jetty-compression-tests</module>
   </modules>
 
   <properties>

@@ -4,13 +4,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.compress</groupId>
-    <artifactId>jetty-compress</artifactId>
+    <artifactId>jetty-compression</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-compress-zstd</artifactId>
+  <artifactId>jetty-compression-zstd</artifactId>
   <packaging>jar</packaging>
-  <name>Core :: Compress :: ZStd Support</name>
-  <description>Jetty Core Compress :: ZStd Support</description>
+  <name>Core :: Compression :: ZStd Support</name>
+  <description>Jetty Core Compression :: ZStd Support</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.zstd</bundle-symbolic-name>
@@ -19,7 +19,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.compress</groupId>
-      <artifactId>jetty-compress-common</artifactId>
+      <artifactId>jetty-compression-common</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

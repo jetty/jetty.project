@@ -4,23 +4,22 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.compress</groupId>
-    <artifactId>jetty-compress</artifactId>
+    <artifactId>jetty-compression</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-compress-gzip</artifactId>
+  <artifactId>jetty-compression-common</artifactId>
   <packaging>jar</packaging>
-  <name>Core :: Compress :: Gzip Support</name>
-  <description>Jetty Core Compress :: Gzip Support</description>
+  <name>Core :: Compression :: Common</name>
+  <description>Jetty Core Compression Common</description>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.gzip</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.compress</groupId>
-      <artifactId>jetty-compress-common</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
     </dependency>
   </dependencies>
 </project>

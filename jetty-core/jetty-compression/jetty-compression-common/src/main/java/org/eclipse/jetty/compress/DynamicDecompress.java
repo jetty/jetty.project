@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.compress;
 
-import org.eclipse.jetty.util.component.LifeCycle;
-
 public interface DynamicDecompress
 {
 
