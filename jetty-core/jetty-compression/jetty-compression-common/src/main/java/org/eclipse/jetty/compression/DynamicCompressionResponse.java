@@ -11,20 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compress;
+package org.eclipse.jetty.compression;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 
-public class DynamicDecompressRequest extends Request.Wrapper implements Destroyable
+public class DynamicCompressionResponse extends Response.Wrapper  implements Callback, Invocable
 {
-    public DynamicDecompressRequest(Request wrapped)
-    {
-        super(wrapped);
-    }
+    protected final Callback callback;
+    protected final CompressionConfig config;
 
-    @Override
-    public void destroy()
+    public DynamicCompressionResponse(Request request, Response wrapped, Callback callback, CompressionConfig config)
     {
+        super(request, wrapped);
+        this.callback = callback;
+        this.config = config;
     }
 }

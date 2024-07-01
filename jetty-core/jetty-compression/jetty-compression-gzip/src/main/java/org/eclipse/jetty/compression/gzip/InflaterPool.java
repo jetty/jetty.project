@@ -11,57 +11,55 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.compress.gzip;
+package org.eclipse.jetty.compression.gzip;
 
-import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
-public class DeflaterPool extends CompressionPool<Deflater>
+public class InflaterPool extends CompressionPool<Inflater>
 {
-    private final int compressionLevel;
     private final boolean nowrap;
 
     /**
-     * Create a Pool of {@link Deflater} instances.
+     * Create a Pool of {@link Inflater} instances.
      * <p>
-     * If given a capacity equal to zero the Deflaters will not be pooled
+     * If given a capacity equal to zero the Inflaters will not be pooled
      * and will be created on acquire and ended on release.
-     * If given a negative capacity equal to zero there will be no size restrictions on the DeflaterPool
+     * If given a negative capacity equal to zero there will be no size restrictions on the InflaterPool
      *
-     * @param capacity maximum number of Deflaters which can be contained in the pool
-     * @param compressionLevel the default compression level for new Deflater objects
-     * @param nowrap if true then use GZIP compatible compression for all new Deflater objects
+     * @param capacity maximum number of Inflaters which can be contained in the pool
+     * @param nowrap if true then use GZIP compatible compression for all new Inflater objects
      */
-    public DeflaterPool(int capacity, int compressionLevel, boolean nowrap)
+    public InflaterPool(int capacity, boolean nowrap)
     {
         super(capacity);
-        this.compressionLevel = compressionLevel;
         this.nowrap = nowrap;
     }
 
     @Override
-    protected Deflater newPooled()
+    protected Inflater newPooled()
     {
-        return new Deflater(compressionLevel, nowrap);
+        return new Inflater(nowrap);
     }
 
     @Override
-    protected void end(Deflater deflater)
+    protected void end(Inflater inflater)
     {
-        deflater.end();
+        inflater.end();
     }
 
     @Override
-    protected void reset(Deflater deflater)
+    protected void reset(Inflater inflater)
     {
-        deflater.reset();
+        inflater.reset();
     }
 
-    public static DeflaterPool ensurePool(Container container)
+    public static InflaterPool ensurePool(Container container)
     {
-        DeflaterPool pool = container.getBean(DeflaterPool.class);
+        InflaterPool pool = container.getBean(InflaterPool.class);
         if (pool != null)
             return pool;
 
@@ -70,7 +68,7 @@ public class DeflaterPool extends CompressionPool<Deflater>
         if (threadPool != null)
             capacity = threadPool.getMaxThreads();
 
-        pool = new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
+        pool = new InflaterPool(capacity, true);
         container.addBean(pool, true);
         return pool;
     }

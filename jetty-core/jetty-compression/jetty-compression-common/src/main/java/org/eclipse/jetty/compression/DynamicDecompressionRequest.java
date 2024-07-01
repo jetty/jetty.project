@@ -11,8 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compress;
+package org.eclipse.jetty.compression;
 
-public interface DynamicCompress
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.component.Destroyable;
+
+public abstract class DynamicDecompressionRequest extends Request.Wrapper implements Destroyable
 {
+    public DynamicDecompressionRequest(Request wrapped)
+    {
+        super(wrapped);
+    }
 }

@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compress;
+package org.eclipse.jetty.compression;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.Invocable;
 
-public class DynamicCompressResponse extends Response.Wrapper  implements Callback, Invocable
+public interface DynamicCompressionCoding
 {
-    public DynamicCompressResponse(Request request, Response wrapped)
-    {
-        super(request, wrapped);
-    }
+    void setDynamicCompressionHandler(DynamicCompressionHandler dynamicCompressionHandler);
+
+    DynamicDecompressionRequest newDecompressionRequest(Request request, CompressionConfig config);
+
+    DynamicCompressionResponse newCompressionResponse(Request request, Response response, Callback callback, CompressionConfig config);
 }
