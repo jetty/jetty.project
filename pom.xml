@@ -223,7 +223,7 @@
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
     <google.errorprone.version>2.28.0</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
-    <grpc.version>1.64.0</grpc.version>
+    <grpc.version>1.65.0</grpc.version>
     <gson.version>2.11.0</gson.version>
     <guava.version>33.2.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
@@ -288,7 +288,7 @@
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.5.1</json-smart.version>
     <jsp.impl.version>9.0.90</jsp.impl.version>
-    <junit.version>5.10.2</junit.version>
+    <junit.version>5.10.3</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <license.maven.plugin.version>4.5</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
