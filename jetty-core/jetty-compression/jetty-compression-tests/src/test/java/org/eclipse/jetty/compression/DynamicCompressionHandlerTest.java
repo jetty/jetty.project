@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.compression;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.zip.GZIPInputStream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -29,11 +32,13 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -46,7 +51,6 @@ public class DynamicCompressionHandlerTest
     public void startClient() throws Exception
     {
         client = new HttpClient();
-        client.getContentDecoderFactories().clear();
         client.start();
     }
 
@@ -107,16 +111,32 @@ public class DynamicCompressionHandlerTest
         startServer(compressionHandler);
 
         URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
 
         ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
             .method(HttpMethod.GET)
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, "gzip");
+            })
             .path("/hello")
             .send();
         dumpResponse(response);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is("gzip"));
-        assertThat(response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH), is(buffer.length));
-        assertThat(response.getContentAsString(), is(new String(buffer, StandardCharsets.UTF_8)));
+        String content = new String(decompressGzip(response.getContent()), UTF_8);
+        assertThat(content, is(new String(buffer, UTF_8)));
+    }
+
+    private byte[] decompressGzip(byte[] content) throws IOException
+    {
+        try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+             ByteArrayInputStream byteIn = new ByteArrayInputStream(content);
+             GZIPInputStream gzipIn = new GZIPInputStream(byteIn))
+        {
+            IO.copy(gzipIn, byteOut);
+            return byteOut.toByteArray();
+        }
     }
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)

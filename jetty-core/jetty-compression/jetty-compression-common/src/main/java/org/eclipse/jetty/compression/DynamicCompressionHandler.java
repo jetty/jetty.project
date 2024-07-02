@@ -159,6 +159,12 @@ public class DynamicCompressionHandler extends Handler.Wrapper
         String decompressEncoding = config.getDecompressionEncoding(requestContentEncoding, request, pathInContext);
         String compressEncoding = config.getCompressionEncoding(requestAcceptEncoding, request, pathInContext);
 
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Request[{}] Content-Encoding={}, Accept-Encoding={}, decompressEncoding={}, compressEncoding={}",
+                request, requestContentEncoding, requestAcceptEncoding, decompressEncoding, compressEncoding);
+        }
+
         // Can we skip looking at the request and wrapping request or response?
         if (decompressEncoding == null && compressEncoding == null)
         {
