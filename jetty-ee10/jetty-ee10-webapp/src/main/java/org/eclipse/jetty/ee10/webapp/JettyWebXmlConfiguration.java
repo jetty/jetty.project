@@ -84,7 +84,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Obtain a WEB-INF/jetty-ee9-web.xml, falling back to
+     * Obtain a WEB-INF/jetty-ee10-web.xml, falling back to
      * looking for WEB-INF/jetty-web.xml.
      *
      * @param webInf the WEB-INF of the context to search

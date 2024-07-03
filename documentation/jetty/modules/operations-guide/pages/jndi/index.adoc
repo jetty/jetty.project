@@ -33,7 +33,10 @@ You must declare the objects you want bound so that you can then hook them into 
 
 You make these declarations in Jetty XML files that are either _external_  or _internal_ to your webapp.
 A server or context XML file is external to your webapp.
-The special `WEB-INF/jetty-env.xml` file is internal to your webapp.
+The special `WEB-INF/jetty-{ee-all}-env.xml` file is internal to your webapp. 
+
+TIP: It is good practice to name the file according to the `environment` into which your webapp is deployed. This way you can supply a file for each `environment` into which you deploy the webapp . If you only ever deploy to a single environment, you may omit the `environment` from the name, however be aware that you cannot change environments without updating the contents of the file to match.
+
 See the section on <<xml,Jetty XML files>> for more information on how to choose in which XML file to place your declarations.
 
 Regardless of its location, the XML file contains declarations of JNDI resources that can be referenced later within your webapp.
@@ -291,7 +294,7 @@ This ensures that the two are linked together and thus accessible to your webapp
 However, if the names cannot be the same, then it is possible to effectively alias one to another using an `org.eclipse.jetty.plus.jndi.Link`.
 
 Supposing you have a declaration for a Datasource named `jdbc/workforce` in a Jetty context XML file, but your web.xml wants to link to a `<resource-ref>` named `jdbc/employees`, and you cannot edit the web.xml.
-You can create a `WEB-INF/jetty-env.xml` file with an `org.eclipse.jetty.plus.jndi.Link` that ties together the names `jdbc/workforce` and `jdbc/employees`:
+You can create a `WEB-INF/jetty-{ee-all}-env.xml` file with an `org.eclipse.jetty.plus.jndi.Link` that ties together the names `jdbc/workforce` and `jdbc/employees`:
 
 The context XML file declares `jdbc/workforce`:
 
@@ -324,7 +327,7 @@ The `web.xml` refers to it as `jdbc/employees`:
 </resource-ref>
 ----
 
-Create a `WEB-INF/jetty-env.xml` file with a `org.eclipse.jetty.plus.jndi.Link` to link these names together:
+Create a `WEB-INF/jetty-{ee-all}-env.xml` file with a `org.eclipse.jetty.plus.jndi.Link` to link these names together:
 
 .wiki.xml
 [,xml,subs=attributes+]
@@ -352,8 +355,8 @@ Context XML file::
 Entries in a context XML file should be <<scope,scoped>> at the level of the webapp to which they apply (it is possible to use a less strict scoping level of Server or JVM, but not recommended).
 As a context XML file executes _before_ the webapp's classes are available, the classes for your resource must be external to the webapp and on either the container or environment classpath.
 
-WEB-INF/jetty-env.xml::
-Naming resources in a `WEB-INF/jetty-env.xml` file are <<scope,scoped>> to the webapp in which the file resides.
+WEB-INF/jetty-{ee-all}-env.xml::
+Naming resources in a `WEB-INF/jetty-{ee-all}-env.xml` file are <<scope,scoped>> to the webapp in which the file resides.
 The resources defined here may use classes from inside your webapp.
 
 [[scope]]
