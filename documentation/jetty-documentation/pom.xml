@@ -5,10 +5,10 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation</artifactId>
-    <version>12.0.10-SNAPSHOT</version>
+    <version>12.0.11-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-documentation</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <name>Documentation :: Guides</name>
 
   <properties>

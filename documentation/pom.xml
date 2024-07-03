@@ -14,5 +14,6 @@
 
   <modules>
     <module>jetty</module>
+    <module>jetty-documentation</module>
   </modules>
 </project>
