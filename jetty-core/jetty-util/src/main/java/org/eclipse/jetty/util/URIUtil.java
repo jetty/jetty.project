@@ -1900,19 +1900,19 @@ public final class URIUtil
      *     relative paths, absolute paths, and much more.
      * </p>
      *
-     * @param resource If the string starts with a recognized scheme, then it is assumed to be a representation
+     * @param reference If the reference string starts with a recognized scheme, then it is assumed to be a representation
      * of a {@link URI}, otherwise it is treated as a {@link Path} (which is then converted to a URI)
-     * @return The {@link URI} form of the resource.
+     * @return The {@link URI} form of the input string.
      */
-    public static URI toURI(String resource)
+    public static URI toURI(String reference)
     {
-        Objects.requireNonNull(resource);
+        Objects.requireNonNull(reference);
 
-        if (URIUtil.hasScheme(resource))
+        if (URIUtil.hasScheme(reference))
         {
             try
             {
-                URI uri = new URI(resource);
+                URI uri = new URI(reference);
 
                 if (ResourceFactory.isSupported(uri))
                     return correctURI(uri);
@@ -1923,7 +1923,7 @@ public final class URIUtil
                     // Input is a possible Windows path disguised as a URI "D:/path/to/resource.txt".
                     try
                     {
-                        return toURI(Paths.get(resource).toUri().toASCIIString());
+                        return toURI(Path.of(reference).toUri().toASCIIString());
                     }
                     catch (InvalidPathException x)
                     {
@@ -1949,7 +1949,7 @@ public final class URIUtil
         // Treat it as a Path, as that's all we have left to investigate.
         try
         {
-            return toURI(Paths.get(resource).toUri().toASCIIString());
+            return toURI(Path.of(reference).toUri().toASCIIString());
         }
         catch (InvalidPathException x)
         {
@@ -1960,7 +1960,7 @@ public final class URIUtil
         // a URI or a File Path.  The cause is usually due to bad input (eg:
         // characters that are not supported by file system)
         if (LOG.isDebugEnabled())
-            LOG.debug("Input string cannot be converted to URI \"{}\"", resource);
+            LOG.debug("Input string cannot be converted to URI \"{}\"", reference);
         throw new IllegalArgumentException("Cannot be converted to URI");
     }
 
