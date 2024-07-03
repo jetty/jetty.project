@@ -25,17 +25,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>The default Servlet, is a specialization of the {@link ResourceServlet} to be mapped to {@code /} as the "default"
+ * <p>The {@code DefaultServlet}, is a specialization of the {@link ResourceServlet} to be mapped to {@code /} as the "default"
  * servlet for a context.
  * </p>
  * <p>
- * In addition to the servlet init parameters that can be used to configure any {@link ResourceServlet}, this default servlet
+ * In addition to the servlet init parameters that can be used to configure any {@link ResourceServlet}, the DefaultServlet
  * also looks at {@link ServletContext#getInitParameter(String)} for any parameter starting with {@link #CONTEXT_INIT}, which
  * is then stripped and the resulting name interpreted as a {@link ResourceServlet} init parameter.
  * </p>
  * <p>
- * To server static content other than as the default servlet mapped to "/", please use the {@link ResourceServlet} directly.
- * This servlet will warn if it is used other than as the default servlet. In future, this may become a fatal error.
+ * To serve static content other than as the {@code DefaultServlet} mapped to "/", please use the {@link ResourceServlet} directly.
+ * The {@code DefaultServlet} will warn if it is used other than as the default servlet. In future, this may become a fatal error.
  * </p>
  */
 public class DefaultServlet extends ResourceServlet
@@ -71,10 +71,18 @@ public class DefaultServlet extends ResourceServlet
     public void init() throws ServletException
     {
         if ("true".equalsIgnoreCase(getInitParameter("pathInfoOnly")))
-            LOG.warn("DefaultServlet pathInfoOnly is set to true");
+            LOG.warn("DefaultServlet pathInfoOnly is set to true. Use ResourceServlet instead.");
         super.init();
     }
 
+    /**
+     * Get the path in the context, of the resource to serve for a request.
+     * The default implementation considers the {@link jakarta.servlet.http.HttpServletMapping} of the request and
+     * any {@link Dispatcher#INCLUDE_SERVLET_PATH} attributes that may be set.
+     * @param request The request
+     * @param included {@code true} if the request is for an included resource
+     * @return The encoded URI path of the resource to server, relative to the resource base.
+     */
     @Override
     protected String getEncodedPathInContext(HttpServletRequest request, boolean included)
     {
