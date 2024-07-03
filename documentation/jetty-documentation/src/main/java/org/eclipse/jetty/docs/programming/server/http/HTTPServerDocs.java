@@ -1237,7 +1237,7 @@ public class HTTPServerDocs
         // Add the ResourceServlet to serve static content from a specific location.
         ServletHolder servletHolder = context.addServlet(ResourceServlet.class, "/static/*");
         // Configure the ResourceServlet with init-parameters.
-        servletHolder.setInitParameter("resourceBase", "/absolute/path/to/static/resources/");
+        servletHolder.setInitParameter("baseResource", "/absolute/path/to/static/resources/");
         servletHolder.setInitParameter("pathInfoOnly", "true");
         servletHolder.setAsyncSupported(true);
 
