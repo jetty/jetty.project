@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -22,13 +21,13 @@ import javax.net.ssl.SSLEngineResult;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class NegotiatingServerConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(NegotiatingServerConnection.class);
-    private static final ByteBuffer EMPTY_WRITABLE_BUFFER = ByteBuffer.allocate(0);
 
     public interface CipherDiscriminator
     {
@@ -145,7 +144,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
     {
         try
         {
-            return getEndPoint().fill(EMPTY_WRITABLE_BUFFER);
+            return getEndPoint().fill(BufferUtil.EMPTY_WRITABLE_BUFFER);
         }
         catch (IOException x)
         {

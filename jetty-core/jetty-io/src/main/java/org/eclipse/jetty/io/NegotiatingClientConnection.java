@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory;
 public abstract class NegotiatingClientConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(NegotiatingClientConnection.class);
-    private static final ByteBuffer EMPTY_WRITABLE_BUFFER = ByteBuffer.allocate(0);
 
     private final SSLEngine engine;
     private final ClientConnectionFactory connectionFactory;
@@ -101,7 +99,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
     {
         try
         {
-            return getEndPoint().fill(EMPTY_WRITABLE_BUFFER);
+            return getEndPoint().fill(BufferUtil.EMPTY_WRITABLE_BUFFER);
         }
         catch (IOException x)
         {

@@ -580,7 +580,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         waitingForFill = _flushState == FlushState.WAIT_FOR_FILL;
                     }
                     if (waitingForFill)
-                        fill(BufferUtil.EMPTY_BUFFER);
+                        fill(BufferUtil.EMPTY_WRITABLE_BUFFER);
                 }
             }
             catch (Throwable e)
@@ -1080,7 +1080,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         break;
                                     if (_fillState == FillState.IDLE)
                                     {
-                                        int filled = fill(BufferUtil.EMPTY_BUFFER);
+                                        int filled = fill(BufferUtil.EMPTY_WRITABLE_BUFFER);
                                         if (_sslEngine.getHandshakeStatus() != status)
                                             continue;
                                         if (filled < 0)
@@ -1270,7 +1270,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 // Try filling ourselves
                                 try
                                 {
-                                    int filled = fill(BufferUtil.EMPTY_BUFFER);
+                                    int filled = fill(BufferUtil.EMPTY_WRITABLE_BUFFER);
                                     // If this changed the status, let's try again
                                     if (_sslEngine.getHandshakeStatus() != status)
                                         continue;
