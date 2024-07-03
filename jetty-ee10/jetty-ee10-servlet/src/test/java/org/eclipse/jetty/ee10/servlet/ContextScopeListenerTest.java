@@ -109,8 +109,6 @@ public class ContextScopeListenerTest
             }
         }), "/");
 
-        CountDownLatch complete = new CountDownLatch(3);
-
         _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
             @Override
@@ -125,15 +123,13 @@ public class ContextScopeListenerTest
             {
                 String pathInContext = (request == null) ? "null" : Request.getPathInContext(request);
                 _history.add("exitScope " + pathInContext);
-                complete.countDown();
             }
         });
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/initialPath");
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
-
-        assertTrue(complete.await(5, TimeUnit.SECONDS));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(100, TimeUnit.MILLISECONDS).until(() -> _history.size() == 7);
         assertHistory(
             "enterScope /initialPath",
             "doGet",
