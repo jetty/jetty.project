@@ -11,19 +11,24 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression;
+package org.eclipse.jetty.compression.gzip;
 
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public interface DynamicCompressionCodec
+import org.junit.jupiter.api.AfterEach;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+public class GzipEncoderTest
 {
-    String getName();
+    private final AtomicInteger poolCounter = new AtomicInteger();
 
-    void setDynamicCompressionHandler(DynamicCompressionHandler dynamicCompressionHandler);
+    @AfterEach
+    public void after()
+    {
+        assertThat(poolCounter.get(), is(0));
+    }
 
-    DynamicDecompressionRequest newDecompressionRequest(Request request, CompressionConfig config);
 
-    DynamicCompressionResponse newCompressionResponse(Request request, Response response, Callback callback, CompressionConfig config);
 }

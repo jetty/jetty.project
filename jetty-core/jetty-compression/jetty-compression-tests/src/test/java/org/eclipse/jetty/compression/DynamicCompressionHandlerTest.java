@@ -23,7 +23,8 @@ import java.util.zip.GZIPInputStream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.compression.gzip.GzipDynamicCompressionCodec;
+import org.eclipse.jetty.compression.gzip.GzipCompression;
+import org.eclipse.jetty.compression.server.DynamicCompressionHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Handler;
@@ -97,7 +98,7 @@ public class DynamicCompressionHandlerTest
         Arrays.fill(buffer, (byte)'a');
 
         DynamicCompressionHandler compressionHandler = new DynamicCompressionHandler();
-        compressionHandler.addCodec(new GzipDynamicCompressionCodec());
+        compressionHandler.addCompression(new GzipCompression());
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override

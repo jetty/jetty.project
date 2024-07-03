@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression;
+package org.eclipse.jetty.compression.server;
 
 import java.util.List;
 import java.util.Set;
@@ -282,6 +282,9 @@ public class CompressionConfig extends AbstractLifeCycle
 
     public String getCompressionEncoding(List<String> requestAcceptEncoding, Request request, String pathInContext)
     {
+        if (requestAcceptEncoding == null || requestAcceptEncoding.isEmpty())
+            return null;
+
         String matchedEncoding = null;
 
         // TODO: add testcase for `Accept-Encoding: *`

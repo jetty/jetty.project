@@ -16,6 +16,7 @@
 
   <modules>
     <module>jetty-compression-common</module>
+    <module>jetty-compression-server</module>
     <module>jetty-compression-gzip</module>
     <module>jetty-compression-brotli</module>
     <module>jetty-compression-zstd</module>

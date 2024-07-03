@@ -11,46 +11,34 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.gzip;
+package org.eclipse.jetty.compression.server;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.CRC32;
-import java.util.zip.Deflater;
 
-import org.eclipse.jetty.compression.CompressionConfig;
-import org.eclipse.jetty.compression.DynamicCompressionResponse;
+import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
-
-public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
+public class DynamicCompressionResponse extends Response.Wrapper  implements Callback, Invocable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(GzipDynamicCompressionResponse.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DynamicCompressionResponse.class);
 
-    // Per RFC-1952 this is the "unknown" OS value byte.
-    private static final byte OS_UNKNOWN = (byte)0xFF;
-    private static final byte[] GZIP_HEADER = new byte[]{
-        (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, OS_UNKNOWN
-    };
-    // Per RFC-1952, the GZIP trailer is 8 bytes
-    private static final int GZIP_TRAILER_SIZE = 8;
-
-    private enum GZState
+    private enum State
     {
         // first state, indicating that content might be compressed, pending the state of the response
         MIGHT_COMPRESS,
@@ -66,21 +54,25 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
         FINISHED
     }
 
-    private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
-    private final CRC32 _crc = new CRC32();
-    private final GzipDynamicCompressionCodec _gzipCoding;
-    private final int _bufferSize;
-    private final boolean _syncFlush;
-    private DeflaterPool.Entry _deflaterEntry;
-    private RetainableByteBuffer _buffer;
-    private boolean _last;
+    private final AtomicReference<State> state = new AtomicReference<>(State.MIGHT_COMPRESS);
+    private final Callback callback;
+    private final CompressionConfig config;
+    private final Compression compression;
+    private final Compression.Encoder encoder;
+    private final boolean syncFlush;
+    private RetainableByteBuffer buffer;
+    private boolean last;
 
-    public GzipDynamicCompressionResponse(GzipDynamicCompressionCodec gzipCoding, Request request, Response response, Callback callback, CompressionConfig config)
+    public DynamicCompressionResponse(Compression compression, Request request, Response wrapped, Callback callback, CompressionConfig config)
     {
-        super(request, response, callback, config);
-        _gzipCoding = gzipCoding;
-        _bufferSize = Math.max(GZIP_HEADER.length + GZIP_TRAILER_SIZE, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
-        _syncFlush = config.isSyncFlush();
+        super(request, wrapped);
+        this.callback = callback;
+        this.config = config;
+        this.compression = compression;
+        ByteBufferPool pool = request.getComponents().getByteBufferPool();
+        int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+        this.encoder = compression.newEncoder(pool, outputBufferSize);
+        syncFlush = config.isSyncFlush();
     }
 
     @Override
@@ -90,14 +82,14 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
         {
             // We need to write nothing here to intercept the committing of the
             // response and possibly change headers in case write is never called.
-            if (_last)
+            if (last)
                 this.callback.succeeded();
             else
                 write(true, null, this.callback);
         }
         finally
         {
-            if (getRequest() instanceof GzipDynamicDecompressionRequest gzipRequest)
+            if (getRequest() instanceof Destroyable gzipRequest)
                 gzipRequest.destroy();
         }
     }
@@ -111,7 +103,7 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
         }
         finally
         {
-            if (getRequest() instanceof GzipDynamicDecompressionRequest gzipRequest)
+            if (getRequest() instanceof Destroyable gzipRequest)
                 gzipRequest.destroy();
         }
     }
@@ -125,8 +117,8 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        _last = last;
-        switch (_state.get())
+        this.last = last;
+        switch (state.get())
         {
             case MIGHT_COMPRESS -> commit(last, callback, content);
             case NOT_COMPRESSING -> super.write(last, content, callback);
@@ -137,23 +129,15 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
                 if (BufferUtil.isEmpty(content))
                     callback.succeeded();
                 else
-                    callback.failed(new IllegalStateException("state=" + _state.get()));
+                    callback.failed(new IllegalStateException("state=" + state.get()));
             }
         }
-    }
-
-    private void addTrailer(ByteBuffer outputBuffer)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("addTrailer: _crc={}, _totalIn={})", _crc.getValue(), _deflaterEntry.get().getTotalIn());
-        outputBuffer.putInt((int)_crc.getValue());
-        outputBuffer.putInt(_deflaterEntry.get().getTotalIn());
     }
 
     private void gzip(boolean complete, final Callback callback, ByteBuffer content)
     {
         if (content != null || complete)
-            new GzipBufferCB(complete, callback, content).iterate();
+            new CompressionBufferCB(complete, callback, content).iterate();
         else
             callback.succeeded();
     }
@@ -177,11 +161,11 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
 
             if (sc == HttpStatus.NOT_MODIFIED_304)
             {
-                String requestEtags = (String)request.getAttribute(GzipDynamicCompressionCodec.GZIP_HANDLER_ETAGS);
+                String requestEtags = (String)request.getAttribute(DynamicCompressionHandler.HANDLER_ETAGS);
                 String responseEtag = fields.get(HttpHeader.ETAG);
                 if (requestEtags != null && responseEtag != null)
                 {
-                    String responseEtagGzip = etagGzip(responseEtag);
+                    String responseEtagGzip = compression.etag(responseEtag);
                     if (requestEtags.contains(responseEtagGzip))
                         fields.put(HttpHeader.ETAG, responseEtagGzip);
                 }
@@ -228,34 +212,33 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
         }
 
         // Are we the thread that commits?
-        if (_state.compareAndSet(GZState.MIGHT_COMPRESS, GZState.COMMITTING))
+        if (state.compareAndSet(State.MIGHT_COMPRESS, State.COMMITTING))
         {
             long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             if (contentLength < 0 && last)
                 contentLength = BufferUtil.length(content);
 
-            _deflaterEntry = _gzipCoding.getDeflaterEntry(request, contentLength);
-            if (_deflaterEntry == null)
+            if (compression.acceptsCompression(request.getHeaders(), contentLength))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exclude no deflater", this);
-                _state.set(GZState.NOT_COMPRESSING);
+                state.set(State.NOT_COMPRESSING);
                 super.write(last, content, callback);
                 return;
             }
 
-            fields.put(GZIP.getContentEncoding());
-            _crc.reset();
+            fields.put(compression.getContentEncodingField());
+            encoder.begin();
 
             // Adjust headers
             fields.remove(HttpHeader.CONTENT_LENGTH);
             String etag = fields.get(HttpHeader.ETAG);
             if (etag != null)
-                fields.put(HttpHeader.ETAG, etagGzip(etag));
+                fields.put(HttpHeader.ETAG, compression.etag(etag));
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} compressing {}", this, _deflaterEntry);
-            _state.set(GZState.COMPRESSING);
+                LOG.debug("{} compressing with {}", this, encoder);
+            state.set(State.COMPRESSING);
 
             if (BufferUtil.isEmpty(content))
             {
@@ -273,37 +256,32 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
         }
     }
 
-    private String etagGzip(String etag)
-    {
-        return GZIP.etag(etag);
-    }
-
     public void noCompression()
     {
         while (true)
         {
-            switch (_state.get())
+            switch (state.get())
             {
                 case NOT_COMPRESSING:
                     return;
 
                 case MIGHT_COMPRESS:
-                    if (_state.compareAndSet(GZState.MIGHT_COMPRESS, GZState.NOT_COMPRESSING))
+                    if (state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING))
                         return;
                     break;
 
                 default:
-                    throw new IllegalStateException(_state.get().toString());
+                    throw new IllegalStateException(state.get().toString());
             }
         }
     }
 
-    private class GzipBufferCB extends IteratingNestedCallback
+    private class CompressionBufferCB extends IteratingNestedCallback
     {
         private final ByteBuffer _content;
         private final boolean _last;
 
-        public GzipBufferCB(boolean complete, Callback callback, ByteBuffer content)
+        public CompressionBufferCB(boolean complete, Callback callback, ByteBuffer content)
         {
             super(callback);
             _content = content;
@@ -311,23 +289,17 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
 
             if (_content != null)
             {
-                _crc.update(_content.slice());
-                Deflater deflater = _deflaterEntry.get();
-                deflater.setInput(_content);
+                encoder.setInput(_content);
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("GzipBufferCB(complete={}, callback={}, content={})", complete, callback, BufferUtil.toDetailString(content));
+                LOG.debug("CompressionBufferCB(complete={}, callback={}, content={})", complete, callback, BufferUtil.toDetailString(content));
         }
 
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            if (_deflaterEntry != null)
-            {
-                _deflaterEntry.release();
-                _deflaterEntry = null;
-            }
+            encoder.cleanup();
             super.onCompleteFailure(x);
         }
 
@@ -335,12 +307,12 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
         protected Action process() throws Exception
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("GzipBufferCB.process(): _last={}, _buffer={}, _content={}", _last, _buffer, BufferUtil.toDetailString(_content));
+                LOG.debug("CompressionBufferCB.process(): _last={}, _buffer={}, _content={}", _last, buffer, BufferUtil.toDetailString(_content));
 
-            GZState gzstate = _state.get();
+            State gzstate = state.get();
 
             // Are we finished?
-            if (gzstate == GZState.FINISHED)
+            if (gzstate == State.FINISHED)
             {
                 // then the trailer has been generated and written below.
                 // We have finished compressing the entire content, so
@@ -350,66 +322,49 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
             }
 
             // If we have no buffer
-            if (_buffer == null)
+            if (buffer == null)
             {
-                _buffer = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
-                ByteBuffer byteBuffer = _buffer.getByteBuffer();
-                // Per RFC-1952, GZIP is LITTLE_ENDIAN
-                byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-                BufferUtil.flipToFill(byteBuffer);
-                // Add GZIP Header
-                byteBuffer.put(GZIP_HEADER, 0, GZIP_HEADER.length);
+                buffer = encoder.initialBuffer();
             }
             else
             {
                 // otherwise clear the buffer as previous writes will always fully consume.
-                BufferUtil.clearToFill(_buffer.getByteBuffer());
+                BufferUtil.clearToFill(buffer.getByteBuffer());
             }
-
-            Deflater deflater = _deflaterEntry.get();
 
             return switch (gzstate)
             {
-                case COMPRESSING -> compressing(deflater, _buffer.getByteBuffer());
-                case FINISHING -> finishing(deflater, _buffer.getByteBuffer());
-                default -> throw new IllegalStateException("Unexpected state [" + _state.get() + "]");
+                case COMPRESSING -> compressing(buffer.getByteBuffer());
+                case FINISHING -> finishing(buffer.getByteBuffer());
+                default -> throw new IllegalStateException("Unexpected state [" + state.get() + "]");
             };
         }
 
         private void cleanup()
         {
-            if (_deflaterEntry != null)
-            {
-                _deflaterEntry.release();
-                _deflaterEntry = null;
-            }
+            encoder.cleanup();
 
-            if (_buffer != null)
+            if (buffer != null)
             {
-                _buffer.release();
-                _buffer = null;
+                buffer.release();
+                buffer = null;
             }
-        }
-
-        private int getFlushMode()
-        {
-            return _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH;
         }
 
         /**
-         * This method is called directly from {@link #process()} to perform the compressing of
-         * the content this {@link GzipBufferCB} represents.
+            * This method is called directly from {@link #process()} to perform the compressing of
+         * the content this {@code CompressionBufferCB} represents.
          */
-        private Action compressing(Deflater deflater, ByteBuffer outputBuffer)
+        private Action compressing(ByteBuffer outputBuffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("compressing() deflater={}, outputBuffer={}", deflater, BufferUtil.toDetailString(outputBuffer));
+                LOG.debug("compressing() outputBuffer={}", BufferUtil.toDetailString(outputBuffer));
 
-            if (!deflater.finished())
+            if (!encoder.finished())
             {
-                if (!deflater.needsInput())
+                if (!encoder.needsInput())
                 {
-                    int len = deflater.deflate(outputBuffer, getFlushMode());
+                    int len = encoder.encode(outputBuffer);
                     if (len > 0)
                     {
                         BufferUtil.flipToFlush(outputBuffer, 0);
@@ -421,9 +376,9 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
 
             if (_last)
             {
-                _state.set(GZState.FINISHING);
-                deflater.finish();
-                return finishing(deflater, outputBuffer);
+                state.set(State.FINISHING);
+                encoder.finish();
+                return finishing(outputBuffer);
             }
 
             BufferUtil.flipToFlush(outputBuffer, 0);
@@ -433,7 +388,7 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
                 return Action.SCHEDULED;
             }
 
-            // the content held by GzipBufferCB is fully consumed as input to the Deflater instance, we are done
+            // the content held by CompressionBufferCB is fully consumed as input to the Deflater instance, we are done
             if (BufferUtil.isEmpty(_content))
                 return Action.SUCCEEDED;
 
@@ -442,21 +397,22 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
         }
 
         /**
-         * This method is called by {@link #compressing(Deflater, ByteBuffer)}, once the last chunk is compressed;
+            * This method is called by {@link #compressing(ByteBuffer)}, once the last chunk is compressed;
          * or directly from {@link #process()} if an earlier call to this method was unable to complete.
          */
-        private Action finishing(Deflater deflater, ByteBuffer outputBuffer)
+        private Action finishing(ByteBuffer outputBuffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("finishing() deflater={}, outputBuffer={}", deflater, BufferUtil.toDetailString(outputBuffer));
-            if (!deflater.finished())
+                LOG.debug("finishing() outputBuffer={}", BufferUtil.toDetailString(outputBuffer));
+            if (!encoder.finished())
             {
-                int len = deflater.deflate(outputBuffer, getFlushMode());
+                int len = encoder.encode(outputBuffer);
+
                 // try to preserve single write if possible (header + compressed content + trailer)
-                if (deflater.finished() && outputBuffer.remaining() >= GZIP_TRAILER_SIZE)
+                if (encoder.finished() && outputBuffer.remaining() >= encoder.trailerSize())
                 {
-                    _state.set(GZState.FINISHED);
-                    addTrailer(outputBuffer);
+                    state.set(State.FINISHED);
+                    encoder.addTrailer(outputBuffer);
                     BufferUtil.flipToFlush(outputBuffer, 0);
                     write(true, outputBuffer);
                     return Action.SCHEDULED;
@@ -474,8 +430,8 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
             }
             else
             {
-                _state.set(GZState.FINISHED);
-                addTrailer(outputBuffer);
+                state.set(State.FINISHED);
+                encoder.addTrailer(outputBuffer);
                 BufferUtil.flipToFlush(outputBuffer, 0);
                 write(true, outputBuffer);
                 return Action.SCHEDULED;
@@ -486,19 +442,18 @@ public class GzipDynamicCompressionResponse extends DynamicCompressionResponse
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("write() last={}, outputBuffer={}", last, BufferUtil.toDetailString(outputBuffer));
-            GzipDynamicCompressionResponse.super.write(last, outputBuffer, this);
+            DynamicCompressionResponse.super.write(last, outputBuffer, this);
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s[content=%s last=%b buffer=%s deflate=%s %s]",
+            return String.format("%s[content=%s last=%b buffer=%s %s]",
                 super.toString(),
                 BufferUtil.toDetailString(_content),
                 _last,
-                _buffer,
-                _deflaterEntry,
-                _state.get());
+                buffer,
+                state.get());
         }
     }
 }

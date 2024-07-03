@@ -7,13 +7,13 @@
     <artifactId>jetty-compression</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-compression-brotli</artifactId>
+  <artifactId>jetty-compression-server</artifactId>
   <packaging>jar</packaging>
-  <name>Core :: Compression :: Brotli Support</name>
-  <description>Jetty Core Compression :: Brotli Support</description>
+  <name>Core :: Compression :: Server</name>
+  <description>Jetty Core Compression Server</description>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.brotli</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
   </properties>
 
   <dependencies>
@@ -23,10 +23,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.aayushatharva.brotli4j</groupId>
-      <artifactId>brotli4j</artifactId>
-      <version>1.16.0</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
     </dependency>
   </dependencies>
-
 </project>
