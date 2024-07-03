@@ -1086,6 +1086,7 @@ public class URIUtilTest
         else
         {
             // URI (and unix) format (relative)
+            args.add(Arguments.of("/path/that has spaces/foo.jar", "file:///path/that%20has%20spaces/foo.jar"));
             args.add(Arguments.of("/path/to/foo.jar", "file:///path/to/foo.jar"));
             args.add(Arguments.of("/path/to/bogus.txt", "file:///path/to/bogus.txt"));
         }

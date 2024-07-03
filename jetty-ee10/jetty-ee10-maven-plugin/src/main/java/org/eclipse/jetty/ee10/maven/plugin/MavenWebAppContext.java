@@ -231,7 +231,7 @@ public class MavenWebAppContext extends WebAppContext
             // This is a user provided list of configurations.
             // We have to assume that mounting can happen.
             List<URI> uris = Stream.of(resourceBases)
-                .map(URI::create)
+                .map(URIUtil::toURI)
                 .toList();
 
             setBaseResource(this.getResourceFactory().newResource(uris));

@@ -1892,15 +1892,18 @@ public final class URIUtil
     }
 
     /**
-     * <p>Convert a String into a URI suitable for use as a Resource.</p>
+     * <p>Convert a String into a URI in a sane way.</p>
      *
-     * @param resource If the string starts with one of the ALLOWED_SCHEMES, then it is assumed to be a
-     * representation of a {@link URI}, otherwise it is treated as a {@link Path}.
+     * <p>
+     *     This exits to take an end user provided String and make a usable URI out of it.
+     *     It is capable of dealing with paths that have spaces, windows slashes, windows UNC references,
+     *     relative paths, absolute paths, and much more.
+     * </p>
+     *
+     * @param resource If the string starts with a recognized scheme, then it is assumed to be a representation
+     * of a {@link URI}, otherwise it is treated as a {@link Path} (which is then converted to a URI)
      * @return The {@link URI} form of the resource.
-     * @deprecated This method is currently resolving relative paths against the current directory, which is a mechanism
-     * that should be implemented by a {@link ResourceFactory}.   All calls to this method need to be reviewed.
      */
-    @Deprecated(since = "12.0.8")
     public static URI toURI(String resource)
     {
         Objects.requireNonNull(resource);
