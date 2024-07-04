@@ -2604,7 +2604,7 @@ public class DefaultServletTest
                 Host: test
                 Accept-Encoding: gzip
                 Connection: close
-                            
+                
                 """);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(HttpStatus.OK_200));

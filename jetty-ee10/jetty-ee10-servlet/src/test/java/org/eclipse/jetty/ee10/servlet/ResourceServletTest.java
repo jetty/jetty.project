@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -29,10 +30,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -74,6 +78,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -3465,6 +3470,82 @@ public class ResourceServletTest
         else
         {
             assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        }
+    }
+
+    @Test
+    public void testGetPrecompressedSuffixMapping() throws Exception
+    {
+        final AtomicReference<ResourceFactory> oldFileResourceFactory = new AtomicReference<>();
+        try
+        {
+            server.stop();
+            Path docRoot = workDir.getEmptyPathDir().resolve("docroot");
+            FS.ensureDirExists(docRoot);
+
+            oldFileResourceFactory.set(ResourceFactory.unregisterResourceFactory("file"));
+            ResourceFactory.registerResourceFactory("file", new URLResourceFactory());
+            Resource resource = ResourceFactory.of(context).newResource(docRoot);
+            assertThat("Expecting URLResource", resource.getClass().getName(), endsWith("URLResource"));
+            context.setBaseResource(resource);
+
+            ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
+            defholder.setInitParameter("cacheControl", "no-store");
+            defholder.setInitParameter("dirAllowed", "false");
+            defholder.setInitParameter("gzip", "false");
+            defholder.setInitParameter("precompressed", "gzip=.gz");
+
+            server.start();
+
+            FS.ensureDirExists(docRoot.resolve("scripts"));
+
+            String scriptText = "This is a script";
+            Files.writeString(docRoot.resolve("scripts/script.js"), scriptText, UTF_8);
+
+            byte[] compressedBytes = compressGzip(scriptText);
+            Files.write(docRoot.resolve("scripts/script.js.gz"), compressedBytes);
+
+            String rawResponse = connector.getResponse("""
+                GET /context/scripts/script.js HTTP/1.1
+                Host: test
+                Accept-Encoding: gzip
+                Connection: close
+                
+                """);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat("Suffix url-pattern mapping not used", response.get(HttpHeader.CACHE_CONTROL), is("no-store"));
+            String responseDecompressed = decompressGzip(response.getContentBytes());
+            assertThat(responseDecompressed, is("This is a script"));
+        }
+        finally
+        {
+            ResourceFactory.registerResourceFactory("file", oldFileResourceFactory.get());
+        }
+    }
+
+    private static byte[] compressGzip(String textToCompress) throws IOException
+    {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             GZIPOutputStream gzipOut = new GZIPOutputStream(baos);
+             ByteArrayInputStream input = new ByteArrayInputStream(textToCompress.getBytes(UTF_8)))
+        {
+            IO.copy(input, gzipOut);
+            gzipOut.flush();
+            gzipOut.finish();
+            return baos.toByteArray();
+        }
+    }
+
+    private static String decompressGzip(byte[] compressedContent) throws IOException
+    {
+        try (ByteArrayInputStream input = new ByteArrayInputStream(compressedContent);
+             GZIPInputStream gzipInput = new GZIPInputStream(input);
+             ByteArrayOutputStream output = new ByteArrayOutputStream())
+        {
+            IO.copy(gzipInput, output);
+            output.flush();
+            return output.toString(UTF_8);
         }
     }
 
