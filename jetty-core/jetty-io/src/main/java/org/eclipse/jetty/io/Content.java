@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 public class Content
 {
     private static final Logger LOG = LoggerFactory.getLogger(Content.class);
+    private static final ByteBuffer EMPTY_READ_ONLY_BUFFER = BufferUtil.EMPTY_BUFFER.asReadOnlyBuffer();
 
     private Content()
     {
@@ -709,7 +710,7 @@ public class Content
             @Override
             public ByteBuffer getByteBuffer()
             {
-                return BufferUtil.EMPTY_BUFFER;
+                return EMPTY_READ_ONLY_BUFFER;
             }
 
             @Override
@@ -733,7 +734,7 @@ public class Content
             @Override
             public ByteBuffer getByteBuffer()
             {
-                return BufferUtil.EMPTY_BUFFER;
+                return EMPTY_READ_ONLY_BUFFER;
             }
 
             @Override
@@ -860,7 +861,7 @@ public class Content
                 @Override
                 public ByteBuffer getByteBuffer()
                 {
-                    return BufferUtil.EMPTY_BUFFER;
+                    return EMPTY_READ_ONLY_BUFFER;
                 }
 
                 @Override
