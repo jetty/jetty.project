@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.11-SNAPSHOT</version>
+    <version>12.0.12-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-servlet</artifactId>
   <name>EE9 :: Servlet</name>
@@ -72,6 +72,8 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <!-- Reuse Forks causes test failures -->
+          <reuseForks>true</reuseForks>
           <argLine>@{argLine} ${jetty.surefire.argLine}
             --add-modules org.eclipse.jetty.util.ajax
             --add-reads org.eclipse.jetty.ee9.servlet=org.eclipse.jetty.logging</argLine>

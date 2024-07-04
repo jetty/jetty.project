@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -24,10 +26,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -59,10 +64,12 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -295,7 +302,7 @@ public class DefaultServletTest
             defholder.setInitParameter("redirectWelcome", "false");
             defholder.setInitParameter("gzip", "false");
 
-            defholder.setInitParameter("resourceBase", resBasePath);
+            defholder.setInitParameter("baseResource", resBasePath);
         });
 
         String req1 = "GET /context/one/deep/ HTTP/1.0\n\n";
@@ -335,7 +342,7 @@ public class DefaultServletTest
             context.setClassLoader(extraClassLoader);
 
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/extra/*");
-            defholder.setInitParameter("resourceBase", extraResourceBaseString);
+            defholder.setInitParameter("baseResource", extraResourceBaseString);
             defholder.setInitParameter("pathInfoOnly", "true");
             defholder.setInitParameter("dirAllowed", "true");
             defholder.setInitParameter("redirectWelcome", "false");
@@ -800,7 +807,7 @@ public class DefaultServletTest
         startServer((context) ->
         {
             ServletHolder altholder = context.addServlet(DefaultServlet.class, "/alt/*");
-            altholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+            altholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
             altholder.setInitParameter("pathInfoOnly", "true");
             altholder.setInitParameter("dirAllowed", "false");
             altholder.setInitParameter("redirectWelcome", "false");
@@ -808,7 +815,7 @@ public class DefaultServletTest
             altholder.setInitParameter("gzip", "false");
 
             ServletHolder otherholder = context.addServlet(DefaultServlet.class, "/other/*");
-            otherholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+            otherholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
             otherholder.setInitParameter("pathInfoOnly", "true");
             otherholder.setInitParameter("dirAllowed", "true");
             otherholder.setInitParameter("redirectWelcome", "false");
@@ -927,7 +934,7 @@ public class DefaultServletTest
         startServer((context) ->
         {
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
-            defholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+            defholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
             defholder.setInitParameter("dirAllowed", "false");
             defholder.setInitParameter("redirectWelcome", "false");
             defholder.setInitParameter("welcomeServlets", "true");
@@ -2237,7 +2244,7 @@ public class DefaultServletTest
         {
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
             defholder.setInitParameter("precompressed", "true");
-            defholder.setInitParameter("resourceBase", docRoot.toString());
+            defholder.setInitParameter("baseResource", docRoot.toString());
         });
 
         String rawResponse;
@@ -2290,7 +2297,7 @@ public class DefaultServletTest
         {
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
             defholder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
-            defholder.setInitParameter("resourceBase", docRoot.toString());
+            defholder.setInitParameter("baseResource", docRoot.toString());
         });
 
         String rawResponse;
@@ -2330,7 +2337,7 @@ public class DefaultServletTest
         {
             connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
             ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-            defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
+            defholder.setInitParameter("baseResource", docRoot.toFile().getAbsolutePath());
         });
 
         try (StacklessLogging ignore = new StacklessLogging(ResourceService.class))
@@ -2557,6 +2564,57 @@ public class DefaultServletTest
         else
         {
             assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        }
+    }
+
+    @Test
+    public void testGetPrecompressedSuffixMapping() throws Exception
+    {
+        final AtomicReference<ResourceFactory> oldFileResourceFactory = new AtomicReference<>();
+        try
+        {
+            Path docRoot = workDir.getEmptyPathDir().resolve("docroot");
+            FS.ensureDirExists(docRoot);
+
+            startServer((context) ->
+            {
+                oldFileResourceFactory.set(ResourceFactory.unregisterResourceFactory("file"));
+                ResourceFactory.registerResourceFactory("file", new URLResourceFactory());
+                Resource resource = ResourceFactory.of(context).newResource(docRoot);
+                assertThat("Expecting URLResource", resource.getClass().getName(), endsWith("URLResource"));
+                context.setBaseResource(resource);
+
+                ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
+                defholder.setInitParameter("cacheControl", "no-store");
+                defholder.setInitParameter("dirAllowed", "false");
+                defholder.setInitParameter("gzip", "false");
+                defholder.setInitParameter("precompressed", "gzip=.gz");
+            });
+
+            FS.ensureDirExists(docRoot.resolve("scripts"));
+
+            String scriptText = "This is a script";
+            Files.writeString(docRoot.resolve("scripts/script.js"), scriptText, UTF_8);
+
+            byte[] compressedBytes = compressGzip(scriptText);
+            Files.write(docRoot.resolve("scripts/script.js.gz"), compressedBytes);
+
+            String rawResponse = connector.getResponse("""
+                GET /context/scripts/script.js HTTP/1.1
+                Host: test
+                Accept-Encoding: gzip
+                Connection: close
+                            
+                """);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat("Suffix url-pattern mapping not used", response.get(HttpHeader.CACHE_CONTROL), is("no-store"));
+            String responseDecompressed = decompressGzip(response.getContentBytes());
+            assertThat(responseDecompressed, is("This is a script"));
+        }
+        finally
+        {
+            ResourceFactory.registerResourceFactory("file", oldFileResourceFactory.get());
         }
     }
 
@@ -2948,6 +3006,31 @@ public class DefaultServletTest
         assumeTrue(ret != null, "Directory creation not supported on OS: " + path + File.separator + subpath);
         assumeTrue(Files.exists(ret), "Directory creation not supported on OS: " + ret);
         return ret;
+    }
+
+    private static byte[] compressGzip(String textToCompress) throws IOException
+    {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             GZIPOutputStream gzipOut = new GZIPOutputStream(baos);
+             ByteArrayInputStream input = new ByteArrayInputStream(textToCompress.getBytes(UTF_8)))
+        {
+            IO.copy(input, gzipOut);
+            gzipOut.flush();
+            gzipOut.finish();
+            return baos.toByteArray();
+        }
+    }
+
+    private static String decompressGzip(byte[] compressedContent) throws IOException
+    {
+        try (ByteArrayInputStream input = new ByteArrayInputStream(compressedContent);
+             GZIPInputStream gzipInput = new GZIPInputStream(input);
+             ByteArrayOutputStream output = new ByteArrayOutputStream())
+        {
+            IO.copy(gzipInput, output);
+            output.flush();
+            return output.toString(UTF_8);
+        }
     }
 
     public static class Scenarios extends ArrayList<Arguments>

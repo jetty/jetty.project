@@ -1,7 +1,7 @@
 # Contributing to Jetty
 
 Contributions are always welcome!
-Please see our [Contribution Guide](https://eclipse.dev/jetty/documentation/contribution-guide/index.html) for instructions on how to set up your development environment, as well as information on our processes and coding standards.
+Please see our [Contribution Guide](https://jetty.org/docs/contribution-guide/index.html) for instructions on how to set up your development environment, as well as information on our processes and coding standards.
 
 Here are some quick links to other useful resources:
 
@@ -9,7 +9,7 @@ Here are some quick links to other useful resources:
 
 * [**Mailing list.**](https://accounts.eclipse.org/mailing-list/jetty-users) The [`jetty-users@eclipse.org`](mailto:jetty-users@eclipse.org) mailing list is a forum for technical discussion.
 
-* [**Issue tracking.**](https://github.com/jetty/jetty.project/issues) We use [GitHub Issues](https://github.com/eclipse/jetty.project/issues) to track ongoing development and issues.
+* [**Issue tracking.**](https://github.com/jetty/jetty.project/issues) We use [GitHub Issues](https://github.com/jetty/jetty.project/issues) to track ongoing development and issues.
 
 
 ## Eclipse Contributor Agreement

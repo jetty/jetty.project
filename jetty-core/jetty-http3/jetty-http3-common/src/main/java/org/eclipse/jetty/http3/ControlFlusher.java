@@ -108,7 +108,7 @@ public class ControlFlusher extends IteratingCallback
     }
 
     @Override
-    public void succeeded()
+    protected void onSuccess()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entries, this);
@@ -119,8 +119,6 @@ public class ControlFlusher extends IteratingCallback
         entries.clear();
 
         invocationType = InvocationType.NON_BLOCKING;
-
-        super.succeeded();
     }
 
     @Override

@@ -69,7 +69,7 @@ $ ulimit -n [new_value]
 .Flagging flaky tests
 ====
 Not all test cases are as timing independent as they should be, which can result in intermittent test failures.
-You can help us track these flaky tests by opening an https://github.com/eclipse/jetty.project/issues[issue] when you come across one.
+You can help us track these flaky tests by opening an https://github.com/jetty/jetty.project/issues[issue] when you come across one.
 ====
 
 [[cg-build-cache]]

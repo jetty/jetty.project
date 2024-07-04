@@ -78,8 +78,9 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiPartFormData.Parser(boundary)
-                    .parse(request)
+                MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+                parser.setMaxMemoryFileSize(-1);
+                parser.parse(request)
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
@@ -128,8 +129,9 @@ public class MultiPartFormDataHandlerTest
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
 
-                new MultiPartFormData.Parser(boundary)
-                    .parse(request)
+                MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+                parser.setMaxMemoryFileSize(-1);
+                parser.parse(request)
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)

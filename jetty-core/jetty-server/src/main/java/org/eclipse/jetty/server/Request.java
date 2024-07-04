@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
+import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -41,6 +43,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartCompliance;
+import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.internal.CompletionStreamWrapper;
@@ -579,6 +583,36 @@ public interface Request extends Attributes, Content.Source
     static List<HttpCookie> getCookies(Request request)
     {
         return CookieCache.getCookies(request);
+    }
+
+    /**
+     * <p>Get a {@link MultiPartConfig.Builder} given a {@link Request} and a location.</p>
+     *
+     * <p>If the location is null this will extract the {@link Context} temp directory from the request.
+     * The {@code maxHeaderSize}, {@link MultiPartCompliance}, {@link ComplianceViolation.Listener}
+     * are also extracted from the request. Additional settings can be configured through the
+     * {@link MultiPartConfig.Builder} which is returned.</p>
+     *
+     * @param request the request.
+     * @param location the temp directory location, or null to use the context default.
+     * @return a {@link MultiPartConfig} with settings extracted from the request.
+     */
+    static MultiPartConfig.Builder getMultiPartConfig(Request request, Path location)
+    {
+        HttpChannel httpChannel = HttpChannel.from(request);
+        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+        MultiPartCompliance multiPartCompliance = httpConfiguration.getMultiPartCompliance();
+        ComplianceViolation.Listener complianceViolationListener = httpChannel.getComplianceViolationListener();
+        int maxHeaderSize = httpConfiguration.getRequestHeaderSize();
+
+        if (location == null)
+            location = request.getContext().getTempDirectory().toPath();
+
+        return new MultiPartConfig.Builder()
+            .location(location)
+            .maxHeadersSize(maxHeaderSize)
+            .complianceMode(multiPartCompliance)
+            .violationListener(complianceViolationListener);
     }
 
     /**
