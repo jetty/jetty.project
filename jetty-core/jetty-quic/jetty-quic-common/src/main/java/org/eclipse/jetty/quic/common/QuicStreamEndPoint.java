@@ -271,7 +271,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
                 // Check if the stream was finished normally.
                 try
                 {
-                    fill(BufferUtil.EMPTY_WRITABLE_BUFFER);
+                    fill(BufferUtil.EMPTY_BUFFER);
                 }
                 catch (EOFException x)
                 {

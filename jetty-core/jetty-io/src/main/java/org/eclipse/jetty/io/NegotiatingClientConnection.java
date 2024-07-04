@@ -99,7 +99,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
     {
         try
         {
-            return getEndPoint().fill(BufferUtil.EMPTY_WRITABLE_BUFFER);
+            return getEndPoint().fill(BufferUtil.EMPTY_BUFFER);
         }
         catch (IOException x)
         {

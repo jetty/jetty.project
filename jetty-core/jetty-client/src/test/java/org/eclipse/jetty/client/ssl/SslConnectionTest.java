@@ -62,7 +62,7 @@ public class SslConnectionTest
         // There are no bytes in the endPoint, so we fill zero.
         // However, this will trigger state changes in SSLEngine
         // that will later cause it to throw ISE("Internal error").
-        sslEndPoint.fill(BufferUtil.EMPTY_WRITABLE_BUFFER);
+        sslEndPoint.fill(BufferUtil.EMPTY_BUFFER);
 
         // Close the connection before filling.
         sslEndPoint.shutdownOutput();
@@ -76,6 +76,6 @@ public class SslConnectionTest
         // We want SSLHandshakeException to be thrown instead, because it is
         // handled better (it is an IOException) by the Connection code that
         // reads from the EndPoint.
-        assertThrows(SSLHandshakeException.class, () -> sslEndPoint.fill(BufferUtil.EMPTY_WRITABLE_BUFFER));
+        assertThrows(SSLHandshakeException.class, () -> sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
     }
 }
