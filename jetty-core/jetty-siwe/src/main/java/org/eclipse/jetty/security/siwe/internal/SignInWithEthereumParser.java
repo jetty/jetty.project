@@ -16,6 +16,9 @@ package org.eclipse.jetty.security.siwe.internal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Parses a SIWE Message, based off the ABNF Message Format from <a href="https://eips.ethereum.org/EIPS/eip-4361">EIP-4361</a>.
+ */
 public class SignInWithEthereumParser
 {
     private static final String SCHEME_PATTERN = "[a-zA-Z][a-zA-Z0-9+\\-.]*";
@@ -50,6 +53,11 @@ public class SignInWithEthereumParser
     {
     }
 
+    /**
+     * Parse a {@link SignInWithEthereumToken} from a {@link String}.
+     * @param message the SIWE message to parse.
+     * @return the {@link SignInWithEthereumToken} or null if it was not a valid SIWE message.
+     */
     public static SignInWithEthereumToken parse(String message)
     {
         Matcher matcher = SIGN_IN_WITH_ETHEREUM_PATTERN.matcher(message);

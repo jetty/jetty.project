@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security.siwe.internal;
 
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -24,8 +25,16 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
+import org.eclipse.jetty.security.siwe.SignedMessage;
 import org.eclipse.jetty.util.StringUtil;
 
+/**
+ * Used to recover an Ethereum address from a message and signature.
+ * <p>
+ * This uses algorithms and terminology defined in <a href="https://eips.ethereum.org/EIPS/eip-191">EIP-191</a> and
+ * <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a>.
+ * </p>
+ */
 public class EthereumSignatureVerifier
 {
     public static final String PREFIX = "\u0019Ethereum Signed Message:\n";
@@ -36,20 +45,27 @@ public class EthereumSignatureVerifier
             SEC_P256K1_PARAMS.getCurve(), SEC_P256K1_PARAMS.getG(), SEC_P256K1_PARAMS.getN(), SEC_P256K1_PARAMS.getH());
     private static final BigInteger PRIME = SEC_P256K1_PARAMS.getCurve().getField().getCharacteristic();
     private static final X9IntegerConverter INT_CONVERTER = new X9IntegerConverter();
+    private static final Charset CHARSET = StandardCharsets.UTF_8;
 
     private EthereumSignatureVerifier()
     {
     }
 
-    public static String recoverAddress(String siweMessage, String signatureHex)
+    /**
+     * Recover the Ethereum Address from the {@link SignedMessage}.
+     * @param signedMessage the signed message used to recover the address.
+     * @return the ethereum address recovered from the signature.
+     */
+    public static String recoverAddress(SignedMessage signedMessage)
     {
+        String siweMessage = signedMessage.message();
+        String signatureHex = signedMessage.signature();
         if (StringUtil.asciiStartsWithIgnoreCase(signatureHex, "0x"))
             signatureHex = signatureHex.substring(2);
 
-        byte[] bytes = siweMessage.getBytes(StandardCharsets.ISO_8859_1);
-        int messageLength = bytes.length;
-        String signedMessage = PREFIX + messageLength + siweMessage;
-        byte[] messageHash = keccak256(signedMessage.getBytes(StandardCharsets.ISO_8859_1));
+        int messageLength = siweMessage.getBytes(CHARSET).length;
+        String prefixedMessage = PREFIX + messageLength + siweMessage;
+        byte[] messageHash = keccak256(prefixedMessage.getBytes(CHARSET));
         byte[] signatureBytes = StringUtil.fromHexString(signatureHex);
 
         BigInteger r = new BigInteger(1, Arrays.copyOfRange(signatureBytes, 0, 32));

@@ -19,6 +19,6 @@ public record SignedMessage(String message, String signature)
 {
     public String recoverAddress()
     {
-        return EthereumSignatureVerifier.recoverAddress(message, signature);
+        return EthereumSignatureVerifier.recoverAddress(this);
     }
 }

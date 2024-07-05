@@ -24,12 +24,19 @@ import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 
+/**
+ * A {@link LoginService} which allows any user to be authenticated.
+ * <p>
+ * This can delegate to a nested {@link LoginService} if it is supplied to the constructor, it will first attempt to log in
+ * with the nested {@link LoginService} and only create a new {@link UserIdentity} if none was found with
+ * {@link LoginService#login(String, Object, Request, Function)}.
+ * </p>
+ */
 public class AnyUserLoginService implements LoginService
 {
     private final String _realm;
     private final LoginService _loginService;
     private IdentityService _identityService;
-    private boolean _authenticateNewUsers;
 
     public AnyUserLoginService(String realm)
     {
@@ -43,20 +50,6 @@ public class AnyUserLoginService implements LoginService
         _identityService = (loginService == null) ? new DefaultIdentityService() : null;
     }
 
-    /**
-     * This setting is only meaningful if a wrapped {@link LoginService} has been set.
-     * <p>
-     * If set to true, any users not found by the wrapped {@link LoginService} will still
-     * be authenticated but with no roles, if set to false users will not be
-     * authenticated unless they are discovered by the wrapped {@link LoginService}.
-     * </p>
-     * @param authenticateNewUsers whether to authenticate users not found by a wrapping LoginService
-     */
-    public void setAuthenticateNewUsers(boolean authenticateNewUsers)
-    {
-        this._authenticateNewUsers = authenticateNewUsers;
-    }
-
     @Override
     public String getName()
     {
@@ -66,14 +59,25 @@ public class AnyUserLoginService implements LoginService
     @Override
     public UserIdentity login(String username, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
+        if (_loginService != null)
+        {
+            UserIdentity login = _loginService.login(username, credentials, request, getOrCreateSession);
+            if (login != null)
+                return login;
+
+            UserPrincipal userPrincipal = new UserPrincipal(username, null);
+            Subject subject = new Subject();
+            subject.getPrincipals().add(userPrincipal);
+            subject.getPrivateCredentials().add(credentials);
+            subject.setReadOnly();
+            return _loginService.getUserIdentity(subject, userPrincipal, true);
+        }
+
         UserPrincipal userPrincipal = new UserPrincipal(username, null);
         Subject subject = new Subject();
         subject.getPrincipals().add(userPrincipal);
         subject.getPrivateCredentials().add(credentials);
         subject.setReadOnly();
-
-        if (_loginService != null)
-            return _loginService.getUserIdentity(subject, userPrincipal, _authenticateNewUsers);
         return _identityService.newUserIdentity(subject, userPrincipal, new String[0]);
     }
 
