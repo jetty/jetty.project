@@ -44,7 +44,10 @@ public class EthereumCredentials
     {
         try
         {
-            KeyPair keyPair = generateECKeyPair();
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", provider);
+            ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec("secp256k1");
+            keyPairGenerator.initialize(ecGenParameterSpec, new SecureRandom());
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
             this.privateKey = keyPair.getPrivate();
             this.publicKey = keyPair.getPublic();
             this.address = EthereumSignatureVerifier.toAddress(((BCECPublicKey)publicKey).getQ());
@@ -53,14 +56,6 @@ public class EthereumCredentials
         {
             throw new RuntimeException(e);
         }
-    }
-
-    private KeyPair generateECKeyPair() throws Exception
-    {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", provider);
-        ECGenParameterSpec ecGenParameterSpec = new ECGenParameterSpec("secp256k1");
-        keyPairGenerator.initialize(ecGenParameterSpec, new SecureRandom());
-        return keyPairGenerator.generateKeyPair();
     }
 
     public String getAddress()
@@ -122,8 +117,8 @@ public class EthereumCredentials
         ECPoint publicKeyPoint = ((BCECPublicKey)publicKey).getQ();
         for (int v = 0; v < 4; v++)
         {
-            ECPoint Q = EthereumSignatureVerifier.ecRecover(hash, v, new BigInteger(1, r), new BigInteger(1, s));
-            if (Q != null && Q.equals(publicKeyPoint))
+            ECPoint qPoint = EthereumSignatureVerifier.ecRecover(hash, v, new BigInteger(1, r), new BigInteger(1, s));
+            if (qPoint != null && qPoint.equals(publicKeyPoint))
                 return (byte)v;
         }
         throw new RuntimeException("Could not recover public key from signature");
