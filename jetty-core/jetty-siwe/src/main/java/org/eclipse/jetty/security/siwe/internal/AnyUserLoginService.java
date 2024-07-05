@@ -68,7 +68,8 @@ public class AnyUserLoginService implements LoginService
             UserPrincipal userPrincipal = new UserPrincipal(username, null);
             Subject subject = new Subject();
             subject.getPrincipals().add(userPrincipal);
-            subject.getPrivateCredentials().add(credentials);
+            if (credentials != null)
+                subject.getPrivateCredentials().add(credentials);
             subject.setReadOnly();
             return _loginService.getUserIdentity(subject, userPrincipal, true);
         }
@@ -76,7 +77,8 @@ public class AnyUserLoginService implements LoginService
         UserPrincipal userPrincipal = new UserPrincipal(username, null);
         Subject subject = new Subject();
         subject.getPrincipals().add(userPrincipal);
-        subject.getPrivateCredentials().add(credentials);
+        if (credentials != null)
+            subject.getPrivateCredentials().add(credentials);
         subject.setReadOnly();
         return _identityService.newUserIdentity(subject, userPrincipal, new String[0]);
     }

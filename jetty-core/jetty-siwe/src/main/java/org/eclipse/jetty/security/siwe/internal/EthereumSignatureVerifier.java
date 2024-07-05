@@ -71,10 +71,14 @@ public class EthereumSignatureVerifier
         BigInteger r = new BigInteger(1, Arrays.copyOfRange(signatureBytes, 0, 32));
         BigInteger s = new BigInteger(1, Arrays.copyOfRange(signatureBytes, 32, 64));
         byte v = (byte)(signatureBytes[64] < 27 ? signatureBytes[64] : signatureBytes[64] - 27);
-        return ecRecover(messageHash, v, r, s);
+
+        ECPoint qPoint = ecRecover(messageHash, v, r, s);
+        if (qPoint == null)
+            return null;
+        return toAddress(qPoint);
     }
 
-    private static String ecRecover(byte[] hash, int v, BigInteger r, BigInteger s)
+    public static ECPoint ecRecover(byte[] hash, int v, BigInteger r, BigInteger s)
     {
         if (v < 0 || v >= 4)
             throw new IllegalArgumentException("Invalid v value: " + v);
@@ -87,13 +91,11 @@ public class EthereumSignatureVerifier
             return null;
 
         // Calculate the curve point R.
-        BigInteger x = r.add(BigInteger.valueOf(v/2).multiply(n));
+        BigInteger x = r.add(BigInteger.valueOf(v / 2).multiply(n));
         if (x.compareTo(PRIME) >= 0)
             return null;
-        byte[] compressedPoint = INT_CONVERTER.integerToBytes(x, 1 + INT_CONVERTER.getByteLength(DOMAIN_PARAMS.getCurve()));
-        compressedPoint[0] = (byte)((v % 2) == 0 ? 0x02 : 0x03);
-        ECPoint R = DOMAIN_PARAMS.getCurve().decodePoint(compressedPoint);
-        if (!R.multiply(n).isInfinity())
+        ECPoint rPoint = decodePoint(x, v);
+        if (!rPoint.multiply(n).isInfinity())
             return null;
 
         // Calculate the curve point Q = u1 * G + u2 * R, where u1=-zr^(-1)%n and u2=sr^(-1)%n.
@@ -102,14 +104,24 @@ public class EthereumSignatureVerifier
         BigInteger rInv = r.modInverse(n);
         BigInteger u1 = e.negate().multiply(rInv).mod(n);
         BigInteger u2 = s.multiply(rInv).mod(n);
-        ECPoint Q = ECAlgorithms.sumOfTwoMultiplies(DOMAIN_PARAMS.getG(), u1, R, u2);
+        return ECAlgorithms.sumOfTwoMultiplies(DOMAIN_PARAMS.getG(), u1, rPoint, u2);
+    }
 
+    public static String toAddress(ECPoint point)
+    {
         // Remove the 1-byte prefix and return the public key as an ethereum address.
-        byte[] qBytes = Q.getEncoded(false);
+        byte[] qBytes = point.getEncoded(false);
         byte[] qHash = keccak256(qBytes, 1, qBytes.length - 1);
         byte[] address = new byte[ADDRESS_LENGTH_BYTES];
         System.arraycopy(qHash, qHash.length - ADDRESS_LENGTH_BYTES, address, 0, ADDRESS_LENGTH_BYTES);
         return "0x" + StringUtil.toHexString(address);
+    }
+
+    public static ECPoint decodePoint(BigInteger p, int v)
+    {
+        byte[] encodedPoint = INT_CONVERTER.integerToBytes(p, 1 + INT_CONVERTER.getByteLength(DOMAIN_PARAMS.getCurve()));
+        encodedPoint[0] = (byte)((v % 2) == 0 ? 0x02 : 0x03);
+        return DOMAIN_PARAMS.getCurve().decodePoint(encodedPoint);
     }
 
     public static byte[] keccak256(byte[] bytes)
