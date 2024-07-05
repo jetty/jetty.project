@@ -855,17 +855,16 @@ public class ForeignQuicheConnection extends QuicheConnection
             long written;
             try (Arena scope = Arena.ofConfined())
             {
+                MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                 if (buffer.isDirect())
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
                     MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                    MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                     written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last, outErrorCode);
                 }
                 else
                 {
                     // If the ByteBuffer is heap-allocated, it must be copied to native memory.
-                    MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                     if (buffer.remaining() == 0)
                     {
                         written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, MemorySegment.NULL, 0, last, outErrorCode);
@@ -906,23 +905,19 @@ public class ForeignQuicheConnection extends QuicheConnection
             long read;
             try (Arena scope = Arena.ofConfined())
             {
+                MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
+                MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                 if (buffer.isDirect())
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
                     MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                    MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
-                    MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                     read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
                 }
                 else
                 {
                     // If the ByteBuffer is heap-allocated, native memory must be copied to it.
                     MemorySegment bufferSegment = scope.allocate(buffer.remaining());
-
-                    MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
-                    MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                     read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
-
                     if (read > 0)
                     {
                         int prevPosition = buffer.position();
