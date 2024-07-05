@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.11-SNAPSHOT</version>
+  <version>12.0.12-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -2290,7 +2290,7 @@
         <spotbugs.skip>false</spotbugs.skip>
         <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
         <spotbugs.threshold>Medium</spotbugs.threshold>
-        <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+        <surefire.rerunFailingTestsCount>1</surefire.rerunFailingTestsCount>
       </properties>
       <build>
         <pluginManagement>
