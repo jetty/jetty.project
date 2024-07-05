@@ -7,16 +7,26 @@
     <artifactId>jetty-core</artifactId>
     <version>12.0.11-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-openid</artifactId>
-  <name>Core :: OpenID</name>
-  <description>Jetty OpenID Connect Infrastructure</description>
+  <artifactId>jetty-siwe</artifactId>
+  <name>Core :: Sign-In with Ethereum</name>
+  <description>Jetty Sign-In with Ethereum</description>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.openid</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.security.openid.*</spotbugs.onlyAnalyze>
+    <bouncycastle.version>1.78.1</bouncycastle.version>
+    <bundle-symbolic-name>${project.groupId}.siwe</bundle-symbolic-name>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15to18</artifactId>
+      <version>${bouncycastle.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15to18</artifactId>
+      <version>${bouncycastle.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>

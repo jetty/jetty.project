@@ -38,6 +38,7 @@
     <module>jetty-security</module>
     <module>jetty-server</module>
     <module>jetty-session</module>
+    <module>jetty-siwe</module>
     <module>jetty-slf4j-impl</module>
     <module>jetty-start</module>
     <module>jetty-tests</module>
