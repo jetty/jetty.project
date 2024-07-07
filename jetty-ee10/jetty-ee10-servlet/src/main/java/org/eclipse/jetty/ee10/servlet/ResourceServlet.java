@@ -72,8 +72,9 @@ import org.slf4j.LoggerFactory;
  *   </dd>
  *   <dt>baseResource</dt>
  *   <dd>
- *     Defaults to the context's baseResource.
- *     The root directory to look for static resources.
+ *     The root directory to look for static resources. Defaults to the context's baseResource. Relative URI
+ *     are {@link Resource#resolve(String) resolved} against the context's {@link ServletContextHandler#getBaseResource()}
+ *     base resource, all other values are resolved using {@link ServletContextHandler#newResource(String)}.
  *   </dd>
  *   <dt>cacheControl</dt>
  *   <dd>
@@ -126,7 +127,8 @@ import org.slf4j.LoggerFactory;
  *   </dd>
  *   <dt>pathInfoOnly</dt>
  *   <dd>
- *     Use {@code true} to use only the pathInfo portion of a PATH (aka prefix) match.
+ *     Use {@code true} to use only the pathInfo portion of a PATH (aka prefix) match
+ *     as obtained from {@link HttpServletRequest#getPathInfo()}.
  *     Defaults to {@code true}.
  *   </dd>
  *   <dt>precompressed</dt>
