@@ -154,8 +154,8 @@ public class PreCompressedHttpContent implements HttpContent
     }
 
     @Override
-    public void release()
+    public boolean release()
     {
-        _precompressedContent.release();
+        return _precompressedContent.release();
     }
 }

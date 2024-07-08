@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http.content;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -25,6 +26,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -150,13 +153,28 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
+    public void writeTo(Content.Sink sink, boolean last, Callback callback)
+    {
+        try
+        {
+            // TODO handle not last
+            Content.copy(Content.Source.from(_resource.newInputStream()), sink, callback);
+        }
+        catch (IOException e)
+        {
+            callback.failed(e);
+        }
+    }
+
+    @Override
     public Set<CompressedContentFormat> getPreCompressedContentFormats()
     {
         return null;
     }
 
     @Override
-    public void release()
+    public boolean release()
     {
+        return false;
     }
 }

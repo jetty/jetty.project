@@ -21,6 +21,7 @@ import java.util.Set;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -33,7 +34,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * reuse in from a cache).
  * </p>
  */
-public interface HttpContent
+public interface HttpContent extends RetainableByteBuffer
 {
     HttpField getContentType();
 
@@ -50,6 +51,12 @@ public interface HttpContent
     HttpField getContentLength();
 
     long getContentLengthValue();
+
+    @Override
+    default long size()
+    {
+        return getContentLengthValue();
+    }
 
     Instant getLastModifiedInstant();
 
@@ -81,7 +88,7 @@ public interface HttpContent
      */
     Set<CompressedContentFormat> getPreCompressedContentFormats();
 
-    void release();
+    boolean release();
 
     interface Factory
     {
@@ -98,12 +105,13 @@ public interface HttpContent
     /**
      * HttpContent Wrapper.
      */
-    class Wrapper implements HttpContent
+    class Wrapper extends RetainableByteBuffer.Wrapper implements HttpContent
     {
         private final HttpContent _delegate;
 
         public Wrapper(HttpContent content)
         {
+            super(content);
             _delegate = content;
         }
 
@@ -197,12 +205,6 @@ public interface HttpContent
         }
 
         @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return _delegate.getByteBuffer();
-        }
-
-        @Override
         public long getBytesOccupied()
         {
             return _delegate.getBytesOccupied();
@@ -212,12 +214,6 @@ public interface HttpContent
         public Set<CompressedContentFormat> getPreCompressedContentFormats()
         {
             return _delegate.getPreCompressedContentFormats();
-        }
-
-        @Override
-        public void release()
-        {
-            _delegate.release();
         }
 
         @Override

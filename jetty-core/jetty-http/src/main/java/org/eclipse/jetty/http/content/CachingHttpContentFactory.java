@@ -230,8 +230,11 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             if (cachingHttpContent.isValid())
             {
                 // If retain fails the CachingHttpContent was already evicted.
-                if (cachingHttpContent.retain())
+                if (cachingHttpContent.canRetain())
+                {
+                    cachingHttpContent.retain();
                     return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
+                }
             }
             else
                 removeFromCache(cachingHttpContent);
@@ -252,8 +255,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         });
 
         // If retain fails the CachingHttpContent was already evicted.
-        if (!cachingHttpContent.retain())
+        if (!cachingHttpContent.canRetain())
             return httpContent;
+        cachingHttpContent.retain();
 
         if (added.get())
         {
@@ -290,7 +294,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
         boolean isValid();
 
-        boolean retain();
+        void retain();
     }
 
     protected class CachedHttpContent extends HttpContent.Wrapper implements CachingHttpContent
@@ -404,20 +408,22 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public boolean retain()
+        public void retain()
         {
-            return _referenceCount.tryRetain();
+            _referenceCount.retain();
         }
 
         @Override
-        public void release()
+        public boolean release()
         {
             if (_referenceCount.release())
             {
                 if (_buffer != null)
                     _buffer.release();
                 super.release();
+                return true;
             }
+            return false;
         }
 
         @Override
@@ -608,8 +614,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void release()
+        public boolean release()
         {
+            return false;
         }
 
         @Override
@@ -619,9 +626,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public boolean retain()
-        {
-            return true;
-        }
+        public void retain()
+        {}
     }
 }

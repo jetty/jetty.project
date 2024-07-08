@@ -682,8 +682,7 @@ public class ResourceService
             response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
 
-            // TODO use a buffer pool
-            IOResources.copy(content.getResource(), response, null, 0, false, range.first(), range.getLength(), callback);
+            IOResources.copy(content.getResource(), response, request.getComponents().getByteBufferPool(), 0, false, range.first(), range.getLength(), callback);
             return;
         }
 
@@ -702,28 +701,7 @@ public class ResourceService
 
     protected void writeHttpContent(Request request, Response response, Callback callback, HttpContent content)
     {
-        try
-        {
-            ByteBuffer buffer = content.getByteBuffer(); // this buffer is going to be consumed by response.write()
-            if (buffer != null)
-            {
-                response.write(true, buffer, callback);
-            }
-            else
-            {
-                IOResources.copy(
-                    content.getResource(),
-                    response, request.getComponents().getByteBufferPool(),
-                    request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize(),
-                    request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers(),
-                    callback);
-            }
-        }
-        catch (Throwable x)
-        {
-            content.release();
-            callback.failed(x);
-        }
+        content.writeTo(response, true, callback);
     }
 
     protected void putHeaders(Response response, HttpContent content, long contentLength)
