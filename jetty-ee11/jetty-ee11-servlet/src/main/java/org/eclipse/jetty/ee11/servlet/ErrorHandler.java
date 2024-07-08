@@ -73,11 +73,22 @@ public class ErrorHandler implements Request.Handler
         };
     }
 
-    private static Object getRequestErrorAttribute(HttpServletRequest request, String servletApiName, String jettyName)
+    /**
+     * Look up an attribute in the request that contains an exception message
+     * to use during an error dispatch. We first try the name of the attribute
+     * as defined by the servlet spec, falling back to checking a similar jetty
+     * core attribute name, if there is one.
+     *
+     * @param request the request from which to obtain the error attribute
+     * @param servletAttributeName the name of the attribute according to the servlet api
+     * @param jettyAttributeName the name of the attribute according to core jetty
+     * @return the exception message to use during the error dispatch or null
+     */
+    private static Object getRequestErrorAttribute(HttpServletRequest request, String servletAttributeName, String jettyAttributeName)
     {
-        Object o = request.getAttribute(servletApiName);
+        Object o = request.getAttribute(servletAttributeName);
         if (o == null)
-            o = request.getAttribute(jettyName);
+            o = request.getAttribute(jettyAttributeName);
         return o;
     }
 
@@ -134,6 +145,7 @@ public class ErrorHandler implements Request.Handler
             }
         }
 
+        //TODO we should refactor the servlet ErrorHandler to extend and use most of the core ErrorHandler to use the core error attributes
         String message = (String)getRequestErrorAttribute(httpServletRequest, Dispatcher.ERROR_MESSAGE, org.eclipse.jetty.server.handler.ErrorHandler.ERROR_MESSAGE);
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
