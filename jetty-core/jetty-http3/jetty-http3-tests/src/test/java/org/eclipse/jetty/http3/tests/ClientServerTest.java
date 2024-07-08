@@ -40,6 +40,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
+import org.eclipse.jetty.quic.common.QuicErrorCode;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.junit.jupiter.api.Tag;
@@ -650,6 +651,8 @@ public class ClientServerTest extends AbstractClientServerTest
     public void testMissingNeededClientCertDeniesConnection() throws Exception
     {
         AtomicReference<HTTP3SessionServer> serverSessionRef = new AtomicReference<>();
+        AtomicReference<Long> serverErrorRef = new AtomicReference<>();
+        AtomicReference<String> serverReasonRef = new AtomicReference<>();
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
         start(true, new Session.Server.Listener()
         {
@@ -657,6 +660,8 @@ public class ClientServerTest extends AbstractClientServerTest
             public void onDisconnect(Session session, long error, String reason)
             {
                 serverSessionRef.set((HTTP3SessionServer)session);
+                serverErrorRef.set(error);
+                serverReasonRef.set(reason);
                 serverDisconnectLatch.countDown();
             }
         });
@@ -673,6 +678,8 @@ public class ClientServerTest extends AbstractClientServerTest
 
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
 
+        assertEquals(QuicErrorCode.CONNECTION_REFUSED.code(), serverErrorRef.get());
+        assertEquals("missing_client_cert", serverReasonRef.get());
         HTTP3SessionServer serverSession = serverSessionRef.get();
         assertTrue(serverSession.isClosed());
         assertTrue(serverSession.getStreams().isEmpty());
