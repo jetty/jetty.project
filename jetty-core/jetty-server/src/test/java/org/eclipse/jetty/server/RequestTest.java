@@ -22,6 +22,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -106,16 +107,19 @@ public class RequestTest
             Arguments.of(UriCompliance.DEFAULT, "/", 200, "local"),
             Arguments.of(UriCompliance.DEFAULT, "https://local/", 200, "local"),
             Arguments.of(UriCompliance.DEFAULT, "https://other/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.UNSAFE, "https://other/", 200, "other"),
             Arguments.of(UriCompliance.DEFAULT, "https://user@local/", 400, "Deprecated User Info"),
             Arguments.of(UriCompliance.LEGACY, "https://user@local/", 200, "local"),
             Arguments.of(UriCompliance.LEGACY, "https://user@local:port/", 400, "Bad Request"),
             Arguments.of(UriCompliance.LEGACY, "https://user@local:8080/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.UNSAFE, "https://user@local:8080/", 200, "local:8080"),
             Arguments.of(UriCompliance.DEFAULT, "https://user:password@local/", 400, "Deprecated User Info"),
             Arguments.of(UriCompliance.LEGACY, "https://user:password@local/", 200, "local"),
             Arguments.of(UriCompliance.DEFAULT, "https://user@other/", 400, "Deprecated User Info"),
             Arguments.of(UriCompliance.LEGACY, "https://user@other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.DEFAULT, "https://user:password@other/", 400, "Deprecated User Info"),
             Arguments.of(UriCompliance.LEGACY, "https://user:password@other/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.UNSAFE, "https://user:password@other/", 200, "other"),
             Arguments.of(UriCompliance.DEFAULT, "/%2F/", 400, "Ambiguous URI path separator"),
             Arguments.of(UriCompliance.UNSAFE, "/%2F/", 200, "local")
         );
@@ -133,6 +137,8 @@ public class RequestTest
             {
                 HttpConfiguration httpConfiguration = httpConnectionFactory.getHttpConfiguration();
                 httpConfiguration.setUriCompliance(compliance);
+                if (compliance == UriCompliance.UNSAFE)
+                    httpConfiguration.setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
             }
         }
 
