@@ -125,7 +125,7 @@ For example, if you have enabled the deployer Jetty module for all Jakarta EE ve
 This unspecified deployment may not work as the EE 9 web application may use APIs that have been removed in {ee-current-caps}, causing an error at runtime.
 ====
 
-[[jetty]]
+[[context-xml]]
 == Deploying Jetty Context XML Files
 
 A Jetty context XML file is a xref:xml/index.adoc[Jetty XML file] that allows you to customize the deployment of web applications.
@@ -199,7 +199,7 @@ Note how the `+*.war+` file path is now obtained by resolving the system propert
 $ java -jar $JETTY_HOME/start.jar -Dmyapps.dir=/opt/myapps
 ----
 
-[[jetty]]
+[[env-context-xml]]
 == Deploying Environment Specific Context XML Files
 
 A xref:xml/index.adoc[Jetty context XML file] file can be applied to _all_ webapps deployed to a particular `environment` by adding a file named `{ee-all}.properties` containing the location of the file.
