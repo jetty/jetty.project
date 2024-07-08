@@ -100,6 +100,63 @@ public class RequestTest
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
+    public static Stream<Arguments> getUriTests()
+    {
+        return Stream.of(
+            Arguments.of(UriCompliance.DEFAULT, "/", 200, "local"),
+            Arguments.of(UriCompliance.DEFAULT, "https://local/", 200, "local"),
+            Arguments.of(UriCompliance.DEFAULT, "https://other/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user@local/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "https://user@local/", 200, "local"),
+            Arguments.of(UriCompliance.DEFAULT, "/%2F/", 400, "Ambiguous URI path separator"),
+            Arguments.of(UriCompliance.UNSAFE, "/%2F/", 200, "local")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getUriTests")
+    public void testGETUris(UriCompliance compliance, String uri, int status, String content) throws Exception
+    {
+        server.stop();
+        for (Connector connector: server.getConnectors())
+        {
+            HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
+            if (httpConnectionFactory != null)
+            {
+                HttpConfiguration httpConfiguration = httpConnectionFactory.getHttpConfiguration();
+                httpConfiguration.setUriCompliance(compliance);
+            }
+        }
+
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                String msg = String.format("authority=\"%s\"", request.getHttpURI().getAuthority());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, true, msg, callback);
+                return true;
+            }
+        });
+        server.start();
+        String request = """
+                GET %s HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """.formatted(uri);
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertThat(response.getStatus(), is(status));
+        if (content != null)
+        {
+            if (status == 200)
+                assertThat(response.getContent(), is("authority=\"%s\"".formatted(content)));
+            else
+                assertThat(response.getContent(), containsString(content));
+        }
+    }
+
     @Test
     public void testAmbiguousPathSep() throws Exception
     {
