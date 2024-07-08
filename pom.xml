@@ -91,6 +91,14 @@
       <organizationUrl>https://webtide.com</organizationUrl>
       <timezone>1</timezone>
     </developer>
+    <developer>
+      <id>lachlan-roberts</id>
+      <name>Lachlan Roberts</name>
+      <email>lachlan@webtide.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>Australia/Sydney</timezone>
+    </developer>
   </developers>
 
   <mailingLists>
