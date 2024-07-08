@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee11.servlet;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -103,6 +105,43 @@ public class ResponseTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Type"), is("text/plain; charset=US-ASCII"));
         assertThat(response.getContent(), containsString("Hello"));
+    }
+
+    @Test
+    public void testErrorWithMessage() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setErrorHandler(new ErrorPageErrorHandler());
+        contextHandler.setContextPath("/");
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                PrintWriter pw = response.getWriter();
+                pw.println("THIS TEXT SHOULD NOT APPEAR");
+                response.addHeader("header", "sendError_StringTest");
+                response.addCookie(new Cookie("cookie1", "value1"));
+                response.sendError(HttpServletResponse.SC_GONE, "The content is gone.");
+            }
+        };
+
+        contextHandler.addServlet(servlet, "/error/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/error/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat(response.getStatus(), is(410));
+        assertThat(response.get("Content-Type"), is("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsString("The content is gone."));
     }
 
     public static Stream<Arguments> redirects()
