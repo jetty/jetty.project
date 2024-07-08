@@ -853,20 +853,21 @@ public class ForeignQuicheConnection extends QuicheConnection
                 throw new IOException("connection was released");
 
             long written;
-            if (buffer.isDirect())
+            try (Arena scope = Arena.ofConfined())
             {
-                // If the ByteBuffer is direct, it can be used without any copy.
-                MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last);
-            }
-            else
-            {
-                // If the ByteBuffer is heap-allocated, it must be copied to native memory.
-                try (Arena scope = Arena.ofConfined())
+                MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
+                if (buffer.isDirect())
                 {
+                    // If the ByteBuffer is direct, it can be used without any copy.
+                    MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
+                    written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last, outErrorCode);
+                }
+                else
+                {
+                    // If the ByteBuffer is heap-allocated, it must be copied to native memory.
                     if (buffer.remaining() == 0)
                     {
-                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, MemorySegment.NULL, 0, last);
+                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, MemorySegment.NULL, 0, last, outErrorCode);
                     }
                     else
                     {
@@ -874,7 +875,7 @@ public class ForeignQuicheConnection extends QuicheConnection
                         int prevPosition = buffer.position();
                         bufferSegment.asByteBuffer().put(buffer);
                         buffer.position(prevPosition);
-                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last);
+                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last, outErrorCode);
                     }
                 }
             }
@@ -904,21 +905,19 @@ public class ForeignQuicheConnection extends QuicheConnection
             long read;
             try (Arena scope = Arena.ofConfined())
             {
+                MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
+                MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                 if (buffer.isDirect())
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
                     MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                    MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
-                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin);
+                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
                 }
                 else
                 {
                     // If the ByteBuffer is heap-allocated, native memory must be copied to it.
                     MemorySegment bufferSegment = scope.allocate(buffer.remaining());
-
-                    MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
-                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin);
-
+                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
                     if (read > 0)
                     {
                         int prevPosition = buffer.position();
