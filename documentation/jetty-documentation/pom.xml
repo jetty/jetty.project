@@ -49,14 +49,15 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-home</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-      <optional>true</optional>
+      <artifactId>jetty-infinispan-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-infinispan-embedded-query</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-infinispan-remote-query</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
