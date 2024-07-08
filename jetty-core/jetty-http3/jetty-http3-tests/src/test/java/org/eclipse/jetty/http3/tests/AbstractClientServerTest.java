@@ -63,32 +63,39 @@ public class AbstractClientServerTest
 
     protected void start(Handler handler) throws Exception
     {
-        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration();
+        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration(false);
         prepareServer(quicConfiguration, new HTTP3ServerConnectionFactory(quicConfiguration));
         server.setHandler(handler);
         server.start();
         startClient();
     }
 
-    private ServerQuicConfiguration newServerQuicConfiguration()
-    {
-        SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath("src/test/resources/keystore.p12");
-        sslServer.setKeyStorePassword("storepwd");
-        return new ServerQuicConfiguration(sslServer, workDir.getEmptyPathDir());
-    }
-
     protected void start(Session.Server.Listener listener) throws Exception
     {
-        startServer(listener);
+        startServer(false, listener);
         startClient();
     }
 
-    protected void startServer(Session.Server.Listener listener) throws Exception
+    protected void start(boolean needClientAuth, Session.Server.Listener listener) throws Exception
     {
-        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration();
+        startServer(needClientAuth, listener);
+        startClient();
+    }
+
+    private void startServer(boolean needClientAuth, Session.Server.Listener listener) throws Exception
+    {
+        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration(needClientAuth);
         prepareServer(quicConfiguration, new RawHTTP3ServerConnectionFactory(quicConfiguration, listener));
         server.start();
+    }
+
+    private ServerQuicConfiguration newServerQuicConfiguration(boolean needClientAuth)
+    {
+        SslContextFactory.Server sslServer = new SslContextFactory.Server();
+        sslServer.setNeedClientAuth(needClientAuth);
+        sslServer.setKeyStorePath("src/test/resources/keystore.p12");
+        sslServer.setKeyStorePassword("storepwd");
+        return new ServerQuicConfiguration(sslServer, workDir.getEmptyPathDir());
     }
 
     private void prepareServer(ServerQuicConfiguration quicConfiguration, ConnectionFactory serverConnectionFactory)

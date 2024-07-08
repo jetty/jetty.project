@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -39,6 +41,7 @@ import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,9 +50,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ClientServerTest extends AbstractClientServerTest
 {
@@ -58,7 +63,7 @@ public class ClientServerTest extends AbstractClientServerTest
     {
         CountDownLatch serverPrefaceLatch = new CountDownLatch(1);
         CountDownLatch serverSettingsLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(true, new Session.Server.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -639,5 +644,41 @@ public class ClientServerTest extends AbstractClientServerTest
         clientStream.data(new DataFrame(ByteBuffer.allocate(512), true));
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testMissingNeededClientCertDeniesConnection() throws Exception
+    {
+        AtomicReference<HTTP3SessionServer> serverSessionRef = new AtomicReference<>();
+        CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
+        start(true, new Session.Server.Listener()
+        {
+            @Override
+            public void onDisconnect(Session session, long error, String reason)
+            {
+                serverSessionRef.set((HTTP3SessionServer)session);
+                serverDisconnectLatch.countDown();
+            }
+        });
+
+        try
+        {
+            newSession(new Session.Client.Listener() {});
+            fail("expected ExecutionException");
+        }
+        catch (ExecutionException ex)
+        {
+            assertInstanceOf(IOException.class, ex.getCause());
+        }
+
+        assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
+
+        HTTP3SessionServer serverSession = serverSessionRef.get();
+        assertTrue(serverSession.isClosed());
+        assertTrue(serverSession.getStreams().isEmpty());
+        ServerQuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
+        // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
+        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
     }
 }
