@@ -693,7 +693,8 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IOException("connection was released");
-            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), jnaBuffer(buffer), new size_t(buffer.remaining()), last).intValue();
+            uint64_t_pointer outErrorCode = new uint64_t_pointer();
+            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), jnaBuffer(buffer), new size_t(buffer.remaining()), last, outErrorCode).intValue();
             if (written == quiche_error.QUICHE_ERR_DONE)
             {
                 int rc = LibQuiche.INSTANCE.quiche_conn_stream_writable(quicheConn, new uint64_t(streamId), new size_t(buffer.remaining()));
@@ -745,7 +746,8 @@ public class JnaQuicheConnection extends QuicheConnection
             if (quicheConn == null)
                 throw new IOException("connection was released");
             bool_pointer fin = new bool_pointer();
-            int read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin).intValue();
+            uint64_t_pointer outErrorCode = new uint64_t_pointer();
+            int read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin, outErrorCode).intValue();
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read == quiche_error.QUICHE_ERR_STREAM_RESET)
