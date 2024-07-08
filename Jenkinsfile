@@ -125,8 +125,8 @@ def mavenBuild(jdk, cmdline, mvnName) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
-          sh "launchable verify"
-          sh "launchable record build --name $BRANCH_NAME"
+          runLaunchable ("verify")
+          runLaunchable ("record build --name $BRANCH_NAME")
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
@@ -138,7 +138,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     {
       junit testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
       echo "Launchable record tests"
-      sh "launchable record tests --build $BRANCH_NAME maven '**/target/surefire-reports/**/*.xml' '**/target/invoker-reports/TEST*.xml'"
+      runLaunchable ("record tests --build $BRANCH_NAME maven '**/target/surefire-reports/**/*.xml' '**/target/invoker-reports/TEST*.xml'")
     }
   }
 }
@@ -167,13 +167,25 @@ def saveHome() {
 def websiteBuild() {
   script {
     try {
-      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' ) {
-        build( job: 'website/jetty.website/main', propagate: false, wait: false )
+      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x') {
+        build(job: 'website/jetty.website/main', propagate: false, wait: false)
       }
     } catch (Exception e) {
       e.printStackTrace()
       echo "skip website build triggering: " + e.getMessage()
     }
+  }
+}
+/**
+ * run launchable with args and ignore any errors
+ * @param args
+ */
+def runLaunchable(args) {
+  try {
+    sh "launchable $args"
+  } catch (Exception e) {
+    e.printStackTrace()
+    echo "skip failure running Launchable: " + e.getMessage()
   }
 }
 
