@@ -108,6 +108,14 @@ public class RequestTest
             Arguments.of(UriCompliance.DEFAULT, "https://other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.DEFAULT, "https://user@local/", 400, "Deprecated User Info"),
             Arguments.of(UriCompliance.LEGACY, "https://user@local/", 200, "local"),
+            Arguments.of(UriCompliance.LEGACY, "https://user@local:port/", 400, "Bad Request"),
+            Arguments.of(UriCompliance.LEGACY, "https://user@local:8080/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user:password@local/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "https://user:password@local/", 200, "local"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user@other/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "https://user@other/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user:password@other/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "https://user:password@other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.DEFAULT, "/%2F/", 400, "Ambiguous URI path separator"),
             Arguments.of(UriCompliance.UNSAFE, "/%2F/", 200, "local")
         );
