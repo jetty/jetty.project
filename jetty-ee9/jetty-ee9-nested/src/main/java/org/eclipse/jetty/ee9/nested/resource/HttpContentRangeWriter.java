@@ -13,17 +13,20 @@
 
 package org.eclipse.jetty.ee9.nested.resource;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Range Writer selection for HttpContent
+ * @deprecated this should be replaced by a {@link HttpContent#writeTo(Content.Sink, Callback)} overload accepting a range param
  */
+@Deprecated
 public class HttpContentRangeWriter
 {
     /**
@@ -35,11 +38,6 @@ public class HttpContentRangeWriter
     public static RangeWriter newRangeWriter(HttpContent content)
     {
         Objects.requireNonNull(content, "HttpContent");
-
-        // Try direct buffer
-        ByteBuffer buffer = content.getByteBuffer();
-        if (buffer != null)
-            return new ByteBufferRangeWriter(buffer);
 
         // Try path's SeekableByteChannel
         Path path = content.getResource().getPath();

@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,11 +71,10 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
 
     private static class FileMappedHttpContent extends HttpContent.Wrapper
     {
-        private static final ByteBuffer SENTINEL_BUFFER = BufferUtil.allocate(0);
-
         private final AutoLock _lock = new AutoLock();
         private final HttpContent _content;
         private volatile ByteBuffer _buffer;
+        private volatile Throwable _failure;
 
         public FileMappedHttpContent(HttpContent content)
         {
@@ -82,17 +83,23 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public ByteBuffer getByteBuffer()
+        public void writeTo(Content.Sink sink, Callback callback)
         {
             ByteBuffer buffer = _buffer;
             if (buffer != null)
-                return (buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : buffer.asReadOnlyBuffer();
+            {
+                sink.write(false, buffer.asReadOnlyBuffer(), callback);
+                return;
+            }
 
             try (AutoLock lock = _lock.lock())
             {
                 if (_buffer == null)
-                    _buffer = getMappedByteBuffer();
-                return (_buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : _buffer.asReadOnlyBuffer();
+                    lockedInitMappedByteBuffer();
+                if (_buffer == null)
+                    callback.failed(_failure);
+                else
+                    sink.write(false, _buffer.asReadOnlyBuffer(), callback);
             }
         }
 
@@ -101,30 +108,30 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             ByteBuffer buffer = _buffer;
             if (buffer != null)
-                return (buffer == SENTINEL_BUFFER) ? super.getBytesOccupied() : 0;
+                return buffer.remaining();
 
             try (AutoLock lock = _lock.lock())
             {
                 if (_buffer == null)
-                    _buffer = getMappedByteBuffer();
-                return (_buffer == SENTINEL_BUFFER) ? super.getBytesOccupied() : 0;
+                    lockedInitMappedByteBuffer();
+                return (_buffer == null) ? super.getBytesOccupied() : _buffer.remaining();
             }
         }
 
-        private ByteBuffer getMappedByteBuffer()
+        private void lockedInitMappedByteBuffer()
         {
+            assert _lock.isHeldByCurrentThread();
+
             try
             {
-                ByteBuffer byteBuffer = BufferUtil.toMappedBuffer(_content.getResource().getPath());
-                return (byteBuffer == null) ? SENTINEL_BUFFER : byteBuffer;
+                _buffer = BufferUtil.toMappedBuffer(_content.getResource().getPath());
             }
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Error getting Mapped Buffer", t);
+                _failure = t;
             }
-
-            return SENTINEL_BUFFER;
         }
     }
 }

@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -64,6 +65,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
@@ -2827,9 +2829,9 @@ public class DefaultServletTest
                 final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
 
                 @Override
-                public ByteBuffer getByteBuffer()
+                public void writeTo(Content.Sink sink, Callback callback)
                 {
-                    return buffer;
+                    sink.write(false, buffer.asReadOnlyBuffer(), callback);
                 }
             });
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
@@ -2864,9 +2866,9 @@ public class DefaultServletTest
                 final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
 
                 @Override
-                public ByteBuffer getByteBuffer()
+                public void writeTo(Content.Sink sink, Callback callback)
                 {
-                    return buffer;
+                    sink.write(false, buffer.asReadOnlyBuffer(), callback);
                 }
             });
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);

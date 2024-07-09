@@ -702,28 +702,7 @@ public class ResourceService
 
     protected void writeHttpContent(Request request, Response response, Callback callback, HttpContent content)
     {
-        try
-        {
-            ByteBuffer buffer = content.getByteBuffer(); // this buffer is going to be consumed by response.write()
-            if (buffer != null)
-            {
-                response.write(true, buffer, callback);
-            }
-            else
-            {
-                IOResources.copy(
-                    content.getResource(),
-                    response, request.getComponents().getByteBufferPool(),
-                    request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize(),
-                    request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers(),
-                    callback);
-            }
-        }
-        catch (Throwable x)
-        {
-            content.release();
-            callback.failed(x);
-        }
+        content.writeTo(response, callback);
     }
 
     protected void putHeaders(Response response, HttpContent content, long contentLength)

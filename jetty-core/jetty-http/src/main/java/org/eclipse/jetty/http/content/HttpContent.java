@@ -14,13 +14,14 @@
 package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -61,15 +62,16 @@ public interface HttpContent
 
     String getETagValue();
 
+    /**
+     * Get the {@link Resource} backing this HTTP content.
+     * @return the backing resource.
+     */
     Resource getResource();
 
     /**
-     * <p>Get this HTTP content as a {@link ByteBuffer} if possible.</p>
-     * <p>Each invocation returns a new {@link ByteBuffer} instance that is
-     * read-only and contains valid data between the pos and the limit.</p>
-     * @return a {@link ByteBuffer} instance or null.
+     * <p>Write this HTTP content to a {@link Content.Sink}.</p>
      */
-    ByteBuffer getByteBuffer();
+    void writeTo(Content.Sink sink, Callback callback);
 
     default long getBytesOccupied()
     {
@@ -94,6 +96,7 @@ public interface HttpContent
     }
 
     // TODO add a writeTo semantic, then update IOResources to use a RBB.Dynamic
+    //  ha ha!  ^^^^^^^^^ (that line above was witten by Greg :-)
 
     /**
      * HttpContent Wrapper.
@@ -197,9 +200,9 @@ public interface HttpContent
         }
 
         @Override
-        public ByteBuffer getByteBuffer()
+        public void writeTo(Content.Sink sink, Callback callback)
         {
-            return _delegate.getByteBuffer();
+            _delegate.writeTo(sink, callback);
         }
 
         @Override

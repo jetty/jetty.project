@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -177,9 +178,9 @@ public class ResourceHandlerByteRangesTest
                     final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
                     @Override
-                    public ByteBuffer getByteBuffer()
+                    public void writeTo(Content.Sink sink, Callback callback)
                     {
-                        return buffer;
+                        sink.write(false, buffer.asReadOnlyBuffer(), callback);
                     }
                 };
             }
@@ -218,9 +219,9 @@ public class ResourceHandlerByteRangesTest
                     final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
                     @Override
-                    public ByteBuffer getByteBuffer()
+                    public void writeTo(Content.Sink sink, Callback callback)
                     {
-                        return buffer;
+                        sink.write(false, buffer.asReadOnlyBuffer(), callback);
                     }
                 };
             }

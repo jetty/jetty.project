@@ -17,7 +17,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -53,7 +52,6 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContent;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
@@ -873,20 +871,13 @@ public class ResourceService
 
     private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
     {
-        // attempt efficient ByteBuffer based write
-        ByteBuffer buffer = content.getByteBuffer();
-        if (buffer != null)
-        {
-            // no need to modify buffer pointers when whole content is requested
-            if (start != 0 || content.getResource().length() != contentLength)
-            {
-                buffer = buffer.asReadOnlyBuffer();
-                buffer.position((int)(buffer.position() + start));
-                buffer.limit((int)(buffer.position() + contentLength));
-            }
-            BufferUtil.writeTo(buffer, out);
-            return;
-        }
+        // TODO this should use a {@link HttpContent#writeTo(Content.Sink, Callback)} overload accepting a range param
+        //  which would look like this:
+//        try (Blocker.Callback callback = Blocker.callback())
+//        {
+//            content.writeTo(Content.Sink.from(out), start, contentLength, callback);
+//            callback.block();
+//        }
 
         // Use a ranged writer if resource backed by path
         Path path = content.getResource().getPath();
