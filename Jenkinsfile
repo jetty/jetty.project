@@ -160,9 +160,9 @@ def saveHome() {
 def websiteBuild() {
   script {
     try {
-      //if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' ) {
-      build( job: 'website/jetty.website/main', propagate: false, wait: false )
-      //}
+      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' ) {
+        build( job: 'website/jetty.website/main', propagate: false, wait: false )
+      }
     } catch (Exception e) {
       e.printStackTrace()
       echo "skip website build triggering: " + e.getMessage()
