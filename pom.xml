@@ -184,6 +184,7 @@
     <conscrypt.version>2.5.2</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.8.0</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
+    <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
     <eclipse.jdt.ecj.version>3.38.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
@@ -303,6 +304,7 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.13.5</pax.exam.version>
     <pax.url.version>2.6.14</pax.url.version>
+    <plexus-classworlds.version>2.8.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.1</plexus-utils.version>
     <plexus-xml.version>4.0.4</plexus-xml.version>
@@ -310,6 +312,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settingsPath>src/it/settings.xml</settingsPath>
+    <sisu.plexus.version>0.9.0.M3</sisu.plexus.version>
     <slf4j.version>2.0.13</slf4j.version>
     <spifly.version>1.3.7</spifly.version>
     <spotbugs.maven.plugin.version>4.8.6.0</spotbugs.maven.plugin.version>
@@ -618,7 +621,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-classworlds</artifactId>
-        <version>2.8.0</version>
+        <version>${plexus-classworlds.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
@@ -1037,7 +1040,7 @@
       <dependency>
         <groupId>org.eclipse.sisu</groupId>
         <artifactId>org.eclipse.sisu.plexus</artifactId>
-        <version>0.9.0.M3</version>
+        <version>${sisu.plexus.version}</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -1977,7 +1980,7 @@
       <plugin>
         <groupId>org.basepom.maven</groupId>
         <artifactId>duplicate-finder-maven-plugin</artifactId>
-        <version>2.0.1</version>
+        <version>${duplicate-finder-maven-plugin.version}</version>
       </plugin>
       <!-- Build helper maven plugin sets the parsedVersion.osgiVersion property -->
       <plugin>
