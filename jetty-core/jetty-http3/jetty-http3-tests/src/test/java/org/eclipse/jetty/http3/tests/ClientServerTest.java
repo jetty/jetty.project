@@ -648,7 +648,7 @@ public class ClientServerTest extends AbstractClientServerTest
     }
 
     @Test
-    public void testMissingNeededClientCertDeniesConnection() throws Exception
+    public void testMissingNeededClientCertificateDeniesConnection() throws Exception
     {
         AtomicReference<HTTP3SessionServer> serverSessionRef = new AtomicReference<>();
         AtomicReference<Long> serverErrorRef = new AtomicReference<>();
