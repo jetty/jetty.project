@@ -131,6 +131,7 @@
     <module>tests</module>
     <module>javadoc</module>
     <module>documentation</module>
+    <module>jetty-p2</module>
   </modules>
 
   <scm>
