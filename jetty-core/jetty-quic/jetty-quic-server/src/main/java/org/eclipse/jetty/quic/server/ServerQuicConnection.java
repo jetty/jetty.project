@@ -31,7 +31,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicConnection;
-import org.eclipse.jetty.quic.common.QuicErrorCode;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -115,19 +114,6 @@ public class ServerQuicConnection extends QuicConnection
         }
         else
         {
-            if (quicConfiguration.getSslContextFactory().getNeedClientAuth())
-            {
-                byte[] peerCertificate = quicheConnection.getPeerCertificate();
-                if (peerCertificate == null)
-                {
-                    ServerQuicSession session = newQuicSession(remoteAddress, quicheConnection);
-                    session.outwardClose(QuicErrorCode.CONNECTION_REFUSED.code(), "missing_client_cert");
-                    // Send the response packet(s) that outwardClose() generated.
-                    session.flush();
-                    return null;
-                }
-            }
-
             ServerQuicSession session = newQuicSession(remoteAddress, quicheConnection);
             // Send the response packet(s) that tryAccept() generated.
             session.flush();
@@ -137,7 +123,7 @@ public class ServerQuicConnection extends QuicConnection
 
     protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
     {
-        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector());
+        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector(), quicConfiguration);
     }
 
     @Override

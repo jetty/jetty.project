@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -40,6 +38,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
+import org.eclipse.jetty.quic.common.QuicErrorCode;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -49,11 +48,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ClientServerTest extends AbstractClientServerTest
 {
@@ -651,14 +648,17 @@ public class ClientServerTest extends AbstractClientServerTest
         start(new Session.Server.Listener() {});
         connector.getQuicConfiguration().getSslContextFactory().setNeedClientAuth(true);
 
-        try
+        CountDownLatch latch = new CountDownLatch(1);
+        newSession(new Session.Client.Listener()
         {
-            newSession(new Session.Client.Listener() {});
-            fail("expected ExecutionException");
-        }
-        catch (ExecutionException ex)
-        {
-            assertInstanceOf(IOException.class, ex.getCause());
-        }
+            @Override
+            public void onDisconnect(Session session, long error, String reason)
+            {
+                assertEquals(QuicErrorCode.CONNECTION_REFUSED.code(), error);
+                assertEquals("missing_client_cert", reason);
+                latch.countDown();
+            }
+        });
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

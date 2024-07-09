@@ -109,7 +109,7 @@ public class IdleTimeoutTest
                     @Override
                     protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
                     {
-                        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector())
+                        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector(), getQuicConfiguration())
                         {
                             @Override
                             public int flush(long streamId, ByteBuffer buffer, boolean last) throws IOException
