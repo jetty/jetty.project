@@ -63,39 +63,32 @@ public class AbstractClientServerTest
 
     protected void start(Handler handler) throws Exception
     {
-        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration(false);
+        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration();
         prepareServer(quicConfiguration, new HTTP3ServerConnectionFactory(quicConfiguration));
         server.setHandler(handler);
         server.start();
         startClient();
     }
 
-    protected void start(Session.Server.Listener listener) throws Exception
-    {
-        startServer(false, listener);
-        startClient();
-    }
-
-    protected void start(boolean needClientAuth, Session.Server.Listener listener) throws Exception
-    {
-        startServer(needClientAuth, listener);
-        startClient();
-    }
-
-    private void startServer(boolean needClientAuth, Session.Server.Listener listener) throws Exception
-    {
-        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration(needClientAuth);
-        prepareServer(quicConfiguration, new RawHTTP3ServerConnectionFactory(quicConfiguration, listener));
-        server.start();
-    }
-
-    private ServerQuicConfiguration newServerQuicConfiguration(boolean needClientAuth)
+    private ServerQuicConfiguration newServerQuicConfiguration()
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setNeedClientAuth(needClientAuth);
         sslServer.setKeyStorePath("src/test/resources/keystore.p12");
         sslServer.setKeyStorePassword("storepwd");
         return new ServerQuicConfiguration(sslServer, workDir.getEmptyPathDir());
+    }
+
+    protected void start(Session.Server.Listener listener) throws Exception
+    {
+        startServer(listener);
+        startClient();
+    }
+
+    protected void startServer(Session.Server.Listener listener) throws Exception
+    {
+        ServerQuicConfiguration quicConfiguration = newServerQuicConfiguration();
+        prepareServer(quicConfiguration, new RawHTTP3ServerConnectionFactory(quicConfiguration, listener));
+        server.start();
     }
 
     private void prepareServer(ServerQuicConfiguration quicConfiguration, ConnectionFactory serverConnectionFactory)

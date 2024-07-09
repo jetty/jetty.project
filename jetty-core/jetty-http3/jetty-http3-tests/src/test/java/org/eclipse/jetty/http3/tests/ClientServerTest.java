@@ -654,7 +654,7 @@ public class ClientServerTest extends AbstractClientServerTest
         AtomicReference<Long> serverErrorRef = new AtomicReference<>();
         AtomicReference<String> serverReasonRef = new AtomicReference<>();
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(true, new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public void onDisconnect(Session session, long error, String reason)
@@ -665,6 +665,7 @@ public class ClientServerTest extends AbstractClientServerTest
                 serverDisconnectLatch.countDown();
             }
         });
+        connector.getQuicConfiguration().getSslContextFactory().setNeedClientAuth(true);
 
         try
         {
