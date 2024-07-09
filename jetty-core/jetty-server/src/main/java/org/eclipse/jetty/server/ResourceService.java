@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -706,55 +707,51 @@ public class ResourceService
 
     protected void putHeaders(Response response, HttpContent content, long contentLength)
     {
-        // TODO it is very inefficient to do many put's to a HttpFields, as each put is a full iteration.
-        //      it might be better remove headers en masse and then just add the extras:
-        // NOTE: If these headers come from a Servlet Filter we shouldn't override them here.
-//        headers.remove(EnumSet.of(
-//            HttpHeader.LAST_MODIFIED,
-//            HttpHeader.CONTENT_LENGTH,
-//            HttpHeader.CONTENT_TYPE,
-//            HttpHeader.CONTENT_ENCODING,
-//            HttpHeader.ETAG,
-//            HttpHeader.ACCEPT_RANGES,
-//            HttpHeader.CACHE_CONTROL
-//            ));
-//        HttpField lm = content.getLastModified();
-//        if (lm != null)
-//            headers.add(lm);
-//        etc.
+        EnumSet<HttpHeader> toRemove = EnumSet.noneOf(HttpHeader.class);
 
         HttpField lm = content.getLastModified();
         if (lm != null)
-            response.getHeaders().put(lm);
+            toRemove.add(HttpHeader.LAST_MODIFIED);
 
-        if (contentLength == USE_KNOWN_CONTENT_LENGTH)
-        {
-            response.getHeaders().put(content.getContentLength());
-        }
-        else if (contentLength > NO_CONTENT_LENGTH)
-        {
-            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
-        }
+        if (contentLength == USE_KNOWN_CONTENT_LENGTH || contentLength > NO_CONTENT_LENGTH)
+            toRemove.add(HttpHeader.CONTENT_LENGTH);
 
         HttpField ct = content.getContentType();
         if (ct != null)
-            response.getHeaders().put(ct);
+            toRemove.add(HttpHeader.CONTENT_TYPE);
 
         HttpField ce = content.getContentEncoding();
         if (ce != null)
-            response.getHeaders().put(ce);
+            toRemove.add(HttpHeader.CONTENT_ENCODING);
 
-        if (_etags)
-        {
-            HttpField et = content.getETag();
-            if (et != null)
-                response.getHeaders().put(et);
-        }
+        HttpField et = _etags ? content.getETag() : null;
+        if (et != null)
+            toRemove.add(HttpHeader.ETAG);
 
-        if (_acceptRanges && !response.getHeaders().contains(HttpHeader.ACCEPT_RANGES))
-            response.getHeaders().put(new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes"));
-        if (_cacheControl != null && !response.getHeaders().contains(HttpHeader.CACHE_CONTROL))
-            response.getHeaders().put(_cacheControl);
+        HttpFields.Mutable headers = response.getHeaders();
+        headers.remove(toRemove);
+
+        if (lm != null)
+            headers.add(lm);
+
+        if (contentLength == USE_KNOWN_CONTENT_LENGTH)
+            headers.add(content.getContentLength());
+        else if (contentLength > NO_CONTENT_LENGTH)
+            headers.add(HttpHeader.CONTENT_LENGTH, contentLength);
+
+        if (ct != null)
+            headers.add(ct);
+
+        if (ce != null)
+            headers.add(ce);
+
+        if (et != null)
+            headers.put(et);
+
+        if (_acceptRanges && !headers.contains(HttpHeader.ACCEPT_RANGES))
+            headers.add(new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes"));
+        if (_cacheControl != null && !headers.contains(HttpHeader.CACHE_CONTROL))
+            headers.add(_cacheControl);
     }
 
     /**
