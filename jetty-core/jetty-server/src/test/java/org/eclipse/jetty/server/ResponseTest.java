@@ -30,7 +30,9 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -569,6 +571,81 @@ public class ResponseTest
         response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
+    }
+
+    public static Stream<Arguments> redirectComplianceTest()
+    {
+        return Stream.of(
+            Arguments.of(null, "http://[bad]:xyz/", HttpStatus.FOUND_302, null),
+            Arguments.of(UriCompliance.UNSAFE, "http://[bad]:xyz/", HttpStatus.INTERNAL_SERVER_ERROR_500, "Bad authority"),
+            Arguments.of(UriCompliance.DEFAULT, "http://[bad]:xyz/", HttpStatus.INTERNAL_SERVER_ERROR_500, "Bad authority"),
+            Arguments.of(null, "http://user:password@host.com/", HttpStatus.FOUND_302, null),
+            Arguments.of(UriCompliance.DEFAULT, "http://user:password@host.com/", HttpStatus.INTERNAL_SERVER_ERROR_500, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "http://user:password@host.com/", HttpStatus.FOUND_302, null),
+            Arguments.of(null, "http://host.com/very%2Funsafe", HttpStatus.FOUND_302, null),
+            Arguments.of(UriCompliance.LEGACY, "http://host.com/very%2Funsafe", HttpStatus.FOUND_302, null),
+            Arguments.of(UriCompliance.DEFAULT, "http://host.com/very%2Funsafe", HttpStatus.INTERNAL_SERVER_ERROR_500, "Ambiguous")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("redirectComplianceTest")
+    public void testRedirectCompliance(UriCompliance compliance, String location, int status, String content) throws Exception
+    {
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
+        {
+            server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setRedirectUriCompliance(compliance);
+            server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(true);
+            server.setHandler(new Handler.Abstract()
+            {
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    Response.sendRedirect(request, response, callback, location);
+                    return true;
+                }
+            });
+            server.start();
+
+            String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+            assertThat(response.getStatus(), is(status));
+            if (HttpStatus.isRedirection(status))
+                assertThat(response.get(HttpHeader.LOCATION), is(location));
+            if (content != null)
+                assertThat(response.getContent(), containsString(content));
+        }
+    }
+
+    @Test
+    public void testAuthorityUserNotAllowedWithNonRelativeRedirect() throws Exception
+    {
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(false);
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setRedirectUriCompliance(UriCompliance.DEFAULT);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Response.sendRedirect(request, response, callback, "/somewhere/else");
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET http://user:password@hostname:8888/path HTTP/1.0\r
+                Host: hostname:8888\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+        assertThat(response.get(HttpHeader.LOCATION), is("http://hostname:8888/somewhere/else"));
     }
 
     @Test

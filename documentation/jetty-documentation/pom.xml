@@ -8,7 +8,7 @@
     <version>12.1.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-documentation</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <name>Documentation :: Guides</name>
 
   <properties>
@@ -49,14 +49,19 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-home</artifactId>
-      <version>${project.version}</version>
-      <type>zip</type>
-      <optional>true</optional>
+      <artifactId>jetty-infinispan-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-infinispan-embedded-query</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-infinispan-remote-query</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

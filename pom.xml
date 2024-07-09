@@ -91,6 +91,14 @@
       <organizationUrl>https://webtide.com</organizationUrl>
       <timezone>1</timezone>
     </developer>
+    <developer>
+      <id>lachlan-roberts</id>
+      <name>Lachlan Roberts</name>
+      <email>lachlan@webtide.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>Australia/Sydney</timezone>
+    </developer>
   </developers>
 
   <mailingLists>
@@ -300,7 +308,7 @@
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.3.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.21.0</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.22.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -1499,6 +1507,7 @@
               <manifestEntries>
                 <Implementation-Version>${project.version}</Implementation-Version>
                 <Implementation-Vendor>Eclipse Jetty Project</Implementation-Vendor>
+                <SPDX-License-Identifier>EPL-2.0 OR Apache-2.0</SPDX-License-Identifier>
                 <url>${jetty.url}</url>
               </manifestEntries>
             </archive>
