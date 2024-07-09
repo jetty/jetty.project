@@ -11,6 +11,7 @@
   <name>Jetty :: P2</name>
   <description>Generates a (maven based) P2 Updatesite</description>
   <properties>
+    <enforcer.skip>true</enforcer.skip>
     <tycho-version>4.0.8</tycho-version>
   </properties>
   <dependencies>
@@ -22,26 +23,6 @@
       <version>${project.version}</version>
       <type>pom</type>
     </dependency>
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.osgi</groupId>-->
-    <!--      <artifactId>jetty-httpservice</artifactId>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.osgi</groupId>-->
-    <!--      <artifactId>jetty-osgi-alpn</artifactId>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.osgi</groupId>-->
-    <!--      <artifactId>jetty-osgi-boot</artifactId>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.osgi</groupId>-->
-    <!--      <artifactId>jetty-osgi-boot-jsp</artifactId>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>org.eclipse.jetty.osgi</groupId>-->
-    <!--      <artifactId>jetty-osgi-boot-warurl</artifactId>-->
-    <!--    </dependency>-->
   </dependencies>
   <build>
     <plugins>
