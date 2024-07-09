@@ -62,6 +62,10 @@ pipeline {
     }
     fixed {
       slackNotif()
+      websiteBuild()
+    }
+    success {
+      websiteBuild()
     }
   }
 }
@@ -151,6 +155,19 @@ def saveHome() {
     return pullRequest.labels.contains("save-home")
   }
   return false;
+}
+
+def websiteBuild() {
+  script {
+    try {
+      //if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' ) {
+      build( job: 'website/jetty.website', propagate: false, wait: false )
+      //}
+    } catch (Exception e) {
+      e.printStackTrace()
+      echo "skip website build triggering: " + e.getMessage()
+    }
+  }
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
