@@ -88,8 +88,6 @@ public interface HttpContent extends RetainableByteBuffer
      */
     Set<CompressedContentFormat> getPreCompressedContentFormats();
 
-    boolean release();
-
     interface Factory
     {
         /**

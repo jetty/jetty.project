@@ -157,8 +157,10 @@ public class ResourceHttpContent implements HttpContent
     {
         try
         {
-            // TODO handle not last
-            Content.copy(Content.Source.from(_resource.newInputStream()), sink, callback);
+            // If the write is not last, then make the sink ignore any last write.
+            Content.Sink s = last ? sink : (l, b, cb) -> sink.write(false, b, cb);
+            Path path = _resource.getPath();
+            Content.copy(path == null ? Content.Source.from(_resource.newInputStream()) : Content.Source.from(path), s, callback);
         }
         catch (IOException e)
         {
@@ -170,11 +172,5 @@ public class ResourceHttpContent implements HttpContent
     public Set<CompressedContentFormat> getPreCompressedContentFormats()
     {
         return null;
-    }
-
-    @Override
-    public boolean release()
-    {
-        return false;
     }
 }

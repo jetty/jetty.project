@@ -22,6 +22,8 @@ import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class PreCompressedHttpContent implements HttpContent
@@ -145,6 +147,12 @@ public class PreCompressedHttpContent implements HttpContent
     public ByteBuffer getByteBuffer()
     {
         return _precompressedContent.getByteBuffer();
+    }
+
+    @Override
+    public void writeTo(Content.Sink sink, boolean last, Callback callback)
+    {
+        _precompressedContent.writeTo(sink, last, callback);
     }
 
     @Override

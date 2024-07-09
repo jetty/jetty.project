@@ -30,9 +30,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -293,8 +295,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         String getKey();
 
         boolean isValid();
-
-        void retain();
     }
 
     protected class CachedHttpContent extends HttpContent.Wrapper implements CachingHttpContent
@@ -384,6 +384,12 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
+        public void writeTo(Content.Sink sink, boolean last, Callback callback)
+        {
+            super.writeTo(sink, last, callback);
+        }
+
+        @Override
         public long getBytesOccupied()
         {
             return _bytesOccupied;
@@ -405,6 +411,12 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         public String getKey()
         {
             return _cacheKey;
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return _referenceCount.canRetain();
         }
 
         @Override
