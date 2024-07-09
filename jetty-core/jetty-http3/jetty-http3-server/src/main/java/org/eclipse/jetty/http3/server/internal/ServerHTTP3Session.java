@@ -112,13 +112,6 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    public void disconnect(long code, String reason)
-    {
-        super.disconnect(code, reason);
-        session.getListener().onDisconnect(session, code, reason);
-    }
-
-    @Override
     protected void onStart()
     {
         Map<Long, Long> settings = session.onPreface();

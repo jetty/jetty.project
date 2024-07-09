@@ -40,9 +40,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
-import org.eclipse.jetty.quic.common.QuicErrorCode;
 import org.eclipse.jetty.quic.common.QuicSession;
-import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -650,21 +648,7 @@ public class ClientServerTest extends AbstractClientServerTest
     @Test
     public void testMissingNeededClientCertificateDeniesConnection() throws Exception
     {
-        AtomicReference<HTTP3SessionServer> serverSessionRef = new AtomicReference<>();
-        AtomicReference<Long> serverErrorRef = new AtomicReference<>();
-        AtomicReference<String> serverReasonRef = new AtomicReference<>();
-        CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
-        {
-            @Override
-            public void onDisconnect(Session session, long error, String reason)
-            {
-                serverSessionRef.set((HTTP3SessionServer)session);
-                serverErrorRef.set(error);
-                serverReasonRef.set(reason);
-                serverDisconnectLatch.countDown();
-            }
-        });
+        start(new Session.Server.Listener() {});
         connector.getQuicConfiguration().getSslContextFactory().setNeedClientAuth(true);
 
         try
@@ -676,17 +660,5 @@ public class ClientServerTest extends AbstractClientServerTest
         {
             assertInstanceOf(IOException.class, ex.getCause());
         }
-
-        assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
-
-        assertEquals(QuicErrorCode.CONNECTION_REFUSED.code(), serverErrorRef.get());
-        assertEquals("missing_client_cert", serverReasonRef.get());
-        HTTP3SessionServer serverSession = serverSessionRef.get();
-        assertTrue(serverSession.isClosed());
-        assertTrue(serverSession.getStreams().isEmpty());
-        ServerQuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
-        // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
-        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
     }
 }
