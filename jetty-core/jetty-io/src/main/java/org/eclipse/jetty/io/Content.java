@@ -57,7 +57,6 @@ import org.slf4j.LoggerFactory;
 public class Content
 {
     private static final Logger LOG = LoggerFactory.getLogger(Content.class);
-    private static final ByteBuffer EMPTY_READ_ONLY_BUFFER = BufferUtil.EMPTY_BUFFER.asReadOnlyBuffer();
 
     private Content()
     {
@@ -710,7 +709,7 @@ public class Content
             @Override
             public ByteBuffer getByteBuffer()
             {
-                return EMPTY_READ_ONLY_BUFFER;
+                return BufferUtil.EMPTY_BUFFER;
             }
 
             @Override
@@ -734,7 +733,7 @@ public class Content
             @Override
             public ByteBuffer getByteBuffer()
             {
-                return EMPTY_READ_ONLY_BUFFER;
+                return BufferUtil.EMPTY_BUFFER;
             }
 
             @Override
@@ -861,7 +860,7 @@ public class Content
                 @Override
                 public ByteBuffer getByteBuffer()
                 {
-                    return EMPTY_READ_ONLY_BUFFER;
+                    return BufferUtil.EMPTY_BUFFER;
                 }
 
                 @Override
@@ -1025,7 +1024,7 @@ public class Content
          */
         default Chunk asReadOnly()
         {
-            if (getByteBuffer().isReadOnly())
+            if (!getByteBuffer().hasRemaining() || getByteBuffer().isReadOnly())
                 return this;
             if (canRetain())
                 return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
