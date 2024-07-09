@@ -64,7 +64,7 @@ public class ClientServerTest extends AbstractClientServerTest
     {
         CountDownLatch serverPrefaceLatch = new CountDownLatch(1);
         CountDownLatch serverSettingsLatch = new CountDownLatch(1);
-        start(true, new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
