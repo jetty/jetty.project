@@ -190,8 +190,9 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void put(String name, String value)
     {
+        String v = value == null ? "" : value;
         // Preserve the case for the field name
-        Field field = new Field(name, value);
+        Field field = new Field(name, v);
         fields.put(name, field);
     }
 
@@ -218,13 +219,14 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void add(String name, String value)
     {
+        String v = value == null ? "" : value;
         fields.compute(name, (k, f) ->
         {
             if (f == null)
                 // Preserve the case for the field name
-                return new Field(name, value);
+                return new Field(name, v);
             else
-                return new Field(f.getName(), f.getValues(), value);
+                return new Field(f.getName(), f.getValues(), v);
         });
     }
 
@@ -246,10 +248,27 @@ public class Fields implements Iterable<Fields.Field>
             fields.compute(name, (k, f) ->
             {
                 if (f == null)
-                    return new Field(name, List.of(values));
+                    return new Field(name, toList(values));
                 else
-                    return new Field(f.getName(), f.getValues(), List.of(values));
+                    return new Field(f.getName(), f.getValues(), toList(values));
             });
+        }
+    }
+
+    static List<String> toList(String... strings)
+    {
+        try
+        {
+            return List.of(strings);
+        }
+        catch (NullPointerException e)
+        {
+            List<String> result = new ArrayList<>(strings.length);
+            for (String s : strings)
+            {
+                result.add(s == null ? "" : s);
+            }
+            return Collections.unmodifiableList(result);
         }
     }
 
