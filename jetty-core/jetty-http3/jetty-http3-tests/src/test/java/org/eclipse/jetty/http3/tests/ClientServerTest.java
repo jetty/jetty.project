@@ -655,7 +655,7 @@ public class ClientServerTest extends AbstractClientServerTest
             public void onDisconnect(Session session, long error, String reason)
             {
                 assertEquals(QuicErrorCode.CONNECTION_REFUSED.code(), error);
-                assertEquals("missing_client_cert", reason);
+                assertEquals("missing_client_certificate_chain", reason);
                 latch.countDown();
             }
         });

@@ -71,6 +71,11 @@ public class ServerQuicConnection extends QuicConnection
         return connector;
     }
 
+    ServerQuicConfiguration getQuicConfiguration()
+    {
+        return quicConfiguration;
+    }
+
     @Override
     public void onOpen()
     {
@@ -123,7 +128,7 @@ public class ServerQuicConnection extends QuicConnection
 
     protected ServerQuicSession newQuicSession(SocketAddress remoteAddress, QuicheConnection quicheConnection)
     {
-        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector(), quicConfiguration);
+        return new ServerQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, getQuicServerConnector());
     }
 
     @Override
