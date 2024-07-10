@@ -796,7 +796,9 @@ public class ServletApiRequest implements HttpServletRequest
                     continue;
                 }
                 else
-                    cookies.add(httpCookie);
+                {
+                     cookies.add(httpCookie);
+                }
             }
         }
 
