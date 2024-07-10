@@ -326,6 +326,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         {
             if (_deflaterEntry != null)
             {
+                _state.set(GZState.FINISHED);
                 _deflaterEntry.release();
                 _deflaterEntry = null;
             }
@@ -381,6 +382,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         {
             if (_deflaterEntry != null)
             {
+                _state.set(GZState.FINISHED);
                 _deflaterEntry.release();
                 _deflaterEntry = null;
             }
