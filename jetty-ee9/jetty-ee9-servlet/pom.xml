@@ -72,7 +72,6 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <!-- Reuse Forks causes test failures -->
           <reuseForks>true</reuseForks>
           <argLine>@{argLine} ${jetty.surefire.argLine}
             --add-modules org.eclipse.jetty.util.ajax
