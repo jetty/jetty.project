@@ -260,6 +260,12 @@ public class Dispatcher implements RequestDispatcher
                 return null;
             return vals.toArray(new String[0]);
         }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getRequest());
+        }
     }
 
     private class ForwardRequest extends ParameterRequestWrapper
