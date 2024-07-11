@@ -121,7 +121,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
         return _nonComplianceWarnings;
     }
 
-    public class MultiPart implements Part
+    public class MultiPart implements org.eclipse.jetty.ee9.nested.MultiPart.Part
     {
         protected String _name;
         protected String _filename;
@@ -352,6 +352,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
          *
          * @return the file, if any, the data has been written to.
          */
+        @Override
         public File getFile()
         {
             return _file;
@@ -362,6 +363,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
          *
          * @return null or the filename
          */
+        @Override
         public String getContentDispositionFilename()
         {
             return _filename;

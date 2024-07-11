@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.List;
 
 import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.MultiPartCompliance;
 
@@ -62,5 +61,28 @@ class MultiPart
         Collection<Part> getParts() throws IOException;
 
         List<ComplianceViolation.Event> getNonComplianceWarnings();
+    }
+
+    /**
+     * Expose File of MultiPart section.
+     *
+     * @deprecated this interface is not available in ee10 or newer.
+     */
+    @Deprecated(since = "12.0.12", forRemoval = true)
+    public interface Part extends jakarta.servlet.http.Part
+    {
+        /**
+         * Get the file
+         *
+         * @return the file, if any, the data has been written to.
+         */
+        File getFile();
+
+        /**
+         * Get the filename from the content-disposition.
+         *
+         * @return null or the filename
+         */
+        String getContentDispositionFilename();
     }
 }
