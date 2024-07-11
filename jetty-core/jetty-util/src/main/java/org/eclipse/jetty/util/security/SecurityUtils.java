@@ -25,14 +25,18 @@ import javax.security.auth.Subject;
 /**
  * <p>Collections of utility methods to deal with the scheduled removal
  * of the security classes defined by <a href="https://openjdk.org/jeps/411">JEP 411</a>.</p>
+ * <p>To enable usage of a {@link SecurityManager}, the system property {@link #USE_SECURITY_MANAGER} must be set to {@code true}</p>
  */
 public class SecurityUtils
 {
+    public static final boolean USE_SECURITY_MANAGER = Boolean.getBoolean("org.eclipse.jetty.util.security.useSecurityManager");
     private static final MethodHandle doAs = lookupDoAs();
     private static final MethodHandle doPrivileged = lookupDoPrivileged();
 
     private static MethodHandle lookupDoAs()
     {
+        if (!USE_SECURITY_MANAGER)
+            return null;
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try
         {
@@ -63,6 +67,8 @@ public class SecurityUtils
 
     private static MethodHandle lookupDoPrivileged()
     {
+        if (!USE_SECURITY_MANAGER)
+            return null;
         try
         {
             // Use reflection to work with Java versions that have and don't have AccessController.
@@ -84,6 +90,8 @@ public class SecurityUtils
     {
         try
         {
+            if (!USE_SECURITY_MANAGER)
+                return null;
             // Use reflection to work with Java versions that have and don't have SecurityManager.
             return System.class.getMethod("getSecurityManager").invoke(null);
         }
@@ -102,6 +110,8 @@ public class SecurityUtils
      */
     public static void checkPermission(Permission permission) throws SecurityException
     {
+        if (!USE_SECURITY_MANAGER)
+            return;
         Object securityManager = SecurityUtils.getSecurityManager();
         if (securityManager == null)
             return;
@@ -129,11 +139,9 @@ public class SecurityUtils
      */
     public static <T> T doPrivileged(PrivilegedAction<T> action)
     {
-        // Keep this method short and inlineable.
-        MethodHandle methodHandle = doPrivileged;
-        if (methodHandle == null)
+        if (!USE_SECURITY_MANAGER || doPrivileged == null)
             return action.run();
-        return doPrivileged(methodHandle, action);
+        return doPrivileged(doPrivileged, action);
     }
 
     @SuppressWarnings("unchecked")
@@ -166,10 +174,9 @@ public class SecurityUtils
     {
         try
         {
-            MethodHandle methodHandle = doAs;
-            if (methodHandle == null)
+            if (!USE_SECURITY_MANAGER || doAs == null)
                 return action.call();
-            return (T)methodHandle.invoke(subject, action);
+            return (T)doAs.invoke(subject, action);
         }
         catch (RuntimeException | Error x)
         {
