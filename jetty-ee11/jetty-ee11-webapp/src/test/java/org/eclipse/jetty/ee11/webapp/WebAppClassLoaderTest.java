@@ -139,6 +139,7 @@ public class WebAppClassLoaderTest
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         assertThrows(NoSuchFieldException.class, () ->
             clazzA.getField("FROM_PARENT"));
+        assertThat(clazzA.getPackage().getName(), is("org.acme.webapp"));
     }
 
     @Test
@@ -190,6 +191,19 @@ public class WebAppClassLoaderTest
             "org.acme.webapp.ClassInJarB",
             _loader,
             "org.acme.other.ClassInClassesC"));
+
+        Class<?> classInJarA = _loader.loadClass("org.acme.webapp.ClassInJarA");
+        Class<?> classInJarB = _loader.loadClass("org.acme.webapp.ClassInJarB");
+        Class<?> classInClassesC = _loader.loadClass("org.acme.other.ClassInClassesC");
+
+        assertThat(classInJarA.getPackage().getName(), is("org.acme.webapp"));
+        assertThat(classInJarB.getPackage().getName(), is("org.acme.webapp"));
+        assertThat(classInClassesC.getPackage().getName(), is("org.acme.other"));
+
+        assertThat(classInJarA.getPackage().getSpecificationTitle(), is("Test Package"));
+        assertThat(classInJarA.getPackage().getSpecificationVersion(), is("3.2.1"));
+        assertThat(classInJarA.getPackage().getImplementationTitle(), is("Testing 123"));
+        assertThat(classInJarA.getPackage().getImplementationVersion(), is("1.2.3"));
     }
 
     @Test

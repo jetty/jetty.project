@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -32,6 +33,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.FileID;
@@ -563,6 +566,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     bytes = tmp;
             }
 
+            definePackageIfNecessary(name, url);
+
             return defineClass(name, bytes, 0, bytes.length);
         }
         catch (IOException | IllegalClassFormatException e)
@@ -572,6 +577,31 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         finally
         {
             IO.close(content);
+        }
+    }
+
+    private void definePackageIfNecessary(String className, URL url) throws IOException
+    {
+        int lastDotIndex = className.lastIndexOf('.');
+        if (lastDotIndex < 0)
+            return;
+        String packageName = className.substring(0, lastDotIndex);
+        if (getDefinedPackage(packageName) == null)
+        {
+            if (url.getProtocol().equals("jar"))
+            {
+                JarURLConnection jarConnection = (JarURLConnection)url.openConnection();
+                JarFile jarFile = jarConnection.getJarFile();
+                Manifest manifest = jarFile.getManifest();
+                if (manifest != null)
+                    definePackage(packageName, manifest, jarConnection.getJarFileURL());
+                else
+                    definePackage(packageName, null, null, null, null, null, null, null);
+            }
+            else
+            {
+                definePackage(packageName, null, null, null, null, null, null, null);
+            }
         }
     }
 
