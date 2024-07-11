@@ -41,6 +41,7 @@ import java.util.Locale;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
@@ -578,7 +579,12 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             }
 
             if (line == null)
-                throw new IOException("Missing content for multipart request");
+            {
+                throw new BadMessageException(
+                    "No progress made on multipart/form-data",
+                    new IOException("Missing content for multipart request")
+                );
+            }
 
             boolean badFormatLogged = false;
 
