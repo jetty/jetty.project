@@ -72,7 +72,6 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     private final int _bufferSize;
     private final boolean _syncFlush;
     private DeflaterPool.Entry _deflaterEntry;
-    private RetainableByteBuffer _buffer;
     private boolean _last;
 
     public GzipResponseAndCallback(GzipHandler handler, Request request, Response response, Callback callback)
@@ -303,6 +302,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     {
         private final ByteBuffer _content;
         private final boolean _last;
+        private RetainableByteBuffer _buffer;
 
         public GzipBufferCB(boolean complete, Callback callback, ByteBuffer content)
         {
@@ -322,14 +322,16 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
 
         @Override
+        protected void onCompleteSuccess()
+        {
+            cleanup();
+            super.onCompleteSuccess();
+        }
+
+        @Override
         protected void onCompleteFailure(Throwable x)
         {
-            if (_deflaterEntry != null)
-            {
-                _state.set(GZState.FINISHED);
-                _deflaterEntry.release();
-                _deflaterEntry = null;
-            }
+            cleanup();
             super.onCompleteFailure(x);
         }
 
@@ -347,7 +349,6 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 // then the trailer has been generated and written below.
                 // We have finished compressing the entire content, so
                 // cleanup and succeed.
-                cleanup();
                 return Action.SUCCEEDED;
             }
 

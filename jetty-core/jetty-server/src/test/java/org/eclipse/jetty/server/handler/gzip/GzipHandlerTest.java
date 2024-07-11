@@ -49,6 +49,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -220,7 +221,7 @@ public class GzipHandlerTest
                     @Override
                     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
                     {
-                        throw new StacklessException("expected");
+                        throw new ArithmeticException("expected");
                     }
                 }, callback);
             }
@@ -242,11 +243,14 @@ public class GzipHandlerTest
         request.setHeader("Host", "tester");
         request.setHeader("accept-encoding", "gzip");
 
-        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
+        {
+            response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        }
 
         assertThat(response.getStatus(), is(500));
         String content = response.getContent();
-        assertThat(content, containsString("StacklessException: expected"));
+        assertThat(content, containsString("ArithmeticException: expected"));
         assertThat(content, not(containsString("Suppressed: ")));
     }
 
@@ -2107,20 +2111,6 @@ public class GzipHandlerTest
             else if (request.getLength() >= 0)
                 MatcherAssert.assertThat(request.getHeaders().get("X-Content-Encoding"), nullValue());
             return super.handle(request, response, callback);
-        }
-    }
-
-    public static class StacklessException extends RuntimeException
-    {
-        public StacklessException(String message)
-        {
-            super(message);
-        }
-
-        @Override
-        public synchronized Throwable fillInStackTrace()
-        {
-            return this;
         }
     }
 }
