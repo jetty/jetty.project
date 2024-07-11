@@ -464,7 +464,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
      * @throws IOException if unable to get the parts
      */
     @Override
-    public Collection<Part> getParts()
+    public Collection<jakarta.servlet.http.Part> getParts()
         throws IOException
     {
         if (!_parsed)

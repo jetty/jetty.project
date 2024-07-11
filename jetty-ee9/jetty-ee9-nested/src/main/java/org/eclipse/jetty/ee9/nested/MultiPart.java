@@ -56,9 +56,9 @@ class MultiPart
     {
         void deleteParts();
 
-        Part getPart(String name) throws IOException;
+        jakarta.servlet.http.Part getPart(String name) throws IOException;
 
-        Collection<Part> getParts() throws IOException;
+        Collection<jakarta.servlet.http.Part> getParts() throws IOException;
 
         List<ComplianceViolation.Event> getNonComplianceWarnings();
     }
