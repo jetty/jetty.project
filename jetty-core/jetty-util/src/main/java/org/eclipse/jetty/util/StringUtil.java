@@ -540,6 +540,23 @@ public class StringUtil
         return s;
     }
 
+    /**
+     * Convert an array of strings to a list of non-null strings.
+     *
+     * @param strings the array
+     * @return The list of non-null strings.
+     * @see #nonNull(String)
+     */
+    public static List<String> toListNonNull(String... strings)
+    {
+        List<String> result = new ArrayList<>(strings.length);
+        for (String s : strings)
+        {
+            result.add(nonNull(s));
+        }
+        return result;
+    }
+
     public static boolean equals(String s, char[] buf, int offset, int length)
     {
         if (s.length() != length)

@@ -248,27 +248,10 @@ public class Fields implements Iterable<Fields.Field>
             fields.compute(name, (k, f) ->
             {
                 if (f == null)
-                    return new Field(name, toList(values));
+                    return new Field(name, StringUtil.toListNonNull(values));
                 else
-                    return new Field(f.getName(), f.getValues(), toList(values));
+                    return new Field(f.getName(), f.getValues(), StringUtil.toListNonNull(values));
             });
-        }
-    }
-
-    static List<String> toList(String... strings)
-    {
-        try
-        {
-            return List.of(strings);
-        }
-        catch (NullPointerException e)
-        {
-            List<String> result = new ArrayList<>(strings.length);
-            for (String s : strings)
-            {
-                result.add(s == null ? "" : s);
-            }
-            return Collections.unmodifiableList(result);
         }
     }
 
