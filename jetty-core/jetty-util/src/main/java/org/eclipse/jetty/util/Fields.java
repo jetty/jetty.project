@@ -190,9 +190,8 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void put(String name, String value)
     {
-        String v = value == null ? "" : value;
         // Preserve the case for the field name
-        Field field = new Field(name, v);
+        Field field = new Field(name, StringUtil.nonNull(value));
         fields.put(name, field);
     }
 
@@ -219,14 +218,13 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void add(String name, String value)
     {
-        String v = value == null ? "" : value;
         fields.compute(name, (k, f) ->
         {
             if (f == null)
                 // Preserve the case for the field name
-                return new Field(name, v);
+                return new Field(name, StringUtil.nonNull(value));
             else
-                return new Field(f.getName(), f.getValues(), v);
+                return new Field(f.getName(), f.getValues(), StringUtil.nonNull(value));
         });
     }
 
