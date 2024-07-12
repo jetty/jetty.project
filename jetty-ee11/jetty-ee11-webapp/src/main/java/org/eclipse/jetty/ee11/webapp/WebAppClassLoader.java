@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
-import java.net.JarURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -590,18 +590,24 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         {
             if (url.getProtocol().equals("jar"))
             {
-                JarURLConnection jarConnection = (JarURLConnection)url.openConnection();
-                JarFile jarFile = jarConnection.getJarFile();
-                Manifest manifest = jarFile.getManifest();
-                if (manifest != null)
-                    definePackage(packageName, manifest, jarConnection.getJarFileURL());
-                else
-                    definePackage(packageName, null, null, null, null, null, null, null);
+                try
+                {
+                    URI jarURI = URIUtil.unwrapContainer(url.toURI());
+                    Resource manifestResource = getContext().newResource(URIUtil.uriJarPrefix(jarURI, "!/META-INF/MANIFEST.MF").toASCIIString());
+                    if (manifestResource.exists())
+                    {
+                        Manifest manifest = new Manifest(manifestResource.newInputStream());
+                        definePackage(packageName, manifest, jarURI.toURL());
+                        return;
+                    }
+                }
+                catch (Throwable t)
+                {
+                    LOG.trace("no manifest", t);
+                }
             }
-            else
-            {
-                definePackage(packageName, null, null, null, null, null, null, null);
-            }
+
+            definePackage(packageName, null, null, null, null, null, null, null);
         }
     }
 
