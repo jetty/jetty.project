@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -388,7 +387,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void writeTo(Content.Sink sink, Callback callback)
+        public void writeTo(HttpContent.Sink sink, Callback callback)
         {
             sink.write(false, _buffer.getByteBuffer().asReadOnlyBuffer(), callback);
         }
@@ -586,7 +585,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void writeTo(Content.Sink sink, Callback callback)
+        public void writeTo(HttpContent.Sink sink, Callback callback)
         {
             callback.succeeded();
         }

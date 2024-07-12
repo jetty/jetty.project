@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Common IO operations for {@link Resource} content.
+ * // TODO use ByteBufferPool.Sized instead of ByteBufferPool in all signatures.
  */
 public class IOResources
 {

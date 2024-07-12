@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
@@ -50,12 +51,20 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>The representation of an HTTP response, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
  */
-public interface Response extends Content.Sink
+public interface Response extends HttpContent.Sink
 {
     /**
      * @return the {@link Request} associated with this {@code Response}
      */
     Request getRequest();
+
+    /**
+     * @return a buffer pool pre-configured with the size and directness of the buffers.
+     */
+    default ByteBufferPool.Sized getSizedByteBufferPool()
+    {
+        return getRequest().getComponents().getSizedByteBufferPool();
+    }
 
     /**
      * @return the response HTTP status code

@@ -24,7 +24,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
@@ -146,9 +146,10 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public void writeTo(Content.Sink sink, Callback callback)
+    public void writeTo(HttpContent.Sink sink, Callback callback)
     {
-        IOResources.copy(_resource, sink, null, -1, true, callback);
+        ByteBufferPool.Sized pool = sink.getSizedByteBufferPool();
+        IOResources.copy(_resource, sink, pool, pool.getSize(), pool.isDirect(), callback);
     }
 
     @Override

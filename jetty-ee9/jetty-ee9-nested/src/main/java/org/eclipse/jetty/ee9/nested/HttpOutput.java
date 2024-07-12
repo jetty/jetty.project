@@ -1361,10 +1361,20 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
-                httpContent.writeTo((last, byteBuffer, cb) ->
-                {
-                    _written += byteBuffer.remaining();
-                    channelWrite(byteBuffer, last, cb);
+                ByteBufferPool.Sized sizedPool = new ByteBufferPool.Sized(_pool, _channel.isUseOutputDirectByteBuffers(), getBufferSize());
+                httpContent.writeTo(new HttpContent.Sink() {
+                    @Override
+                    public ByteBufferPool.Sized getSizedByteBufferPool()
+                    {
+                        return sizedPool;
+                    }
+
+                    @Override
+                    public void write(boolean last, ByteBuffer byteBuffer, Callback cb)
+                    {
+                        _written += byteBuffer.remaining();
+                        channelWrite(byteBuffer, last, cb);
+                    }
                 }, new Callback.Nested(callback)
                 {
                     @Override

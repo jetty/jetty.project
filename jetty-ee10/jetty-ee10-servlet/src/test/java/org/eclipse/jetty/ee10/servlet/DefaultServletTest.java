@@ -51,10 +51,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -3541,7 +3541,7 @@ public class DefaultServletTest
             final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
             @Override
-            public void writeTo(Content.Sink sink, Callback callback)
+            public void writeTo(HttpContent.Sink sink, Callback callback)
             {
                 sink.write(false, buffer.asReadOnlyBuffer(), callback);
             }
@@ -3595,7 +3595,7 @@ public class DefaultServletTest
             final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
             @Override
-            public void writeTo(Content.Sink sink, Callback callback)
+            public void writeTo(HttpContent.Sink sink, Callback callback)
             {
                 sink.write(false, buffer.asReadOnlyBuffer(), callback);
             }

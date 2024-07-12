@@ -178,7 +178,7 @@ public class ResourceHandlerByteRangesTest
                     final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
                     @Override
-                    public void writeTo(Content.Sink sink, Callback callback)
+                    public void writeTo(HttpContent.Sink sink, Callback callback)
                     {
                         sink.write(false, buffer.asReadOnlyBuffer(), callback);
                     }
@@ -219,7 +219,7 @@ public class ResourceHandlerByteRangesTest
                     final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
 
                     @Override
-                    public void writeTo(Content.Sink sink, Callback callback)
+                    public void writeTo(HttpContent.Sink sink, Callback callback)
                     {
                         sink.write(false, buffer.asReadOnlyBuffer(), callback);
                     }
