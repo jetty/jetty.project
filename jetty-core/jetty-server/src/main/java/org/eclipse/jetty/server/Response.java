@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
@@ -301,25 +302,32 @@ public interface Response extends Content.Sink
             return;
         }
 
-        if (consumeAvailable)
+        try
         {
-            while (true)
+            if (consumeAvailable)
             {
-                Content.Chunk chunk = response.getRequest().read();
-                if (chunk == null)
+                while (true)
                 {
-                    response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                    break;
+                    Content.Chunk chunk = response.getRequest().read();
+                    if (chunk == null)
+                    {
+                        response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                        break;
+                    }
+                    chunk.release();
+                    if (chunk.isLast())
+                        break;
                 }
-                chunk.release();
-                if (chunk.isLast())
-                    break;
             }
-        }
 
-        response.getHeaders().put(HttpHeader.LOCATION, toRedirectURI(request, location));
-        response.setStatus(code);
-        response.write(true, null, callback);
+            response.getHeaders().put(HttpHeader.LOCATION, toRedirectURI(request, location));
+            response.setStatus(code);
+            response.write(true, null, callback);
+        }
+        catch (Throwable failure)
+        {
+            callback.failed(failure);
+        }
     }
 
     /**
@@ -333,6 +341,8 @@ public interface Response extends Content.Sink
      */
     static String toRedirectURI(Request request, String location)
     {
+        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+
         // is the URI absolute already?
         if (!URIUtil.hasScheme(location))
         {
@@ -353,12 +363,19 @@ public interface Response extends Content.Sink
                 throw new IllegalStateException("redirect path cannot be above root");
 
             // if relative redirects are not allowed?
-            if (!request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
-            {
+            if (!httpConfiguration.isRelativeRedirectAllowed())
                 // make the location an absolute URI
                 location = URIUtil.newURI(uri.getScheme(), Request.getServerName(request), Request.getServerPort(request), location, null);
-            }
         }
+
+        UriCompliance redirectCompliance = httpConfiguration.getRedirectUriCompliance();
+        if (redirectCompliance != null)
+        {
+            String violations = UriCompliance.checkUriCompliance(redirectCompliance, HttpURI.from(location), null);
+            if (StringUtil.isNotBlank(violations))
+                throw new IllegalArgumentException(violations);
+        }
+
         return location;
     }
 

@@ -656,14 +656,14 @@ public class StartArgs
                 cmd.addArg(propPath.toAbsolutePath().toString());
             }
 
-            for (Path xml : jettyEnvironment.getXmlFiles())
-            {
-                cmd.addArg(xml.toAbsolutePath().toString());
-            }
-
             for (Path propertyFile : jettyEnvironment.getPropertyFiles())
             {
                 cmd.addArg(propertyFile.toAbsolutePath().toString());
+            }
+
+            for (Path xml : jettyEnvironment.getXmlFiles())
+            {
+                cmd.addArg(xml.toAbsolutePath().toString());
             }
         }
 

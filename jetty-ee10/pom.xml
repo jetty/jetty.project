@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.11-SNAPSHOT</version>
+    <version>12.0.12-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.ee10</groupId>
   <artifactId>jetty-ee10</artifactId>
@@ -58,8 +58,8 @@
     <jakarta.xml.bind.api.version>4.0.2</jakarta.xml.bind.api.version>
     <jakarta.xml.bind.impl.version>4.0.5</jakarta.xml.bind.impl.version>
     <jakarta.xml.jaxws.impl.version>4.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>4.0.1</jakarta.xml.ws.api.version>
-    <jersey.version>3.1.5</jersey.version>
+    <jakarta.xml.ws.api.version>4.0.2</jakarta.xml.ws.api.version>
+    <jersey.version>3.1.7</jersey.version>
 
     <jsp.impl.version>10.1.25</jsp.impl.version>
     <mail.impl.version>2.0.1</mail.impl.version>

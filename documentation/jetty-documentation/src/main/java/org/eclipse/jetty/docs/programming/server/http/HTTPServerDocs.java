@@ -34,6 +34,7 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.ResourceServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -1220,9 +1221,30 @@ public class HTTPServerDocs
         // Add the DefaultServlet to serve static content.
         ServletHolder servletHolder = context.addServlet(DefaultServlet.class, "/");
         // Configure the DefaultServlet with init-parameters.
-        servletHolder.setInitParameter("resourceBase", "/path/to/static/resources/");
+        servletHolder.setInitParameter("maxCacheSize", "8388608");
+        servletHolder.setInitParameter("dirAllowed", "true");
         servletHolder.setAsyncSupported(true);
         // end::defaultServlet[]
+    }
+
+    public void resourceServlet()
+    {
+        // tag::resourceServlet[]
+        // Create a ServletContextHandler with contextPath.
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/app");
+
+        // Add the ResourceServlet to serve static content from a specific location.
+        ServletHolder servletHolder = context.addServlet(ResourceServlet.class, "/static/*");
+        // Configure the ResourceServlet with init-parameters.
+        servletHolder.setInitParameter("baseResource", "/absolute/path/to/static/resources/");
+        servletHolder.setInitParameter("pathInfoOnly", "true");
+        servletHolder.setAsyncSupported(true);
+
+        // Add the DefaultServlet to serve static content from the resource base
+        ServletHolder defaultHolder = context.addServlet(DefaultServlet.class, "/");
+        defaultHolder.setAsyncSupported(true);
+        // end::resourceServlet[]
     }
 
     public void serverGzipHandler() throws Exception
