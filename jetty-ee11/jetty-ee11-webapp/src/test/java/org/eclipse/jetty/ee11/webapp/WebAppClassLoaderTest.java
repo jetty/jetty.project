@@ -204,6 +204,16 @@ public class WebAppClassLoaderTest
         assertThat(classInJarA.getPackage().getSpecificationVersion(), is("3.2.1"));
         assertThat(classInJarA.getPackage().getImplementationTitle(), is("Testing 123"));
         assertThat(classInJarA.getPackage().getImplementationVersion(), is("1.2.3"));
+
+        assertThat(classInJarB.getPackage().getSpecificationTitle(), is("Test Package"));
+        assertThat(classInJarB.getPackage().getSpecificationVersion(), is("3.2.1"));
+        assertThat(classInJarB.getPackage().getImplementationTitle(), is("Testing 123"));
+        assertThat(classInJarB.getPackage().getImplementationVersion(), is("1.2.3"));
+
+        assertThat(classInClassesC.getPackage().getSpecificationTitle(), nullValue());
+        assertThat(classInClassesC.getPackage().getSpecificationVersion(), nullValue());
+        assertThat(classInClassesC.getPackage().getImplementationTitle(), nullValue());
+        assertThat(classInClassesC.getPackage().getImplementationVersion(), nullValue());
     }
 
     @Test
