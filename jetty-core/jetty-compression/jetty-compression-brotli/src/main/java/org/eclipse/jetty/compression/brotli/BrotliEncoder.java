@@ -15,71 +15,96 @@ package org.eclipse.jetty.compression.brotli;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 
+import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
 import com.aayushatharva.brotli4j.encoder.Encoder;
-import com.aayushatharva.brotli4j.encoder.EncoderJNI;
 import com.aayushatharva.brotli4j.encoder.PreparedDictionary;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BrotliEncoder implements Compression.Encoder
+public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(BrotliEncoder.class);
 
-    private EncoderJNI.Wrapper encoder;
+    private final ByteBufferPool bufferPool;
+    private final int outputBufferSize;
+    // TODO: change to com.aayushatharva.brotli4j.encoder.EncoderJNI.Wrapper once new release
+    // of brotli4j is available with fix https://github.com/hyperxpro/Brotli4j/issues/144
+    private final BrotliEncoderChannel encoder;
     private ByteBuffer inputBuffer;
 
     public BrotliEncoder(BrotliCompression brotliCompression, ByteBufferPool pool, int outputBufferSize)
     {
+        this.bufferPool = pool;
+        this.outputBufferSize = brotliCompression.getBufferSize();
         try
         {
             Encoder.Parameters params = brotliCompression.getEncoderParams();
-            this.encoder = new EncoderJNI.Wrapper(outputBufferSize, params.quality(), params.lgwin(), params.mode());
+            this.encoder = new BrotliEncoderChannel(this, params, brotliCompression.getBufferSize());
         }
         catch (IOException e)
         {
             throw new RuntimeException(e);
         }
-        this.inputBuffer = encoder.getInputBuffer();
     }
 
     public void attachDictionary(PreparedDictionary dictionary) throws IOException
     {
-        if (!encoder.attachDictionary(dictionary.getData()))
-        {
-            throw new IOException("Unable to attach dictionary: " + dictionary);
-        }
+        encoder.attachDictionary(dictionary);
     }
 
     @Override
     public void begin()
     {
-        encoder.push(EncoderJNI.Operation.PROCESS, 0);
+        // no header blocks in brotli
     }
 
     @Override
-    public void setInput(ByteBuffer content)
-    {
-    }
-
-    @Override
-    public void finish()
-    {
-    }
-
-    @Override
-    public boolean finished()
+    public boolean isOpen()
     {
         return false;
     }
 
     @Override
+    public void close() throws IOException
+    {
+        encoder.close();
+    }
+
+    @Override
+    public void setInput(ByteBuffer content)
+    {
+        try
+        {
+            encoder.write(content);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    @Override
+    public void finishInput()
+    {
+    }
+
+    @Override
+    public boolean isOutputFinished()
+    {
+        return encoder.isOpen();
+    }
+
+    @Override
     public boolean needsInput()
     {
-        return isOpen();
+        return encoder.isOpen();
     }
 
     @Override
@@ -89,25 +114,44 @@ public class BrotliEncoder implements Compression.Encoder
     }
 
     @Override
-    public int trailerSize()
+    public int getTrailerSize()
     {
         return 0;
     }
 
     @Override
-    public RetainableByteBuffer initialBuffer()
+    public RetainableByteBuffer acquireInitialOutputBuffer()
     {
-        return null;
+        RetainableByteBuffer buffer = bufferPool.acquire(outputBufferSize, false);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        BufferUtil.flipToFill(byteBuffer);
+        return buffer;
     }
 
     @Override
     public void addTrailer(ByteBuffer outputBuffer)
     {
+        // no trailers in brotli
     }
 
     @Override
-    public void cleanup() throws IOException
+    public void release()
     {
-        encoder.close();
+        try
+        {
+            encoder.close();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    @Override
+    public int write(ByteBuffer src) throws IOException
+    {
+        int pos = src.position();
+        inputBuffer.put(src);
+        return src.position() - pos;
     }
 }

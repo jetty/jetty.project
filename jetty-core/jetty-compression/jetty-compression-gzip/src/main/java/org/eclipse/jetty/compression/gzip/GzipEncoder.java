@@ -30,13 +30,33 @@ public class GzipEncoder implements Compression.Encoder
 {
     private static final Logger LOG = LoggerFactory.getLogger(GzipEncoder.class);
 
-    // Per RFC-1952 this is the "unknown" OS value byte.
+    /**
+     * Per RFC-1952 (Section 2.3.1) this is the "Unknown" OS value as a byte.
+     */
     private static final byte OS_UNKNOWN = (byte)0xFF;
+
+    /**
+     * The static Gzip Header
+     */
     private static final byte[] GZIP_HEADER = new byte[]{
-        (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, OS_UNKNOWN
+        (byte)0x1f, // Gzip Magic number (0x8B1F) [short]
+        (byte)0x8b, // Gzip Magic number (0x8B1F) [short]
+        Deflater.DEFLATED, // compression method
+        0, // flags
+        0, // modification time [int]
+        0, // modification time [int]
+        0, // modification time [int]
+        0, // modification time [int]
+        0, // extra flags
+        OS_UNKNOWN // operating system
     };
 
-    // Per RFC-1952, the GZIP trailer is 8 bytes
+    /**
+     * Per RFC-1952, the GZIP trailer is 8 bytes.
+     * 1. [CRC32] integer (4 bytes) representing CRC of uncompressed data.
+     * 2. [ISIZE] integer (4 bytes) representing total bytes of uncompressed data.
+     * This implies that Gzip cannot properly handle uncompressed sizes above <em>2^32 bytes</em> (or <em>4,294,967,296 bytes</em>)
+     */
     private static final int GZIP_TRAILER_SIZE = 8;
 
     private final CRC32 crc = new CRC32();
@@ -54,70 +74,61 @@ public class GzipEncoder implements Compression.Encoder
     }
 
     @Override
+    public RetainableByteBuffer acquireInitialOutputBuffer()
+    {
+        RetainableByteBuffer buffer = byteBufferPool.acquire(outputBufferSize, false);
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        byteBuffer.order(getByteOrder());
+        BufferUtil.clearToFill(byteBuffer);
+        // Add GZIP Header
+        byteBuffer.put(GZIP_HEADER, 0, GZIP_HEADER.length);
+        return buffer;
+    }
+
+    @Override
+    public void addTrailer(ByteBuffer outputBuffer)
+    {
+        Deflater deflater = deflaterEntry.get();
+        if (LOG.isDebugEnabled())
+            LOG.debug("addTrailer: crc={}, bytesRead={}, bytesWritten={}", crc.getValue(), deflater.getBytesRead(), deflater.getBytesWritten());
+        outputBuffer.putInt((int)crc.getValue()); // CRC-32 of uncompressed data
+        outputBuffer.putInt((int)deflater.getBytesRead()); // // Number of uncompressed bytes
+    }
+
+    @Override
     public void begin()
     {
         crc.reset();
     }
 
     @Override
-    public void cleanup()
+    public int encode(ByteBuffer outputBuffer)
     {
-        if (deflaterEntry != null)
-        {
-            deflaterEntry.release();
-            deflaterEntry = null;
-        }
-    }
-
-    @Override
-    public void setInput(ByteBuffer content)
-    {
-        crc.update(content.slice());
         Deflater deflater = deflaterEntry.get();
-        deflater.setInput(content);
+        return deflater.deflate(outputBuffer, getFlushMode());
     }
 
     @Override
-    public void finish()
+    public void finishInput()
     {
         deflaterEntry.get().finish();
     }
 
     @Override
-    public int trailerSize()
+    public ByteOrder getByteOrder()
+    {
+        // Per RFC-1952, GZIP is LITTLE_ENDIAN
+        return ByteOrder.LITTLE_ENDIAN;
+    }
+
+    @Override
+    public int getTrailerSize()
     {
         return GZIP_TRAILER_SIZE;
     }
 
     @Override
-    public RetainableByteBuffer initialBuffer()
-    {
-        RetainableByteBuffer buffer = byteBufferPool.acquire(outputBufferSize, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        // Per RFC-1952, GZIP is LITTLE_ENDIAN
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        BufferUtil.flipToFill(byteBuffer);
-        // Add GZIP Header
-        byteBuffer.put(GZIP_HEADER, 0, GZIP_HEADER.length);
-        return buffer;
-    }
-
-    private int getFlushMode()
-    {
-        return syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH;
-    }
-
-    @Override
-    public void addTrailer(ByteBuffer outputBuffer)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("addTrailer: _crc={}, _totalIn={})", crc.getValue(), deflaterEntry.get().getTotalIn());
-        outputBuffer.putInt((int)crc.getValue());
-        outputBuffer.putInt(deflaterEntry.get().getTotalIn());
-    }
-
-    @Override
-    public boolean finished()
+    public boolean isOutputFinished()
     {
         return deflaterEntry.get().finished();
     }
@@ -129,9 +140,27 @@ public class GzipEncoder implements Compression.Encoder
     }
 
     @Override
-    public int encode(ByteBuffer outputBuffer)
+    public void release()
+    {
+        if (deflaterEntry != null)
+        {
+            deflaterEntry.release();
+            deflaterEntry = null;
+        }
+    }
+
+    @Override
+    public void setInput(ByteBuffer content)
     {
         Deflater deflater = deflaterEntry.get();
-        return deflater.deflate(outputBuffer, getFlushMode());
+        if (LOG.isDebugEnabled())
+            LOG.debug("setInput({})", BufferUtil.toDetailString(content));
+        crc.update(content.slice());
+        deflater.setInput(content);
+    }
+
+    private int getFlushMode()
+    {
+        return syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH;
     }
 }

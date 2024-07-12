@@ -11,11 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.brotli;
+package org.eclipse.jetty.compression.zstd;
 
 import java.util.Set;
 
-import com.aayushatharva.brotli4j.Brotli4jLoader;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -25,36 +24,23 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BrotliCompression extends Compression
+public class ZstdCompression extends Compression
 {
-    private static final Logger LOG = LoggerFactory.getLogger(BrotliCompression.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ZstdCompression.class);
 
-    static
-    {
-        Brotli4jLoader.ensureAvailability();
-    }
-
-    private static final String ENCODING_NAME = "br";
+    private static final String ENCODING_NAME = "zstd";
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
-    private static final int DEFAULT_MIN_BROTLI_SIZE = 48;
+    private static final int DEFAULT_MIN_ZSTD_SIZE = 48;
 
     private ByteBufferPool byteBufferPool;
     private int bufferSize = 2048;
-    private int minCompressSize = DEFAULT_MIN_BROTLI_SIZE;
+    private int minCompressSize = DEFAULT_MIN_ZSTD_SIZE;
 
-    public BrotliCompression()
+    public ZstdCompression()
     {
         super(ENCODING_NAME);
 
-    }
-
-    public com.aayushatharva.brotli4j.encoder.Encoder.Parameters getEncoderParams()
-    {
-        com.aayushatharva.brotli4j.encoder.Encoder.Parameters params = new com.aayushatharva.brotli4j.encoder.Encoder.Parameters();
-        params.setQuality(5); // TODO: make configurable
-        params.setMode(com.aayushatharva.brotli4j.encoder.Encoder.Mode.GENERIC);
-        return params;
     }
 
     public int getMinCompressSize()
@@ -64,7 +50,7 @@ public class BrotliCompression extends Compression
 
     public void setMinCompressSize(int minCompressSize)
     {
-        this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_BROTLI_SIZE);
+        this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_ZSTD_SIZE);
     }
 
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
@@ -111,13 +97,13 @@ public class BrotliCompression extends Compression
     @Override
     public String getName()
     {
-        return "brotli";
+        return "zstd";
     }
 
     @Override
     public Set<String> getFileExtensionNames()
     {
-        return Set.of("br");
+        return Set.of("zstd");
     }
 
     @Override
@@ -133,27 +119,27 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public Decoder newDecoder()
+    public Compression.Decoder newDecoder()
     {
         return newDecoder(getByteBufferPool());
     }
 
     @Override
-    public Decoder newDecoder(ByteBufferPool pool)
+    public Compression.Decoder newDecoder(ByteBufferPool pool)
     {
-        return new BrotliDecoder(this, pool);
+        return new ZstdDecoder(this, pool);
     }
 
     @Override
-    public Encoder newEncoder(int outputBufferSize)
+    public Compression.Encoder newEncoder(int outputBufferSize)
     {
         return newEncoder(getByteBufferPool(), outputBufferSize);
     }
 
     @Override
-    public Encoder newEncoder(ByteBufferPool pool, int outputBufferSize)
+    public Compression.Encoder newEncoder(ByteBufferPool pool, int outputBufferSize)
     {
-        return new BrotliEncoder(this, pool, outputBufferSize);
+        return new ZstdEncoder(this, pool, outputBufferSize);
     }
 
     @Override

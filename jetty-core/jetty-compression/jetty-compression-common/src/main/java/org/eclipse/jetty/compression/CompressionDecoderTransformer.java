@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.compression;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
@@ -48,23 +50,30 @@ public class CompressionDecoderTransformer extends ContentSourceTransformer
         // Retain the input chunk because its ByteBuffer might be referenced by the Decoder.
         if (retain)
             _chunk.retain();
-        RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk);
+        try
+        {
+            RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk);
 
-        if (decodedBuffer != null && decodedBuffer.hasRemaining())
-        {
-            // The decoded ByteBuffer is a transformed "copy" of the
-            // compressed one, so it has its own reference counter.
-            return Content.Chunk.from(decodedBuffer.getByteBuffer(), _chunk.isLast() && !_chunk.hasRemaining(), decodedBuffer::release);
+            if (decodedBuffer != null && decodedBuffer.hasRemaining())
+            {
+                // The decoded ByteBuffer is a transformed "copy" of the
+                // compressed one, so it has its own reference counter.
+                return Content.Chunk.from(decodedBuffer.getByteBuffer(), _chunk.isLast() && !_chunk.hasRemaining(), decodedBuffer::release);
+            }
+            else
+            {
+                if (decodedBuffer != null)
+                    decodedBuffer.release();
+                // Could not decode more from this chunk, release it.
+                Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
+                _chunk.release();
+                _chunk = null;
+                return result;
+            }
         }
-        else
+        catch (IOException e)
         {
-            if (decodedBuffer != null)
-                decodedBuffer.release();
-            // Could not decode more from this chunk, release it.
-            Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
-            _chunk.release();
-            _chunk = null;
-            return result;
+            return Content.Chunk.from(e);
         }
     }
 }

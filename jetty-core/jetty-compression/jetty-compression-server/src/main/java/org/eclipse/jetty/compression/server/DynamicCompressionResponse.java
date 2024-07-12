@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.server;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -299,7 +300,7 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            encoder.cleanup();
+            encoder.release();
             super.onCompleteFailure(x);
         }
 
@@ -324,7 +325,7 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
             // If we have no buffer
             if (buffer == null)
             {
-                buffer = encoder.initialBuffer();
+                buffer = encoder.acquireInitialOutputBuffer();
             }
             else
             {
@@ -342,7 +343,7 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
 
         private void cleanup()
         {
-            encoder.cleanup();
+            encoder.release();
 
             if (buffer != null)
             {
@@ -360,37 +361,44 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
             if (LOG.isDebugEnabled())
                 LOG.debug("compressing() outputBuffer={}", BufferUtil.toDetailString(outputBuffer));
 
-            if (!encoder.finished())
+            try
             {
-                if (!encoder.needsInput())
+                if (!encoder.isOutputFinished())
                 {
-                    int len = encoder.encode(outputBuffer);
-                    if (len > 0)
+                    if (!encoder.needsInput())
                     {
-                        BufferUtil.flipToFlush(outputBuffer, 0);
-                        write(false, outputBuffer);
-                        return Action.SCHEDULED;
+                        int len = encoder.encode(outputBuffer);
+                        if (len > 0)
+                        {
+                            BufferUtil.flipToFlush(outputBuffer, 0);
+                            write(false, outputBuffer);
+                            return Action.SCHEDULED;
+                        }
                     }
                 }
-            }
 
-            if (_last)
+                if (_last)
+                {
+                    state.set(State.FINISHING);
+                    encoder.finishInput();
+                    return finishing(outputBuffer);
+                }
+
+                BufferUtil.flipToFlush(outputBuffer, 0);
+                if (outputBuffer.hasRemaining())
+                {
+                    write(false, outputBuffer);
+                    return Action.SCHEDULED;
+                }
+
+                // the content held by CompressionBufferCB is fully consumed as input to the Deflater instance, we are done
+                if (BufferUtil.isEmpty(_content))
+                    return Action.SUCCEEDED;
+            }
+            catch (IOException e)
             {
-                state.set(State.FINISHING);
-                encoder.finish();
-                return finishing(outputBuffer);
+                throw new RuntimeException("Unable to encode", e);
             }
-
-            BufferUtil.flipToFlush(outputBuffer, 0);
-            if (outputBuffer.hasRemaining())
-            {
-                write(false, outputBuffer);
-                return Action.SCHEDULED;
-            }
-
-            // the content held by CompressionBufferCB is fully consumed as input to the Deflater instance, we are done
-            if (BufferUtil.isEmpty(_content))
-                return Action.SUCCEEDED;
 
             // No progress made on deflate, but the _content wasn't consumed, we shouldn't be able to reach this.
             throw new AssertionError("No progress on deflate made for " + this);
@@ -404,12 +412,34 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("finishing() outputBuffer={}", BufferUtil.toDetailString(outputBuffer));
-            if (!encoder.finished())
-            {
-                int len = encoder.encode(outputBuffer);
 
-                // try to preserve single write if possible (header + compressed content + trailer)
-                if (encoder.finished() && outputBuffer.remaining() >= encoder.trailerSize())
+            try
+            {
+                if (!encoder.isOutputFinished())
+                {
+                    int len = encoder.encode(outputBuffer);
+
+                    // try to preserve single write if possible (header + compressed content + trailer)
+                    if (encoder.isOutputFinished() && outputBuffer.remaining() >= encoder.getTrailerSize())
+                    {
+                        state.set(State.FINISHED);
+                        encoder.addTrailer(outputBuffer);
+                        BufferUtil.flipToFlush(outputBuffer, 0);
+                        write(true, outputBuffer);
+                        return Action.SCHEDULED;
+                    }
+
+                    if (len > 0)
+                    {
+                        BufferUtil.flipToFlush(outputBuffer, 0);
+                        write(false, outputBuffer);
+                        return Action.SCHEDULED;
+                    }
+
+                    // No progress made on deflate, deflater not finished, we shouldn't be able to reach this.
+                    throw new AssertionError("No progress on deflate made for " + this);
+                }
+                else
                 {
                     state.set(State.FINISHED);
                     encoder.addTrailer(outputBuffer);
@@ -417,24 +447,10 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
                     write(true, outputBuffer);
                     return Action.SCHEDULED;
                 }
-
-                if (len > 0)
-                {
-                    BufferUtil.flipToFlush(outputBuffer, 0);
-                    write(false, outputBuffer);
-                    return Action.SCHEDULED;
-                }
-
-                // No progress made on deflate, deflater not finished, we shouldn't be able to reach this.
-                throw new AssertionError("No progress on deflate made for " + this);
             }
-            else
+            catch (IOException e)
             {
-                state.set(State.FINISHED);
-                encoder.addTrailer(outputBuffer);
-                BufferUtil.flipToFlush(outputBuffer, 0);
-                write(true, outputBuffer);
-                return Action.SCHEDULED;
+                throw new RuntimeException("Unable to encode", e);
             }
         }
 

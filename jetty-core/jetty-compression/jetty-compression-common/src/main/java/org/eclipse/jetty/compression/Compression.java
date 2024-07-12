@@ -15,6 +15,7 @@ package org.eclipse.jetty.compression;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Set;
 
 import org.eclipse.jetty.http.EtagUtils;
@@ -67,9 +68,38 @@ public abstract class Compression extends ContainerLifeCycle
     }
 
     /**
-     * @return the name of the compression implementation.
+     * Get the container being used for common components.
+     *
+     * @return the container for common components
      */
-    public abstract String getName();
+    public Container getContainer()
+    {
+        return container != null ? container : this;
+    }
+
+    /**
+     * Set the container that this compression implementation should use.
+     *
+     * <p>
+     *     The container is often a source for common components (beans) that can
+     *     be shared across different implementations.
+     * </p>
+     *
+     * @param container the container (often the Server itself).
+     */
+    public void setContainer(Container container)
+    {
+        if (isRunning())
+            throw new IllegalStateException("Cannot set container on running component");
+        this.container = container;
+    }
+
+    /**
+     * The {@link HttpField} for {@code Content-Encoding} suitable for this Compression implementation.
+     *
+     * @return the HttpField for {@code Content-Encoding}.
+     */
+    public abstract HttpField getContentEncodingField();
 
     /**
      * The name of the encoding if seen in the HTTP protocol in fields like {@code Content-Encoding}
@@ -95,18 +125,16 @@ public abstract class Compression extends ContainerLifeCycle
     public abstract Set<String> getFileExtensionNames();
 
     /**
+     * @return the name of the compression implementation.
+     */
+    public abstract String getName();
+
+    /**
      * The {@link HttpField} for {@code X-Content-Encoding} suitable for this Compression implementation.
      *
      * @return the HttpField for {@code X-Content-Encoding}.
      */
     public abstract HttpField getXContentEncodingField();
-
-    /**
-     * The {@link HttpField} for {@code Content-Encoding} suitable for this Compression implementation.
-     *
-     * @return the HttpField for {@code Content-Encoding}.
-     */
-    public abstract HttpField getContentEncodingField();
 
     /**
      * Get a new Decoder (possibly pooled) for this compression implementation.
@@ -143,33 +171,6 @@ public abstract class Compression extends ContainerLifeCycle
     public abstract Encoder newEncoder(ByteBufferPool pool, int outputBufferSize);
 
     /**
-     * Set the container that this compression implementation should use.
-     *
-     * <p>
-     *     The container is often a source for common components (beans) that can
-     *     be shared across different implementations.
-     * </p>
-     *
-     * @param container the container (often the Server itself).
-     */
-    public void setContainer(Container container)
-    {
-        if (isRunning())
-            throw new IllegalStateException("Cannot set container on running component");
-        this.container = container;
-    }
-
-    /**
-     * Get the container being used for common components.
-     *
-     * @return the container for common components
-     */
-    public Container getContainer()
-    {
-        return container != null ? container : this;
-    }
-
-    /**
      * Strip compression suffixes off etags
      *
      * @param etagsList the list of etags to strip
@@ -195,9 +196,9 @@ public abstract class Compression extends ContainerLifeCycle
      */
     public interface Decoder
     {
-        RetainableByteBuffer decode(Content.Chunk chunk) throws IOException;
-
         void cleanup(); // TODO: consider AutoCloseable instead
+
+        RetainableByteBuffer decode(Content.Chunk chunk) throws IOException;
     }
 
     /**
@@ -205,24 +206,89 @@ public abstract class Compression extends ContainerLifeCycle
      */
     public interface Encoder
     {
-        void begin();
+        /**
+         * Create the initial buffer, might include encoder headers.
+         *
+         * @return the newly acquired initial buffer to use for
+         */
+        RetainableByteBuffer acquireInitialOutputBuffer();
 
-        void setInput(ByteBuffer content);
-
-        void finish();
-
-        boolean finished();
-
-        boolean needsInput();
-
-        int encode(ByteBuffer outputBuffer) throws IOException;
-
-        int trailerSize();
-
-        RetainableByteBuffer initialBuffer();
-
+        /**
+         * Write the encoder trailer to the provided output buffer.
+         *
+         * @param outputBuffer the buffer to write trailer to
+         */
         void addTrailer(ByteBuffer outputBuffer);
 
-        void cleanup() throws IOException;
+        /**
+         * Begin the encoder process, initializing any
+         * internals necessary for performing the encoding.
+         */
+        void begin();
+
+        /**
+         * Encode what exists in the input buffer to the provided output buffer.
+         *
+         * @param outputBuffer the output buffer to write to
+         * @return the size in bytes put into the output buffer
+         *
+         * @throws IOException if unable to encode the input buffer
+         */
+        int encode(ByteBuffer outputBuffer) throws IOException;
+
+        /**
+         * Indicate that we are finished providing input.
+         * Encoder will not accept more input after this.
+         */
+        void finishInput();
+
+        /**
+         * Get encoder specific {@code ByteOrder} to use for ByteBuffers.
+         *
+         * @return the encoder {@code ByteOrder}
+         */
+        ByteOrder getByteOrder();
+
+        /**
+         * Get the size of the trailer for this encoder.
+         *
+         * <p>
+         *     Useful for ByteBuffer size calculations.
+         * </p>
+         *
+         * @return the size of the trailer (0 for no trailer)
+         */
+        int getTrailerSize();
+
+        /**
+         * Test if output is finished.
+         *
+         * @return true if output is finished.
+         */
+        boolean isOutputFinished();
+
+        /**
+         * Test if input is needed.
+         *
+         * @return true if input is needed.
+         */
+        boolean needsInput();
+
+        /**
+         * Cleanup and release any resources that the encoder is managing.
+         *
+         * <p>
+         *     Note: this does not include the {@link RetainableByteBuffer}
+         *     returned from the {@link #acquireInitialOutputBuffer()} call.
+         * </p>
+         */
+        void release();
+
+        /**
+         * Provide input buffer to encoder
+         *
+         * @param content the input buffer
+         */
+        void setInput(ByteBuffer content);
     }
 }

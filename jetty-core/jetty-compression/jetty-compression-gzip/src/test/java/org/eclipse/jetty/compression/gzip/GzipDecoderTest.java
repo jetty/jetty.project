@@ -96,9 +96,16 @@ public class GzipDecoderTest extends AbstractGzipTest
 
                     if (chunk.hasRemaining())
                     {
-                        RetainableByteBuffer decoded = decoder.decode(chunk);
-                        builder.append(BufferUtil.toString(decoded.getByteBuffer()));
-                        decoded.release();
+                        try
+                        {
+                            RetainableByteBuffer decoded = decoder.decode(chunk);
+                            builder.append(BufferUtil.toString(decoded.getByteBuffer()));
+                            decoded.release();
+                        }
+                        catch (IOException e)
+                        {
+                            completeExceptionally(e);
+                        }
                     }
                     chunk.release();
 
