@@ -588,23 +588,27 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         String packageName = className.substring(0, lastDotIndex);
         if (getDefinedPackage(packageName) == null)
         {
-            if (url.getProtocol().equals("jar"))
+            try
             {
-                try
+                String externalForm = url.toExternalForm();
+                if (externalForm.startsWith("jar:file:") && externalForm.contains("!/"))
                 {
-                    URI jarURI = URIUtil.unwrapContainer(url.toURI());
+                    URI jarURI = URIUtil.unwrapContainer(new URI(externalForm));
                     Resource manifestResource = getContext().newResource(URIUtil.uriJarPrefix(jarURI, "!/META-INF/MANIFEST.MF").toASCIIString());
                     if (manifestResource.exists())
                     {
-                        Manifest manifest = new Manifest(manifestResource.newInputStream());
-                        definePackage(packageName, manifest, jarURI.toURL());
-                        return;
+                        try (InputStream is = manifestResource.newInputStream())
+                        {
+                            Manifest manifest = new Manifest(is);
+                            definePackage(packageName, manifest, jarURI.toURL());
+                            return;
+                        }
                     }
                 }
-                catch (Throwable t)
-                {
-                    LOG.trace("no manifest", t);
-                }
+            }
+            catch (Throwable t)
+            {
+                LOG.trace("could not read manifest of {}", url, t);
             }
 
             definePackage(packageName, null, null, null, null, null, null, null);
