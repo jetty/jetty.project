@@ -322,13 +322,13 @@ public class ServletContextHandler extends ContextHandler
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
-    @Deprecated(forRemoval = true, since = "12.0.0")
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public boolean isUsingSecurityManager()
     {
         return false;
     }
 
-    @Deprecated(forRemoval = true, since = "12.0.0")
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
         if (usingSecurityManager)
