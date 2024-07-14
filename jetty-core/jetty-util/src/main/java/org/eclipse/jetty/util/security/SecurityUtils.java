@@ -22,14 +22,18 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionException;
 import javax.security.auth.Subject;
 
+import org.eclipse.jetty.util.JavaVersion;
+
 /**
  * <p>Collections of utility methods to deal with the scheduled removal
  * of the security classes defined by <a href="https://openjdk.org/jeps/411">JEP 411</a>.</p>
- * <p>To enable usage of a {@link SecurityManager}, the system property {@link #USE_SECURITY_MANAGER} must be set to {@code true}</p>
+ * <p>To enable usage of a {@link SecurityManager}, the system property {@link #USE_SECURITY_MANAGER} must be set to {@code true}
+ * for JVMs after version 21.</p>
  */
 public class SecurityUtils
 {
-    public static final boolean USE_SECURITY_MANAGER = Boolean.getBoolean("org.eclipse.jetty.util.security.useSecurityManager");
+    public static final boolean USE_SECURITY_MANAGER = Boolean.parseBoolean(
+        System.getProperty("org.eclipse.jetty.util.security.useSecurityManager", JavaVersion.VERSION.getMajor() <= 21 ? "true" : "false"));
     private static final MethodHandle callAs = lookupCallAs();
     private static final MethodHandle doPrivileged = lookupDoPrivileged();
 
