@@ -405,7 +405,7 @@ public class FrameFlusher extends IteratingCallback
     }
 
     @Override
-    public void onCompleteFailure(Throwable failure)
+    public void onFailure(Throwable failure)
     {
         if (batchBuffer != null)
             batchBuffer.clear();

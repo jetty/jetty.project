@@ -361,7 +361,7 @@ public class ContentDocs
         }
 
         @Override
-        protected void onCompleteFailure(Throwable failure)
+        protected void onFailure(Throwable failure)
         {
             // In case of a failure, either on the
             // read or on the write, release the chunk.

@@ -344,7 +344,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     }
 
     @Override
-    protected void onCompleteFailure(Throwable x)
+    protected void onFailure(Throwable x)
     {
         release();
 

@@ -1425,7 +1425,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void onCompleteFailure(Throwable e)
+        public void onFailure(Throwable e)
         {
             onWriteComplete(_last, e);
         }
@@ -1461,11 +1461,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void onCompleteFailure(Throwable e)
+        public void onFailure(Throwable e)
         {
             try
             {
-                super.onCompleteFailure(e);
+                super.onFailure(e);
             }
             catch (Throwable t)
             {
@@ -1666,11 +1666,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void onCompleteFailure(Throwable x)
+        public void onFailure(Throwable x)
         {
             _buffer.release();
             IO.close(_in);
-            super.onCompleteFailure(x);
+            super.onFailure(x);
         }
     }
 
@@ -1739,11 +1739,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void onCompleteFailure(Throwable x)
+        public void onFailure(Throwable x)
         {
             _buffer.release();
             IO.close(_in);
-            super.onCompleteFailure(x);
+            super.onFailure(x);
         }
     }
 

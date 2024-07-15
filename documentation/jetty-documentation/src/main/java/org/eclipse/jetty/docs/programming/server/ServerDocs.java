@@ -241,7 +241,7 @@ public class ServerDocs
             }
 
             @Override
-            protected void onCompleteFailure(Throwable cause)
+            protected void onFailure(Throwable cause)
             {
                 getEndPoint().close(cause);
             }

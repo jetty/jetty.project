@@ -494,10 +494,10 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onFailure(Throwable cause)
         {
             releasePayload(_payloadRef);
-            super.onCompleteFailure(cause);
+            super.onFailure(cause);
         }
 
         private void releasePayload(AtomicReference<RetainableByteBuffer> reference)

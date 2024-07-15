@@ -591,7 +591,7 @@ public abstract class HttpSender
         }
 
         @Override
-        protected void onCompleteFailure(Throwable x)
+        protected void onFailure(Throwable x)
         {
             if (chunk != null)
             {

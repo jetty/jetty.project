@@ -298,7 +298,7 @@ public class SelectorManagerDocs
                 }
 
                 @Override
-                protected void onCompleteFailure(Throwable cause)
+                protected void onFailure(Throwable cause)
                 {
                     // The iteration completed with a failure.
                     getEndPoint().close(cause);

@@ -109,7 +109,7 @@ public class Flusher
         }
 
         @Override
-        public void onCompleteFailure(Throwable x)
+        public void onFailure(Throwable x)
         {
             if (active != null)
                 active.failed(x);

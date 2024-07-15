@@ -248,9 +248,9 @@ public class HttpSenderOverHTTP extends HttpSender
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onFailure(Throwable cause)
         {
-            super.onCompleteFailure(cause);
+            super.onFailure(cause);
             release();
             callback.failed(cause);
         }
@@ -335,7 +335,7 @@ public class HttpSenderOverHTTP extends HttpSender
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onFailure(Throwable cause)
         {
             release();
             callback.failed(cause);

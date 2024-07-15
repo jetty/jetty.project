@@ -14,8 +14,11 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This specialized callback implements a pattern that allows
@@ -41,20 +44,27 @@ import org.eclipse.jetty.util.thread.AutoLock;
  * <p>
  * Subclasses must implement method {@link #process()} where the
  * asynchronous sub-task is initiated and a suitable {@link Action}
- * is returned to this callback to indicate the overall progress of
+ * is returned to this callback to indicate the overall progress ofk
  * the large asynchronous task.
  * This callback is passed to the asynchronous sub-task, and a call
  * to {@link #succeeded()} on this callback represents the successful
  * completion of the asynchronous sub-task, while a call to
  * {@link #failed(Throwable)} on this callback represents the
  * completion with a failure of the large asynchronous task.
+ * <p>
+ * For most purposes, the {@link #succeeded()} and {@link #failed(Throwable)}
+ * methods of this class should be considered final, and only overridden in
+ * extraordinary circumstances. Any action taken in such extensions are not
+ * serialized.
  */
 public abstract class IteratingCallback implements Callback
 {
+    private static final Logger LOG = LoggerFactory.getLogger(IteratingCallback.class);
+
     /**
      * The internal states of this callback.
      */
-    private enum State
+    enum State
     {
         /**
          * This callback is idle, ready to iterate.
@@ -64,48 +74,35 @@ public abstract class IteratingCallback implements Callback
         /**
          * This callback is just about to call {@link #process()},
          * or within it, or just exited from it, either normally
-         * or by throwing.
+         * or by throwing. Further actions are waiting for the
+         * {@link #process()} method to return.
          */
         PROCESSING,
 
         /**
+         * The asynchronous sub-task was completed either with
+         * a call to {@link #succeeded()} or {@link #failed(Throwable)}, whilst in
+         * {@link #PROCESSING} state.  Further actions are waiting for the
+         * {@link #process()} method to return.
+         */
+        PROCESSING_CALLED,
+
+        /**
          * Method {@link #process()} returned {@link Action#SCHEDULED}
          * and this callback is waiting for the asynchronous sub-task
-         * to complete.
+         * to complete via a callback to {@link #succeeded()} or {@link #failed(Throwable)}
          */
         PENDING,
 
         /**
-         * The asynchronous sub-task was completed successfully
-         * via a call to {@link #succeeded()} while in
-         * {@link #PROCESSING} state.
+         * This callback is complete.
          */
-        CALLED,
+        COMPLETE,
 
         /**
-         * The iteration terminated successfully as indicated by
-         * {@link Action#SUCCEEDED} returned from
-         * {@link IteratingCallback#process()}.
+         * Complete and can't be reset.
          */
-        SUCCEEDED,
-
-        /**
-         * The iteration terminated with a failure via a call
-         * to {@link IteratingCallback#failed(Throwable)}.
-         */
-        FAILED,
-
-        /**
-         * This callback has been {@link #close() closed} and
-         * cannot be {@link #reset() reset}.
-         */
-        CLOSED,
-
-        /**
-         * This callback has been {@link #abort(Throwable) aborted},
-         * and cannot be {@link #reset() reset}.
-         */
-        ABORTED
+        CLOSED
     }
 
     /**
@@ -120,6 +117,7 @@ public abstract class IteratingCallback implements Callback
          * for additional events to trigger more work.
          */
         IDLE,
+
         /**
          * Indicates that {@link #process()} has initiated an asynchronous
          * sub-task, where the execution has started but the callback
@@ -127,6 +125,7 @@ public abstract class IteratingCallback implements Callback
          * may have not yet been invoked.
          */
         SCHEDULED,
+
         /**
          * Indicates that {@link #process()} has completed the whole
          * iteration successfully.
@@ -137,7 +136,8 @@ public abstract class IteratingCallback implements Callback
     private final AutoLock _lock = new AutoLock();
     private State _state;
     private Throwable _failure;
-    private boolean _iterate;
+    private boolean _reprocess;
+    private boolean _aborted;
 
     protected IteratingCallback()
     {
@@ -146,7 +146,7 @@ public abstract class IteratingCallback implements Callback
 
     protected IteratingCallback(boolean needReset)
     {
-        _state = needReset ? State.SUCCEEDED : State.IDLE;
+        _state = needReset ? State.COMPLETE : State.IDLE;
     }
 
     /**
@@ -180,7 +180,23 @@ public abstract class IteratingCallback implements Callback
     }
 
     /**
+     * Invoked when the overall task has been {@link #abort(Throwable) aborted} or {@link #failed(Throwable) failed}.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #onAborted(Throwable)}, {@link #process()},
+     * {@link #onCompleteFailure(Throwable)} and {@link #onCompleted(Throwable)}.
+     *
+     * @param cause The cause of the failure or abort
+     */
+    protected void onFailure(Throwable cause)
+    {
+    }
+
+    /**
      * Invoked when the overall task has completed successfully.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #process()}, {@link #onAborted(Throwable)}
+     * and {@link #onCompleted(Throwable)}.
+     * If this method is called, then {@link #onCompleteFailure(Throwable)} ()} will never be called.
      *
      * @see #onCompleteFailure(Throwable)
      */
@@ -190,12 +206,60 @@ public abstract class IteratingCallback implements Callback
 
     /**
      * Invoked when the overall task has completed with a failure.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #process()}, {@link #onAborted(Throwable)}
+     * and {@link #onCompleted(Throwable)}.
+     * If this method is called, then {@link #onCompleteSuccess()} will never be called.
      *
      * @param cause the throwable to indicate cause of failure
      * @see #onCompleteSuccess()
      */
     protected void onCompleteFailure(Throwable cause)
     {
+    }
+
+    /**
+     * Invoked when the overall task has been aborted.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #process()}, {@link #onCompleteFailure(Throwable)}
+     * and {@link #onCompleted(Throwable)}.
+     * If this method is called, then {@link #onCompleteSuccess()} will never be called.
+     * <p>
+     * The default implementation of this method calls {@link #failed(Throwable)}.  Overridden implementations of
+     * this method SHOULD NOT call {@code super.onAborted(Throwable)}.
+     *
+     * @param cause The cause of the abort
+     */
+    protected void onAborted(Throwable cause)
+    {
+    }
+
+    /**
+     * Invoked when the overall task has completed.
+     * <p>
+     * Calls to this method are serialized with respect to {@link #process()} and {@link #onAborted(Throwable)}.
+     * The default implementation of this method will call either {@link #onCompleteSuccess()} or {@link #onCompleteFailure(Throwable)}
+     * thus implementations of this method should always call {@code super.onCompleted(Throwable)}.
+     *
+     * @param causeOrNull the cause of any {@link #abort(Throwable) abort} or {@link #failed(Throwable) failure},
+     * else {@code null} for {@link #succeeded() success}.
+     */
+    protected void onCompleted(Throwable causeOrNull)
+    {
+        if (causeOrNull == null)
+            onCompleteSuccess();
+        else
+            onCompleteFailure(causeOrNull);
+    }
+
+    private void doCompleteSuccess()
+    {
+        onCompleted(null);
+    }
+
+    private void doCompleteFailure(Throwable cause)
+    {
+        onCompleted(cause);
     }
 
     /**
@@ -215,28 +279,18 @@ public abstract class IteratingCallback implements Callback
         {
             switch (_state)
             {
-                case PENDING:
-                case CALLED:
-                    // process will be called when callback is handled
-                    break;
-
                 case IDLE:
                     _state = State.PROCESSING;
                     process = true;
                     break;
 
                 case PROCESSING:
-                    _iterate = true;
+                case PROCESSING_CALLED:
+                    _reprocess = true;
                     break;
 
-                case FAILED:
-                case SUCCEEDED:
-                    break;
-
-                case CLOSED:
-                case ABORTED:
                 default:
-                    throw new IllegalStateException(toString());
+                    break;
             }
         }
         if (process)
@@ -248,21 +302,24 @@ public abstract class IteratingCallback implements Callback
         // This should only ever be called when in processing state, however a failed or close call
         // may happen concurrently, so state is not assumed.
 
-        boolean notifyCompleteSuccess = false;
-        Throwable notifyCompleteFailure = null;
+        boolean completeSuccess = false;
+        Throwable abortDoCompleteFailure = null;
+        Throwable completeFailure = null;
+        Throwable onAbort = null;
 
         // While we are processing
         processing:
         while (true)
         {
             // Call process to get the action that we have to take.
-            Action action = null;
+            Action action;
             try
             {
                 action = process();
             }
             catch (Throwable x)
             {
+                action = null;
                 failed(x);
                 // Fall through to possibly invoke onCompleteFailure().
             }
@@ -271,72 +328,104 @@ public abstract class IteratingCallback implements Callback
             // acted on the action we have just received
             try (AutoLock ignored = _lock.lock())
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("processing {} {}", action, this);
+
                 switch (_state)
                 {
                     case PROCESSING:
                     {
-                        if (action != null)
+                        if (action == null)
+                            break processing;
+                        switch (action)
                         {
-                            switch (action)
+                            case IDLE:
                             {
-                                case IDLE:
+                                if (_aborted)
                                 {
-                                    // Has iterate been called while we were processing?
-                                    if (_iterate)
-                                    {
-                                        // yes, so skip idle and keep processing
-                                        _iterate = false;
-                                        continue;
-                                    }
+                                    _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                                    abortDoCompleteFailure = _failure;
+                                    break processing;
+                                }
 
-                                    // No, so we can go idle
-                                    _state = State.IDLE;
-                                    break processing;
-                                }
-                                case SCHEDULED:
+                                // Has iterate been called while we were processing?
+                                if (_reprocess)
                                 {
-                                    // we won the race against the callback, so the callback has to process and we can break processing
-                                    _state = State.PENDING;
-                                    break processing;
+                                    // yes, so skip idle and keep processing
+                                    _reprocess = false;
+                                    continue;
                                 }
-                                case SUCCEEDED:
+
+                                // No, so we can go idle
+                                _state = State.IDLE;
+                                break processing;
+                            }
+                            case SCHEDULED:
+                            {
+                                // we won the race against the callback, so the callback has to process and we can break processing
+                                _state = State.PENDING;
+                                if (_aborted)
                                 {
-                                    // we lost the race against the callback,
-                                    _iterate = false;
-                                    _state = State.SUCCEEDED;
-                                    notifyCompleteSuccess = true;
-                                    break processing;
+                                    onAbort = _failure;
+                                    _failure = new AbortingException(onAbort);
                                 }
-                                default:
+                                break processing;
+                            }
+                            case SUCCEEDED:
+                            {
+                                // we lost the race against the callback,
+                                _reprocess = false;
+                                if (_aborted)
                                 {
-                                    break;
+                                    _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                                    abortDoCompleteFailure = _failure;
                                 }
+                                else
+                                {
+                                    _state = State.COMPLETE;
+                                    completeSuccess = true;
+                                }
+                                break processing;
+                            }
+                            default:
+                            {
+                                break;
                             }
                         }
                         throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                     }
 
-                    case CALLED:
+                    case PROCESSING_CALLED:
                     {
+                        if (action != Action.SCHEDULED && action != null)
+                        {
+                            _state = State.CLOSED;
+                            abortDoCompleteFailure = new IllegalStateException("Action not scheduled");
+                            if (_failure == null)
+                            {
+                                _failure = abortDoCompleteFailure;
+                            }
+                            else
+                            {
+                                ExceptionUtil.addSuppressedIfNotAssociated(_failure, onAbort);
+                                abortDoCompleteFailure = _failure;
+                            }
+                            break processing;
+                        }
+                        if (_failure != null)
+                        {
+                            if (_aborted)
+                                abortDoCompleteFailure = _failure;
+                            else
+                                completeFailure = _failure;
+                            _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                            break processing;
+                        }
                         callOnSuccess = true;
-                        if (action != Action.SCHEDULED)
-                            throw new IllegalStateException(String.format("%s[action=%s]", this, action));
-                        // we lost the race, so we have to keep processing
                         _state = State.PROCESSING;
-                        continue;
+                        break;
                     }
 
-                    case FAILED:
-                    case CLOSED:
-                    case ABORTED:
-                        notifyCompleteFailure = _failure;
-                        break processing;
-
-                    case SUCCEEDED:
-                        break processing;
-
-                    case IDLE:
-                    case PENDING:
                     default:
                         throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                 }
@@ -347,47 +436,74 @@ public abstract class IteratingCallback implements Callback
                     onSuccess();
             }
         }
-
-        if (notifyCompleteSuccess)
-            onCompleteSuccess();
-        else if (notifyCompleteFailure != null)
-            onCompleteFailure(notifyCompleteFailure);
+        if (abortDoCompleteFailure != null)
+            ExceptionUtil.callAndThen(abortDoCompleteFailure, this::doOnAbortedOnFailure, this::doCompleteFailure);
+        else if (completeSuccess)
+            doCompleteSuccess();
+        else if (completeFailure != null)
+            ExceptionUtil.callAndThen(completeFailure, this::onFailure, this::doCompleteFailure);
+        else if (onAbort != null)
+            ExceptionUtil.callAndThen(onAbort, this::doOnAbortedOnFailure, this::doAbortPendingCompletion);
     }
 
     /**
      * Method to invoke when the asynchronous sub-task succeeds.
      * <p>
-     * This method should be considered final for all practical purposes.
-     * <p>
+     * For most purposes, this method should be considered {@code final} and should only be
+     * overridden in extraordinary circumstances.
+     * Subclasses that override this method must always call {@code super.succeeded()}.
+     * Such overridden methods are not serialized with respect to {@link #process()}, {@link #onCompleteSuccess()},
+     * {@link #onCompleteFailure(Throwable)}, nor {@link #onAborted(Throwable)}. They should not act on nor change any
+     * fields that may be used by those methods.
      * Eventually, {@link #onSuccess()} is
      * called, either by the caller thread or by the processing
      * thread.
      */
     @Override
-    public void succeeded()
+    public final void succeeded()
     {
         boolean process = false;
+        Throwable completeFailure = null;
         try (AutoLock ignored = _lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("succeeded {}", this);
             switch (_state)
             {
                 case PROCESSING:
                 {
-                    _state = State.CALLED;
+                    // Another thread is processing, so we just tell it the state
+                    _state = State.PROCESSING_CALLED;
                     break;
                 }
                 case PENDING:
                 {
-                    _state = State.PROCESSING;
-                    process = true;
+                    if (_aborted)
+                    {
+                        if (_failure instanceof AbortingException)
+                        {
+                            // Another thread is still calling onAborted, so we will let it do the completion
+                            _state = _failure.getCause() instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                        }
+                        else
+                        {
+                            // The onAborted call is complete, so we must do the completion
+                            _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                            completeFailure = _failure;
+                        }
+                    }
+                    else
+                    {
+                        // No other thread is processing, so we will do the processing
+                        _state = State.PROCESSING;
+                        process = true;
+                    }
                     break;
                 }
-                case FAILED:
-                case CLOSED:
-                case ABORTED:
+                case COMPLETE, CLOSED:
                 {
-                    // Too late!
-                    break;
+                    // Too late
+                    return;
                 }
                 default:
                 {
@@ -397,8 +513,11 @@ public abstract class IteratingCallback implements Callback
         }
         if (process)
         {
-            onSuccess();
-            processing();
+            ExceptionUtil.callAndThen(this::onSuccess, this::processing);
+        }
+        else if (completeFailure != null)
+        {
+            doCompleteFailure(completeFailure);
         }
     }
 
@@ -407,47 +526,84 @@ public abstract class IteratingCallback implements Callback
      * or to fail the overall asynchronous task and therefore
      * terminate the iteration.
      * <p>
-     * This method should be considered final for all practical purposes.
-     * <p>
      * Eventually, {@link #onCompleteFailure(Throwable)} is
      * called, either by the caller thread or by the processing
      * thread.
-     *
+     * <p>
+     * For most purposes, this method should be considered {@code final} and should only be
+     * overridden in extraordinary circumstances.
+     * Subclasses that override this method must always call {@code super.succeeded()}.
+     * Such overridden methods are not serialized with respect to {@link #process()}, {@link #onCompleteSuccess()},
+     * {@link #onCompleteFailure(Throwable)}, nor {@link #onAborted(Throwable)}. They should not act on nor change any
+     * fields that may be used by those methods.
      * @see #isFailed()
      */
     @Override
-    public void failed(Throwable x)
+    public final void failed(Throwable cause)
     {
-        boolean failure = false;
+        cause = Objects.requireNonNullElseGet(cause, IOException::new);
+
+        Throwable completeFailure = null;
+        Throwable abortCompletion = null;
         try (AutoLock ignored = _lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failed {}", this, cause);
             switch (_state)
             {
-                case CALLED:
-                case SUCCEEDED:
-                case FAILED:
-                case CLOSED:
-                case ABORTED:
-                    // Too late!
-                    break;
-                case PENDING:
-                {
-                    _state = State.FAILED;
-                    failure = true;
-                    break;
-                }
                 case PROCESSING:
                 {
-                    _state = State.FAILED;
-                    _failure = x;
+                    // Another thread is processing, so we just tell it the state
+                    _state = State.PROCESSING_CALLED;
+                    if (_failure == null)
+                        _failure = cause;
+                    else
+                        ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
                     break;
                 }
+                case PENDING:
+                {
+                    if (_aborted)
+                    {
+                        if (_failure instanceof AbortingException)
+                        {
+                            // Another thread is still calling onAborted, so we will let it do the completion
+                            ExceptionUtil.addSuppressedIfNotAssociated(_failure.getCause(), cause);
+                            _state = _failure.getCause() instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                        }
+                        else
+                        {
+                            // The onAborted call is complete, so we must do the completion
+                            ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
+                            _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                            abortCompletion = _failure;
+                        }
+                    }
+                    else
+                    {
+                        // No other thread is processing, so we will do the processing
+                        _state = State.COMPLETE;
+                        _failure = cause;
+                        completeFailure = _failure;
+                    }
+                    break;
+                }
+                case COMPLETE, CLOSED:
+                {
+                    // Too late
+                    ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
+                    return;
+                }
                 default:
+                {
                     throw new IllegalStateException(toString());
+                }
             }
         }
-        if (failure)
-            onCompleteFailure(x);
+        if (completeFailure != null)
+            ExceptionUtil.callAndThen(completeFailure, this::onFailure, this::doCompleteFailure);
+        else if (abortCompletion != null)
+            doCompleteFailure(abortCompletion);
     }
 
     /**
@@ -459,37 +615,63 @@ public abstract class IteratingCallback implements Callback
      *
      * @see #isClosed()
      */
-    public void close()
+    public final void close()
     {
-        String failure = null;
+        Throwable onAbort = null;
+        Throwable onAbortDoCompleteFailure = null;
+
         try (AutoLock ignored = _lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("close {}", this);
             switch (_state)
             {
-                case IDLE:
-                case SUCCEEDED:
-                case FAILED:
+                case IDLE ->
+                {
+                    // Nothing happening so we can abort and complete
                     _state = State.CLOSED;
-                    break;
+                    _failure = new ClosedException();
+                    onAbortDoCompleteFailure = _failure;
+                }
+                case PROCESSING, PROCESSING_CALLED ->
+                {
+                    // Another thread is processing, so we just tell it the state and let it handle it
+                    if (_aborted)
+                    {
+                        ExceptionUtil.addSuppressedIfNotAssociated(_failure, new ClosedException());
+                    }
+                    else
+                    {
+                        _aborted = true;
+                        _failure = new ClosedException();
+                    }
+                }
 
-                case PROCESSING:
-                    _failure = new IOException(String.format("Close %s in state %s", this, _state));
+                case PENDING ->
+                {
+                    // We are waiting for the callback, so we can only call onAbort and then keep waiting
+                    onAbort = new ClosedException();
+                    _failure = new AbortingException(onAbort);
+                    _aborted = true;
+                }
+
+                case COMPLETE ->
+                {
                     _state = State.CLOSED;
-                    break;
+                }
 
-                case CLOSED:
-                case ABORTED:
-                    break;
-
-                default:
-                    failure = String.format("Close %s in state %s", this, _state);
-                    _state = State.CLOSED;
-                    break;
+                case CLOSED ->
+                {
+                    // too late
+                    return;
+                }
             }
         }
 
-        if (failure != null)
-            onCompleteFailure(new IOException(failure));
+        if (onAbort != null)
+            ExceptionUtil.callAndThen(onAbort, this::doOnAbortedOnFailure, this::doAbortPendingCompletion);
+        else if (onAbortDoCompleteFailure != null)
+            ExceptionUtil.callAndThen(onAbortDoCompleteFailure, this::doOnAbortedOnFailure, this::doCompleteFailure);
     }
 
     /**
@@ -498,49 +680,106 @@ public abstract class IteratingCallback implements Callback
      * ultimately be invoked, either during this call or later after
      * any call to {@link #process()} has returned.</p>
      *
-     * @param failure the cause of the abort
+     * @param cause the cause of the abort
+     * @return {@code true} if abort was called before the callback was complete.
      * @see #isAborted()
      */
-    public void abort(Throwable failure)
+    public final boolean abort(Throwable cause)
     {
-        boolean abort = false;
+        cause = Objects.requireNonNullElseGet(cause, Throwable::new);
+
+        boolean onAbort = false;
+        boolean onAbortDoCompleteFailure = false;
         try (AutoLock ignored = _lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("abort {}", this, cause);
+
+            // Are we already aborted?
+            if (_aborted)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
+                return false;
+            }
+
             switch (_state)
             {
-                case SUCCEEDED:
-                case FAILED:
-                case CLOSED:
-                case ABORTED:
-                {
-                    // Too late.
-                    break;
-                }
-
                 case IDLE:
-                case PENDING:
                 {
-                    _failure = failure;
-                    _state = State.ABORTED;
-                    abort = true;
+                    // Nothing happening so we can abort and complete
+                    _state = State.COMPLETE;
+                    _failure = cause;
+                    _aborted = true;
+                    onAbortDoCompleteFailure = true;
                     break;
                 }
 
                 case PROCESSING:
-                case CALLED:
                 {
-                    _failure = failure;
-                    _state = State.ABORTED;
+                    // Another thread is processing, so we just tell it the state and let it handle everything
+                    _failure = cause;
+                    _aborted = true;
                     break;
                 }
 
-                default:
-                    throw new IllegalStateException(toString());
+                case PROCESSING_CALLED:
+                {
+                    // Another thread is processing, but we have already succeeded or failed.
+                    if (_failure == null)
+                        _failure = cause;
+                    else
+                        ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
+                    _aborted = true;
+                    break;
+                }
+
+                case PENDING:
+                {
+                    // We are waiting for the callback, so we can only call onAbort and then keep waiting
+                    onAbort = true;
+                    _failure = new AbortingException(cause);
+                    _aborted = true;
+                    break;
+                }
+
+                case COMPLETE, CLOSED:
+                {
+                    // too late
+                    ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
+                    return false;
+                }
             }
         }
 
-        if (abort)
-            onCompleteFailure(failure);
+        if (onAbortDoCompleteFailure)
+            ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, this::doCompleteFailure);
+        else if (onAbort)
+            ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, this::doAbortPendingCompletion);
+
+        return true;
+    }
+
+    private void doOnAbortedOnFailure(Throwable cause)
+    {
+        ExceptionUtil.callAndThen(cause, this::onAborted, this::onFailure);
+    }
+
+    private void doAbortPendingCompletion()
+    {
+        Throwable doCompleteFailure = null;
+        try (AutoLock ignored = _lock.lock())
+        {
+            _failure = _failure.getCause();
+
+            if (Objects.requireNonNull(_state) != State.PENDING)
+            {
+                // the callback completed, one way or another, so it is up to use to do the completion
+                doCompleteFailure = _failure;
+            }
+        }
+
+        if (doCompleteFailure != null)
+            ExceptionUtil.call(doCompleteFailure, this::doCompleteFailure);
     }
 
     /**
@@ -561,7 +800,7 @@ public abstract class IteratingCallback implements Callback
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _state == State.CLOSED;
+            return _state == State.CLOSED || _failure instanceof ClosedException;
         }
     }
 
@@ -572,7 +811,7 @@ public abstract class IteratingCallback implements Callback
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _state == State.FAILED;
+            return _failure != null;
         }
     }
 
@@ -585,7 +824,7 @@ public abstract class IteratingCallback implements Callback
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _state == State.SUCCEEDED;
+            return _state == State.COMPLETE && _failure == null;
         }
     }
 
@@ -596,7 +835,7 @@ public abstract class IteratingCallback implements Callback
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _state == State.ABORTED;
+            return _aborted;
         }
     }
 
@@ -618,11 +857,10 @@ public abstract class IteratingCallback implements Callback
                 case IDLE:
                     return true;
 
-                case SUCCEEDED:
-                case FAILED:
+                case COMPLETE:
                     _state = State.IDLE;
                     _failure = null;
-                    _iterate = false;
+                    _reprocess = false;
                     return true;
 
                 default:
@@ -634,6 +872,31 @@ public abstract class IteratingCallback implements Callback
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), _state);
+        try (AutoLock ignored = _lock.lock())
+        {
+            return String.format("%s@%x[%s, %b, %s]", getClass().getSimpleName(), hashCode(), _state, _aborted, _failure);
+        }
+    }
+
+    private static class ClosedException extends Exception
+    {
+        ClosedException()
+        {
+            super("Closed");
+        }
+
+        ClosedException(Throwable suppressed)
+        {
+            this();
+            ExceptionUtil.addSuppressedIfNotAssociated(this, suppressed);
+        }
+    }
+
+    private static class AbortingException extends Exception
+    {
+        AbortingException(Throwable cause)
+        {
+            super(cause.getMessage(), cause);
+        }
     }
 }

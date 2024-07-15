@@ -543,7 +543,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         }
 
         @Override
-        protected void onCompleteFailure(Throwable failure)
+        protected void onFailure(Throwable failure)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failed to write cipher bytes, closing session on {}", QuicSession.this, failure);
