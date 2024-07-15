@@ -515,7 +515,7 @@ public class Request implements HttpServletRequest
                         String msg = "Unable to extract content parameters";
                         if (LOG.isDebugEnabled())
                             LOG.debug(msg, e);
-                        throw new RuntimeIOException(msg, e);
+                        throw new BadMessageException(msg, e);
                     }
                 }
             }

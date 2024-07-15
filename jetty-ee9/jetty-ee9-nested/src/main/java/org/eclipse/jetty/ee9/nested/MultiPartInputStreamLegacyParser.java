@@ -705,7 +705,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 // Check if we can create a new part.
                 _numParts++;
                 if (_maxParts >= 0 && _numParts > _maxParts)
-                    throw new IllegalStateException(String.format("Form with too many parts [%d > %d]", _numParts, _maxParts));
+                    throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", _numParts, _maxParts));
 
                 //Have a new Part
                 MultiPart part = new MultiPart(name, filename);
