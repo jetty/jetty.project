@@ -65,10 +65,11 @@ import org.slf4j.LoggerFactory;
  *
  * @deprecated Replaced by {@link MultiPartFormInputStream}.
  * This code is slower and subject to more bugs than its replacement {@link MultiPartFormInputStream}. However,
- * this class accepts formats non-compliant the RFC that the new {@link MultiPartFormInputStream} does not accept.
+ * this class accepts non-compliant RFC formats that the new {@link MultiPartFormInputStream} does not accept.
+ * This class is unavailable on <em>ee10</em> and newer environments.
  */
-@Deprecated
-class MultiPartInputStreamLegacyParser implements MultiPart.Parser
+@Deprecated (forRemoval = true, since = "10.0.10")
+public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartInputStreamLegacyParser.class);
     public static final MultipartConfigElement __DEFAULT_MULTIPART_CONFIG = new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
