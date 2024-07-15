@@ -745,6 +745,11 @@ public class HttpClientTLSTest
 
     private class TestByteBufferPool extends ArrayByteBufferPool
     {
+        public TestByteBufferPool()
+        {
+            super(-1, -1, -1, -1, 0, 0, 0, 0);
+        }
+
         @Override
         protected RetainableByteBufferPool newRetainableByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
         {
