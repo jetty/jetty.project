@@ -333,7 +333,7 @@ public class MultiPartServletTest
             else if (multiPartCompliance == MultiPartCompliance.LEGACY)
             {
                 assertThat(responseContent, containsString("Unable to extract content parameters"));
-                assertThat(responseContent, containsString("Incomplete parts"));
+                assertThat(responseContent, containsString("Incomplete Multipart"));
             }
         });
     }

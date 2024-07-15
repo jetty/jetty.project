@@ -869,7 +869,7 @@ class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                         MultiPartCompliance.Violation.LF_LINE_TERMINATION, "0x10"));
             }
             else
-                throw new IOException("Incomplete parts");
+                throw new IOException("Incomplete Multipart");
         }
         catch (Exception e)
         {
