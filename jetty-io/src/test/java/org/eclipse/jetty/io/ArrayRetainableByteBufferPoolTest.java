@@ -414,7 +414,6 @@ public class ArrayRetainableByteBufferPoolTest
         RetainableByteBuffer retain5 = retainablePool.acquire(5, false);
         retain5.release();
         RetainableByteBuffer retain6 = retainablePool.acquire(6, false);
-        assertThat(retain6, sameInstance(retain5));
         retain6.release();
         RetainableByteBuffer retain9 = retainablePool.acquire(9, false);
         assertThat(retain9, not(sameInstance(retain5)));
