@@ -553,6 +553,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
         public class Buffer extends RetainableByteBuffer
         {
+            private final Instant creationInstant = Instant.now();
             private final RetainableByteBuffer wrapped;
             private final int size;
             private final Instant acquireInstant;
