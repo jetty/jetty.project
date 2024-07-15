@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,6 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -599,6 +601,7 @@ public class IteratingCallbackTest
         callback.iterate();
         callback.succeeded();
         assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
+        assertThat(callback._onFailure.get(), nullValue());
         assertThat(callback._completion.getReference(), Matchers.nullValue());
         assertTrue(callback._completion.isMarked());
 
@@ -607,6 +610,8 @@ public class IteratingCallbackTest
         callback.failed(new Throwable());
         assertThat(callback._completion.getReference(), Matchers.nullValue());
         assertThat(callback._completed.getCount(), is(0L));
+
+        callback.checkNoBadCalls();
     }
 
     @Test
@@ -617,6 +622,7 @@ public class IteratingCallbackTest
         callback.iterate();
         callback.failed(failure);
         assertTrue(callback._completed.await(1, TimeUnit.SECONDS));
+        assertThat(callback._onFailure.get(), sameInstance(failure));
         assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
         assertTrue(callback._completion.isMarked());
 
@@ -627,6 +633,8 @@ public class IteratingCallbackTest
         assertFalse(ExceptionUtil.areNotAssociated(failure, late));
         assertThat(callback._completion.getReference(), Matchers.sameInstance(failure));
         assertThat(callback._completed.getCount(), is(0L));
+
+        callback.checkNoBadCalls();
     }
 
     @Test
@@ -638,6 +646,7 @@ public class IteratingCallbackTest
         Throwable abort = new Throwable();
         callback.abort(abort);
         assertFalse(callback._completed.await(100, TimeUnit.MILLISECONDS));
+        assertThat(callback._onFailure.get(), sameInstance(abort));
         assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
         assertFalse(callback._completion.isMarked());
 
@@ -648,9 +657,12 @@ public class IteratingCallbackTest
         Throwable late = new Throwable();
         callback.failed(late);
         assertFalse(callback.abort(late));
-        assertFalse(ExceptionUtil.areNotAssociated(abort, late));
+        assertTrue(ExceptionUtil.areAssociated(abort, late));
+        assertTrue(ExceptionUtil.areAssociated(callback._onFailure.get(), late));
         assertThat(callback._completion.getReference(), Matchers.sameInstance(abort));
         assertThat(callback._completed.getCount(), is(0L));
+
+        callback.checkNoBadCalls();
     }
 
     public static Stream<Arguments> abortTests()
@@ -705,10 +717,12 @@ public class IteratingCallbackTest
         CountDownLatch processLatch = new CountDownLatch(1);
 
         AtomicReference<Throwable> onAbort = new AtomicReference<>();
+        AtomicReference<Throwable> onFailure = new AtomicReference<>(null);
         AtomicMarkableReference<Throwable> onCompleted = new AtomicMarkableReference<>(null, false);
 
         Throwable cause = new Throwable("abort");
         Throwable failure = new Throwable("failure");
+        AtomicInteger badCalls = new AtomicInteger(0);
 
         IteratingCallback callback = new IteratingCallback()
         {
@@ -745,15 +759,24 @@ public class IteratingCallbackTest
             }
 
             @Override
+            protected void onFailure(Throwable cause)
+            {
+                if (!onFailure.compareAndSet(null, cause))
+                    badCalls.incrementAndGet();
+            }
+
+            @Override
             protected void onAborted(Throwable cause)
             {
-                onAbort.set(cause);
+                if (!onAbort.compareAndSet(null, cause))
+                    badCalls.incrementAndGet();
             }
 
             @Override
             protected void onCompleted(Throwable causeOrNull)
             {
                 onCompleted.set(causeOrNull, true);
+                super.onCompleted(causeOrNull);
             }
         };
 
@@ -765,6 +788,12 @@ public class IteratingCallbackTest
         Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> callback.toString().contains(state));
         assertThat(callback.toString(), containsString("[" + state + ","));
         onAbort.set(null);
+
+        if (success == Boolean.FALSE && (state.equals("COMPLETE") || state.equals("CLOSED")))
+        {
+            // We must be failed already
+            assertThat(onFailure.get(), notNullValue());
+        }
 
         boolean aborted = callback.abort(cause);
 
@@ -793,9 +822,16 @@ public class IteratingCallbackTest
             if (action.equals("SCHEDULED"))
             {
                 if (success)
+                {
                     callback.succeeded();
+                }
                 else
-                    callback.failed(new Throwable("failure after abort"));
+                {
+                    Throwable failureAfterAbort = new Throwable("failure after abort");
+                    callback.failed(failureAfterAbort);
+                    assertThat(onFailure.get(), not(sameInstance(failureAfterAbort)));
+                    assertTrue(ExceptionUtil.areAssociated(onFailure.get(), failureAfterAbort));
+                }
             }
         }
         else if (state.contains("PENDING"))
@@ -818,11 +854,16 @@ public class IteratingCallbackTest
             assertThat(onCompleted.getReference(), sameInstance(cause));
             assertThat(onAbort.get(), sameInstance(cause));
         }
+
+        assertThat(badCalls.get(), is(0));
     }
 
     private static class TestIteratingCB extends IteratingCallback
     {
         final AtomicInteger _count;
+        final AtomicInteger _badCalls = new AtomicInteger(0);
+        final AtomicBoolean _onSuccess = new AtomicBoolean();
+        final AtomicReference<Throwable> _onFailure = new AtomicReference<>();
         final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
         final CountDownLatch _completed = new CountDownLatch(2);
 
@@ -837,7 +878,7 @@ public class IteratingCallbackTest
         }
 
         @Override
-        protected Action process() throws Throwable
+        protected Action process()
         {
             return _count.getAndDecrement() == 0 ? Action.SUCCEEDED : Action.SCHEDULED;
         }
@@ -846,6 +887,20 @@ public class IteratingCallbackTest
         protected void onAborted(Throwable cause)
         {
             _completion.compareAndSet(null, cause, false, false);
+        }
+
+        @Override
+        protected void onSuccess()
+        {
+            if (!_onSuccess.compareAndSet(false, true))
+                _badCalls.incrementAndGet();
+        }
+
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            if (!_onFailure.compareAndSet(null, cause))
+                _badCalls.incrementAndGet();
         }
 
         @Override
@@ -869,8 +924,15 @@ public class IteratingCallbackTest
         @Override
         protected void onCompleted(Throwable causeOrNull)
         {
+            if (_completion.isMarked())
+                _badCalls.incrementAndGet();
             super.onCompleted(causeOrNull);
             _completed.countDown();
+        }
+
+        public void checkNoBadCalls()
+        {
+            assertThat(_badCalls.get(), is(0));
         }
     }
 
