@@ -78,6 +78,10 @@ pipeline {
     }
     fixed {
       slackNotif()
+      websiteBuild()
+    }
+    success {
+      websiteBuild()
     }
   }
 }
@@ -124,6 +128,19 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+    }
+  }
+}
+
+def websiteBuild() {
+  script {
+    try {
+      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x') {
+        build(job: 'website/jetty.website/main', propagate: false, wait: false)
+      }
+    } catch (Exception e) {
+      e.printStackTrace()
+      echo "skip website build triggering: " + e.getMessage()
     }
   }
 }
