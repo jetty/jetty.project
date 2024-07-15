@@ -82,7 +82,7 @@ public class RetainableByteBuffer implements Retainable
      * The reason why this method exists on top of {@link #retain()} is to be able to
      * have some safety checks that must know why the ref counter is being incremented.
      */
-    void acquire()
+    protected void acquire()
     {
         if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
             throw new IllegalStateException("re-pooled while still used " + this);
