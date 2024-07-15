@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -2569,44 +2570,52 @@ public class DefaultServletTest
     @Test
     public void testGetPrecompressedSuffixMapping() throws Exception
     {
-        Path docRoot = workDir.getEmptyPathDir().resolve("docroot");
-        FS.ensureDirExists(docRoot);
-
-        startServer((context) ->
+        final AtomicReference<ResourceFactory> oldFileResourceFactory = new AtomicReference<>();
+        try
         {
-            ResourceFactory.registerResourceFactory("file", new URLResourceFactory());
-            Resource resource = ResourceFactory.of(context).newResource(docRoot);
-            assertThat("Expecting URLResource", resource.getClass().getName(), endsWith("URLResource"));
-            context.setBaseResource(resource);
+            Path docRoot = workDir.getEmptyPathDir().resolve("docroot");
+            FS.ensureDirExists(docRoot);
 
-            ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
-            defholder.setInitParameter("cacheControl", "no-store");
-            defholder.setInitParameter("dirAllowed", "false");
-            defholder.setInitParameter("gzip", "false");
-            defholder.setInitParameter("precompressed", "gzip=.gz");
-        });
+            startServer((context) ->
+            {
+                oldFileResourceFactory.set(ResourceFactory.unregisterResourceFactory("file"));
+                ResourceFactory.registerResourceFactory("file", new URLResourceFactory());
+                Resource resource = ResourceFactory.of(context).newResource(docRoot);
+                assertThat("Expecting URLResource", resource.getClass().getName(), endsWith("URLResource"));
+                context.setBaseResource(resource);
 
+                ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
+                defholder.setInitParameter("cacheControl", "no-store");
+                defholder.setInitParameter("dirAllowed", "false");
+                defholder.setInitParameter("gzip", "false");
+                defholder.setInitParameter("precompressed", "gzip=.gz");
+            });
 
-        FS.ensureDirExists(docRoot.resolve("scripts"));
+            FS.ensureDirExists(docRoot.resolve("scripts"));
 
-        String scriptText = "This is a script";
-        Files.writeString(docRoot.resolve("scripts/script.js"), scriptText, UTF_8);
+            String scriptText = "This is a script";
+            Files.writeString(docRoot.resolve("scripts/script.js"), scriptText, UTF_8);
 
-        byte[] compressedBytes = compressGzip(scriptText);
-        Files.write(docRoot.resolve("scripts/script.js.gz"), compressedBytes);
+            byte[] compressedBytes = compressGzip(scriptText);
+            Files.write(docRoot.resolve("scripts/script.js.gz"), compressedBytes);
 
-        String rawResponse = connector.getResponse("""
-            GET /context/scripts/script.js HTTP/1.1
-            Host: test
-            Accept-Encoding: gzip
-            Connection: close
-            
-            """);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("Suffix url-pattern mapping not used", response.get(HttpHeader.CACHE_CONTROL), is("no-store"));
-        String responseDecompressed = decompressGzip(response.getContentBytes());
-        assertThat(responseDecompressed, is("This is a script"));
+            String rawResponse = connector.getResponse("""
+                GET /context/scripts/script.js HTTP/1.1
+                Host: test
+                Accept-Encoding: gzip
+                Connection: close
+                
+                """);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat("Suffix url-pattern mapping not used", response.get(HttpHeader.CACHE_CONTROL), is("no-store"));
+            String responseDecompressed = decompressGzip(response.getContentBytes());
+            assertThat(responseDecompressed, is("This is a script"));
+        }
+        finally
+        {
+            ResourceFactory.registerResourceFactory("file", oldFileResourceFactory.get());
+        }
     }
 
     @Test

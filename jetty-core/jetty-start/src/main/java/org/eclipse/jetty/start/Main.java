@@ -29,8 +29,14 @@ import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
@@ -135,7 +141,7 @@ public class Main
         }).start();
     }
 
-    private void dumpClasspathWithVersions(String name, PrintStream out, Classpath classpath)
+    private void listClasspath(String name, PrintStream out, Classpath classpath)
     {
         StartLog.endStartLog();
         out.println();
@@ -154,8 +160,93 @@ public class Main
         int i = 0;
         for (Path element : classpath.getElements())
         {
-            out.printf("%2d: %24s | %s\n", i++, getVersion(element), baseHome.toShortForm(element));
+            String license = getLicenceFromJar(element);
+            if (license != null && !license.isEmpty())
+                out.printf("%2d: %24s | %s | %s\n", i++, getVersion(element), baseHome.toShortForm(element), license);
+            else
+                out.printf("%2d: %24s | %s\n", i++, getVersion(element), baseHome.toShortForm(element));
         }
+    }
+
+    private String getLicenceFromJar(Path jar)
+    {
+        if (!Files.exists(jar) || Files.isDirectory(jar) || !Files.isReadable(jar))
+            return null;
+        try
+        {
+            try (JarFile jarFile = new JarFile(jar.toFile()))
+            {
+                Manifest manifest = jarFile.getManifest();
+                if (manifest != null)
+                {
+                    String spdxLicense = manifest.getMainAttributes().getValue("SPDX-License-Identifier");
+                    if (spdxLicense != null)
+                        return spdxLicense;
+
+                    String bundleLicense = manifest.getMainAttributes().getValue("Bundle-License");
+                    if (bundleLicense != null)
+                        return bundleLicense;
+                }
+
+                Optional<String> license = jarFile.stream().filter(Main::isLicenseFile).map(e -> getLicenceFromFile(jarFile, e)).filter(Objects::nonNull).findFirst();
+                if (license.isPresent())
+                    return license.get();
+
+            }
+        }
+        catch (Throwable ignored)
+        {
+        }
+        return null;
+    }
+
+    private static boolean isLicenseFile(JarEntry entry)
+    {
+        String name = entry.getName();
+        return name.matches("(?i)^(META-INF/)?LICEN[SC]E.*") || name.matches("(?i)^LICEN[SC]E.*");
+    }
+
+    private String getLicenceFromFile(JarFile jarFile, JarEntry entry)
+    {
+        try
+        {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(jarFile.getInputStream(entry))))
+            {
+                String line;
+                StringBuilder licenseBuilder = new StringBuilder();
+                int nonEmptyLines = 0;
+
+                List<String> links = new ArrayList<>();
+
+                while ((line = reader.readLine()) != null)
+                {
+                    line = line.trim();
+                    if (!line.isEmpty())
+                    {
+                        if (line.contains("SPDX-License-Identifier:"))
+                            return line.substring(line.indexOf(':') + 1).trim();
+
+                        if (line.startsWith("http:") || line.startsWith("https:"))
+                            links.add(line);
+
+                        if (nonEmptyLines < 2)
+                        {
+                            licenseBuilder.append(line).append(" ");
+                            nonEmptyLines++;
+                        }
+                    }
+                }
+
+                if (!links.isEmpty())
+                    return links.stream().max(Comparator.comparingInt(String::length)).get();
+
+                return nonEmptyLines > 0 ? licenseBuilder.toString().trim() : null;
+            }
+        }
+        catch (Throwable ignored)
+        {
+        }
+        return null;
     }
 
     public BaseHome getBaseHome()
@@ -243,7 +334,7 @@ public class Main
         // Dump Jetty Properties
         jettyEnvironment.dumpProperties(out);
         // Dump Jetty Classpath
-        dumpClasspathWithVersions(jettyEnvironment.getName(), out, jettyEnvironment.getClasspath());
+        listClasspath(jettyEnvironment.getName(), out, jettyEnvironment.getClasspath());
         // Dump Jetty Resolved XMLs
         jettyEnvironment.dumpActiveXmls(out);
 
@@ -252,7 +343,7 @@ public class Main
             // Dump Properties
             environment.dumpProperties(out);
             // Dump Classpath
-            dumpClasspathWithVersions(environment.getName(), out, environment.getClasspath());
+            listClasspath(environment.getName(), out, environment.getClasspath());
             // Dump Resolved XMLs
             environment.dumpActiveXmls(out);
         }
@@ -400,7 +491,7 @@ public class Main
         // Show the version information and return
         if (args.isListClasspath())
         {
-            dumpClasspathWithVersions("Jetty", System.out, classpath);
+            listClasspath("Jetty", System.out, classpath);
         }
 
         // Show configuration
