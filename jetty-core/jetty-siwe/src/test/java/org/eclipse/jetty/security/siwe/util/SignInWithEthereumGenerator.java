@@ -16,17 +16,10 @@ package org.eclipse.jetty.security.siwe.util;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import org.eclipse.jetty.security.siwe.internal.EthereumUtil;
-
 public class  SignInWithEthereumGenerator
 {
     private SignInWithEthereumGenerator()
     {
-    }
-
-    public static String generateMessage(int port, String address)
-    {
-        return generateMessage(port, address, EthereumUtil.createNonce());
     }
 
     public static String generateMessage(int port, String address, String nonce)
