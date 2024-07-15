@@ -35,13 +35,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IteratingCallbackTest
@@ -878,6 +878,7 @@ public class IteratingCallbackTest
     public void testOnSuccessCalledDespiteISE() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Throwable> aborted = new AtomicReference<>();
         IteratingCallback icb = new IteratingCallback()
         {
             @Override
@@ -888,13 +889,22 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onSuccess()
+            protected void onAborted(Throwable cause)
             {
+                aborted.set(cause);
+                super.onAborted(cause);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                super.onCompleted(causeOrNull);
                 latch.countDown();
             }
         };
 
-        assertThrows(IllegalStateException.class, icb::iterate);
+        icb.iterate();
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertThat(aborted.get(), instanceOf(IllegalStateException.class));
     }
 }

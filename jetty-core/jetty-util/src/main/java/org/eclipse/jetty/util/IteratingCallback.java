@@ -387,7 +387,20 @@ public abstract class IteratingCallback implements Callback
                     case PROCESSING_CALLED:
                     {
                         if (action != Action.SCHEDULED && action != null)
-                            LOG.warn("Processing called when not schedules {}", action);
+                        {
+                            _state = State.CLOSED;
+                            onAbortDoCompleteFailure = new IllegalStateException("Action not scheduled");
+                            if (_failure == null)
+                            {
+                                _failure = onAbortDoCompleteFailure;
+                            }
+                            else
+                            {
+                                ExceptionUtil.addSuppressedIfNotAssociated(_failure, onAbort);
+                                onAbortDoCompleteFailure = _failure;
+                            }
+                            break processing;
+                        }
                         if (_failure != null)
                         {
                             if (_aborted)
