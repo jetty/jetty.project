@@ -20,6 +20,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -81,6 +82,7 @@ public class SuspendResumeTest
     public void start() throws Exception
     {
         server = new Server();
+        server.addBean(new LogarithmicArrayByteBufferPool(-1, -1, -1, 0, 0, 0, 0));
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
