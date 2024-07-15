@@ -20,9 +20,9 @@ The following checklist is used to handle security issues:
 - [ ] If the vulnerability cannot be confirmed then close the security advisory, else continue.
 - [ ] Generate a CVE score and add it to the advisory description.
 - [ ] Identify a CWE Definition and add it to the advisory description.
-- [ ] Identify vulnerable version(s), including current and past versions that are affected (e.g. 9.4.0 through 9.4.35, and 10.0.0.alpha1 through 10.0.0.beta3…​etc.)
+- [ ] Identify vulnerable version(s), including current and past versions that are affected (e.g. 9.4.0 through 9.4.35, and 10.0.0.alpha1 through 10.0.0.beta3 etc.)
 - [ ] Identify and document workaround(s), if applicable, in the comments of the security advisory.
-- [ ] Open an [Gitlab@Eclipse EMO CVE issue](https://gitlab.eclipse.org/eclipsefdn/emo-team/emo/-/issues/new?issuable_template=cve) to have a CVE allocated.   
+- [ ] Open an [Gitlab@Eclipse CVE Assignment](https://gitlab.eclipse.org/security/cve-assignement/-/issues/new) to have a CVE allocated.   
       The issue should be opened under the "Eclipse Foundation" > "EMO Team" > "EMO" section as a "cve" description, with the "This issue is confidential" checkbox checked.   
       Follow the template for what details are necessary to file for a CVE.
 - [ ] Once the CVE is allocated update the Security Advisory with the number
