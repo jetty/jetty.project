@@ -31,7 +31,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,6 +39,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class TempDirTest
@@ -174,6 +175,7 @@ public class TempDirTest
         _server.start();
         File tempDirectory = webAppContext.getTempDirectory();
         webAppContext.stop();
+        assertNull(webAppContext.getTempDirectory());
         webAppContext.start();
         assertThat(tempDirectory.toPath(), not(PathMatchers.isSame(webAppContext.getTempDirectory().toPath())));
     }
@@ -208,6 +210,7 @@ public class TempDirTest
         File tempDirectory = webAppContext.getTempDirectory();
         assertThat(tempDirectory.toPath(), PathMatchers.isSame(configuredTmpDir));
         webAppContext.stop();
+        assertNotNull(webAppContext.getTempDirectory());
         webAppContext.start();
         assertThat(tempDirectory.toPath(), PathMatchers.isSame(webAppContext.getTempDirectory().toPath()));
     }
@@ -239,5 +242,6 @@ public class TempDirTest
         File tempDirectory = webAppContext.getTempDirectory();
         _server.stop();
         assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
+        assertNull(webAppContext.getTempDirectory());
     }
  }

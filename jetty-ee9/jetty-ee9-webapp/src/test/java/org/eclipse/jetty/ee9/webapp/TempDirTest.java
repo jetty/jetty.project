@@ -41,6 +41,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -165,6 +166,7 @@ public class TempDirTest
             IO.copyDir(testWebappDir, root);
         }
 
+        //Let jetty create the tmp dir on the fly
         Server server = new Server();
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setContextPath("/");
@@ -173,6 +175,7 @@ public class TempDirTest
         server.start();
         File tempDirectory = webAppContext.getTempDirectory();
         server.stop();
+        assertNull(webAppContext.getTempDirectory());
         assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
     }
 }
