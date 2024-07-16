@@ -17,13 +17,15 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextScopeListenerTest
 {
@@ -83,24 +86,31 @@ public class ContextScopeListenerTest
                 }
 
                 _history.add("doGet");
+                CountDownLatch latch = new CountDownLatch(1);
                 AsyncContext asyncContext = req.startAsync();
                 asyncContext.start(() ->
                 {
                     _history.add("asyncRunnable");
                     asyncContext.dispatch("/dispatch");
+                    latch.countDown();
                 });
+
+                try
+                {
+                    assertTrue(latch.await(5, TimeUnit.SECONDS));
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
             }
         }), "/");
 
         _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
         {
-            // Use a lock to prevent the async thread running the listener concurrently.
-            private final ReentrantLock _lock = new ReentrantLock();
-
             @Override
             public void enterScope(ContextHandler.APIContext context, org.eclipse.jetty.ee9.nested.Request request, Object reason)
             {
-                _lock.lock();
                 String pathInContext = (request == null) ? "null" : URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
                 _history.add("enterScope " + pathInContext);
             }
@@ -110,24 +120,20 @@ public class ContextScopeListenerTest
             {
                 String pathInContext = (request == null) ? "null" : URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
                 _history.add("exitScope " + pathInContext);
-                _lock.unlock();
             }
         });
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/initialPath");
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> _history.size() == 7);
         assertHistory(
             "enterScope /initialPath",
             "doGet",
-            "exitScope /initialPath",
             "enterScope /initialPath",
             "asyncRunnable",
             "exitScope /initialPath",
-            "enterScope /dispatch",
             "asyncDispatch",
-            "exitScope /dispatch",
-            "enterScope /dispatch",
             "exitScope /dispatch"
         );
     }

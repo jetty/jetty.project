@@ -923,7 +923,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             // check the target.
             String contextPath = getContextPath();
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
+            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) || baseRequest.getCoreRequest().getContext().isCrossContextDispatch(baseRequest.getCoreRequest()))
             {
                 if (target.length() > contextPath.length())
                 {
@@ -2463,6 +2463,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private final HttpChannel _httpChannel;
         private SessionManager _sessionManager;
         private ManagedSession _managedSession;
+        private List<ManagedSession> _managedSessions;
+
         AbstractSessionManager.RequestedSession _requestedSession;
 
         protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
@@ -2501,9 +2503,54 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             return _managedSession;
         }
 
+        /**
+         * Retrieve an existing session, if one exists, for a given SessionManager. A
+         * session belongs to a single SessionManager, and a context can only have a single
+         * SessionManager. Thus, calling this method is equivalent to asking
+         * "Does a ManagedSession already exist for the given context?".
+         *
+         * @param manager the SessionManager that should be associated with a ManagedSession
+         * @return the ManagedSession that already exists in the given context and is managed
+         * by the given SessionManager.
+         */
+        public ManagedSession getManagedSession(SessionManager manager)
+        {
+            if (_managedSessions == null)
+                return null;
+
+            for (ManagedSession s : _managedSessions)
+            {
+                if (manager == s.getSessionManager())
+                {
+                   if (s.isValid())
+                       return s;
+                }
+            }
+            return null;
+        }
+
         public void setManagedSession(ManagedSession managedSession)
         {
             _managedSession = managedSession;
+            addManagedSession(managedSession);
+        }
+
+        /**
+         * Add a session to the list of sessions maintained by this request.
+         * A session will be added whenever a request visits a new context
+         * that already has a session associated with it, or one is created
+         * during the dispatch.
+         *
+         * @param managedSession the session to add
+         */
+        private void addManagedSession(ManagedSession managedSession)
+        {
+            if (managedSession == null)
+                return;
+            if (_managedSessions == null)
+                _managedSessions = new ArrayList<>();
+            if (!_managedSessions.contains(managedSession))
+                _managedSessions.add(managedSession);
         }
 
         public SessionManager getSessionManager()
@@ -2511,10 +2558,68 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             return _sessionManager;
         }
 
+        /**
+         * Remember the session that was extracted from the id in the request
+         *
+         * @param requestedSession info about the session matching the id in the request
+         */
         public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
         {
             _requestedSession = requestedSession;
-            _managedSession = requestedSession.session();
+        }
+
+        /**
+         * Release each of the sessions as the request is now complete
+         */
+        public void completeSessions()
+        {
+            if (_managedSessions != null)
+            {
+                for (ManagedSession s : _managedSessions)
+                {
+
+                    if (s.getSessionManager() == null)
+                        continue; //TODO log it
+                    s.getSessionManager().getContext().run(() -> completeSession(s), this);
+                }
+            }
+        }
+
+        /**
+         * Ensure that each session is committed - ie written out to storage if necessary -
+         * because the response is about to be returned to the client.
+         */
+        public void commitSessions()
+        {
+            if (_managedSessions != null)
+            {
+                for (ManagedSession s : _managedSessions)
+                {
+                    if (s.getSessionManager() == null)
+                        continue; //TODO log it
+                    s.getSessionManager().getContext().run(() -> commitSession(s), this);
+                }
+            }
+        }
+
+        private void commitSession(ManagedSession session)
+        {
+            if (session == null)
+                return;
+            SessionManager manager = session.getSessionManager();
+            if (manager == null)
+                return;
+            manager.commit(session);
+        }
+
+        private void completeSession(ManagedSession session)
+        {
+            if (session == null)
+                return;
+            SessionManager manager = session.getSessionManager();
+            if (manager == null)
+                return;
+            manager.complete(session);
         }
 
         public AbstractSessionManager.RequestedSession getRequestedSession()
@@ -2661,7 +2766,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
                 request.getComponents().getCache().setAttribute(HttpChannel.class.getName(), httpChannel);
             }
-            else if (httpChannel.getContextHandler() == ContextHandler.this)
+            else if (httpChannel.getContextHandler() == ContextHandler.this && !request.getContext().isCrossContextDispatch(request))
             {
                 httpChannel.recycle();
             }

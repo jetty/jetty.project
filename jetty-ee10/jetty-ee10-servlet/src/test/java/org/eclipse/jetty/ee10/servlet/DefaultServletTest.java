@@ -38,6 +38,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -52,7 +53,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -1383,7 +1383,7 @@ public class DefaultServletTest
         FS.ensureDirExists(altRoot);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
-        defholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+        defholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "true");
@@ -1394,7 +1394,8 @@ public class DefaultServletTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 String includeTarget = req.getParameter("includeTarget");
-                req.getRequestDispatcher(includeTarget).include(req, resp);
+                RequestDispatcher requestDispatcher = req.getRequestDispatcher(includeTarget);
+                requestDispatcher.include(req, resp);
             }
         });
         context.addServlet(gwholder, "/gateway");
@@ -2001,10 +2002,9 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
 
-        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
-
         /*
         TODO: fix after HttpContent changes.
+        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
         HttpContent content = factory.getContent("/index.html", 200);
         ByteBuffer buffer = content.getDirectBuffer();
         assertThat("Buffer is direct", buffer.isDirect(), is(true));
@@ -3425,22 +3425,17 @@ public class DefaultServletTest
             response.setCharacterEncoding("utf-8");
             chain.doFilter(request, response);
         }
-
-        @Override
-        public void destroy()
-        {
-        }
     }
 
     @Test
-    public void testPathInfoOnly() throws Exception
+    public void testNotPathInfoOnly() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler("/c1", ServletContextHandler.NO_SESSIONS);
         context.setWelcomeFiles(new String[]{"index.y", "index.x"});
         ServletHolder indexServlet = new ServletHolder("index-servlet", new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.setContentType("text/plain");
                 resp.setCharacterEncoding("UTF-8");
@@ -3456,27 +3451,27 @@ public class DefaultServletTest
         context.getServletHandler().addServlet(indexServlet);
         context.getServletHandler().addServletMapping(indexMapping);
 
-        Path pathTest = MavenTestingUtils.getTestResourcePath("pathTest");
+        Path docroot = MavenTestingUtils.getTestResourcePath("docroot");
 
-        Path defaultDir = pathTest.resolve("default");
         ServletHolder slashHolder = new ServletHolder("default", new DefaultServlet());
         slashHolder.setInitParameter("redirectWelcome", "false");
         slashHolder.setInitParameter("welcomeServlets", "true");
-        slashHolder.setInitParameter("baseResource", defaultDir.toAbsolutePath().toString());
+        slashHolder.setInitParameter("baseResource", docroot.toAbsolutePath().toString());
         context.addServlet(slashHolder, "/");
 
-        Path rDir = pathTest.resolve("rdir");
-        ServletHolder rHolder = new ServletHolder("rdefault", new DefaultServlet());
+        Path altroot = MavenTestingUtils.getTestResourcePath("altroot");
+        ServletHolder rHolder = new ServletHolder("alt", new DefaultServlet());
         rHolder.setInitParameter("redirectWelcome", "false");
         rHolder.setInitParameter("welcomeServlets", "true");
-        rHolder.setInitParameter("baseResource", rDir.toAbsolutePath().toString());
-        context.addServlet(rHolder, "/r/*");
+        rHolder.setInitParameter("pathInfoOnly", "false");
+        rHolder.setInitParameter("baseResource", altroot.toAbsolutePath().toString());
+        context.addServlet(rHolder, "/all/*");
 
         server.stop();
         server.setHandler(context);
         server.start();
         String rawRequest = """
-            GET /c1/r/ HTTP/1.1\r
+            GET /c1/all/index.html HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
             \r
@@ -3484,7 +3479,7 @@ public class DefaultServletTest
 
         String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("testPathInfoOnly-OK"));
+        assertThat(response.getContent(), containsString("this is alternate index content"));
     }
 
     @Test
@@ -3651,11 +3646,6 @@ public class DefaultServletTest
             response.getWriter().println("Extra Info");
             response.setCharacterEncoding("utf-8");
             chain.doFilter(request, response);
-        }
-
-        @Override
-        public void destroy()
-        {
         }
     }
 

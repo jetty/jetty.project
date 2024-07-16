@@ -1220,7 +1220,7 @@ public class HTTPServerDocs
         // Add the DefaultServlet to serve static content.
         ServletHolder servletHolder = context.addServlet(DefaultServlet.class, "/");
         // Configure the DefaultServlet with init-parameters.
-        servletHolder.setInitParameter("resourceBase", "/path/to/static/resources/");
+        servletHolder.setInitParameter("baseResource", "/path/to/static/resources/");
         servletHolder.setAsyncSupported(true);
         // end::defaultServlet[]
     }

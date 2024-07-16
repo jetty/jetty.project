@@ -2004,19 +2004,19 @@ public class XmlConfigurationTest
         List<Arguments> ids = new ArrayList<>();
 
         String[] schemes = {"http", "https"};
-        String[] hosts = {"eclipse.org", "www.eclipse.org", "eclipse.dev", "www.eclipse.dev"};
-        String[] paths = {"/jetty/configure.dtd", // version-less
-                          "/jetty/configure_9_0.dtd", // 9.0
-                          "/jetty/configure_9_3.dtd", // 9.3
-                          "/jetty/configure_10_0.dtd"}; // 10.
+        String[] contexts = {"eclipse.org/jetty", "www.eclipse.org/jetty", "eclipse.dev/jetty", "www.eclipse.dev/jetty", "jetty.org"};
+        String[] paths = {"configure.dtd", // version-less
+                          "configure_9_0.dtd", // 9.0
+                          "configure_9_3.dtd", // 9.3
+                          "configure_10_0.dtd"}; // 10.
 
         for (String scheme: schemes)
         {
-            for (String host: hosts)
+            for (String host: contexts)
             {
                 for (String path: paths)
                 {
-                    ids.add(Arguments.of(String.format("%s://%s%s", scheme, host, path)));
+                    ids.add(Arguments.of(String.format("%s://%s/%s", scheme, host, path)));
                 }
             }
         }

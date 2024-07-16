@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-All [stable versions](https://eclipse.dev/jetty/download.php) of jetty are actively supported for security issues. [Deprecated versions](https://eclipse.dev/jetty/download.php) may be supported for serious security issues or on a commercial support basis.
+All [stable versions](https://jetty.org/download.html) of jetty are actively supported for security issues. [Deprecated versions](https://jetty.org/download.html) may be supported for serious security issues or on a commercial support basis.
 
 ## Reporting a Vulnerability
 
@@ -10,7 +10,7 @@ Do not open a public issue to report a security vulnerability.  Please send a me
 
 ## Handling a Vulnerability
 
-The [following checklist](https://eclipse.dev/jetty/security_processes.php) is used to handle security issues:
+The following checklist is used to handle security issues:
 
 - [ ] On receipt of a security report via security@webtide.com or other channels, if it cannot be trivially dismissed (already fixed, known not a problem, etc.), then a Github security advisory is created by project leadership.
 - [ ] Copy this list as a markdown in the security advisory for tracking the completion of various tasks.
@@ -20,9 +20,9 @@ The [following checklist](https://eclipse.dev/jetty/security_processes.php) is u
 - [ ] If the vulnerability cannot be confirmed then close the security advisory, else continue.
 - [ ] Generate a CVE score and add it to the advisory description.
 - [ ] Identify a CWE Definition and add it to the advisory description.
-- [ ] Identify vulnerable version(s), including current and past versions that are affected (e.g. 9.4.0 through 9.4.35, and 10.0.0.alpha1 through 10.0.0.beta3…​etc.)
+- [ ] Identify vulnerable version(s), including current and past versions that are affected (e.g. 9.4.0 through 9.4.35, and 10.0.0.alpha1 through 10.0.0.beta3 etc.)
 - [ ] Identify and document workaround(s), if applicable, in the comments of the security advisory.
-- [ ] Open an [Gitlab@Eclipse EMO CVE issue](https://gitlab.eclipse.org/eclipsefdn/emo-team/emo/-/issues/new?issuable_template=cve) to have a CVE allocated.   
+- [ ] Open an [Gitlab@Eclipse CVE Assignment](https://gitlab.eclipse.org/security/cve-assignement/-/issues/new) to have a CVE allocated.   
       The issue should be opened under the "Eclipse Foundation" > "EMO Team" > "EMO" section as a "cve" description, with the "This issue is confidential" checkbox checked.   
       Follow the template for what details are necessary to file for a CVE.
 - [ ] Once the CVE is allocated update the Security Advisory with the number

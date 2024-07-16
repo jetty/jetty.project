@@ -125,7 +125,7 @@ For example, if you have enabled the deployer Jetty module for all Jakarta EE ve
 This unspecified deployment may not work as the EE 9 web application may use APIs that have been removed in {ee-current-caps}, causing an error at runtime.
 ====
 
-[[jetty]]
+[[context-xml]]
 == Deploying Jetty Context XML Files
 
 A Jetty context XML file is a xref:xml/index.adoc[Jetty XML file] that allows you to customize the deployment of web applications.
@@ -140,7 +140,7 @@ A simple Jetty context XML file, for example named `wiki.xml` is the following:
 [,xml,subs=attributes+]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext"> <!--1-->
   <Set name="contextPath">/wiki</Set> <!--2-->
@@ -185,7 +185,7 @@ You can use the features of xref:xml/index.adoc[Jetty XML files] to avoid to har
 [,xml,subs=attributes+]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
@@ -199,6 +199,56 @@ Note how the `+*.war+` file path is now obtained by resolving the system propert
 $ java -jar $JETTY_HOME/start.jar -Dmyapps.dir=/opt/myapps
 ----
 
+[[env-context-xml]]
+== Deploying Environment Specific Context XML Files
+
+A xref:xml/index.adoc[Jetty context XML file] file can be applied to _all_ webapps deployed to a particular `environment` by adding a file named `{ee-all}.properties` containing the location of the file.
+
+This environment-specific Jetty context XML file will be applied to the webapps _before_ any context XML file associated with the webapp.
+Thus, it can be used to configure general defaults to all webapps for a given `environment`, allowing a webapp-specific context XML file to further refine or override that configuration.
+
+IMPORTANT: The contents of the environment specific context XML file may only contain references to classes appropriate for that environment.
+
+The `{ee-all}.properties` file must be in the same directory as the webapp being deployed.
+It must contain the property `jetty.deploy.environmentXml` set to the location of the context XML file.
+The location may be either absolute or relative to the parent of the deployment directory (usually `$JETTY_BASE`).
+
+For example, given the previous example of a `$JETTY_BASE/webapps/wiki.xml` and its accompanying `$JETTY_BASE/webapps/wiki.properties` file that declares the `wiki` webapp should be deployed to environment `{ee-current}`, a file called `$JETTY_BASE/webapps/{ee-current}.properties` can be defined containing the following:
+
+.{ee-current}.properties
+[,properties,subs=attributes+]
+----
+jetty.deploy.environmentXml=etc/{ee-current}-context.xml
+----
+
+The directory structure would look like this:
+
+.directory structure
+[,properties,subs=attributes+]
+----
+$JETTY_BASE
+├── etc
+│   └── {ee-current}-context.xml
+└── webapps
+    ├── {ee-current}.properties
+    ├── wiki.properties
+    └── wiki.xml
+----
+
+The contents of the `$JETTY_BASE/etc/{ee-current}-context.xml` file will be applied to the `wiki` webapp instance _before_ the `wiki.xml`, allowing the contents of the latter to override the contents of the former.
+
+== WEB-INF/jetty-{ee-all}-web.xml
+
+As discussed above, a Jetty context XML file can be used to configure a webapp during deployment.
+The webapp can also be configured during its startup phase by a `WEB-INF/jetty-{ee-all}-web.xml` file.
+The contents of this file is the same as a Jetty context XML file.
+This file can be useful:
+
+* to place all configuration inside your webapp archive
+* to perform configuration that can only occur _after_ the webapp's classpath has been created
+
+TIP: it is good practice to name the file according to the `environment` into which the webapp will be deployed. If your webapp can be deployed to multiple `environments` then you should include a `WEB-INF` file for each one. If you only deploy to a single `environment` then you can omit it from the filename, however be aware that you cannot change environments without updating the contents of the file.
+
 [[jndi]]
 == Configuring JNDI Entries
 
@@ -209,7 +259,7 @@ The JNDI entry must be _defined_ in a xref:jndi/index.adoc#xml[Jetty XML file], 
 [,xml,subs="attributes+,+quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="wac" class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
@@ -234,7 +284,7 @@ For more information and examples on how to use JNDI in Jetty, refer to the xref
 ====
 Class `com.mysql.cj.jdbc.MysqlConnectionPoolDataSource` is present in the MySQL JDBC driver file, `mysql-connector-java-<version>.jar`, which must be available on the server's classpath .
 
-If the class is instead present _within_ the web application, then the JNDI entry must be declared in a `WEB-INF/jetty-env.xml` file - see the xref:jndi/index.adoc[JNDI] feature section for more information and examples.
+If the class is instead present _within_ the web application, then the JNDI entry must be declared in a `WEB-INF/jetty-{ee-all}-env.xml` file - which is applied after the webapp's classpath has been set up - see the xref:jndi/index.adoc[JNDI] feature section for more information and examples.
 ====
 
 [[virtual-hosts]]
@@ -282,7 +332,7 @@ If you have a web application `mywebapp.war` you can configure its virtual hosts
 [,xml,subs=attributes+]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
@@ -327,7 +377,7 @@ To achieve this, you simply use the same context path of `/` for each of your we
 [,xml,subs=attributes+]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
@@ -344,7 +394,7 @@ To achieve this, you simply use the same context path of `/` for each of your we
 [,xml,subs=attributes+]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
@@ -372,7 +422,7 @@ In this case, you want to xref:protocols/index.adoc[configure multiple connector
 [,xml,subs="attributes+,+quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
@@ -389,7 +439,7 @@ In this case, you want to xref:protocols/index.adoc[configure multiple connector
 [,xml,subs="attributes+,+quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
@@ -424,7 +474,7 @@ If you do not want Jetty to extract the `+*.war+` files, you can disable this fe
 [,xml,subs="attributes+,+quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
@@ -444,7 +494,7 @@ This allows you to add host specific configuration or server specific configurat
 [,xml,subs="attributes+,+quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>

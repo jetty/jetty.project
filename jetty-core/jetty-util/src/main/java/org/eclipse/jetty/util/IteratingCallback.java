@@ -168,6 +168,18 @@ public abstract class IteratingCallback implements Callback
     protected abstract Action process() throws Throwable;
 
     /**
+     * Invoked when one task has completed successfully, either by the
+     * caller thread or by the processing thread. This invocation is
+     * always serialized w.r.t the execution of {@link #process()}.
+     * <p>
+     * This method is not invoked when a call to {@link #abort(Throwable)}
+     * is made before the {@link #succeeded()} callback happens.
+     */
+    protected void onSuccess()
+    {
+    }
+
+    /**
      * Invoked when the overall task has completed successfully.
      *
      * @see #onCompleteFailure(Throwable)
@@ -255,6 +267,7 @@ public abstract class IteratingCallback implements Callback
                 // Fall through to possibly invoke onCompleteFailure().
             }
 
+            boolean callOnSuccess = false;
             // acted on the action we have just received
             try (AutoLock ignored = _lock.lock())
             {
@@ -305,6 +318,7 @@ public abstract class IteratingCallback implements Callback
 
                     case CALLED:
                     {
+                        callOnSuccess = true;
                         if (action != Action.SCHEDULED)
                             throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                         // we lost the race, so we have to keep processing
@@ -327,6 +341,11 @@ public abstract class IteratingCallback implements Callback
                         throw new IllegalStateException(String.format("%s[action=%s]", this, action));
                 }
             }
+            finally
+            {
+                if (callOnSuccess)
+                    onSuccess();
+            }
         }
 
         if (notifyCompleteSuccess)
@@ -338,8 +357,11 @@ public abstract class IteratingCallback implements Callback
     /**
      * Method to invoke when the asynchronous sub-task succeeds.
      * <p>
-     * Subclasses that override this method must always remember
-     * to call {@code super.succeeded()}.
+     * This method should be considered final for all practical purposes.
+     * <p>
+     * Eventually, {@link #onSuccess()} is
+     * called, either by the caller thread or by the processing
+     * thread.
      */
     @Override
     public void succeeded()
@@ -374,7 +396,10 @@ public abstract class IteratingCallback implements Callback
             }
         }
         if (process)
+        {
+            onSuccess();
             processing();
+        }
     }
 
     /**
@@ -382,8 +407,7 @@ public abstract class IteratingCallback implements Callback
      * or to fail the overall asynchronous task and therefore
      * terminate the iteration.
      * <p>
-     * Subclasses that override this method must always remember
-     * to call {@code super.failed(Throwable)}.
+     * This method should be considered final for all practical purposes.
      * <p>
      * Eventually, {@link #onCompleteFailure(Throwable)} is
      * called, either by the caller thread or by the processing

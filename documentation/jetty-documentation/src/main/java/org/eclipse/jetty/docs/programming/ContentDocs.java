@@ -347,17 +347,10 @@ public class ContentDocs
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             // After every successful write, release the chunk.
             chunk.release();
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            super.failed(x);
         }
 
         @Override

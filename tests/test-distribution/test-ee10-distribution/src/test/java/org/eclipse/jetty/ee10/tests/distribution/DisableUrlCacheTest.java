@@ -77,7 +77,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             Path webappsDir = distribution.getJettyBase().resolve("webapps");
             String warXml = """
                 <?xml version="1.0"  encoding="ISO-8859-1"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
                    <Set name="contextPath">/test</Set>
                    <Set name="war"><Property name="jetty.webapps"/>/test.war</Set>

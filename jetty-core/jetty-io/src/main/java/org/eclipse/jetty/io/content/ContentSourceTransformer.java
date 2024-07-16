@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.content;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 /**
@@ -114,19 +115,7 @@ public abstract class ContentSourceTransformer implements Content.Source
         Runnable demandCallback = this.demandCallback;
         this.demandCallback = null;
         if (demandCallback != null)
-            runDemandCallback(demandCallback);
-    }
-
-    private void runDemandCallback(Runnable demandCallback)
-    {
-        try
-        {
-            demandCallback.run();
-        }
-        catch (Throwable x)
-        {
-            fail(x);
-        }
+            ExceptionUtil.run(demandCallback, this::fail);
     }
 
     private Content.Chunk process(Content.Chunk rawChunk)
