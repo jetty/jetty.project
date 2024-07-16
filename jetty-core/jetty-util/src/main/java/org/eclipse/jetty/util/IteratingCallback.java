@@ -44,18 +44,13 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Subclasses must implement method {@link #process()} where the
  * asynchronous sub-task is initiated and a suitable {@link Action}
- * is returned to this callback to indicate the overall progress ofk
+ * is returned to this callback to indicate the overall progress of
  * the large asynchronous task.
  * This callback is passed to the asynchronous sub-task, and a call
  * to {@link #succeeded()} on this callback represents the successful
  * completion of the asynchronous sub-task, while a call to
  * {@link #failed(Throwable)} on this callback represents the
  * completion with a failure of the large asynchronous task.
- * <p>
- * For most purposes, the {@link #succeeded()} and {@link #failed(Throwable)}
- * methods of this class should be considered final, and only overridden in
- * extraordinary circumstances. Any action taken in such extensions are not
- * serialized.
  */
 public abstract class IteratingCallback implements Callback
 {
