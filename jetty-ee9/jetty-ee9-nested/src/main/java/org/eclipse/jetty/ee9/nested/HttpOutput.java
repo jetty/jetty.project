@@ -199,7 +199,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private long _written;
     private long _flushed;
     private long _firstByteNanoTime = -1;
-    private ByteBufferPool.Sized _pool;
+    private ByteBufferPool _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -661,7 +661,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (_aggregate == null)
         {
-            _pool = new ByteBufferPool.Sized(_channel.getByteBufferPool(), _channel.isUseOutputDirectByteBuffers(), getBufferSize());
+            _pool = _channel.getByteBufferPool();
             _aggregate = _pool.acquire(getBufferSize(), _channel.isUseOutputDirectByteBuffers());
         }
         return _aggregate;
