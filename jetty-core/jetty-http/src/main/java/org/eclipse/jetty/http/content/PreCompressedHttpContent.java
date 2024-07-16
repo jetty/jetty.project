@@ -149,6 +149,12 @@ public class PreCompressedHttpContent implements HttpContent
     }
 
     @Override
+    public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
+    {
+        _precompressedContent.writeTo(sink, offset, length, callback);
+    }
+
+    @Override
     public Set<CompressedContentFormat> getPreCompressedContentFormats()
     {
         return _content.getPreCompressedContentFormats();

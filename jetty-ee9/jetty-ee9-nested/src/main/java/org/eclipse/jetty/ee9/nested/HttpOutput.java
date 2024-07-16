@@ -1987,6 +1987,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private class Sink implements Content.Sink, ByteBufferPool.Holder
     {
+        private final ByteBufferPool.Sized _pool = new ByteBufferPool.Sized(_channel.getByteBufferPool(), _channel.isUseOutputDirectByteBuffers(), getBufferSize());
+
         @Override
         public ByteBufferPool.Sized getSizedByteBufferPool()
         {

@@ -88,7 +88,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
             ByteBuffer buffer = _buffer;
             if (buffer != null)
             {
-                sink.write(false, buffer.asReadOnlyBuffer(), callback);
+                sink.write(false, buffer.slice(), callback);
                 return;
             }
 
@@ -99,7 +99,28 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
                 if (_buffer == null)
                     callback.failed(_failure);
                 else
-                    sink.write(false, _buffer.asReadOnlyBuffer(), callback);
+                    sink.write(false, _buffer.slice(), callback);
+            }
+        }
+
+        @Override
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
+        {
+            ByteBuffer buffer = _buffer;
+            if (buffer != null)
+            {
+                sink.write(false, buffer.slice((int)offset, (int)length), callback);
+                return;
+            }
+
+            try (AutoLock lock = _lock.lock())
+            {
+                if (_buffer == null)
+                    lockedInitMappedByteBuffer();
+                if (_buffer == null)
+                    callback.failed(_failure);
+                else
+                    sink.write(false, _buffer.slice((int)offset, (int)length), callback);
             }
         }
 

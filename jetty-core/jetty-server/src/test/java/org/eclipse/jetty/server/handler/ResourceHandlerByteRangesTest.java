@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,9 +27,7 @@ import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.ResourceService;
@@ -39,7 +36,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -173,16 +169,7 @@ public class ResourceHandlerByteRangesTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain")
-                {
-                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
-
-                    @Override
-                    public void writeTo(Content.Sink sink, Callback callback)
-                    {
-                        sink.write(false, buffer.asReadOnlyBuffer(), callback);
-                    }
-                };
+                return path -> new ResourceHttpContent(memResource, "text/plain");
             }
         });
 
@@ -214,16 +201,7 @@ public class ResourceHandlerByteRangesTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain")
-                {
-                    final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
-
-                    @Override
-                    public void writeTo(Content.Sink sink, Callback callback)
-                    {
-                        sink.write(false, buffer.asReadOnlyBuffer(), callback);
-                    }
-                };
+                return path -> new ResourceHttpContent(memResource, "text/plain");
             }
         });
 

@@ -15,12 +15,9 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -35,9 +32,6 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.resource.HttpContentRangeWriter;
-import org.eclipse.jetty.ee9.nested.resource.RangeWriter;
-import org.eclipse.jetty.ee9.nested.resource.SeekableByteChannelRangeWriter;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpDateTime;
@@ -49,11 +43,11 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
-import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -853,15 +847,12 @@ public class ResourceService
             length += CRLF + DASHDASH + BOUNDARY + DASHDASH + CRLF;
             response.setContentLengthLong(length);
 
-            try (RangeWriter rangeWriter = HttpContentRangeWriter.newRangeWriter(content))
+            i = 0;
+            for (InclusiveByteRange ibr : ranges)
             {
-                i = 0;
-                for (InclusiveByteRange ibr : ranges)
-                {
-                    multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
-                    rangeWriter.writeTo(multi, ibr.getFirst(), ibr.getSize());
-                    i++;
-                }
+                multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
+                writeContent(content, multi, ibr.getFirst(), ibr.getSize());
+                i++;
             }
 
             multi.close();
@@ -871,30 +862,21 @@ public class ResourceService
 
     private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
     {
-        // TODO this should use a {@link HttpContent#writeTo(Content.Sink, Callback)} overload accepting a range param
-        //  which would look like this:
-//        try (Blocker.Callback callback = Blocker.callback())
-//        {
-//            content.writeTo(Content.Sink.from(out), start, contentLength, callback);
-//            callback.block();
-//        }
-
-        // Use a ranged writer if resource backed by path
-        Path path = content.getResource().getPath();
-        if (path != null)
+        try (Blocker.Callback blocker = Blocker.callback())
         {
-            try (SeekableByteChannelRangeWriter rangeWriter = new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(path)))
+            content.writeTo((last, byteBuffer, callback) ->
             {
-                rangeWriter.writeTo(out, start, contentLength);
-            }
-            return;
-        }
-
-        // Perform ranged write
-        try (InputStream input = IOResources.asInputStream(content.getResource()))
-        {
-            input.skipNBytes(start);
-            IO.copy(input, out, contentLength);
+                try
+                {
+                    out.write(BufferUtil.toArray(byteBuffer));
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
+            }, start, contentLength, blocker);
+            blocker.block();
         }
     }
 

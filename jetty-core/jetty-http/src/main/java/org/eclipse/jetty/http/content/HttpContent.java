@@ -73,6 +73,11 @@ public interface HttpContent
      */
     void writeTo(Content.Sink sink, Callback callback);
 
+    /**
+     * <p>Write a subset of this HTTP content, to a {@link Content.Sink}.</p>
+     */
+    void writeTo(Content.Sink sink, long offset, long length, Callback callback);
+
     default long getBytesOccupied()
     {
         return getContentLengthValue();
@@ -203,6 +208,12 @@ public interface HttpContent
         public void writeTo(Content.Sink sink, Callback callback)
         {
             _delegate.writeTo(sink, callback);
+        }
+
+        @Override
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
+        {
+            _delegate.writeTo(sink, offset, length, callback);
         }
 
         @Override
