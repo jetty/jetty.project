@@ -247,14 +247,57 @@ public abstract class IteratingCallback implements Callback
             onCompleteFailure(causeOrNull);
     }
 
+    private void doOnSuccessProcessing()
+    {
+        ExceptionUtil.callAndThen(this::onSuccess, this::processing);
+    }
+
     private void doCompleteSuccess()
     {
         onCompleted(null);
     }
 
-    private void doCompleteFailure(Throwable cause)
+    private void doOnCompleted(Throwable cause)
     {
-        onCompleted(cause);
+        ExceptionUtil.call(cause, this::onCompleted);
+    }
+
+    private void doOnFailureOnCompleted(Throwable cause)
+    {
+        ExceptionUtil.callAndThen(cause, this::onFailure, this::onCompleted);
+    }
+
+    private void doOnAbortedOnFailure(Throwable cause)
+    {
+        ExceptionUtil.callAndThen(cause, this::onAborted, this::onFailure);
+    }
+    
+    private void doOnAbortedOnFailureOnCompleted(Throwable cause)
+    {
+        ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, this::onCompleted);
+    }
+
+    private void doOnAbortedOnFailureIfNotPendingDoCompleted(Throwable cause)
+    {
+        ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, this::ifNotPendingDoCompleted);
+    }
+
+    private void ifNotPendingDoCompleted()
+    {
+        Throwable completeFailure = null;
+        try (AutoLock ignored = _lock.lock())
+        {
+            _failure = _failure.getCause();
+
+            if (Objects.requireNonNull(_state) != State.PENDING)
+            {
+                // the callback completed, one way or another, so it is up to us to do the completion
+                completeFailure = _failure;
+            }
+        }
+
+        if (completeFailure != null)
+            doOnCompleted(completeFailure);
     }
 
     /**
@@ -298,9 +341,9 @@ public abstract class IteratingCallback implements Callback
         // may happen concurrently, so state is not assumed.
 
         boolean completeSuccess = false;
-        Throwable abortDoCompleteFailure = null;
-        Throwable completeFailure = null;
-        Throwable onAbort = null;
+        Throwable onAbortedOnFailureOnCompleted = null;
+        Throwable onFailureOnCompleted = null;
+        Throwable onAbortedOnFailureIfNotPendingDoCompleted = null;
 
         // While we are processing
         processing:
@@ -339,7 +382,7 @@ public abstract class IteratingCallback implements Callback
                                 if (_aborted)
                                 {
                                     _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
-                                    abortDoCompleteFailure = _failure;
+                                    onAbortedOnFailureOnCompleted = _failure;
                                     break processing;
                                 }
 
@@ -361,8 +404,8 @@ public abstract class IteratingCallback implements Callback
                                 _state = State.PENDING;
                                 if (_aborted)
                                 {
-                                    onAbort = _failure;
-                                    _failure = new AbortingException(onAbort);
+                                    onAbortedOnFailureIfNotPendingDoCompleted = _failure;
+                                    _failure = new AbortingException(onAbortedOnFailureIfNotPendingDoCompleted);
                                 }
                                 break processing;
                             }
@@ -373,7 +416,7 @@ public abstract class IteratingCallback implements Callback
                                 if (_aborted)
                                 {
                                     _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
-                                    abortDoCompleteFailure = _failure;
+                                    onAbortedOnFailureOnCompleted = _failure;
                                 }
                                 else
                                 {
@@ -395,24 +438,24 @@ public abstract class IteratingCallback implements Callback
                         if (action != Action.SCHEDULED && action != null)
                         {
                             _state = State.CLOSED;
-                            abortDoCompleteFailure = new IllegalStateException("Action not scheduled");
+                            onAbortedOnFailureOnCompleted = new IllegalStateException("Action not scheduled");
                             if (_failure == null)
                             {
-                                _failure = abortDoCompleteFailure;
+                                _failure = onAbortedOnFailureOnCompleted;
                             }
                             else
                             {
-                                ExceptionUtil.addSuppressedIfNotAssociated(_failure, onAbort);
-                                abortDoCompleteFailure = _failure;
+                                ExceptionUtil.addSuppressedIfNotAssociated(_failure, onAbortedOnFailureIfNotPendingDoCompleted);
+                                onAbortedOnFailureOnCompleted = _failure;
                             }
                             break processing;
                         }
                         if (_failure != null)
                         {
                             if (_aborted)
-                                abortDoCompleteFailure = _failure;
+                                onAbortedOnFailureOnCompleted = _failure;
                             else
-                                completeFailure = _failure;
+                                onFailureOnCompleted = _failure;
                             _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
                             break processing;
                         }
@@ -431,14 +474,14 @@ public abstract class IteratingCallback implements Callback
                     onSuccess();
             }
         }
-        if (abortDoCompleteFailure != null)
-            ExceptionUtil.callAndThen(abortDoCompleteFailure, this::doOnAbortedOnFailure, this::doCompleteFailure);
+        if (onAbortedOnFailureOnCompleted != null)
+            doOnAbortedOnFailureOnCompleted(onAbortedOnFailureOnCompleted);
         else if (completeSuccess)
             doCompleteSuccess();
-        else if (completeFailure != null)
-            ExceptionUtil.callAndThen(completeFailure, this::onFailure, this::doCompleteFailure);
-        else if (onAbort != null)
-            ExceptionUtil.callAndThen(onAbort, this::doOnAbortedOnFailure, this::doAbortPendingCompletion);
+        else if (onFailureOnCompleted != null)
+            doOnFailureOnCompleted(onFailureOnCompleted);
+        else if (onAbortedOnFailureIfNotPendingDoCompleted != null)
+            doOnAbortedOnFailureIfNotPendingDoCompleted(onAbortedOnFailureIfNotPendingDoCompleted);
     }
 
     /**
@@ -457,8 +500,8 @@ public abstract class IteratingCallback implements Callback
     @Override
     public final void succeeded()
     {
-        boolean process = false;
-        Throwable completeFailure = null;
+        boolean onSuccessProcessing = false;
+        Throwable onCompleted = null;
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
@@ -484,14 +527,14 @@ public abstract class IteratingCallback implements Callback
                         {
                             // The onAborted call is complete, so we must do the completion
                             _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
-                            completeFailure = _failure;
+                            onCompleted = _failure;
                         }
                     }
                     else
                     {
                         // No other thread is processing, so we will do the processing
                         _state = State.PROCESSING;
-                        process = true;
+                        onSuccessProcessing = true;
                     }
                     break;
                 }
@@ -506,13 +549,13 @@ public abstract class IteratingCallback implements Callback
                 }
             }
         }
-        if (process)
+        if (onSuccessProcessing)
         {
-            ExceptionUtil.callAndThen(this::onSuccess, this::processing);
+            doOnSuccessProcessing();
         }
-        else if (completeFailure != null)
+        else if (onCompleted != null)
         {
-            doCompleteFailure(completeFailure);
+            doOnCompleted(onCompleted);
         }
     }
 
@@ -538,8 +581,8 @@ public abstract class IteratingCallback implements Callback
     {
         cause = Objects.requireNonNullElseGet(cause, IOException::new);
 
-        Throwable completeFailure = null;
-        Throwable abortCompletion = null;
+        Throwable onFailureOnCompleted = null;
+        Throwable onCompleted = null;
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
@@ -571,7 +614,7 @@ public abstract class IteratingCallback implements Callback
                             // The onAborted call is complete, so we must do the completion
                             ExceptionUtil.addSuppressedIfNotAssociated(_failure, cause);
                             _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
-                            abortCompletion = _failure;
+                            onCompleted = _failure;
                         }
                     }
                     else
@@ -579,7 +622,7 @@ public abstract class IteratingCallback implements Callback
                         // No other thread is processing, so we will do the processing
                         _state = State.COMPLETE;
                         _failure = cause;
-                        completeFailure = _failure;
+                        onFailureOnCompleted = _failure;
                     }
                     break;
                 }
@@ -595,10 +638,10 @@ public abstract class IteratingCallback implements Callback
                 }
             }
         }
-        if (completeFailure != null)
-            ExceptionUtil.callAndThen(completeFailure, this::onFailure, this::doCompleteFailure);
-        else if (abortCompletion != null)
-            doCompleteFailure(abortCompletion);
+        if (onFailureOnCompleted != null)
+            doOnFailureOnCompleted(onFailureOnCompleted);
+        else if (onCompleted != null)
+            doOnCompleted(onCompleted);
     }
 
     /**
@@ -612,8 +655,8 @@ public abstract class IteratingCallback implements Callback
      */
     public final void close()
     {
-        Throwable onAbort = null;
-        Throwable onAbortDoCompleteFailure = null;
+        Throwable onAbortedOnFailureIfNotPendingDoCompleted = null;
+        Throwable onAbortOnFailureOnCompleted = null;
 
         try (AutoLock ignored = _lock.lock())
         {
@@ -626,7 +669,7 @@ public abstract class IteratingCallback implements Callback
                     // Nothing happening so we can abort and complete
                     _state = State.CLOSED;
                     _failure = new ClosedException();
-                    onAbortDoCompleteFailure = _failure;
+                    onAbortOnFailureOnCompleted = _failure;
                 }
                 case PROCESSING, PROCESSING_CALLED ->
                 {
@@ -645,8 +688,8 @@ public abstract class IteratingCallback implements Callback
                 case PENDING ->
                 {
                     // We are waiting for the callback, so we can only call onAbort and then keep waiting
-                    onAbort = new ClosedException();
-                    _failure = new AbortingException(onAbort);
+                    onAbortedOnFailureIfNotPendingDoCompleted = new ClosedException();
+                    _failure = new AbortingException(onAbortedOnFailureIfNotPendingDoCompleted);
                     _aborted = true;
                 }
 
@@ -663,10 +706,10 @@ public abstract class IteratingCallback implements Callback
             }
         }
 
-        if (onAbort != null)
-            ExceptionUtil.callAndThen(onAbort, this::doOnAbortedOnFailure, this::doAbortPendingCompletion);
-        else if (onAbortDoCompleteFailure != null)
-            ExceptionUtil.callAndThen(onAbortDoCompleteFailure, this::doOnAbortedOnFailure, this::doCompleteFailure);
+        if (onAbortedOnFailureIfNotPendingDoCompleted != null)
+            doOnAbortedOnFailureIfNotPendingDoCompleted(onAbortedOnFailureIfNotPendingDoCompleted);
+        else if (onAbortOnFailureOnCompleted != null)
+            doOnAbortedOnFailureOnCompleted(onAbortOnFailureOnCompleted);
     }
 
     /**
@@ -747,34 +790,11 @@ public abstract class IteratingCallback implements Callback
         }
 
         if (onAbortDoCompleteFailure)
-            ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, this::doCompleteFailure);
+            doOnAbortedOnFailureOnCompleted(cause);
         else if (onAbort)
-            ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, this::doAbortPendingCompletion);
+            doOnAbortedOnFailureIfNotPendingDoCompleted(cause);
 
         return true;
-    }
-
-    private void doOnAbortedOnFailure(Throwable cause)
-    {
-        ExceptionUtil.callAndThen(cause, this::onAborted, this::onFailure);
-    }
-
-    private void doAbortPendingCompletion()
-    {
-        Throwable doCompleteFailure = null;
-        try (AutoLock ignored = _lock.lock())
-        {
-            _failure = _failure.getCause();
-
-            if (Objects.requireNonNull(_state) != State.PENDING)
-            {
-                // the callback completed, one way or another, so it is up to use to do the completion
-                doCompleteFailure = _failure;
-            }
-        }
-
-        if (doCompleteFailure != null)
-            ExceptionUtil.call(doCompleteFailure, this::doCompleteFailure);
     }
 
     /**
