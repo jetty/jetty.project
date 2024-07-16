@@ -22,16 +22,22 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionException;
 import javax.security.auth.Subject;
 
+import org.eclipse.jetty.util.JavaVersion;
+
 /**
  * <p>Collections of utility methods to deal with the scheduled removal
  * of the security classes defined by <a href="https://openjdk.org/jeps/411">JEP 411</a>.</p>
+ * <p>To enable usage of a {@link SecurityManager}, the system property {@link #USE_SECURITY_MANAGER} must be set to {@code true}
+ * for JVMs after version 21.</p>
  */
 public class SecurityUtils
 {
-    private static final MethodHandle doAs = lookupDoAs();
+    public static final boolean USE_SECURITY_MANAGER = Boolean.parseBoolean(
+        System.getProperty("org.eclipse.jetty.util.security.useSecurityManager", JavaVersion.VERSION.getMajor() <= 21 ? "true" : "false"));
+    private static final MethodHandle callAs = lookupCallAs();
     private static final MethodHandle doPrivileged = lookupDoPrivileged();
 
-    private static MethodHandle lookupDoAs()
+    private static MethodHandle lookupCallAs()
     {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try
@@ -39,14 +45,15 @@ public class SecurityUtils
             // Subject.doAs() is deprecated for removal and replaced by Subject.callAs().
             // Lookup first the new API, since for Java versions where both exists, the
             // new API delegates to the old API (for example Java 18, 19 and 20).
-            // Otherwise (Java 17), lookup the old API.
             return lookup.findStatic(Subject.class, "callAs", MethodType.methodType(Object.class, Subject.class, Callable.class));
         }
         catch (Throwable x)
         {
             try
             {
-                // Lookup the old API.
+                if (!USE_SECURITY_MANAGER)
+                    return null;
+                // Otherwise (Java 17), lookup the old API.
                 MethodType oldSignature = MethodType.methodType(Object.class, Subject.class, PrivilegedAction.class);
                 MethodHandle doAs = lookup.findStatic(Subject.class, "doAs", oldSignature);
                 // Convert the Callable used in the new API to the PrivilegedAction used in the old API.
@@ -63,6 +70,8 @@ public class SecurityUtils
 
     private static MethodHandle lookupDoPrivileged()
     {
+        if (!USE_SECURITY_MANAGER)
+            return null;
         try
         {
             // Use reflection to work with Java versions that have and don't have AccessController.
@@ -84,6 +93,8 @@ public class SecurityUtils
     {
         try
         {
+            if (!USE_SECURITY_MANAGER)
+                return null;
             // Use reflection to work with Java versions that have and don't have SecurityManager.
             return System.class.getMethod("getSecurityManager").invoke(null);
         }
@@ -102,6 +113,8 @@ public class SecurityUtils
      */
     public static void checkPermission(Permission permission) throws SecurityException
     {
+        if (!USE_SECURITY_MANAGER)
+            return;
         Object securityManager = SecurityUtils.getSecurityManager();
         if (securityManager == null)
             return;
@@ -129,11 +142,9 @@ public class SecurityUtils
      */
     public static <T> T doPrivileged(PrivilegedAction<T> action)
     {
-        // Keep this method short and inlineable.
-        MethodHandle methodHandle = doPrivileged;
-        if (methodHandle == null)
+        if (!USE_SECURITY_MANAGER || doPrivileged == null)
             return action.run();
-        return doPrivileged(methodHandle, action);
+        return doPrivileged(doPrivileged, action);
     }
 
     @SuppressWarnings("unchecked")
@@ -160,16 +171,31 @@ public class SecurityUtils
      * @param action the action to run
      * @return the result of the action
      * @param <T> the type of the result
+     * @deprecated use {@link #callAs(Subject, Callable)}
+     */
+    @Deprecated(forRemoval = true, since = "12.1.0")
+    public static <T> T doAs(Subject subject, Callable<T> action)
+    {
+        return callAs(subject, action);
+    }
+
+    /**
+     * <p>Runs the given action as the given subject.</p>
+     *
+     * @param subject the subject this action runs as
+     * @param action the action to run
+     * @return the result of the action
+     * @param <T> the type of the result
      */
     @SuppressWarnings("unchecked")
-    public static <T> T doAs(Subject subject, Callable<T> action)
+    public static <T> T callAs(Subject subject, Callable<T> action)
     {
         try
         {
-            MethodHandle methodHandle = doAs;
-            if (methodHandle == null)
+            if (callAs == null)
                 return action.call();
-            return (T)methodHandle.invoke(subject, action);
+
+            return (T)callAs.invoke(subject, action);
         }
         catch (RuntimeException | Error x)
         {

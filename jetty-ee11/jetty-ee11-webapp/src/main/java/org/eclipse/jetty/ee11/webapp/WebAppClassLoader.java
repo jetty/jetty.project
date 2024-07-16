@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -32,12 +33,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.jar.Manifest;
 
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -563,6 +566,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     bytes = tmp;
             }
 
+            definePackageIfNecessary(name, url);
+
             return defineClass(name, bytes, 0, bytes.length);
         }
         catch (IOException | IllegalClassFormatException e)
@@ -572,6 +577,41 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         finally
         {
             IO.close(content);
+        }
+    }
+
+    private void definePackageIfNecessary(String className, URL url) throws IOException
+    {
+        int lastDotIndex = className.lastIndexOf('.');
+        if (lastDotIndex < 0)
+            return;
+        String packageName = className.substring(0, lastDotIndex);
+        if (getDefinedPackage(packageName) == null)
+        {
+            try
+            {
+                String externalForm = url.toExternalForm();
+                if (externalForm.startsWith("jar:file:") && externalForm.contains("!/"))
+                {
+                    URI jarURI = URIUtil.unwrapContainer(new URI(externalForm));
+                    Resource manifestResource = getContext().newResource(URIUtil.uriJarPrefix(jarURI, "!/META-INF/MANIFEST.MF").toASCIIString());
+                    if (manifestResource.exists())
+                    {
+                        try (InputStream is = manifestResource.newInputStream())
+                        {
+                            Manifest manifest = new Manifest(is);
+                            definePackage(packageName, manifest, jarURI.toURL());
+                            return;
+                        }
+                    }
+                }
+            }
+            catch (Throwable t)
+            {
+                LOG.trace("could not read manifest of {}", url, t);
+            }
+
+            definePackage(packageName, null, null, null, null, null, null, null);
         }
     }
 

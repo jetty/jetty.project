@@ -654,3 +654,10 @@ Below you can find an example of how to setup `DefaultServlet`:
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=defaultServlet]
 ----
+
+If you wish to serve resources from a non-default location, then the `ResourceServlet` should be used instead of the `DefaultServlet`. Below you can find an example of how to setup both a `DefaultServlet` and a `ResourceServlet`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=resourceServlet]
+----

@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
@@ -332,40 +333,48 @@ public interface Response extends Content.Sink, ByteBufferPool.Holder
             callback.failed(new IllegalArgumentException("No location"));
             return;
         }
-        location = toRedirectURI(request, location);
 
-        if (consumeAvailable)
+        try
         {
-            while (true)
+            location = toRedirectURI(request, location);
+
+            if (consumeAvailable)
             {
-                Content.Chunk chunk = response.getRequest().read();
-                if (chunk == null)
+                while (true)
                 {
-                    response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                    break;
+                    Content.Chunk chunk = response.getRequest().read();
+                    if (chunk == null)
+                    {
+                        response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                        break;
+                    }
+                    chunk.release();
+                    if (chunk.isLast())
+                        break;
                 }
-                chunk.release();
-                if (chunk.isLast())
-                    break;
             }
-        }
 
-        if (content == null && request.getConnectionMetaData().getHttpConfiguration().isGenerateRedirectBody())
-        {
-            response.getHeaders().put(MimeTypes.Type.TEXT_HTML_8859_1.getContentTypeField());
-            String body = """
+            if (content == null && request.getConnectionMetaData().getHttpConfiguration().isGenerateRedirectBody())
+            {
+                response.getHeaders().put(MimeTypes.Type.TEXT_HTML_8859_1.getContentTypeField());
+                String body = """
             <!DOCTYPE html>
             <html lang="en">
             <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
             <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
             </html>
             """.formatted(location, location);
-            content = BufferUtil.toBuffer(body, StandardCharsets.ISO_8859_1);
-        }
+                content = BufferUtil.toBuffer(body, StandardCharsets.ISO_8859_1);
+            }
 
-        response.getHeaders().put(HttpHeader.LOCATION, location);
-        response.setStatus(code);
-        response.write(true, content, callback);
+            response.getHeaders().put(HttpHeader.LOCATION, location);
+            response.setStatus(code);
+            response.write(true, content, callback);
+        }
+        catch (Throwable failure)
+        {
+            callback.failed(failure);
+        }
     }
 
     /**
@@ -379,6 +388,8 @@ public interface Response extends Content.Sink, ByteBufferPool.Holder
      */
     static String toRedirectURI(Request request, String location)
     {
+        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+
         // is the URI absolute already?
         if (!URIUtil.hasScheme(location))
         {
@@ -399,12 +410,19 @@ public interface Response extends Content.Sink, ByteBufferPool.Holder
                 throw new IllegalStateException("redirect path cannot be above root");
 
             // if relative redirects are not allowed?
-            if (!request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
-            {
+            if (!httpConfiguration.isRelativeRedirectAllowed())
                 // make the location an absolute URI
                 location = URIUtil.newURI(uri.getScheme(), Request.getServerName(request), Request.getServerPort(request), location, null);
-            }
         }
+
+        UriCompliance redirectCompliance = httpConfiguration.getRedirectUriCompliance();
+        if (redirectCompliance != null)
+        {
+            String violations = UriCompliance.checkUriCompliance(redirectCompliance, HttpURI.from(location), null);
+            if (StringUtil.isNotBlank(violations))
+                throw new IllegalArgumentException(violations);
+        }
+
         return location;
     }
 
