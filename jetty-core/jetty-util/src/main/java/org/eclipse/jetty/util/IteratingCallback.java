@@ -15,6 +15,7 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -129,6 +130,9 @@ public abstract class IteratingCallback implements Callback
     }
 
     private final AutoLock _lock = new AutoLock();
+    private final Runnable _onSuccess = this::onSuccess;
+    private final Runnable _processing = this::processing;
+    private final Consumer<Throwable> _onCompleted = this::onCompleted;
     private State _state;
     private Throwable _failure;
     private boolean _reprocess;
@@ -249,7 +253,7 @@ public abstract class IteratingCallback implements Callback
 
     private void doOnSuccessProcessing()
     {
-        ExceptionUtil.callAndThen(this::onSuccess, this::processing);
+        ExceptionUtil.callAndThen(_onSuccess, _processing);
     }
 
     private void doCompleteSuccess()
@@ -259,12 +263,12 @@ public abstract class IteratingCallback implements Callback
 
     private void doOnCompleted(Throwable cause)
     {
-        ExceptionUtil.call(cause, this::onCompleted);
+        ExceptionUtil.call(cause, _onCompleted);
     }
 
     private void doOnFailureOnCompleted(Throwable cause)
     {
-        ExceptionUtil.callAndThen(cause, this::onFailure, this::onCompleted);
+        ExceptionUtil.callAndThen(cause, this::onFailure, _onCompleted);
     }
 
     private void doOnAbortedOnFailure(Throwable cause)
@@ -274,7 +278,7 @@ public abstract class IteratingCallback implements Callback
     
     private void doOnAbortedOnFailureOnCompleted(Throwable cause)
     {
-        ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, this::onCompleted);
+        ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, _onCompleted);
     }
 
     private void doOnAbortedOnFailureIfNotPendingDoCompleted(Throwable cause)
