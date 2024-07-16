@@ -599,7 +599,7 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             }
 
             if (line == null || line.length() == 0)
-                throw new IOException("Missing initial multi part boundary");
+                throw new IOException("Missing content for multipart request");
 
             // Empty multipart.
             if (line.equals(lastBoundary))
@@ -700,7 +700,7 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 // Check if we can create a new part.
                 _numParts++;
                 if (_maxParts >= 0 && _numParts > _maxParts)
-                    throw new IllegalStateException(String.format("Form with too many parts [%d > %d]", _numParts, _maxParts));
+                    throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", _numParts, _maxParts));
 
                 //Have a new Part
                 MultiPart part = new MultiPart(name, filename);
@@ -864,7 +864,7 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                         MultiPartCompliance.Violation.LF_LINE_TERMINATION, "0x10"));
             }
             else
-                throw new IOException("Incomplete parts");
+                throw new IOException("Incomplete Multipart");
         }
         catch (Exception e)
         {
