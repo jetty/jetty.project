@@ -208,7 +208,7 @@
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
-    <commons-codec.version>1.17.0</commons-codec.version>
+    <commons-codec.version>1.17.1</commons-codec.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.26.2</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
@@ -221,13 +221,13 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.28.0</google.errorprone.version>
+    <google.errorprone.version>2.29.0</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
     <grpc.version>1.65.1</grpc.version>
     <gson.version>2.11.0</gson.version>
     <guava.version>33.2.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
-    <h2spec.maven.plugin.version>1.0.11</h2spec.maven.plugin.version>
+    <h2spec.maven.plugin.version>1.0.12</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>3.0.2</hawtio.version>
     <hazelcast.version>5.3.7</hazelcast.version>
@@ -349,7 +349,7 @@
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.19.8</testcontainers.version>
-    <versions.maven.plugin.version>2.17.0</versions.maven.plugin.version>
+    <versions.maven.plugin.version>2.17.1</versions.maven.plugin.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.7.0.Final</wildfly.common.version>
     <wildfly.elytron.version>2.5.0.Final</wildfly.elytron.version>
