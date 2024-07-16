@@ -178,7 +178,7 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
     }
 
     @Override
-    protected void onFailure(Throwable cause)
+    protected void onCompleteFailure(Throwable cause)
     {
         Throwable suppressed = _failure.getAndSet(cause);
         if (suppressed != null && suppressed != cause)

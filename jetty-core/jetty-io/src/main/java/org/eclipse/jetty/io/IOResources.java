@@ -413,12 +413,12 @@ public class IOResources
         }
 
         @Override
-        protected void onFailure(Throwable x)
+        protected void onCompleteFailure(Throwable x)
         {
             if (retainableByteBuffer != null)
                 retainableByteBuffer.release();
             IO.close(channel);
-            super.onFailure(x);
+            super.onCompleteFailure(x);
         }
     }
 }

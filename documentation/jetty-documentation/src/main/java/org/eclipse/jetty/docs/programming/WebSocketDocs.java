@@ -541,7 +541,7 @@ public class WebSocketDocs
             }
 
             @Override
-            protected void onFailure(Throwable x)
+            protected void onCompleteFailure(Throwable x)
             {
                 x.printStackTrace();
             }

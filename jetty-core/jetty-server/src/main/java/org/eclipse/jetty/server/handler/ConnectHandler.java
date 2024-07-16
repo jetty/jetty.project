@@ -768,7 +768,7 @@ public class ConnectHandler extends Handler.Wrapper
             }
 
             @Override
-            protected void onFailure(Throwable x)
+            protected void onCompleteFailure(Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failed to write {} bytes {}", filled, TunnelConnection.this, x);

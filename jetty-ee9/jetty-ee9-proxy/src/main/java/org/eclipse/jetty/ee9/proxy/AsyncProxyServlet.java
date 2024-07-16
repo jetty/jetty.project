@@ -192,7 +192,7 @@ public class AsyncProxyServlet extends ProxyServlet
         }
 
         @Override
-        protected void onFailure(Throwable cause)
+        protected void onCompleteFailure(Throwable cause)
         {
             onError(cause);
         }

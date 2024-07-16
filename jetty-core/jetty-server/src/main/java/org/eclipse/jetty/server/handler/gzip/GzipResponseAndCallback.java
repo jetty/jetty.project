@@ -322,14 +322,14 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
 
         @Override
-        protected void onFailure(Throwable x)
+        protected void onCompleteFailure(Throwable x)
         {
             if (_deflaterEntry != null)
             {
                 _deflaterEntry.release();
                 _deflaterEntry = null;
             }
-            super.onFailure(x);
+            super.onCompleteFailure(x);
         }
 
         @Override

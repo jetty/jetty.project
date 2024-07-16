@@ -910,7 +910,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void onFailure(final Throwable x)
+        public void onCompleteFailure(final Throwable x)
         {
             failedCallback(release(), x);
         }

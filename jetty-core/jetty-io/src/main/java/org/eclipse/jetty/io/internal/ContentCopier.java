@@ -77,13 +77,13 @@ public class ContentCopier extends IteratingNestedCallback
     }
 
     @Override
-    protected void onFailure(Throwable x)
+    protected void onCompleteFailure(Throwable x)
     {
         if (current != null)
         {
             current.release();
             current = Content.Chunk.next(current);
         }
-        ExceptionUtil.callAndThen(x, source::fail, super::onFailure);
+        ExceptionUtil.callAndThen(x, source::fail, super::onCompleteFailure);
     }
 }

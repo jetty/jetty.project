@@ -400,7 +400,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         @Override
-        protected void onFailure(Throwable x)
+        protected void onCompleteFailure(Throwable x)
         {
             onError(x);
         }

@@ -118,7 +118,7 @@ public class InstructionFlusher extends IteratingCallback
     }
 
     @Override
-    protected void onFailure(Throwable failure)
+    protected void onCompleteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write buffers on {}", this, failure);

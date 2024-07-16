@@ -118,7 +118,7 @@ public class MessageFlusher extends IteratingCallback
     }
 
     @Override
-    protected void onFailure(Throwable cause)
+    protected void onCompleteFailure(Throwable cause)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write {} on {}", entry, this, cause);

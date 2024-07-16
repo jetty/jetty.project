@@ -377,7 +377,7 @@ public abstract class QuicConnection extends AbstractConnection
         }
 
         @Override
-        protected void onFailure(Throwable cause)
+        protected void onCompleteFailure(Throwable cause)
         {
             entry.callback.failed(cause);
             QuicConnection.this.close();
