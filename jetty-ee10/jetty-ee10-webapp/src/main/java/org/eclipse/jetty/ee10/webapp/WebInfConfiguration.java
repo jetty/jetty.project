@@ -39,7 +39,7 @@ public class WebInfConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebInfConfiguration.class);
 
-    public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
+    public static final String TEMPDIR_CREATED = "org.eclipse.jetty.tmpdirCreated";
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.webapp.tmpResourceBase";
     public static final String ORIGINAL_RESOURCE_BASE = "org.eclipse.jetty.webapp.originalResourceBase";
 
@@ -89,10 +89,6 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        //if it wasn't explicitly configured by the user, then unset it
-        if (!(context.getAttribute(TEMPDIR_CONFIGURED) instanceof Boolean tmpdirConfigured && tmpdirConfigured))
-            context.setTempDirectory(null);
-
         //reset the base resource back to what it was before we did any unpacking of resources
         Resource originalBaseResource = (Resource)context.removeAttribute(ORIGINAL_RESOURCE_BASE);
         context.setBaseResource(originalBaseResource);
@@ -133,7 +129,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         File tempDirectory = context.getTempDirectory();
         if (tempDirectory != null)
         {
-            context.setAttribute(TEMPDIR_CONFIGURED, Boolean.TRUE); //the tmp dir was set explicitly
             return;
         }
 
@@ -179,6 +174,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             LOG.debug("Set temp dir {}", tmpDir);
         context.setTempDirectory(tmpDir);
         context.setTempDirectoryPersistent(persistent);
+        context.setAttribute(TEMPDIR_CREATED, Boolean.TRUE);
     }
 
     public void unpack(WebAppContext context) throws IOException

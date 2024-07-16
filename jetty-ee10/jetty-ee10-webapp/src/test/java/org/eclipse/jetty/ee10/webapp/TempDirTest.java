@@ -178,7 +178,6 @@ public class TempDirTest
         assertThat(tempDirectory.toPath(), not(PathMatchers.isSame(webAppContext.getTempDirectory().toPath())));
     }
 
-    @Disabled ("Enable after issue 11548 fixed")
     @Test
     public void testSameTempDir(WorkDir workDir) throws Exception
     {
@@ -212,4 +211,33 @@ public class TempDirTest
         webAppContext.start();
         assertThat(tempDirectory.toPath(), PathMatchers.isSame(webAppContext.getTempDirectory().toPath()));
     }
-}
+
+    @Test
+    public void testTempDirDeleted(WorkDir workDir) throws Exception
+    {
+        // Create war on the fly
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path warFile = workDir.getEmptyPathDir().resolve("test.war");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(testWebappDir, root);
+        }
+
+         _server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        webAppContext.setWarResource(webAppContext.getResourceFactory().newResource(warFile));
+        _server.setHandler(webAppContext);
+        _server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        _server.stop();
+        assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
+    }
+ }

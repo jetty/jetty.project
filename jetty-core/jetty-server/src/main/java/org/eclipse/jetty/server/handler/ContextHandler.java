@@ -788,7 +788,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
+        {
             IO.delete(tempDirectory);
+        }
+
+        //if it was jetty that created the tmp dir, it can be reset, otherwise we need to retain the name
+        if ((getAttribute("org.eclipse.jetty.tmpdirCreated") instanceof Boolean tmpdirCreated && tmpdirCreated))
+            setTempDirectory(null);
     }
 
     public boolean checkVirtualHost(Request request)
