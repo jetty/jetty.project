@@ -199,7 +199,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private long _written;
     private long _flushed;
     private long _firstByteNanoTime = -1;
-    private ByteBufferPool _pool;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -661,7 +661,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (_aggregate == null)
         {
-            _pool = _channel.getByteBufferPool();
+            _pool = new ByteBufferPool.Sized(_channel.getByteBufferPool(), _channel.isUseOutputDirectByteBuffers(), getBufferSize());
             _aggregate = _pool.acquire(getBufferSize(), _channel.isUseOutputDirectByteBuffers());
         }
         return _aggregate;
@@ -1361,21 +1361,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
-                ByteBufferPool.Sized sizedPool = new ByteBufferPool.Sized(_pool, _channel.isUseOutputDirectByteBuffers(), getBufferSize());
-                httpContent.writeTo(new HttpContent.Sink() {
-                    @Override
-                    public ByteBufferPool.Sized getSizedByteBufferPool()
-                    {
-                        return sizedPool;
-                    }
-
-                    @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback cb)
-                    {
-                        _written += byteBuffer.remaining();
-                        channelWrite(byteBuffer, last, cb);
-                    }
-                }, new Callback.Nested(callback)
+                httpContent.writeTo(new Sink(), new Callback.Nested(callback)
                 {
                     @Override
                     public void succeeded()
@@ -1996,6 +1982,22 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
+        }
+    }
+
+    private class Sink implements Content.Sink, ByteBufferPool.Holder
+    {
+        @Override
+        public ByteBufferPool.Sized getSizedByteBufferPool()
+        {
+            return _pool;
+        }
+
+        @Override
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        {
+            _written += byteBuffer.remaining();
+            channelWrite(byteBuffer, last, callback);
         }
     }
 }

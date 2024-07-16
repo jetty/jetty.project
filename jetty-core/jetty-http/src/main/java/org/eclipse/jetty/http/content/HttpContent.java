@@ -20,7 +20,6 @@ import java.util.Set;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
@@ -70,9 +69,9 @@ public interface HttpContent
     Resource getResource();
 
     /**
-     * <p>Write this HTTP content to a {@link Sink}.</p>
+     * <p>Write this HTTP content to a {@link Content.Sink}.</p>
      */
-    void writeTo(Sink sink, Callback callback);
+    void writeTo(Content.Sink sink, Callback callback);
 
     default long getBytesOccupied()
     {
@@ -85,14 +84,6 @@ public interface HttpContent
     Set<CompressedContentFormat> getPreCompressedContentFormats();
 
     void release();
-
-    /**
-     * A {@link Content.Sink} that exposes a pre-sized buffer pool.
-     */
-    interface Sink extends Content.Sink
-    {
-        ByteBufferPool.Sized getSizedByteBufferPool();
-    }
 
     interface Factory
     {
@@ -209,7 +200,7 @@ public interface HttpContent
         }
 
         @Override
-        public void writeTo(HttpContent.Sink sink, Callback callback)
+        public void writeTo(Content.Sink sink, Callback callback)
         {
             _delegate.writeTo(sink, callback);
         }
