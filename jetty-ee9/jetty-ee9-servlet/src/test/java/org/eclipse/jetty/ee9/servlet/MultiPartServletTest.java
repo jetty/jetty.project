@@ -526,7 +526,7 @@ public class MultiPartServletTest
             assertThat(headers.get(HttpHeader.CONTENT_TYPE), startsWith("multipart/form-data"));
             assertThat(headers.get(HttpHeader.CONTENT_ENCODING), is("gzip"));
 
-            try(InputStream inputStream = new GZIPInputStream(responseStream.getInputStream()))
+            try (InputStream inputStream = new GZIPInputStream(responseStream.getInputStream()))
             {
                 String contentType = headers.get(HttpHeader.CONTENT_TYPE);
                 MultiPartFormInputStream mpis = new MultiPartFormInputStream(inputStream, contentType, null, null);
