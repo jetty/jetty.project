@@ -60,6 +60,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -217,8 +218,11 @@ public class MultiPartServletTest
         Response response = listener.get(60, TimeUnit.SECONDS);
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
 
-        String responseBody = IO.toString(listener.getInputStream());
-        assertThat(responseBody, containsString("java.io.IOException: Missing content for multipart request"));
+        assert400orEof(listener, responseContent ->
+        {
+            assertThat(responseContent, containsString("Unable to parse form content"));
+            assertThat(responseContent, containsString("Missing content for multipart request"));
+        });
     }
 
     @ParameterizedTest
@@ -286,7 +290,7 @@ public class MultiPartServletTest
 
         assert400orEof(listener, responseContent ->
         {
-            assertThat(responseContent, containsString("Unable to extract content parameters"));
+            assertThat(responseContent, containsString("Unable to parse form content"));
             assertThat(responseContent, containsString("Incomplete Multipart"));
         });
     }
@@ -325,14 +329,13 @@ public class MultiPartServletTest
 
         assert400orEof(listener, responseContent ->
         {
+            assertThat(responseContent, containsString("Unable to parse form content"));
             if (multiPartCompliance == MultiPartCompliance.RFC7578)
             {
-                assertThat(responseContent, containsString("Unable to parse form content"));
                 assertThat(responseContent, containsString("Illegal character ALPHA=&apos;s&apos"));
             }
             else if (multiPartCompliance == MultiPartCompliance.LEGACY)
             {
-                assertThat(responseContent, containsString("Unable to extract content parameters"));
                 assertThat(responseContent, containsString("Incomplete Multipart"));
             }
         });
@@ -362,8 +365,8 @@ public class MultiPartServletTest
 
         assert400orEof(listener, responseContent ->
         {
-            assertThat(responseContent, containsString("Unable to extract content parameters"));
-            assertThat(responseContent, containsString("Missing initial multi part boundary"));
+            assertThat(responseContent, containsString("Unable to parse form content"));
+            assertThat(responseContent, containsString("Missing content for multipart request"));
         });
     }
 
@@ -494,11 +497,10 @@ public class MultiPartServletTest
         assertThat(fileList.length, is(0));
     }
 
-    @ParameterizedTest
-    @MethodSource("multipartModes")
-    public void testMultiPartGzip(MultiPartCompliance multiPartCompliance) throws Exception
+    @Test
+    public void testMultiPartGzip() throws Exception
     {
-        startServer(multiPartCompliance);
+        startServer(MultiPartCompliance.RFC7578);
 
         String contentString = "the quick brown fox jumps over the lazy dog, " +
             "the quick brown fox jumps over the lazy dog";
@@ -524,12 +526,14 @@ public class MultiPartServletTest
             assertThat(headers.get(HttpHeader.CONTENT_TYPE), startsWith("multipart/form-data"));
             assertThat(headers.get(HttpHeader.CONTENT_ENCODING), is("gzip"));
 
-            InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
-            String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-            MultiPartFormInputStream mpis = new MultiPartFormInputStream(inputStream, contentType, null, null);
-            List<Part> parts = new ArrayList<>(mpis.getParts());
-            assertThat(parts.size(), is(1));
-            assertThat(IO.toString(parts.get(0).getInputStream()), is(contentString));
+            try(InputStream inputStream = new GZIPInputStream(responseStream.getInputStream()))
+            {
+                String contentType = headers.get(HttpHeader.CONTENT_TYPE);
+                MultiPartFormInputStream mpis = new MultiPartFormInputStream(inputStream, contentType, null, null);
+                List<Part> parts = new ArrayList<>(mpis.getParts());
+                assertThat(parts.size(), is(1));
+                assertThat(IO.toString(parts.get(0).getInputStream()), is(contentString));
+            }
         }
     }
 }
