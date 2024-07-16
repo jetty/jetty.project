@@ -838,20 +838,21 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 throw new IOException("connection was released");
 
             long written;
-            if (buffer.isDirect())
+            try (ResourceScope scope = ResourceScope.newConfinedScope())
             {
-                // If the ByteBuffer is direct, it can be used without any copy.
-                MemorySegment bufferSegment = MemorySegment.ofByteBuffer(buffer);
-                written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), last ? C_TRUE : C_FALSE);
-            }
-            else
-            {
-                // If the ByteBuffer is heap-allocated, it must be copied to native memory.
-                try (ResourceScope scope = ResourceScope.newConfinedScope())
+                MemorySegment outErrorCode = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+                if (buffer.isDirect())
                 {
+                    // If the ByteBuffer is direct, it can be used without any copy.
+                    MemorySegment bufferSegment = MemorySegment.ofByteBuffer(buffer);
+                    written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), last ? C_TRUE : C_FALSE, outErrorCode.address());
+                }
+                else
+                {
+                    // If the ByteBuffer is heap-allocated, it must be copied to native memory.
                     if (buffer.remaining() == 0)
                     {
-                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, MemoryAddress.NULL, 0, last ? C_TRUE : C_FALSE);
+                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, MemoryAddress.NULL, 0, last ? C_TRUE : C_FALSE, outErrorCode.address());
                     }
                     else
                     {
@@ -859,7 +860,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                         int prevPosition = buffer.position();
                         bufferSegment.asByteBuffer().put(buffer);
                         buffer.position(prevPosition);
-                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), last ? C_TRUE : C_FALSE);
+                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), last ? C_TRUE : C_FALSE, outErrorCode.address());
                     }
                 }
             }
@@ -889,24 +890,25 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             long read;
             try (ResourceScope scope = ResourceScope.newConfinedScope())
             {
+                MemorySegment fin = MemorySegment.allocateNative(CLinker.C_CHAR, scope);
+                MemorySegment outErrorCode = MemorySegment.allocateNative(CLinker.C_LONG, scope);
                 if (buffer.isDirect())
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
                     MemorySegment bufferSegment = MemorySegment.ofByteBuffer(buffer);
-                    MemorySegment fin = MemorySegment.allocateNative(CLinker.C_CHAR, scope);
-                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), fin.address());
+                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), fin.address(), outErrorCode.address());
                 }
                 else
                 {
                     // If the ByteBuffer is heap-allocated, native memory must be copied to it.
                     MemorySegment bufferSegment = MemorySegment.allocateNative(buffer.remaining(), scope);
-
-                    MemorySegment fin = MemorySegment.allocateNative(CLinker.C_CHAR, scope);
-                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), fin.address());
-
-                    int prevPosition = buffer.position();
-                    buffer.put(bufferSegment.asByteBuffer().limit((int)read));
-                    buffer.position(prevPosition);
+                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), fin.address(), outErrorCode.address());
+                    if (read > 0)
+                    {
+                        int prevPosition = buffer.position();
+                        buffer.put(bufferSegment.asByteBuffer().limit((int)read));
+                        buffer.position(prevPosition);
+                    }
                 }
             }
 

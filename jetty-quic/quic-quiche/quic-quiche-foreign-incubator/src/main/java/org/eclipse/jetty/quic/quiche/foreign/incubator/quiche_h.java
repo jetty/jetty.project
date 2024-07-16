@@ -33,7 +33,7 @@ public class quiche_h
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    private static final String EXPECTED_QUICHE_VERSION = "0.21.0";
+    private static final String EXPECTED_QUICHE_VERSION = "0.22.0";
 
     public static final byte C_FALSE = 0;
     public static final byte C_TRUE = 1;
@@ -312,8 +312,8 @@ public class quiche_h
 
     private static final MethodHandle quiche_conn_stream_send$MH = downcallHandle(
         "quiche_conn_stream_send",
-        "(Ljdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;JB)J",
-        FunctionDescriptor.of(C_LONG, C_POINTER, C_LONG, C_POINTER, C_LONG, C_CHAR)
+        "(Ljdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;JBLjdk/incubator/foreign/MemoryAddress;)J",
+        FunctionDescriptor.of(C_LONG, C_POINTER, C_LONG, C_POINTER, C_LONG, C_CHAR, C_POINTER)
     );
 
     private static final MethodHandle quiche_conn_stream_writable$MH = downcallHandle(
@@ -324,8 +324,8 @@ public class quiche_h
 
     private static final MethodHandle quiche_conn_stream_recv$MH = downcallHandle(
         "quiche_conn_stream_recv",
-        "(Ljdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;)J",
-        FunctionDescriptor.of(C_LONG, C_POINTER, C_LONG, C_POINTER, C_LONG, C_POINTER)
+        "(Ljdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;)J",
+        FunctionDescriptor.of(C_LONG, C_POINTER, C_LONG, C_POINTER, C_LONG, C_POINTER, C_POINTER)
     );
 
     private static final MethodHandle quiche_stream_iter_next$MH = downcallHandle(
@@ -658,11 +658,11 @@ public class quiche_h
         }
     }
 
-    public static long quiche_conn_stream_recv(MemoryAddress conn, long stream_id, MemoryAddress buf, long buf_len, MemoryAddress fin)
+    public static long quiche_conn_stream_recv(MemoryAddress conn, long stream_id, MemoryAddress buf, long buf_len, MemoryAddress fin, MemoryAddress outErrorCode)
     {
         try
         {
-            return (long) quiche_conn_stream_recv$MH.invokeExact(conn, stream_id, buf, buf_len, fin);
+            return (long) quiche_conn_stream_recv$MH.invokeExact(conn, stream_id, buf, buf_len, fin, outErrorCode);
         }
         catch (Throwable ex)
         {
@@ -670,11 +670,11 @@ public class quiche_h
         }
     }
 
-    public static long quiche_conn_stream_send(MemoryAddress conn, long stream_id, MemoryAddress buf, long buf_len, byte fin)
+    public static long quiche_conn_stream_send(MemoryAddress conn, long stream_id, MemoryAddress buf, long buf_len, byte fin, MemoryAddress outErrorCode)
     {
         try
         {
-            return (long) quiche_conn_stream_send$MH.invokeExact(conn, stream_id, buf, buf_len, fin);
+            return (long) quiche_conn_stream_send$MH.invokeExact(conn, stream_id, buf, buf_len, fin, outErrorCode);
         }
         catch (Throwable ex)
         {
