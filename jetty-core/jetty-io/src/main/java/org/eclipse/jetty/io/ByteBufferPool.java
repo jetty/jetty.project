@@ -136,7 +136,7 @@ public interface ByteBufferPool
         {
             super(Objects.requireNonNullElse(wrapped, NON_POOLING));
             _direct = direct;
-            _size = size > 0 ? size : 4096;
+            _size = size >= 0 ? size : 8192;
         }
 
         public boolean isDirect()
@@ -152,9 +152,18 @@ public interface ByteBufferPool
         /**
          * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured size and type.
          */
-        public RetainableByteBuffer acquire()
+        public RetainableByteBuffer.Mutable acquire()
         {
             return getWrapped().acquire(_size, _direct);
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured type.
+         * @param size The specified size in bytes of the buffer, or -1 for a default
+         */
+        public RetainableByteBuffer.Mutable acquire(int size)
+        {
+            return getWrapped().acquire(size < 0 ? _size : size, _direct);
         }
     }
 

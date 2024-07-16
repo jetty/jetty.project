@@ -596,10 +596,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private RetainableByteBuffer acquireBuffer()
     {
-        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-        ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
         if (_aggregate == null)
-            _aggregate = pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
+            _aggregate = _servletChannel.getRequest().getComponents().getOutputByteBufferPool().acquire(getBufferSize());
         return _aggregate;
     }
 

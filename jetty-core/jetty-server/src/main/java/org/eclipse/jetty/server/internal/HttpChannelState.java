@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MultiPartFormData.Parts;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
@@ -106,6 +108,8 @@ public class HttpChannelState implements HttpChannel, Components
     private final SerializedInvoker _readInvoker;
     private final SerializedInvoker _writeInvoker;
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
+    private final AtomicReference<ByteBufferPool.Sized> _inputByteBufferPool = new AtomicReference<>();
+    private final AtomicReference<ByteBufferPool.Sized> _outputByteBufferPool = new AtomicReference<>();
     private Thread _handling;
     private boolean _handled;
     private StreamSendState _streamSendState = StreamSendState.SENDING;
@@ -220,6 +224,34 @@ public class HttpChannelState implements HttpChannel, Components
     public ByteBufferPool getByteBufferPool()
     {
         return getConnectionMetaData().getConnector().getByteBufferPool();
+    }
+
+    @Override
+    public ByteBufferPool.Sized getInputByteBufferPool()
+    {
+        return _inputByteBufferPool.updateAndGet(this::checkInputPool);
+    }
+
+    protected ByteBufferPool.Sized checkInputPool(ByteBufferPool.Sized sized)
+    {
+        if (sized != null)
+            return sized;
+        return new ByteBufferPool.Sized(
+            _connectionMetaData.getConnector().getByteBufferPool(),
+            getHttpConfiguration().isUseInputDirectByteBuffers(),
+            _connectionMetaData.getConnection() instanceof AbstractConnection abstractConnection ? abstractConnection.getInputBufferSize() : -1);
+    }
+
+    @Override
+    public ByteBufferPool.Sized getOutputByteBufferPool()
+    {
+        return _inputByteBufferPool.updateAndGet(this::checkOutputPool);
+    }
+
+    protected ByteBufferPool.Sized checkOutputPool(ByteBufferPool.Sized sized)
+    {
+        return sized == null ? new ByteBufferPool.Sized(_connectionMetaData.getConnector().getByteBufferPool(),
+            getHttpConfiguration().isUseOutputDirectByteBuffers(), getHttpConfiguration().getOutputBufferSize()) : sized;
     }
 
     @Override

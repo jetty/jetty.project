@@ -25,6 +25,10 @@ public interface Components
 {
     ByteBufferPool getByteBufferPool();
 
+    ByteBufferPool.Sized getInputByteBufferPool();
+
+    ByteBufferPool.Sized getOutputByteBufferPool();
+
     Scheduler getScheduler();
 
     ThreadPool getThreadPool();

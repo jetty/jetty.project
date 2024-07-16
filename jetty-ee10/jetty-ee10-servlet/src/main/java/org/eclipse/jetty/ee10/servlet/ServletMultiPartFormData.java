@@ -32,12 +32,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
-import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -110,22 +106,10 @@ public class ServletMultiPartFormData
                 {
                     // No existing core parts, so we need to configure the parser.
                     ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
-                    ByteBufferPool byteBufferPool = servletContextRequest.getComponents().getByteBufferPool();
-                    ConnectionMetaData connectionMetaData = servletContextRequest.getConnectionMetaData();
-                    Connection connection = connectionMetaData.getConnection();
 
-                    Content.Source source;
-                    if (servletRequest instanceof ServletApiRequest servletApiRequest)
-                    {
-                        source = servletApiRequest.getRequest();
-                    }
-                    else
-                    {
-                        int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-                        InputStreamContentSource iscs = new InputStreamContentSource(servletRequest.getInputStream(), byteBufferPool);
-                        iscs.setBufferSize(bufferSize);
-                        source = iscs;
-                    }
+                    Content.Source source = servletRequest instanceof ServletApiRequest servletApiRequest
+                        ? servletApiRequest.getRequest()
+                        : new InputStreamContentSource(servletRequest.getInputStream(), servletContextRequest.getComponents().getInputByteBufferPool());
 
                     MultiPartConfig multiPartConfig = Request.getMultiPartConfig(servletContextRequest, filesDirectory)
                         .location(filesDirectory)
