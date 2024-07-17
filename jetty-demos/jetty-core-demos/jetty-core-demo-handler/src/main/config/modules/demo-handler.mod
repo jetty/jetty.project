@@ -12,10 +12,10 @@ server
 
 [files]
 basehome:modules/demo.d/demo-handler.xml|etc/demo-handler.xml
-maven://org.eclipse.jetty.demos/jetty-demo-handler/${jetty.version}/jar|lib/jetty-demo-handler.jar
+maven://org.eclipse.jetty.demos/jetty-core-demo-handler/${jetty.version}/jar|lib/jetty-core-demo-handler.jar
 
 [xml]
 etc/demo-handler.xml
 
 [lib]
-lib/jetty-demo-handler.jar
+lib/jetty-core-demo-handler.jar

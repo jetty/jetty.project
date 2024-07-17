@@ -4,16 +4,16 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-core</artifactId>
+    <artifactId>jetty-demos</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.demos</groupId>
-  <artifactId>jetty-demos</artifactId>
+  <artifactId>jetty-core-demos</artifactId>
   <packaging>pom</packaging>
   <name>Core :: Demos</name>
 
   <modules>
-    <module>jetty-demo-handler</module>
+    <module>jetty-core-demo-handler</module>
   </modules>
 
 </project>
