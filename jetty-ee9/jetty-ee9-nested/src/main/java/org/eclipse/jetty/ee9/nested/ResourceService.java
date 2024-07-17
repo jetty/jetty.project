@@ -43,10 +43,10 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
@@ -864,18 +864,7 @@ public class ResourceService
     {
         try (Blocker.Callback blocker = Blocker.callback())
         {
-            content.writeTo((last, byteBuffer, callback) ->
-            {
-                try
-                {
-                    out.write(BufferUtil.toArray(byteBuffer));
-                    callback.succeeded();
-                }
-                catch (Throwable x)
-                {
-                    callback.failed(x);
-                }
-            }, start, contentLength, blocker);
+            content.writeTo(Content.Sink.from(out), start, contentLength, blocker);
             blocker.block();
         }
     }
