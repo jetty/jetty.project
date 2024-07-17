@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 
 /**
  * <p>A pool for {@link RetainableByteBuffer} instances.</p>
@@ -136,7 +137,7 @@ public interface ByteBufferPool
         {
             super(Objects.requireNonNullElse(wrapped, NON_POOLING));
             _direct = direct;
-            _size = size >= 0 ? size : 8192;
+            _size = size >= 0 ? size : IO.DEFAULT_BUFFER_SIZE;
         }
 
         public boolean isDirect()
