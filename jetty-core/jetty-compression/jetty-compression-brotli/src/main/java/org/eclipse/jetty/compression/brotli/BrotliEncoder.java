@@ -15,6 +15,7 @@ package org.eclipse.jetty.compression.brotli;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
 
 import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
@@ -93,6 +94,12 @@ public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
     @Override
     public void finishInput()
     {
+    }
+
+    @Override
+    public ByteOrder getByteOrder()
+    {
+        return ByteOrder.BIG_ENDIAN;
     }
 
     @Override

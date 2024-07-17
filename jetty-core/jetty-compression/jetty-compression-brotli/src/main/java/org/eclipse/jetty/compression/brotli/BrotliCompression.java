@@ -17,6 +17,7 @@ import java.util.Set;
 
 import com.aayushatharva.brotli4j.Brotli4jLoader;
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -34,6 +35,7 @@ public class BrotliCompression extends Compression
         Brotli4jLoader.ensureAvailability();
     }
 
+    private static final CompressedContentFormat BR = new CompressedContentFormat("br", ".br");
     private static final String ENCODING_NAME = "br";
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);

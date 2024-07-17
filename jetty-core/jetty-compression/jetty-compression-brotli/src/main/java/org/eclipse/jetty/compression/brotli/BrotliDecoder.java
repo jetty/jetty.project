@@ -22,6 +22,7 @@ import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,6 @@ public class BrotliDecoder implements Compression.Decoder
     private final ByteBufferPool pool;
     private final int bufferSize;
     private DecoderJNI.Wrapper decoder;
-    private RetainableByteBuffer output;
 
     public BrotliDecoder(BrotliCompression brotliCompression, ByteBufferPool pool)
     {
@@ -49,27 +49,51 @@ public class BrotliDecoder implements Compression.Decoder
     }
 
     @Override
-    public RetainableByteBuffer decode(Content.Chunk chunk) throws IOException
+    public void cleanup()
     {
-        while (true)
-        {
-            if (output != null)
-            {
-                if (!output.hasRemaining())
-                {
-                    output = null;
-                }
-                else
-                {
-                    return output;
-                }
-            }
+        decoder.destroy();
+    }
 
+    @Override
+    public RetainableByteBuffer decode(Content.Chunk input) throws IOException
+    {
+        return decode(input.getByteBuffer());
+    }
+
+    /**
+     * <p>Decompresses compressed data from a buffer.</p>
+     *
+     * <p>
+     *     The {@link RetainableByteBuffer} returned by this method
+     *     <em>must</em> be released via {@link RetainableByteBuffer#release()}.
+     * </p>
+     *
+     * <p>
+     *     This method may fully consume the input buffer, but return
+     *     only a chunk of the decompressed bytes, to allow applications to
+     *     consume the decompressed buffer before performing further decompression,
+     *     applying backpressure. In this case, this method should be
+     *     invoked again with the same input buffer (even if
+     *     it's already fully consumed) and that will produce another
+     *     buffer of decompressed bytes. Termination happens when the input
+     *     buffer is fully consumed, and the returned buffer is empty.
+     * </p>
+     *
+     * @param compressed the buffer containing compressed data.
+     * @return a buffer containing decompressed data.
+     * @throws IOException if unable to decompress the input buffer
+     */
+    public RetainableByteBuffer decode(ByteBuffer compressed) throws IOException
+    {
+        RetainableByteBuffer output = null;
+        while (output == null)
+        {
             switch (decoder.getStatus())
             {
                 case DONE ->
                 {
-                    return null;
+                    output = RetainableByteBuffer.EMPTY;
+                    break;
                 }
                 case OK ->
                 {
@@ -77,27 +101,40 @@ public class BrotliDecoder implements Compression.Decoder
                 }
                 case NEEDS_MORE_INPUT ->
                 {
-                    ByteBuffer compressed = chunk.getByteBuffer();
-                    decoder.getInputBuffer().put(compressed);
-                    decoder.push(compressed.remaining());
+                    ByteBuffer input = decoder.getInputBuffer();
+                    BufferUtil.clearToFill(input);
+                    int len = BufferUtil.put(compressed, input);
+                    decoder.push(len);
+
+                    if (len == 0)
+                    {
+                        output = RetainableByteBuffer.EMPTY;
+                        break;
+                    }
                 }
                 case NEEDS_MORE_OUTPUT ->
                 {
                     ByteBuffer pulled = decoder.pull();
                     output = RetainableByteBuffer.wrap(pulled);
-                    return output;
+                    break;
                 }
                 default ->
                 {
-                    throw new IOException("Corrupted input");
+                    throw new IOException("Corrupted input buffer");
                 }
             }
         }
+        return output;
     }
 
     @Override
-    public void cleanup()
+    public boolean isFinished()
     {
-        decoder.destroy();
+        return switch (decoder.getStatus())
+        {
+            case DONE -> true;
+            case ERROR -> true;
+            default -> false;
+        };
     }
 }
