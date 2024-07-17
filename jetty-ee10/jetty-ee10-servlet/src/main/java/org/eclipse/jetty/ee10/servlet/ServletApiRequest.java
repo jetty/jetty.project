@@ -37,6 +37,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConnection;
@@ -70,8 +72,8 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -769,27 +771,47 @@ public class ServletApiRequest implements HttpServletRequest
 
         outputStream.flush(); // commit the 101 response
         httpConnection.getGenerator().servletUpgrade(); // tell the generator it can send data as-is
+
+        _servletContextRequest.addFailureListener(t ->
+        {
+            System.err.println("failureListener: " + t);
+            asyncContext.complete();
+        });
+
+        _servletContextRequest.getServletChannel().setReportRemoteErrors(true);
+        asyncContext.addListener(new AsyncListener() {
+            @Override
+            public void onComplete(AsyncEvent event) throws IOException
+            {
+                System.err.println("AsyncListener onComplete");
+            }
+
+            @Override
+            public void onTimeout(AsyncEvent event) throws IOException
+            {
+                System.err.println("AsyncListener onTimeout");
+            }
+
+            @Override
+            public void onError(AsyncEvent event) throws IOException
+            {
+                System.err.println("AsyncListener onError");
+            }
+
+            @Override
+            public void onStartAsync(AsyncEvent event) throws IOException
+            {
+                System.err.println("AsyncListener onStartAsync");
+            }
+        });
+
         httpConnection.addEventListener(new Connection.Listener()
         {
             @Override
             public void onClosed(Connection connection)
             {
-                try
-                {
-                    asyncContext.complete();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("error during upgrade AsyncContext complete", e);
-                }
-                try
-                {
-                    upgradeHandler.destroy();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("error during upgrade HttpUpgradeHandler destroy", e);
-                }
+                System.err.println("Connection.Listener onClosed: " + connection);
+                System.err.println("asyncContext: " + asyncContext);
             }
 
             @Override
@@ -803,14 +825,10 @@ public class ServletApiRequest implements HttpServletRequest
             @Override
             public void close() throws Exception
             {
-                try
-                {
-                    inputStream.close();
-                }
-                finally
-                {
-                    outputStream.close();
-                }
+                IO.close(inputStream);
+                IO.close(outputStream);
+                 asyncContext.complete();
+                 upgradeHandler.destroy();
             }
 
             @Override

@@ -596,6 +596,12 @@ public class ServletChannel
             LOG.debug("!handle {} {}", action, this);
     }
 
+    private boolean reportRemoteErrors;
+    public void setReportRemoteErrors(boolean reportRemoteErrors)
+    {
+        this.reportRemoteErrors = reportRemoteErrors;
+    }
+
     private void reopen()
     {
         _servletContextRequest.getServletContextResponse().getHttpOutput().reopen();
@@ -661,7 +667,7 @@ public class ServletChannel
             LOG.warn(request == null ? "unknown request" : request.getServletApiRequest().getRequestURI(), failure);
         }
 
-        if (isCommitted())
+        if (isCommitted() && !reportRemoteErrors)
         {
             abort(failure);
         }
