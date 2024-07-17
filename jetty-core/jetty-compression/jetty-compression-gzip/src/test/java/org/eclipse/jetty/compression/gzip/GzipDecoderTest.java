@@ -60,7 +60,7 @@ public class GzipDecoderTest extends AbstractGzipTest
     public static Stream<Arguments> precompressedText()
     {
         return Stream.of(
-            Arguments.of("precompressed/test_quotes.gz", "precompressed/test_quotes.txt")
+            Arguments.of("precompressed/test_quotes.txt.gz", "precompressed/test_quotes.txt")
             /*, TODO: figure out flaw in testcase with large inputs (other large input tests work)
             Arguments.of("precompressed/logo.svgz", "precompressed/logo.svg"),
             Arguments.of("precompressed/text-long.txt.gz", "precompressed/text-long.txt")
@@ -323,8 +323,8 @@ public class GzipDecoderTest extends AbstractGzipTest
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              GZIPOutputStream output = new GZIPOutputStream(baos))
         {
-        output.write(data1.getBytes(StandardCharsets.UTF_8));
-        output.close();
+            output.write(data1.getBytes(StandardCharsets.UTF_8));
+            output.close();
             bytes1 = ByteBuffer.wrap(baos.toByteArray());
         }
 
@@ -334,8 +334,8 @@ public class GzipDecoderTest extends AbstractGzipTest
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              GZIPOutputStream output = new GZIPOutputStream(baos))
         {
-        output.write(data2.getBytes(StandardCharsets.UTF_8));
-        output.close();
+            output.write(data2.getBytes(StandardCharsets.UTF_8));
+            output.close();
             bytes2 = ByteBuffer.wrap(baos.toByteArray());
         }
 
@@ -473,7 +473,15 @@ public class GzipDecoderTest extends AbstractGzipTest
     static final long UINT_MAX = 0xFFFFFFFFL;
 
     @ParameterizedTest
-    @ValueSource(longs = {INT_MAX, INT_MAX + 1 /* TODO too slow , UINT_MAX, UINT_MAX + 1 */})
+    @ValueSource(longs = {
+        INT_MAX / 2,
+        /* TODO too slow ,
+        INT_MAX,
+        INT_MAX + 1,
+        UINT_MAX,
+        UINT_MAX + 1
+         */
+    })
     public void testLargeGzipStream(long origSize) throws Exception
     {
         // Size chosen for trade off between speed of I/O vs speed of Gzip

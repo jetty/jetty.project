@@ -39,23 +39,23 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     // Unsigned Integer Max == 2^32
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
-    private final List<RetainableByteBuffer> _inflateds = new ArrayList<>();
-    private final ByteBufferPool _pool;
-    private final int _bufferSize;
-    private InflaterPool.Entry _inflaterEntry;
-    private Inflater _inflater;
-    private State _state;
-    private int _size;
-    private long _value;
-    private byte _flags;
-    private RetainableByteBuffer _inflated;
+    private final List<RetainableByteBuffer> inflateds = new ArrayList<>();
+    private final ByteBufferPool pool;
+    private final int bufferSize;
+    private InflaterPool.Entry inflaterEntry;
+    private Inflater inflater;
+    private State state;
+    private int size;
+    private long value;
+    private byte flags;
+    private RetainableByteBuffer inflated;
 
     public GzipDecoder(GzipCompression gzipCompression, ByteBufferPool pool)
     {
-        _pool = Objects.requireNonNull(pool);
-        _bufferSize = gzipCompression.getBufferSize();
-        _inflaterEntry = gzipCompression.getInflaterPool().acquire();
-        _inflater = _inflaterEntry.get();
+        this.pool = Objects.requireNonNull(pool);
+        this.bufferSize = gzipCompression.getBufferSize();
+        this.inflaterEntry = gzipCompression.getInflaterPool().acquire();
+        this.inflater = inflaterEntry.get();
         reset();
     }
 
@@ -69,10 +69,10 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     public RetainableByteBuffer decode(Content.Chunk chunk)
     {
         decodeChunks(chunk.getByteBuffer());
-        RetainableByteBuffer decoded = _inflated;
-        if (_inflated == null && chunk.isLast())
+        RetainableByteBuffer decoded = inflated;
+        if (inflated == null && chunk.isLast())
             return RetainableByteBuffer.EMPTY;
-        _inflated = null;
+        inflated = null;
         return decoded;
     }
 
@@ -98,26 +98,26 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     {
         decodeChunks(compressed);
 
-        if (_inflateds.isEmpty())
+        if (inflateds.isEmpty())
         {
-            if ((_inflated == null || !_inflated.hasRemaining()) || _state == State.CRC || _state == State.ISIZE)
+            if ((inflated == null || !inflated.hasRemaining()) || state == State.CRC || state == State.ISIZE)
                 return acquire(0);
-            RetainableByteBuffer result = _inflated;
-            _inflated = null;
+            RetainableByteBuffer result = inflated;
+            inflated = null;
             return result;
         }
         else
         {
-            _inflateds.add(_inflated);
-            _inflated = null;
-            int length = _inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
+            inflateds.add(inflated);
+            inflated = null;
+            int length = inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
             RetainableByteBuffer result = acquire(length);
-            for (RetainableByteBuffer buffer : _inflateds)
+            for (RetainableByteBuffer buffer : inflateds)
             {
                 buffer.appendTo(result);
                 buffer.release();
             }
-            _inflateds.clear();
+            inflateds.clear();
             return result;
         }
     }
@@ -125,14 +125,14 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     @Override
     public void destroy()
     {
-        _inflaterEntry.release();
-        _inflaterEntry = null;
-        _inflater = null;
+        inflaterEntry.release();
+        inflaterEntry = null;
+        inflater = null;
     }
 
     public boolean isFinished()
     {
-        return _state == State.INITIAL;
+        return state == State.INITIAL;
     }
 
     /**
@@ -149,35 +149,35 @@ class GzipDecoder implements Compression.Decoder, Destroyable
         {
             while (true)
             {
-                switch (_state)
+                switch (state)
                 {
                     case INITIAL:
                     {
-                        _state = State.ID;
+                        state = State.ID;
                         break;
                     }
 
                     case FLAGS:
                     {
-                        if ((_flags & 0x04) == 0x04)
+                        if ((flags & 0x04) == 0x04)
                         {
-                            _state = State.EXTRA_LENGTH;
-                            _size = 0;
-                            _value = 0;
+                            state = State.EXTRA_LENGTH;
+                            size = 0;
+                            value = 0;
                         }
-                        else if ((_flags & 0x08) == 0x08)
-                            _state = State.NAME;
-                        else if ((_flags & 0x10) == 0x10)
-                            _state = State.COMMENT;
-                        else if ((_flags & 0x2) == 0x2)
+                        else if ((flags & 0x08) == 0x08)
+                            state = State.NAME;
+                        else if ((flags & 0x10) == 0x10)
+                            state = State.COMMENT;
+                        else if ((flags & 0x2) == 0x2)
                         {
-                            _state = State.HCRC;
-                            _size = 0;
-                            _value = 0;
+                            state = State.HCRC;
+                            size = 0;
+                            value = 0;
                         }
                         else
                         {
-                            _state = State.DATA;
+                            state = State.DATA;
                             continue;
                         }
                         break;
@@ -188,13 +188,13 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                         while (true)
                         {
                             if (buffer == null)
-                                buffer = acquire(_bufferSize);
+                                buffer = acquire(bufferSize);
 
                             try
                             {
                                 ByteBuffer decoded = buffer.getByteBuffer();
                                 int pos = BufferUtil.flipToFill(decoded);
-                                _inflater.inflate(decoded);
+                                inflater.inflate(decoded);
                                 BufferUtil.flipToFlush(decoded, pos);
                             }
                             catch (DataFormatException x)
@@ -210,17 +210,17 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                                 if (stop)
                                     return;
                             }
-                            else if (_inflater.needsInput())
+                            else if (inflater.needsInput())
                             {
                                 if (!compressed.hasRemaining())
                                     return;
-                                _inflater.setInput(compressed);
+                                inflater.setInput(compressed);
                             }
-                            else if (_inflater.finished())
+                            else if (inflater.finished())
                             {
-                                _state = State.CRC;
-                                _size = 0;
-                                _value = 0;
+                                state = State.CRC;
+                                size = 0;
+                                value = 0;
                                 break;
                             }
                         }
@@ -235,17 +235,17 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                     break;
 
                 byte currByte = compressed.get();
-                switch (_state)
+                switch (state)
                 {
                     case ID:
                     {
-                        _value += (currByte & 0xFF) << 8 * _size;
-                        ++_size;
-                        if (_size == 2)
+                        value += (currByte & 0xFF) << 8 * size;
+                        ++size;
+                        if (size == 2)
                         {
-                            if (_value != 0x8B1F)
+                            if (value != 0x8B1F)
                                 throw new ZipException("Invalid gzip bytes");
-                            _state = State.CM;
+                            state = State.CM;
                         }
                         break;
                     }
@@ -253,54 +253,54 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                     {
                         if ((currByte & 0xFF) != 0x08)
                             throw new ZipException("Invalid gzip compression method");
-                        _state = State.FLG;
+                        state = State.FLG;
                         break;
                     }
                     case FLG:
                     {
-                        _flags = currByte;
-                        _state = State.MTIME;
-                        _size = 0;
-                        _value = 0;
+                        flags = currByte;
+                        state = State.MTIME;
+                        size = 0;
+                        value = 0;
                         break;
                     }
                     case MTIME:
                     {
                         // Skip the 4 MTIME bytes
-                        ++_size;
-                        if (_size == 4)
-                            _state = State.XFL;
+                        ++size;
+                        if (size == 4)
+                            state = State.XFL;
                         break;
                     }
                     case XFL:
                     {
                         // Skip XFL
-                        _state = State.OS;
+                        state = State.OS;
                         break;
                     }
                     case OS:
                     {
                         // Skip OS
-                        _state = State.FLAGS;
+                        state = State.FLAGS;
                         break;
                     }
                     case EXTRA_LENGTH:
                     {
-                        _value += (currByte & 0xFF) << 8 * _size;
-                        ++_size;
-                        if (_size == 2)
-                            _state = State.EXTRA;
+                        value += (currByte & 0xFF) << 8 * size;
+                        ++size;
+                        if (size == 2)
+                            state = State.EXTRA;
                         break;
                     }
                     case EXTRA:
                     {
                         // Skip EXTRA bytes
-                        --_value;
-                        if (_value == 0)
+                        --value;
+                        if (value == 0)
                         {
                             // Clear the EXTRA flag and loop on the flags
-                            _flags &= ~0x04;
-                            _state = State.FLAGS;
+                            flags &= ~0x04;
+                            state = State.FLAGS;
                         }
                         break;
                     }
@@ -310,8 +310,8 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                         if (currByte == 0)
                         {
                             // Clear the NAME flag and loop on the flags
-                            _flags &= ~0x08;
-                            _state = State.FLAGS;
+                            flags &= ~0x08;
+                            state = State.FLAGS;
                         }
                         break;
                     }
@@ -321,44 +321,44 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                         if (currByte == 0)
                         {
                             // Clear the COMMENT flag and loop on the flags
-                            _flags &= ~0x10;
-                            _state = State.FLAGS;
+                            flags &= ~0x10;
+                            state = State.FLAGS;
                         }
                         break;
                     }
                     case HCRC:
                     {
                         // Skip HCRC
-                        ++_size;
-                        if (_size == 2)
+                        ++size;
+                        if (size == 2)
                         {
                             // Clear the HCRC flag and loop on the flags
-                            _flags &= ~0x02;
-                            _state = State.FLAGS;
+                            flags &= ~0x02;
+                            state = State.FLAGS;
                         }
                         break;
                     }
                     case CRC:
                     {
-                        _value += (currByte & 0xFF) << 8 * _size;
-                        ++_size;
-                        if (_size == 4)
+                        value += (currByte & 0xFF) << 8 * size;
+                        ++size;
+                        if (size == 4)
                         {
                             // From RFC 1952, compliant decoders need not to verify the CRC
-                            _state = State.ISIZE;
-                            _size = 0;
-                            _value = 0;
+                            state = State.ISIZE;
+                            size = 0;
+                            value = 0;
                         }
                         break;
                     }
                     case ISIZE:
                     {
-                        _value = _value | ((currByte & 0xFFL) << (8 * _size));
-                        ++_size;
-                        if (_size == 4)
+                        value = value | ((currByte & 0xFFL) << (8 * size));
+                        ++size;
+                        if (size == 4)
                         {
                             // RFC 1952: Section 2.3.1; ISIZE is the input size modulo 2^32
-                            if (_value != (_inflater.getBytesWritten() & UINT_MAX))
+                            if (value != (inflater.getBytesWritten() & UINT_MAX))
                                 throw new ZipException("Invalid input size");
 
                             reset();
@@ -401,9 +401,9 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     {
         // Retain the chunk because it is stored for later use.
         chunk.retain();
-        if (_inflated != null)
-            _inflateds.add(_inflated);
-        _inflated = chunk;
+        if (inflated != null)
+            inflateds.add(inflated);
+        inflated = chunk;
         return false;
     }
 
@@ -416,15 +416,15 @@ class GzipDecoder implements Compression.Decoder, Destroyable
         // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
         if (capacity == 0)
             return RetainableByteBuffer.EMPTY;
-        return _pool.acquire(capacity, false);
+        return pool.acquire(capacity, false);
     }
 
     private void reset()
     {
-        _inflater.reset();
-        _state = State.INITIAL;
-        _size = 0;
-        _value = 0;
-        _flags = 0;
+        inflater.reset();
+        state = State.INITIAL;
+        size = 0;
+        value = 0;
+        flags = 0;
     }
 }
