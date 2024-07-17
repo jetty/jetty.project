@@ -92,7 +92,8 @@ public class DynamicCompressionHandler extends Handler.Wrapper
         if (next == null)
             return false;
 
-        // TODO: (both request and response covered?) Are we already being compressed?
+        // TODO: are both request decompression and response compression covered?
+        // Are we already being compressed?
         if (Request.as(request, DynamicDecompressionRequest.class) != null)
             return next.handle(request, response, callback);
 

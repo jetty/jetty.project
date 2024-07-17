@@ -219,7 +219,7 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
             if (contentLength < 0 && last)
                 contentLength = BufferUtil.length(content);
 
-            if (compression.acceptsCompression(request.getHeaders(), contentLength))
+            if (!compression.acceptsCompression(request.getHeaders(), contentLength))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exclude no deflater", this);

@@ -27,6 +27,7 @@ import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.server.DynamicCompressionHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -77,7 +78,17 @@ public class DynamicCompressionHandlerTest
     public void testDefaultConfiguration() throws Exception
     {
         DynamicCompressionHandler compressionHandler = new DynamicCompressionHandler();
-        compressionHandler.setHandler(new HelloHandler());
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, true, "Hello World", callback);
+                return true;
+            }
+        });
 
         startServer(compressionHandler);
 
@@ -104,6 +115,8 @@ public class DynamicCompressionHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
                 response.write(true, ByteBuffer.wrap(buffer), callback);
                 return true;
             }
