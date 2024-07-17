@@ -147,17 +147,9 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public void writeTo(Content.Sink sink, Callback callback)
+    public void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
     {
-        ByteBufferPool.Sized pool = sink instanceof ByteBufferPool.Holder holder ? holder.getSizedByteBufferPool() : new ByteBufferPool.Sized(null);
-        IOResources.copy(_resource, sink, pool, pool.getSize(), pool.isDirect(), callback);
-    }
-
-    @Override
-    public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
-    {
-        ByteBufferPool.Sized pool = sink instanceof ByteBufferPool.Holder holder ? holder.getSizedByteBufferPool() : new ByteBufferPool.Sized(null);
-        IOResources.copy(_resource, sink, pool, pool.getSize(), pool.isDirect(), offset, length, callback);
+        IOResources.copy(_resource, sink, bufferPool, bufferPool.getSize(), bufferPool.isDirect(), offset, length, callback);
     }
 
     @Override

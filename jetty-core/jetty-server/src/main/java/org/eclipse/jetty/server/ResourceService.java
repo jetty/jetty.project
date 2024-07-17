@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -702,7 +703,12 @@ public class ResourceService
 
     protected void writeHttpContent(Request request, Response response, Callback callback, HttpContent content)
     {
-        content.writeTo(response, callback);
+        ByteBufferPool.Sized sizedBufferPool = new ByteBufferPool.Sized(
+            request.getComponents().getByteBufferPool(),
+            request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers(),
+            request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize()
+        );
+        content.writeTo(response, sizedBufferPool, 0L, -1L, callback);
     }
 
     protected void putHeaders(Response response, HttpContent content, long contentLength)

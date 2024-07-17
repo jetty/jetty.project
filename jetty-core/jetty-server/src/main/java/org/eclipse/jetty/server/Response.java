@@ -51,21 +51,12 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>The representation of an HTTP response, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
  */
-public interface Response extends Content.Sink, ByteBufferPool.Holder
+public interface Response extends Content.Sink
 {
     /**
      * @return the {@link Request} associated with this {@code Response}
      */
     Request getRequest();
-
-    /**
-     * @return a buffer pool pre-configured with the size and directness of the buffers.
-     */
-    @Override
-    default ByteBufferPool.Sized getSizedByteBufferPool()
-    {
-        return getRequest().getComponents().getSizedByteBufferPool();
-    }
 
     /**
      * @return the response HTTP status code

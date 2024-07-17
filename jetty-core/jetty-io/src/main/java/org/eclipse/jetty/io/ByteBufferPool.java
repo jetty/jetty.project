@@ -159,14 +159,6 @@ public interface ByteBufferPool
     }
 
     /**
-     * A marker interface for classes that expose a pre-sized buffer pool.
-     */
-    interface Holder
-    {
-        ByteBufferPool.Sized getSizedByteBufferPool();
-    }
-
-    /**
      * <p>A {@link ByteBufferPool} that does not pool its
      * {@link RetainableByteBuffer}s.</p>
      * <p>The returned {@code RetainableByteBuffer}s are reference

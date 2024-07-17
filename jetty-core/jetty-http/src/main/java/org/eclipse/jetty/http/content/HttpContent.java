@@ -20,6 +20,7 @@ import java.util.Set;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
@@ -69,14 +70,9 @@ public interface HttpContent
     Resource getResource();
 
     /**
-     * <p>Write this HTTP content to a {@link Content.Sink}.</p>
-     */
-    void writeTo(Content.Sink sink, Callback callback);
-
-    /**
      * <p>Write a subset of this HTTP content, to a {@link Content.Sink}.</p>
      */
-    void writeTo(Content.Sink sink, long offset, long length, Callback callback);
+    void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback);
 
     default long getBytesOccupied()
     {
@@ -205,15 +201,9 @@ public interface HttpContent
         }
 
         @Override
-        public void writeTo(Content.Sink sink, Callback callback)
+        public void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
         {
-            _delegate.writeTo(sink, callback);
-        }
-
-        @Override
-        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
-        {
-            _delegate.writeTo(sink, offset, length, callback);
+            _delegate.writeTo(sink, bufferPool, offset, length, callback);
         }
 
         @Override

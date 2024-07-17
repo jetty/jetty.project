@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
@@ -388,15 +389,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void writeTo(Content.Sink sink, Callback callback)
+        public void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
         {
-            sink.write(false, _buffer.getByteBuffer().slice(), callback);
-        }
-
-        @Override
-        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
-        {
-            sink.write(false, _buffer.getByteBuffer().slice((int)offset, (int)length), callback);
+            sink.write(false, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), callback);
         }
 
         @Override
@@ -592,13 +587,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void writeTo(Content.Sink sink, Callback callback)
-        {
-            callback.succeeded();
-        }
-
-        @Override
-        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
+        public void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
         {
             callback.succeeded();
         }

@@ -1361,7 +1361,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
-                httpContent.writeTo(new Sink(), new Callback.Nested(callback)
+                Content.Sink sink = (last, byteBuffer, cb) ->
+                {
+                    _written += byteBuffer.remaining();
+                    channelWrite(byteBuffer, last, cb);
+                };
+                ByteBufferPool.Sized sizedBufferPool = new ByteBufferPool.Sized(_channel.getByteBufferPool(), _channel.isUseOutputDirectByteBuffers(), getBufferSize());
+                httpContent.writeTo(sink, sizedBufferPool, 0L, -1L, new Callback.Nested(callback)
                 {
                     @Override
                     public void succeeded()
@@ -1982,24 +1988,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
-        }
-    }
-
-    private class Sink implements Content.Sink, ByteBufferPool.Holder
-    {
-        private final ByteBufferPool.Sized _pool = new ByteBufferPool.Sized(_channel.getByteBufferPool(), _channel.isUseOutputDirectByteBuffers(), getBufferSize());
-
-        @Override
-        public ByteBufferPool.Sized getSizedByteBufferPool()
-        {
-            return _pool;
-        }
-
-        @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            _written += byteBuffer.remaining();
-            channelWrite(byteBuffer, last, callback);
         }
     }
 }
