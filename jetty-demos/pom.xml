@@ -7,13 +7,13 @@
     <artifactId>jetty-project</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-demos</artifactId>
   <packaging>pom</packaging>
   <name>Demos</name>
 
   <modules>
     <!-- TBD -->
+    <module>jetty-core-demos</module>
     <module>jetty-servlet4-demos</module>
     <module>jetty-servlet5-demos</module>
     <!-- module>jetty-servlet6-demos</module -->
