@@ -11,26 +11,31 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.zstd;
+package org.eclipse.jetty.compression.zstandard;
 
 import java.io.IOException;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public class ZstdDecoder implements Compression.Decoder
+public class ZStandardDecoder implements Compression.Decoder
 {
-    public ZstdDecoder(ZstdCompression zstdCompression, ByteBufferPool pool)
+    public ZStandardDecoder(ZStandardCompression ZStandardCompression, ByteBufferPool pool)
     {
 
     }
 
     @Override
-    public RetainableByteBuffer decode(Content.Chunk chunk) throws IOException
+    public Content.Chunk decode(Content.Chunk input) throws IOException
     {
         return null;
+    }
+
+    @Override
+    public boolean isFinished()
+    {
+        return false;
     }
 
     @Override

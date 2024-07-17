@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.zstd;
+package org.eclipse.jetty.compression.zstandard;
 
 import java.util.Set;
 
@@ -24,9 +24,9 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ZstdCompression extends Compression
+public class ZStandardCompression extends Compression
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ZstdCompression.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ZStandardCompression.class);
 
     private static final String ENCODING_NAME = "zstd";
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
@@ -37,10 +37,9 @@ public class ZstdCompression extends Compression
     private int bufferSize = 2048;
     private int minCompressSize = DEFAULT_MIN_ZSTD_SIZE;
 
-    public ZstdCompression()
+    public ZStandardCompression()
     {
         super(ENCODING_NAME);
-
     }
 
     public int getMinCompressSize()
@@ -97,7 +96,7 @@ public class ZstdCompression extends Compression
     @Override
     public String getName()
     {
-        return "zstd";
+        return "zstandard";
     }
 
     @Override
@@ -127,7 +126,7 @@ public class ZstdCompression extends Compression
     @Override
     public Compression.Decoder newDecoder(ByteBufferPool pool)
     {
-        return new ZstdDecoder(this, pool);
+        return new ZStandardDecoder(this, pool);
     }
 
     @Override
@@ -139,7 +138,7 @@ public class ZstdCompression extends Compression
     @Override
     public Compression.Encoder newEncoder(ByteBufferPool pool, int outputBufferSize)
     {
-        return new ZstdEncoder(this, pool, outputBufferSize);
+        return new ZStandardEncoder(this, pool, outputBufferSize);
     }
 
     @Override

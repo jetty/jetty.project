@@ -11,18 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.zstd;
+package org.eclipse.jetty.compression.zstandard;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public class ZstdEncoder implements Compression.Encoder
+public class ZStandardEncoder implements Compression.Encoder
 {
-    public ZstdEncoder(ZstdCompression zstdCompression, ByteBufferPool pool, int outputBufferSize)
+    public ZStandardEncoder(ZStandardCompression ZStandardCompression, ByteBufferPool pool, int outputBufferSize)
     {
 
     }
@@ -43,6 +44,12 @@ public class ZstdEncoder implements Compression.Encoder
     public void finishInput()
     {
 
+    }
+
+    @Override
+    public ByteOrder getByteOrder()
+    {
+        return ByteOrder.BIG_ENDIAN;
     }
 
     @Override

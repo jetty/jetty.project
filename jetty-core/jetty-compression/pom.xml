@@ -19,7 +19,7 @@
     <module>jetty-compression-server</module>
     <module>jetty-compression-gzip</module>
     <module>jetty-compression-brotli</module>
-    <module>jetty-compression-zstd</module>
+    <module>jetty-compression-zstandard</module>
     <module>jetty-compression-tests</module>
   </modules>
 
