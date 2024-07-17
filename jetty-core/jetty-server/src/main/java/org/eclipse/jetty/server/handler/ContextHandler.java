@@ -804,6 +804,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         }
     }
 
+    /** Generate a reasonable name for the temp directory because one has not be
+     * explicitly configured by the user. The directory may also be created, if
+     * it is not persistent. If it is persistent it will be created as necessary by
+     * {@link #createTempDirectory()} later during the startup of the context.
+     * @throws Exception
+     */
     protected void makeTempDirectory()
         throws Exception
     {
@@ -836,6 +842,19 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         _createdTempDirectoryName = true;
     }
 
+    /**
+     * Create a canonical name for a context temp directory.
+     * <p>
+     * The form of the name is:
+     *
+     * <pre>"jetty-"+host+"-"+port+"-"+resourceBase+"-_"+context+"-"+virtualhost+"-"+randomdigits+".dir"</pre>
+     *
+     * host and port uniquely identify the server
+     * context and virtual host uniquely identify the context
+     * randomdigits ensure every tmp directory is unique
+     *
+     * @return the canonical name for the context temp directory
+     */
     protected String getCanonicalNameForTmpDir()
     {
         StringBuilder canonicalName = new StringBuilder();
@@ -911,11 +930,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         return StringUtil.sanitizeFileSystemName(canonicalName.toString());
     }
 
+    /**
+     * @return the baseResource for the context to use in the temp dir name
+     */
     protected Resource getResourceForTempDirName()
     {
         return getBaseResource();
     }
 
+    /**
+     * @param resource the resource whose filename minus suffix to extract
+     * @return the filename of the resource without suffix
+     */
     protected static String getBaseName(Resource resource)
     {
         // Use File System and File interface if present

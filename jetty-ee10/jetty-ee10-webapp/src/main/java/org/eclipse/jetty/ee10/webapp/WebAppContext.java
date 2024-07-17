@@ -1503,6 +1503,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return super.getCanonicalNameForTmpDir();
     }
 
+    /**
+     * If the webapp has no baseresource yet, use
+     * the war to make the temp directory name.
+     *
+     * @return the baseresource if non null, or the war
+     */
     @Override
     protected Resource getResourceForTempDirName()
     {

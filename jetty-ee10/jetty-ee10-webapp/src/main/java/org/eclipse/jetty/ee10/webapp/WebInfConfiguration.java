@@ -366,7 +366,9 @@ public class WebInfConfiguration extends AbstractConfiguration
      *
      * @param context the context to get the canonical name from
      * @return the canonical name for the webapp temp directory
+     * @deprecated this method is no longer used
      */
+    @Deprecated(forRemoval = true, since = "12.0.12")
     public static String getCanonicalNameForWebAppTmpDir(WebAppContext context)
     {
        return context.getCanonicalNameForTmpDir();
