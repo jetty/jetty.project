@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,6 +36,7 @@ public class GzipCompression extends Compression
     public static final int BREAK_EVEN_GZIP_SIZE = 23;
 
     private static final String ENCODING_NAME = "gzip";
+    public static final CompressedContentFormat GZIP = new CompressedContentFormat(ENCODING_NAME, ".gz");
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
 

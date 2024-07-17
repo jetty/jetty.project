@@ -114,6 +114,16 @@ public abstract class Compression extends ContainerLifeCycle
     }
 
     /**
+     * Get the ETag suffix.
+     *
+     * @return the etag suffix for this compression.
+     */
+    public String getEtagSuffix()
+    {
+        return etagSuffix;
+    }
+
+    /**
      * The filename extensions for this compression implementation.
      *
      * <p>
@@ -198,7 +208,21 @@ public abstract class Compression extends ContainerLifeCycle
     {
         void cleanup(); // TODO: consider AutoCloseable instead
 
-        RetainableByteBuffer decode(Content.Chunk chunk) throws IOException;
+        /**
+         * Decode the input chunk, returning the decoded chunk.
+         *
+         * @param input the input chunk, can be fully consumed.
+         * @return the output chunk (never null)
+         * @throws IOException if unable to decode chunk.
+         */
+        RetainableByteBuffer decode(Content.Chunk input) throws IOException;
+
+        /**
+         * The decoder has finished.
+         *
+         * @return true if decoder is finished (usually means the decoder reached the trailer bytes)
+         */
+        boolean isFinished();
     }
 
     /**

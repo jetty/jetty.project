@@ -70,6 +70,8 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     {
         decodeChunks(chunk.getByteBuffer());
         RetainableByteBuffer decoded = _inflated;
+        if (_inflated == null && chunk.isLast())
+            return RetainableByteBuffer.EMPTY;
         _inflated = null;
         return decoded;
     }
