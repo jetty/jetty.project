@@ -96,8 +96,7 @@ public interface HttpContent
         HttpContent getContent(String path) throws IOException;
     }
 
-    // TODO add a writeTo semantic, then update IOResources to use a RBB.Dynamic
-    //  ha ha!  ^^^^^^^^^ (that line above was witten by Greg :-)
+    // TODO update IOResources to use a RBB.Dynamic
 
     /**
      * HttpContent Wrapper.
