@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -682,8 +683,8 @@ public class ResourceService
             response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
 
-            // TODO use a buffer pool
-            IOResources.copy(content.getResource(), response, null, 0, false, range.first(), range.getLength(), callback);
+            ByteBufferPool.Sized sizedBufferPool = request.getComponents().getOutputByteBufferPool();
+            IOResources.copy(content.getResource(), response, sizedBufferPool, sizedBufferPool.getSize(), sizedBufferPool.isDirect(), range.first(), range.getLength(), callback);
             return;
         }
 
@@ -692,7 +693,7 @@ public class ResourceService
         String contentType = "multipart/byteranges; boundary=";
         String boundary = MultiPart.generateBoundary(null, 24);
         MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
-        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource(), range, contentLength, request.getComponents().getByteBufferPool())));
+        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource(), range, contentLength, request.getComponents().getOutputByteBufferPool())));
         byteRanges.close();
         long partsContentLength = byteRanges.getLength();
         putHeaders(response, content, partsContentLength);
@@ -711,12 +712,8 @@ public class ResourceService
             }
             else
             {
-                IOResources.copy(
-                    content.getResource(),
-                    response, request.getComponents().getByteBufferPool(),
-                    request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize(),
-                    request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers(),
-                    callback);
+                ByteBufferPool.Sized sizedBufferPool = request.getComponents().getOutputByteBufferPool();
+                IOResources.copy(content.getResource(), response, sizedBufferPool, sizedBufferPool.getSize(), sizedBufferPool.isDirect(), callback);
             }
         }
         catch (Throwable x)

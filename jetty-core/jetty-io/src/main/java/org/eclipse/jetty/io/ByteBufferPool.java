@@ -166,6 +166,15 @@ public interface ByteBufferPool
         {
             return getWrapped().acquire(size < 0 ? _size : size, _direct);
         }
+
+        /**
+         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured type.
+         * @param direct true for a direct byte buffer, false otherwise
+         */
+        public RetainableByteBuffer.Mutable acquire(boolean direct)
+        {
+            return getWrapped().acquire(_size, direct);
+        }
     }
 
     /**

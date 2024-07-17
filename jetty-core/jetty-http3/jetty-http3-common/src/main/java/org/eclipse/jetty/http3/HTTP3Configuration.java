@@ -187,7 +187,7 @@ public class HTTP3Configuration
 
     /**
      * <p>Sets max request headers size.</p>
-     * <p>The default value is ByteBuf bytes.</p>
+     * <p>The default value is {@link IO#DEFAULT_BUFFER_SIZE} bytes.</p>
      * <p>This value is configured in the server-side QPACK decoder, and
      * then communicated to the client-side QPACK encoder via the SETTINGS
      * frame.</p>

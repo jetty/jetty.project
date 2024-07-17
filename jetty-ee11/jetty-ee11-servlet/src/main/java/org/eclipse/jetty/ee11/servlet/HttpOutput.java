@@ -597,7 +597,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private RetainableByteBuffer acquireBuffer()
     {
         if (_aggregate == null)
-            _aggregate = _servletChannel.getRequest().getComponents().getOutputByteBufferPool().acquire(getBufferSize());
+            _aggregate = _servletChannel.getRequest().getComponents().getOutputByteBufferPool().acquire();
         return _aggregate;
     }
 
@@ -1022,7 +1022,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             encoder.onMalformedInput(CodingErrorAction.REPLACE);
             encoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
         }
-        ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
+        ByteBufferPool.Sized pool = _servletChannel.getRequest().getComponents().getOutputByteBufferPool();
         RetainableByteBuffer out = pool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         try
         {
@@ -1059,7 +1059,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (result.isOverflow())
                 {
                     BufferUtil.flipToFlush(byteBuffer, 0);
-                    RetainableByteBuffer bigger = pool.acquire(out.capacity() + s.length() + 2, out.isDirect());
+                    RetainableByteBuffer bigger = pool.acquire(out.capacity() + s.length() + 2, false);
                     BufferUtil.flipToFill(bigger.getByteBuffer());
                     bigger.getByteBuffer().put(byteBuffer);
                     out.release();
@@ -1073,6 +1073,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
 
             BufferUtil.flipToFlush(byteBuffer, 0);
+            // TODO if write(ByteBuffer) did not bypass the aggregation buffer, direct byte buffers could be used
             write(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.remaining());
         }
         finally
@@ -1618,8 +1619,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             super(callback, true);
             _in = in;
             // Reading from InputStream requires byte[], don't use direct buffers.
-            ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
-            _buffer = pool.acquire(getBufferSize(), false);
+            ByteBufferPool.Sized pool = _servletChannel.getRequest().getComponents().getOutputByteBufferPool();
+            _buffer = pool.acquire(false);
         }
 
         @Override
@@ -1694,9 +1695,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             super(callback, true);
             _in = in;
-            boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-            ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
-            _buffer = pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
+            ByteBufferPool.Sized pool = _servletChannel.getRequest().getComponents().getOutputByteBufferPool();
+            _buffer = pool.acquire();
         }
 
         @Override

@@ -23,8 +23,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public interface Components
 {
-    ByteBufferPool getByteBufferPool();
-
     ByteBufferPool.Sized getInputByteBufferPool();
 
     ByteBufferPool.Sized getOutputByteBufferPool();

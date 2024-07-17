@@ -221,12 +221,6 @@ public class HttpChannelState implements HttpChannel, Components
     }
 
     @Override
-    public ByteBufferPool getByteBufferPool()
-    {
-        return getConnectionMetaData().getConnector().getByteBufferPool();
-    }
-
-    @Override
     public ByteBufferPool.Sized getInputByteBufferPool()
     {
         return _inputByteBufferPool.updateAndGet(this::checkInputPool);
@@ -234,24 +228,26 @@ public class HttpChannelState implements HttpChannel, Components
 
     protected ByteBufferPool.Sized checkInputPool(ByteBufferPool.Sized sized)
     {
-        if (sized != null)
+        int inputBufferSize = _connectionMetaData.getConnection() instanceof AbstractConnection abstractConnection ? abstractConnection.getInputBufferSize() : -1;
+        boolean useInputDirectByteBuffers = getHttpConfiguration().isUseInputDirectByteBuffers();
+        if (sized != null && sized.getSize() == inputBufferSize && sized.isDirect() == useInputDirectByteBuffers)
             return sized;
-        return new ByteBufferPool.Sized(
-            _connectionMetaData.getConnector().getByteBufferPool(),
-            getHttpConfiguration().isUseInputDirectByteBuffers(),
-            _connectionMetaData.getConnection() instanceof AbstractConnection abstractConnection ? abstractConnection.getInputBufferSize() : -1);
+        return new ByteBufferPool.Sized(_connectionMetaData.getConnector().getByteBufferPool(), useInputDirectByteBuffers, inputBufferSize);
     }
 
     @Override
     public ByteBufferPool.Sized getOutputByteBufferPool()
     {
-        return _inputByteBufferPool.updateAndGet(this::checkOutputPool);
+        return _outputByteBufferPool.updateAndGet(this::checkOutputPool);
     }
 
     protected ByteBufferPool.Sized checkOutputPool(ByteBufferPool.Sized sized)
     {
-        return sized == null ? new ByteBufferPool.Sized(_connectionMetaData.getConnector().getByteBufferPool(),
-            getHttpConfiguration().isUseOutputDirectByteBuffers(), getHttpConfiguration().getOutputBufferSize()) : sized;
+        int outputBufferSize = getHttpConfiguration().getOutputBufferSize();
+        boolean useOutputDirectByteBuffers = getHttpConfiguration().isUseOutputDirectByteBuffers();
+        if (sized != null && sized.getSize() == outputBufferSize && sized.isDirect() == useOutputDirectByteBuffers)
+            return sized;
+        return new ByteBufferPool.Sized(_connectionMetaData.getConnector().getByteBufferPool(), useOutputDirectByteBuffers, outputBufferSize);
     }
 
     @Override

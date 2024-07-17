@@ -222,7 +222,7 @@ public class MultiPartByteRanges
     {
         private final Resource resource;
         private final ByteRange byteRange;
-        private final ByteBufferPool bufferPool;
+        private final ByteBufferPool.Sized bufferPool;
 
         public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength)
         {
@@ -230,7 +230,7 @@ public class MultiPartByteRanges
                 .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, null);
         }
 
-        public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength, ByteBufferPool bufferPool)
+        public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength, ByteBufferPool.Sized bufferPool)
         {
             this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
                 .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, bufferPool);
@@ -241,18 +241,18 @@ public class MultiPartByteRanges
             this(headers, resource, byteRange, null);
         }
 
-        public Part(HttpFields headers, Resource resource, ByteRange byteRange, ByteBufferPool bufferPool)
+        public Part(HttpFields headers, Resource resource, ByteRange byteRange, ByteBufferPool.Sized bufferPool)
         {
             super(null, null, headers);
             this.resource = resource;
             this.byteRange = byteRange;
-            this.bufferPool = bufferPool == null ? ByteBufferPool.NON_POOLING : bufferPool;
+            this.bufferPool = bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool;
         }
 
         @Override
         public Content.Source newContentSource()
         {
-            return IOResources.asContentSource(resource, bufferPool, 0, false, byteRange.first(), byteRange.getLength());
+            return IOResources.asContentSource(resource, bufferPool, bufferPool.getSize(), bufferPool.isDirect(), byteRange.first(), byteRange.getLength());
         }
     }
 

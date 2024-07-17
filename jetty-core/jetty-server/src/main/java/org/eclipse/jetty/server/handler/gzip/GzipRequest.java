@@ -49,7 +49,7 @@ public class GzipRequest extends Request.Wrapper
         if (inflateBufferSize > 0)
         {
             Components components = getComponents();
-            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), inflateBufferSize);
+            _decoder = new Decoder(__inflaterPool, components.getInputByteBufferPool(), inflateBufferSize);
             _gzipTransformer = new GzipTransformer(getWrapped(), _decoder);
         }
     }

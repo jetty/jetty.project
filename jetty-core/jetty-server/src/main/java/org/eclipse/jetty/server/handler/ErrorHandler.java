@@ -198,10 +198,8 @@ public class ErrorHandler implements Request.Handler
                 return false;
         }
 
-        int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        bufferSize = Math.min(8192, bufferSize); // TODO ?
-        ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
-        RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
+        ByteBufferPool.Sized byteBufferPool = request.getComponents().getOutputByteBufferPool();
+        RetainableByteBuffer buffer = byteBufferPool.acquire();
 
         try
         {
@@ -238,9 +236,9 @@ public class ErrorHandler implements Request.Handler
                         continue;
                     }
                     if (LOG.isDebugEnabled())
-                        LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request, e);
+                        LOG.warn("Error page too large: >{} {} {} {}", byteBufferPool.getSize(), code, message, request, e);
                     else
-                        LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request);
+                        LOG.warn("Error page too large: >{} {} {} {}", byteBufferPool.getSize(), code, message, request);
 
                     break;
                 }
