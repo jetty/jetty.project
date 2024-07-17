@@ -664,11 +664,11 @@ public class BufferUtil
 
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
-        ByteBuffer tmp = allocate(8192);
+        ByteBuffer tmp = allocate(IO.DEFAULT_BUFFER_SIZE);
 
         while (needed > 0 && buffer.hasRemaining())
         {
-            int l = is.read(tmp.array(), 0, 8192);
+            int l = is.read(tmp.array(), 0, IO.DEFAULT_BUFFER_SIZE);
             if (l < 0)
                 break;
             tmp.position(0);
@@ -688,7 +688,7 @@ public class BufferUtil
         else
         {
             int totalRead = 0;
-            ByteBuffer tmp = allocate(8192);
+            ByteBuffer tmp = allocate(IO.DEFAULT_BUFFER_SIZE);
             while (BufferUtil.space(tmp) > 0 && BufferUtil.space(buffer) > 0)
             {
                 int read = is.read(tmp.array(), 0, Math.min(BufferUtil.space(tmp), BufferUtil.space(buffer)));

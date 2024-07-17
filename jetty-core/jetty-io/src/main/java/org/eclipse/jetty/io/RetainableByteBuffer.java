@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1439,7 +1440,7 @@ public interface RetainableByteBuffer extends Retainable
          */
         public DynamicCapacity(ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
         {
-            this(null, new ByteBufferPool.Sized(pool, direct, maxSize > 0 && maxSize < 8192L ? (int)maxSize : aggregationSize), maxSize, minRetainSize);
+            this(null, new ByteBufferPool.Sized(pool, direct, maxSize > 0 && maxSize < IO.DEFAULT_BUFFER_SIZE ? (int)maxSize : aggregationSize), maxSize, minRetainSize);
         }
 
         private DynamicCapacity(List<RetainableByteBuffer> buffers, ByteBufferPool.Sized pool, long maxSize, int minRetainSize)
@@ -1500,7 +1501,7 @@ public interface RetainableByteBuffer extends Retainable
                         throw new BufferOverflowException();
 
                     int length = (int)size;
-                    RetainableByteBuffer combined = _pool.acquire(length, _pool.isDirect());
+                    RetainableByteBuffer combined = _pool.acquire(length);
                     ByteBuffer byteBuffer = combined.getByteBuffer();
                     BufferUtil.flipToFill(byteBuffer);
                     for (RetainableByteBuffer buffer : _buffers)
@@ -2007,7 +2008,7 @@ public interface RetainableByteBuffer extends Retainable
                 aggregateSize = Math.max(length, aggregateSize);
                 if (aggregateSize > space)
                     aggregateSize = (int)space;
-                _aggregate = _pool.acquire(aggregateSize, _pool.isDirect()).asMutable();
+                _aggregate = _pool.acquire(aggregateSize, _pool.isDirect());
                 checkAggregateLimit(space);
                 _buffers.add(_aggregate);
             }

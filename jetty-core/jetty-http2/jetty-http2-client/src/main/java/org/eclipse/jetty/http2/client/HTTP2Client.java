@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -102,7 +103,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class HTTP2Client extends ContainerLifeCycle
 {
     private final ClientConnector connector;
-    private int inputBufferSize = 8192;
+    private int inputBufferSize = IO.DEFAULT_BUFFER_SIZE;
     private List<String> protocols = List.of("h2");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
     private int initialStreamRecvWindow = 8 * 1024 * 1024;
