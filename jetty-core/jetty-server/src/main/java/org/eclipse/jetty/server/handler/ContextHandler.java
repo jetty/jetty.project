@@ -252,6 +252,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             }
         }
         _tempDirectory = tempDirectory;
+         _createdTempDirectoryName = false;
     }
 
     /**
