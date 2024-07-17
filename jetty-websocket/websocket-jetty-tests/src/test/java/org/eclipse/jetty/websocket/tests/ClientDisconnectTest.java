@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
 import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool.LogarithmicRetainablePool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -65,7 +64,6 @@ public class ClientDisconnectTest
     {
         _client = new WebSocketClient();
         _server = new Server();
-        _server.addBean(new LogarithmicArrayByteBufferPool(-1, -1, -1, 0, 0, 0,0));
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
