@@ -103,7 +103,6 @@ public class HttpChannelState implements HttpChannel, Components
     private final AutoLock _lock = new AutoLock();
     private final HandlerInvoker _handlerInvoker = new HandlerInvoker();
     private final ConnectionMetaData _connectionMetaData;
-    private final ByteBufferPool.Sized _sizedBufferPool;
     private final SerializedInvoker _readInvoker;
     private final SerializedInvoker _writeInvoker;
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
@@ -128,10 +127,6 @@ public class HttpChannelState implements HttpChannel, Components
     public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
         _connectionMetaData = connectionMetaData;
-        _sizedBufferPool = new ByteBufferPool.Sized(connectionMetaData.getConnector().getByteBufferPool(),
-            connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers(),
-            connectionMetaData.getHttpConfiguration().getOutputBufferSize()
-        );
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
         _readInvoker = new HttpChannelSerializedInvoker();
         _writeInvoker = new HttpChannelSerializedInvoker();
@@ -225,12 +220,6 @@ public class HttpChannelState implements HttpChannel, Components
     public ByteBufferPool getByteBufferPool()
     {
         return getConnectionMetaData().getConnector().getByteBufferPool();
-    }
-
-    @Override
-    public ByteBufferPool.Sized getSizedByteBufferPool()
-    {
-        return _sizedBufferPool;
     }
 
     @Override

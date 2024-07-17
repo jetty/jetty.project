@@ -23,10 +23,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public interface Components
 {
-    // TODO remove?
     ByteBufferPool getByteBufferPool();
-
-    ByteBufferPool.Sized getSizedByteBufferPool();
 
     Scheduler getScheduler();
 
