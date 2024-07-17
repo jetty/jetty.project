@@ -349,27 +349,21 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
     {
         public Tracking()
         {
-            // Do not call super as we want to change the default value of retainedHeapMemory and retainedDirectMemory.
-            this(-1, -1, -1, -1, 0, 0);
         }
 
         public Tracking(int minCapacity, int factor, int maxCapacity)
         {
-            // Do not call super as we want to change the default value of retainedHeapMemory and retainedDirectMemory.
-            this(minCapacity, factor, maxCapacity, -1, 0, 0);
+            super(minCapacity, factor, maxCapacity);
         }
 
         public Tracking(int minCapacity, int factor, int maxCapacity, int maxQueueLength)
         {
-            // Do not call super as we want to change the default value of retainedHeapMemory and retainedDirectMemory.
-            this(minCapacity, factor, maxCapacity, maxQueueLength, 0, 0);
+            super(minCapacity, factor, maxCapacity, maxQueueLength);
         }
 
         public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
-            // Set retainedHeapMemory and retainedDirectMemory to the same values as maxHeapMemory and maxDirectMemory respectively
-            // to default to a retaining pool.
-            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, maxHeapMemory, maxDirectMemory);
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
         }
 
         public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
