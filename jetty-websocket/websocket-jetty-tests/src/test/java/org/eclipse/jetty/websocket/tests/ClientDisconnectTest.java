@@ -65,7 +65,7 @@ public class ClientDisconnectTest
     {
         _client = new WebSocketClient();
         _server = new Server();
-        _server.addBean(new LogarithmicArrayByteBufferPool(-1, -1, -1, 0, 0, 0, 0));
+        _server.addBean(new LogarithmicArrayByteBufferPool(-1, -1, -1, 0, 0, 0,0));
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
