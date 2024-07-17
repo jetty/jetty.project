@@ -48,6 +48,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
@@ -875,7 +876,25 @@ public class ResourceService
     {
         try (Blocker.Callback blocker = Blocker.callback())
         {
-            content.writeTo(Content.Sink.from(out), bufferPool, start, contentLength, blocker);
+            // Do not use Content.Sink.from(out) as HttpContent.writeTo() may write a last Chunk
+            // which would then be converted to OutputStream.close(), and we do not want to
+            // close the OutputStream here;
+            // this happens because Content.copy() and IOResources.copy() assume that when they
+            // read a last Chunk from a Content.Source, it should be written as a last Chunk
+            // to the Content.Sink.
+            Content.Sink sink = (last, byteBuffer, callback) ->
+            {
+                try
+                {
+                    BufferUtil.writeTo(byteBuffer, out);
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
+            };
+            content.writeTo(sink, bufferPool, start, contentLength, blocker);
             blocker.block();
         }
     }
