@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -257,7 +258,7 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent(); )
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, false, 8192, 8192);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, false, IO.DEFAULT_BUFFER_SIZE, IO.DEFAULT_BUFFER_SIZE);
 
             Callback.Completable callback = new Callback.Completable();
             buffered.write(false, BufferUtil.toBuffer("Hello "), callback);
@@ -485,7 +486,7 @@ public class BufferedContentSinkTest
         try (AsyncContent async = new AsyncContent())
         {
             BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096, 4096);
-            AtomicInteger count = new AtomicInteger(8192);
+            AtomicInteger count = new AtomicInteger(IO.DEFAULT_BUFFER_SIZE);
             CountDownLatch complete = new CountDownLatch(1);
             Callback callback = new Callback()
             {
@@ -571,7 +572,7 @@ public class BufferedContentSinkTest
         try (AsyncContent async = new AsyncContent())
         {
             BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1, 4096);
-            AtomicInteger count = new AtomicInteger(8192);
+            AtomicInteger count = new AtomicInteger(IO.DEFAULT_BUFFER_SIZE);
             CountDownLatch complete = new CountDownLatch(1);
             Callback callback = new Callback()
             {

@@ -641,7 +641,7 @@ public class BufferUtil
 
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
-        ByteBuffer tmp = allocate(8192);
+        ByteBuffer tmp = allocate(IO.DEFAULT_BUFFER_SIZE);
 
         while (needed > 0 && buffer.hasRemaining())
         {

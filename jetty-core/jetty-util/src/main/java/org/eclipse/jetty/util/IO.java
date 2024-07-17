@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
  */
 public class IO
 {
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
     private static final Logger LOG = LoggerFactory.getLogger(IO.class);
 
     public static final String

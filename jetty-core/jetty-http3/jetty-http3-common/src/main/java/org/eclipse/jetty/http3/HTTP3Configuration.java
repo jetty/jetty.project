@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -186,7 +187,7 @@ public class HTTP3Configuration
 
     /**
      * <p>Sets max request headers size.</p>
-     * <p>The default value is {@code 8192} bytes.</p>
+     * <p>The default value is ByteBuf bytes.</p>
      * <p>This value is configured in the server-side QPACK decoder, and
      * then communicated to the client-side QPACK encoder via the SETTINGS
      * frame.</p>
@@ -208,7 +209,7 @@ public class HTTP3Configuration
 
     /**
      * <p>Sets max response headers size.</p>
-     * <p>The default value is {@code 8192} bytes.</p>
+     * <p>The default value is {@link IO#DEFAULT_BUFFER_SIZE} bytes.</p>
      * <p>This value is configured in the client-side QPACK decoder, and
      * then communicated to the server-side QPACK encoder via the SETTINGS
      * frame.</p>

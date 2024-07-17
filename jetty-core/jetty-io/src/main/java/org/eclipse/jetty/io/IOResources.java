@@ -99,7 +99,7 @@ public class IOResources
             while (true)
             {
                 if (buffer == null)
-                    buffer = bufferPool.acquire(8192, false);
+                    buffer = bufferPool.acquire(IO.DEFAULT_BUFFER_SIZE, false);
                 int read = inputStream.read(buffer.getByteBuffer().array());
                 if (read == -1)
                     break;
