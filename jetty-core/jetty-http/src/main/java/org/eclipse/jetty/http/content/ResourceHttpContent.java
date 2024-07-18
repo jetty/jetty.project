@@ -42,13 +42,15 @@ public class ResourceHttpContent implements HttpContent
     final Path _path;
     final String _contentType;
     final HttpField _etag;
+    final ByteBufferPool.Sized _sizedBufferPool;
 
-    public ResourceHttpContent(final Resource resource, final String contentType)
+    public ResourceHttpContent(Resource resource, String contentType, ByteBufferPool.Sized sizedByteBufferPool)
     {
         _resource = resource;
         _path = resource.getPath();
         _contentType = contentType;
         _etag = EtagUtils.createWeakEtagField(resource);
+        _sizedBufferPool = sizedByteBufferPool;
     }
 
     @Override
@@ -147,9 +149,9 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
+    public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
     {
-        IOResources.copy(_resource, sink, bufferPool, bufferPool.getSize(), bufferPool.isDirect(), offset, length, callback);
+        IOResources.copy(_resource, sink, _sizedBufferPool, _sizedBufferPool.getSize(), _sizedBufferPool.isDirect(), offset, length, callback);
     }
 
     @Override

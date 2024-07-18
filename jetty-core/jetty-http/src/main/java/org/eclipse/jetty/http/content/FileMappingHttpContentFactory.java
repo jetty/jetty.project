@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -84,7 +83,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
             ByteBuffer buffer = _buffer;
             if (buffer != null)

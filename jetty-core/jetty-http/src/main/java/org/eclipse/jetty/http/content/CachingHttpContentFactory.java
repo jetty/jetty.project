@@ -389,7 +389,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
             sink.write(false, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), callback);
         }
@@ -587,7 +587,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public void writeTo(Content.Sink sink, ByteBufferPool.Sized bufferPool, long offset, long length, Callback callback)
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
             callback.succeeded();
         }

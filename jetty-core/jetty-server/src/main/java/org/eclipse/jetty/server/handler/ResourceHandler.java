@@ -56,7 +56,9 @@ public class ResourceHandler extends Handler.Wrapper
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
     private final ResourceService _resourceService = newResourceService();
-    private ByteBufferPool _byteBufferPool;
+    private ByteBufferPool.Sized _byteBufferPool;
+    private int _byteBufferSize = 32768;
+    private boolean _useDirectByteBuffers = true;
     private Resource _baseResource;
     private Resource _styleSheet;
     private MimeTypes _mimeTypes;
@@ -99,7 +101,7 @@ public class ResourceHandler extends Handler.Wrapper
 
         setMimeTypes(context == null ? MimeTypes.DEFAULTS : context.getMimeTypes());
 
-        _byteBufferPool = getByteBufferPool(context);
+        _byteBufferPool = new ByteBufferPool.Sized(getByteBufferPool(context), _useDirectByteBuffers, _byteBufferSize);
         ResourceService resourceService = getResourceService();
         resourceService.setHttpContentFactory(newHttpContentFactory());
         resourceService.setWelcomeFactory(setupWelcomeFactory());
@@ -126,10 +128,10 @@ public class ResourceHandler extends Handler.Wrapper
 
     protected HttpContent.Factory newHttpContentFactory()
     {
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), _byteBufferPool);
         if (isUseFileMapping())
             contentFactory = new FileMappingHttpContentFactory(contentFactory);
-        contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
+        contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", _byteBufferPool);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getByteBufferPool());
         return contentFactory;
@@ -174,6 +176,11 @@ public class ResourceHandler extends Handler.Wrapper
         return true;
     }
 
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _byteBufferPool;
+    }
+
     /**
      * @return Returns the resourceBase.
      */
@@ -182,9 +189,20 @@ public class ResourceHandler extends Handler.Wrapper
         return _baseResource;
     }
 
-    public ByteBufferPool getByteBufferPool()
+    /**
+     * @return The size of the byte buffers used to serve static resources.
+     */
+    public int getByteBufferSize()
     {
-        return _byteBufferPool;
+        return _byteBufferSize;
+    }
+
+    /**
+     * @return whether to use direct byte buffers to serve static resources.
+     */
+    public boolean isUseDirectByteBuffers()
+    {
+        return _useDirectByteBuffers;
     }
 
     /**
@@ -292,6 +310,22 @@ public class ResourceHandler extends Handler.Wrapper
     public void setBaseResourceAsString(String base)
     {
         setBaseResource(base == null ? null : ResourceFactory.of(this).newResource(base));
+    }
+
+    /**
+     * @param byteBufferSize The size of the byte buffers used to serve static resources.
+     */
+    public void setByteBufferSize(int byteBufferSize)
+    {
+        _byteBufferSize = byteBufferSize;
+    }
+
+    /**
+     * @param useDirectByteBuffers whether to use direct byte buffers to serve static resources.
+     */
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    {
+        _useDirectByteBuffers = useDirectByteBuffers;
     }
 
     /**

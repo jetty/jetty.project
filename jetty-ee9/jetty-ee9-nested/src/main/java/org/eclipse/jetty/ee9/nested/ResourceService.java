@@ -43,7 +43,6 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
@@ -705,30 +704,20 @@ public class ResourceService
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("sendData content=%s out=%s async=%b", content, out, request.isAsyncSupported()));
 
-        ByteBufferPool.Sized bufferPool = null;
-        if (request instanceof Request jettyRequest)
-        {
-            bufferPool = new ByteBufferPool.Sized(
-                jettyRequest.getCoreRequest().getComponents().getByteBufferPool(),
-                jettyRequest.getCoreRequest().getHttpChannel().isUseOutputDirectByteBuffers(),
-                jettyRequest.getCoreRequest().getHttpChannel().getHttpConfiguration().getOutputBufferSize()
-            );
-        }
-
         if (reqRanges == null || !reqRanges.hasMoreElements() || content_length < 0)
         {
             //  if there were no ranges, send entire entity
             if (include)
             {
                 // write without headers
-                writeContent(content, out, bufferPool, 0, content_length);
+                writeContent(content, out, 0, content_length);
             }
             // else if we can't do a bypass write because of wrapping
             else if (written)
             {
                 // write normally
                 putHeaders(response, content, Response.NO_CONTENT_LENGTH);
-                writeContent(content, out, bufferPool, 0, content_length);
+                writeContent(content, out, 0, content_length);
             }
             // else do a bypass write
             else
@@ -808,7 +797,7 @@ public class ResourceService
                     response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     singleSatisfiableRange.toHeaderRangeString(content_length));
-                writeContent(content, out, bufferPool, singleSatisfiableRange.getFirst(), singleLength);
+                writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
                 return true;
             }
 
@@ -863,7 +852,7 @@ public class ResourceService
             for (InclusiveByteRange ibr : ranges)
             {
                 multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
-                writeContent(content, multi, bufferPool, ibr.getFirst(), ibr.getSize());
+                writeContent(content, multi, ibr.getFirst(), ibr.getSize());
                 i++;
             }
 
@@ -872,7 +861,7 @@ public class ResourceService
         return true;
     }
 
-    private static void writeContent(HttpContent content, OutputStream out, ByteBufferPool.Sized bufferPool, long start, long contentLength) throws IOException
+    private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
     {
         try (Blocker.Callback blocker = Blocker.callback())
         {
@@ -894,7 +883,7 @@ public class ResourceService
                     callback.failed(x);
                 }
             };
-            content.writeTo(sink, bufferPool, start, contentLength, blocker);
+            content.writeTo(sink, start, contentLength, blocker);
             blocker.block();
         }
     }
