@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.server.Handler;
@@ -103,7 +104,7 @@ public class ResourceHandlerByteRangesTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain");
+                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
             }
         });
 
@@ -135,7 +136,7 @@ public class ResourceHandlerByteRangesTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain");
+                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
             }
         });
 
@@ -169,7 +170,7 @@ public class ResourceHandlerByteRangesTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain");
+                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
             }
         });
 
@@ -201,7 +202,7 @@ public class ResourceHandlerByteRangesTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain");
+                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
             }
         });
 
@@ -235,7 +236,7 @@ public class ResourceHandlerByteRangesTest
             @Override
             protected HttpContent.Factory newHttpContentFactory()
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain");
+                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
             }
 
             @Override

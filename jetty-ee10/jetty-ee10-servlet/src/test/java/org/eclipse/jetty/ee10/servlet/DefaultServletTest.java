@@ -52,6 +52,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -3505,7 +3506,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3526,7 +3527,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3547,7 +3548,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3571,7 +3572,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3595,7 +3596,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
         defaultServlet.getResourceService().setAcceptRanges(false);
 
         String rawResponse = connector.getResponse("""

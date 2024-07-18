@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -103,7 +104,7 @@ public class TryPathsHandlerTest
             protected HttpContent.Factory newHttpContentFactory()
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), ByteBufferPool.SIZED_NON_POOLING);
             }
         };
 
@@ -174,7 +175,7 @@ public class TryPathsHandlerTest
             protected HttpContent.Factory newHttpContentFactory()
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), ByteBufferPool.SIZED_NON_POOLING);
             }
         };
         resourceHandler.setDirAllowed(false);
@@ -302,7 +303,7 @@ public class TryPathsHandlerTest
             protected HttpContent.Factory newHttpContentFactory()
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), ByteBufferPool.SIZED_NON_POOLING);
             }
         };
         resourceHandler.setDirAllowed(false);
