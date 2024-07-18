@@ -339,4 +339,42 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
             ArrayByteBufferPool.this.release(retainedBuffer.getBuffer());
         }
     }
+
+    /**
+     * <p>A variant of {@link ArrayByteBufferPool} that tracks buffer
+     * acquires/releases of the retained buffers, useful to identify buffer leaks.</p>
+     * @see ArrayRetainableByteBufferPool.Tracking
+     */
+    public static class Tracking extends ArrayByteBufferPool
+    {
+        public Tracking()
+        {
+        }
+
+        public Tracking(int minCapacity, int factor, int maxCapacity)
+        {
+            super(minCapacity, factor, maxCapacity);
+        }
+
+        public Tracking(int minCapacity, int factor, int maxCapacity, int maxQueueLength)
+        {
+            super(minCapacity, factor, maxCapacity, maxQueueLength);
+        }
+
+        public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
+        }
+
+        public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, long retainedHeapMemory, long retainedDirectMemory)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, retainedHeapMemory, retainedDirectMemory);
+        }
+
+        @Override
+        protected RetainableByteBufferPool newRetainableByteBufferPool(int factor, int maxCapacity, int maxBucketSize, long retainedHeapMemory, long retainedDirectMemory)
+        {
+            return new ArrayRetainableByteBufferPool.Tracking(0, factor, maxCapacity, maxBucketSize, retainedHeapMemory, retainedDirectMemory);
+        }
+    }
 }
