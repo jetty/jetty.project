@@ -8,7 +8,7 @@
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
-  <url>https://eclipse.dev/jetty</url>
+  <url>https://jetty.org</url>
   <inceptionYear>1995</inceptionYear>
 
   <organization>
