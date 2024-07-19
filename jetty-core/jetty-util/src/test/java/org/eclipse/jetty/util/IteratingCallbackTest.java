@@ -438,16 +438,16 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onCompleteFailure(Throwable cause)
+            protected void onCompleteSuccess()
             {
-                failure.set(cause);
+                completed.set(null, true);
             }
 
             @Override
-            protected void onCompleted(Throwable causeOrNull)
+            protected void onCompleteFailure(Throwable cause)
             {
-                completed.set(causeOrNull, true);
-                super.onCompleted(causeOrNull);
+                completed.set(cause, true);
+                failure.set(cause);
             }
         };
 
@@ -536,16 +536,16 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onCompleteFailure(Throwable cause)
+            protected void onCompleteSuccess()
             {
-                failure.set(cause);
+                completed.set(null, true);
             }
 
             @Override
-            protected void onCompleted(Throwable causeOrNull)
+            protected void onCompleteFailure(Throwable cause)
             {
-                completed.set(causeOrNull, true);
-                super.onCompleted(causeOrNull);
+                completed.set(cause, true);
+                failure.set(cause);
             }
         };
 
@@ -773,10 +773,15 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onCompleted(Throwable causeOrNull)
+            protected void onCompleteSuccess()
             {
-                onCompleted.set(causeOrNull, true);
-                super.onCompleted(causeOrNull);
+                onCompleted.set(null, true);
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                onCompleted.set(cause, true);
             }
         };
 
@@ -865,7 +870,7 @@ public class IteratingCallbackTest
         final AtomicBoolean _onSuccess = new AtomicBoolean();
         final AtomicReference<Throwable> _onFailure = new AtomicReference<>();
         final AtomicMarkableReference<Throwable> _completion = new AtomicMarkableReference<>(null, false);
-        final CountDownLatch _completed = new CountDownLatch(2);
+        final CountDownLatch _completed = new CountDownLatch(1);
 
         private TestIteratingCB()
         {
@@ -904,30 +909,28 @@ public class IteratingCallbackTest
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            if (_completion.compareAndSet(null, cause, false, true))
-                _completed.countDown();
-
-            Throwable failure = _completion.getReference();
-            if (failure != null && _completion.compareAndSet(failure, failure, false, true))
-                _completed.countDown();
-        }
-
-        @Override
         protected void onCompleteSuccess()
         {
+            if (_completion.isMarked())
+                _badCalls.incrementAndGet();
+
             if (_completion.compareAndSet(null, null, false, true))
                 _completed.countDown();
         }
 
         @Override
-        protected void onCompleted(Throwable causeOrNull)
+        protected void onCompleteFailure(Throwable cause)
         {
             if (_completion.isMarked())
                 _badCalls.incrementAndGet();
-            super.onCompleted(causeOrNull);
-            _completed.countDown();
+
+            if (_completion.compareAndSet(null, cause, false, true))
+                _completed.countDown();
+
+            // Try again the CAS if there was a call to onAborted().
+            Throwable failure = _completion.getReference();
+            if (failure != null && _completion.compareAndSet(failure, failure, false, true))
+                _completed.countDown();
         }
 
         public void checkNoBadCalls()
@@ -958,9 +961,14 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onCompleted(Throwable causeOrNull)
+            protected void onCompleteSuccess()
             {
-                super.onCompleted(causeOrNull);
+                latch.countDown();
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
                 latch.countDown();
             }
         };

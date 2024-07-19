@@ -243,7 +243,7 @@ public abstract class IteratingCallback implements Callback
      * @param causeOrNull the cause of any {@link #abort(Throwable) abort} or {@link #failed(Throwable) failure},
      * else {@code null} for {@link #succeeded() success}.
      */
-    protected void onCompleted(Throwable causeOrNull)
+    private void onCompleted(Throwable causeOrNull)
     {
         if (causeOrNull == null)
             onCompleteSuccess();
