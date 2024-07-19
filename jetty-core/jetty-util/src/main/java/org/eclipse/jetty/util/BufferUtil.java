@@ -290,7 +290,7 @@ public class BufferUtil
     /**
      * Slice a buffer given an offset and a length.
      * @param buffer the buffer to slice
-     * @param offset the offset, 0 meaning use the current position
+     * @param offset the offset
      * @param length the length, -1 meaning use the current limit
      * @return the sliced buffer
      */
