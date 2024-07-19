@@ -665,13 +665,13 @@ public class ResourceHandlerTest
         _rootResourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
-                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), ByteBufferPool.SIZED_NON_POOLING);
+                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
-                contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", ByteBufferPool.SIZED_NON_POOLING);
+                contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", byteBufferPool);
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
-                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getByteBufferPool());
+                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, byteBufferPool);
                 return contentFactory;
             }
         };

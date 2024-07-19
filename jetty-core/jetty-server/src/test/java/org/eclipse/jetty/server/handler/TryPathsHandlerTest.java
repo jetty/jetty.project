@@ -101,10 +101,10 @@ public class TryPathsHandlerTest
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), ByteBufferPool.SIZED_NON_POOLING);
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
             }
         };
 
@@ -172,10 +172,10 @@ public class TryPathsHandlerTest
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), ByteBufferPool.SIZED_NON_POOLING);
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
             }
         };
         resourceHandler.setDirAllowed(false);
@@ -300,10 +300,10 @@ public class TryPathsHandlerTest
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), ByteBufferPool.SIZED_NON_POOLING);
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
             }
         };
         resourceHandler.setDirAllowed(false);

@@ -102,9 +102,9 @@ public class ResourceHandlerByteRangesTest
             final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
+                return path -> new ResourceHttpContent(memResource, "text/plain", byteBufferPool);
             }
         });
 
@@ -134,9 +134,9 @@ public class ResourceHandlerByteRangesTest
             final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
+                return path -> new ResourceHttpContent(memResource, "text/plain", byteBufferPool);
             }
         });
 
@@ -168,9 +168,9 @@ public class ResourceHandlerByteRangesTest
             final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
+                return path -> new ResourceHttpContent(memResource, "text/plain", byteBufferPool);
             }
         });
 
@@ -200,9 +200,9 @@ public class ResourceHandlerByteRangesTest
             final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
+                return path -> new ResourceHttpContent(memResource, "text/plain", byteBufferPool);
             }
         });
 
@@ -234,9 +234,9 @@ public class ResourceHandlerByteRangesTest
             final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
-                return path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING);
+                return path -> new ResourceHttpContent(memResource, "text/plain", byteBufferPool);
             }
 
             @Override
