@@ -407,6 +407,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settingsPath>src/it/settings.xml</settingsPath>
+    <sisu.plexus.version>0.9.0.M3</sisu.plexus.version>
     <slf4j.version>2.0.13</slf4j.version>
     <spifly.version>1.3.7</spifly.version>
     <spotbugs.maven.plugin.version>4.8.6.0</spotbugs.maven.plugin.version>
