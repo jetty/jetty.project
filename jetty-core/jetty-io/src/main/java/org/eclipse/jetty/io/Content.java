@@ -267,20 +267,26 @@ public class Content
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
         {
+            if (offset > 0 && length != 0)
+            {
+                try
+                {
+                    inputStream.skip(offset -1);
+                    if (inputStream.read() == -1)
+                        throw new IllegalArgumentException("Offset out of range");
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeIOException(e);
+                }
+            }
             return new InputStreamContentSource(inputStream, byteBufferPool)
             {
-                private long skip = offset;
                 private long toRead = length;
 
                 @Override
                 protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
                 {
-                    if (skip > 0)
-                    {
-                        inputStream.skipNBytes(skip);
-                        skip = 0;
-                    }
-
                     if (toRead == 0)
                         return -1;
                     int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);

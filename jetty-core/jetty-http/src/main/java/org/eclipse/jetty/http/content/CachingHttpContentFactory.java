@@ -391,7 +391,15 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
-            sink.write(false, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), callback);
+            try
+            {
+                sink.write(false, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), callback);
+            }
+            catch (Throwable x)
+            {
+                // BufferUtil.slice() may fail if offset and/or length are out of bounds.
+                callback.failed(x);
+            }
         }
 
         @Override
