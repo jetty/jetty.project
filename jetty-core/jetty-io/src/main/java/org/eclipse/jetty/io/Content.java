@@ -271,7 +271,7 @@ public class Content
             {
                 try
                 {
-                    inputStream.skip(offset -1);
+                    inputStream.skip(offset - 1);
                     if (inputStream.read() == -1)
                         throw new IllegalArgumentException("Offset out of range");
                 }
