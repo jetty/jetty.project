@@ -9,6 +9,9 @@ pipeline {
     buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
   }
+  environment {
+    LAUNCHABLE_TOKEN = credentials('launchable-token')
+  }
   stages {
     stage("Parallel Stage") {
       parallel {
@@ -62,6 +65,10 @@ pipeline {
     }
     fixed {
       slackNotif()
+      websiteBuild()
+    }
+    success {
+      websiteBuild()
     }
   }
 }
@@ -118,6 +125,8 @@ def mavenBuild(jdk, cmdline, mvnName) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
+          runLaunchable ("verify")
+          runLaunchable ("record build --name jetty-12.0.x")
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
@@ -127,7 +136,9 @@ def mavenBuild(jdk, cmdline, mvnName) {
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      junit testDataPublishers: [[$class: 'JUnitFlakyTestDataPublisher']], testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      echo "Launchable record tests"
+      runLaunchable ("record tests --build jetty-12.0.x maven '**/target/surefire-reports/**/*.xml' '**/target/invoker-reports/TEST*.xml'")
     }
   }
 }
@@ -151,6 +162,31 @@ def saveHome() {
     return pullRequest.labels.contains("save-home")
   }
   return false;
+}
+
+def websiteBuild() {
+  script {
+    try {
+      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x') {
+        build(job: 'website/jetty.website/main', propagate: false, wait: false)
+      }
+    } catch (Exception e) {
+      e.printStackTrace()
+      echo "skip website build triggering: " + e.getMessage()
+    }
+  }
+}
+/**
+ * run launchable with args and ignore any errors
+ * @param args
+ */
+def runLaunchable(args) {
+  try {
+    sh "launchable $args"
+  } catch (Exception e) {
+    e.printStackTrace()
+    echo "skip failure running Launchable: " + e.getMessage()
+  }
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
