@@ -363,12 +363,16 @@ public class ContentDocs
         @Override
         protected void onFailure(Throwable failure)
         {
+            // The copy is failed, fail the callback.
+            callback.failed(failure);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
             // In case of a failure, either on the
             // read or on the write, release the chunk.
             chunk.release();
-
-            // The copy is failed, fail the callback.
-            callback.failed(failure);
         }
 
         @Override

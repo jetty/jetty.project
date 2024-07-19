@@ -415,10 +415,16 @@ public class IOResources
         @Override
         protected void onFailure(Throwable x)
         {
-            if (retainableByteBuffer != null)
-                retainableByteBuffer.release();
             IO.close(channel);
             super.onFailure(x);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            if (retainableByteBuffer != null)
+                retainableByteBuffer.release();
+            super.onCompleteFailure(cause);
         }
     }
 }

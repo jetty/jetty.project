@@ -222,7 +222,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                releaseBuffer();
+                if (failure == null)
+                    releaseBuffer();
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -1427,9 +1428,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void onFailure(Throwable e)
+        protected void onFailure(Throwable e)
         {
             onWriteComplete(_last, e);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            try (AutoLock ignored = _channelState.lock())
+            {
+                releaseBuffer();
+            }
         }
     }
 
@@ -1463,7 +1473,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void onFailure(Throwable e)
+        protected void onFailure(Throwable e)
         {
             try
             {
@@ -1664,15 +1674,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _buffer.release();
             IO.close(_in);
-            super.onCompleteSuccess();
         }
 
         @Override
-        public void onFailure(Throwable x)
+        protected void onFailure(Throwable cause)
+        {
+            IO.close(_in);
+        }
+
+        @Override
+        public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
-            IO.close(_in);
-            super.onFailure(x);
         }
     }
 
@@ -1737,15 +1750,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _buffer.release();
             IO.close(_in);
-            super.onCompleteSuccess();
         }
 
         @Override
-        public void onFailure(Throwable x)
+        protected void onFailure(Throwable cause)
+        {
+            IO.close(_in);
+        }
+
+        @Override
+        public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
-            IO.close(_in);
-            super.onFailure(x);
         }
     }
 

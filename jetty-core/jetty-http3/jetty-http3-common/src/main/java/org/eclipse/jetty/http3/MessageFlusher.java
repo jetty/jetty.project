@@ -123,13 +123,17 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write {} on {}", entry, this, cause);
 
-        accumulator.release();
-
         if (entry != null)
         {
             entry.callback.failed(cause);
             entry = null;
         }
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
+        accumulator.release();
     }
 
     @Override

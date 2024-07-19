@@ -660,7 +660,7 @@ public abstract class IteratingCallback implements Callback
     public final void close()
     {
         Throwable onAbortedOnFailureIfNotPendingDoCompleted = null;
-        Throwable onAbortOnFailureOnCompleted = null;
+        Throwable onAbortedOnFailureOnCompleted = null;
 
         try (AutoLock ignored = _lock.lock())
         {
@@ -673,7 +673,7 @@ public abstract class IteratingCallback implements Callback
                     // Nothing happening so we can abort and complete
                     _state = State.CLOSED;
                     _failure = new ClosedException();
-                    onAbortOnFailureOnCompleted = _failure;
+                    onAbortedOnFailureOnCompleted = _failure;
                 }
                 case PROCESSING, PROCESSING_CALLED ->
                 {
@@ -712,8 +712,8 @@ public abstract class IteratingCallback implements Callback
 
         if (onAbortedOnFailureIfNotPendingDoCompleted != null)
             doOnAbortedOnFailureIfNotPendingDoCompleted(onAbortedOnFailureIfNotPendingDoCompleted);
-        else if (onAbortOnFailureOnCompleted != null)
-            doOnAbortedOnFailureOnCompleted(onAbortOnFailureOnCompleted);
+        else if (onAbortedOnFailureOnCompleted != null)
+            doOnAbortedOnFailureOnCompleted(onAbortedOnFailureOnCompleted);
     }
 
     /**
@@ -731,7 +731,7 @@ public abstract class IteratingCallback implements Callback
         cause = Objects.requireNonNullElseGet(cause, Throwable::new);
 
         boolean onAbort = false;
-        boolean onAbortDoCompleteFailure = false;
+        boolean onAbortedOnFailureOnCompleted = false;
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
@@ -752,7 +752,7 @@ public abstract class IteratingCallback implements Callback
                     _state = State.COMPLETE;
                     _failure = cause;
                     _aborted = true;
-                    onAbortDoCompleteFailure = true;
+                    onAbortedOnFailureOnCompleted = true;
                     break;
                 }
 
@@ -793,7 +793,7 @@ public abstract class IteratingCallback implements Callback
             }
         }
 
-        if (onAbortDoCompleteFailure)
+        if (onAbortedOnFailureOnCompleted)
             doOnAbortedOnFailureOnCompleted(cause);
         else if (onAbort)
             doOnAbortedOnFailureIfNotPendingDoCompleted(cause);

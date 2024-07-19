@@ -180,7 +180,7 @@ public abstract class TransformingFlusher
                 notifyCallbackFailure(current.callback, t);
                 current = null;
             }
-            this.onFailure(t);
+            TransformingFlusher.this.onFailure(t);
         }
     }
 

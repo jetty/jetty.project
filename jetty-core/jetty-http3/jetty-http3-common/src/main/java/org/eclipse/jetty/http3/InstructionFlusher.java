@@ -123,8 +123,6 @@ public class InstructionFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write buffers on {}", this, failure);
 
-        accumulator.release();
-
         try (AutoLock ignored = lock.lock())
         {
             terminated = failure;
@@ -136,6 +134,12 @@ public class InstructionFlusher extends IteratingCallback
 
         // Cannot continue without the instruction stream, close the session.
         endPoint.getQuicSession().getProtocolSession().outwardClose(error, "instruction_stream_failure");
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
+        accumulator.release();
     }
 
     @Override

@@ -15,6 +15,7 @@ package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
@@ -115,32 +116,44 @@ public class Flusher
                 active.failed(x);
             active = null;
 
+            List<Entry> entries;
+            try (AutoLock ignored = lock.lock())
+            {
+                entries = new ArrayList<>(queue);
+            }
+            entries.forEach(entry -> entry.failed(x));
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
             while (true)
             {
                 Entry entry = poll();
                 if (entry == null)
                     break;
-                entry.failed(x);
+                entry.release();
             }
         }
     }
 
-    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback) implements Callback
+    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback)
     {
-        @Override
         public void succeeded()
         {
-            if (accumulator != null)
-                accumulator.release();
+            release();
             callback.succeeded();
         }
 
-        @Override
         public void failed(Throwable x)
+        {
+            callback.failed(x);
+        }
+
+        private void release()
         {
             if (accumulator != null)
                 accumulator.release();
-            callback.failed(x);
         }
     }
 }

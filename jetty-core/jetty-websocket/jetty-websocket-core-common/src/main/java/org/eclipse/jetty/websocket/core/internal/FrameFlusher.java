@@ -407,9 +407,6 @@ public class FrameFlusher extends IteratingCallback
     @Override
     public void onFailure(Throwable failure)
     {
-        if (batchBuffer != null)
-            batchBuffer.clear();
-        releaseAggregate();
         try (AutoLock l = lock.lock())
         {
             failedEntries.addAll(queue);
@@ -417,9 +414,6 @@ public class FrameFlusher extends IteratingCallback
 
             failedEntries.addAll(entries);
             entries.clear();
-
-            releasableBuffers.forEach(RetainableByteBuffer::release);
-            releasableBuffers.clear();
 
             if (closedCause == null)
                 closedCause = failure;
@@ -434,6 +428,19 @@ public class FrameFlusher extends IteratingCallback
 
         failedEntries.clear();
         endPoint.close(closedCause);
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
+        if (batchBuffer != null)
+            batchBuffer.clear();
+        releaseAggregate();
+        try (AutoLock l = lock.lock())
+        {
+            releasableBuffers.forEach(RetainableByteBuffer::release);
+            releasableBuffers.clear();
+        }
     }
 
     private void releaseAggregate()
