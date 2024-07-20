@@ -460,7 +460,7 @@ public interface HttpURI
         @Override
         public boolean hasAuthority()
         {
-            return !StringUtil.isEmpty(_host);
+            return _host != null;
         }
 
         @Override
@@ -906,7 +906,7 @@ public interface HttpURI
         @Override
         public boolean hasAuthority()
         {
-            return !StringUtil.isEmpty(_host);
+            return _host != null;
         }
 
         @Override

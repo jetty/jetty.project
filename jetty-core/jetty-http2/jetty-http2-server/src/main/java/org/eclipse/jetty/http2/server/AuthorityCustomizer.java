@@ -39,7 +39,7 @@ public class AuthorityCustomizer implements HttpConfiguration.Customizer
             return request;
 
         HttpURI httpURI = request.getHttpURI();
-        if (httpURI.hasAuthority())
+        if (httpURI.hasAuthority() && !httpURI.getAuthority().isEmpty())
             return request;
 
         String hostPort = request.getHeaders().get(HttpHeader.HOST);
