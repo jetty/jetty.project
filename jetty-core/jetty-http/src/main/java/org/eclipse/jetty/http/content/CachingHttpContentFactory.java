@@ -597,7 +597,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
-            callback.succeeded();
+            sink.write(true, BufferUtil.EMPTY_BUFFER, callback);
         }
 
         @Override

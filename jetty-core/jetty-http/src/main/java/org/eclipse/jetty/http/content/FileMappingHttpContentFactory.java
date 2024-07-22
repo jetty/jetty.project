@@ -102,7 +102,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                sink.write(false, BufferUtil.slice(_buffer, (int)offset, (int)length), callback);
+                sink.write(true, BufferUtil.slice(_buffer, (int)offset, (int)length), callback);
             }
             catch (Throwable x)
             {
@@ -173,8 +173,9 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
                         ByteBuffer currentBuffer = _buffers[index];
                         int offset = index == beginIndex ? firstOffset : 0;
                         int len = index == endIndex ? lastLen : -1;
+                        boolean last = index == endIndex;
                         index++;
-                        sink.write(false, BufferUtil.slice(currentBuffer, offset, len), this);
+                        sink.write(last, BufferUtil.slice(currentBuffer, offset, len), this);
                         return Action.SCHEDULED;
                     }
                 }.iterate();
