@@ -71,6 +71,11 @@ public class ServerQuicConnection extends QuicConnection
         return connector;
     }
 
+    ServerQuicConfiguration getQuicConfiguration()
+    {
+        return quicConfiguration;
+    }
+
     @Override
     public void onOpen()
     {

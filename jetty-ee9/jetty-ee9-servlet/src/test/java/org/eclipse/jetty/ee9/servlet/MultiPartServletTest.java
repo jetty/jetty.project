@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -49,15 +50,20 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -130,14 +136,15 @@ public class MultiPartServletTest
         }
     }
 
-    @BeforeEach
-    public void start() throws Exception
+    private void startServer(MultiPartCompliance multiPartCompliance) throws Exception
     {
         tmpDir = Files.createTempDirectory(MultiPartServletTest.class.getSimpleName());
         assertNotNull(tmpDir);
 
         server = new Server();
-        connector = new ServerConnector(server);
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setMultiPartCompliance(multiPartCompliance);
+        connector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
         server.addConnector(connector);
 
         MultipartConfigElement config = new MultipartConfigElement(tmpDir.toAbsolutePath().toString(),
@@ -180,9 +187,50 @@ public class MultiPartServletTest
         IO.delete(tmpDir.toFile());
     }
 
-    @Test
-    public void testLargePart() throws Exception
+    public static Stream<Arguments> multipartModes()
     {
+        return Stream.of(
+            Arguments.of(MultiPartCompliance.RFC7578),
+            Arguments.of(MultiPartCompliance.LEGACY)
+        );
+    }
+
+    /**
+     * The request indicates that it is a multipart/form-data, but no body is sent.
+     */
+    @ParameterizedTest
+    @MethodSource("multipartModes")
+    public void testEmptyBodyMultipartForm(MultiPartCompliance multiPartCompliance) throws Exception
+    {
+        startServer(multiPartCompliance);
+
+        String contentType = "multipart/form-data; boundary=---------------boundaryXYZ123";
+        StringRequestContent emptyContent = new StringRequestContent(contentType, "");
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(emptyContent)
+            .send(listener);
+
+        Response response = listener.get(60, TimeUnit.SECONDS);
+        assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
+
+        assert400orEof(listener, responseContent ->
+        {
+            assertThat(responseContent, containsString("Unable to parse form content"));
+            assertThat(responseContent, containsString("Missing content for multipart request"));
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("multipartModes")
+    public void testLargePart(MultiPartCompliance multiPartCompliance) throws Exception
+    {
+        startServer(multiPartCompliance);
+
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
         multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
@@ -212,9 +260,122 @@ public class MultiPartServletTest
         });
     }
 
-    @Test
-    public void testManyParts() throws Exception
+    @ParameterizedTest
+    @MethodSource("multipartModes")
+    public void testIncompleteMultipart(MultiPartCompliance multiPartCompliance) throws Exception
     {
+        startServer(multiPartCompliance);
+
+        String contentType = "multipart/form-data; boundary=-------------------------7e21c038151054";
+        String incompleteForm = """
+            ---------------------------7e21c038151054
+            Content-Disposition: form-data; name="description"
+            
+            Some data, but incomplete
+            ---------------------------7e21c038151054
+            Content-Disposition: form-d"""; // intentionally incomplete
+
+        StringRequestContent incomplete = new StringRequestContent(
+            contentType,
+            incompleteForm
+        );
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(incomplete)
+            .send(listener);
+
+        assert400orEof(listener, responseContent ->
+        {
+            assertThat(responseContent, containsString("Unable to parse form content"));
+            assertThat(responseContent, containsString("Incomplete Multipart"));
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("multipartModes")
+    public void testLineFeedCarriageReturnEOL(MultiPartCompliance multiPartCompliance) throws Exception
+    {
+        startServer(multiPartCompliance);
+
+        String contentType = "multipart/form-data; boundary=---------------------------7e25e1e151054";
+        String rawForm = """
+            -----------------------------7e25e1e151054\r
+            Content-Disposition: form-data; name="user"\r
+                        \r
+            anotheruser\r
+            -----------------------------7e25e1e151054\r
+            Content-Disposition: form-data; name="comment"\r
+                        \r
+            with something to say\r
+            -----------------------------7e25e1e151054--\r
+            """;
+
+        StringRequestContent form = new StringRequestContent(
+            contentType,
+            rawForm
+        );
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(form)
+            .send(listener);
+
+        assert400orEof(listener, responseContent ->
+        {
+            assertThat(responseContent, containsString("Unable to parse form content"));
+            if (multiPartCompliance == MultiPartCompliance.RFC7578)
+            {
+                assertThat(responseContent, containsString("Illegal character ALPHA=&apos;s&apos"));
+            }
+            else if (multiPartCompliance == MultiPartCompliance.LEGACY)
+            {
+                assertThat(responseContent, containsString("Incomplete Multipart"));
+            }
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("multipartModes")
+    public void testAllWhitespaceForm(MultiPartCompliance multiPartCompliance) throws Exception
+    {
+        startServer(multiPartCompliance);
+
+        String contentType = "multipart/form-data; boundary=----WebKitFormBoundaryjwqONTsAFgubfMZc";
+        String rawForm = " \n \n \n \n \n \n \n \n \n ";
+
+        StringRequestContent form = new StringRequestContent(
+            contentType,
+            rawForm
+        );
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/defaultConfig")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(form)
+            .send(listener);
+
+        assert400orEof(listener, responseContent ->
+        {
+            assertThat(responseContent, containsString("Unable to parse form content"));
+            assertThat(responseContent, containsString("Missing content for multipart request"));
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("multipartModes")
+    public void testManyParts(MultiPartCompliance multiPartCompliance) throws Exception
+    {
+        startServer(multiPartCompliance);
+
         byte[] byteArray = new byte[1024];
         Arrays.fill(byteArray, (byte)1);
 
@@ -241,9 +402,12 @@ public class MultiPartServletTest
         });
     }
 
-    @Test
-    public void testMaxRequestSize() throws Exception
+    @ParameterizedTest
+    @MethodSource("multipartModes")
+    public void testMaxRequestSize(MultiPartCompliance multiPartCompliance) throws Exception
     {
+        startServer(multiPartCompliance);
+
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
         multiPart.addPart(new MultiPart.ContentSourcePart("param", null, null, content));
@@ -301,9 +465,12 @@ public class MultiPartServletTest
             checkbody.accept(responseContent);
     }
 
-    @Test
-    public void testTempFilesDeletedOnError() throws Exception
+    @ParameterizedTest
+    @MethodSource("multipartModes")
+    public void testTempFilesDeletedOnError(MultiPartCompliance multiPartCompliance) throws Exception
     {
+        startServer(multiPartCompliance);
+
         byte[] byteArray = new byte[LARGE_MESSAGE_SIZE];
         Arrays.fill(byteArray, (byte)1);
         BytesRequestContent content = new BytesRequestContent(byteArray);
@@ -333,6 +500,8 @@ public class MultiPartServletTest
     @Test
     public void testMultiPartGzip() throws Exception
     {
+        startServer(MultiPartCompliance.RFC7578);
+
         String contentString = "the quick brown fox jumps over the lazy dog, " +
             "the quick brown fox jumps over the lazy dog";
         StringRequestContent content = new StringRequestContent(contentString);
@@ -357,12 +526,14 @@ public class MultiPartServletTest
             assertThat(headers.get(HttpHeader.CONTENT_TYPE), startsWith("multipart/form-data"));
             assertThat(headers.get(HttpHeader.CONTENT_ENCODING), is("gzip"));
 
-            InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
-            String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-            MultiPartFormInputStream mpis = new MultiPartFormInputStream(inputStream, contentType, null, null);
-            List<Part> parts = new ArrayList<>(mpis.getParts());
-            assertThat(parts.size(), is(1));
-            assertThat(IO.toString(parts.get(0).getInputStream()), is(contentString));
+            try (InputStream inputStream = new GZIPInputStream(responseStream.getInputStream()))
+            {
+                String contentType = headers.get(HttpHeader.CONTENT_TYPE);
+                MultiPartFormInputStream mpis = new MultiPartFormInputStream(inputStream, contentType, null, null);
+                List<Part> parts = new ArrayList<>(mpis.getParts());
+                assertThat(parts.size(), is(1));
+                assertThat(IO.toString(parts.get(0).getInputStream()), is(contentString));
+            }
         }
     }
 }
