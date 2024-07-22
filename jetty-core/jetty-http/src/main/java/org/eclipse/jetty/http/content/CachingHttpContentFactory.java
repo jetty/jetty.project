@@ -393,7 +393,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                sink.write(false, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), callback);
+                sink.write(true, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), callback);
             }
             catch (Throwable x)
             {
