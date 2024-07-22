@@ -143,7 +143,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
         LoginContext loginContext = new LoginContext("", null, null, new SPNEGOConfiguration());
         loginContext.login();
         Subject subject = loginContext.getSubject();
-        _context = SecurityUtils.doAs(subject, newSpnegoContext(subject));
+        _context = SecurityUtils.callAs(subject, newSpnegoContext(subject));
         super.doStart();
     }
 
@@ -182,10 +182,11 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
             gssContext = holder == null ? null : holder.gssContext;
         }
         if (gssContext == null)
-            gssContext = SecurityUtils.doAs(subject, newGSSContext());
+            gssContext = SecurityUtils.callAs(subject, newGSSContext());
+
 
         byte[] input = Base64.getDecoder().decode((String)credentials);
-        byte[] output = SecurityUtils.doAs(_context._subject, acceptGSSContext(gssContext, input));
+        byte[] output = SecurityUtils.callAs(_context._subject, acceptGSSContext(gssContext, input));
         String token = Base64.getEncoder().encodeToString(output);
 
         String userName = toUserName(gssContext);

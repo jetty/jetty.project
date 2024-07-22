@@ -919,6 +919,12 @@ public interface Request extends Attributes, Content.Source
         {
             return _request;
         }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
+        }
     }
 
     @SuppressWarnings("unchecked")

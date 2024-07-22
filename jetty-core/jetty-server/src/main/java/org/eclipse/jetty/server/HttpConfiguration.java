@@ -79,6 +79,7 @@ public class HttpConfiguration implements Dumpable
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
     private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
+    private UriCompliance _redirectUriCompliance = null; // TODO default to UriCompliance.DEFAULT in 12.1 ?;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
@@ -161,6 +162,7 @@ public class HttpConfiguration implements Dumpable
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
         _generateRedirectBody = config._generateRedirectBody;
         _uriCompliance = config._uriCompliance;
+        _redirectUriCompliance = config._redirectUriCompliance;
         _serverAuthority = config._serverAuthority;
         _localAddress = config._localAddress;
     }
@@ -600,9 +602,22 @@ public class HttpConfiguration implements Dumpable
         return _uriCompliance;
     }
 
+    public UriCompliance getRedirectUriCompliance()
+    {
+        return _redirectUriCompliance;
+    }
+
     public void setUriCompliance(UriCompliance uriCompliance)
     {
         _uriCompliance = uriCompliance;
+    }
+
+    /**
+     * @param uriCompliance The {@link UriCompliance} to apply in {@link Response#toRedirectURI(Request, String)} or {@code null}.
+     */
+    public void setRedirectUriCompliance(UriCompliance uriCompliance)
+    {
+        _redirectUriCompliance = uriCompliance;
     }
 
     /**

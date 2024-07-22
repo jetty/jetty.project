@@ -25,6 +25,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
@@ -125,6 +126,7 @@ public class ContextScopeListenerTest
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/initialPath");
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> _history.size() == 7);
         assertHistory(
             "enterScope /initialPath",
             "doGet",

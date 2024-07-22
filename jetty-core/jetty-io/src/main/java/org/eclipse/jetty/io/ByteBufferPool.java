@@ -194,7 +194,7 @@ public interface ByteBufferPool
      * {@link #release() released} when they are consumed.</p>
      * @deprecated use {@link RetainableByteBuffer.DynamicCapacity}
      */
-    @Deprecated (forRemoval = true)
+    @Deprecated (forRemoval = true, since = "12.1.0")
     class Accumulator
     {
         private final List<RetainableByteBuffer> buffers = new ArrayList<>();

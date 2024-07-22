@@ -1150,7 +1150,7 @@ public class Content
         @Deprecated(forRemoval = true, since = "12.1.0")
         default Chunk asReadOnly()
         {
-            if (getByteBuffer().isReadOnly())
+            if (!getByteBuffer().hasRemaining() || getByteBuffer().isReadOnly())
                 return this;
             if (canRetain())
                 return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);

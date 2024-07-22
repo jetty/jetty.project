@@ -109,7 +109,12 @@ public final class UriCompliance implements ComplianceViolation.Mode
          * Allow path characters not allowed in the path portion of the URI and HTTP specs.
          * <p>This would allow characters that fall outside of the {@code unreserved / pct-encoded / sub-delims / ":" / "@"} ABNF</p>
          */
-        ILLEGAL_PATH_CHARACTERS("https://datatracker.ietf.org/doc/html/rfc3986#section-3.3", "Illegal Path Character");
+        ILLEGAL_PATH_CHARACTERS("https://datatracker.ietf.org/doc/html/rfc3986#section-3.3", "Illegal Path Character"),
+
+        /**
+         * Allow user info in the authority portion of the URI and HTTP specs.
+         */
+        USER_INFO("https://datatracker.ietf.org/doc/html/rfc9110#name-deprecation-of-userinfo-in-", "Deprecated User Info");
 
         private final String _url;
         private final String _description;
@@ -175,7 +180,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
-            Violation.UTF16_ENCODINGS));
+            Violation.UTF16_ENCODINGS,
+            Violation.USER_INFO));
 
     /**
      * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form, and illegal characters

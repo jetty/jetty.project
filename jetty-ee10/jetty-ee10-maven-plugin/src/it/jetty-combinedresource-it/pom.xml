@@ -53,8 +53,8 @@
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
-            <contentCheck>BLAH</contentCheck>
-            <pathToCheck>/blah.html</pathToCheck>
+            <contentCheck>SPACY</contentCheck>
+            <pathToCheck>/spacy.html</pathToCheck>
           </systemPropertyVariables>
           <dependenciesToScan>
             <dependency>org.eclipse.jetty.ee10:jetty-ee10-maven-plugin</dependency>
@@ -95,6 +95,7 @@
               <webApp>
                 <resourceBases>
                   <resourceBase>${project.basedir}/public</resourceBase>
+                  <resourceBase>${project.basedir}/with space</resourceBase>
                   <resourceBase>${project.basedir}/src/main/webapp</resourceBase>
                 </resourceBases>
               </webApp>
