@@ -74,6 +74,6 @@ public abstract class AbstractBrotliTest
     public void stopBrotli()
     {
         LifeCycle.stop(brotli);
-        assertThat(poolCounter.get(), is(0));
+        assertThat("ByteBufferPool counter", poolCounter.get(), is(0));
     }
 }

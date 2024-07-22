@@ -16,7 +16,12 @@ package org.eclipse.jetty.compression.brotli;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 
 import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
 import com.aayushatharva.brotli4j.encoder.Encoder;
@@ -29,14 +34,15 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
+public class BrotliEncoder implements Compression.Encoder
 {
     private static final Logger LOG = LoggerFactory.getLogger(BrotliEncoder.class);
 
-    private final ByteBufferPool bufferPool;
+    private final CaptureByteChannel captureChannel;
+    private final ByteBufferPool bufferPool; // TODO: can we even use this??
     private final int outputBufferSize;
-    // TODO: change to com.aayushatharva.brotli4j.encoder.EncoderJNI.Wrapper once new release
-    // of brotli4j is available with fix https://github.com/hyperxpro/Brotli4j/issues/144
+    // TODO: change to com.aayushatharva.brotli4j.encoder.EncoderJNI.Wrapper once new release is available for
+    // https://github.com/hyperxpro/Brotli4j/issues/144
     private final BrotliEncoderChannel encoder;
     private ByteBuffer inputBuffer;
 
@@ -46,8 +52,9 @@ public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
         this.outputBufferSize = brotliCompression.getBufferSize();
         try
         {
+            this.captureChannel = new CaptureByteChannel();
             Encoder.Parameters params = brotliCompression.getEncoderParams();
-            this.encoder = new BrotliEncoderChannel(this, params, brotliCompression.getBufferSize());
+            this.encoder = new BrotliEncoderChannel(captureChannel, params);
         }
         catch (IOException e)
         {
@@ -67,23 +74,15 @@ public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
     }
 
     @Override
-    public boolean isOpen()
-    {
-        return false;
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        encoder.close();
-    }
-
-    @Override
     public void setInput(ByteBuffer content)
     {
         try
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("setInput - {}", BufferUtil.toDetailString(content));
             encoder.write(content);
+            // Content should be fully consumed
+            assert !content.hasRemaining();
         }
         catch (IOException e)
         {
@@ -94,18 +93,28 @@ public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
     @Override
     public void finishInput()
     {
+        try
+        {
+            encoder.close();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
     public ByteOrder getByteOrder()
     {
-        return ByteOrder.BIG_ENDIAN;
+        // Per https://datatracker.ietf.org/doc/html/rfc7932#section-1.5
+        // Brotli is LITTLE_ENDIAN
+        return ByteOrder.LITTLE_ENDIAN;
     }
 
     @Override
     public boolean isOutputFinished()
     {
-        return encoder.isOpen();
+        return !encoder.isOpen() && !this.captureChannel.hasOutput();
     }
 
     @Override
@@ -117,12 +126,26 @@ public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
     @Override
     public int encode(ByteBuffer outputBuffer) throws IOException
     {
-        return encoder.write(outputBuffer);
+        if (LOG.isDebugEnabled())
+            LOG.debug("encode:1 - outputBuffer={}", BufferUtil.toDetailString(outputBuffer));
+        ByteBuffer compressed = this.captureChannel.getBuffer();
+        if (compressed == null)
+            return 0;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("encode:2 - compressed={}", BufferUtil.toDetailString(compressed));
+        int len = 0;
+        if (compressed.hasRemaining())
+            len = BufferUtil.put(compressed, outputBuffer);
+        if (LOG.isDebugEnabled())
+            LOG.debug("encode:3 - outputBuffer={}", BufferUtil.toDetailString(outputBuffer));
+        return len;
     }
 
     @Override
     public int getTrailerSize()
     {
+        // no trailers for brotli
         return 0;
     }
 
@@ -144,6 +167,8 @@ public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
     @Override
     public void release()
     {
+        this.captureChannel.release();
+
         try
         {
             encoder.close();
@@ -154,11 +179,67 @@ public class BrotliEncoder implements Compression.Encoder, WritableByteChannel
         }
     }
 
-    @Override
-    public int write(ByteBuffer src) throws IOException
+    private static class CaptureByteChannel implements WritableByteChannel
     {
-        int pos = src.position();
-        inputBuffer.put(src);
-        return src.position() - pos;
+        /**
+         * The ByteBuffer elements stored here are created and managed by brotli4j.
+         */
+        private final Queue<ByteBuffer> bufferQueue = new ArrayDeque<>();
+        private ByteBuffer activeBuffer;
+        private boolean closed = false;
+
+        public CaptureByteChannel()
+        {
+        }
+
+        public void release()
+        {
+        }
+
+        public boolean hasOutput()
+        {
+            if (activeBuffer != null && activeBuffer.hasRemaining())
+                return true;
+
+            return !bufferQueue.isEmpty();
+        }
+
+        public ByteBuffer getBuffer()
+        {
+            if (activeBuffer != null && !activeBuffer.hasRemaining())
+                activeBuffer = null;
+
+            if (activeBuffer == null)
+                activeBuffer = bufferQueue.poll();
+
+            return activeBuffer;
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return !closed;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            closed = true;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException
+        {
+            if (!isOpen())
+                throw new ClosedChannelException();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("write({})", BufferUtil.toDetailString(src));
+
+            int len = src.remaining();
+            bufferQueue.add(src.slice());
+            src.position(src.limit());
+            return len;
+        }
     }
 }

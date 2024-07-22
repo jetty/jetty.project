@@ -26,6 +26,11 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Brotli Compression.
+ *
+ * @see <a href="https://datatracker.ietf.org/doc/html/rfc7932">RFC7932: Brotli Compressed Data Format</a>
+ */
 public class BrotliCompression extends Compression
 {
     private static final Logger LOG = LoggerFactory.getLogger(BrotliCompression.class);
@@ -48,7 +53,6 @@ public class BrotliCompression extends Compression
     public BrotliCompression()
     {
         super(ENCODING_NAME);
-
     }
 
     public com.aayushatharva.brotli4j.encoder.Encoder.Parameters getEncoderParams()
