@@ -38,6 +38,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
+import org.eclipse.jetty.quic.common.QuicErrorCode;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -639,5 +640,25 @@ public class ClientServerTest extends AbstractClientServerTest
         clientStream.data(new DataFrame(ByteBuffer.allocate(512), true));
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testMissingNeededClientCertificateDeniesConnection() throws Exception
+    {
+        start(new Session.Server.Listener() {});
+        connector.getQuicConfiguration().getSslContextFactory().setNeedClientAuth(true);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        newSession(new Session.Client.Listener()
+        {
+            @Override
+            public void onDisconnect(Session session, long error, String reason)
+            {
+                assertEquals(QuicErrorCode.CONNECTION_REFUSED.code(), error);
+                assertEquals("missing_client_certificate_chain", reason);
+                latch.countDown();
+            }
+        });
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

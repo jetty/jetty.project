@@ -49,6 +49,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -59,6 +60,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -192,6 +194,64 @@ public class GzipHandlerTest
 
         _contextHandler = new ContextHandler("/ctx");
         _gzipHandler.setHandler(_contextHandler);
+    }
+
+    @Test
+    public void testFailureDuringGzipWrite() throws Exception
+    {
+        Handler leafHandler = new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                try (var out = Content.Sink.asOutputStream(response))
+                {
+                    out.write("Hello, Jetty".getBytes(StandardCharsets.UTF_8));
+                }
+                return true;
+            }
+        };
+        Handler rootHandler = new Handler.Wrapper(new GzipHandler(leafHandler))
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                return super.handle(request, new Response.Wrapper(request, response)
+                {
+                    @Override
+                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    {
+                        throw new ArithmeticException("expected");
+                    }
+                }, callback);
+            }
+        };
+        _server.setHandler(rootHandler);
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowStacks(true);
+        errorHandler.setShowCauses(true);
+        _server.setErrorHandler(errorHandler);
+        _server.start();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
+        {
+            response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        }
+
+        assertThat(response.getStatus(), is(500));
+        String content = response.getContent();
+        assertThat(content, containsString("ArithmeticException: expected"));
+        assertThat(content, not(containsString("Suppressed: ")));
     }
 
     @Test
