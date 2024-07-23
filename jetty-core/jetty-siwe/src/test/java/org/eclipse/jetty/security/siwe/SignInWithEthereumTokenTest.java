@@ -55,7 +55,7 @@ public class SignInWithEthereumTokenTest
         assertNotNull(siwe);
 
         Throwable error = assertThrows(Throwable.class, () ->
-            siwe.validate(signedMessage, null, null, null, null));
+            siwe.validate(signedMessage, null, null, null));
         assertThat(error.getMessage(), containsString("unsupported version"));
     }
 
@@ -84,7 +84,7 @@ public class SignInWithEthereumTokenTest
         assertNotNull(siwe);
 
         Throwable error = assertThrows(Throwable.class, () ->
-            siwe.validate(signedMessage, null, null, null, null));
+            siwe.validate(signedMessage, null, null, null));
         assertThat(error.getMessage(), containsString("expired SIWE message"));
     }
 
@@ -114,7 +114,7 @@ public class SignInWithEthereumTokenTest
         assertNotNull(siwe);
 
         Throwable error = assertThrows(Throwable.class, () ->
-            siwe.validate(signedMessage, null, null, null, null));
+            siwe.validate(signedMessage, null, null, null));
         assertThat(error.getMessage(), containsString("SIWE message not yet valid"));
     }
 
@@ -144,38 +144,8 @@ public class SignInWithEthereumTokenTest
         domains.include("example.org");
 
         Throwable error = assertThrows(Throwable.class, () ->
-            siwe.validate(signedMessage, null, null, domains, null));
+            siwe.validate(signedMessage, null, domains, null));
         assertThat(error.getMessage(), containsString("unregistered domain"));
-    }
-
-    @Test
-    public void testInvalidScheme() throws Exception
-    {
-        EthereumCredentials credentials = new EthereumCredentials();
-        LocalDateTime issuedAt = LocalDateTime.now();
-        String message = SignInWithEthereumGenerator.generateMessage(
-            "https",
-            "example.com",
-            credentials.getAddress(),
-            "hello this is the statement",
-            "https://example.com",
-            "1",
-            "1",
-            EthereumUtil.createNonce(),
-            issuedAt,
-            null, null, null, null
-        );
-
-        SignedMessage signedMessage = credentials.signMessage(message);
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
-        assertNotNull(siwe);
-
-        IncludeExcludeSet<String, String> schemes = new IncludeExcludeSet<>();
-        schemes.include("wss");
-
-        Throwable error = assertThrows(Throwable.class, () ->
-            siwe.validate(signedMessage, null, schemes, null, null));
-        assertThat(error.getMessage(), containsString("unregistered scheme"));
     }
 
     @Test
@@ -204,7 +174,7 @@ public class SignInWithEthereumTokenTest
         chainIds.include("1337");
 
         Throwable error = assertThrows(Throwable.class, () ->
-            siwe.validate(signedMessage, null, null, null, chainIds));
+            siwe.validate(signedMessage, null, null, chainIds));
         assertThat(error.getMessage(), containsString("unregistered chainId"));
     }
 
@@ -232,7 +202,7 @@ public class SignInWithEthereumTokenTest
 
         Predicate<String> nonceValidation = nonce -> false;
         Throwable error = assertThrows(Throwable.class, () ->
-            siwe.validate(signedMessage, nonceValidation, null, null, null));
+            siwe.validate(signedMessage, nonceValidation, null, null));
         assertThat(error.getMessage(), containsString("invalid nonce"));
     }
 
@@ -260,6 +230,6 @@ public class SignInWithEthereumTokenTest
 
         Predicate<String> nonceValidation = nonce -> true;
         assertDoesNotThrow(() ->
-            siwe.validate(signedMessage, nonceValidation, null, null, null));
+            siwe.validate(signedMessage, nonceValidation, null, null));
     }
 }

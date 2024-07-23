@@ -169,6 +169,7 @@
     <asciidoctorj.version>3.0.0-alpha.2</asciidoctorj.version>
     <asm.version>9.7</asm.version>
     <awaitility.version>4.2.1</awaitility.version>
+    <bouncycastle.version>1.78.1</bouncycastle.version>
     <bndlib.version>7.0.0</bndlib.version>
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
@@ -1302,6 +1303,22 @@
         <groupId>org.wildfly.security</groupId>
         <artifactId>wildfly-elytron-sasl-scram</artifactId>
         <version>${wildfly.elytron.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk15to18</artifactId>
+        <version>${bouncycastle.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15to18</artifactId>
+        <version>${bouncycastle.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcutil-jdk15to18</artifactId>
+        <version>${bouncycastle.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -79,13 +79,7 @@ public class SignInWithEthereumEmbeddedExample
             }
         };
 
-        EthereumAuthenticator authenticator = new EthereumAuthenticator();
-        authenticator.setLoginPath("/login.html");
-        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
-        securityHandler.setAuthenticator(authenticator);
-        securityHandler.setHandler(handler);
-        securityHandler.put("/*", Constraint.ANY_USER);
-
+        SecurityHandler securityHandler = createSecurityHandler(handler);
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setHandler(securityHandler);
 
@@ -97,5 +91,25 @@ public class SignInWithEthereumEmbeddedExample
         server.start();
         System.err.println(resourceHandler.getBaseResource());
         server.join();
+    }
+
+    public static SecurityHandler createSecurityHandler(Handler handler)
+    {
+        // This uses jetty-core, but you can configure a ConstraintSecurityHandler for use with EE10.
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
+        securityHandler.setHandler(handler);
+        securityHandler.put("/*", Constraint.ANY_USER);
+
+        // Add the EthereumAuthenticator to the securityHandler.
+        EthereumAuthenticator authenticator = new EthereumAuthenticator();
+        securityHandler.setAuthenticator(authenticator);
+
+        // In embedded you can configure via EthereumAuthenticator APIs.
+        authenticator.setLoginPath("/login.html");
+
+        // Or you can configure with parameters on the SecurityHandler.
+        securityHandler.setParameter(EthereumAuthenticator.LOGIN_PATH_PARAM, "/login.html");
+
+        return securityHandler;
     }
 }

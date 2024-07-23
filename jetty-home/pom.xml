@@ -106,6 +106,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-siwe</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-start</artifactId>
       <version>${project.version}</version>
       <classifier>shaded</classifier>

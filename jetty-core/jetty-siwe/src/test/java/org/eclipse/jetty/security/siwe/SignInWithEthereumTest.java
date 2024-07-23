@@ -70,6 +70,11 @@ public class SignInWithEthereumTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 String pathInContext = Request.getPathInContext(request);
+                if ("/error".equals(pathInContext))
+                {
+                    response.write(true, BufferUtil.toBuffer("ERROR"), callback);
+                    return true;
+                }
                 if ("/login".equals(pathInContext))
                 {
                     response.write(true, BufferUtil.toBuffer("Please Login"), callback);
@@ -89,11 +94,11 @@ public class SignInWithEthereumTest
         };
 
         _authenticator = new EthereumAuthenticator();
-        _authenticator.setLoginPath("/login");
 
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         securityHandler.setAuthenticator(_authenticator);
         securityHandler.setHandler(handler);
+        securityHandler.setParameter(EthereumAuthenticator.LOGIN_PATH_PARAM, "/login");
         securityHandler.put("/*", Constraint.ANY_USER);
 
         SessionHandler sessionHandler = new SessionHandler();
@@ -219,26 +224,6 @@ public class SignInWithEthereumTest
         // Test login with valid domain.
         nonce = getNonce();
         siweMessage = SignInWithEthereumGenerator.generateMessage(null, "example.com", _credentials.getAddress(), nonce);
-        response = sendAuthRequest(_credentials.signMessage(siweMessage));
-        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
-        assertThat(response.getContentAsString(), containsString("UserPrincipal: " + _credentials.getAddress()));
-    }
-
-    @Test
-    public void testEnforceScheme() throws Exception
-    {
-        _authenticator.includeSchemes("https");
-
-        // Test login with invalid scheme.
-        String nonce = getNonce();
-        String siweMessage = SignInWithEthereumGenerator.generateMessage("http", "localhost", _credentials.getAddress(), nonce);
-        ContentResponse response = sendAuthRequest(_credentials.signMessage(siweMessage));
-        assertThat(response.getStatus(), equalTo(HttpStatus.FORBIDDEN_403));
-        assertThat(response.getContentAsString(), containsString("unregistered scheme"));
-
-        // Test login with valid scheme.
-        nonce = getNonce();
-        siweMessage = SignInWithEthereumGenerator.generateMessage("https", "localhost", _credentials.getAddress(), nonce);
         response = sendAuthRequest(_credentials.signMessage(siweMessage));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), containsString("UserPrincipal: " + _credentials.getAddress()));

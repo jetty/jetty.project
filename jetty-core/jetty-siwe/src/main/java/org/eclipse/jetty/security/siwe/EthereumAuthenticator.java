@@ -56,34 +56,38 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CharsetStringBuilder.Iso88591StringBuilder;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.server.FormFields.getFormEncodedCharset;
 
-public class EthereumAuthenticator extends LoginAuthenticator
+public class EthereumAuthenticator extends LoginAuthenticator implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(EthereumAuthenticator.class);
 
     public static final String LOGIN_PATH_PARAM = "org.eclipse.jetty.security.siwe.login_path";
     public static final String AUTHENTICATION_PATH_PARAM = "org.eclipse.jetty.security.siwe.authentication_path";
     public static final String NONCE_PATH_PARAM = "org.eclipse.jetty.security.siwe.nonce_path";
-    public static final String MAX_MESSAGE_SIZE_PARAM = "org.eclipse.jetty.security.siwe.max_message_size";
     public static final String LOGOUT_REDIRECT_PARAM = "org.eclipse.jetty.security.siwe.logout_redirect_path";
-    public static final String DISPATCH_PARAM = "org.eclipse.jetty.security.siwe.dispatch";
-    public static final String ERROR_PAGE = "org.eclipse.jetty.security.siwe.error_page";
-    public static final String J_URI = "org.eclipse.jetty.security.siwe.URI";
-    public static final String J_POST = "org.eclipse.jetty.security.siwe.POST";
-    public static final String J_METHOD = "org.eclipse.jetty.security.siwe.METHOD";
+    public static final String ERROR_PATH_PARAM = "org.eclipse.jetty.security.siwe.error_path";
     public static final String ERROR_PARAMETER = "error_description_jetty";
+    public static final String MAX_MESSAGE_SIZE_PARAM = "org.eclipse.jetty.security.siwe.max_message_size";
+    public static final String DISPATCH_PARAM = "org.eclipse.jetty.security.siwe.dispatch";
+    public static final String AUTHENTICATE_NEW_USERS_PARAM = "org.eclipse.jetty.security.siwe.authenticate_new_users";
+    public static final String CHAIN_IDS_PARAM = "org.eclipse.jetty.security.siwe.chainIds";
+    public static final String DOMAINS_PARAM = "org.eclipse.jetty.security.siwe.domains";
+    private static final String J_URI = "org.eclipse.jetty.security.siwe.URI";
+    private static final String J_POST = "org.eclipse.jetty.security.siwe.POST";
+    private static final String J_METHOD = "org.eclipse.jetty.security.siwe.METHOD";
     private static final String DEFAULT_AUTHENTICATION_PATH = "/auth/login";
     private static final String DEFAULT_NONCE_PATH = "/auth/nonce";
     private static final String NONCE_SET_ATTR = "org.eclipse.jetty.security.siwe.nonce";
 
     private final IncludeExcludeSet<String, String> _chainIds = new IncludeExcludeSet<>();
-    private final IncludeExcludeSet<String, String> _schemes = new IncludeExcludeSet<>();
     private final IncludeExcludeSet<String, String> _domains = new IncludeExcludeSet<>();
 
     private String _loginPath;
@@ -91,11 +95,10 @@ public class EthereumAuthenticator extends LoginAuthenticator
     private String _noncePath = DEFAULT_NONCE_PATH;
     private int _maxMessageSize = 4 * 1024;
     private String _logoutRedirectPath;
-    private String _errorPage;
     private String _errorPath;
     private String _errorQuery;
     private boolean _dispatch;
-    private boolean authenticateNewUsers = true;
+    private boolean _authenticateNewUsers = true;
 
     public EthereumAuthenticator()
     {
@@ -105,11 +108,6 @@ public class EthereumAuthenticator extends LoginAuthenticator
     public void includeDomains(String... domains)
     {
         _domains.include(domains);
-    }
-
-    public void includeSchemes(String... schemes)
-    {
-        _schemes.include(schemes);
     }
 
     public void includeChainIds(String... chainIds)
@@ -140,7 +138,7 @@ public class EthereumAuthenticator extends LoginAuthenticator
         if (logout != null)
             setLogoutRedirectPath(logout);
 
-        String error = authConfig.getParameter(ERROR_PAGE);
+        String error = authConfig.getParameter(ERROR_PATH_PARAM);
         if (error != null)
             setErrorPage(error);
 
@@ -148,7 +146,19 @@ public class EthereumAuthenticator extends LoginAuthenticator
         if (dispatch != null)
             setDispatch(Boolean.parseBoolean(dispatch));
 
-        if (authenticateNewUsers)
+        String authenticateNewUsers = authConfig.getParameter(AUTHENTICATE_NEW_USERS_PARAM);
+        if (authenticateNewUsers != null)
+            setAuthenticateNewUsers(Boolean.parseBoolean(authenticateNewUsers));
+
+        String chainIds = authConfig.getParameter(CHAIN_IDS_PARAM);
+        if (chainIds != null)
+            includeChainIds(StringUtil.csvSplit(chainIds));
+
+        String domains = authConfig.getParameter(DOMAINS_PARAM);
+        if (domains != null)
+            includeDomains(StringUtil.csvSplit(domains));
+
+        if (isAuthenticateNewUsers())
         {
             LoginService loginService = new AnyUserLoginService(authConfig.getRealmName(), authConfig.getLoginService());
             authConfig = new Configuration.Wrapper(authConfig)
@@ -161,6 +171,8 @@ public class EthereumAuthenticator extends LoginAuthenticator
             };
         }
 
+        if (_loginPath == null)
+            throw new IllegalStateException("No loginPath");
         super.setConfiguration(authConfig);
     }
 
@@ -172,7 +184,7 @@ public class EthereumAuthenticator extends LoginAuthenticator
 
     public boolean isAuthenticateNewUsers()
     {
-        return authenticateNewUsers;
+        return _authenticateNewUsers;
     }
 
     /**
@@ -186,7 +198,7 @@ public class EthereumAuthenticator extends LoginAuthenticator
      */
     public void setAuthenticateNewUsers(boolean authenticateNewUsers)
     {
-        this.authenticateNewUsers = authenticateNewUsers;
+        this._authenticateNewUsers = authenticateNewUsers;
     }
 
     public void setLoginPath(String loginPath)
@@ -263,7 +275,6 @@ public class EthereumAuthenticator extends LoginAuthenticator
         if (path == null || path.trim().isEmpty())
         {
             _errorPath = null;
-            _errorPage = null;
         }
         else
         {
@@ -272,15 +283,14 @@ public class EthereumAuthenticator extends LoginAuthenticator
                 LOG.warn("error-page must start with /");
                 path = "/" + path;
             }
-            _errorPage = path;
             _errorPath = path;
             _errorQuery = "";
 
             int queryIndex = _errorPath.indexOf('?');
             if (queryIndex > 0)
             {
-                _errorPath = _errorPage.substring(0, queryIndex);
-                _errorQuery = _errorPage.substring(queryIndex + 1);
+                _errorPath = path.substring(0, queryIndex);
+                _errorQuery = path.substring(queryIndex + 1);
             }
         }
     }
@@ -417,6 +427,8 @@ public class EthereumAuthenticator extends LoginAuthenticator
             return Constraint.Authorization.ANY_USER;
         if (isLoginPage(pathInContext) || isErrorPage(pathInContext))
             return Constraint.Authorization.ALLOWED;
+        if (isNonceRequest(pathInContext))
+            return Constraint.Authorization.ANY_USER;
         return existing;
     }
 
@@ -433,7 +445,7 @@ public class EthereumAuthenticator extends LoginAuthenticator
                 break;
 
             totalRead += len;
-            if (totalRead > _maxMessageSize)
+            if (_maxMessageSize >= 0 && totalRead > _maxMessageSize)
                 throw new BadMessageException("SIWE Message Too Large");
             out.append(buffer, 0, len);
         }
@@ -494,6 +506,7 @@ public class EthereumAuthenticator extends LoginAuthenticator
     protected AuthenticationState handleNonceRequest(Request request, Response response, Callback callback)
     {
         String nonce = createNonce(request.getSession(false));
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
         ByteBuffer content = BufferUtil.toBuffer("{ \"nonce\": \"" + nonce + "\" }");
         response.write(true, content, callback);
         return AuthenticationState.CHALLENGE;
@@ -510,7 +523,7 @@ public class EthereumAuthenticator extends LoginAuthenticator
 
         try
         {
-            siwe.validate(signedMessage, nonce -> redeemNonce(session, nonce), _schemes, _domains, _chainIds);
+            siwe.validate(signedMessage, nonce -> redeemNonce(session, nonce), _domains, _chainIds);
         }
         catch (Throwable t)
         {
@@ -580,9 +593,6 @@ public class EthereumAuthenticator extends LoginAuthenticator
                     return formAuth;
                 }
 
-                // not authenticated
-                if (LOG.isDebugEnabled())
-                    LOG.debug("auth failed {}=={}", address, _errorPage);
                 sendError(request, response, callback, "auth failed");
                 return AuthenticationState.SEND_FAILURE;
             }
@@ -661,9 +671,9 @@ public class EthereumAuthenticator extends LoginAuthenticator
     private void sendError(Request request, Response response, Callback callback, String message)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("OpenId authentication FAILED: {}", message);
+            LOG.debug("Authentication FAILED: {}", message);
 
-        if (_errorPage == null)
+        if (_errorPath == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("auth failed 403");
@@ -673,10 +683,10 @@ public class EthereumAuthenticator extends LoginAuthenticator
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("auth failed {}", _errorPage);
+                LOG.debug("auth failed {}", _errorPath);
 
             String contextPath = Request.getContextPath(request);
-            String redirectUri = URIUtil.addPaths(contextPath, _errorPage);
+            String redirectUri = URIUtil.addPaths(contextPath, _errorPath);
             if (message != null)
             {
                 String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
@@ -732,6 +742,8 @@ public class EthereumAuthenticator extends LoginAuthenticator
 
     public boolean isErrorPage(String pathInContext)
     {
+        if (_errorPath == null)
+            return false;
         return pathInContext != null && (pathInContext.equals(_errorPath));
     }
 
@@ -760,6 +772,24 @@ public class EthereumAuthenticator extends LoginAuthenticator
                 return false;
             return attribute.remove(nonce);
         }
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this,
+            "loginPath=" + _loginPath,
+            "authenticationPath=" + _authenticationPath,
+            "noncePath=" + _noncePath,
+            "errorPath=" + _errorPath,
+            "errorQuery=" + _errorQuery,
+            "dispatch=" + _dispatch,
+            "authenticateNewUsers=" + _authenticateNewUsers,
+            "logoutRedirectPath=" + _logoutRedirectPath,
+            "maxMessageSize=" + _maxMessageSize,
+            "chainIds=" + _chainIds,
+            "domains=" + _domains
+        );
     }
 
     public static class FixedSizeSet<T> extends LinkedHashSet<T>

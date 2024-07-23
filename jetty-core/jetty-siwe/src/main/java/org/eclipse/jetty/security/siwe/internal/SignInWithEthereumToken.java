@@ -56,24 +56,22 @@ public record SignInWithEthereumToken(String scheme,
     /**
      * @param signedMessage the {@link SignedMessage}.
      * @param validateNonce a {@link Predicate} used to validate the nonce.
-     * @param schemes the {@link IncludeExcludeSet} used to validate the scheme.
      * @param domains the {@link IncludeExcludeSet} used to validate the domain.
      * @param chainIds the {@link IncludeExcludeSet} used to validate the chainId.
      * @throws ServerAuthException if the {@link SignedMessage} fails validation.
      */
     public void validate(SignedMessage signedMessage, Predicate<String> validateNonce,
-                         IncludeExcludeSet<String, String> schemes,
                          IncludeExcludeSet<String, String> domains,
                          IncludeExcludeSet<String, String> chainIds) throws ServerAuthException
     {
         if (validateNonce != null && !validateNonce.test(nonce()))
-            throw new ServerAuthException("invalid nonce");
+            throw new ServerAuthException("invalid nonce " + nonce);
 
         if (!StringUtil.asciiEqualsIgnoreCase(signedMessage.recoverAddress(), address()))
             throw new ServerAuthException("signature verification failed");
 
         if (!"1".equals(version()))
-            throw new ServerAuthException("unsupported version");
+            throw new ServerAuthException("unsupported version " + version);
 
         LocalDateTime now = LocalDateTime.now();
         if (StringUtil.isNotBlank(expirationTime()))
@@ -90,11 +88,9 @@ public record SignInWithEthereumToken(String scheme,
                 throw new ServerAuthException("SIWE message not yet valid");
         }
 
-        if (schemes != null && !schemes.test(scheme()))
-            throw new ServerAuthException("unregistered scheme");
         if (domains != null && !domains.test(domain()))
-            throw new ServerAuthException("unregistered domain");
+            throw new ServerAuthException("unregistered domain: " + domain());
         if (chainIds != null && !chainIds.test(chainId()))
-            throw new ServerAuthException("unregistered chainId");
+            throw new ServerAuthException("unregistered chainId: " + chainId());
     }
 }

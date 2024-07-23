@@ -11,124 +11,170 @@
 // ========================================================================
 //
 
-[[openid-support]]
-=== OpenID Support
+[[siwe-support]]
+= SIWE Support
 
-==== External Setup
+== Introduction
 
-===== Registering an App with OpenID Provider
-You must register the app with an OpenID Provider such as link:https://developers.google.com/identity/protocols/OpenIDConnect#authenticatingtheuser[Google] or link:https://images-na.ssl-images-amazon.com/images/G/01/lwa/dev/docs/website-developer-guide._TTH_.pdf[Amazon.]
-This will give you a Client ID and Client Secret.
-Once set up you must also register all the possible URI's for your webapp with the path `/j_security_check` so that the OpenId Provider will allow redirection back to the webapp.
+Sign-In with Ethereum (SIWE) is a decentralized authentication protocol that allows users to authenticate using their Ethereum account.
 
-These may look like
+This enables users to retain more control over their identity and provides an alternative to protocols such as OpenID Connect, which rely on a centralized identity provider.
 
- * `http://localhost:8080/openid-webapp/j_security_check`
+Sign-In with Ethereum works by using off-chain services to sign a standard message format defined by EIP-4361 (https://eips.ethereum.org/EIPS/eip-4361). The user signs the SIWE message to prove ownership of the Ethereum address. This is verified by the server by extracting the Ethereum address from the signature and comparing it to the address supplied in the SIWE message.
 
- *  `https://example.com/j_security_check`
+Typically, you would rely on a browser extension such as MetaMask to provide a user-friendly way for users to sign the message with their Ethereum account.
 
-==== Distribution Configuration
+=== Support
 
-===== OpenID Provider Configuration
-To enable OpenID support, you first need to activate the `openid` module in your implementation.
+Currently Jetty only provides support SIWE in Jetty 12.0+ and only for `jetty-core`, and `ee10`+ environments. It is enabled by adding the `EtheremAuthenticator` to the `SecurityHandler` of your web application.
 
-[source, screen, subs="{sub-order}"]
+== Usage
+
+=== Enabling SIWE
+The Sign-In with Ethereum module can be enabled when using Standalone Jetty with.
+[source,subs=attributes+]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-to-start=openid
-----
-
-To configure OpenID Authentication with Jetty you will need to specify the OpenID Provider's issuer identifier (case sensitive URL using the `https` scheme) and the OAuth 2.0 Client ID and Client Secret.
-If the OpenID Provider does not allow metadata discovery you will also need to specify the token endpoint and authorization endpoint of the OpenID Provider.
-These can be set as properties in the `start.ini` or `start.d/openid.ini` files.
-
-===== WebApp Specific Configuration in web.xml
-
-The `web.xml` file needs some specific configuration to use OpenID.
-There must be a `login-config` element with an `auth-method` value of `OPENID`, and a `realm-name` value of the exact URL string used to set the OpenID Provider.
-
-To set the error page, an init param is set at `"org.eclipse.jetty.security.openid.error_page"`, its value should be a path relative to the webapp where authentication errors should be redirected.
-
-Example:
-
-[source, xml, subs="{sub-order}"]
-----
-<login-config>
-  <auth-method>OPENID</auth-method>
-  <realm-name>https://accounts.google.com</realm-name>
-</login-config>
-<context-param>
-  <param-name>org.eclipse.jetty.security.openid.error_page</param-name>
-  <param-value>/error</param-value>
-</context-param>
+$ java -jar $JETTY_HOME/start.jar --add-modules=siwe
 ----
 
-==== Embedded Configuration
+If using embedded Jetty you must add the `EthereumAuthenticator` to your `SecurityHandler`.
 
-===== Define the `OpenIdConfiguration` for a specific OpenID Provider.
+=== Configuration
 
-If the OpenID Provider allows metadata discovery then you can use.
+Configuration of the `EthereumAuthenticator` is done through init params on the `ServletContext` or `SecurityHandler`. The `loginPath` is the only mandatory configuration and the others have defaults that you may wish to configure.
 
-[source, java, subs="{sub-order}"]
+Login Path::
+* Init param: `org.eclipse.jetty.security.siwe.login_path`
+* Description: Unauthenticated requests are redirected to a login page where they must sign a SIWE message and send it to the server. This path represents a page in the application that contains the SIWE login page.
+
+Nonce Path::
+* Init param: `org.eclipse.jetty.security.siwe.nonce_path`
+* Description: Requests to this path will generate a random nonce string which is associated with the session. The nonce is used in the SIWE Message to avoid replay attacks. The path at which this nonce is served can be configured through the init parameter. The application does not need to implement their own nonce endpoint, they just configure this path and the Authenticator handles it. The default value for this is `/auth/nonce` if left un-configured.
+
+Authentication Path::
+* Init param: `org.eclipse.jetty.security.siwe.authentication_path`
+* Description: The authentication path is where requests containing a signed SIWE message are sent in order to authenticate the user. The default value for this is `/auth/login`.
+
+Max Message Size::
+* Init Param: `org.eclipse.jetty.security.siwe.max_message_size`
+* Description: This is the max size of the authentication message which can be read by the implementation. This limit defaults to `4 * 1024`. This is necessary because the complete request content is read into a string and then parsed.
+
+Logout Redirect Path::
+* Init Param: `org.eclipse.jetty.security.siwe.logout_redirect_path`
+* Description: Where the request is redirected to after logout. If left un-configured no redirect will be done upon logout.
+
+Error Path::
+* Init Param: `org.eclipse.jetty.security.siwe.error_path`
+* Description: Path where Authentication errors are sent, this may contain an optional query string. An error description is available on the error page through the request parameter `error_description_jetty`. If this configuration is not set Jetty will send a 403 Forbidden response upon authentication errors.
+
+Dispatch::
+* Init Param: `org.eclipse.jetty.security.siwe.dispatch`
+* Description: If set to true a dispatch will be done instead of a redirect to the login page in the case of an unauthenticated request. This defaults to false.
+
+Authenticate New Users::
+* Init Param: `org.eclipse.jetty.security.siwe.authenticate_new_users`
+* Description: This can be set to false if you have a nested `LoginService` and only want to authenticate users known by the `LoginService`. This defaults to `true` meaning that any user will be authenticated regardless if they are known by the nested `LoginService`.
+
+Domains::
+* Init Param: org.eclipse.jetty.security.siwe.domains
+* Description: This list of allowed domains to be declared in the `domain` field of the SIWE Message. If left blank this will allow all domains.
+
+Chain IDs::
+* Init Param: org.eclipse.jetty.security.siwe.chainIds
+* Description: This list of allowed Chain IDs to be declared in the `chain-id` field of the SIWE Message. If left blank this will allow all Chain IDs.
+
+=== Nested LoginService
+
+A nested `LoginService` may be used to assign roles to users of a known Ethereum Address. Or the nested `LoginService` may be combined with the setting `authenticateNewUsers == false` to only allow authentication of known users.
+
+For example a `HashLoginService` may be configured through the `jetty-ee10-web.xml` file:
+[, xml, indent=0]
 ----
-OpenIdConfiguration openIdConfig = new OpenIdConfiguration(ISSUER, CLIENT_ID, CLIENT_SECRET);
+<Configure id="wac" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+  <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
+    <Arg><Ref refid="Server"/></Arg>
+    <Call id="realmResource" name="newResource">
+      <Arg><SystemProperty name="jetty.base" default="."/>/etc/realm.properties</Arg>
+    </Call>
+  </Call>
+
+  <Call name="getSecurityHandler">
+    <Set name="loginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
+        <Set name="name">myRealm</Set>
+        <Set name="config"><Ref refid="realmResource"/></Set>
+      </New>
+    </Set>
+  </Call>
+</Configure>
 ----
 
-Otherwise you can manually enter the necessary information:
+=== Application Implementation
+EIP-4361 specifies the format of a SIWE Message, the overview of the Sign-In with Ethereum process, and message validation. However, it does not specify certain things like how the SIWE Message and signature are sent to the server for validation, and it does not specify the process the client acquires the nonce from the server. For this reason the `EthereumAuthenticator` has been made extensible to allow different implementations.
 
-[source, java, subs="{sub-order}"]
-----
-OpenIdConfiguration openIdConfig = new OpenIdConfiguration(ISSUER, TOKEN_ENDPOINT, AUTH_ENDPOINT, CLIENT_ID, CLIENT_SECRET);
-----
+Currently Jetty supports authentication requests of type `application/x-www-form-urlencoded` or `multipart/form-data`, which contains the fields `message` and `signature`. Where `message` contains the full SIWE message, and `signature` is the ERC-1271 signature of the SIWE message.
 
-===== Configuring an `OpenIdLoginService`
-[source, java, subs="{sub-order}"]
-----
-LoginService loginService = new OpenIdLoginService(openIdConfig);
-securityHandler.setLoginService(loginService);
-----
+The nonce endpoint provided by the `EthereumAuthenticator` returns a response with `application/json` format, with a single key of `nonce`.
 
-===== Configuring an `OpenIdAuthenticator` with `OpenIdConfiguration` and Error Page Redirect
-[source, java, subs="{sub-order}"]
+=== Configuring Security Handler
+[,java,indent=0]
 ----
-Authenticator authenticator = new OpenIdAuthenticator(openIdConfig, "/error");
-securityHandler.setAuthenticator(authenticator);
-servletContextHandler.setSecurityHandler(securityHandler);
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/siwe/SignInWithEthereum.java[tags=configureSecurityHandler]
 ----
 
-===== Usage
+=== Login Page Example
 
-====== Claims and Access Token
-Claims about the user can be found using attributes on the session attribute `"org.eclipse.jetty.security.openid.claims"`, and the full response containing the OAuth 2.0 Access Token can be found with the session attribute `"org.eclipse.jetty.security.openid.response"`.
-
-Example:
-[source, java, subs="{sub-order}"]
+Include the `Web3.js` library to interact with the users Ethereum wallet.
+[,html,indent=0]
 ----
-Map<String, Object> claims = (Map)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
-String userId = claims.get("sub");
-
-Map<String, Object> response = (Map)request.getSession().getAttribute("org.eclipse.jetty.security.openid.response");
-String accessToken = response.get("access_token");
+<script src="https://cdn.jsdelivr.net/npm/web3@1.6.1/dist/web3.min.js"></script>
 ----
 
-==== Scopes
-The OpenID scope is always used but additional scopes can be requested which can give you additional resources or privileges.
-For the Google OpenID Provider it can be useful to request the scopes `profile` and `email` which will give you additional user claims.
-
-Additional scopes can be requested through the `start.ini` or `start.d/openid.ini` files, or with `OpenIdConfiguration.addScopes(...);` in embedded code.
-
-==== Roles
-
-If security roles are required they can be configured through a wrapped `LoginService` which is deferred to for role information by the `OpenIdLoginService`.
-
-This can be configured in XML through `etc/openid-baseloginservice.xml` in the Distribution, or in embedded code using the constructor for the `OpenIdLoginService`.
-
-[source, java, subs="{sub-order}"]
+HTML form to submit the sign in request.
+[,html,indent=0]
 ----
-LoginService wrappedLoginService = ...; // Optional LoginService for Roles
-LoginService loginService = new OpenIdLoginService(openIdConfig, wrappedLoginService);
+<button id="siwe">Sign-In with Ethereum</button>
+<form id="loginForm" action="/auth/login" method="POST" style="display: none;">
+    <input type="hidden" id="signatureField" name="signature">
+    <input type="hidden" id="messageField" name="message">
+</form>
+<p class="alert" style="display: none;">Result: <span id="siweResult"></span></p>
 ----
 
-When using authorization roles, the setting `authenticateNewUsers` becomes significant.
-If set to `true` users not found by the wrapped `LoginService` will still be authenticated but will have no roles.
-If set to `false` those users will be not be allowed to authenticate and are redirected to the error page.
-This setting is configured through the property `jetty.openid.authenticateNewUsers` in the `start.ini` or `start.d/openid.ini` file, or with `OpenIdLoginService.setAuthenticateNewUsers(...);` in embedded code.
+Add script to generate and sign the SIWE message when the sign-in button is pressed.
+[,html,indent=0]
+----
+<script>
+    let provider = window.ethereum;
+    let accounts;
+
+    if (!provider) {
+        document.getElementById('siweResult').innerText = 'MetaMask is not installed. Please install MetaMask to use this feature.';
+    } else {
+        document.getElementById('siwe').addEventListener('click', async () => {
+            try {
+                accounts = await provider.request({ method: 'eth_requestAccounts' });
+                const domain = window.location.host;
+                const from = accounts[0];
+
+                // Fetch nonce from the server.
+                const nonceResponse = await fetch('/auth/nonce');
+                const nonceData = await nonceResponse.json();
+                const nonce = nonceData.nonce;
+
+                const siweMessage = `${domain} wants you to sign in with your Ethereum account:\n${from}\n\nI accept the MetaMask Terms of Service: https://community.metamask.io/tos\n\nURI: https://${domain}\nVersion: 1\nChain ID: 1\nNonce: ${nonce}\nIssued At: ${new Date().toISOString()}`;
+                document.getElementById('signatureField').value = await provider.request({
+                    method: 'personal_sign',
+                    params: [siweMessage, from]
+                });
+                document.getElementById('messageField').value = siweMessage;
+                document.getElementById('loginForm').submit();
+            } catch (error) {
+                console.error('Error during login:', error);
+                document.getElementById('siweResult').innerText = `Error: ${error.message}`;
+                document.getElementById('siweResult').parentElement.style.display = 'block';
+            }
+        });
+    }
+</script>
+----
