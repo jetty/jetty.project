@@ -215,6 +215,7 @@ public abstract class Compression extends ContainerLifeCycle
          * @return the output chunk (never null)
          * @throws IOException if unable to decode chunk.
          */
+        // TODO: make input is RetainableByteBuffer
         RetainableByteBuffer decode(Content.Chunk input) throws IOException;
 
         /**
@@ -271,6 +272,7 @@ public abstract class Compression extends ContainerLifeCycle
          *
          * @return the encoder {@code ByteOrder}
          */
+        // TODO: Look into removing
         ByteOrder getByteOrder();
 
         /**
@@ -313,6 +315,7 @@ public abstract class Compression extends ContainerLifeCycle
          *
          * @param content the input buffer
          */
+        // TODO: rename to addInput
         void setInput(ByteBuffer content);
     }
 }
