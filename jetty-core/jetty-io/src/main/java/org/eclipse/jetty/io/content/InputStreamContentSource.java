@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -43,6 +44,7 @@ public class InputStreamContentSource implements Content.Source
     private ByteBufferPool.Sized bufferPool;
     private Runnable demandCallback;
     private Content.Chunk errorChunk;
+    private long toRead;
     private boolean closed;
 
     public InputStreamContentSource(InputStream inputStream)
@@ -57,12 +59,36 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool)
     {
+        this(inputStream, bufferPool, 0L, -1L);
+    }
+
+    public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool, long offset, long length)
+    {
         this.inputStream = Objects.requireNonNull(inputStream);
         bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
         // Make sure direct is always false as the implementation requires heap buffers to be able to call array().
         if (bufferPool.isDirect())
             bufferPool = new ByteBufferPool.Sized(bufferPool.getWrapped(), false, bufferPool.getSize());
         this.bufferPool = bufferPool;
+        skipToOffset(inputStream, offset, length);
+        this.toRead = length;
+    }
+
+    private static void skipToOffset(InputStream inputStream, long offset, long length)
+    {
+        if (offset > 0L && length != 0L)
+        {
+            try
+            {
+                inputStream.skip(offset - 1);
+                if (inputStream.read() == -1)
+                    throw new IllegalArgumentException("Offset out of range");
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
+        }
     }
 
     public int getBufferSize()
@@ -135,7 +161,13 @@ public class InputStreamContentSource implements Content.Source
 
     protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
     {
-        return inputStream.read(buffer, 0, buffer.length);
+        if (toRead == 0L)
+            return -1;
+        int toReadInt = toRead >= Integer.MAX_VALUE || toRead < 0L ? -1 : (int)toRead;
+        int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
+        int read = inputStream.read(buffer, 0, len);
+        toRead -= read;
+        return read;
     }
 
     private void close()
