@@ -16,6 +16,9 @@ package org.eclipse.jetty.security.siwe.util;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * A utility to generate Sign-In with Ethereum message to be used for testing.
+ */
 public class SignInWithEthereumGenerator
 {
     private SignInWithEthereumGenerator()

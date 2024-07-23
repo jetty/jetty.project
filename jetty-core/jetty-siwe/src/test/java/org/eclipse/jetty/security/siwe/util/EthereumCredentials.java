@@ -33,6 +33,9 @@ import org.eclipse.jetty.security.siwe.internal.EthereumUtil;
 
 import static org.eclipse.jetty.security.siwe.internal.EthereumUtil.keccak256;
 
+/**
+ * Test utility to generate an ethereum address and use it to sign messages.
+ */
 public class EthereumCredentials
 {
     private final PrivateKey privateKey;
