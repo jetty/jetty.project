@@ -52,7 +52,7 @@ public class CompressionDecoderTransformer extends ContentSourceTransformer
             _chunk.retain();
         try
         {
-            RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk);
+            RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk.getByteBuffer());
 
             if (decodedBuffer != null && decodedBuffer.hasRemaining())
             {

@@ -15,20 +15,15 @@ package org.eclipse.jetty.compression.brotli;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 
 import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
 import com.aayushatharva.brotli4j.encoder.Encoder;
 import com.aayushatharva.brotli4j.encoder.PreparedDictionary;
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -39,17 +34,13 @@ public class BrotliEncoder implements Compression.Encoder
     private static final Logger LOG = LoggerFactory.getLogger(BrotliEncoder.class);
 
     private final CaptureByteChannel captureChannel;
-    private final ByteBufferPool bufferPool; // TODO: can we even use this??
-    private final int outputBufferSize;
     // TODO: change to com.aayushatharva.brotli4j.encoder.EncoderJNI.Wrapper once new release is available for
     // https://github.com/hyperxpro/Brotli4j/issues/144
     private final BrotliEncoderChannel encoder;
     private ByteBuffer inputBuffer;
 
-    public BrotliEncoder(BrotliCompression brotliCompression, ByteBufferPool pool, int outputBufferSize)
+    public BrotliEncoder(BrotliCompression brotliCompression)
     {
-        this.bufferPool = pool;
-        this.outputBufferSize = brotliCompression.getBufferSize();
         try
         {
             this.captureChannel = new CaptureByteChannel();
@@ -68,13 +59,7 @@ public class BrotliEncoder implements Compression.Encoder
     }
 
     @Override
-    public void begin()
-    {
-        // no header blocks in brotli
-    }
-
-    @Override
-    public void setInput(ByteBuffer content)
+    public void addInput(ByteBuffer content)
     {
         try
         {
@@ -101,14 +86,6 @@ public class BrotliEncoder implements Compression.Encoder
         {
             throw new RuntimeIOException(e);
         }
-    }
-
-    @Override
-    public ByteOrder getByteOrder()
-    {
-        // Per https://datatracker.ietf.org/doc/html/rfc7932#section-1.5
-        // Brotli is LITTLE_ENDIAN
-        return ByteOrder.LITTLE_ENDIAN;
     }
 
     @Override
@@ -150,33 +127,16 @@ public class BrotliEncoder implements Compression.Encoder
     }
 
     @Override
-    public RetainableByteBuffer acquireInitialOutputBuffer()
-    {
-        RetainableByteBuffer buffer = bufferPool.acquire(outputBufferSize, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        BufferUtil.flipToFill(byteBuffer);
-        return buffer;
-    }
-
-    @Override
     public void addTrailer(ByteBuffer outputBuffer)
     {
         // no trailers in brotli
     }
 
     @Override
-    public void release()
+    public void close() throws Exception
     {
-        this.captureChannel.release();
-
-        try
-        {
-            encoder.close();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeIOException(e);
-        }
+        captureChannel.release();
+        encoder.close();
     }
 
     private static class CaptureByteChannel implements WritableByteChannel

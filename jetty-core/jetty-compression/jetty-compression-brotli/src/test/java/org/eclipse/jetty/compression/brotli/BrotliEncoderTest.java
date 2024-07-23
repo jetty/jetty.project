@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.compression.brotli;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,13 +25,13 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 import com.aayushatharva.brotli4j.Brotli4jLoader;
-import com.aayushatharva.brotli4j.decoder.BrotliInputStream;
 import com.aayushatharva.brotli4j.decoder.Decoder;
 import com.aayushatharva.brotli4j.decoder.DecoderJNI;
 import com.aayushatharva.brotli4j.decoder.DirectDecompress;
 import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import com.aayushatharva.brotli4j.encoder.Encoder;
+import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -42,7 +40,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -67,17 +64,14 @@ public class BrotliEncoderTest extends AbstractBrotliTest
     {
         startBrotli(2048);
 
-        BrotliEncoder encoder = (BrotliEncoder)brotli.newEncoder(2048);
-
         String inputString = "Hello World, this is " + BrotliEncoderTest.class.getName();
         ByteBuffer input = BufferUtil.toBuffer(inputString);
 
-        RetainableByteBuffer output = encoder.acquireInitialOutputBuffer();
-        try
+        RetainableByteBuffer output = brotli.acquireByteBuffer();
+        try (Compression.Encoder encoder = brotli.newEncoder())
         {
             ByteBuffer outputBuf = output.getByteBuffer();
-            encoder.begin();
-            encoder.setInput(input);
+            encoder.addInput(input);
             encoder.finishInput();
             encoder.encode(outputBuf);
             encoder.addTrailer(outputBuf);
@@ -92,7 +86,6 @@ public class BrotliEncoderTest extends AbstractBrotliTest
         }
         finally
         {
-            encoder.release();
             output.release();
         }
     }
@@ -164,72 +157,70 @@ public class BrotliEncoderTest extends AbstractBrotliTest
 
         final int readBufferSize = 1000;
 
-        BrotliEncoder encoder = (BrotliEncoder)brotli.newEncoder(2048);
-
-        Path textFile = MavenPaths.findTestResourceFile(resourceName);
-
-        int fileSize = (int)Files.size(textFile);
-        System.err.printf("fileSize = %d%n", fileSize);
-        int encodeMax = (int)(double)(fileSize / readBufferSize) + 10;
-        System.err.printf("encodeMax = %d%n", encodeMax);
-
-        ByteBuffer compressed = ByteBuffer.allocate(fileSize);
-        RetainableByteBuffer output = encoder.acquireInitialOutputBuffer();
-        try (SeekableByteChannel channel = Files.newByteChannel(textFile, StandardOpenOption.READ))
+        try (Compression.Encoder encoder = brotli.newEncoder())
         {
-            ByteBuffer input = ByteBuffer.allocate(readBufferSize);
+            Path textFile = MavenPaths.findTestResourceFile(resourceName);
 
-            ByteBuffer outputBuf = output.getByteBuffer();
-            outputBuf.order(encoder.getByteOrder());
-            encoder.begin();
+            int fileSize = (int)Files.size(textFile);
+            System.err.printf("fileSize = %d%n", fileSize);
+            int encodeMax = (int)(double)(fileSize / readBufferSize) + 10;
+            System.err.printf("encodeMax = %d%n", encodeMax);
 
-            // input / encode loop
-            while (!encoder.isOutputFinished())
+            ByteBuffer compressed = ByteBuffer.allocate(fileSize);
+            RetainableByteBuffer output = brotli.acquireByteBuffer();
+            try (SeekableByteChannel channel = Files.newByteChannel(textFile, StandardOpenOption.READ))
             {
-                if (encoder.needsInput())
+                ByteBuffer input = ByteBuffer.allocate(readBufferSize);
+
+                ByteBuffer outputBuf = output.getByteBuffer();
+
+                // input / encode loop
+                while (!encoder.isOutputFinished())
                 {
-                    int readLen = channel.read(input);
-                    input.flip();
-                    if (readLen > 0)
+                    if (encoder.needsInput())
                     {
-                        encoder.setInput(input);
+                        int readLen = channel.read(input);
+                        input.flip();
+                        if (readLen > 0)
+                        {
+                            encoder.addInput(input);
+                        }
+                        else if (readLen == (-1))
+                        {
+                            encoder.finishInput();
+                        }
+                        input.compact();
                     }
-                    else if (readLen == (-1))
+
+                    int encodedLen = encoder.encode(outputBuf);
+                    if (encodeMax-- < 0)
+                        throw new RuntimeIOException("DEBUG: Too many encodes!");
+
+                    if (encodedLen > 0)
                     {
-                        encoder.finishInput();
+                        BufferUtil.flipToFlush(outputBuf, 0);
+                        compressed.put(outputBuf);
+                        BufferUtil.clearToFill(outputBuf);
                     }
-                    input.compact();
                 }
 
-                int encodedLen = encoder.encode(outputBuf);
-                if (encodeMax-- < 0)
-                    throw new RuntimeIOException("DEBUG: Too many encodes!");
+                encoder.addTrailer(outputBuf);
 
-                if (encodedLen > 0)
-                {
-                    BufferUtil.flipToFlush(outputBuf, 0);
-                    compressed.put(outputBuf);
-                    BufferUtil.clearToFill(outputBuf);
-                }
+                BufferUtil.flipToFlush(outputBuf, 0);
+                compressed.put(outputBuf);
+                BufferUtil.clearToFill(outputBuf);
+
+                compressed.flip();
+                LOG.debug("Compressed={}", BufferUtil.toDetailString(compressed));
+
+                String decompressed = decompress(compressed);
+                String wholeText = Files.readString(textFile, StandardCharsets.UTF_8);
+                assertThat(decompressed, is(wholeText));
             }
-
-            encoder.addTrailer(outputBuf);
-
-            BufferUtil.flipToFlush(outputBuf, 0);
-            compressed.put(outputBuf);
-            BufferUtil.clearToFill(outputBuf);
-
-            compressed.flip();
-            LOG.debug("Compressed={}", BufferUtil.toDetailString(compressed));
-
-            String decompressed = decompress(compressed);
-            String wholeText = Files.readString(textFile, StandardCharsets.UTF_8);
-            assertThat(decompressed, is(wholeText));
-        }
-        finally
-        {
-            encoder.release();
-            output.release();
+            finally
+            {
+                output.release();
+            }
         }
     }
 

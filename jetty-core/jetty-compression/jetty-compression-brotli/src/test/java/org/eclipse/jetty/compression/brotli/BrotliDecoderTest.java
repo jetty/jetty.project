@@ -66,7 +66,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
         startBrotli();
         Compression.Decoder decoder = brotli.newDecoder();
 
-        RetainableByteBuffer buf = decoder.decode(Content.Chunk.EMPTY);
+        RetainableByteBuffer buf = decoder.decode(BufferUtil.EMPTY_BUFFER);
         assertFalse(buf.hasRemaining());
     }
 
@@ -111,7 +111,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
                     {
                         try
                         {
-                            RetainableByteBuffer decoded = decoder.decode(chunk);
+                            RetainableByteBuffer decoded = decoder.decode(chunk.getByteBuffer());
                             builder.append(BufferUtil.toString(decoded.getByteBuffer()));
                             decoded.release();
                         }
@@ -216,7 +216,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
         }
 
         BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(Content.Chunk.from(bytes, true));
+        RetainableByteBuffer decoded = decoder.decode(bytes);
         assertEquals(0, decoded.remaining());
         decoded.release();
     }

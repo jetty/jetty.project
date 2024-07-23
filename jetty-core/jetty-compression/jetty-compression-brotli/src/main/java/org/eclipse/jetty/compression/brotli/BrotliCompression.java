@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.brotli;
 
+import java.nio.ByteOrder;
 import java.util.Set;
 
 import com.aayushatharva.brotli4j.Brotli4jLoader;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,6 +141,21 @@ public class BrotliCompression extends Compression
     }
 
     @Override
+    public RetainableByteBuffer acquireByteBuffer()
+    {
+        RetainableByteBuffer buffer = this.byteBufferPool.acquire(getBufferSize(), false);
+        buffer.getByteBuffer().order(getByteOrder());
+        return buffer;
+    }
+
+    private ByteOrder getByteOrder()
+    {
+        // Per https://datatracker.ietf.org/doc/html/rfc7932#section-1.5
+        // Brotli is LITTLE_ENDIAN
+        return ByteOrder.LITTLE_ENDIAN;
+    }
+
+    @Override
     public Decoder newDecoder()
     {
         return newDecoder(getByteBufferPool());
@@ -151,15 +168,9 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public Encoder newEncoder(int outputBufferSize)
+    public Encoder newEncoder()
     {
-        return newEncoder(getByteBufferPool(), outputBufferSize);
-    }
-
-    @Override
-    public Encoder newEncoder(ByteBufferPool pool, int outputBufferSize)
-    {
-        return new BrotliEncoder(this, pool, outputBufferSize);
+        return new BrotliEncoder(this);
     }
 
     @Override

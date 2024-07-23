@@ -20,7 +20,6 @@ import java.util.Objects;
 import com.aayushatharva.brotli4j.decoder.DecoderJNI;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -49,15 +48,9 @@ public class BrotliDecoder implements Compression.Decoder
     }
 
     @Override
-    public void cleanup()
+    public void close()
     {
         decoder.destroy();
-    }
-
-    @Override
-    public RetainableByteBuffer decode(Content.Chunk input) throws IOException
-    {
-        return decode(input.getByteBuffer());
     }
 
     /**

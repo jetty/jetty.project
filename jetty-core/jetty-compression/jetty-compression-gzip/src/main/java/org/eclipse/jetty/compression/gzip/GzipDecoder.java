@@ -23,7 +23,6 @@ import java.util.zip.ZipException;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Destroyable;
@@ -60,20 +59,9 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     }
 
     @Override
-    public void cleanup()
+    public void close()
     {
         // do nothing
-    }
-
-    @Override
-    public RetainableByteBuffer decode(Content.Chunk chunk)
-    {
-        decodeChunks(chunk.getByteBuffer());
-        RetainableByteBuffer decoded = inflated;
-        if (inflated == null && chunk.isLast())
-            return RetainableByteBuffer.EMPTY;
-        inflated = null;
-        return decoded;
     }
 
     /**

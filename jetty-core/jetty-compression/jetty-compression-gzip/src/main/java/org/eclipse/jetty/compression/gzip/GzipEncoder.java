@@ -14,13 +14,10 @@
 package org.eclipse.jetty.compression.gzip;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.slf4j.Logger;
@@ -60,29 +57,15 @@ public class GzipEncoder implements Compression.Encoder
     private static final int GZIP_TRAILER_SIZE = 8;
 
     private final CRC32 crc = new CRC32();
-    private final ByteBufferPool byteBufferPool;
-    private final int outputBufferSize;
     private final boolean syncFlush;
     private CompressionPool<Deflater>.Entry deflaterEntry;
+    private boolean headersOutputted = false;
 
-    public GzipEncoder(GzipCompression gzipCompression, ByteBufferPool bufferPool, int outputBufferSize)
+    public GzipEncoder(GzipCompression gzipCompression)
     {
-        this.byteBufferPool = bufferPool;
-        this.outputBufferSize = Math.max(GZIP_HEADER.length + GZIP_TRAILER_SIZE, outputBufferSize);
-        this.deflaterEntry = gzipCompression.getDeflaterPool().acquire();
-        this.syncFlush = gzipCompression.isSyncFlush();
-    }
-
-    @Override
-    public RetainableByteBuffer acquireInitialOutputBuffer()
-    {
-        RetainableByteBuffer buffer = byteBufferPool.acquire(outputBufferSize, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        byteBuffer.order(getByteOrder());
-        BufferUtil.clearToFill(byteBuffer);
-        // Add GZIP Header
-        byteBuffer.put(GZIP_HEADER, 0, GZIP_HEADER.length);
-        return buffer;
+        deflaterEntry = gzipCompression.getDeflaterPool().acquire();
+        syncFlush = gzipCompression.isSyncFlush();
+        crc.reset();
     }
 
     @Override
@@ -96,29 +79,26 @@ public class GzipEncoder implements Compression.Encoder
     }
 
     @Override
-    public void begin()
-    {
-        crc.reset();
-    }
-
-    @Override
     public int encode(ByteBuffer outputBuffer)
     {
+        int size = 0;
+        if (!headersOutputted)
+        {
+            // Add GZIP Header
+            outputBuffer.put(GZIP_HEADER, 0, GZIP_HEADER.length);
+            size += GZIP_HEADER.length;
+            headersOutputted = true;
+        }
+
         Deflater deflater = deflaterEntry.get();
-        return deflater.deflate(outputBuffer, getFlushMode());
+        size += deflater.deflate(outputBuffer, getFlushMode());
+        return size;
     }
 
     @Override
     public void finishInput()
     {
         deflaterEntry.get().finish();
-    }
-
-    @Override
-    public ByteOrder getByteOrder()
-    {
-        // Per RFC-1952, GZIP is LITTLE_ENDIAN
-        return ByteOrder.LITTLE_ENDIAN;
     }
 
     @Override
@@ -140,7 +120,7 @@ public class GzipEncoder implements Compression.Encoder
     }
 
     @Override
-    public void release()
+    public void close()
     {
         if (deflaterEntry != null)
         {
@@ -150,7 +130,7 @@ public class GzipEncoder implements Compression.Encoder
     }
 
     @Override
-    public void setInput(ByteBuffer content)
+    public void addInput(ByteBuffer content)
     {
         Deflater deflater = deflaterEntry.get();
         if (LOG.isDebugEnabled())

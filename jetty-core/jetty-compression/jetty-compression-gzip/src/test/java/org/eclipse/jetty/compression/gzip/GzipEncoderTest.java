@@ -13,65 +13,85 @@
 
 package org.eclipse.jetty.compression.gzip;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.zip.GZIPInputStream;
 
+import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 
 public class GzipEncoderTest extends AbstractGzipTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(GzipEncoderTest.class);
 
     @Test
+    public void testEncodeSmallBuffer() throws Exception
+    {
+        startGzip(2048);
+
+        String inputString = "Jetty";
+        ByteBuffer input = BufferUtil.toBuffer(inputString, UTF_8);
+        try (Compression.Encoder encoder = gzip.newEncoder())
+        {
+            RetainableByteBuffer compressed = gzip.acquireByteBuffer();
+            ByteBuffer compressedBytes = compressed.getByteBuffer();
+            BufferUtil.flipToFill(compressedBytes);
+            encoder.addInput(input);
+            encoder.finishInput();
+            encoder.encode(compressedBytes);
+            encoder.addTrailer(compressedBytes);
+
+            BufferUtil.flipToFlush(compressedBytes, 0);
+
+            assertThat(compressed.hasRemaining(), is(true));
+            assertThat(compressed.remaining(), greaterThan(10));
+
+            String decompressed = new String(decompress(compressedBytes), UTF_8);
+            assertThat(decompressed, is(inputString));
+            compressed.release();
+        }
+    }
+
+    @Test
     public void testEncodeSingleBuffer() throws Exception
     {
         startGzip(2048);
 
-        GzipEncoder encoder = (GzipEncoder)gzip.newEncoder(2048);
-
         String inputString = "Hello World, this is " + GzipEncoderTest.class.getName();
-        ByteBuffer input = BufferUtil.toBuffer(inputString);
+        ByteBuffer input = BufferUtil.toBuffer(inputString, UTF_8);
 
-        RetainableByteBuffer output = encoder.acquireInitialOutputBuffer();
-        try
+        try (Compression.Encoder encoder = gzip.newEncoder())
         {
-            ByteBuffer outputBuf = output.getByteBuffer();
-            encoder.begin();
-            encoder.setInput(input);
+            RetainableByteBuffer compressed = gzip.acquireByteBuffer();
+            ByteBuffer compressedBytes = compressed.getByteBuffer();
+            BufferUtil.flipToFill(compressedBytes);
+            encoder.addInput(input);
             encoder.finishInput();
-            encoder.encode(outputBuf);
-            encoder.addTrailer(outputBuf);
+            encoder.encode(compressedBytes);
+            encoder.addTrailer(compressedBytes);
 
-            BufferUtil.flipToFlush(outputBuf, 0);
+            BufferUtil.flipToFlush(compressedBytes, 0);
 
-            assertThat(output.hasRemaining(), is(true));
-            assertThat(output.remaining(), greaterThan(10));
+            assertThat(compressed.hasRemaining(), is(true));
+            assertThat(compressed.remaining(), greaterThan(10));
 
-            String decompressed = decompress(outputBuf);
+            String decompressed = new String(decompress(compressedBytes), UTF_8);
             assertThat(decompressed, is(inputString));
-        }
-        finally
-        {
-            output.release();
+            compressed.release();
         }
     }
 
@@ -84,76 +104,77 @@ public class GzipEncoderTest extends AbstractGzipTest
     {
         startGzip(2048);
 
-        GzipEncoder encoder = (GzipEncoder)gzip.newEncoder(2048);
-
-        Path textFile = MavenPaths.findTestResourceFile(resourceName);
-
-        RetainableByteBuffer.DynamicCapacity aggregateCompressed = new RetainableByteBuffer.DynamicCapacity();
-
-        RetainableByteBuffer output = encoder.acquireInitialOutputBuffer();
-        try (SeekableByteChannel channel = Files.newByteChannel(textFile))
+        try (Compression.Encoder encoder = gzip.newEncoder())
         {
-            ByteBuffer input = ByteBuffer.allocate(256);
+            Path textFile = MavenPaths.findTestResourceFile(resourceName);
 
-            ByteBuffer outputBuf = output.getByteBuffer();
-            outputBuf.order(encoder.getByteOrder());
-            encoder.begin();
+            long fileSize = Files.size(textFile);
+            // since we are working with a simple aggregate byte buffers, lets put a small safety check in
+            assertThat("Test not able to support large file sizes", fileSize, lessThan(8_000_000L));
 
-            // input / encode loop
-            while (!encoder.isOutputFinished())
+            int aggregateSize = (int)(fileSize * 2);
+            ByteBuffer aggregate = ByteBuffer.allocate(aggregateSize);
+
+            RetainableByteBuffer output = gzip.acquireByteBuffer();
+            try (SeekableByteChannel channel = Files.newByteChannel(textFile))
             {
-                if (encoder.needsInput())
-                {
-                    BufferUtil.clearToFill(input);
-                    int readLen = channel.read(input);
-                    if (readLen > 0)
-                    {
-                        BufferUtil.flipToFlush(input, 0);
-                        encoder.setInput(input);
-                    }
-                    else if (readLen == (-1))
-                    {
-                        encoder.setInput(BufferUtil.EMPTY_BUFFER);
-                        encoder.finishInput();
-                    }
-                }
+                ByteBuffer input = ByteBuffer.allocate(256);
+                ByteBuffer outputBuf = output.getByteBuffer();
 
-                int encodedLen = encoder.encode(outputBuf);
-                if (encodedLen > 0 || outputBuf.hasRemaining())
+                boolean inputDone = false;
+                boolean outputDone = false;
+                // input / encode loop
+                while (!inputDone || !outputDone)
                 {
-                    BufferUtil.flipToFlush(outputBuf, 0);
-                    aggregateCompressed.append(outputBuf);
+                    if (encoder.needsInput() && !inputDone)
+                    {
+                        if (!input.hasRemaining())
+                            BufferUtil.clearToFill(input);
+                        int readLen = channel.read(input);
+                        if (readLen > 0)
+                        {
+                            BufferUtil.flipToFlush(input, 0);
+                            encoder.addInput(input);
+                        }
+                        else if (readLen == (-1))
+                        {
+                            // ensure that input is empty (and not using previous input)
+                            encoder.addInput(BufferUtil.EMPTY_BUFFER);
+                            encoder.finishInput();
+                            inputDone = true;
+                        }
+                    }
+
                     BufferUtil.clearToFill(outputBuf);
+                    int encodedLen = encoder.encode(outputBuf);
+                    if (encodedLen > 0)
+                    {
+                        BufferUtil.flipToFlush(outputBuf, 0);
+                        aggregate.put(outputBuf);
+                    }
+                    else if (encodedLen == 0 && inputDone)
+                    {
+                        outputDone = true;
+                    }
                 }
+
+                BufferUtil.clearToFill(outputBuf);
+                encoder.addTrailer(outputBuf);
+                BufferUtil.flipToFlush(outputBuf, 0);
+                aggregate.put(outputBuf);
+
+                BufferUtil.flipToFlush(aggregate, 0);
+
+                LOG.debug("File Size = {}", fileSize);
+
+                String decompressed = new String(decompress(aggregate), UTF_8);
+                String wholeText = Files.readString(textFile, UTF_8);
+                assertThat(decompressed, is(wholeText));
             }
-
-            encoder.addTrailer(outputBuf);
-            BufferUtil.flipToFlush(outputBuf, 0);
-            aggregateCompressed.append(outputBuf);
-            BufferUtil.clearToFill(outputBuf);
-
-            ByteBuffer compressed = aggregateCompressed.getByteBuffer();
-            String decompressed = decompress(compressed);
-            String wholeText = Files.readString(textFile, StandardCharsets.UTF_8);
-            assertThat(decompressed, is(wholeText));
-        }
-        finally
-        {
-            output.release();
-        }
-    }
-
-    private String decompress(ByteBuffer buf) throws IOException
-    {
-        byte[] array = BufferUtil.toArray(buf.slice());
-
-        try (
-            ByteArrayInputStream input = new ByteArrayInputStream(array);
-            GZIPInputStream gzipInput = new GZIPInputStream(input);
-            ByteArrayOutputStream output = new ByteArrayOutputStream())
-        {
-            IO.copy(gzipInput, output);
-            return new String(output.toByteArray(), StandardCharsets.UTF_8);
+            finally
+            {
+                output.release();
+            }
         }
     }
 }

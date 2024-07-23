@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.zstandard;
 
+import java.nio.ByteOrder;
 import java.util.Set;
 
 import org.eclipse.jetty.compression.Compression;
@@ -21,12 +22,18 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ZStandardCompression extends Compression
+/**
+ * Compression for Zstandard.
+ *
+ * @see <a href="https://datatracker.ietf.org/doc/html/rfc8478">RFC 8478 - Zstandard Compression and the application/zstd Media Type</a>
+ */
+public class ZstandardCompression extends Compression
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ZStandardCompression.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ZstandardCompression.class);
 
     private static final String ENCODING_NAME = "zstd";
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
@@ -37,7 +44,7 @@ public class ZStandardCompression extends Compression
     private int bufferSize = 2048;
     private int minCompressSize = DEFAULT_MIN_ZSTD_SIZE;
 
-    public ZStandardCompression()
+    public ZstandardCompression()
     {
         super(ENCODING_NAME);
     }
@@ -94,6 +101,21 @@ public class ZStandardCompression extends Compression
     }
 
     @Override
+    public RetainableByteBuffer acquireByteBuffer()
+    {
+        RetainableByteBuffer buffer = this.byteBufferPool.acquire(getBufferSize(), false);
+        buffer.getByteBuffer().order(getByteOrder());
+        return buffer;
+    }
+
+    private ByteOrder getByteOrder()
+    {
+        // https://datatracker.ietf.org/doc/html/rfc8478
+        // Zstandard is LITTLE_ENDIAN
+        return ByteOrder.LITTLE_ENDIAN;
+    }
+
+    @Override
     public String getName()
     {
         return "zstandard";
@@ -126,19 +148,13 @@ public class ZStandardCompression extends Compression
     @Override
     public Compression.Decoder newDecoder(ByteBufferPool pool)
     {
-        return new ZStandardDecoder(this, pool);
+        return new ZstandardDecoder(this, pool);
     }
 
     @Override
-    public Compression.Encoder newEncoder(int outputBufferSize)
+    public Compression.Encoder newEncoder()
     {
-        return newEncoder(getByteBufferPool(), outputBufferSize);
-    }
-
-    @Override
-    public Compression.Encoder newEncoder(ByteBufferPool pool, int outputBufferSize)
-    {
-        return new ZStandardEncoder(this, pool, outputBufferSize);
+        return new ZstandardEncoder(this);
     }
 
     @Override

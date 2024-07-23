@@ -13,14 +13,23 @@
 
 package org.eclipse.jetty.compression.gzip;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -75,5 +84,47 @@ public abstract class AbstractGzipTest
     {
         LifeCycle.stop(gzip);
         assertThat(poolCounter.get(), is(0));
+    }
+
+    /**
+     * Generate compressed bytes using JVM Built-In GZIP features.
+     *
+     * @param data the data to compress
+     * @return the compressed bytes
+     */
+    public byte[] compress(String data) throws IOException
+    {
+        // Generate some compressed bytes using GZIP built-in techniques
+        try (ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+             GZIPOutputStream output = new GZIPOutputStream(bytesOut))
+        {
+            if (data != null)
+                output.write(data.getBytes(UTF_8));
+            output.close();
+            return bytesOut.toByteArray();
+        }
+    }
+
+    /**
+     * Decompress bytes using JVM Built-In GZIP features.
+     *
+     * @param compressedBytes the data to decompress
+     * @return the decompressed bytes
+     */
+    public byte[] decompress(byte[] compressedBytes) throws IOException
+    {
+        try (
+            ByteArrayInputStream input = new ByteArrayInputStream(compressedBytes);
+            GZIPInputStream gzipInput = new GZIPInputStream(input);
+            ByteArrayOutputStream output = new ByteArrayOutputStream())
+        {
+            IO.copy(gzipInput, output);
+            return output.toByteArray();
+        }
+    }
+
+    public byte[] decompress(ByteBuffer compressedBytes) throws IOException
+    {
+        return decompress(BufferUtil.toArray(compressedBytes));
     }
 }

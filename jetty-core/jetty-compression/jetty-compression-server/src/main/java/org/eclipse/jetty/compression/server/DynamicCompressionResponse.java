@@ -23,12 +23,12 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -70,9 +70,7 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
         this.callback = callback;
         this.config = config;
         this.compression = compression;
-        ByteBufferPool pool = request.getComponents().getByteBufferPool();
-        int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        this.encoder = compression.newEncoder(pool, outputBufferSize);
+        this.encoder = compression.newEncoder();
         syncFlush = config.isSyncFlush();
     }
 
@@ -229,7 +227,6 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
             }
 
             fields.put(compression.getContentEncodingField());
-            encoder.begin();
 
             // Adjust headers
             fields.remove(HttpHeader.CONTENT_LENGTH);
@@ -290,7 +287,7 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
 
             if (_content != null)
             {
-                encoder.setInput(_content);
+                encoder.addInput(_content);
             }
 
             if (LOG.isDebugEnabled())
@@ -300,7 +297,14 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            encoder.release();
+            try
+            {
+                encoder.close();
+            }
+            catch (Exception e)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(x, e);
+            }
             super.onCompleteFailure(x);
         }
 
@@ -325,7 +329,7 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
             // If we have no buffer
             if (buffer == null)
             {
-                buffer = encoder.acquireInitialOutputBuffer();
+                buffer = compression.acquireByteBuffer();
             }
             else
             {
@@ -343,7 +347,15 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
 
         private void cleanup()
         {
-            encoder.release();
+            try
+            {
+                encoder.close();
+            }
+            catch (Exception e)
+            {
+                // TODO: what should we do here? rethrow? handle? fail?
+                throw new RuntimeException(e);
+            }
 
             if (buffer != null)
             {

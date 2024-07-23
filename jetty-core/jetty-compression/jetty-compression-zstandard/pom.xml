@@ -9,8 +9,8 @@
   </parent>
   <artifactId>jetty-compression-zstandard</artifactId>
   <packaging>jar</packaging>
-  <name>Core :: Compression :: ZStandard Support</name>
-  <description>Jetty Core Compression :: ZStandard Support</description>
+  <name>Core :: Compression :: Zstandard Support</name>
+  <description>Jetty Core Compression :: Zstandard Support</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.zstandard</bundle-symbolic-name>

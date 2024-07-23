@@ -15,27 +15,18 @@ package org.eclipse.jetty.compression.zstandard;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public class ZStandardEncoder implements Compression.Encoder
+public class ZstandardEncoder implements Compression.Encoder
 {
-    public ZStandardEncoder(ZStandardCompression ZStandardCompression, ByteBufferPool pool, int outputBufferSize)
+    public ZstandardEncoder(ZstandardCompression compression)
     {
 
     }
 
     @Override
-    public void begin()
-    {
-
-    }
-
-    @Override
-    public void setInput(ByteBuffer content)
+    public void addInput(ByteBuffer content)
     {
 
     }
@@ -44,12 +35,6 @@ public class ZStandardEncoder implements Compression.Encoder
     public void finishInput()
     {
 
-    }
-
-    @Override
-    public ByteOrder getByteOrder()
-    {
-        return ByteOrder.BIG_ENDIAN;
     }
 
     @Override
@@ -77,19 +62,13 @@ public class ZStandardEncoder implements Compression.Encoder
     }
 
     @Override
-    public RetainableByteBuffer acquireInitialOutputBuffer()
-    {
-        return null;
-    }
-
-    @Override
     public void addTrailer(ByteBuffer outputBuffer)
     {
 
     }
 
     @Override
-    public void release()
+    public void close()
     {
 
     }

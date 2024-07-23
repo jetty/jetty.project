@@ -14,20 +14,21 @@
 package org.eclipse.jetty.compression.zstandard;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public class ZStandardDecoder implements Compression.Decoder
+public class ZstandardDecoder implements Compression.Decoder
 {
-    public ZStandardDecoder(ZStandardCompression ZStandardCompression, ByteBufferPool pool)
+    public ZstandardDecoder(ZstandardCompression compression, ByteBufferPool pool)
     {
 
     }
 
     @Override
-    public Content.Chunk decode(Content.Chunk input) throws IOException
+    public RetainableByteBuffer decode(ByteBuffer input) throws IOException
     {
         return null;
     }
@@ -39,7 +40,7 @@ public class ZStandardDecoder implements Compression.Decoder
     }
 
     @Override
-    public void cleanup()
+    public void close()
     {
 
     }

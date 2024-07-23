@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.gzip;
 
+import java.nio.ByteOrder;
 import java.util.Set;
 import java.util.zip.Deflater;
 
@@ -23,6 +24,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.slf4j.Logger;
@@ -113,6 +115,21 @@ public class GzipCompression extends Compression
     }
 
     @Override
+    public RetainableByteBuffer acquireByteBuffer()
+    {
+        // TODO: can we safely use direct bytebuffers here?
+        RetainableByteBuffer buffer = this.byteBufferPool.acquire(getBufferSize(), false);
+        buffer.getByteBuffer().order(getByteOrder());
+        return buffer;
+    }
+
+    private ByteOrder getByteOrder()
+    {
+        // Per RFC-1952, GZIP is LITTLE_ENDIAN
+        return ByteOrder.LITTLE_ENDIAN;
+    }
+
+    @Override
     public boolean acceptsCompression(HttpFields headers, long contentLength)
     {
         if (contentLength >= 0 && contentLength < minCompressSize)
@@ -173,16 +190,9 @@ public class GzipCompression extends Compression
         return new GzipDecoder(this, pool);
     }
 
-    @Override
-    public Encoder newEncoder(int outputBufferSize)
+    public Encoder newEncoder()
     {
-        return newEncoder(getByteBufferPool(), getBufferSize());
-    }
-
-    @Override
-    public Encoder newEncoder(ByteBufferPool pool, int outputBufferSize)
-    {
-        return new GzipEncoder(this, pool, outputBufferSize);
+        return new GzipEncoder(this);
     }
 
     @Override

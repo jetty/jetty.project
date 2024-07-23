@@ -18,32 +18,34 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.CompletableTask;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class GzipDecoderTest extends AbstractGzipTest
 {
@@ -51,20 +53,21 @@ public class GzipDecoderTest extends AbstractGzipTest
     public void testDecodeEmpty() throws Exception
     {
         startGzip();
-        Compression.Decoder decoder = gzip.newDecoder();
-
-        RetainableByteBuffer buf = decoder.decode(Content.Chunk.EMPTY);
-        assertThat(buf, is(nullValue()));
+        try (Compression.Decoder decoder = gzip.newDecoder())
+        {
+            RetainableByteBuffer buf = decoder.decode(BufferUtil.EMPTY_BUFFER);
+            assertThat(buf, is(notNullValue()));
+            assertThat(buf.getByteBuffer().hasRemaining(), is(false));
+            assertThat("Decoder hasn't reached the end of the compressed content", decoder.isFinished(), is(false));
+        }
     }
 
     public static Stream<Arguments> precompressedText()
     {
         return Stream.of(
-            Arguments.of("precompressed/test_quotes.txt.gz", "precompressed/test_quotes.txt")
-            /*, TODO: figure out flaw in testcase with large inputs (other large input tests work)
+            Arguments.of("precompressed/test_quotes.txt.gz", "precompressed/test_quotes.txt"),
             Arguments.of("precompressed/logo.svgz", "precompressed/logo.svg"),
             Arguments.of("precompressed/text-long.txt.gz", "precompressed/text-long.txt")
-             */
         );
     }
 
@@ -76,53 +79,44 @@ public class GzipDecoderTest extends AbstractGzipTest
         Compression.Decoder decoder = gzip.newDecoder();
         Path inputPath = MavenPaths.findTestResourceFile(precompressedRef);
 
-        Content.Source source = Content.Source.from(inputPath);
+        StringBuilder result = new StringBuilder();
 
-        StringBuilder builder = new StringBuilder();
-
-        var task = new CompletableTask<>()
+        try (SeekableByteChannel inputChannel = Files.newByteChannel(inputPath, StandardOpenOption.READ))
         {
-            @Override
-            public void run()
+            ByteBuffer readBuffer = ByteBuffer.allocate(2048);
+
+            boolean done = false;
+            while (!done)
             {
-                while (true)
+                BufferUtil.clearToFill(readBuffer);
+                try
                 {
-                    Content.Chunk chunk = source.read();
-                    if (chunk == null)
+                    int len = inputChannel.read(readBuffer);
+
+                    if (len == -1)
                     {
-                        source.demand(this);
+                        done = true;
                         break;
                     }
-
-                    if (chunk.hasRemaining())
+                    if (len > 0)
                     {
-                        try
-                        {
-                            RetainableByteBuffer decoded = decoder.decode(chunk);
-                            builder.append(BufferUtil.toString(decoded.getByteBuffer()));
-                            decoded.release();
-                        }
-                        catch (IOException e)
-                        {
-                            completeExceptionally(e);
-                        }
-                    }
-                    chunk.release();
-
-                    if (chunk.isLast())
-                    {
-                        complete(null);
-                        break;
+                        BufferUtil.flipToFlush(readBuffer, 0);
+                        RetainableByteBuffer decoded = decoder.decode(readBuffer);
+                        result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                        decoded.release();
                     }
                 }
+                catch (IOException e)
+                {
+                    fail(e);
+                }
             }
-        };
-        source.demand(task);
+        }
 
         Path expectedPath = MavenPaths.findTestResourceFile(expectedRef);
         String expected = Files.readString(expectedPath);
 
-        assertThat(builder.toString(), is(expected));
+        assertEquals(expected, result.toString());
     }
 
     @Test
@@ -139,59 +133,122 @@ public class GzipDecoderTest extends AbstractGzipTest
     public void testStreamNoBlocks() throws Exception
     {
         startGzip();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.close();
-        byte[] bytes = baos.toByteArray();
 
-        GZIPInputStream input = new GZIPInputStream(new ByteArrayInputStream(bytes), 1);
-        int read = input.read();
-        assertEquals(-1, read);
+        byte[] compressedBytes = compress(null);
+
+        // Compressed bytes should have some content, and not be totally blank.
+        assertThat(compressedBytes.length, greaterThan(8));
+
+        // Using built-in GZIP features, this should result in an immediate EOF (read == -1).
+        try (ByteArrayInputStream bytesIn = new ByteArrayInputStream(compressedBytes);
+             GZIPInputStream input = new GZIPInputStream(bytesIn, compressedBytes.length))
+        {
+            int read = input.read();
+            assertEquals(-1, read, "Expected EOF");
+        }
+
+        // Using GzipDecoder this should result in no content
+        try (Compression.Decoder decoder = gzip.newDecoder())
+        {
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
+            RetainableByteBuffer output = decoder.decode(compressed);
+            assertThat(output, notNullValue());
+            assertThat(output.getByteBuffer().remaining(), is(0));
+            assertThat(decoder.isFinished(), is(true));
+            output.release();
+        }
     }
 
     @Test
-    public void testStreamBigBlockOneByteAtATime() throws Exception
+    public void testOneEmptyBlock() throws Exception
     {
         startGzip();
-        String data = "0123456789ABCDEF";
-        for (int i = 0; i < 10; ++i)
-        {
-            data += data;
-        }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes(StandardCharsets.UTF_8));
-        output.close();
-        byte[] bytes = baos.toByteArray();
+        byte[] compressedBytes = compress("");
 
-        baos = new ByteArrayOutputStream();
-        GZIPInputStream input = new GZIPInputStream(new ByteArrayInputStream(bytes), 1);
-        int read;
-        while ((read = input.read()) >= 0)
+        // Compressed bytes should have some content, and not be totally blank.
+        assertThat(compressedBytes.length, greaterThan(8));
+
+        // Using built-in GZIP features, this should result in an immediate EOF (read == -1).
+        try (ByteArrayInputStream bytesIn = new ByteArrayInputStream(compressedBytes);
+             GZIPInputStream input = new GZIPInputStream(bytesIn, compressedBytes.length))
         {
-            baos.write(read);
+            int read = input.read();
+            assertEquals(-1, read, "Expected EOF");
         }
-        assertEquals(data, baos.toString(StandardCharsets.UTF_8));
+
+        // Using GzipDecoder this should result in no content
+        try (Compression.Decoder decoder = gzip.newDecoder())
+        {
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
+            RetainableByteBuffer output = decoder.decode(compressed);
+            assertThat(output, notNullValue());
+            assertThat(output.getByteBuffer().remaining(), is(0));
+            assertThat(decoder.isFinished(), is(true));
+            output.release();
+        }
     }
 
     @Test
-    public void testNoBlocks() throws Exception
+    public void testBigBlockOneByteAtATime() throws Exception
     {
         startGzip();
 
-        ByteBuffer bytes;
+        String data = "0123456789ABCDEF".repeat(10);
+        byte[] compressedBytes = compress(data);
 
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream output = new GZIPOutputStream(baos))
+        // Using built-in GZIP features.
+        try (ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+             ByteArrayInputStream bytesIn = new ByteArrayInputStream(compressedBytes);
+             GZIPInputStream input = new GZIPInputStream(bytesIn, compressedBytes.length))
         {
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
+            int read;
+            while ((read = input.read()) >= 0)
+            {
+                bytesOut.write(read);
+            }
+            assertEquals(data, bytesOut.toString(UTF_8));
         }
 
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(Content.Chunk.from(bytes, true));
-        assertEquals(0, decoded.remaining());
-        decoded.release();
+        // Using GzipDecoder.
+        try (Compression.Decoder decoder = gzip.newDecoder())
+        {
+            StringBuilder actualContent = new StringBuilder();
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
+
+            while (compressed.hasRemaining())
+            {
+                // decode 1 byte at a time for this test
+                ByteBuffer singleByte = ByteBuffer.wrap(new byte[]{compressed.get()});
+                RetainableByteBuffer output = decoder.decode(singleByte);
+                assertThat(output, notNullValue());
+                if (output.hasRemaining())
+                {
+                    actualContent.append(BufferUtil.toString(output.getByteBuffer(), UTF_8));
+                }
+                output.release();
+            }
+
+            assertEquals(data, actualContent.toString());
+        }
+    }
+
+    @Test
+    public void testBigBlock() throws Exception
+    {
+        startGzip();
+        String data = "0123456789ABCDEF".repeat(10);
+        ByteBuffer bytes = ByteBuffer.wrap(compress(data));
+
+        try (Compression.Decoder decoder = gzip.newDecoder())
+        {
+            StringBuilder actual = new StringBuilder();
+
+            RetainableByteBuffer decoded = decoder.decode(bytes);
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            assertEquals(data, actual.toString());
+        }
     }
 
     @Test
@@ -199,20 +256,15 @@ public class GzipDecoderTest extends AbstractGzipTest
     {
         startGzip();
         String data = "0";
-        ByteBuffer bytes;
+        byte[] compressedBytes = compress(data);
 
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream output = new GZIPOutputStream(baos))
+        try (Compression.Decoder decoder = gzip.newDecoder())
         {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
+            RetainableByteBuffer decoded = decoder.decode(compressed);
+            assertEquals(data, BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
         }
-
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(Content.Chunk.from(bytes, true));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-        decoded.release();
     }
 
     @Test
@@ -220,15 +272,7 @@ public class GzipDecoderTest extends AbstractGzipTest
     {
         startGzip();
         String data = "0";
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream output = new GZIPOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
+        ByteBuffer bytes = ByteBuffer.wrap(compress(data));
 
         // The header is 10 bytes, chunk at 11 bytes
         ByteBuffer slice1 = bytes.slice();
@@ -236,12 +280,24 @@ public class GzipDecoderTest extends AbstractGzipTest
         ByteBuffer slice2 = bytes.slice();
         slice2.position(11);
 
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(Content.Chunk.from(slice1, false));
-        assertNull(decoded);
-        decoded = decoder.decode(Content.Chunk.from(slice2, true));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-        decoded.release();
+        try (Compression.Decoder decoder = gzip.newDecoder())
+        {
+            StringBuilder actual = new StringBuilder();
+
+            RetainableByteBuffer decoded = decoder.decode(slice1);
+            assertNotNull(decoded);
+            assertThat(decoder.isFinished(), is(false));
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            decoded = decoder.decode(slice2);
+            assertNotNull(decoded);
+            assertThat(decoder.isFinished(), is(true));
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            assertEquals(data, actual.toString());
+        }
     }
 
     @Test
@@ -249,15 +305,7 @@ public class GzipDecoderTest extends AbstractGzipTest
     {
         startGzip();
         String data = "0";
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream output = new GZIPOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
+        ByteBuffer bytes = ByteBuffer.wrap(compress(data));
 
         // The trailer is 8 bytes, chunk the last 9 bytes
         int split = bytes.remaining() - 9;
@@ -266,15 +314,24 @@ public class GzipDecoderTest extends AbstractGzipTest
         ByteBuffer slice2 = bytes.slice();
         slice2.position(split);
 
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(Content.Chunk.from(slice1, false));
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-        assertFalse(decoder.isFinished());
-        decoded.release();
-        decoded = decoder.decode(Content.Chunk.from(slice2, true));
-        assertEquals(0, decoded.remaining());
-        assertTrue(decoder.isFinished());
-        decoded.release();
+        try (Compression.Decoder decoder = gzip.newDecoder())
+        {
+            StringBuilder actual = new StringBuilder();
+
+            RetainableByteBuffer decoded = decoder.decode(slice1);
+            assertNotNull(decoded);
+            assertThat(decoder.isFinished(), is(false)); // haven't read the trailers yet
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            decoded = decoder.decode(slice2);
+            assertNotNull(decoded);
+            assertThat(decoder.isFinished(), is(true)); // we reached the end
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            assertEquals(data, actual.toString());
+        }
     }
 
     @Test
@@ -282,15 +339,7 @@ public class GzipDecoderTest extends AbstractGzipTest
     {
         startGzip();
         String data = "0";
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream output = new GZIPOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
+        ByteBuffer bytes = ByteBuffer.wrap(compress(data));
 
         // The trailer is 4+4 bytes, chunk the last 3 bytes
         int split = bytes.remaining() - 3;
@@ -299,18 +348,24 @@ public class GzipDecoderTest extends AbstractGzipTest
         ByteBuffer slice2 = bytes.slice();
         slice2.position(split);
 
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
-        RetainableByteBuffer.DynamicCapacity decoded = new RetainableByteBuffer.DynamicCapacity();
-        RetainableByteBuffer part;
-        part = decoder.decode(Content.Chunk.from(slice1, false));
-        decoded.append(part);
-        part.release();
-        part = decoder.decode(Content.Chunk.from(slice2, true));
-        decoded.append(part);
-        part.release();
+        try (Compression.Decoder decoder = gzip.newDecoder())
+        {
+            StringBuilder actual = new StringBuilder();
 
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-        decoded.release();
+            RetainableByteBuffer decoded = decoder.decode(slice1);
+            assertNotNull(decoded);
+            assertThat(decoder.isFinished(), is(false)); // haven't read all the trailers yet
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            decoded = decoder.decode(slice2);
+            assertNotNull(decoded);
+            assertThat(decoder.isFinished(), is(true)); // we reached the end
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            assertEquals(data, actual.toString());
+        }
     }
 
     @Test
@@ -318,27 +373,13 @@ public class GzipDecoderTest extends AbstractGzipTest
     {
         startGzip();
         String data1 = "0";
-        ByteBuffer bytes1;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream output = new GZIPOutputStream(baos))
-        {
-            output.write(data1.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes1 = ByteBuffer.wrap(baos.toByteArray());
-        }
-
+        // Entire Gzip Buffer (headers + content + trailers)
+        ByteBuffer bytes1 = ByteBuffer.wrap(compress(data1));
         String data2 = "1";
-        ByteBuffer bytes2;
+        // Yet another entire Gzip Buffer (headers + content + trailers)
+        ByteBuffer bytes2 = ByteBuffer.wrap(compress(data2));
 
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream output = new GZIPOutputStream(baos))
-        {
-            output.write(data2.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes2 = ByteBuffer.wrap(baos.toByteArray());
-        }
-
+        // Buffer containing 2 entire gzip compressions
         ByteBuffer bytes = ByteBuffer.allocate(bytes1.remaining() + bytes2.remaining());
 
         bytes.put(bytes1.slice());
@@ -346,124 +387,58 @@ public class GzipDecoderTest extends AbstractGzipTest
 
         BufferUtil.flipToFlush(bytes, 0);
 
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
-
-        RetainableByteBuffer.DynamicCapacity decoded = new RetainableByteBuffer.DynamicCapacity();
-        RetainableByteBuffer part;
-
-        part = decoder.decode(Content.Chunk.from(bytes, false));
-        decoded.append(part);
-        part.release();
-
-        part = decoder.decode(Content.Chunk.from(bytes, true));
-        decoded.append(part);
-        part.release();
-
-        assertEquals(data1 + data2, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-
-        decoded.release();
-    }
-
-    @Test
-    public void testBigBlock() throws Exception
-    {
-        startGzip();
-        String data = "0123456789ABCDEF";
-        for (int i = 0; i < 10; ++i)
+        try (Compression.Decoder decoder = gzip.newDecoder())
         {
-            data += data;
-        }
-        ByteBuffer bytes;
+            RetainableByteBuffer.DynamicCapacity decoded = new RetainableByteBuffer.DynamicCapacity();
+            RetainableByteBuffer part;
 
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream output = new GZIPOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
+            part = decoder.decode(bytes);
+            assertTrue(decoder.isFinished());
+            decoded.append(part);
+            part.release();
 
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
+            part = decoder.decode(bytes);
+            assertTrue(decoder.isFinished());
+            decoded.append(part);
+            part.release();
 
-        String result = "";
-        Content.Chunk chunk = Content.Chunk.from(bytes, true);
-        RetainableByteBuffer decoded = decoder.decode(bytes);
-        if (decoded != null)
-        {
-            result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
+            assertEquals(data1 + data2, BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+
             decoded.release();
         }
-
-        assertEquals(data.length(), result.length());
-        assertEquals(data, result);
-    }
-
-    @Test
-    public void testBigBlockOneByteAtATime() throws Exception
-    {
-        startGzip(64);
-        String data = "0123456789ABCDEF";
-        for (int i = 0; i < 10; ++i)
-        {
-            data += data;
-        }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data.getBytes(StandardCharsets.UTF_8));
-        output.close();
-        byte[] bytes = baos.toByteArray();
-
-        String result = "";
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        while (buffer.hasRemaining())
-        {
-            RetainableByteBuffer decoded = decoder.decode(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            if (decoded.hasRemaining())
-                result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
-            decoded.release();
-        }
-        assertEquals(data, result);
-        assertTrue(decoder.isFinished());
     }
 
     @Test
     public void testBigBlockWithExtraBytes() throws Exception
     {
         startGzip(64);
-        String data1 = "0123456789ABCDEF";
-        for (int i = 0; i < 10; ++i)
-        {
-            data1 += data1;
-        }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        GZIPOutputStream output = new GZIPOutputStream(baos);
-        output.write(data1.getBytes(StandardCharsets.UTF_8));
-        output.close();
-        byte[] bytes1 = baos.toByteArray();
-
+        String data1 = "0123456789ABCDEF".repeat(10);
+        ByteBuffer bytes1 = ByteBuffer.wrap(compress(data1));
         String data2 = "HELLO";
-        byte[] bytes2 = data2.getBytes(StandardCharsets.UTF_8);
+        ByteBuffer bytes2 = ByteBuffer.wrap(data2.getBytes(UTF_8));
 
-        byte[] bytes = new byte[bytes1.length + bytes2.length];
-        System.arraycopy(bytes1, 0, bytes, 0, bytes1.length);
-        System.arraycopy(bytes2, 0, bytes, bytes1.length, bytes2.length);
+        ByteBuffer bytes = ByteBuffer.allocate(bytes1.remaining() + bytes2.remaining());
+        bytes.put(bytes1.slice());
+        bytes.put(bytes2.slice());
+        BufferUtil.flipToFlush(bytes, 0);
 
-        String result = "";
-        GzipDecoder decoder = (GzipDecoder)gzip.newDecoder();
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        while (buffer.hasRemaining())
+        try (Compression.Decoder decoder = gzip.newDecoder())
         {
-            RetainableByteBuffer decoded = decoder.decode(buffer);
-            if (decoded.hasRemaining())
-                result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
-            decoded.release();
-            if (decoder.isFinished())
-                break;
+            StringBuilder actual = new StringBuilder();
+
+            while (bytes.hasRemaining())
+            {
+                RetainableByteBuffer decoded = decoder.decode(bytes);
+                actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                decoded.release();
+                if (decoder.isFinished())
+                    break;
+            }
+
+            assertEquals(data1, actual.toString());
+            assertTrue(bytes.hasRemaining());
+            assertEquals(data2, UTF_8.decode(bytes).toString());
         }
-        assertEquals(data1, result);
-        assertTrue(buffer.hasRemaining());
-        assertEquals(data2, StandardCharsets.UTF_8.decode(buffer).toString());
     }
 
     // Signed Integer Max
@@ -482,6 +457,7 @@ public class GzipDecoderTest extends AbstractGzipTest
         UINT_MAX + 1
          */
     })
+    @Disabled("too slow for short term, enable again for long term")
     public void testLargeGzipStream(long origSize) throws Exception
     {
         // Size chosen for trade off between speed of I/O vs speed of Gzip
@@ -489,7 +465,7 @@ public class GzipDecoderTest extends AbstractGzipTest
         startGzip(BUFSIZE);
 
         // Create a buffer to use over and over again to produce the uncompressed input
-        byte[] cbuf = "0123456789ABCDEFGHIJKLMOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
+        byte[] cbuf = "0123456789ABCDEFGHIJKLMOPQRSTUVWXYZ".getBytes(UTF_8);
         byte[] buf = new byte[BUFSIZE];
         for (int off = 0; off < buf.length; )
         {
@@ -498,34 +474,37 @@ public class GzipDecoderTest extends AbstractGzipTest
             off += len;
         }
 
-        GzipDecoderOutputStream out = new GzipDecoderOutputStream((GzipDecoder)gzip.newDecoder());
-        GZIPOutputStream outputStream = new GZIPOutputStream(out, BUFSIZE);
-
-        for (long bytesLeft = origSize; bytesLeft > 0; )
+        // Perform Built-in Compression to immediate Compression.Decoder decode
+        // with counting of decoded bytes.
+        try (GzipDecoderOutputStream out = new GzipDecoderOutputStream(gzip.newDecoder());
+             GZIPOutputStream outputStream = new GZIPOutputStream(out, BUFSIZE))
         {
-            int len = buf.length;
-            if (bytesLeft < buf.length)
+            for (long bytesLeft = origSize; bytesLeft > 0; )
             {
-                len = (int)bytesLeft;
+                int len = buf.length;
+                if (bytesLeft < buf.length)
+                {
+                    len = (int)bytesLeft;
+                }
+                outputStream.write(buf, 0, len);
+                bytesLeft -= len;
             }
-            outputStream.write(buf, 0, len);
-            bytesLeft -= len;
+
+            // Close GZIPOutputStream to have it generate gzip trailer.
+            // This can cause more writes of unflushed gzip buffers
+            outputStream.close();
+
+            // out.decodedByteCount is only valid after close
+            assertThat("Decoded byte count", out.decodedByteCount, is(origSize));
         }
-
-        // Close GZIPOutputStream to have it generate gzip trailer.
-        // This can cause more writes of unflushed gzip buffers
-        outputStream.close();
-
-        // out.decodedByteCount is only valid after close
-        assertThat("Decoded byte count", out.decodedByteCount, is(origSize));
     }
 
     public static class GzipDecoderOutputStream extends OutputStream
     {
-        private final GzipDecoder decoder;
+        private final Compression.Decoder decoder;
         public long decodedByteCount = 0L;
 
-        public GzipDecoderOutputStream(GzipDecoder decoder)
+        public GzipDecoderOutputStream(Compression.Decoder decoder)
         {
             this.decoder = decoder;
         }

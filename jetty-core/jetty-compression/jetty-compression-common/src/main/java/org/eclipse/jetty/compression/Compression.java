@@ -15,14 +15,12 @@ package org.eclipse.jetty.compression;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Set;
 
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Container;
@@ -51,6 +49,19 @@ public abstract class Compression extends ContainerLifeCycle
      * @return true if compression is allowed
      */
     public abstract boolean acceptsCompression(HttpFields headers, long contentLength);
+
+    /**
+     * Acquire a {@link RetainableByteBuffer} that is managed by this {@link Compression} implementation
+     * which is suitable for compressed output from an {@link Encoder} or compressed input from a {@link Decoder}.
+     *
+     * <p>
+     *     It is recommended to use this method so that any compression specific details can be
+     *     managed by this Compression implementation (such as ByteOrder or buffer pooling)
+     * </p>
+     *
+     * @return the ByteBuffer suitable for this compression implementation.
+     */
+    public abstract RetainableByteBuffer acquireByteBuffer();
 
     /**
      * Get an etag with suffix that represents this compression implementation.
@@ -164,21 +175,9 @@ public abstract class Compression extends ContainerLifeCycle
     /**
      * Get a new Encoder (possibly pooled) for this compression implementation.
      *
-     * @param outputBufferSize the desired output buffer size (can be overridden by
-     * compression implementation)
      * @return a new Encoder
      */
-    public abstract Encoder newEncoder(int outputBufferSize);
-
-    /**
-     * Get a new Encoder (possibly pooled) for this compression implementation.
-     *
-     * @param pool the desired ByteBufferPool to use for this Encoder
-     * @param outputBufferSize the desired output buffer size (can be overridden by
-     * compression implementation)
-     * @return a new Encoder
-     */
-    public abstract Encoder newEncoder(ByteBufferPool pool, int outputBufferSize);
+    public abstract Encoder newEncoder();
 
     /**
      * Strip compression suffixes off etags
@@ -202,54 +201,45 @@ public abstract class Compression extends ContainerLifeCycle
     }
 
     /**
-     * A Decoder (compression)
+     * A Decoder for decompression
      */
-    public interface Decoder
+    public interface Decoder extends AutoCloseable
     {
-        void cleanup(); // TODO: consider AutoCloseable instead
-
         /**
-         * Decode the input chunk, returning the decoded chunk.
+         * Decode the input buffer, returning the next decoded buffer.
          *
-         * @param input the input chunk, can be fully consumed.
-         * @return the output chunk (never null)
+         * <p>
+         *     The input buffer might not be fully read (or even read at all) if
+         *     there are pending output buffers from a previous {@code .decode(RetainableByteBuffer)} operation.
+         *     It is the responsibility of the user of this API to give the same input buffer back to
+         *     this method if the buffer has remaining bytes.
+         * </p>
+         *
+         * @param input the input buffer to read from.
+         * @return the output buffer. never null, use {@link #isFinished()} to know if the decompression is done.
          * @throws IOException if unable to decode chunk.
          */
-        // TODO: make input is RetainableByteBuffer
-        RetainableByteBuffer decode(Content.Chunk input) throws IOException;
+        RetainableByteBuffer decode(ByteBuffer input) throws IOException;
 
         /**
          * The decoder has finished.
          *
-         * @return true if decoder is finished (usually means the decoder reached the trailer bytes)
+         * @return true if decoder is finished (usually means the decoder reached the end of the compressed content)
          */
         boolean isFinished();
     }
 
     /**
-     * A Encoder (decompression)
+     * A Encoder for compression.
      */
-    public interface Encoder
+    public interface Encoder extends AutoCloseable
     {
-        /**
-         * Create the initial buffer, might include encoder headers.
-         *
-         * @return the newly acquired initial buffer to use for
-         */
-        RetainableByteBuffer acquireInitialOutputBuffer();
-
         /**
          * Write the encoder trailer to the provided output buffer.
          *
          * @param outputBuffer the buffer to write trailer to
          */
         void addTrailer(ByteBuffer outputBuffer);
-
-        /**
-         * Begin the encoder process, initializing any
-         * internals necessary for performing the encoding.
-         */
-        void begin();
 
         /**
          * Encode what exists in the input buffer to the provided output buffer.
@@ -268,15 +258,7 @@ public abstract class Compression extends ContainerLifeCycle
         void finishInput();
 
         /**
-         * Get encoder specific {@code ByteOrder} to use for ByteBuffers.
-         *
-         * @return the encoder {@code ByteOrder}
-         */
-        // TODO: Look into removing
-        ByteOrder getByteOrder();
-
-        /**
-         * Get the size of the trailer for this encoder.
+         * Get the size of the encoder trailer for this encoder.
          *
          * <p>
          *     Useful for ByteBuffer size calculations.
@@ -301,21 +283,10 @@ public abstract class Compression extends ContainerLifeCycle
         boolean needsInput();
 
         /**
-         * Cleanup and release any resources that the encoder is managing.
-         *
-         * <p>
-         *     Note: this does not include the {@link RetainableByteBuffer}
-         *     returned from the {@link #acquireInitialOutputBuffer()} call.
-         * </p>
-         */
-        void release();
-
-        /**
          * Provide input buffer to encoder
          *
          * @param content the input buffer
          */
-        // TODO: rename to addInput
-        void setInput(ByteBuffer content);
+        void addInput(ByteBuffer content);
     }
 }
