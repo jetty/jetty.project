@@ -690,18 +690,22 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void succeeded()
         {
-            HttpStream stream;
-            boolean completeStream;
+            HttpStream completeStream = null;
+            Throwable failure = null;
             try (AutoLock ignored = _lock.lock())
             {
                 assert _callbackCompleted;
                 _streamSendState = StreamSendState.LAST_COMPLETE;
-                completeStream = _handling == null;
-                stream = _stream;
+                if (_handling == null)
+                {
+                    completeStream = _stream;
+                    _stream = null;
+                    failure = _callbackFailure;
+                }
             }
 
-            if (completeStream)
-                completeStream(stream, null);
+            if (completeStream != null)
+                completeStream(completeStream, failure);
         }
 
         /**

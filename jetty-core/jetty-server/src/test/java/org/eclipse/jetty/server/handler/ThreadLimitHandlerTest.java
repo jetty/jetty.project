@@ -42,6 +42,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ThreadLimitHandlerTest
@@ -280,6 +281,16 @@ public class ThreadLimitHandlerTest
                     @Override
                     public void run()
                     {
+                        // Read the first byte we know is there.  This is to get around any delayed dispatch
+                        if (read.get() == 0)
+                        {
+                            Content.Chunk chunk = request.read();
+                            assertThat(chunk, notNullValue());
+                            assertThat(chunk.remaining(), is(1));
+                            read.incrementAndGet();
+                            request.demand(this);
+                            return;
+                        }
                         count.incrementAndGet();
                         try
                         {
@@ -331,7 +342,7 @@ public class ThreadLimitHandlerTest
         for (int i = 0; i < client.length; i++)
         {
             client[i] = new Socket("127.0.0.1", _connector.getLocalPort());
-            client[i].getOutputStream().write(("POST /" + i + " HTTP/1.0\r\nForwarded: for=1.2.3.4\r\nContent-Length: 2\r\n\r\n").getBytes());
+            client[i].getOutputStream().write(("POST /" + i + " HTTP/1.0\r\nForwarded: for=1.2.3.4\r\nContent-Length: 3\r\n\r\nX").getBytes());
             client[i].getOutputStream().flush();
         }
 
@@ -344,7 +355,7 @@ public class ThreadLimitHandlerTest
         // Send some content for the clients
         for (Socket socket : client)
         {
-            socket.getOutputStream().write('X');
+            socket.getOutputStream().write('Y');
             socket.getOutputStream().flush();
         }
 
@@ -364,7 +375,7 @@ public class ThreadLimitHandlerTest
         // Send the rest of the content for the clients
         for (Socket socket : client)
         {
-            socket.getOutputStream().write('Y');
+            socket.getOutputStream().write('Z');
             socket.getOutputStream().flush();
         }
 
@@ -373,7 +384,7 @@ public class ThreadLimitHandlerTest
         {
             response = IO.toString(socket.getInputStream());
             assertThat(response, containsString(" 200 OK"));
-            assertThat(response, containsString(" read 2"));
+            assertThat(response, containsString(" read 3"));
         }
 
         await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));

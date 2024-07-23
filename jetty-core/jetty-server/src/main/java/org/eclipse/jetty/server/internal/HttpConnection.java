@@ -106,6 +106,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private volatile RetainableByteBuffer _retainableByteBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
+    private boolean _delayedForContent;
     private long _requests;
     // TODO why is this not on HttpConfiguration?
     private boolean _useInputDirectByteBuffers;
@@ -596,7 +597,31 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        Runnable task = _httpChannel.onIdleTimeout(timeout);
+
+        Runnable task;
+        if (_delayedForContent && _onRequest != null)
+        {
+            Runnable onRequest = _onRequest;
+            _onRequest = null;
+            task = () ->
+            {
+                try
+                {
+                    onRequest.run();
+                }
+                finally
+                {
+                    _handling.set(false);
+                    Runnable next = _httpChannel.onIdleTimeout(timeout);
+                    if (next != null)
+                        getExecutor().execute(next);
+                }
+            };
+        }
+        else
+        {
+            task = _httpChannel.onIdleTimeout(timeout);
+        }
         if (task != null)
             getExecutor().execute(task);
         return false; // We've handle the exception
@@ -940,6 +965,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 throw new IllegalStateException("Stream pending");
             _headerBuilder.clear();
             _httpChannel.setHttpStream(stream);
+            _delayedForContent = false;
         }
 
         @Override
@@ -951,8 +977,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public boolean headerComplete()
         {
-            _onRequest = _stream.get().headerComplete();
-            return true;
+            HttpStreamOverHTTP1 stream = _stream.get();
+            _onRequest = stream.headerComplete();
+
+            // Should we delay dispatch until we have some content?
+            // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
+            _delayedForContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
+                (_parser.getContentLength() > 0 || _parser.isChunking()) &&
+                !stream._expects100Continue &&
+                !stream.isCommitted() &&
+                _retainableByteBuffer != null && _retainableByteBuffer.isEmpty();
+
+            return !_delayedForContent;
         }
 
         @Override
@@ -967,15 +1003,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             _retainableByteBuffer.retain();
             stream._chunk = Content.Chunk.asChunk(buffer, false, _retainableByteBuffer);
+            _delayedForContent = false;
             return true;
         }
 
         @Override
         public boolean contentComplete()
         {
-            // Do nothing at this point.
+            // Do nothing at this point unless we delayed for content
             // Wait for messageComplete so any trailers can be sent as special content
-            return false;
+            boolean delayed = _delayedForContent;
+            _delayedForContent = false;
+            return delayed;
         }
 
         @Override
