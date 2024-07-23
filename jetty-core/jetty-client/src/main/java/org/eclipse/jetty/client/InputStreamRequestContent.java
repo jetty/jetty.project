@@ -30,28 +30,52 @@ public class InputStreamRequestContent extends InputStreamContentSource implemen
 {
     private final String contentType;
 
+    /**
+     * @deprecated use {@link #InputStreamRequestContent(String, InputStream, ByteBufferPool.Sized)} instead.
+     */
+    @Deprecated
     public InputStreamRequestContent(InputStream stream)
     {
         this(stream, 4096);
     }
 
+    /**
+     * @deprecated use {@link #InputStreamRequestContent(String, InputStream, ByteBufferPool.Sized)} instead.
+     */
+    @Deprecated
     public InputStreamRequestContent(InputStream stream, int bufferSize)
     {
         this("application/octet-stream", stream, bufferSize);
     }
 
+    /**
+     * @deprecated use {@link #InputStreamRequestContent(String, InputStream, ByteBufferPool.Sized)} instead.
+     */
+    @Deprecated
     public InputStreamRequestContent(String contentType, InputStream stream, int bufferSize)
     {
-        this(contentType, stream);
-        setBufferSize(bufferSize);
+        this(contentType, stream, new ByteBufferPool.Sized(null, false, bufferSize));
     }
 
+    /**
+     * @deprecated use {@link #InputStreamRequestContent(String, InputStream, ByteBufferPool.Sized)} instead.
+     */
+    @Deprecated
     public InputStreamRequestContent(String contentType, InputStream stream)
     {
         this(contentType, stream, null);
     }
 
+    /**
+     * @deprecated use {@link #InputStreamRequestContent(String, InputStream, ByteBufferPool.Sized)} instead.
+     */
+    @Deprecated
     public InputStreamRequestContent(String contentType, InputStream stream, ByteBufferPool bufferPool)
+    {
+        this(contentType, stream, new ByteBufferPool.Sized(bufferPool));
+    }
+
+    public InputStreamRequestContent(String contentType, InputStream stream, ByteBufferPool.Sized bufferPool)
     {
         super(stream, bufferPool);
         this.contentType = contentType;

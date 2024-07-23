@@ -41,20 +41,19 @@ public class InputStreamContentSource implements Content.Source
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker invoker = new SerializedInvoker();
     private final InputStream inputStream;
-    private ByteBufferPool.Sized bufferPool;
+    private final ByteBufferPool.Sized bufferPool;
     private Runnable demandCallback;
     private Content.Chunk errorChunk;
     private long toRead;
     private boolean closed;
 
+    /**
+     * @deprecated Use {@link #InputStreamContentSource(InputStream, ByteBufferPool.Sized)} instead.
+     */
+    @Deprecated
     public InputStreamContentSource(InputStream inputStream)
     {
         this(inputStream, null);
-    }
-
-    public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
-    {
-        this(inputStream, bufferPool instanceof ByteBufferPool.Sized sized ? sized : new ByteBufferPool.Sized(bufferPool));
     }
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool.Sized bufferPool)
@@ -91,39 +90,6 @@ public class InputStreamContentSource implements Content.Source
         }
     }
 
-    public int getBufferSize()
-    {
-        return bufferPool.getSize();
-    }
-
-    /**
-     * @param bufferSize The size of the buffer
-     * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
-     */
-    @Deprecated(forRemoval = true)
-    public void setBufferSize(int bufferSize)
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            if (bufferSize != bufferPool.getSize())
-                bufferPool = new ByteBufferPool.Sized(bufferPool.getWrapped(), bufferPool.isDirect(), bufferSize);
-        }
-    }
-
-    public boolean isUseDirectByteBuffers()
-    {
-        return bufferPool.isDirect();
-    }
-
-    /**
-     * @param useDirectByteBuffers this parameter is ignored as this class cannot work with direct byte buffers
-     * @deprecated Use {@link InputStreamContentSource#InputStreamContentSource(InputStream, ByteBufferPool.Sized)}
-     */
-    @Deprecated(forRemoval = true, since = "12.0.11")
-    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
-    {
-    }
-    
     @Override
     public Content.Chunk read()
     {
