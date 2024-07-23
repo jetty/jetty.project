@@ -142,7 +142,7 @@ public class SignInWithEthereumTest
 
         // Create ethereum credentials to login, and sign a login message.
         String siweMessage = SignInWithEthereumGenerator.generateMessage(_connector.getLocalPort(), _credentials.getAddress(), nonce);
-        SignedMessage signedMessage = _credentials.signMessage(siweMessage);
+        EthereumAuthenticator.SignedMessage signedMessage = _credentials.signMessage(siweMessage);
 
         // Send an Authentication request with the signed SIWE message, this should redirect back to initial request.
         response = sendAuthRequest(signedMessage);
@@ -190,7 +190,7 @@ public class SignInWithEthereumTest
 
         // Create ethereum credentials to login, and sign a login message.
         String siweMessage = SignInWithEthereumGenerator.generateMessage(_connector.getLocalPort(), _credentials.getAddress(), nonce);
-        SignedMessage signedMessage = _credentials.signMessage(siweMessage);
+        EthereumAuthenticator.SignedMessage signedMessage = _credentials.signMessage(siweMessage);
 
         // Initial authentication should succeed because it has a valid nonce.
         response = sendAuthRequest(signedMessage);
@@ -249,7 +249,7 @@ public class SignInWithEthereumTest
         assertThat(response.getContentAsString(), containsString("UserPrincipal: " + _credentials.getAddress()));
     }
 
-    private ContentResponse sendAuthRequest(SignedMessage signedMessage) throws ExecutionException, InterruptedException, TimeoutException
+    private ContentResponse sendAuthRequest(EthereumAuthenticator.SignedMessage signedMessage) throws ExecutionException, InterruptedException, TimeoutException
     {
         MultiPartRequestContent content = new MultiPartRequestContent();
         content.addPart(new MultiPart.ByteBufferPart("signature", null, null, BufferUtil.toBuffer(signedMessage.signature())));

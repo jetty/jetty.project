@@ -16,7 +16,7 @@ package org.eclipse.jetty.security.siwe.util;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class  SignInWithEthereumGenerator
+public class SignInWithEthereumGenerator
 {
     private SignInWithEthereumGenerator()
     {

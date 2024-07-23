@@ -25,7 +25,7 @@ import org.eclipse.jetty.ee10.tests.distribution.siwe.EthereumCredentials;
 import org.eclipse.jetty.ee10.tests.distribution.siwe.SignInWithEthereumGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.security.siwe.SignedMessage;
+import org.eclipse.jetty.security.siwe.EthereumAuthenticator;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
@@ -137,7 +137,7 @@ public class SiweTests extends AbstractJettyHomeTest
 
     private FormRequestContent getAuthRequestContent(int port, String nonce) throws Exception
     {
-        SignedMessage signedMessage = _credentials.signMessage(
+        EthereumAuthenticator.SignedMessage signedMessage = _credentials.signMessage(
             SignInWithEthereumGenerator.generateMessage(port, _credentials.getAddress(), nonce));
         Fields fields = new Fields();
         fields.add("signature", signedMessage.signature());

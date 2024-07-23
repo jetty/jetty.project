@@ -27,7 +27,7 @@ public class SignatureVerificationTest
     public void testSignatureVerification() throws Exception
     {
         String siweMessage = "hello world";
-        SignedMessage signedMessage = credentials.signMessage(siweMessage);
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(siweMessage);
         String address = credentials.getAddress();
         String recoveredAddress = signedMessage.recoverAddress();
         assertThat(recoveredAddress, equalToIgnoringCase(address));

@@ -188,14 +188,17 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
     }
 
     /**
-     * This setting is only meaningful if a non-null {@link LoginService} has been set.
+     * Configures the behavior for authenticating users not found by a wrapped {@link LoginService}.
      * <p>
-     * If set to true, any users not found by the {@link LoginService} will still
-     * be authenticated but with no roles, if set to false users will not be
-     * authenticated unless they are discovered by the wrapped {@link LoginService}.
+     * This setting is only meaningful if a wrapped {@link LoginService} has been set.
      * </p>
-     * @param authenticateNewUsers whether to authenticate users not found by a wrapping LoginService
-     */
+     * <p>
+     * If set to {@code true}, users not found by a wrapped {@link LoginService} will authenticated with no roles.
+     * If set to {@code false}, only users found by a wrapped {@link LoginService} will be authenticated.
+     * </p>
+     *
+     * @param authenticateNewUsers whether to authenticate users not found by the wrapped {@link LoginService}
+     **/
     public void setAuthenticateNewUsers(boolean authenticateNewUsers)
     {
         this._authenticateNewUsers = authenticateNewUsers;
@@ -815,6 +818,14 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                 }
             }
             return super.add(element);
+        }
+    }
+
+    public record SignedMessage(String message, String signature)
+    {
+        public String recoverAddress()
+        {
+            return EthereumUtil.recoverAddress(this);
         }
     }
 }

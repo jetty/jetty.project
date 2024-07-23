@@ -28,10 +28,10 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Hex;
-import org.eclipse.jetty.security.siwe.SignedMessage;
-import org.eclipse.jetty.security.siwe.internal.EthereumSignatureVerifier;
+import org.eclipse.jetty.security.siwe.EthereumAuthenticator;
+import org.eclipse.jetty.security.siwe.internal.EthereumUtil;
 
-import static org.eclipse.jetty.security.siwe.internal.EthereumSignatureVerifier.keccak256;
+import static org.eclipse.jetty.security.siwe.internal.EthereumUtil.keccak256;
 
 public class EthereumCredentials
 {
@@ -50,7 +50,7 @@ public class EthereumCredentials
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
             this.privateKey = keyPair.getPrivate();
             this.publicKey = keyPair.getPublic();
-            this.address = EthereumSignatureVerifier.toAddress(((BCECPublicKey)publicKey).getQ());
+            this.address = EthereumUtil.toAddress(((BCECPublicKey)publicKey).getQ());
         }
         catch (Exception e)
         {
@@ -63,7 +63,7 @@ public class EthereumCredentials
         return address;
     }
 
-    public SignedMessage signMessage(String message) throws Exception
+    public EthereumAuthenticator.SignedMessage signMessage(String message) throws Exception
     {
         byte[] messageBytes = message.getBytes(StandardCharsets.ISO_8859_1);
         String prefix = "\u0019Ethereum Signed Message:\n" + messageBytes.length + message;
@@ -80,7 +80,7 @@ public class EthereumCredentials
         System.arraycopy(r, 0, signature, 0, 32);
         System.arraycopy(s, 0, signature, 32, 32);
         signature[64] = (byte)(calculateV(messageHash, r, s) + 27);
-        return new SignedMessage(message, Hex.toHexString(signature));
+        return new EthereumAuthenticator.SignedMessage(message, Hex.toHexString(signature));
     }
 
     private byte[] getR(byte[] encodedSignature)
@@ -117,7 +117,7 @@ public class EthereumCredentials
         ECPoint publicKeyPoint = ((BCECPublicKey)publicKey).getQ();
         for (int v = 0; v < 4; v++)
         {
-            ECPoint qPoint = EthereumSignatureVerifier.ecRecover(hash, v, new BigInteger(1, r), new BigInteger(1, s));
+            ECPoint qPoint = EthereumUtil.ecRecover(hash, v, new BigInteger(1, r), new BigInteger(1, s));
             if (qPoint != null && qPoint.equals(publicKeyPoint))
                 return (byte)v;
         }

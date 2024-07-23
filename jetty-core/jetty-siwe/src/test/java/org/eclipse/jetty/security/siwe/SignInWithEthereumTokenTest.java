@@ -50,7 +50,7 @@ public class SignInWithEthereumTokenTest
             null, null, null, null
         );
 
-        SignedMessage signedMessage = credentials.signMessage(message);
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
         SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
         assertNotNull(siwe);
 
@@ -79,7 +79,7 @@ public class SignInWithEthereumTokenTest
             null, null, null
         );
 
-        SignedMessage signedMessage = credentials.signMessage(message);
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
         SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
         assertNotNull(siwe);
 
@@ -109,7 +109,7 @@ public class SignInWithEthereumTokenTest
             null, null
         );
 
-        SignedMessage signedMessage = credentials.signMessage(message);
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
         SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
         assertNotNull(siwe);
 
@@ -136,7 +136,7 @@ public class SignInWithEthereumTokenTest
             null, null, null, null
         );
 
-        SignedMessage signedMessage = credentials.signMessage(message);
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
         SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
         assertNotNull(siwe);
 
@@ -166,7 +166,7 @@ public class SignInWithEthereumTokenTest
             null, null, null, null
         );
 
-        SignedMessage signedMessage = credentials.signMessage(message);
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
         SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
         assertNotNull(siwe);
 
@@ -196,7 +196,7 @@ public class SignInWithEthereumTokenTest
             null, null, null, null
         );
 
-        SignedMessage signedMessage = credentials.signMessage(message);
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
         SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
         assertNotNull(siwe);
 
@@ -224,7 +224,7 @@ public class SignInWithEthereumTokenTest
             null, null, null, null
         );
 
-        SignedMessage signedMessage = credentials.signMessage(message);
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
         SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
         assertNotNull(siwe);
 
