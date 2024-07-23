@@ -27,6 +27,7 @@ import com.mongodb.MongoException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -322,8 +323,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 //        fields.put(__VALID, 1);
 //        fields.put(getContextSubfield(__VERSION), 1);
 
+        Bson projection = Projections.fields(Projections.include(__ID, __VALID, __EXPIRY, __VERSION, getContextField()), Projections.excludeId());
         Bson filterId = Filters.eq(__ID, id);
-        Document sessionDocument = _dbSessions.find(filterId).first();
+        Document sessionDocument = _dbSessions.find(filterId).projection(projection).first();
 
         if (sessionDocument == null)
             return false; //doesn't exist
@@ -349,10 +351,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
         //firstly ask mongo to verify if these candidate ids have expired - all of
         //these candidates will be for our node
-//        BasicDBObject query = new BasicDBObject();
-//        query.append(__ID, new BasicDBObject("$in", candidates));
-//        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lte", time));
-
         Bson query = Filters.and(
                 Filters.in(__ID, candidates),
                 Filters.gt(__EXPIRY, 0),
@@ -390,16 +388,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     {
         // now ask mongo to find sessions for this context, last managed by any
         // node, that expired before timeLimit
-//        Set<String> expiredSessions = new HashSet<>();
-
-//        BasicDBObject query = new BasicDBObject();
-//        BasicDBObject gt = new BasicDBObject(__EXPIRY, new BasicDBObject("$gt", 0));
-//        BasicDBObject lt = new BasicDBObject(__EXPIRY, new BasicDBObject("$lte", timeLimit));
-//        BasicDBList list = new BasicDBList();
-//        list.add(gt);
-//        list.add(lt);
-//        query.append("$and", list);
-
         Bson query = Filters.and(
             Filters.gt(__EXPIRY, 0),
             Filters.lte(__EXPIRY, timeLimit)
@@ -442,13 +430,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         //Delete all session documents where the expiry time (which is always the most
         //up-to-date expiry of all contexts sharing that session id) has already past as
         //at the timeLimit.
-//        BasicDBObject query = new BasicDBObject();
-//        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lte", timeLimit));
         Bson query = Filters.and(
           Filters.gt(__EXPIRY, 0),
           Filters.lte(__EXPIRY, timeLimit)
         );
-        _dbSessions.deleteMany(query); //.remove(query, WriteConcern.SAFE);
+        _dbSessions.deleteMany(query);
     }
 
     /**
@@ -466,7 +452,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         // Form query for upsert
-        //final BasicDBObject key = new BasicDBObject(__ID, id);
         Bson key = Filters.eq(__ID, id);;
         // Form updates
         BasicDBObject update = new BasicDBObject();
@@ -495,7 +480,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             version = ((Number)version).longValue() + 1L;
             ((NoSqlSessionData)data).setVersion(version);
-            //update.put("$inc", _version1);
+            // what is this?? this field is used no where...
+            //sets.put("$inc", _version1);
             //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc
             BasicDBObject fields = new BasicDBObject();
             fields.append(__MAX_IDLE, true);
