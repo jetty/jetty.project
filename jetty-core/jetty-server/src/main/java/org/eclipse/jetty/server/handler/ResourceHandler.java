@@ -54,10 +54,11 @@ public class ResourceHandler extends Handler.Wrapper
     //    - request ranges
     //    - a way to configure caching or not
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
+    private static final int DEFAULT_BUFFER_SIZE = 32768;
+    private static final boolean DEFAULT_USE_DIRECT_BUFFERS = true;
 
     private final ResourceService _resourceService = newResourceService();
-    private int _byteBufferSize = 32768;
-    private boolean _useDirectByteBuffers = true;
+    private ByteBufferPool.Sized _byteBufferPool;
     private Resource _baseResource;
     private Resource _styleSheet;
     private MimeTypes _mimeTypes;
@@ -66,12 +67,18 @@ public class ResourceHandler extends Handler.Wrapper
 
     public ResourceHandler()
     {
-        this(null);
+        this(null, null);
     }
 
     public ResourceHandler(Handler handler)
     {
+        this(handler, null);
+    }
+
+    public ResourceHandler(Handler handler, ByteBufferPool.Sized byteBufferPool)
+    {
         super(handler);
+        _byteBufferPool = byteBufferPool;
     }
 
     protected ResourceService newResourceService()
@@ -100,9 +107,10 @@ public class ResourceHandler extends Handler.Wrapper
 
         setMimeTypes(context == null ? MimeTypes.DEFAULTS : context.getMimeTypes());
 
-        ByteBufferPool.Sized byteBufferPool = new ByteBufferPool.Sized(findByteBufferPool(), _useDirectByteBuffers, _byteBufferSize);
+        if (_byteBufferPool == null)
+            _byteBufferPool = new ByteBufferPool.Sized(findByteBufferPool(), DEFAULT_USE_DIRECT_BUFFERS, DEFAULT_BUFFER_SIZE);
         ResourceService resourceService = getResourceService();
-        resourceService.setHttpContentFactory(newHttpContentFactory(byteBufferPool));
+        resourceService.setHttpContentFactory(newHttpContentFactory(_byteBufferPool));
         resourceService.setWelcomeFactory(setupWelcomeFactory());
         if (getStyleSheet() == null)
             setStyleSheet(getServer().getDefaultStyleSheet());
@@ -179,22 +187,6 @@ public class ResourceHandler extends Handler.Wrapper
     public Resource getBaseResource()
     {
         return _baseResource;
-    }
-
-    /**
-     * @return The size of the byte buffers used to serve static resources.
-     */
-    public int getByteBufferSize()
-    {
-        return _byteBufferSize;
-    }
-
-    /**
-     * @return whether to use direct byte buffers to serve static resources.
-     */
-    public boolean isUseDirectByteBuffers()
-    {
-        return _useDirectByteBuffers;
     }
 
     /**
@@ -302,22 +294,6 @@ public class ResourceHandler extends Handler.Wrapper
     public void setBaseResourceAsString(String base)
     {
         setBaseResource(base == null ? null : ResourceFactory.of(this).newResource(base));
-    }
-
-    /**
-     * @param byteBufferSize The size of the byte buffers used to serve static resources.
-     */
-    public void setByteBufferSize(int byteBufferSize)
-    {
-        _byteBufferSize = byteBufferSize;
-    }
-
-    /**
-     * @param useDirectByteBuffers whether to use direct byte buffers to serve static resources.
-     */
-    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
-    {
-        _useDirectByteBuffers = useDirectByteBuffers;
     }
 
     /**
