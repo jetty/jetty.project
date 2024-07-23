@@ -240,6 +240,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (isStarted())
             throw new IllegalStateException("Started");
 
+        File oldTempDirectory = _tempDirectory;
+
         if (tempDirectory != null)
         {
             try
@@ -249,6 +251,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             catch (IOException e)
             {
                 LOG.warn("Unable to find canonical path for {}", tempDirectory, e);
+            }
+        }
+
+        if (oldTempDirectory != null)
+        {
+            try
+            {
+                if (tempDirectory == null || (!Files.isSameFile(oldTempDirectory.toPath(), tempDirectory.toPath())))
+                    IO.delete(oldTempDirectory);
+            }
+            catch (Exception e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to delete old temp directory {}", oldTempDirectory, e);
             }
         }
         _tempDirectory = tempDirectory;
@@ -805,11 +821,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         }
     }
 
-    /** Generate a reasonable name for the temp directory because one has not be
-     * explicitly configured by the user. The directory may also be created, if
-     * it is not persistent. If it is persistent it will be created as necessary by
-     * {@link #createTempDirectory()} later during the startup of the context.
-     * @throws Exception
+    /** Generate a reasonable name for the temp directory because one has not been
+     * explicitly configured by the user with {@link #setTempDirectory(File)}. The
+     * directory may also be created, if it is not persistent. If it is persistent
+     * it will be created as necessary by {@link #createTempDirectory()} later
+     * during the startup of the context.
+     *
+     * @throws Exception IllegalStateException if the parent tmp directory does
+     * not exist, or IOException if the child tmp directory cannot be created.
      */
     protected void makeTempDirectory()
         throws Exception
