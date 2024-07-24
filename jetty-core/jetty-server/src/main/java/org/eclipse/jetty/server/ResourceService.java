@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.HttpField;
@@ -364,7 +365,7 @@ public class ResourceService
             if (ifms != null && ifnm == null)
             {
                 //Get jetty's Response impl
-                String mdlm = content.getLastModifiedValue();
+                String mdlm = DateGenerator.formatDate(content.getLastModifiedInstant());
                 if (ifms.equals(mdlm))
                 {
                     writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
@@ -637,7 +638,7 @@ public class ResourceService
         response.write(true, ByteBuffer.wrap(data), callback);
     }
 
-    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges) throws IOException
+    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
         if (LOG.isDebugEnabled())
         {
@@ -646,7 +647,6 @@ public class ResourceService
         }
 
         long contentLength = content.getContentLengthValue();
-        callback = Callback.from(callback, content::release);
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("sendData content=%s", content));

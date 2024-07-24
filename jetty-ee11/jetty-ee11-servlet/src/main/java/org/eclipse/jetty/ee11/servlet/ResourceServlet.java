@@ -839,7 +839,7 @@ public class ResourceServlet extends HttpServlet
     private static class ForcedCharacterEncodingHttpContent extends HttpContent.Wrapper
     {
         private final String characterEncoding;
-        private final String contentType;
+        private final HttpField contentType;
 
         public ForcedCharacterEncodingHttpContent(HttpContent content, String characterEncoding)
         {
@@ -855,20 +855,14 @@ public class ResourceServlet extends HttpServlet
                 int idx = mimeType.indexOf(";charset");
                 if (idx >= 0)
                     mimeType = mimeType.substring(0, idx);
-                this.contentType = mimeType + ";charset=" + characterEncoding;
+                this.contentType = new HttpField(HttpHeader.CONTENT_TYPE, mimeType + ";charset=" + characterEncoding);
             }
         }
 
         @Override
         public HttpField getContentType()
         {
-            return new HttpField(HttpHeader.CONTENT_TYPE, this.contentType);
-        }
-
-        @Override
-        public String getContentTypeValue()
-        {
-            return this.contentType;
+            return contentType;
         }
 
         @Override
