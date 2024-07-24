@@ -24,6 +24,8 @@ import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
 import com.aayushatharva.brotli4j.encoder.Encoder;
 import com.aayushatharva.brotli4j.encoder.PreparedDictionary;
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -43,7 +45,7 @@ public class BrotliEncoder implements Compression.Encoder
     {
         try
         {
-            this.captureChannel = new CaptureByteChannel();
+            this.captureChannel = new CaptureByteChannel(brotliCompression.getByteBufferPool());
             Encoder.Parameters params = brotliCompression.getEncoderParams();
             this.encoder = new BrotliEncoderChannel(captureChannel, params);
         }
@@ -91,7 +93,13 @@ public class BrotliEncoder implements Compression.Encoder
     @Override
     public boolean isOutputFinished()
     {
-        return !encoder.isOpen() && !this.captureChannel.hasOutput();
+        if (this.captureChannel.isOpen())
+            return false;
+
+        if (this.captureChannel.hasOutput())
+            return false;
+
+        return true;
     }
 
     @Override
@@ -141,19 +149,14 @@ public class BrotliEncoder implements Compression.Encoder
 
     private static class CaptureByteChannel implements WritableByteChannel
     {
-        /**
-         * The ByteBuffer elements stored here are created and managed by brotli4j.
-         */
-        private final Queue<ByteBuffer> bufferQueue = new ArrayDeque<>();
-        private ByteBuffer activeBuffer;
+        private final ByteBufferPool byteBufferPool;
+        private final Queue<RetainableByteBuffer> bufferQueue = new ArrayDeque<>();
+        private RetainableByteBuffer activeBuffer;
         private boolean closed = false;
 
-        public CaptureByteChannel()
+        public CaptureByteChannel(ByteBufferPool byteBufferPool)
         {
-        }
-
-        public void release()
-        {
+            this.byteBufferPool = byteBufferPool;
         }
 
         public boolean hasOutput()
@@ -167,18 +170,30 @@ public class BrotliEncoder implements Compression.Encoder
         public ByteBuffer getBuffer()
         {
             if (activeBuffer != null && !activeBuffer.hasRemaining())
+            {
+                activeBuffer.release();
                 activeBuffer = null;
+            }
 
             if (activeBuffer == null)
                 activeBuffer = bufferQueue.poll();
 
-            return activeBuffer;
+            if (activeBuffer != null)
+                return activeBuffer.getByteBuffer();
+            return null;
         }
 
         @Override
         public boolean isOpen()
         {
             return !closed;
+        }
+
+        public void release()
+        {
+            if (activeBuffer != null)
+                activeBuffer.release();
+            bufferQueue.forEach(RetainableByteBuffer::release);
         }
 
         @Override
@@ -194,12 +209,25 @@ public class BrotliEncoder implements Compression.Encoder
                 throw new ClosedChannelException();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("write({})", BufferUtil.toDetailString(src));
+                LOG.debug("captured.write({})", BufferUtil.toDetailString(src));
 
             int len = src.remaining();
-            bufferQueue.add(src.slice());
-            src.position(src.limit());
+            RetainableByteBuffer copy = copyOf(src);
+            if (LOG.isDebugEnabled())
+                LOG.debug("capture.write() queue:{}", BufferUtil.toDetailString(copy.getByteBuffer()));
+            bufferQueue.add(copy);
             return len;
+        }
+
+        private RetainableByteBuffer copyOf(ByteBuffer buf)
+        {
+            if (buf == null)
+                return null;
+            RetainableByteBuffer.Mutable copy = byteBufferPool.acquire(buf.remaining(), buf.isDirect());
+            copy.getByteBuffer().clear();
+            copy.getByteBuffer().put(buf);
+            copy.getByteBuffer().flip();
+            return copy;
         }
     }
 }

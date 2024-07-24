@@ -39,12 +39,13 @@ public class GzipEncoderTest extends AbstractGzipTest
     private static final Logger LOG = LoggerFactory.getLogger(GzipEncoderTest.class);
 
     @Test
-    public void testEncodeSmallBuffer() throws Exception
+    public void testEncodeSingleBuffer() throws Exception
     {
         startGzip(2048);
 
-        String inputString = "Jetty";
+        String inputString = "Hello World, this is " + GzipEncoderTest.class.getName();
         ByteBuffer input = BufferUtil.toBuffer(inputString, UTF_8);
+
         try (Compression.Encoder encoder = gzip.newEncoder())
         {
             RetainableByteBuffer compressed = gzip.acquireByteBuffer();
@@ -67,13 +68,12 @@ public class GzipEncoderTest extends AbstractGzipTest
     }
 
     @Test
-    public void testEncodeSingleBuffer() throws Exception
+    public void testEncodeSmallBuffer() throws Exception
     {
         startGzip(2048);
 
-        String inputString = "Hello World, this is " + GzipEncoderTest.class.getName();
+        String inputString = "Jetty";
         ByteBuffer input = BufferUtil.toBuffer(inputString, UTF_8);
-
         try (Compression.Encoder encoder = gzip.newEncoder())
         {
             RetainableByteBuffer compressed = gzip.acquireByteBuffer();

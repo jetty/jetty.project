@@ -35,6 +35,11 @@ import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractGzipTest
 {
+    // Signed Integer Max
+    protected static final long INT_MAX = Integer.MAX_VALUE;
+    // Unsigned Integer Max == 2^32
+    protected static final long UINT_MAX = 0xFFFFFFFFL;
+
     private final AtomicInteger poolCounter = new AtomicInteger();
 
     @AfterEach
@@ -91,6 +96,7 @@ public abstract class AbstractGzipTest
      *
      * @param data the data to compress
      * @return the compressed bytes
+     * @throws IOException if unable to compress input data
      */
     public byte[] compress(String data) throws IOException
     {
@@ -110,6 +116,7 @@ public abstract class AbstractGzipTest
      *
      * @param compressedBytes the data to decompress
      * @return the decompressed bytes
+     * @throws IOException if unable to decompress
      */
     public byte[] decompress(byte[] compressedBytes) throws IOException
     {
@@ -123,6 +130,13 @@ public abstract class AbstractGzipTest
         }
     }
 
+    /**
+     * Decompress ByteBuffer using JVM Built-In GZIP features.
+     *
+     * @param compressedBytes the data to decompress
+     * @return the decompressed bytes
+     * @throws IOException if unable to decompress
+     */
     public byte[] decompress(ByteBuffer compressedBytes) throws IOException
     {
         return decompress(BufferUtil.toArray(compressedBytes));

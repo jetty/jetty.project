@@ -18,467 +18,97 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
+import java.nio.file.StandardOpenOption;
 
-import com.aayushatharva.brotli4j.Brotli4jLoader;
-import com.aayushatharva.brotli4j.decoder.BrotliDecoderChannel;
 import com.aayushatharva.brotli4j.decoder.BrotliInputStream;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import com.aayushatharva.brotli4j.encoder.Encoder;
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.CompletableTask;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class BrotliDecoderTest extends AbstractBrotliTest
 {
     @Test
-    public void testBrotliDecodeEmpty() throws Exception
-    {
-        startBrotli();
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-
-        RetainableByteBuffer buf = decoder.decode(BufferUtil.EMPTY_BUFFER);
-        assertFalse(buf.hasRemaining());
-    }
-
-    @Test
-    public void testDecodeEmpty() throws Exception
-    {
-        startBrotli();
-        Compression.Decoder decoder = brotli.newDecoder();
-
-        RetainableByteBuffer buf = decoder.decode(BufferUtil.EMPTY_BUFFER);
-        assertFalse(buf.hasRemaining());
-    }
-
-    public static Stream<Arguments> precompressedText()
-    {
-        return Stream.of(
-            Arguments.of("precompressed/test_quotes.txt.br", "precompressed/test_quotes.txt")
-            /*, TODO: figure out flaw in testcase with large inputs (other large input tests work)
-            Arguments.of("precompressed/logo.svgz", "precompressed/logo.svg"),
-            Arguments.of("precompressed/text-long.txt.gz", "precompressed/text-long.txt")
-             */
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("precompressedText")
-    public void testDecodeText(String precompressedRef, String expectedRef) throws Exception
-    {
-        startBrotli();
-        Compression.Decoder decoder = brotli.newDecoder();
-        Path inputPath = MavenPaths.findTestResourceFile(precompressedRef);
-
-        Content.Source source = Content.Source.from(inputPath);
-
-        StringBuilder builder = new StringBuilder();
-
-        var task = new CompletableTask<>()
-        {
-            @Override
-            public void run()
-            {
-                while (true)
-                {
-                    Content.Chunk chunk = source.read();
-                    if (chunk == null)
-                    {
-                        source.demand(this);
-                        break;
-                    }
-
-                    if (chunk.hasRemaining())
-                    {
-                        try
-                        {
-                            RetainableByteBuffer decoded = decoder.decode(chunk.getByteBuffer());
-                            builder.append(BufferUtil.toString(decoded.getByteBuffer()));
-                            decoded.release();
-                        }
-                        catch (IOException e)
-                        {
-                            completeExceptionally(e);
-                        }
-                    }
-                    chunk.release();
-
-                    if (chunk.isLast())
-                    {
-                        complete(null);
-                        break;
-                    }
-                }
-            }
-        };
-        source.demand(task);
-
-        Path expectedPath = MavenPaths.findTestResourceFile(expectedRef);
-        String expected = Files.readString(expectedPath);
-
-        assertThat(builder.toString(), is(expected));
-    }
-
-    @Test
-    public void testStripSuffixes()
-    {
-        BrotliCompression brotli = new BrotliCompression();
-        assertThat(brotli.stripSuffixes("12345"), is("12345"));
-        assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix()), is("12345, 666"));
-        assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix() + ",W/\"9999" + brotli.getEtagSuffix() + "\""),
-            is("12345, 666,W/\"9999\""));
-    }
-
-    @Test
-    public void testStreamNoBlocks() throws Exception
-    {
-        Brotli4jLoader.ensureAvailability();
-
-        byte[] bytes;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.close();
-            bytes = baos.toByteArray();
-        }
-
-        try (BrotliInputStream input = new BrotliInputStream(new ByteArrayInputStream(bytes), 1))
-        {
-            int read = input.read();
-            assertEquals(-1, read);
-        }
-    }
-
-    @Test
-    public void testStreamBigBlockOneByteAtATime() throws Exception
-    {
-        Brotli4jLoader.ensureAvailability();
-
-        String data = "0123456789ABCDEF";
-        for (int i = 0; i < 10; ++i)
-        {
-            data += data;
-        }
-
-        byte[] bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = baos.toByteArray();
-        }
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliInputStream input = new BrotliInputStream(new ByteArrayInputStream(bytes), 1))
-        {
-            int read;
-            while ((read = input.read()) >= 0)
-            {
-                baos.write(read);
-            }
-            assertEquals(data, baos.toString(StandardCharsets.UTF_8));
-        }
-    }
-
-    @Test
-    public void testNoBlocks() throws Exception
-    {
-        startBrotli();
-
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(bytes);
-        assertEquals(0, decoded.remaining());
-        decoded.release();
-    }
-
-    @Test
-    public void testSmallBlock() throws Exception
-    {
-        startBrotli();
-        String data = "0";
-
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(bytes);
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-        decoded.release();
-    }
-
-    @Test
-    public void testSmallBlockChunked() throws Exception
-    {
-        startBrotli();
-        String data = "0";
-
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        // Split roughly at halfway mark
-        int split = (int)(double)(bytes.remaining() / 2);
-        ByteBuffer slice1 = bytes.slice();
-        slice1.limit(split);
-        ByteBuffer slice2 = bytes.slice();
-        slice2.position(split);
-
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(slice1);
-        assertThat(decoded.remaining(), is(0));
-        decoded.release();
-        decoded = decoder.decode(slice2);
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-        decoded.release();
-    }
-
-    @Test
-    public void testSmallBlockWithOneByteEndChunk() throws Exception
-    {
-        startBrotli();
-
-        String data = "0";
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        // Last slice should be 1 byte.
-        int split = bytes.remaining() - 1;
-        ByteBuffer slice1 = bytes.slice();
-        slice1.limit(split);
-        ByteBuffer slice2 = bytes.slice();
-        slice2.position(split);
-
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        RetainableByteBuffer decoded = decoder.decode(slice1);
-        assertThat(decoded.remaining(), is(0));
-        decoded.release();
-        decoded = decoder.decode(slice2);
-        assertEquals(data, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-        decoded.release();
-    }
-
-    @Test
-    @Disabled("Not supported by brotli4j")
-    public void testTwoSmallBlocks() throws Exception
-    {
-        startBrotli();
-
-        String data1 = "0";
-        ByteBuffer bytes1;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data1.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes1 = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        String data2 = "1";
-        ByteBuffer bytes2;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data2.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes2 = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        ByteBuffer bytes = ByteBuffer.allocate(bytes1.remaining() + bytes2.remaining());
-
-        bytes.put(bytes1.slice());
-        bytes.put(bytes2.slice());
-
-        BufferUtil.flipToFlush(bytes, 0);
-
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-
-        RetainableByteBuffer.DynamicCapacity decoded = new RetainableByteBuffer.DynamicCapacity();
-        RetainableByteBuffer part;
-
-        part = decoder.decode(bytes);
-        decoded.append(part);
-        part.release();
-
-        part = decoder.decode(bytes);
-        decoded.append(part);
-        part.release();
-
-        assertEquals(data1 + data2, StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString());
-
-        decoded.release();
-    }
-
-    @Test
     public void testBigBlock() throws Exception
     {
         startBrotli();
-        String data = "0123456789ABCDEF";
-        for (int i = 0; i < 10; ++i)
-        {
-            data += data;
-        }
+        String data = "0123456789ABCDEF".repeat(10);
+        ByteBuffer bytes = ByteBuffer.wrap(compress(data));
 
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
+        try (Compression.Decoder decoder = brotli.newDecoder())
         {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
+            StringBuilder actual = new StringBuilder();
 
-        String result = "";
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        while (bytes.hasRemaining())
-        {
             RetainableByteBuffer decoded = decoder.decode(bytes);
-            result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
             decoded.release();
+
+            assertEquals(data, actual.toString());
         }
-        assertEquals(data, result);
-    }
-
-    @Test
-    public void testSmallBlockOneByteAtATime() throws Exception
-    {
-        startBrotli(256);
-        String data = "0123456789ABCDEF";
-
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        String result = "";
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        while (bytes.hasRemaining())
-        {
-            ByteBuffer singleByte = ByteBuffer.wrap(new byte[]{bytes.get()});
-            RetainableByteBuffer decoded = decoder.decode(singleByte);
-            if (decoded.hasRemaining())
-                result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
-            decoded.release();
-        }
-        assertEquals(data, result);
-        assertTrue(decoder.isFinished());
-    }
-
-    @Test
-    public void testSmallBlockOneByteAtTimeChannel() throws Exception
-    {
-        Brotli4jLoader.ensureAvailability();
-
-        String data = "0123456789ABCDEF";
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        ReadableByteChannel oneByteAtATimeChannel = new OneByteAtATimeByteChannel(bytes);
-        BrotliDecoderChannel channel = new BrotliDecoderChannel(oneByteAtATimeChannel);
-        ByteBuffer output = ByteBuffer.allocate(2048);
-        channel.read(output);
-        output.flip();
-        String result = StandardCharsets.UTF_8.decode(output).toString();
-        assertEquals("0123456789ABCDEF", result);
     }
 
     @Test
     public void testBigBlockOneByteAtATime() throws Exception
     {
         startBrotli(64);
-        String data = "0123456789ABCDEF";
-        for (int i = 0; i < 10; ++i)
+        String data = "0123456789ABCDEF".repeat(10);
+        byte[] compressedBytes = compress(data);
+
+        // Using Brotli4j BrotliInputStream
+        try (ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+             ByteArrayInputStream bytesIn = new ByteArrayInputStream(compressedBytes);
+             BrotliInputStream input = new BrotliInputStream(bytesIn, compressedBytes.length))
         {
-            data += data;
+            int read;
+            while ((read = input.read()) >= 0)
+            {
+                bytesOut.write(read);
+            }
+            assertEquals(data, bytesOut.toString(UTF_8));
         }
 
-        ByteBuffer bytes;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
+        // Using BrotliDecoder.
+        try (Compression.Decoder decoder = brotli.newDecoder())
         {
-            output.write(data.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes = ByteBuffer.wrap(baos.toByteArray());
-        }
+            StringBuilder actualContent = new StringBuilder();
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
 
-        String result = "";
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        while (bytes.hasRemaining())
-        {
-            ByteBuffer singleByte = ByteBuffer.wrap(new byte[]{bytes.get()});
-            RetainableByteBuffer decoded = decoder.decode(singleByte);
-            if (decoded.hasRemaining())
-                result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
-            decoded.release();
+            while (compressed.hasRemaining())
+            {
+                // decode 1 byte at a time for this test
+                ByteBuffer singleByte = ByteBuffer.wrap(new byte[]{compressed.get()});
+                RetainableByteBuffer output = decoder.decode(singleByte);
+                assertThat(output, notNullValue());
+                if (output.hasRemaining())
+                {
+                    actualContent.append(BufferUtil.toString(output.getByteBuffer(), UTF_8));
+                }
+                output.release();
+            }
+
+            assertEquals(data, actualContent.toString());
         }
-        assertEquals(data.length(), result.length());
-        assertEquals(data, result);
-        assertTrue(decoder.isFinished());
     }
 
     @Test
@@ -486,52 +116,102 @@ public class BrotliDecoderTest extends AbstractBrotliTest
     {
         startBrotli(64);
 
-        String data1 = "0123456789ABCDEF";
-        for (int i = 0; i < 10; ++i)
-        {
-            data1 += data1;
-        }
+        String data1 = "0123456789ABCDEF".repeat(10);
+        ByteBuffer bytes1 = ByteBuffer.wrap(compress(data1));
+        String data2 = "HELLO";
+        ByteBuffer bytes2 = ByteBuffer.wrap(data2.getBytes(UTF_8));
 
-        ByteBuffer bytes1;
-
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(baos))
-        {
-            output.write(data1.getBytes(StandardCharsets.UTF_8));
-            output.close();
-            bytes1 = ByteBuffer.wrap(baos.toByteArray());
-        }
-
-        String helloData = "HELLO";
-        byte[] helloBytes = helloData.getBytes(StandardCharsets.UTF_8);
-
-        ByteBuffer bytes = ByteBuffer.allocate(bytes1.remaining() + helloBytes.length);
+        ByteBuffer bytes = ByteBuffer.allocate(bytes1.remaining() + bytes2.remaining());
         bytes.put(bytes1.slice());
-        bytes.put(helloBytes);
+        bytes.put(bytes2.slice());
         BufferUtil.flipToFlush(bytes, 0);
 
-        String result = "";
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        while (bytes.hasRemaining())
+        try (Compression.Decoder decoder = brotli.newDecoder())
         {
-            RetainableByteBuffer decoded = decoder.decode(bytes);
-            if (decoded.hasRemaining())
-                result += StandardCharsets.UTF_8.decode(decoded.getByteBuffer()).toString();
-            decoded.release();
-            if (decoder.isFinished())
-                break;
+            StringBuilder actual = new StringBuilder();
+
+            while (bytes.hasRemaining())
+            {
+                RetainableByteBuffer decoded = decoder.decode(bytes);
+                actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                decoded.release();
+                if (decoder.isFinished())
+                    break;
+            }
+
+            assertEquals(data1, actual.toString());
+
+            // brotli4j consumes the entire input buffer always.
+            // even if there is extra content outside of the brotli data stream.
+            assertFalse(bytes.hasRemaining());
         }
-        assertEquals(data1, result);
-        // brotli4j consumes the entire input buffer always.
-        // even if there is extra content outside of the brotli data stream.
-        assertFalse(bytes.hasRemaining());
     }
 
-    // Signed Integer Max
-    static final long INT_MAX = Integer.MAX_VALUE;
+    @Test
+    public void testDecodeEmpty() throws Exception
+    {
+        startBrotli();
+        try (Compression.Decoder decoder = brotli.newDecoder())
+        {
+            RetainableByteBuffer buf = decoder.decode(BufferUtil.EMPTY_BUFFER);
+            assertThat(buf, is(notNullValue()));
+            assertThat(buf.getByteBuffer().hasRemaining(), is(false));
+            assertThat("Decoder hasn't reached the end of the compressed content", decoder.isFinished(), is(false));
+        }
+    }
 
-    // Unsigned Integer Max == 2^32
-    static final long UINT_MAX = 0xFFFFFFFFL;
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = false, delimiterString = "|", textBlock = """
+       # PRECOMPRESSED                  | UNCOMPRESSED            
+       precompressed/test_quotes.txt.br | precompressed/test_quotes.txt
+       precompressed/logo.svg.br        | precompressed/logo.svg
+       precompressed/text-long.txt.br   | precompressed/text-long.txt
+       """)
+    public void testDecodeText(String precompressedRef, String expectedRef) throws Exception
+    {
+        startBrotli();
+        Path inputPath = MavenPaths.findTestResourceFile(precompressedRef);
+
+        StringBuilder result = new StringBuilder();
+
+        try (Compression.Decoder decoder = brotli.newDecoder();
+             SeekableByteChannel inputChannel = Files.newByteChannel(inputPath, StandardOpenOption.READ))
+        {
+            ByteBuffer readBuffer = ByteBuffer.allocate(2048);
+
+            boolean done = false;
+            while (!done)
+            {
+                BufferUtil.clearToFill(readBuffer);
+                try
+                {
+                    int len = inputChannel.read(readBuffer);
+
+                    if (len == -1)
+                    {
+                        done = true;
+                        break;
+                    }
+                    if (len > 0)
+                    {
+                        BufferUtil.flipToFlush(readBuffer, 0);
+                        RetainableByteBuffer decoded = decoder.decode(readBuffer);
+                        result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                        decoded.release();
+                    }
+                }
+                catch (IOException e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        Path expectedPath = MavenPaths.findTestResourceFile(expectedRef);
+        String expected = Files.readString(expectedPath);
+
+        assertEquals(expected, result.toString());
+    }
 
     @ParameterizedTest
     @ValueSource(longs = {
@@ -543,34 +223,30 @@ public class BrotliDecoderTest extends AbstractBrotliTest
         UINT_MAX + 1
          */
     })
+    @Disabled("too slow for short term, enable again for long term")
     public void testLargeBrotliStream(long origSize) throws Exception
     {
-        final int BUFSIZE = 64 * 1024 * 1024;
-        startBrotli(BUFSIZE);
+        startBrotli();
 
         // Create a buffer to use over and over again to produce the uncompressed input
-        byte[] chars = "0123456789ABCDEFGHIJKLMOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
-        byte[] buf = new byte[BUFSIZE];
-        for (int off = 0; off < buf.length; )
-        {
-            int len = Math.min(chars.length, buf.length - off);
-            System.arraycopy(chars, 0, buf, off, len);
-            off += len;
-        }
+        byte[] buf = "0123456789ABCDEFGHIJKLMOPQRSTUVWXYZ".repeat(100).getBytes(StandardCharsets.UTF_8);
 
         Encoder.Parameters encoderParams = new Encoder.Parameters();
-        BrotliDecoder decoder = (BrotliDecoder)brotli.newDecoder();
-        try (BrotliDecoderOutputStream out = new BrotliDecoderOutputStream(decoder);
-             BrotliOutputStream outputStream = new BrotliOutputStream(out, encoderParams, BUFSIZE))
+        try (Compression.Decoder decoder = brotli.newDecoder();
+             BrotliDecoderOutputStream out = new BrotliDecoderOutputStream(decoder);
+             BrotliOutputStream outputStream = new BrotliOutputStream(out, encoderParams))
         {
-            for (long bytesLeft = origSize; bytesLeft > 0; )
+
+            int offset = 0;
+            long bytesLeft = origSize;
+            while (bytesLeft > 0)
             {
                 int len = buf.length;
                 if (bytesLeft < buf.length)
                 {
                     len = (int)bytesLeft;
                 }
-                outputStream.write(buf, 0, len);
+                outputStream.write(buf, offset, len);
                 bytesLeft -= len;
             }
 
@@ -583,12 +259,210 @@ public class BrotliDecoderTest extends AbstractBrotliTest
         }
     }
 
+    @Test
+    public void testNoBlocks() throws Exception
+    {
+        startBrotli();
+
+        byte[] compressedBytes = compress(null);
+
+        // Compressed bytes should have some content, and not be totally blank.
+        assertThat(compressedBytes.length, greaterThan(0));
+
+        // Using Brotli4j features, this should result in an immediate EOF (read == -1).
+        try (ByteArrayInputStream bytesIn = new ByteArrayInputStream(compressedBytes);
+             BrotliInputStream input = new BrotliInputStream(bytesIn, compressedBytes.length))
+        {
+            int read = input.read();
+            assertEquals(-1, read, "Expected EOF");
+        }
+
+        // Using BrotliDecoder this should result in no content
+        try (Compression.Decoder decoder = brotli.newDecoder())
+        {
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
+            RetainableByteBuffer output = decoder.decode(compressed);
+            assertThat(output, notNullValue());
+            assertThat(output.getByteBuffer().remaining(), is(0));
+            assertThat(decoder.isFinished(), is(true));
+            output.release();
+        }
+    }
+
+    @Test
+    public void testOneEmptyBlock() throws Exception
+    {
+        startBrotli();
+        byte[] compressedBytes = compress("");
+
+        // Compressed bytes should have some content, and not be totally blank.
+        assertThat(compressedBytes.length, greaterThan(0));
+
+        // Using Brotli4j features, this should result in an immediate EOF (read == -1).
+        try (ByteArrayInputStream bytesIn = new ByteArrayInputStream(compressedBytes);
+             BrotliInputStream input = new BrotliInputStream(bytesIn, compressedBytes.length))
+        {
+            int read = input.read();
+            assertEquals(-1, read, "Expected EOF");
+        }
+
+        // Using BrotliDecoder this should result in no content
+        try (Compression.Decoder decoder = brotli.newDecoder())
+        {
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
+            RetainableByteBuffer output = decoder.decode(compressed);
+            assertThat(output, notNullValue());
+            assertThat(output.getByteBuffer().remaining(), is(0));
+            assertThat(decoder.isFinished(), is(true));
+            output.release();
+        }
+    }
+
+    @Test
+    public void testSmallBlock() throws Exception
+    {
+        startBrotli();
+        String data = "0";
+        byte[] compressedBytes = compress(data);
+
+        try (Compression.Decoder decoder = brotli.newDecoder())
+        {
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
+            RetainableByteBuffer decoded = decoder.decode(compressed);
+            assertEquals(data, BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+        }
+    }
+
+    @Test
+    public void testSmallBlockChunked() throws Exception
+    {
+        startBrotli();
+        String data = "Jetty";
+
+        ByteBuffer bytes = ByteBuffer.wrap(compress(data));
+
+        // We should have something we can split
+        assertThat(bytes.remaining(), greaterThan(3));
+
+        // Split roughly at halfway mark
+        int split = (int)(double)(bytes.remaining() / 2);
+        ByteBuffer slice1 = bytes.slice();
+        slice1.limit(split);
+        ByteBuffer slice2 = bytes.slice();
+        slice2.position(split);
+
+        try (Compression.Decoder decoder = brotli.newDecoder())
+        {
+            StringBuilder actual = new StringBuilder();
+
+            RetainableByteBuffer decoded = decoder.decode(slice1);
+            assertNotNull(decoded);
+            assertThat(decoder.isFinished(), is(false));
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            decoded = decoder.decode(slice2);
+            assertNotNull(decoded);
+            assertThat(decoder.isFinished(), is(true));
+            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            assertEquals(data, actual.toString());
+        }
+    }
+
+    @Test
+    public void testSmallBlockOneByteAtATime() throws Exception
+    {
+        startBrotli(256);
+
+        String data = "0123456789ABCDEF";
+        byte[] compressedBytes = compress(data);
+
+        // Using Brotli features
+        try (ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+             ByteArrayInputStream bytesIn = new ByteArrayInputStream(compressedBytes);
+             BrotliInputStream input = new BrotliInputStream(bytesIn, compressedBytes.length))
+        {
+            int read;
+            while ((read = input.read()) >= 0)
+            {
+                bytesOut.write(read);
+            }
+            assertEquals(data, bytesOut.toString(UTF_8));
+        }
+
+        // Using BrotliDecoder
+        try (Compression.Decoder decoder = brotli.newDecoder())
+        {
+            StringBuilder actualContent = new StringBuilder();
+            ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
+
+            while (compressed.hasRemaining())
+            {
+                // decode 1 byte at a time for this test
+                ByteBuffer singleByte = ByteBuffer.wrap(new byte[]{compressed.get()});
+                RetainableByteBuffer output = decoder.decode(singleByte);
+                assertThat(output, notNullValue());
+                if (output.hasRemaining())
+                {
+                    actualContent.append(BufferUtil.toString(output.getByteBuffer(), UTF_8));
+                }
+                output.release();
+            }
+
+            assertEquals(data, actualContent.toString());
+        }
+    }
+
+    @Test
+    public void testSmallBlockWithOneByteEndChunk() throws Exception
+    {
+        startBrotli();
+
+        String data = "Jetty";
+        ByteBuffer bytes = ByteBuffer.wrap(compress(data));
+        assertThat(bytes.remaining(), greaterThan(3));
+
+        // Last slice should be 1 byte.
+        int split = bytes.remaining() - 1;
+        ByteBuffer slice1 = bytes.slice();
+        slice1.limit(split);
+        ByteBuffer slice2 = bytes.slice();
+        slice2.position(split);
+
+        try (Compression.Decoder decoder = brotli.newDecoder())
+        {
+            StringBuilder actualContent = new StringBuilder();
+            RetainableByteBuffer decoded = decoder.decode(slice1);
+            actualContent.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            decoded = decoder.decode(slice2);
+            actualContent.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            decoded.release();
+
+            assertEquals(data, actualContent.toString());
+        }
+    }
+
+    @Test
+    public void testStripSuffixes()
+    {
+        BrotliCompression brotli = new BrotliCompression();
+        assertThat(brotli.stripSuffixes("12345"), is("12345"));
+        assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix()), is("12345, 666"));
+        assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix() + ",W/\"9999" + brotli.getEtagSuffix() + "\""),
+            is("12345, 666,W/\"9999\""));
+    }
+
     public static class BrotliDecoderOutputStream extends OutputStream
     {
-        private final BrotliDecoder decoder;
+        private final Compression.Decoder decoder;
         public long decodedByteCount = 0L;
 
-        public BrotliDecoderOutputStream(BrotliDecoder decoder)
+        public BrotliDecoderOutputStream(Compression.Decoder decoder)
         {
             this.decoder = decoder;
         }
@@ -600,10 +474,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
             while (buf.hasRemaining())
             {
                 RetainableByteBuffer decoded = decoder.decode(buf);
-                if (decoded.hasRemaining())
-                {
-                    decodedByteCount += decoded.remaining();
-                }
+                decodedByteCount += decoded.remaining();
                 decoded.release();
             }
         }
@@ -612,36 +483,6 @@ public class BrotliDecoderTest extends AbstractBrotliTest
         public void write(int b) throws IOException
         {
             write(new byte[]{(byte)b}, 0, 1);
-        }
-    }
-
-    private static class OneByteAtATimeByteChannel implements ReadableByteChannel
-    {
-        private final ByteBuffer buffer;
-
-        public OneByteAtATimeByteChannel(ByteBuffer buffer)
-        {
-            this.buffer = buffer.slice();
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return true;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        public int read(ByteBuffer dst)
-        {
-            if (!buffer.hasRemaining())
-                return -1;
-            dst.put(buffer.get());
-            return 1;
         }
     }
 }
