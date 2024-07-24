@@ -258,7 +258,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             try
             {
-                if (tempDirectory == null || (!Files.isSameFile(oldTempDirectory.toPath(), tempDirectory.toPath())))
+                //if we had made up the name of the tmp directory previously, delete it if the new name is different
+                if (_createdTempDirectoryName && (tempDirectory == null || (!Files.isSameFile(oldTempDirectory.toPath(), tempDirectory.toPath()))))
                     IO.delete(oldTempDirectory);
             }
             catch (Exception e)
