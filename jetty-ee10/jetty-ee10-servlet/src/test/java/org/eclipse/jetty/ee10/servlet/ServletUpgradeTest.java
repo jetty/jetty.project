@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +32,6 @@ import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,8 +42,8 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.util.StringUtil.CRLF;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletUpgradeTest
@@ -129,16 +126,14 @@ public class ServletUpgradeTest
 
         }).start();
 
-//        socket.close();
-
-        // TODO test for the 101 response.
-        String content = futureContent.get(500000, TimeUnit.SECONDS);
+        String content = futureContent.get(5, TimeUnit.SECONDS);
         String expectedContent = """
             TCKHttpUpgradeHandler.init\r
             =onDataAvailable\r
             HelloWorld\r
             =onAllDataRead\r
             """;
+        assertThat(content, startsWith("HTTP/1.1 101 Switching Protocols"));
         assertThat(content, endsWith(expectedContent));
 
         input.close();
@@ -176,7 +171,6 @@ public class ServletUpgradeTest
         @Override
         public void destroy()
         {
-            System.err.println("destroy");
             destroyLatch.countDown();
         }
 
@@ -187,7 +181,7 @@ public class ServletUpgradeTest
             {
                 ServletInputStream input = wc.getInputStream();
                 ServletOutputStream output = wc.getOutputStream();
-                TestReadListener readListener = new TestReadListener(wc, input, output);
+                TestReadListener readListener = new TestReadListener(input, output);
                 input.setReadListener(readListener);
                 output.println("TCKHttpUpgradeHandler.init");
                 output.flush();
@@ -201,14 +195,12 @@ public class ServletUpgradeTest
 
     private static class TestReadListener implements ReadListener
     {
-        private final WebConnection wc;
         private final ServletInputStream input;
         private final ServletOutputStream output;
         private boolean outputOnDataAvailable = false;
 
-        TestReadListener(WebConnection wc, ServletInputStream in, ServletOutputStream out)
+        TestReadListener(ServletInputStream in, ServletOutputStream out)
         {
-            this.wc = wc;
             input = in;
             output = out;
         }
@@ -218,7 +210,6 @@ public class ServletUpgradeTest
         {
             try
             {
-                System.err.println("onAllDataRead");
                 output.println("\r\n=onAllDataRead");
                 output.close();
             }
@@ -246,14 +237,12 @@ public class ServletUpgradeTest
                 {
                     String data = new String(b, 0, len);
                     sb.append(data);
-                    System.err.println("len: " + len);
                 }
                 output.print(sb.toString());
                 output.flush();
             }
             catch (Exception ex)
             {
-                System.err.println("onDataAvailable " + ex);
                 throw new IllegalStateException(ex);
             }
         }

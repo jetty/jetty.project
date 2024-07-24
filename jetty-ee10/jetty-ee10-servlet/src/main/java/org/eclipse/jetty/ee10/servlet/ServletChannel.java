@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
@@ -78,6 +79,13 @@ public class ServletChannel
     private Request _request;
     private Response _response;
     private Callback _callback;
+    private CompleteListener _completeListener;
+    private final AtomicInteger _completeCount = new AtomicInteger(2);
+
+    public interface CompleteListener
+    {
+        void complete();
+    }
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
@@ -882,5 +890,26 @@ public class ServletChannel
         {
             servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
         }
+    }
+
+    public void readComplete()
+    {
+        if (_completeCount.decrementAndGet() == 0 && _completeListener != null)
+        {
+            _completeListener.complete();
+        }
+    }
+
+    public void writeComplete()
+    {
+        if (_completeCount.decrementAndGet() == 0 && _completeListener != null)
+        {
+            _completeListener.complete();
+        }
+    }
+
+    public void setCompleteListener(CompleteListener listener)
+    {
+        _completeListener = listener;
     }
 }

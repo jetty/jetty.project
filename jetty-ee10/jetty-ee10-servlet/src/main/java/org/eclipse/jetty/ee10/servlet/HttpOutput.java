@@ -219,6 +219,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // Transition to CLOSED state if we were the last write or we have failed
             if (last || failure != null)
             {
+                _servletChannel.writeComplete();
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
@@ -359,6 +360,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (error != null)
             {
                 _servletChannel.abort(error);
+                _servletChannel.writeComplete();
                 _state = State.CLOSED;
             }
             else

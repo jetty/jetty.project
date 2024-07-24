@@ -261,6 +261,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (Content.Chunk.isFailure(chunk))
             {
                 Throwable failure = chunk.getFailure();
+                _servletChannel.readComplete();
                 if (LOG.isDebugEnabled())
                     LOG.debug("read failure={} {}", failure, this);
                 if (failure instanceof IOException)
@@ -271,6 +272,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             // Empty and not a failure; can only be EOF as per ContentProducer.nextChunk() contract.
             if (LOG.isDebugEnabled())
                 LOG.debug("read at EOF, setting consumed EOF to true {}", this);
+            _servletChannel.readComplete();
             _consumedEof = true;
             // Do we need to wake for allDataRead callback?
             if (onContentProducible())
@@ -355,6 +357,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("running failure={} {}", failure, this);
             _readListener.onError(failure);
+            _servletChannel.readComplete();
         }
         else if (chunk.isLast() && !chunk.hasRemaining())
         {
@@ -363,12 +366,14 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (LOG.isDebugEnabled())
                     LOG.debug("running at EOF {}", this);
                 _readListener.onAllDataRead();
+                _servletChannel.readComplete();
             }
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("running failed onAllDataRead {}", this, x);
                 _readListener.onError(x);
+                _servletChannel.readComplete();
             }
         }
         else
