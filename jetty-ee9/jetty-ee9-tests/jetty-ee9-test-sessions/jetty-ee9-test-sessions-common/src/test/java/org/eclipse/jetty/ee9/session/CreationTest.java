@@ -435,6 +435,72 @@ public class CreationTest
         }
     }
 
+    /**
+     * Test creating a session in a request and then invalidating it in another request
+     * @throws Exception
+     */
+    @Test
+    public void testSessionSimpleCreateInvalidate() throws Exception
+    {
+        String contextPath = "";
+        String servletMapping = "/server";
+        int inactivePeriod = -1; //immortal session
+        int scavengePeriod = 3;
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        cacheFactory.setSaveOnCreate(true);
+        cacheFactory.setFlushOnResponseCommit(true); //ensure session saved before response returned
+        SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        TestServlet servlet = new TestServlet();
+        ServletHolder holder = new ServletHolder(servlet);
+        ServletContextHandler contextHandler = server1.addContext(contextPath);
+        contextHandler.addServlet(holder, servletMapping);
+        servlet.setStore(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore());
+        server1.start();
+        int port1 = server1.getPort();
+
+        try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
+        {
+            HttpClient client = new HttpClient();
+            client.start();
+            String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create";
+
+            //make a request to set up a session on the server
+            ContentResponse response = client.GET(url);
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            //Ensure session handling is finished
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+
+            //make a request to re-obtain the session on the server
+            Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=test");
+            response = request.send();
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            //at this point the last accessed time should be the creation time
+            long lastAccessedTime = servlet._lastAccessedTime;
+            assertEquals(lastAccessedTime, servlet._creationTime);
+
+            //make another request to re-obtain the session on the server
+            request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=test");
+            response = request.send();
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(servlet._id));
+            //check that the lastAccessedTime is being updated
+            assertTrue(lastAccessedTime < servlet._lastAccessedTime);
+
+            //make a request to invalidate it
+            request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=invalidate");
+            response = request.send();
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+        }
+        finally
+        {
+            server1.stop();
+        }
+
+    }
+
     public static class MySessionListener implements HttpSessionListener
     {
         @Override
@@ -454,6 +520,8 @@ public class CreationTest
         private static final long serialVersionUID = 1L;
         public String _id = null;
         public SessionDataStore _store;
+        public long _lastAccessedTime;
+        public long _creationTime;
 
         public void setStore(SessionDataStore store)
         {
@@ -469,6 +537,7 @@ public class CreationTest
                 case "forward" ->
                 {
                     HttpSession session = createAndSaveSessionId(request);
+                    assertTrue(session.isNew());
 
                     ServletContext contextB = getServletContext().getContext("/contextB");
                     RequestDispatcher dispatcherB = contextB.getRequestDispatcher(request.getServletPath());
@@ -482,6 +551,7 @@ public class CreationTest
                 case "forwardinv" ->
                 {
                     HttpSession session = createAndSaveSessionId(request);
+                    assertTrue(session.isNew());
 
                     ServletContext contextB = getServletContext().getContext("/contextB");
                     RequestDispatcher dispatcherB = contextB.getRequestDispatcher(request.getServletPath());
@@ -491,23 +561,38 @@ public class CreationTest
                 case "forwardc" ->
                 {
                     HttpSession session = createAndSaveSessionId(request);
-                //forward to contextC
-                ServletContext contextC = getServletContext().getContext("/contextC");
-                RequestDispatcher dispatcherC = contextC.getRequestDispatcher(request.getServletPath());
-                dispatcherC.forward(request, httpServletResponse);
+                    assertTrue(session.isNew());
+                    //forward to contextC
+                    ServletContext contextC = getServletContext().getContext("/contextC");
+                    RequestDispatcher dispatcherC = contextC.getRequestDispatcher(request.getServletPath());
+                    dispatcherC.forward(request, httpServletResponse);
                 }
                 case "test" ->
                 {
                     HttpSession session = request.getSession(false);
                     assertNotNull(session);
+                    _id = session.getId();
+                    _lastAccessedTime = session.getLastAccessedTime();
+                    assertFalse(session.isNew());
                     assertNotNull(session.getAttribute("value")); //check we see the session we created earlier
                     assertNull(session.getAttribute("B")); //check we don't see stuff from other contexts
                     assertNull(session.getAttribute("C"));
+                }
+                case "invalidate" ->
+                {
+                    HttpSession session = request.getSession(false);
+                    assertNotNull(session);
+                    _id = session.getId();
+                    assertFalse(session.isNew());
+                    session.invalidate();
+                    assertNull(request.getSession(false));
                 }
                 case "create", "createinv", "createinvcreate" ->
                 {
                     currentRequest.set(request);
                     HttpSession session = createAndSaveSessionId(request);
+                    assertTrue(session.isNew());
+                    _creationTime = session.getCreationTime();
                     String check = request.getParameter("check");
                     if (!StringUtil.isBlank(check) && _store != null)
                     {
