@@ -520,7 +520,10 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
                     coreRequest.setSessionManager(_sessionManager);
                     coreRequest.setRequestedSession(currentRequestedSession);
                     if (currentRequestedSession != null)
+                    {
                         coreRequest.setManagedSession(currentRequestedSession.session());
+                        currentSession = currentRequestedSession.session();
+                    }
                     break;
                 }
                 case ASYNC:

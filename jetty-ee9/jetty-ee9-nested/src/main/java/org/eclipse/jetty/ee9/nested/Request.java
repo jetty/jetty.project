@@ -2050,7 +2050,12 @@ public class Request implements HttpServletRequest
             {
                 parts = _multiParts.getParts();
             }
-            catch (IOException e)
+            catch (BadMessageException e)
+            {
+                throw e;
+            }
+            // Catch RuntimeException to handle IllegalStateException, IllegalArgumentException, CharacterEncodingException, etc .. (long list)
+            catch (RuntimeException | IOException e)
             {
                 throw new BadMessageException("Unable to parse form content", e);
             }

@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -104,18 +105,27 @@ public class MultiPartServletTest
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
+            resp.setCharacterEncoding("utf-8");
+            resp.setContentType("text/plain");
+
+            PrintWriter out = resp.getWriter();
+
             if (!req.getContentType().contains(MimeTypes.Type.MULTIPART_FORM_DATA.asString()))
             {
-                resp.setContentType("text/plain");
-                resp.getWriter().println("not content type " + MimeTypes.Type.MULTIPART_FORM_DATA);
-                resp.getWriter().println("contentType: " + req.getContentType());
+                out.println("not content type " + MimeTypes.Type.MULTIPART_FORM_DATA);
+                out.println("contentType: " + req.getContentType());
                 return;
             }
 
-            resp.setContentType("text/plain");
             for (Part part : req.getParts())
             {
-                resp.getWriter().println("Part: name=" + part.getName() + ", size=" + part.getSize());
+                out.printf("Part: name=%s, size=%s", part.getName(), part.getSize());
+                if (part.getSize() <= 100)
+                {
+                    String content = IO.toString(part.getInputStream());
+                    out.printf(", content=%s", content);
+                }
+                out.println();
             }
         }
     }
@@ -302,6 +312,7 @@ public class MultiPartServletTest
         startServer(multiPartCompliance);
 
         String contentType = "multipart/form-data; boundary=---------------------------7e25e1e151054";
+        // NOTE: The extra `\r` here are intentional, do not remove.
         String rawForm = """
             -----------------------------7e25e1e151054\r
             Content-Disposition: form-data; name="user"\r
@@ -368,6 +379,131 @@ public class MultiPartServletTest
             assertThat(responseContent, containsString("Unable to parse form content"));
             assertThat(responseContent, containsString("Missing content for multipart request"));
         });
+    }
+
+    /**
+     * A part with Content-Transfer-Encoding: base64, and the content is valid Base64 encoded.
+     *
+     * MultiPartCompliance mode set to allow MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING
+     */
+    @Test
+    public void testLegacyContentTransferEncodingBase64Allowed() throws Exception
+    {
+        MultiPartCompliance legacyBase64 = MultiPartCompliance.from("LEGACY,BASE64_TRANSFER_ENCODING");
+
+        startServer(legacyBase64);
+
+        String contentType = "multipart/form-data; boundary=8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp";
+        String rawForm = """
+            --8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp
+            Content-ID: <foo@example.org>
+            Content-Disposition: form-data; name="quote"
+            Content-Transfer-Encoding: base64
+            
+            IkJvb2tzIGFyZSB0aGUgbGliZXJhdGVkIHNwaXJpdHMgb2YgbWVuLiIgLS0gTWFyayBUd2Fpbg==
+            --8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp--
+            
+            """;
+
+        StringRequestContent form = new StringRequestContent(
+            contentType,
+            rawForm
+        );
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .path("/")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(form)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.getContentAsString(), containsString("Part: name=quote, size=55, content=\"Books are the liberated spirits of men.\" -- Mark Twain"));
+    }
+
+    /**
+     * A part with Content-Transfer-Encoding: base64, but the content is not actually encoded in Base 64.
+     *
+     * MultiPartCompliance mode set to allow MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING
+     */
+    @Test
+    public void testLegacyContentTransferEncodingBadBase64Allowed() throws Exception
+    {
+        MultiPartCompliance legacyBase64 = MultiPartCompliance.from("LEGACY,BASE64_TRANSFER_ENCODING");
+
+        startServer(legacyBase64);
+
+        String contentType = "multipart/form-data; boundary=8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp";
+        String rawForm = """
+            --8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp
+            Content-ID: <foo@example.org>
+            Content-Disposition: form-data; name="quote"
+            Content-Transfer-Encoding: base64
+            
+            "Travel is fatal to prejudice." -- Mark Twain
+            --8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp--
+            
+            """;
+
+        StringRequestContent form = new StringRequestContent(
+            contentType,
+            rawForm
+        );
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(form)
+            .send(listener);
+
+        assert400orEof(listener, responseContent ->
+        {
+            assertThat(responseContent, containsString("Unable to parse form content"));
+            assertThat(responseContent, containsString("java.lang.IllegalArgumentException: Last unit does not have enough valid bits"));
+        });
+    }
+
+    /**
+     * A part with Content-Transfer-Encoding: base64, and the content is valid Base64 encoded.
+     *
+     * MultiPartCompliance mode set to allow MultiPartCompliance.LEGACY, which does not perform
+     * base64 decoding.
+     */
+    @Test
+    public void testLegacyContentTransferEncodingBase64() throws Exception
+    {
+        MultiPartCompliance legacyBase64 = MultiPartCompliance.LEGACY;
+
+        startServer(legacyBase64);
+
+        String contentType = "multipart/form-data; boundary=8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp";
+        String rawForm = """
+            --8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp
+            Content-ID: <foo@example.org>
+            Content-Disposition: form-data; name="quote"
+            Content-Transfer-Encoding: base64
+            
+            IkJvb2tzIGFyZSB0aGUgbGliZXJhdGVkIHNwaXJpdHMgb2YgbWVuLiIgLS0gTWFyayBUd2Fpbg==
+            --8GbcZNTauFWYMt7GeM9BxFMdlNBJ6aLJhGdXp--
+            
+            """;
+
+        StringRequestContent form = new StringRequestContent(
+            contentType,
+            rawForm
+        );
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .path("/")
+            .scheme(HttpScheme.HTTP.asString())
+            .method(HttpMethod.POST)
+            .body(form)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertThat(response.getContentAsString(), containsString("Part: name=quote, size=76, content=IkJvb2tzIGFyZSB0aGUgbGliZXJhdGVkIHNwaXJpdHMgb2YgbWVuLiIgLS0gTWFyayBUd2Fpbg=="));
     }
 
     @ParameterizedTest
@@ -487,7 +623,7 @@ public class MultiPartServletTest
                 .body(multiPart)
                 .send();
 
-            assertEquals(500, response.getStatus());
+            assertEquals(400, response.getStatus());
             assertThat(response.getContentAsString(),
                 containsString("Multipart Mime part largePart exceeds max filesize"));
         }
