@@ -277,7 +277,6 @@ public class IOResources
             }
         }
 
-
         @Override
         public InvocationType getInvocationType()
         {
