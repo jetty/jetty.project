@@ -60,12 +60,6 @@ public class PreCompressedHttpContent implements HttpContent
     }
 
     @Override
-    public String getETagValue()
-    {
-        return getETag().getValue();
-    }
-
-    @Override
     public Instant getLastModifiedInstant()
     {
         return _precompressedContent.getLastModifiedInstant();
@@ -78,33 +72,15 @@ public class PreCompressedHttpContent implements HttpContent
     }
 
     @Override
-    public String getLastModifiedValue()
-    {
-        return _precompressedContent.getLastModifiedValue();
-    }
-
-    @Override
     public HttpField getContentType()
     {
         return _content.getContentType();
     }
 
     @Override
-    public String getContentTypeValue()
-    {
-        return _content.getContentTypeValue();
-    }
-
-    @Override
     public HttpField getContentEncoding()
     {
         return _format.getContentEncoding();
-    }
-
-    @Override
-    public String getContentEncodingValue()
-    {
-        return _format.getContentEncoding().getValue();
     }
 
     @Override
@@ -152,11 +128,5 @@ public class PreCompressedHttpContent implements HttpContent
     public Set<CompressedContentFormat> getPreCompressedContentFormats()
     {
         return _content.getPreCompressedContentFormats();
-    }
-
-    @Override
-    public void release()
-    {
-        _precompressedContent.release();
     }
 }
