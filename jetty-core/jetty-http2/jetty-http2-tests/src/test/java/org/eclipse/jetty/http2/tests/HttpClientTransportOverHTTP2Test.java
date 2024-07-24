@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -572,7 +573,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         }
                         catch (HpackException x)
                         {
-                            x.printStackTrace();
+                            throw new RuntimeException(x);
                         }
                     }
 
@@ -589,7 +590,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         }
                         catch (HpackException x)
                         {
-                            x.printStackTrace();
+                            throw new RuntimeException(x);
                         }
                     }
 
@@ -599,11 +600,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         {
                             // Write the frames.
                             accumulator.writeTo(Content.Sink.from(output), false);
-                            accumulator.release();
+                            accumulator.clear();
                         }
-                        catch (Throwable x)
+                        catch (IOException x)
                         {
-                            x.printStackTrace();
+                            throw new RuntimeException(x);
                         }
                     }
                 });

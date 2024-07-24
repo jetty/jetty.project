@@ -51,7 +51,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private final Collection<HTTP2Session.Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
     private final RetainableByteBuffer.Mutable accumulator;
-    private boolean released;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
     private Throwable terminated;
     private HTTP2Session.Entry stalledEntry;
@@ -308,7 +307,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private void finish()
     {
-        release();
+        accumulator.clear();
         processedEntries.forEach(HTTP2Session.Entry::succeeded);
         processedEntries.clear();
         invocationType = InvocationType.NON_BLOCKING;
@@ -328,15 +327,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         }
     }
 
-    private void release()
-    {
-        if (!released)
-        {
-            released = true;
-            accumulator.release();
-        }
-    }
-
     @Override
     protected void onCompleteSuccess()
     {
@@ -346,7 +336,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     protected void onCompleteFailure(Throwable x)
     {
-        release();
+        accumulator.release();
 
         Throwable closed;
         Set<HTTP2Session.Entry> allEntries;
