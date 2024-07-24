@@ -14,15 +14,22 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +41,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -138,5 +146,36 @@ public class TempDirTest
         server.setHandler(webAppContext);
         webInfConfiguration.resolveTempDirectory(webAppContext);
         assertThat(webAppContext.getTempDirectory().getParentFile().toPath(), PathMatchers.isSame(workDir));
+    }
+
+    @Test
+    public void testTempDirDeleted(WorkDir workDir) throws Exception
+    {
+        // Create war on the fly
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path warFile = workDir.getEmptyPathDir().resolve("test.war");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(testWebappDir, root);
+        }
+
+        //Let jetty create the tmp dir on the fly
+        Server server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        webAppContext.setWarResource(webAppContext.getResourceFactory().newResource(warFile));
+        server.setHandler(webAppContext);
+        server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        server.stop();
+        assertNull(webAppContext.getTempDirectory());
+        assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
     }
 }
