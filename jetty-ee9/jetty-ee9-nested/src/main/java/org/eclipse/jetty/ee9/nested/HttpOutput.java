@@ -1357,12 +1357,40 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(http={},{})", httpContent, callback);
+        try
+        {
+            if (prepareSendContent(0, callback))
+            {
+                Content.Sink sink = (last, byteBuffer, cb) ->
+                {
+                    _written += byteBuffer.remaining();
+                    channelWrite(byteBuffer, last, cb);
+                };
+                httpContent.writeTo(sink, 0L, -1L, new Callback.Nested(callback)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        onWriteComplete(true, null);
+                        super.succeeded();
+                    }
 
-        ByteBuffer buffer = httpContent.getByteBuffer();
-        if (buffer != null)
-            sendContent(buffer, callback);
-        else
-            sendContent(httpContent.getResource(), callback);
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        onWriteComplete(true, x);
+                        super.failed(x);
+                    }
+                });
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to send http content {}", httpContent, x);
+            _channel.abort(x);
+            callback.failed(x);
+        }
     }
 
     private boolean prepareSendContent(int len, Callback callback)

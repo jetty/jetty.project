@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 import java.util.SortedSet;
@@ -30,9 +29,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -328,30 +330,19 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             boolean isValid = true;
 
             // Read the content into memory if the HttpContent does not already have a buffer.
-            RetainableByteBuffer buffer;
-            ByteBuffer byteBuffer = httpContent.getByteBuffer();
-            if (byteBuffer == null)
+            RetainableByteBuffer buffer = null;
+            try
             {
-                try
-                {
-                    if (_contentLengthValue <= _maxCachedFileSize)
-                        buffer = IOResources.toRetainableByteBuffer(httpContent.getResource(), _bufferPool, _useDirectByteBuffers);
-                    else
-                        buffer = null;
-                }
-                catch (Throwable t)
-                {
-                    buffer = null;
-                    isValid = false;
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Failed to read Resource: {}", httpContent.getResource(), t);
-                    else
-                        LOG.warn("Failed to read Resource: {} - {}", httpContent.getResource(), t.toString());
-                }
+                if (_contentLengthValue <= _maxCachedFileSize)
+                    buffer = IOResources.toRetainableByteBuffer(httpContent.getResource(), _bufferPool, _useDirectByteBuffers);
             }
-            else
+            catch (Throwable t)
             {
-                buffer = RetainableByteBuffer.wrap(byteBuffer);
+                isValid = false;
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Failed to read Resource: {}", httpContent.getResource(), t);
+                else
+                    LOG.warn("Failed to read Resource: {} - {}", httpContent.getResource(), t.toString());
             }
 
             _buffer = buffer;
@@ -371,12 +362,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         public long getContentLengthValue()
         {
             return _contentLengthValue;
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return _buffer == null ? null : _buffer.getByteBuffer().asReadOnlyBuffer();
         }
 
         @Override
@@ -401,6 +386,20 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         public String getKey()
         {
             return _cacheKey;
+        }
+
+        @Override
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
+        {
+            try
+            {
+                sink.write(true, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), callback);
+            }
+            catch (Throwable x)
+            {
+                // BufferUtil.slice() may fail if offset and/or length are out of bounds.
+                callback.failed(x);
+            }
         }
 
         @Override
@@ -596,9 +595,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public ByteBuffer getByteBuffer()
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
-            return null;
+            sink.write(true, BufferUtil.EMPTY_BUFFER, callback);
         }
 
         @Override

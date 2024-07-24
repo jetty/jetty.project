@@ -15,13 +15,9 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -36,9 +32,6 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.resource.HttpContentRangeWriter;
-import org.eclipse.jetty.ee9.nested.resource.RangeWriter;
-import org.eclipse.jetty.ee9.nested.resource.SeekableByteChannelRangeWriter;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpDateTime;
@@ -50,12 +43,12 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
-import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -855,15 +848,12 @@ public class ResourceService
             length += CRLF + DASHDASH + BOUNDARY + DASHDASH + CRLF;
             response.setContentLengthLong(length);
 
-            try (RangeWriter rangeWriter = HttpContentRangeWriter.newRangeWriter(content))
+            i = 0;
+            for (InclusiveByteRange ibr : ranges)
             {
-                i = 0;
-                for (InclusiveByteRange ibr : ranges)
-                {
-                    multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
-                    rangeWriter.writeTo(multi, ibr.getFirst(), ibr.getSize());
-                    i++;
-                }
+                multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
+                writeContent(content, multi, ibr.getFirst(), ibr.getSize());
+                i++;
             }
 
             multi.close();
@@ -873,37 +863,28 @@ public class ResourceService
 
     private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
     {
-        // attempt efficient ByteBuffer based write
-        ByteBuffer buffer = content.getByteBuffer();
-        if (buffer != null)
+        try (Blocker.Callback blocker = Blocker.callback())
         {
-            // no need to modify buffer pointers when whole content is requested
-            if (start != 0 || content.getResource().length() != contentLength)
+            // Do not use Content.Sink.from(out) as HttpContent.writeTo() may write a last Chunk
+            // which would then be converted to OutputStream.close(), and we do not want to
+            // close the OutputStream here;
+            // this happens because Content.copy() and IOResources.copy() assume that when they
+            // read a last Chunk from a Content.Source, it should be written as a last Chunk
+            // to the Content.Sink.
+            Content.Sink sink = (last, byteBuffer, callback) ->
             {
-                buffer = buffer.asReadOnlyBuffer();
-                buffer.position((int)(buffer.position() + start));
-                buffer.limit((int)(buffer.position() + contentLength));
-            }
-            BufferUtil.writeTo(buffer, out);
-            return;
-        }
-
-        // Use a ranged writer if resource backed by path
-        Path path = content.getResource().getPath();
-        if (path != null)
-        {
-            try (SeekableByteChannelRangeWriter rangeWriter = new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(path)))
-            {
-                rangeWriter.writeTo(out, start, contentLength);
-            }
-            return;
-        }
-
-        // Perform ranged write
-        try (InputStream input = IOResources.asInputStream(content.getResource()))
-        {
-            input.skipNBytes(start);
-            IO.copy(input, out, contentLength);
+                try
+                {
+                    BufferUtil.writeTo(byteBuffer, out);
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
+            };
+            content.writeTo(sink, start, contentLength, blocker);
+            blocker.block();
         }
     }
 

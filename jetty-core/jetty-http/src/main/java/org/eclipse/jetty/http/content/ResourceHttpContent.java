@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http.content;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Set;
@@ -25,6 +24,10 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -39,13 +42,15 @@ public class ResourceHttpContent implements HttpContent
     final Path _path;
     final String _contentType;
     final HttpField _etag;
+    final ByteBufferPool.Sized _sizedBufferPool;
 
-    public ResourceHttpContent(final Resource resource, final String contentType)
+    public ResourceHttpContent(Resource resource, String contentType, ByteBufferPool.Sized sizedByteBufferPool)
     {
         _resource = resource;
         _path = resource.getPath();
         _contentType = contentType;
         _etag = EtagUtils.createWeakEtagField(resource);
+        _sizedBufferPool = sizedByteBufferPool;
     }
 
     @Override
@@ -144,9 +149,9 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public ByteBuffer getByteBuffer()
+    public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
     {
-        return null;
+        IOResources.copy(_resource, sink, _sizedBufferPool, _sizedBufferPool.getSize(), _sizedBufferPool.isDirect(), offset, length, callback);
     }
 
     @Override

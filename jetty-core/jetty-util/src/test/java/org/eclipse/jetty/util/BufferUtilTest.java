@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
@@ -55,6 +56,22 @@ public class BufferUtilTest
     public void afterEach()
     {
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @Test
+    public void testSlice()
+    {
+        ByteBuffer byteBuffer = ByteBuffer.wrap("0123456789".getBytes(StandardCharsets.UTF_8));
+        assertEquals("0123456789", BufferUtil.toString(BufferUtil.slice(byteBuffer, 0, -1)));
+        assertEquals("3456789", BufferUtil.toString(BufferUtil.slice(byteBuffer, 3, -1)));
+        assertEquals("01234567", BufferUtil.toString(BufferUtil.slice(byteBuffer, 0, 8)));
+        assertEquals("5678", BufferUtil.toString(BufferUtil.slice(byteBuffer, 5, 4)));
+        assertEquals("", BufferUtil.toString(BufferUtil.slice(byteBuffer, 1, 0)));
+        assertEquals("", BufferUtil.toString(BufferUtil.slice(byteBuffer, 10, -1)));
+
+        assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 0, 11));
+        assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 11, -1));
+        assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 1, 10));
     }
 
     @Test

@@ -125,10 +125,9 @@ public class ServletMultiPartFormData
                     }
                     else
                     {
+                        // TODO use the size specified in ByteBufferPool.SIZED_NON_POOLING instead of specifying a 2K buffer size?
                         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-                        InputStreamContentSource iscs = new InputStreamContentSource(servletRequest.getInputStream(), byteBufferPool);
-                        iscs.setBufferSize(bufferSize);
-                        source = iscs;
+                        source = new InputStreamContentSource(servletRequest.getInputStream(), new ByteBufferPool.Sized(byteBufferPool, false, bufferSize));
                     }
 
                     parser.setMaxParts(contextHandler.getMaxFormKeys());

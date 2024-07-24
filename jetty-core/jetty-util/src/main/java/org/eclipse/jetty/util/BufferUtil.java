@@ -288,6 +288,23 @@ public class BufferUtil
     }
 
     /**
+     * Slice a buffer given an offset and a length.
+     * @param buffer the buffer to slice
+     * @param offset the offset
+     * @param length the length, -1 meaning use the current limit
+     * @return the sliced buffer
+     */
+    public static ByteBuffer slice(ByteBuffer buffer, int offset, int length)
+    {
+        ByteBuffer slice = buffer.slice();
+        if (offset > 0)
+            slice.position(slice.position() + offset);
+        if (length > -1)
+            slice.limit(slice.position() + length);
+        return slice;
+    }
+
+    /**
      * Convert a ByteBuffer to a byte array.
      *
      * @param buffer The buffer to convert in flush mode. The buffer is not altered.
