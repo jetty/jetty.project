@@ -68,6 +68,7 @@ public class BufferUtilTest
         assertEquals("5678", BufferUtil.toString(BufferUtil.slice(byteBuffer, 5, 4)));
         assertEquals("", BufferUtil.toString(BufferUtil.slice(byteBuffer, 1, 0)));
         assertEquals("", BufferUtil.toString(BufferUtil.slice(byteBuffer, 10, -1)));
+        assertEquals("", BufferUtil.toString(BufferUtil.slice(byteBuffer, 1000, 0)));
 
         assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 0, 11));
         assertThrows(IllegalArgumentException.class, () -> BufferUtil.slice(byteBuffer, 11, -1));

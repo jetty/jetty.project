@@ -135,6 +135,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private long _written;
     private long _flushed;
     private long _firstByteNanoTime = -1;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -222,7 +223,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                releaseBuffer();
+                lockedReleaseBuffer(failure != null);
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -328,7 +329,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // TODO avoid this copy.
             ByteBuffer content = _aggregate != null && _aggregate.hasRemaining() ? BufferUtil.copy(_aggregate.getByteBuffer()) : BufferUtil.EMPTY_BUFFER;
             _state = State.CLOSED;
-            releaseBuffer();
+            lockedReleaseBuffer(false);
             return content;
         }
     }
@@ -458,7 +459,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock ignored = _channelState.lock())
         {
             _state = State.CLOSED;
-            releaseBuffer();
+            lockedReleaseBuffer(failure != null);
         }
     }
 
@@ -590,25 +591,40 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (AutoLock ignored = _channelState.lock())
         {
-            return acquireBuffer().getByteBuffer();
+            return lockedAcquireBuffer().getByteBuffer();
         }
     }
 
-    private RetainableByteBuffer acquireBuffer()
+    private ByteBufferPool.Sized getSizedByteBufferPool()
     {
+        int bufferSize = getBufferSize();
         boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-        ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
+        if (_pool == null || _pool.getSize() != bufferSize || _pool.isDirect() != useOutputDirectByteBuffers)
+            _pool = new ByteBufferPool.Sized(_servletChannel.getRequest().getComponents().getByteBufferPool(), useOutputDirectByteBuffers, bufferSize);
+        return _pool;
+    }
+
+    private RetainableByteBuffer lockedAcquireBuffer()
+    {
+        assert _channelState.isLockHeldByCurrentThread();
+
         if (_aggregate == null)
-            _aggregate = pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
+            _aggregate = getSizedByteBufferPool().acquire();
         return _aggregate;
     }
 
-    private void releaseBuffer()
+    private void lockedReleaseBuffer(boolean failure)
     {
+        assert _channelState.isLockHeldByCurrentThread();
+
         if (_aggregate != null)
         {
-            _aggregate.release();
+            if (failure && _pool != null)
+                _pool.removeAndRelease(_aggregate);
+            else
+                _aggregate.release();
             _aggregate = null;
+            _pool = null;
         }
     }
 
@@ -766,7 +782,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // Should we aggregate?
             if (aggregate)
             {
-                acquireBuffer();
+                lockedAcquireBuffer();
                 int filled = BufferUtil.fill(_aggregate.getByteBuffer(), b, off, len);
 
                 // return if we are not complete, not full and filled all the content
@@ -971,7 +987,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             _written = written;
 
-            acquireBuffer();
+            lockedAcquireBuffer();
             BufferUtil.append(_aggregate.getByteBuffer(), (byte)b);
         }
 
@@ -1274,6 +1290,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (AutoLock ignored = _channelState.lock())
         {
+            lockedReleaseBuffer(_state != State.CLOSED);
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
             _softClose = true; // Stay closed until next request
@@ -1282,7 +1299,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _commitSize = config.getOutputAggregationSize();
             if (_commitSize > _bufferSize)
                 _commitSize = _bufferSize;
-            releaseBuffer();
             _written = 0;
             _writeListener = null;
             _onError = null;

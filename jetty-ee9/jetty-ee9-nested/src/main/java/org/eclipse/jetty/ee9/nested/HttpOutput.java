@@ -199,7 +199,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private long _written;
     private long _flushed;
     private long _firstByteNanoTime = -1;
-    private ByteBufferPool _pool;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -655,15 +655,21 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    private ByteBufferPool.Sized getSizedByteBufferPool()
+    {
+        int bufferSize = getBufferSize();
+        boolean useOutputDirectByteBuffers = _channel.isUseOutputDirectByteBuffers();
+        if (_pool == null || _pool.getSize() != bufferSize || _pool.isDirect() != useOutputDirectByteBuffers)
+            _pool = new ByteBufferPool.Sized(_channel.getByteBufferPool(), useOutputDirectByteBuffers, bufferSize);
+        return _pool;
+    }
+
     private RetainableByteBuffer lockedAcquireBuffer()
     {
         assert _channelState.isLockHeldByCurrentThread();
 
         if (_aggregate == null)
-        {
-            _pool = _channel.getByteBufferPool();
-            _aggregate = _pool.acquire(getBufferSize(), _channel.isUseOutputDirectByteBuffers());
-        }
+            _aggregate = getSizedByteBufferPool().acquire();
         return _aggregate;
     }
 
@@ -1320,7 +1326,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     _written += byteBuffer.remaining();
                     channelWrite(byteBuffer, last, cb);
-                }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(), new Callback.Nested(callback)
+                }, getSizedByteBufferPool(), 0L, -1L, new Callback.Nested(callback)
                 {
                     @Override
                     public void succeeded()

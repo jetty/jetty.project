@@ -135,7 +135,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private long _written;
     private long _flushed;
     private long _firstByteNanoTime = -1;
-    private ByteBufferPool _pool;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -581,17 +581,21 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    private ByteBufferPool.Sized getSizedByteBufferPool()
+    {
+        int bufferSize = getBufferSize();
+        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+        if (_pool == null || _pool.getSize() != bufferSize || _pool.isDirect() != useOutputDirectByteBuffers)
+            _pool = new ByteBufferPool.Sized(_servletChannel.getRequest().getComponents().getByteBufferPool(), useOutputDirectByteBuffers, bufferSize);
+        return _pool;
+    }
+
     private RetainableByteBuffer lockedAcquireBuffer()
     {
         assert _channelState.isLockHeldByCurrentThread();
 
-        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-
         if (_aggregate == null)
-        {
-            _pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
-            _aggregate = _pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
-        }
+            _aggregate = getSizedByteBufferPool().acquire();
         return _aggregate;
     }
 

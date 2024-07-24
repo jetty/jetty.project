@@ -298,7 +298,13 @@ public class BufferUtil
     {
         ByteBuffer slice = buffer.slice();
         if (offset > 0)
-            slice.position(slice.position() + offset);
+        {
+            int newPosition = slice.position() + offset;
+            if (newPosition > slice.limit() && length == 0)
+                slice.position(slice.limit());
+            else
+                slice.position(newPosition);
+        }
         if (length > -1)
             slice.limit(slice.position() + length);
         return slice;
