@@ -81,6 +81,7 @@ public class ServletChannel
     private Callback _callback;
     private CompleteListener _completeListener;
     private final AtomicInteger _completeCount = new AtomicInteger(2);
+    private boolean _reportRemoteErrors;
 
     public interface CompleteListener
     {
@@ -604,10 +605,9 @@ public class ServletChannel
             LOG.debug("!handle {} {}", action, this);
     }
 
-    private boolean reportRemoteErrors;
     public void setReportRemoteErrors(boolean reportRemoteErrors)
     {
-        this.reportRemoteErrors = reportRemoteErrors;
+        this._reportRemoteErrors = reportRemoteErrors;
     }
 
     private void reopen()
@@ -675,7 +675,7 @@ public class ServletChannel
             LOG.warn(request == null ? "unknown request" : request.getServletApiRequest().getRequestURI(), failure);
         }
 
-        if (isCommitted() && !reportRemoteErrors)
+        if (isCommitted() && !_reportRemoteErrors)
         {
             abort(failure);
         }
