@@ -324,11 +324,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         @Override
         protected void onFailure(Throwable x)
         {
-            if (_deflaterEntry != null)
-            {
-                _deflaterEntry.release();
-                _deflaterEntry = null;
-            }
+            cleanup();
             super.onFailure(x);
         }
 
@@ -381,6 +377,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         {
             if (_deflaterEntry != null)
             {
+                _state.set(GZState.FINISHED);
                 _deflaterEntry.release();
                 _deflaterEntry = null;
             }

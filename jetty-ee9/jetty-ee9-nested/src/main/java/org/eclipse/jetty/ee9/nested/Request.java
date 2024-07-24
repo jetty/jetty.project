@@ -515,7 +515,7 @@ public class Request implements HttpServletRequest
                         String msg = "Unable to extract content parameters";
                         if (LOG.isDebugEnabled())
                             LOG.debug(msg, e);
-                        throw new RuntimeIOException(msg, e);
+                        throw new BadMessageException(msg, e);
                     }
                 }
             }
@@ -2044,7 +2044,21 @@ public class Request implements HttpServletRequest
             MultiPartCompliance multiPartCompliance = getHttpChannel().getHttpConfiguration().getMultiPartCompliance();
 
             _multiParts = newMultiParts(multiPartCompliance, config, maxFormKeys);
-            Collection<Part> parts = _multiParts.getParts();
+
+            Collection<Part> parts;
+            try
+            {
+                parts = _multiParts.getParts();
+            }
+            catch (BadMessageException e)
+            {
+                throw e;
+            }
+            // Catch RuntimeException to handle IllegalStateException, IllegalArgumentException, CharacterEncodingException, etc .. (long list)
+            catch (RuntimeException | IOException e)
+            {
+                throw new BadMessageException("Unable to parse form content", e);
+            }
             reportComplianceViolations();
 
             String formCharset = null;

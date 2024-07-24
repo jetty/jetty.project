@@ -52,7 +52,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -1567,6 +1566,40 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public MetaData getMetaData()
     {
         return _metadata;
+    }
+
+    @Override
+    protected void makeTempDirectory() throws Exception
+    {
+        super.makeTempDirectory();
+    }
+
+    @Override
+    protected String getCanonicalNameForTmpDir()
+    {
+        return super.getCanonicalNameForTmpDir();
+    }
+
+    /**
+     * If the webapp has no baseresource yet, use
+     * the war to make the temp directory name.
+     *
+     * @return the baseresource if non null, or the war
+     */
+    @Override
+    protected Resource getResourceForTempDirName()
+    {
+        Resource resource = super.getResourceForTempDirName();
+
+        if (resource == null)
+        {
+            if (getWar() == null || getWar().length() == 0)
+                throw new IllegalStateException("No resourceBase or war set for context");
+
+            // Use name of given resource in the temporary dirname
+            resource = newResource(getWar());
+        }
+        return resource;
     }
 
     /**

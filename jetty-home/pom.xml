@@ -121,7 +121,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-demo-handler</artifactId>
+      <artifactId>jetty-core-demo-handler</artifactId>
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>

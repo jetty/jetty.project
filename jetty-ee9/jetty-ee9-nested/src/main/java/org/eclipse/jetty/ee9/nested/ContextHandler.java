@@ -71,8 +71,6 @@ import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FormFields;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler.ScopedContext;
@@ -2671,6 +2669,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             super.setHandler(new CoreToNestedHandler());
             installBean(ContextHandler.this, true);
+        }
+
+        @Override
+        public void makeTempDirectory() throws Exception
+        {
+            super.makeTempDirectory();
+        }
+
+        @Override
+        public String getCanonicalNameForTmpDir()
+        {
+            return super.getCanonicalNameForTmpDir();
+        }
+
+        @Override
+        public Resource getResourceForTempDirName()
+        {
+           return super.getResourceForTempDirName();
         }
 
         @Override

@@ -108,7 +108,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
-import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,7 +218,6 @@ public class ServletContextHandler extends ContextHandler
     private Logger _logger;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
-    private boolean _usingSecurityManager = getSecurityManager() != null;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
@@ -324,16 +322,17 @@ public class ServletContextHandler extends ContextHandler
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public boolean isUsingSecurityManager()
     {
-        return _usingSecurityManager;
+        return false;
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
-        if (usingSecurityManager && getSecurityManager() == null)
-            throw new IllegalStateException("No security manager");
-        _usingSecurityManager = usingSecurityManager;
+        if (usingSecurityManager)
+            throw new UnsupportedOperationException("SecurityManager not supported");
     }
 
     /**
@@ -1712,11 +1711,6 @@ public class ServletContextHandler extends ContextHandler
         getContext().destroy(listener);
     }
 
-    private static Object getSecurityManager()
-    {
-        return SecurityUtils.getSecurityManager();
-    }
-
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {
         private final List<String> _urlPatterns = new ArrayList<>();
@@ -2980,25 +2974,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ClassLoader getClassLoader()
         {
-            // no security manager just return the classloader
-            ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
-            if (isUsingSecurityManager())
-            {
-                // check to see if the classloader of the caller is the same as the context
-                // classloader, or a parent of it, as required by the javadoc specification.
-                ClassLoader callerLoader = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-                    .getCallerClass()
-                    .getClassLoader();
-                while (callerLoader != null)
-                {
-                    if (callerLoader == classLoader)
-                        return classLoader;
-                    else
-                        callerLoader = callerLoader.getParent();
-                }
-                SecurityUtils.checkPermission(new RuntimePermission("getClassLoader"));
-            }
-            return classLoader;
+            return ServletContextHandler.this.getClassLoader();
         }
 
         public void setEnabled(boolean enabled)
