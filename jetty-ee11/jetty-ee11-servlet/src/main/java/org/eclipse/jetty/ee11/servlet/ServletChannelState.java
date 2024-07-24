@@ -224,6 +224,11 @@ public class ServletChannelState
         return _lock.lock();
     }
 
+    boolean isLockHeldByCurrentThread()
+    {
+        return _lock.isHeldByCurrentThread();
+    }
+
     public State getState()
     {
         try (AutoLock ignored = lock())

@@ -150,11 +150,29 @@ public interface ByteBufferPool
         }
 
         /**
-         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured size and type.
+         * @return A {@link RetainableByteBuffer.Mutable} suitable for the specified preconfigured size and type.
          */
-        public RetainableByteBuffer acquire()
+        public RetainableByteBuffer.Mutable acquire()
         {
             return getWrapped().acquire(_size, _direct);
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer.Mutable} suitable for the specified preconfigured type.
+         * @param size The specified size in bytes of the buffer
+         */
+        public RetainableByteBuffer.Mutable acquire(int size)
+        {
+            return getWrapped().acquire(size, _direct);
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer.Mutable} suitable for the specified preconfigured type.
+         * @param direct true for a direct byte buffer, false otherwise
+         */
+        public RetainableByteBuffer.Mutable acquire(boolean direct)
+        {
+            return getWrapped().acquire(_size, direct);
         }
     }
 
