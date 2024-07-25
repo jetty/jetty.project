@@ -19,6 +19,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,12 +45,14 @@ public class DosHandlerTest
         DosHandler.Tracker tracker = handler.testTracker();
         long now = tracker.getSampleStart() + TimeUnit.SECONDS.toNanos(10);
 
-        for (int sample = 0; sample < 200; sample++)
+        for (int sample = 0; sample < 400; sample++)
         {
             boolean exceeded = tracker.addSampleAndCheckRateExceeded(now);
             assertFalse(exceeded);
             now += TimeUnit.MILLISECONDS.toNanos(11);
         }
+        int rate = tracker.getCurrentRatePerSecond(now);
+        assertThat(rate, both(greaterThan((1000 / 11) - 5)).and(lessThan(100)));
     }
 
     @Test
@@ -168,18 +174,23 @@ public class DosHandlerTest
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 99; burst++)
-            {
-                boolean exceeded = tracker.addSampleAndCheckRateExceeded(now);
-                assertFalse(exceeded);
-            }
+                assertFalse(tracker.addSampleAndCheckRateExceeded(now++));
 
-            now += TimeUnit.MILLISECONDS.toNanos(1000);
+            now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
 
-        int initialRate = tracker.getCurrentRatePerSecond();
-        Thread.sleep(500);
-        int halfSecondRate = tracker.getCurrentRatePerSecond();
-        Thread.sleep(500);
-    }
+        int rate = tracker.getCurrentRatePerSecond(now);
+        assertThat(rate, both(greaterThan(90)).and(lessThan(100)));
 
+        for (int seconds = 0; seconds < 2; seconds++)
+        {
+            for (int burst = 0; burst < 49; burst++)
+                assertFalse(tracker.addSampleAndCheckRateExceeded(now++));
+
+            now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
+        }
+
+        rate = tracker.getCurrentRatePerSecond(now);
+        assertThat(rate, both(greaterThan(40)).and(lessThan(50)));
+    }
 }

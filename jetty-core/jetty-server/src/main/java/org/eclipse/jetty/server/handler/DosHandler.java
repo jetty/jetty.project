@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * A Denial of Service Handler
+ * A Denial of Service Handler.
  * <p>Protect from denial of service attacks by limiting the request rate from remote hosts</p>
  */
 public class DosHandler extends ConditionalHandler.ElseNext
@@ -120,7 +120,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         // If we are not over-limit then handle normally
         if (!tracker.isRateExceeded(request, response, callback))
-            return super.handle(request, response, callback);
+            return nextHandler(request, response, callback);
 
         // Otherwise the Tracker will reject the request
         return true;
