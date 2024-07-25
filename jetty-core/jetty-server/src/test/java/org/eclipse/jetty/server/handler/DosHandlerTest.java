@@ -13,14 +13,19 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -192,5 +197,98 @@ public class DosHandlerTest
 
         rate = tracker.getCurrentRatePerSecond(now);
         assertThat(rate, both(greaterThan(40)).and(lessThan(50)));
+    }
+
+    @Test
+    public void testOKRequestRate() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        DosHandler dosHandler = new DosHandler(1000);
+        DumpHandler dumpHandler = new DumpHandler();
+        server.setHandler(dosHandler);
+        dosHandler.setHandler(dumpHandler);
+
+        server.start();
+
+        long now = System.nanoTime();
+        long end = now + TimeUnit.SECONDS.toNanos(5);
+        CountDownLatch latch = new CountDownLatch(90);
+        for (int thread = 0; thread < 90; thread++)
+        {
+            server.getThreadPool().execute(() ->
+            {
+                try
+                {
+                    while (System.nanoTime() < end)
+                    {
+                        String response = connector.getResponse("""
+                                GET / HTTP/1.1\r
+                                Host: local\r
+                                                
+                                """);
+                        assertThat(response, containsString("200 OK"));
+                        Thread.sleep(100);
+                    }
+                    latch.countDown();
+                }
+                catch (Throwable x)
+                {
+                    throw new RuntimeException(x);
+                }
+            });
+        }
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testHighRequestRate() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        DosHandler dosHandler = new DosHandler(1000);
+        DumpHandler dumpHandler = new DumpHandler();
+        server.setHandler(dosHandler);
+        dosHandler.setHandler(dumpHandler);
+
+        server.start();
+
+        long now = System.nanoTime();
+        long end = now + TimeUnit.SECONDS.toNanos(5);
+        CountDownLatch latch = new CountDownLatch(90);
+        AtomicInteger calm = new AtomicInteger();
+        for (int thread = 0; thread < 90; thread++)
+        {
+            server.getThreadPool().execute(() ->
+            {
+                try
+                {
+                    while (System.nanoTime() < end)
+                    {
+                        String response = connector.getResponse("""
+                                GET / HTTP/1.1\r
+                                Host: local\r
+                                
+                                """);
+                        if (response.contains(" 420 "))
+                            calm.incrementAndGet();
+                        Thread.sleep(70);
+                    }
+                    latch.countDown();
+                }
+                catch (Throwable x)
+                {
+                    throw new RuntimeException(x);
+                }
+            });
+        }
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertThat(calm.get(), greaterThan(0));
     }
 }
