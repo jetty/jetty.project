@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 
 /**
- * A {@link LoginService} which allows any user to be authenticated.
+ * A {@link LoginService} which allows unknown users to be authenticated.
  * <p>
  * This can delegate to a nested {@link LoginService} if it is supplied to the constructor, it will first attempt to log in
  * with the nested {@link LoginService} and only create a new {@link UserIdentity} if none was found with
@@ -38,11 +38,10 @@ public class AnyUserLoginService implements LoginService
     private final LoginService _loginService;
     private IdentityService _identityService;
 
-    public AnyUserLoginService(String realm)
-    {
-        this(realm, null);
-    }
-
+    /**
+     * @param realm the realm name.
+     * @param loginService optional {@link LoginService} which can be used to assign roles to known users.
+     */
     public AnyUserLoginService(String realm, LoginService loginService)
     {
         _realm = realm;
