@@ -1,4 +1,15 @@
-jetty-12.0.12-SNAPSHOT
+jetty-12.0.12 - 25 July 2024
+ + 265 --list-config license enhancement
+ + 10904 jetty.sh reports FAILED too early
+ + 11965 Client: Some HTTP/2 requests are never sent
+ + 11996 mTLS: client cert verification for QUIC/HTTP3
+ + 12000 Cannot use Paths that have spaces with `jetty-ee10-maven-plugin` 
+ + 12018 NPE when passing null value to Request.param
+ + 12019 External property file not being read
+ + 12022 Intermittent NPE in OutputStream.close with GzipHandler
+ + 12044 Temp directory not deleted in jetty-12
+ + 12070 lastAccessedTime and isNew not getting updated
+ + 12086 Serve favicon.ico as image/vnd.microsoft.icon instead of image/x-icon
 
 jetty-12.0.11 - 27 June 2024
  + 11803 Follow Reactive Stream TCK for ContentSourcePublisher implementation
