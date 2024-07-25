@@ -559,8 +559,6 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                 }
             }
 
-            // TODO: verify the sessionID is obtained from a cookie.
-
             if (isNonceRequest(uri))
                 return handleNonceRequest(request, response, callback);
             if (isAuthenticationRequest(uri))

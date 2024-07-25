@@ -313,8 +313,6 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     protected void doStart()
         throws Exception
     {
-        Context context1 = ContextHandler.getCurrentContext();
-
         // complicated resolution of login and identity service to handle
         // many different ways these can be constructed and injected.
 

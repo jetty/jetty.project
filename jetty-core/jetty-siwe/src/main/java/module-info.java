@@ -11,10 +11,15 @@
 // ========================================================================
 //
 
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.siwe.EthereumAuthenticatorFactory;
+
 module org.eclipse.jetty.siwe
 {
     requires transitive org.eclipse.jetty.security;
     requires org.bouncycastle.provider;
 
     exports org.eclipse.jetty.security.siwe;
+
+    provides Authenticator.Factory with EthereumAuthenticatorFactory;
 }

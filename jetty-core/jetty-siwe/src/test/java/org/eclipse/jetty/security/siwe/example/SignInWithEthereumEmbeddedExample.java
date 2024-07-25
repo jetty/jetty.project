@@ -89,7 +89,6 @@ public class SignInWithEthereumEmbeddedExample
 
         server.setHandler(contextHandler);
         server.start();
-        System.err.println(resourceHandler.getBaseResource());
         server.join();
     }
 
