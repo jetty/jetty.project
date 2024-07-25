@@ -1,3 +1,5 @@
+jetty-12.0.13-SNAPSHOT
+
 jetty-12.0.12 - 25 July 2024
  + 265 --list-config license enhancement
  + 10904 jetty.sh reports FAILED too early
