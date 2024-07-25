@@ -44,7 +44,6 @@ import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.security.siwe.internal.AnyUserLoginService;
 import org.eclipse.jetty.security.siwe.internal.EthereumUtil;
-import org.eclipse.jetty.security.siwe.internal.SignInWithEthereumParser;
 import org.eclipse.jetty.security.siwe.internal.SignInWithEthereumToken;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
@@ -573,7 +572,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                 SignedMessage signedMessage = parseMessage(request, response, callback);
                 if (signedMessage == null)
                     return AuthenticationState.SEND_FAILURE;
-                SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(signedMessage.message());
+                SignInWithEthereumToken siwe = SignInWithEthereumToken.from(signedMessage.message());
                 if (siwe == null || !validateSignInWithEthereumToken(siwe, signedMessage, request, response, callback))
                     return AuthenticationState.SEND_FAILURE;
 

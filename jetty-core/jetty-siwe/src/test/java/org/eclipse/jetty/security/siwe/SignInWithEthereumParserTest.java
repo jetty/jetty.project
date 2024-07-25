@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.security.siwe.internal.EthereumUtil;
-import org.eclipse.jetty.security.siwe.internal.SignInWithEthereumParser;
 import org.eclipse.jetty.security.siwe.internal.SignInWithEthereumToken;
 import org.eclipse.jetty.security.siwe.util.SignInWithEthereumGenerator;
 import org.junit.jupiter.api.Test;
@@ -97,7 +96,7 @@ public class SignInWithEthereumParserTest
     @MethodSource("specExamples")
     public void testSpecExamples(String message, String scheme, String domain)
     {
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
         assertThat(siwe.address(), equalTo("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"));
         assertThat(siwe.issuedAt(), equalTo("2021-09-30T16:25:24Z"));
@@ -139,7 +138,7 @@ public class SignInWithEthereumParserTest
         String message = SignInWithEthereumGenerator.generateMessage(scheme, domain, address, statement, uri, version, chainId, nonce, issuedAt,
             expirationTime, notBefore, requestId, resources);
 
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
         assertThat(siwe.scheme(), equalTo(scheme));
         assertThat(siwe.domain(), equalTo(domain));

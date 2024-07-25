@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.security.siwe.internal.EthereumUtil;
-import org.eclipse.jetty.security.siwe.internal.SignInWithEthereumParser;
 import org.eclipse.jetty.security.siwe.internal.SignInWithEthereumToken;
 import org.eclipse.jetty.security.siwe.util.EthereumCredentials;
 import org.eclipse.jetty.security.siwe.util.SignInWithEthereumGenerator;
@@ -51,7 +50,7 @@ public class SignInWithEthereumTokenTest
         );
 
         EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
 
         Throwable error = assertThrows(Throwable.class, () ->
@@ -80,7 +79,7 @@ public class SignInWithEthereumTokenTest
         );
 
         EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
 
         Throwable error = assertThrows(Throwable.class, () ->
@@ -110,7 +109,7 @@ public class SignInWithEthereumTokenTest
         );
 
         EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
 
         Throwable error = assertThrows(Throwable.class, () ->
@@ -137,7 +136,7 @@ public class SignInWithEthereumTokenTest
         );
 
         EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
 
         IncludeExcludeSet<String, String> domains = new IncludeExcludeSet<>();
@@ -167,7 +166,7 @@ public class SignInWithEthereumTokenTest
         );
 
         EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
 
         IncludeExcludeSet<String, String> chainIds = new IncludeExcludeSet<>();
@@ -197,7 +196,7 @@ public class SignInWithEthereumTokenTest
         );
 
         EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
 
         Predicate<String> nonceValidation = nonce -> false;
@@ -225,7 +224,7 @@ public class SignInWithEthereumTokenTest
         );
 
         EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
-        SignInWithEthereumToken siwe = SignInWithEthereumParser.parse(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
         assertNotNull(siwe);
 
         Predicate<String> nonceValidation = nonce -> true;
