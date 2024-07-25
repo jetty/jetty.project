@@ -33,6 +33,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.HttpField;
@@ -242,7 +243,6 @@ public class ResourceService
         boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith("/");
 
         HttpContent content = null;
-        boolean releaseContent = true;
         try
         {
             // Find the content
@@ -280,7 +280,7 @@ public class ResourceService
             {
                 String q = request.getQueryString();
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
-                if (q != null && q.length() != 0)
+                if (q != null && !q.isEmpty())
                     pathInContext += "?" + q;
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), pathInContext)));
                 return true;
@@ -322,7 +322,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
 
             // Send the data
-            releaseContent = sendData(request, response, included, content, reqRanges);
+            sendData(request, response, included, content, reqRanges);
         }
         // Can be thrown from contentFactory.getContent() call when using invalid characters
         catch (InvalidPathException e)
@@ -340,15 +340,6 @@ public class ResourceService
             if (!response.isCommitted())
                 response.sendError(500, e.getMessage());
         }
-        finally
-        {
-            if (releaseContent)
-            {
-                if (content != null)
-                    content.release();
-            }
-        }
-
         return true;
     }
 
@@ -602,7 +593,7 @@ public class ResourceService
             if (ifms != null && ifnm == null)
             {
                 //Get jetty's Response impl
-                String mdlm = content.getLastModifiedValue();
+                String mdlm = DateGenerator.formatDate(content.getLastModifiedInstant());
                 if (ifms.equals(mdlm))
                 {
                     sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
@@ -676,7 +667,7 @@ public class ResourceService
         response.getOutputStream().write(data);
     }
 
-    protected boolean sendData(HttpServletRequest request,
+    protected void sendData(HttpServletRequest request,
                                HttpServletResponse response,
                                boolean include,
                                final HttpContent content,
@@ -737,7 +728,6 @@ public class ResourceService
                         public void succeeded()
                         {
                             context.complete();
-                            content.release();
                         }
 
                         @Override
@@ -749,7 +739,6 @@ public class ResourceService
                             else
                                 LOG.warn(msg, x);
                             context.complete();
-                            content.release();
                         }
 
                         @Override
@@ -764,7 +753,7 @@ public class ResourceService
                             return String.format("ResourceService@%x$CB", ResourceService.this.hashCode());
                         }
                     });
-                    return false;
+                    return;
                 }
                 // otherwise write content blocking
                 ((HttpOutput)out).sendContent(content);
@@ -776,13 +765,13 @@ public class ResourceService
             List<InclusiveByteRange> ranges = InclusiveByteRange.satisfiableRanges(reqRanges, content_length);
 
             //  if there are no satisfiable ranges, send 416 response
-            if (ranges == null || ranges.size() == 0)
+            if (ranges == null || ranges.isEmpty())
             {
                 response.setContentLength(0);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
-                return true;
+                return;
             }
 
             //  if there is only a single valid range (must be satisfiable
@@ -798,7 +787,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     singleSatisfiableRange.toHeaderRangeString(content_length));
                 writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
-                return true;
+                return;
             }
 
             //  multiple non-overlapping valid ranges cause a multipart
@@ -858,7 +847,6 @@ public class ResourceService
 
             multi.close();
         }
-        return true;
     }
 
     private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException

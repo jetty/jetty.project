@@ -16,8 +16,11 @@ package org.eclipse.jetty.http.content;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Objects;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -87,6 +90,9 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
     private static class SingleBufferFileMappedHttpContent extends HttpContent.Wrapper
     {
         private final ByteBuffer _buffer;
+        private final HttpField _contentLength;
+        private final HttpField _lastModified;
+        private final Instant _lastModifiedInstant;
 
         private SingleBufferFileMappedHttpContent(HttpContent content) throws IOException
         {
@@ -95,6 +101,9 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
             if (path == null)
                 throw new IOException("Cannot memory map Content whose Resource is not backed by a Path: " + content.getResource());
             _buffer = BufferUtil.toMappedBuffer(path);
+            _contentLength = new HttpField(HttpHeader.CONTENT_LENGTH, Integer.toString(_buffer.remaining()));
+            _lastModified = content.getLastModified();
+            _lastModifiedInstant = content.getLastModifiedInstant();
         }
 
         @Override
@@ -111,9 +120,27 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public long getBytesOccupied()
+        public HttpField getContentLength()
+        {
+            return _contentLength;
+        }
+
+        @Override
+        public long getContentLengthValue()
         {
             return _buffer.remaining();
+        }
+
+        @Override
+        public Instant getLastModifiedInstant()
+        {
+            return _lastModifiedInstant;
+        }
+
+        @Override
+        public HttpField getLastModified()
+        {
+            return _lastModified;
         }
     }
 
@@ -121,7 +148,10 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
     {
         private final ByteBuffer[] _buffers;
         private final int maxBufferSize;
-        private final long _bytesOccupied;
+        private final HttpField _contentLength;
+        private final long _contentLengthValue;
+        private final HttpField _lastModified;
+        private final Instant _lastModifiedInstant;
 
         private MultiBufferFileMappedHttpContent(HttpContent content, int maxBufferSize) throws IOException
         {
@@ -143,7 +173,10 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
                 currentPos += len;
                 total += _buffers[i].remaining();
             }
-            _bytesOccupied = total;
+            _contentLengthValue = total;
+            _contentLength = new HttpField(HttpHeader.CONTENT_LENGTH, Long.toString(total));
+            _lastModified = content.getLastModified();
+            _lastModifiedInstant = content.getLastModifiedInstant();
         }
 
         @Override
@@ -151,9 +184,9 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         {
             try
             {
-                if (offset > getBytesOccupied())
+                if (offset > getContentLengthValue())
                     throw new IllegalArgumentException("Offset outside of mapped file range");
-                if (length > -1 && length + offset > getBytesOccupied())
+                if (length > -1 && length + offset > getContentLengthValue())
                     throw new IllegalArgumentException("Offset / length outside of mapped file range");
 
                 int beginIndex = Math.toIntExact(offset / maxBufferSize);
@@ -205,9 +238,27 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         }
 
         @Override
-        public long getBytesOccupied()
+        public HttpField getContentLength()
         {
-            return _bytesOccupied;
+            return _contentLength;
+        }
+
+        @Override
+        public long getContentLengthValue()
+        {
+            return _contentLengthValue;
+        }
+
+        @Override
+        public Instant getLastModifiedInstant()
+        {
+            return _lastModifiedInstant;
+        }
+
+        @Override
+        public HttpField getLastModified()
+        {
+            return _lastModified;
         }
     }
 }
