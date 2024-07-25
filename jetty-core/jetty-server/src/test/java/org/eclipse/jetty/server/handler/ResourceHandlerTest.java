@@ -49,6 +49,7 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Handler;
@@ -664,13 +665,13 @@ public class ResourceHandlerTest
         _rootResourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
-                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
+                HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
-                contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
+                contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", byteBufferPool);
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
-                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, getByteBufferPool());
+                contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, 0, byteBufferPool);
                 return contentFactory;
             }
         };

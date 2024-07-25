@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -51,7 +50,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -2763,7 +2762,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
         });
@@ -2791,7 +2790,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
         });
@@ -2822,16 +2821,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
-            {
-                final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
-
-                @Override
-                public ByteBuffer getByteBuffer()
-                {
-                    return buffer;
-                }
-            });
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
         });
@@ -2859,16 +2849,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
-            {
-                final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
-
-                @Override
-                public ByteBuffer getByteBuffer()
-                {
-                    return buffer;
-                }
-            });
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
         });
@@ -2899,7 +2880,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             resourceService.setAcceptRanges(false);
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
