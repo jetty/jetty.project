@@ -86,6 +86,16 @@ public class DosHandler extends ConditionalHandler.ElseNext
             throw new IllegalArgumentException("Alpha " + _alpha + " is too large");
     }
 
+    public boolean isUseAddress()
+    {
+        return _useAddress;
+    }
+
+    public boolean isUsePort()
+    {
+        return _usePort;
+    }
+
     @Override
     protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
@@ -98,22 +108,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         // Calculate an id for the request (which may be global empty string)
         String id;
-        SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
-        if (remoteSocketAddress instanceof InetSocketAddress inetSocketAddress)
-        {
-            if (_useAddress && _usePort)
-                id = inetSocketAddress.toString();
-            else if (_useAddress)
-                id = inetSocketAddress.getAddress().toString();
-            else if (_usePort)
-                id = Integer.toString(inetSocketAddress.getPort());
-            else
-                id = "";
-        }
-        else
-        {
-            id = remoteSocketAddress.toString();
-        }
+        id = getId(request);
 
         // Obtain a tracker
         Tracker tracker = _trackers.computeIfAbsent(id, Tracker::new);
@@ -124,6 +119,25 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         // Otherwise the Tracker will reject the request
         return true;
+    }
+
+    protected String getId(Request request)
+    {
+        String id;
+        SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
+        if (remoteSocketAddress instanceof InetSocketAddress inetSocketAddress)
+        {
+            if (isUseAddress() && isUsePort())
+                return inetSocketAddress.toString();
+            if (isUseAddress())
+                return inetSocketAddress.getAddress().toString();
+            if (isUsePort())
+                return Integer.toString(inetSocketAddress.getPort());
+
+            return "";
+        }
+
+        return remoteSocketAddress.toString();
     }
 
     @Override
