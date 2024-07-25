@@ -6,7 +6,7 @@ pipeline {
   options {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
-    buildDiscarder logRotator( numToKeepStr: '60' )
+    buildDiscarder logRotator( numToKeepStr: '40' )
     disableRestartFromStage()
   }
   environment {
