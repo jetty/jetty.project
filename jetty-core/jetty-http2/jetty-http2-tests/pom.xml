@@ -75,7 +75,7 @@
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>h2spec-maven-plugin</artifactId>
-        <version>1.0.10</version>
+        <version>1.0.12</version>
         <configuration>
           <mainClass>org.eclipse.jetty.http2.tests.H2SpecServer</mainClass>
           <skip>${h2spec.skip}</skip>
