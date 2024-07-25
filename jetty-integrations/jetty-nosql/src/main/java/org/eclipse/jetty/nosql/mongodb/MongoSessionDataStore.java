@@ -22,11 +22,14 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
@@ -525,6 +528,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
     protected void ensureIndexes() throws MongoException
     {
+
         // FIXME
 //        _version1 = new BasicDBObject(getContextSubfield(__VERSION), 1);
 //        DBObject idKey = BasicDBObjectBuilder.start().add("id", 1).get();
@@ -535,7 +539,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 //                        .add("sparse", false)
 //                        .add("unique", true)
 //                        .get());
-//
+
+        String createResult = _dbSessions.createIndex(Indexes.text("id"), new IndexOptions().unique(true).name("id_1").sparse(false));
+
 //        DBObject versionKey = BasicDBObjectBuilder.start().add("id", 1).add("version", 1).get();
 //        _dbSessions.createIndex(versionKey, BasicDBObjectBuilder.start()
 //                .add("name", "id_1_version_1")
@@ -543,9 +549,13 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 //                .add("sparse", false)
 //                .add("unique", true)
 //                .get());
-//        if (LOG.isDebugEnabled())
-//            LOG.debug("Done ensure Mongodb indexes existing");
-//        //TODO perhaps index on expiry time?
+
+        createResult = _dbSessions.createIndex(Indexes.compoundIndex(Indexes.text("id"), Indexes.text("version")),
+                new IndexOptions().unique(true).name("id_1_version_1").sparse(false));
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Done ensure Mongodb indexes existing");
+        //TODO perhaps index on expiry time?
     }
 
     private String getContextField()
