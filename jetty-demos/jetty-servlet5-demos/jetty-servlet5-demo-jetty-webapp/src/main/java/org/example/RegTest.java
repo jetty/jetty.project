@@ -22,7 +22,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Rego Servlet - tests being accessed from servlet 3.0 programmatic
@@ -163,9 +162,9 @@ public class RegTest extends HttpServlet
     {
         if (s == null)
             return "null";
-        s = StringUtil.replace(s, "&", "&amp;");
-        s = StringUtil.replace(s, "<", "&lt;");
-        s = StringUtil.replace(s, ">", "&gt;");
+        s = s.replace("&", "&amp;");
+        s = s.replace("<", "&lt;");
+        s = s.replace(">", "&gt;");
         return s;
     }
 }
