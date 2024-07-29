@@ -32,6 +32,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.UriCompliance;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResponseHeadersTest
@@ -322,5 +324,97 @@ public class ResponseHeadersTest
         assertThat("Response Code", response.getStatus(), is(200));
         // The Content-Type should not have a charset= portion
         assertThat("Response Header Content-Type", response.get("Content-Type"), is("application/json"));
+    }
+
+    @Test
+    public void testHTTP10ConnectionClose() throws Exception
+    {
+        startServer((context) ->
+        {
+            HttpServlet servlet = new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                {
+                    // do nothing.
+                }
+            };
+            ServletHolder servletHolder = new ServletHolder(servlet);
+            context.addServlet(servletHolder, "/nothing");
+        });
+
+        String rawRequest = """
+            GET /nothing HTTP/1.0
+            Host: test
+            Connection: close
+            
+            """;
+
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat("Should not be persistent", response.get(HttpHeader.CONNECTION), nullValue());
+    }
+
+    @Test
+    public void testHTTP10ConnectionKeepAlive() throws Exception
+    {
+        startServer((context) ->
+        {
+            HttpServlet servlet = new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                {
+                    // do nothing.
+                }
+            };
+            ServletHolder servletHolder = new ServletHolder(servlet);
+            context.addServlet(servletHolder, "/nothing");
+        });
+
+        String rawRequest = """
+            GET /nothing HTTP/1.0
+            Host: test
+            Connection: keep-alive
+            
+            """;
+
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat("Should be persistent", response.get(HttpHeader.CONNECTION), is("keep-alive"));
+    }
+
+    @Test
+    public void testHTTP10NoConnectionHeader() throws Exception
+    {
+        startServer((context) ->
+        {
+            HttpServlet servlet = new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                {
+                    // do nothing.
+                }
+            };
+            ServletHolder servletHolder = new ServletHolder(servlet);
+            context.addServlet(servletHolder, "/nothing");
+        });
+
+        String rawRequest = """
+            GET /nothing HTTP/1.0
+            Host: test
+            
+            """;
+
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat("Should not be persistent", response.get(HttpHeader.CONNECTION), nullValue());
     }
 }
