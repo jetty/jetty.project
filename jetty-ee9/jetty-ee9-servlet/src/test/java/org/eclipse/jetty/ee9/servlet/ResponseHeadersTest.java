@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.function.Consumer;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
@@ -39,8 +40,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -150,11 +150,24 @@ public class ResponseHeadersTest
         }
     }
 
-    private static Server server;
-    private static LocalConnector connector;
+    private Server server;
+    private LocalConnector connector;
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    public void startServer() throws Exception
+    {
+        startServer((context) ->
+        {
+            context.addServlet(new ServletHolder(new DefaultServlet()), "/default/*");
+            context.addFilter(new FilterHolder(new WrappingFilter()), "/default/*", EnumSet.allOf(DispatcherType.class));
+            context.addServlet(new ServletHolder(new SimulateUpgradeServlet()), "/ws/*");
+            context.addServlet(new ServletHolder(new MultilineResponseValueServlet()), "/multiline/*");
+            context.addServlet(CharsetResetToJsonMimeTypeServlet.class, "/charset/json-reset/*");
+            context.addServlet(CharsetChangeToJsonMimeTypeServlet.class, "/charset/json-change/*");
+            context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/charset/json-change-null/*");
+        });
+    }
+
+    public void startServer(Consumer<ServletContextHandler> configureServletContext) throws Exception
     {
         Path staticContentPath = MavenPaths.findTestResourceDir("contextResources");
         server = new Server();
@@ -165,21 +178,15 @@ public class ResponseHeadersTest
         context.setContextPath("/");
         context.setBaseResourceAsPath(staticContentPath);
         context.setInitParameter("org.eclipse.jetty.servlet.Default.pathInfoOnly", "TRUE");
+
+        configureServletContext.accept(context);
+
         server.setHandler(context);
-
-        context.addServlet(new ServletHolder(new DefaultServlet()), "/default/*");
-        context.addFilter(new FilterHolder(new WrappingFilter()), "/default/*", EnumSet.allOf(DispatcherType.class));
-        context.addServlet(new ServletHolder(new SimulateUpgradeServlet()), "/ws/*");
-        context.addServlet(new ServletHolder(new MultilineResponseValueServlet()), "/multiline/*");
-        context.addServlet(CharsetResetToJsonMimeTypeServlet.class, "/charset/json-reset/*");
-        context.addServlet(CharsetChangeToJsonMimeTypeServlet.class, "/charset/json-change/*");
-        context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/charset/json-change-null/*");
-
         server.start();
     }
 
-    @AfterAll
-    public static void stopServer()
+    @AfterEach
+    public void stopServer()
     {
         try
         {
@@ -194,6 +201,7 @@ public class ResponseHeadersTest
     @Test
     public void testWrappedResponseWithStaticContent() throws Exception
     {
+        startServer();
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/default/test.txt");
@@ -208,6 +216,7 @@ public class ResponseHeadersTest
     @Test
     public void testResponseWebSocketHeaderFormat() throws Exception
     {
+        startServer();
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/ws/");
@@ -226,6 +235,7 @@ public class ResponseHeadersTest
     @Test
     public void testMultilineResponseHeaderValue() throws Exception
     {
+        startServer();
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         String actualPathInfo = "%0a%20Content-Type%3a%20image/png%0a%20Content-Length%3a%208%0A%20%0A%20yuck<!--";
 
@@ -254,6 +264,7 @@ public class ResponseHeadersTest
     @Test
     public void testCharsetResetToJsonMimeType() throws Exception
     {
+        startServer();
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/charset/json-reset/");
@@ -274,6 +285,7 @@ public class ResponseHeadersTest
     @Test
     public void testCharsetChangeToJsonMimeType() throws Exception
     {
+        startServer();
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/charset/json-change/");
@@ -294,6 +306,7 @@ public class ResponseHeadersTest
     @Test
     public void testCharsetChangeToJsonMimeTypeSetCharsetToNull() throws Exception
     {
+        startServer();
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/charset/json-change-null/");
