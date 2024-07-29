@@ -694,7 +694,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 if (!HttpField.contains(coalesced, HttpHeaderValue.CLOSE.asString()))
                     coalesced += ", close";
 
-                // Returns a single Cookie header with all cookies.
                 return new HttpField(HttpHeader.CONNECTION, coalesced);
 
             });
