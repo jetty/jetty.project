@@ -1384,8 +1384,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void prepareResponse(HttpFields.Mutable headers)
         {
-            if (_connectionKeepAlive && _version == HttpVersion.HTTP_1_0 && !headers.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
-                headers.add(HttpFields.CONNECTION_KEEPALIVE);
+            // If the HTTP/1 generator is set to no longer be persistent then the
+            // logic for handling HTTP/1.0 shouldn't occur.  This typically happens
+            // in the case of errors with the request or response.
+//            if (_version == HttpVersion.HTTP_1_0 && _generator.isPersistent())
+            {
+                // attempt to cover HTTP/1.0 case where the Connection response header
+                // doesn't have a close value (set by the application) and it needs to
+                // be represented as a `Connection: keep-alive` response instead due
+                // to the existence of the `Connection: keep-alive` request header
+                if (_connectionKeepAlive && !headers.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
+                    headers.add(HttpFields.CONNECTION_KEEPALIVE);
+            }
         }
 
         @Override

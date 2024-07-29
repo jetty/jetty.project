@@ -31,6 +31,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -55,7 +55,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // TODO
 public class ErrorHandlerTest
 {
     StacklessLogging stacklessLogging;
@@ -281,16 +280,20 @@ public class ErrorHandlerTest
     @Test
     public void test404PostCantConsumeHttp10() throws Exception
     {
-        String rawResponse = connector.getResponse(
-            "POST / HTTP/1.0\r\n" +
-                "Host: Localhost\r\n" +
-                "Accept: text/html\r\n" +
-                "Content-Length: 100\r\n" +
-                "Connection: keep-alive\r\n" +
-                "\r\n" +
-                "0123456789");
+        String rawRequest = """
+            POST / HTTP/1.0\r
+            Host: Localhost\r
+            Accept: text/html\r
+            Content-Length: 100\r
+            Connection: keep-alive\r
+            \r
+            0123456789
+            """;
 
+        String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        dump(response);
 
         assertThat(response.getStatus(), is(404));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
@@ -308,7 +311,6 @@ public class ErrorHandlerTest
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "Content-Length: 100\r\n" +
-                "Connection: keep-alive\r\n" + // This is not need by HTTP/1.1 but sometimes sent anyway
                 "\r\n" +
                 "0123456789");
 
@@ -703,7 +705,7 @@ public class ErrorHandlerTest
         context.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.getOutputStream().println("Context Error");
@@ -717,35 +719,32 @@ public class ErrorHandlerTest
                 response.sendError(444);
             }
         });
-
-        context.setErrorHandler(new ErrorHandler()
+        server.setErrorHandler((request, response, callback) ->
         {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-                response.getOutputStream().println("Server Error");
-            }
+            Content.Sink.write(response, true, "Server Error", callback);
+            return true;
         });
 
         server.start();
 
-        LocalConnector.LocalEndPoint connection = connector.connect();
-        connection.addInputAndExecute(BufferUtil.toBuffer(
-            "GET /foo/test HTTP/1.1\r\n" +
-                "Host: Localhost\r\n" +
-                "\r\n"));
-        String response = connection.getResponse();
+        try (LocalConnector.LocalEndPoint connection = connector.connect())
+        {
+            connection.addInputAndExecute(BufferUtil.toBuffer(
+                "GET /foo/test HTTP/1.1\r\n" +
+                    "Host: Localhost\r\n" +
+                    "\r\n"));
+            String response = connection.getResponse();
 
-        assertThat(response, containsString("HTTP/1.1 444 444"));
-        assertThat(response, containsString("Context Error"));
+            assertThat(response, containsString("HTTP/1.1 444 444"));
+            assertThat(response, containsString("Context Error"));
 
-        connection.addInputAndExecute(BufferUtil.toBuffer(
-            "GET /test HTTP/1.1\r\n" +
-                "Host: Localhost\r\n" +
-                "\r\n"));
-        response = connection.getResponse();
-        assertThat(response, containsString("HTTP/1.1 404 Not Found"));
-        assertThat(response, containsString("Server Error"));
+            connection.addInputAndExecute(BufferUtil.toBuffer(
+                "GET /test HTTP/1.1\r\n" +
+                    "Host: Localhost\r\n" +
+                    "\r\n"));
+            response = connection.getResponse();
+            assertThat(response, containsString("HTTP/1.1 404 Not Found"));
+            assertThat(response, containsString("Server Error"));
+        }
     }
 }
