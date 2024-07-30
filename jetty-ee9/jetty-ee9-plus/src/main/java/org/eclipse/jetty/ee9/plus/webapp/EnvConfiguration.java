@@ -29,6 +29,7 @@ import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.IO;
@@ -139,6 +140,7 @@ public class EnvConfiguration extends AbstractConfiguration
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        ContextFactory.associateClassLoader(context.getClassLoader());
         try
         {
             Context ic = new InitialContext();
@@ -163,6 +165,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
+            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
             IO.close(_resourceFactory);
             _resourceFactory = null;
@@ -236,6 +239,10 @@ public class EnvConfiguration extends AbstractConfiguration
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+        //ensure that we create a unique comp/env context for this webapp based off
+        //its classloader
+        ContextFactory.associateClassLoader(wac.getClassLoader());
+
         try
         {
             Context context = new InitialContext();
@@ -244,6 +251,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
+            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
