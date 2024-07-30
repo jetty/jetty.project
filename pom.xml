@@ -1440,6 +1440,7 @@
             <timeoutInSeconds>300</timeoutInSeconds>
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
+            <scope>test</scope>
             <settingsFile>${settingsPath}</settingsFile>
             <skipInvocation>${skipTests}</skipInvocation>
             <streamLogsOnFailures>true</streamLogsOnFailures>
