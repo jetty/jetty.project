@@ -639,11 +639,15 @@ public class HttpGenerator
                             }
                             if (keepAlive && _persistent == Boolean.FALSE)
                             {
-                                field = new HttpField(HttpHeader.CONNECTION,
-                                    Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
-                                        .collect(Collectors.joining(", ")));
+                                String resultingValue = Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
+                                    .collect(Collectors.joining(", "));
+                                if (StringUtil.isBlank(resultingValue))
+                                    field = null; // all values stripped, do not produce a Connection header with no values
+                                else
+                                    field = new HttpField(HttpHeader.CONNECTION, resultingValue);
                             }
-                            putTo(field, header);
+                            if (field != null)
+                                putTo(field, header);
                             break;
                         }
 

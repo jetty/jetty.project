@@ -327,7 +327,7 @@ public class ResponseHeadersTest
     }
 
     @Test
-    public void testHTTP10ConnectionClose() throws Exception
+    public void testHTTP10ConnectionCloseFromRequest() throws Exception
     {
         startServer((context) ->
         {
@@ -358,7 +358,38 @@ public class ResponseHeadersTest
     }
 
     @Test
-    public void testHTTP10ConnectionKeepAlive() throws Exception
+    public void testHTTP10ConnectionCloseFromResponse() throws Exception
+    {
+        startServer((context) ->
+        {
+            HttpServlet servlet = new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                {
+                    resp.setHeader("Connection", "close");
+                }
+            };
+            ServletHolder servletHolder = new ServletHolder(servlet);
+            context.addServlet(servletHolder, "/nothing");
+        });
+
+        String rawRequest = """
+            GET /nothing HTTP/1.0
+            Host: test
+            
+            """;
+
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getVersion(), is(HttpVersion.HTTP_1_1));
+        assertThat("Should not be persistent", response.get(HttpHeader.CONNECTION), is("close"));
+    }
+
+    @Test
+    public void testHTTP10ConnectionKeepAliveFromRequest() throws Exception
     {
         startServer((context) ->
         {
@@ -389,7 +420,37 @@ public class ResponseHeadersTest
     }
 
     @Test
-    public void testHTTP10NoConnectionHeader() throws Exception
+    public void testHTTP10ConnectionKeepAliveFromResponse() throws Exception
+    {
+        startServer((context) ->
+        {
+            HttpServlet servlet = new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                {
+                    resp.setHeader("Connection", "keep-alive");
+                }
+            };
+            ServletHolder servletHolder = new ServletHolder(servlet);
+            context.addServlet(servletHolder, "/nothing");
+        });
+
+        String rawRequest = """
+            GET /nothing HTTP/1.0
+            Host: test
+            
+            """;
+
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat("Should not be persistent (since request wasn't)", response.get(HttpHeader.CONNECTION), nullValue());
+    }
+
+    @Test
+    public void testHTTP10NoConnectionHeaderFromRequest() throws Exception
     {
         startServer((context) ->
         {
