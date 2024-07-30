@@ -19,8 +19,11 @@ import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
@@ -43,6 +46,9 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -326,39 +332,66 @@ public class ResponseHeadersTest
         assertThat("Response Header Content-Type", response.get("Content-Type"), is("application/json"));
     }
 
-    @Test
-    public void testHTTP10ConnectionCloseFromRequest() throws Exception
+    public static Stream<Arguments> http10ConnectionBehavior()
     {
-        startServer((context) ->
-        {
-            HttpServlet servlet = new HttpServlet()
-            {
-                @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-                {
-                    // do nothing.
-                }
-            };
-            ServletHolder servletHolder = new ServletHolder(servlet);
-            context.addServlet(servletHolder, "/nothing");
-        });
+        List<Arguments> cases = new ArrayList<>();
+        String request;
 
-        String rawRequest = """
-            GET /nothing HTTP/1.0
-            Host: test
-            Connection: close
-            
-            """;
+        // --- VALID HTTP/1.0 SPEC REQUESTS ---
 
-        String rawResponse = connector.getResponse(rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        // Request does not send connection header.
+        request = null;
 
-        assertThat(response.getStatus(), is(200));
-        assertThat("Should not be persistent", response.get(HttpHeader.CONNECTION), nullValue());
+        cases.add(Arguments.of(request, null, "close"));
+        cases.add(Arguments.of(request, "close", "close"));
+        cases.add(Arguments.of(request, "keep-alive", "close"));
+
+        // Request sends "keep-alive"
+        request = "keep-alive";
+
+        cases.add(Arguments.of(request, null, "keep-alive"));
+        cases.add(Arguments.of(request, "close", "close"));
+        cases.add(Arguments.of(request, "keep-alive", "keep-alive"));
+
+        // --- INVALID HTTP/1.0 SPEC REQUESTS ---
+
+        // Request sends invalid value "close" (on HTTP/1.0)
+        request = "close";
+
+        cases.add(Arguments.of(request, null, "close"));
+        cases.add(Arguments.of(request, "close", "close"));
+        cases.add(Arguments.of(request, "keep-alive", "close"));
+
+        // --- INVALID HTTP RESPONSE HEADERS ---
+        // this is when the servlet is setting headers that are in conflict with
+        // the spec and each other.
+
+        // Request does not set "connection" header.
+        request = null;
+
+        cases.add(Arguments.of(request, "close, keep-alive", "close"));
+        cases.add(Arguments.of(request, "keep-alive, close", "close"));
+
+        // Request sends invalid value "close" (on HTTP/1.0)
+        request = "close";
+
+        // keep-alive is forbidden when not persistent
+        cases.add(Arguments.of(request, "close, keep-alive", "close"));
+        cases.add(Arguments.of(request, "keep-alive, close", "close"));
+
+        // Request sends "keep-alive"
+        request = "keep-alive";
+
+        // connection lists are preserved per hop-by-hop rules
+        cases.add(Arguments.of(request, "close, keep-alive", "close, keep-alive"));
+        cases.add(Arguments.of(request, "keep-alive, close", "keep-alive, close"));
+
+        return cases.stream();
     }
 
-    @Test
-    public void testHTTP10ConnectionCloseFromResponse() throws Exception
+    @ParameterizedTest
+    @MethodSource("http10ConnectionBehavior")
+    public void testHTTP10ConnectionBehavior(String requestConnectionHeader, String responseConnectionHeader, String expectedConnectionHeader) throws Exception
     {
         startServer((context) ->
         {
@@ -367,29 +400,92 @@ public class ResponseHeadersTest
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                 {
-                    resp.setHeader("Connection", "close");
+                    if (responseConnectionHeader != null)
+                        resp.setHeader("Connection", responseConnectionHeader);
                 }
             };
             ServletHolder servletHolder = new ServletHolder(servlet);
             context.addServlet(servletHolder, "/nothing");
         });
 
-        String rawRequest = """
-            GET /nothing HTTP/1.0
-            Host: test
-            
-            """;
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /nothing HTTP/1.0\r\n");
+        rawRequest.append("Host: test\r\n");
+        if (requestConnectionHeader != null)
+        {
+            rawRequest.append("Connection: ").append(requestConnectionHeader).append("\r\n");
+        }
+        rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponse(rawRequest);
+        String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getVersion(), is(HttpVersion.HTTP_1_1));
-        assertThat("Should not be persistent", response.get(HttpHeader.CONNECTION), is("close"));
+        if (expectedConnectionHeader == null)
+            assertThat(response.get(HttpHeader.CONNECTION), nullValue());
+        else
+            assertThat(response.get(HttpHeader.CONNECTION), is(expectedConnectionHeader));
     }
 
-    @Test
-    public void testHTTP10ConnectionKeepAliveFromRequest() throws Exception
+    public static Stream<Arguments> http11ConnectionBehavior()
+    {
+        List<Arguments> cases = new ArrayList<>();
+        String request;
+
+        // --- VALID HTTP/1.1 SPEC REQUESTS ---
+
+        // Request does not send connection header.
+        request = null;
+
+        cases.add(Arguments.of(request, null, null));
+        cases.add(Arguments.of(request, "close", "close"));
+        cases.add(Arguments.of(request, "keep-alive", null));
+
+        // Request sends value "close"
+        request = "close";
+
+        cases.add(Arguments.of(request, null, "close"));
+        cases.add(Arguments.of(request, "close", "close"));
+        cases.add(Arguments.of(request, "keep-alive", "close"));
+
+        // --- INVALID HTTP/1.0 SPEC REQUESTS ---
+
+        // Request sends invalid "keep-alive" header value (on HTTP/1.1)
+        request = "keep-alive";
+
+        cases.add(Arguments.of(request, null, null));
+        cases.add(Arguments.of(request, "close", "close"));
+        cases.add(Arguments.of(request, "keep-alive", null));
+
+        // --- INVALID HTTP RESPONSE HEADERS ---
+        // this is when the servlet is setting headers that are in conflict with
+        // the spec and each other.
+
+        // Request does not set "connection" header.
+        request = null;
+
+        cases.add(Arguments.of(request, "close, keep-alive", "close"));
+        cases.add(Arguments.of(request, "keep-alive, close", "close"));
+
+        // Request sends value "close"
+        request = "close";
+
+        cases.add(Arguments.of(request, "close, keep-alive", "close"));
+        cases.add(Arguments.of(request, "keep-alive, close", "close"));
+
+        // Request sends invalid "keep-alive" header value (on HTTP/1.1)
+        request = "keep-alive";
+
+        cases.add(Arguments.of(request, "close, keep-alive", "close"));
+        cases.add(Arguments.of(request, "keep-alive, close", "close"));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("http11ConnectionBehavior")
+    public void testHTTP11ConnectionBehavior(String requestConnectionHeader, String responseConnectionHeader, String expectedConnectionHeader) throws Exception
     {
         startServer((context) ->
         {
@@ -398,84 +494,31 @@ public class ResponseHeadersTest
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                 {
-                    // do nothing.
+                    if (responseConnectionHeader != null)
+                        resp.setHeader("Connection", responseConnectionHeader);
                 }
             };
             ServletHolder servletHolder = new ServletHolder(servlet);
             context.addServlet(servletHolder, "/nothing");
         });
 
-        String rawRequest = """
-            GET /nothing HTTP/1.0
-            Host: test
-            Connection: keep-alive
-            
-            """;
-
-        String rawResponse = connector.getResponse(rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        assertThat(response.getStatus(), is(200));
-        assertThat("Should be persistent", response.get(HttpHeader.CONNECTION), is("keep-alive"));
-    }
-
-    @Test
-    public void testHTTP10ConnectionKeepAliveFromResponse() throws Exception
-    {
-        startServer((context) ->
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /nothing HTTP/1.1\r\n");
+        rawRequest.append("Host: test\r\n");
+        if (requestConnectionHeader != null)
         {
-            HttpServlet servlet = new HttpServlet()
-            {
-                @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-                {
-                    resp.setHeader("Connection", "keep-alive");
-                }
-            };
-            ServletHolder servletHolder = new ServletHolder(servlet);
-            context.addServlet(servletHolder, "/nothing");
-        });
+            rawRequest.append("Connection: ").append(requestConnectionHeader).append("\r\n");
+        }
+        rawRequest.append("\r\n");
 
-        String rawRequest = """
-            GET /nothing HTTP/1.0
-            Host: test
-            
-            """;
-
-        String rawResponse = connector.getResponse(rawRequest);
+        String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
-        assertThat("Should not be persistent (since request wasn't)", response.get(HttpHeader.CONNECTION), nullValue());
-    }
-
-    @Test
-    public void testHTTP10NoConnectionHeaderFromRequest() throws Exception
-    {
-        startServer((context) ->
-        {
-            HttpServlet servlet = new HttpServlet()
-            {
-                @Override
-                protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-                {
-                    // do nothing.
-                }
-            };
-            ServletHolder servletHolder = new ServletHolder(servlet);
-            context.addServlet(servletHolder, "/nothing");
-        });
-
-        String rawRequest = """
-            GET /nothing HTTP/1.0
-            Host: test
-            
-            """;
-
-        String rawResponse = connector.getResponse(rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        assertThat(response.getStatus(), is(200));
-        assertThat("Should not be persistent", response.get(HttpHeader.CONNECTION), nullValue());
+        assertThat(response.getVersion(), is(HttpVersion.HTTP_1_1));
+        if (expectedConnectionHeader == null)
+            assertThat(response.get(HttpHeader.CONNECTION), nullValue());
+        else
+            assertThat(response.get(HttpHeader.CONNECTION), is(expectedConnectionHeader));
     }
 }

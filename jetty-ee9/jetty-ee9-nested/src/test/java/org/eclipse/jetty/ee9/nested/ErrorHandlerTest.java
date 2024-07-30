@@ -299,7 +299,7 @@ public class ErrorHandlerTest
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
         assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
-        assertThat(response.getField(HttpHeader.CONNECTION), nullValue());
+        assertThat(response.get(HttpHeader.CONNECTION), is("close"));
         assertContent(response);
     }
 

@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -1382,19 +1383,57 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void prepareResponse(HttpFields.Mutable headers)
+        public void prepareResponse(HttpFields.Mutable responseHeaders)
         {
-            // If the HTTP/1 generator is set to no longer be persistent then the
-            // logic for handling HTTP/1.0 shouldn't occur.  This typically happens
-            // in the case of errors with the request or response.
-            if (_version == HttpVersion.HTTP_1_0 && _generator.isPersistent())
+            boolean hasConnectionClose = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+            boolean hasConnectionKeepAlive = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
+
+            if (_version == HttpVersion.HTTP_1_0 && _generator.isPersistent() && _connectionKeepAlive && !hasConnectionClose)
             {
                 // attempt to cover HTTP/1.0 case where the Connection response header
                 // doesn't have a close value (set by the application) and it needs to
                 // be represented as a `Connection: keep-alive` response instead due
                 // to the existence of the `Connection: keep-alive` request header
-                if (_connectionKeepAlive && !headers.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
-                    headers.add(HttpFields.CONNECTION_KEEPALIVE);
+                responseHeaders.add(HttpFields.CONNECTION_KEEPALIVE);
+            }
+
+            if (!_generator.isPersistent())
+            {
+                if (!hasConnectionClose)
+                {
+                    // Add missing "Connection: close" if not persistent
+                    responseHeaders.add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                }
+
+                if (hasConnectionKeepAlive)
+                {
+                    // if generator is not persistent, strip any keep-alive
+                    // response header values set by the application regardless of
+                    // HTTP/1.0 and HTTP/1.1 differences
+                    String resultingValue = responseHeaders.getValuesList(HttpHeader.CONNECTION)
+                        .stream()
+                        .filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
+                        .collect(Collectors.joining(", "));
+                    if (StringUtil.isBlank(resultingValue))
+                        responseHeaders.remove(HttpHeader.CONNECTION);
+                    else
+                        responseHeaders.put(HttpHeader.CONNECTION, resultingValue);
+                }
+            }
+            else
+            {
+                // Strip "keep-alive" when using HTTP/1.1 on persistent connections
+                if (_version == HttpVersion.HTTP_1_1 && hasConnectionKeepAlive)
+                {
+                    String resultingValue = responseHeaders.getValuesList(HttpHeader.CONNECTION)
+                        .stream()
+                        .filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
+                        .collect(Collectors.joining(", "));
+                    if (StringUtil.isBlank(resultingValue))
+                        responseHeaders.remove(HttpHeader.CONNECTION);
+                    else
+                        responseHeaders.put(HttpHeader.CONNECTION, resultingValue);
+                }
             }
         }
 

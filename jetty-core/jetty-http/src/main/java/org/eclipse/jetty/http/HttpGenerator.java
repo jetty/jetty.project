@@ -575,6 +575,7 @@ public class HttpGenerator
 
         // default field values
         HttpField transferEncoding = null;
+        boolean http10 = _info.getHttpVersion() == HttpVersion.HTTP_1_0;
         boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
         boolean chunkedHint = _info.getTrailersSupplier() != null;
@@ -627,26 +628,35 @@ public class HttpGenerator
 
                         case CONNECTION:
                         {
-                            boolean keepAlive = field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
-                            if (keepAlive && _info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null)
+                            boolean hasValue = StringUtil.isNotBlank(field.getValue());
+                            boolean hasKeepAlive = field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
+                            boolean hasClose = field.contains(HttpHeaderValue.CLOSE.asString());
+
+                            if (http10 && hasKeepAlive)
                             {
-                                _persistent = true;
+                                // set persistence if unset
+                                if (_persistent == null)
+                                    _persistent = true;
                             }
-                            if (field.contains(HttpHeaderValue.CLOSE.asString()))
+                            else if (hasClose)
                             {
                                 close = true;
                                 _persistent = false;
                             }
-                            if (keepAlive && _persistent == Boolean.FALSE)
+
+                            if (_persistent == Boolean.FALSE && hasKeepAlive)
                             {
-                                String resultingValue = Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
+                                // we need to strip the keep-alive values
+                                String resultingValue = Stream.of(field.getValues())
+                                    .filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
                                     .collect(Collectors.joining(", "));
                                 if (StringUtil.isBlank(resultingValue))
-                                    field = null; // all values stripped, do not produce a Connection header with no values
+                                    hasValue = false; // all values stripped, do not produce a Connection header with no values
                                 else
                                     field = new HttpField(HttpHeader.CONNECTION, resultingValue);
                             }
-                            if (field != null)
+
+                            if (hasValue)
                                 putTo(field, header);
                             break;
                         }
