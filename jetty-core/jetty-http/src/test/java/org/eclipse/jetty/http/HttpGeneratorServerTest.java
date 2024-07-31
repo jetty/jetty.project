@@ -819,6 +819,7 @@ public class HttpGeneratorServerTest
     public void testKeepAliveWithClose() throws Exception
     {
         HttpGenerator generator = new HttpGenerator();
+        generator.setPersistent(false);
         HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString() + ", other, " + HttpHeaderValue.CLOSE.asString());
         MetaData.Response info = new MetaData.Response(200, "OK", HttpVersion.HTTP_1_0, fields);
