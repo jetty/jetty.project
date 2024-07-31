@@ -47,12 +47,12 @@ public class DosHandlerTest
     public void testTrackerSteadyBelowRate() throws Exception
     {
         DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.testTracker();
-        long now = tracker.getSampleStart() + TimeUnit.SECONDS.toNanos(10);
+        DosHandler.Tracker tracker = handler.newTracker("id");
+        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int sample = 0; sample < 400; sample++)
         {
-            boolean exceeded = tracker.addSampleAndCheckRateExceeded(now);
+            boolean exceeded = tracker.isRateExceeded(now, true);
             assertFalse(exceeded);
             now += TimeUnit.MILLISECONDS.toNanos(11);
         }
@@ -64,13 +64,13 @@ public class DosHandlerTest
     public void testTrackerSteadyAboveRate() throws Exception
     {
         DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.testTracker();
-        long now = tracker.getSampleStart() + TimeUnit.SECONDS.toNanos(10);
+        DosHandler.Tracker tracker = handler.newTracker("id");
+        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         boolean exceeded = false;
         for (int sample = 0; sample < 200; sample++)
         {
-            if (tracker.addSampleAndCheckRateExceeded(now))
+            if (tracker.isRateExceeded(now, true))
             {
                 exceeded = true;
                 break;
@@ -85,14 +85,14 @@ public class DosHandlerTest
     public void testTrackerUnevenBelowRate() throws Exception
     {
         DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.testTracker();
-        long now = tracker.getSampleStart() + TimeUnit.SECONDS.toNanos(10);
+        DosHandler.Tracker tracker = handler.newTracker("id");
+        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int sample = 0; sample < 20; sample++)
         {
             for (int burst = 0; burst < 9; burst++)
             {
-                boolean exceeded = tracker.addSampleAndCheckRateExceeded(now);
+                boolean exceeded = tracker.isRateExceeded(now, true);
                 assertFalse(exceeded);
             }
 
@@ -104,15 +104,15 @@ public class DosHandlerTest
     public void testTrackerUnevenAboveRate() throws Exception
     {
         DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.testTracker();
-        long now = tracker.getSampleStart() + TimeUnit.SECONDS.toNanos(10);
+        DosHandler.Tracker tracker = handler.newTracker("id");
+        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         boolean exceeded = false;
         for (int sample = 0; sample < 20; sample++)
         {
             for (int burst = 0; burst < 11; burst++)
             {
-                if (tracker.addSampleAndCheckRateExceeded(now))
+                if (tracker.isRateExceeded(now, true))
                 {
                     exceeded = true;
                     break;
@@ -129,14 +129,14 @@ public class DosHandlerTest
     public void testTrackerBurstBelowRate() throws Exception
     {
         DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.testTracker();
-        long now = tracker.getSampleStart() + TimeUnit.SECONDS.toNanos(10);
+        DosHandler.Tracker tracker = handler.newTracker("id");
+        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 99; burst++)
             {
-                boolean exceeded = tracker.addSampleAndCheckRateExceeded(now);
+                boolean exceeded = tracker.isRateExceeded(now, true);
                 assertFalse(exceeded);
             }
 
@@ -148,15 +148,15 @@ public class DosHandlerTest
     public void testTrackerBurstAboveRate() throws Exception
     {
         DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.testTracker();
-        long now = tracker.getSampleStart() + TimeUnit.SECONDS.toNanos(10);
+        DosHandler.Tracker tracker = handler.newTracker("id");
+        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         boolean exceeded = false;
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 101; burst++)
             {
-                if (tracker.addSampleAndCheckRateExceeded(now))
+                if (tracker.isRateExceeded(now, true))
                 {
                     exceeded = true;
                     break;
@@ -173,13 +173,13 @@ public class DosHandlerTest
     public void testRecoveryAfterBursts() throws Exception
     {
         DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.testTracker();
-        long now = tracker.getSampleStart() + TimeUnit.SECONDS.toNanos(10);
+        DosHandler.Tracker tracker = handler.newTracker("id");
+        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 99; burst++)
-                assertFalse(tracker.addSampleAndCheckRateExceeded(now++));
+                assertFalse(tracker.isRateExceeded(now++, true));
 
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
@@ -190,7 +190,7 @@ public class DosHandlerTest
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 49; burst++)
-                assertFalse(tracker.addSampleAndCheckRateExceeded(now++));
+                assertFalse(tracker.isRateExceeded(now++, true));
 
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }

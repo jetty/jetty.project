@@ -69,39 +69,36 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
     private final Map<String, Tracker> _trackers = new ConcurrentHashMap<>();
     private final Function<Request, String> _getId;
+    private final RateFactory _rateFactory;
     private final int _maxRequestsPerSecond;
     private final int _maxTrackers;
-    private final long _samplePeriod;
-    private final double _alpha;
     private final int _maxDelayQueueSize;
     private Scheduler _scheduler;
 
     public DosHandler()
     {
-        this(null, null, 100, -1, -1, -1.0, -1);
+        this(null, null, 100, -1, null, -1);
     }
 
     public DosHandler(int maxRequestsPerSecond)
     {
-        this(null, null, maxRequestsPerSecond, -1, -1, -1.0, -1);
+        this(null, null, maxRequestsPerSecond, -1, null, -1);
     }
 
     /**
      * @param getId Function to extract an remote ID from a request.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
-     * @param samplePeriodMs The period in MS to sample to request rate over, or -1 for the 100ms default.
-     * @param alpha The factor for the <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">exponential moving average</a> or -1.0 for the default of 0.2
+     * @param rateFactory Factory to create a Rate per Tracker
      * @param maxDelayQueueSize The maximum number of request to hold in a delay queue before rejecting them.  Delaying rejection can slow some DOS attackers.
      */
     public DosHandler(
         @Name("getId") Function<Request, String> getId,
         @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
         @Name("maxTrackers") int maxTrackers,
-        @Name("samplePeriodMs") int samplePeriodMs,
-        @Name("alpha") Double alpha,
+        @Name("rateFactory") RateFactory rateFactory,
         @Name("maxDelayQueueSize") int maxDelayQueueSize)
     {
-        this(null, getId, maxRequestsPerSecond, maxTrackers, samplePeriodMs, alpha, maxDelayQueueSize);
+        this(null, getId, maxRequestsPerSecond, maxTrackers, rateFactory, maxDelayQueueSize);
     }
 
     /**
@@ -109,8 +106,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
      * @param getId Function to extract an remote ID from a request.
      * @param maxRequestsPerSecond The maximum number of requests per second to allow
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
-     * @param samplePeriodMs The period in MS to sample to request rate over, or -1 for the 100ms default.
-     * @param alpha The factor for the <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">exponential moving average</a> or -1.0 for the default of 0.2
+     * @param rateFactory Factory to create a Rate per Tracker
      * @param maxDelayQueueSize The maximum number of request to hold in a delay queue before rejecting them.  Delaying rejection can slow some DOS attackers.
      */
     public DosHandler(
@@ -118,24 +114,16 @@ public class DosHandler extends ConditionalHandler.ElseNext
         @Name("getId") Function<Request, String> getId,
         @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
         @Name("maxTrackers") int maxTrackers,
-        @Name("samplePeriodMs") int samplePeriodMs,
-        @Name("alpha") Double alpha,
+        @Name("rateFactory") RateFactory rateFactory,
         @Name("maxDelayQueueSize") int maxDelayQueueSize)
     {
         super(handler);
         installBean(_trackers);
         _getId = Objects.requireNonNullElse(getId, ID_FROM_REMOTE_ADDRESS_PORT);
+        _rateFactory = Objects.requireNonNullElseGet(rateFactory, ExponentialMovingAverageRateFactory::new);
         _maxRequestsPerSecond = maxRequestsPerSecond;
         _maxTrackers = maxTrackers <= 0 ? 10_000 : maxTrackers;
-        _samplePeriod = TimeUnit.MILLISECONDS.toNanos(samplePeriodMs <= 0 ? 100 : samplePeriodMs);
-        _alpha = alpha <= 0.0 ? 0.2 : alpha;
         _maxDelayQueueSize = maxDelayQueueSize <= 0 ? 1_000 : maxDelayQueueSize;
-
-        if (_samplePeriod > TimeUnit.SECONDS.toNanos(1))
-            throw new IllegalArgumentException("Sample period must be less than or equal to 1 second");
-
-        if (_alpha > 1.0)
-            throw new IllegalArgumentException("Alpha " + _alpha + " is too large");
     }
 
     @Override
@@ -153,7 +141,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
         id = _getId.apply(request);
 
         // Obtain a tracker
-        Tracker tracker = _trackers.computeIfAbsent(id, Tracker::new);
+        Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
         // If we are not over-limit then handle normally
         if (!tracker.isRateExceeded(request, response, callback))
@@ -161,6 +149,11 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         // Otherwise the Tracker will reject the request
         return true;
+    }
+
+    Tracker newTracker(String id)
+    {
+        return new Tracker(id, _rateFactory.newRate());
     }
 
     @Override
@@ -182,9 +175,98 @@ public class DosHandler extends ConditionalHandler.ElseNext
         Response.writeError(request, response, callback, HttpStatus.ENHANCE_YOUR_CALM_420);
     }
 
-    Tracker testTracker()
+    public interface Rate
     {
-        return new Tracker("id");
+        int getRate(long now, boolean addSample);
+    }
+
+    public interface RateFactory
+    {
+        Rate newRate();
+    }
+
+    public static class ExponentialMovingAverageRateFactory implements RateFactory
+    {
+        private final long _samplePeriod;
+        private final double _alpha;
+        private final int _checkAt;
+
+        private ExponentialMovingAverageRateFactory()
+        {
+            this(-1, -1.0, 100);
+        }
+
+        private ExponentialMovingAverageRateFactory(long samplePeriodMs, double alpha, int checkAt)
+        {
+            _samplePeriod = TimeUnit.MILLISECONDS.toNanos(samplePeriodMs <= 0 ? 100 : samplePeriodMs);
+            _alpha = alpha <= 0.0 ? 0.2 : alpha;
+            if (_samplePeriod > TimeUnit.SECONDS.toNanos(1))
+                throw new IllegalArgumentException("Sample period must be less than or equal to 1 second");
+            if (_alpha > 1.0)
+                throw new IllegalArgumentException("Alpha " + _alpha + " is too large");
+            _checkAt = checkAt;
+        }
+
+        @Override
+        public Rate newRate()
+        {
+            return new ExponentialMovingAverageRate();
+        }
+
+        private class ExponentialMovingAverageRate implements Rate
+        {
+            private double _exponentialMovingAverage;
+            private int _sampleCount;
+            private long _sampleStart;
+
+            private ExponentialMovingAverageRate()
+            {
+                _sampleStart = System.nanoTime();
+            }
+
+            @Override
+            public int getRate(long now, boolean addSample)
+            {
+                // Count the request
+                if (addSample)
+                    _sampleCount++;
+
+                long elapsedTime = now - _sampleStart;
+
+                // We calculate the rate if:
+                //    + we didn't add a sample
+                //    + the sample exceeds the rate
+                //    + the sample period has been exceeded
+                if (!addSample || _sampleCount > _checkAt || (_sampleStart != 0 && elapsedTime > _samplePeriod))
+                {
+                    double elapsedTime1 = (double)(now - _sampleStart);
+                    double count = _sampleCount;
+                    if (elapsedTime1 > 0.0)
+                    {
+                        double currentRate = (count * TimeUnit.SECONDS.toNanos(1L)) / elapsedTime1;
+                        // Adjust alpha based on the ratio of elapsed time to the interval to allow for long and short intervals
+                        double adjustedAlpha = _alpha * (elapsedTime1 / _samplePeriod);
+                        if (adjustedAlpha > 1.0)
+                            adjustedAlpha = 1.0; // Ensure adjustedAlpha does not exceed 1.0
+
+                        _exponentialMovingAverage = (adjustedAlpha * currentRate + (1.0 - adjustedAlpha) * _exponentialMovingAverage);
+                    }
+                    else
+                    {
+                        // assume count as the rate for the sample.
+                        double guessedRate = count * TimeUnit.SECONDS.toNanos(1) / _samplePeriod;
+                        _exponentialMovingAverage = (_alpha * guessedRate + (1.0 - _alpha) * _exponentialMovingAverage);
+                    }
+
+                    // restart the sample
+                    _sampleStart = now;
+                    _sampleCount = 0;
+                }
+
+                // if the rate has been exceeded?
+                return (int)_exponentialMovingAverage;
+            }
+        }
     }
 
     /**
@@ -198,16 +280,14 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         private final AutoLock _lock = new AutoLock();
         private final String _id;
-        private double _exponentialMovingAverage;
-        private int _sampleCount;
-        private long _sampleStart;
+        private final Rate _rate;
         private Queue<Exchange> _delayQueue;
 
-        Tracker(String id)
+        Tracker(String id, Rate rate)
         {
             super(_scheduler);
             _id = id;
-            _sampleStart = System.nanoTime();
+            _rate = rate;
         }
 
         public String getId()
@@ -215,31 +295,24 @@ public class DosHandler extends ConditionalHandler.ElseNext
             return _id;
         }
 
-        public int getCurrentRatePerSecond()
-        {
-            return getCurrentRatePerSecond(System.nanoTime());
-        }
-
-        long getSampleStart()
-        {
-            return _sampleStart;
-        }
-
         int getCurrentRatePerSecond(long now)
         {
             try (AutoLock l = _lock.lock())
             {
-                updateRateLocked(now);
-                return (int)_exponentialMovingAverage;
+                return _rate.getRate(now, false);
             }
         }
 
         public boolean isRateExceeded()
         {
+            return isRateExceeded(System.nanoTime(), false);
+        }
+
+        public boolean isRateExceeded(long now, boolean addSample)
+        {
             try (AutoLock l = _lock.lock())
             {
-                updateRateLocked(System.nanoTime());
-                return _exponentialMovingAverage > _maxRequestsPerSecond;
+                return _rate.getRate(now, addSample) > _maxRequestsPerSecond;
             }
         }
 
@@ -253,7 +326,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
             boolean exceeded;
             try (AutoLock l = _lock.lock())
             {
-                exceeded = addSampleAndCheckRateExceededLocked(now);
+                exceeded = _rate.getRate(now, true) > _maxRequestsPerSecond;
                 if (exceeded)
                 {
                     // Add the request to the delay queue
@@ -276,68 +349,6 @@ public class DosHandler extends ConditionalHandler.ElseNext
             return exceeded;
         }
 
-        boolean addSampleAndCheckRateExceeded(long now)
-        {
-            try (AutoLock l = _lock.lock())
-            {
-                return addSampleAndCheckRateExceededLocked(now);
-            }
-        }
-
-        private boolean addSampleAndCheckRateExceededLocked(long now)
-        {
-            assert _lock.isHeldByCurrentThread();
-
-            // Count the request
-            _sampleCount++;
-
-            long elapsedTime = now - _sampleStart;
-
-            // We calculate the race if:
-            //    + the sample exceeds the rate
-            //    + the sample period has been exceeded
-            if (_sampleCount > _maxRequestsPerSecond || (_sampleStart != 0 && elapsedTime > _samplePeriod))
-                updateRateLocked(now);
-
-            // if the rate has been exceeded?
-            return _exponentialMovingAverage > _maxRequestsPerSecond;
-        }
-
-        private void updateRateLocked(long now)
-        {
-            assert _lock.isHeldByCurrentThread();
-
-            if (_sampleStart == 0)
-            {
-                _sampleStart = now;
-                return;
-            }
-
-            double elapsedTime = (double)(now - _sampleStart);
-            double count = _sampleCount;
-
-            if (elapsedTime > 0.0)
-            {
-                double currentRate = (count * TimeUnit.SECONDS.toNanos(1L)) / elapsedTime;
-                // Adjust alpha based on the ratio of elapsed time to the interval to allow for long and short intervals
-                double adjustedAlpha = _alpha * (elapsedTime / _samplePeriod);
-                if (adjustedAlpha > 1.0)
-                    adjustedAlpha = 1.0; // Ensure adjustedAlpha does not exceed 1.0
-
-                _exponentialMovingAverage = (adjustedAlpha * currentRate + (1.0 - adjustedAlpha) * _exponentialMovingAverage);
-            }
-            else
-            {
-                // assume count as the rate for the sample.
-                double guessedRate = count * TimeUnit.SECONDS.toNanos(1) / _samplePeriod;
-                _exponentialMovingAverage = (_alpha * guessedRate + (1.0 - _alpha) * _exponentialMovingAverage);
-            }
-
-            // restart the sample
-            _sampleStart = now;
-            _sampleCount = 0;
-        }
-
         @Override
         public void onTimeoutExpired()
         {
@@ -346,9 +357,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 if (_delayQueue == null || _delayQueue.isEmpty())
                 {
                     // Has the Tracker has gone idle, so remove it
-                    if (_sampleCount > 0)
-                        updateRateLocked(System.nanoTime());
-                    else
+                    if (_rate.getRate(System.nanoTime(), false) == 0)
                         _trackers.remove(_id);
                 }
                 else
@@ -366,7 +375,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
         {
             try (AutoLock l = _lock.lock())
             {
-                return "Tracker@%s{ema=%d/s}".formatted(_id, (long)_exponentialMovingAverage);
+                return "Tracker@%s{ema=%d/s}".formatted(_id, _rate);
             }
         }
     }
