@@ -14,12 +14,6 @@ etc/jetty-dos.xml
 
 [ini-template]
 
-## Is the remote address used to track the clients
-#jetty.dos.useAddress=true
-
-## Is the remote port used to track the clients
-#jetty.dos.usePort=true
-
 ## The maximum requests per second per client
 #jetty.dos.maxRequestsPerSecond=100
 

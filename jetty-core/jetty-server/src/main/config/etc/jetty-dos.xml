@@ -5,8 +5,7 @@
   <Call name="insertHandler">
     <Arg>
       <New id="DosHandler" class="org.eclipse.jetty.server.handler.DosHandler">
-        <Arg name="useAddress"><Property name="jetty.dos.useAddress" default="true"/></Arg>
-        <Arg name="usePort"><Property name="jetty.dos.usePort" default="true"/></Arg>
+      <Arg name="getId"><Get class="org.eclipse.jetty.server.handler.DosHandler" name="ID_FROM_REMOTE_ADDRESS_PORT"/></Arg>
         <Arg name="maxRequestsPerSecond"><Property name="jetty.dos.maxRequestsPerSecond" default="100"/></Arg>
         <Arg name="maxTrackers"><Property name="jetty.dos.maxTrackers" default="-1"/></Arg>
         <Arg name="samplePeriodMs"><Property name="jetty.dos.samplePeriodMs" default="-1"/></Arg>

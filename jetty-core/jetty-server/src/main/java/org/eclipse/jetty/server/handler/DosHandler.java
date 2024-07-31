@@ -17,13 +17,14 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.CyclicTimeout;
-import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -40,9 +41,34 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject("DOS Prevention Handler")
 public class DosHandler extends ConditionalHandler.ElseNext
 {
-    private final boolean _useAddress;
-    private final boolean _usePort;
+    public static final Function<Request, String> ID_FROM_REMOTE_ADDRESS_PORT = request ->
+    {
+        SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
+        if (remoteSocketAddress instanceof InetSocketAddress inetSocketAddress)
+            return inetSocketAddress.toString();
+        return remoteSocketAddress.toString();
+    };
+
+    public static final Function<Request, String> ID_FROM_REMOTE_ADDRESS = request ->
+    {
+        String id;
+        SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
+        if (remoteSocketAddress instanceof InetSocketAddress inetSocketAddress)
+            return inetSocketAddress.getAddress().toString();
+        return remoteSocketAddress.toString();
+    };
+
+    public static final Function<Request, String> ID_FROM_REMOTE_PORT = request ->
+    {
+        String id;
+        SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
+        if (remoteSocketAddress instanceof InetSocketAddress inetSocketAddress)
+            return Integer.toString(inetSocketAddress.getPort());
+        return remoteSocketAddress.toString();
+    };
+
     private final Map<String, Tracker> _trackers = new ConcurrentHashMap<>();
+    private final Function<Request, String> _getId;
     private final int _maxRequestsPerSecond;
     private final int _maxTrackers;
     private final long _samplePeriod;
@@ -52,39 +78,35 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
     public DosHandler()
     {
-        this(null, true, true, 100, -1, -1, -1.0, -1);
+        this(null, null, 100, -1, -1, -1.0, -1);
     }
 
     public DosHandler(int maxRequestsPerSecond)
     {
-        this(null, true, true, maxRequestsPerSecond, -1, -1, -1.0, -1);
+        this(null, null, maxRequestsPerSecond, -1, -1, -1.0, -1);
     }
 
     /**
-     * @param useAddress {@code true} if the {@link InetSocketAddress#getAddress()} portion of the {@link ConnectionMetaData#getRemoteSocketAddress()} should be used when tracking remote clients.
-     * @param usePort {@code true} if the {@link InetSocketAddress#getPort()} portion of the {@link ConnectionMetaData#getRemoteSocketAddress()} should be used when tracking remote clients.
-     * @param maxRequestsPerSecond The maximum number of requests per second to allow
+     * @param getId Function to extract an remote ID from a request.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      * @param samplePeriodMs The period in MS to sample to request rate over, or -1 for the 100ms default.
      * @param alpha The factor for the <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">exponential moving average</a> or -1.0 for the default of 0.2
      * @param maxDelayQueueSize The maximum number of request to hold in a delay queue before rejecting them.  Delaying rejection can slow some DOS attackers.
      */
     public DosHandler(
-        @Name("useAddress") boolean useAddress,
-        @Name("usePort") boolean usePort,
+        @Name("getId") Function<Request, String> getId,
         @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
         @Name("maxTrackers") int maxTrackers,
         @Name("samplePeriodMs") int samplePeriodMs,
         @Name("alpha") Double alpha,
         @Name("maxDelayQueueSize") int maxDelayQueueSize)
     {
-        this(null, useAddress, usePort, maxRequestsPerSecond, maxTrackers, samplePeriodMs, alpha, maxDelayQueueSize);
+        this(null, getId, maxRequestsPerSecond, maxTrackers, samplePeriodMs, alpha, maxDelayQueueSize);
     }
 
     /**
-     * @param handler Then next {@link Handler} or {@code null}/
-     * @param useAddress {@code true} if the {@link InetSocketAddress#getAddress()} portion of the {@link ConnectionMetaData#getRemoteSocketAddress()} should be used when tracking remote clients.
-     * @param usePort {@code true} if the {@link InetSocketAddress#getPort()} portion of the {@link ConnectionMetaData#getRemoteSocketAddress()} should be used when tracking remote clients.
+     * @param handler Then next {@link Handler} or {@code null}
+     * @param getId Function to extract an remote ID from a request.
      * @param maxRequestsPerSecond The maximum number of requests per second to allow
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      * @param samplePeriodMs The period in MS to sample to request rate over, or -1 for the 100ms default.
@@ -92,19 +114,17 @@ public class DosHandler extends ConditionalHandler.ElseNext
      * @param maxDelayQueueSize The maximum number of request to hold in a delay queue before rejecting them.  Delaying rejection can slow some DOS attackers.
      */
     public DosHandler(
-        Handler handler,
-        boolean useAddress,
-        boolean usePort,
-        int maxRequestsPerSecond,
-        int maxTrackers,
-        int samplePeriodMs,
-        Double alpha,
-        int maxDelayQueueSize)
+        @Name("handler") Handler handler,
+        @Name("getId") Function<Request, String> getId,
+        @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
+        @Name("maxTrackers") int maxTrackers,
+        @Name("samplePeriodMs") int samplePeriodMs,
+        @Name("alpha") Double alpha,
+        @Name("maxDelayQueueSize") int maxDelayQueueSize)
     {
         super(handler);
         installBean(_trackers);
-        _useAddress = useAddress;
-        _usePort = usePort;
+        _getId = Objects.requireNonNullElse(getId, ID_FROM_REMOTE_ADDRESS_PORT);
         _maxRequestsPerSecond = maxRequestsPerSecond;
         _maxTrackers = maxTrackers <= 0 ? 10_000 : maxTrackers;
         _samplePeriod = TimeUnit.MILLISECONDS.toNanos(samplePeriodMs <= 0 ? 100 : samplePeriodMs);
@@ -116,16 +136,6 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         if (_alpha > 1.0)
             throw new IllegalArgumentException("Alpha " + _alpha + " is too large");
-    }
-
-    public boolean isUseAddress()
-    {
-        return _useAddress;
-    }
-
-    public boolean isUsePort()
-    {
-        return _usePort;
     }
 
     @Override
@@ -140,7 +150,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         // Calculate an id for the request (which may be global empty string)
         String id;
-        id = getId(request);
+        id = _getId.apply(request);
 
         // Obtain a tracker
         Tracker tracker = _trackers.computeIfAbsent(id, Tracker::new);
@@ -151,25 +161,6 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         // Otherwise the Tracker will reject the request
         return true;
-    }
-
-    protected String getId(Request request)
-    {
-        String id;
-        SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
-        if (remoteSocketAddress instanceof InetSocketAddress inetSocketAddress)
-        {
-            if (isUseAddress() && isUsePort())
-                return inetSocketAddress.toString();
-            if (isUseAddress())
-                return inetSocketAddress.getAddress().toString();
-            if (isUsePort())
-                return Integer.toString(inetSocketAddress.getPort());
-
-            return "";
-        }
-
-        return remoteSocketAddress.toString();
     }
 
     @Override
