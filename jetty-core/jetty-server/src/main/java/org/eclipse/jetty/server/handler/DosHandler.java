@@ -28,6 +28,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -35,6 +37,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * A Denial of Service Handler.
  * <p>Protect from denial of service attacks by limiting the request rate from remote hosts</p>
  */
+@ManagedObject("DOS Prevention Handler")
 public class DosHandler extends ConditionalHandler.ElseNext
 {
     private final boolean _useAddress;
@@ -58,6 +61,27 @@ public class DosHandler extends ConditionalHandler.ElseNext
     }
 
     /**
+     * @param useAddress {@code true} if the {@link InetSocketAddress#getAddress()} portion of the {@link ConnectionMetaData#getRemoteSocketAddress()} should be used when tracking remote clients.
+     * @param usePort {@code true} if the {@link InetSocketAddress#getPort()} portion of the {@link ConnectionMetaData#getRemoteSocketAddress()} should be used when tracking remote clients.
+     * @param maxRequestsPerSecond The maximum number of requests per second to allow
+     * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
+     * @param samplePeriodMs The period in MS to sample to request rate over, or -1 for the 100ms default.
+     * @param alpha The factor for the <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">exponential moving average</a> or -1.0 for the default of 0.2
+     * @param maxDelayQueueSize The maximum number of request to hold in a delay queue before rejecting them.  Delaying rejection can slow some DOS attackers.
+     */
+    public DosHandler(
+        @Name("useAddress") boolean useAddress,
+        @Name("usePort") boolean usePort,
+        @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
+        @Name("maxTrackers") int maxTrackers,
+        @Name("samplePeriodMs") int samplePeriodMs,
+        @Name("alpha") Double alpha,
+        @Name("maxDelayQueueSize") int maxDelayQueueSize)
+    {
+        this(null, useAddress, usePort, maxRequestsPerSecond, maxTrackers, samplePeriodMs, alpha, maxDelayQueueSize);
+    }
+
+    /**
      * @param handler Then next {@link Handler} or {@code null}/
      * @param useAddress {@code true} if the {@link InetSocketAddress#getAddress()} portion of the {@link ConnectionMetaData#getRemoteSocketAddress()} should be used when tracking remote clients.
      * @param usePort {@code true} if the {@link InetSocketAddress#getPort()} portion of the {@link ConnectionMetaData#getRemoteSocketAddress()} should be used when tracking remote clients.
@@ -67,7 +91,15 @@ public class DosHandler extends ConditionalHandler.ElseNext
      * @param alpha The factor for the <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">exponential moving average</a> or -1.0 for the default of 0.2
      * @param maxDelayQueueSize The maximum number of request to hold in a delay queue before rejecting them.  Delaying rejection can slow some DOS attackers.
      */
-    public DosHandler(Handler handler, boolean useAddress, boolean usePort, int maxRequestsPerSecond, int maxTrackers, int samplePeriodMs, Double alpha, int maxDelayQueueSize)
+    public DosHandler(
+        Handler handler,
+        boolean useAddress,
+        boolean usePort,
+        int maxRequestsPerSecond,
+        int maxTrackers,
+        int samplePeriodMs,
+        Double alpha,
+        int maxDelayQueueSize)
     {
         super(handler);
         installBean(_trackers);

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="DosHandler" class="org.eclipse.jetty.server.handler.DosHandler">
+        <Arg name="useAddress"><Property name="jetty.dos.useAddress" default="true"/></Arg>
+        <Arg name="usePort"><Property name="jetty.dos.usePort" default="true"/></Arg>
+        <Arg name="maxRequestsPerSecond"><Property name="jetty.dos.maxRequestsPerSecond" default="100"/></Arg>
+        <Arg name="maxTrackers"><Property name="jetty.dos.maxTrackers" default="-1"/></Arg>
+        <Arg name="samplePeriodMs"><Property name="jetty.dos.samplePeriodMs" default="-1"/></Arg>
+        <Arg name="alpha"><Property name="jetty.dos.alpha" default="-1.0"/></Arg>
+        <Arg name="maxDelayQueueSize"><Property name="jetty.dos.maxDelayQueueSize" default="-1"/></Arg>
+        <Call name="includeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.include.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.exclude.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="includePath">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.include.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludePath">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.exclude.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
