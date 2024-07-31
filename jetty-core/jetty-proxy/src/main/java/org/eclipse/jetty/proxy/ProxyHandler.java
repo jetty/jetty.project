@@ -393,11 +393,12 @@ public abstract class ProxyHandler extends Handler.Abstract
 
     private boolean hasContent(Request clientToProxyRequest)
     {
-        if (clientToProxyRequest.getLength() > 0)
+        long contentLength = clientToProxyRequest.getLength();
+        if (contentLength == 0)
+            return false;
+        if (contentLength > 0)
             return true;
-        HttpFields headers = clientToProxyRequest.getHeaders();
-        return headers.get(HttpHeader.CONTENT_TYPE) != null ||
-               headers.get(HttpHeader.TRANSFER_ENCODING) != null;
+        return clientToProxyRequest.getHeaders().get(HttpHeader.TRANSFER_ENCODING) != null;
     }
 
     private boolean expects100Continue(Request clientToProxyRequest)
