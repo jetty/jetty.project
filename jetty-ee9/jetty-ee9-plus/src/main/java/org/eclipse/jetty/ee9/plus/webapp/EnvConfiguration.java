@@ -245,9 +245,17 @@ public class EnvConfiguration extends AbstractConfiguration
 
         try
         {
-            Context context = new InitialContext();
-            Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.createSubcontext("env");
+            WebAppClassLoader.runWithServerClassAccess(() ->
+            {
+                Context context = new InitialContext();
+                Context compCtx = (Context)context.lookup("java:comp");
+                compCtx.createSubcontext("env");
+                return null;
+            });
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
         finally
         {

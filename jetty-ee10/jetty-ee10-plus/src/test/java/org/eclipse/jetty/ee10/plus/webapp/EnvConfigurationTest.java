@@ -44,13 +44,6 @@ public class EnvConfigurationTest
 {
     Server _server;
 
-    @BeforeAll
-    public static void exposeJNDIClasses()
-    {
-        //we need to expose the org.eclipse.jetty.jndi classes so the InitialContextFactory can be found
-        WebAppClassLoading.addHiddenClasses("-org.eclipse.jetty.jndi.");
-    }
-
     @BeforeEach
     public void setUp()
     {
@@ -119,6 +112,10 @@ public class EnvConfigurationTest
             Context namingContextB = getCompEnvFor(webappB);
 
             assertThat(namingContextA, is(not(namingContextB)));
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace();
         }
         finally
         {

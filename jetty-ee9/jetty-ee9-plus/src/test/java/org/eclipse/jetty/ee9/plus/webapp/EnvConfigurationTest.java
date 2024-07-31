@@ -94,7 +94,6 @@ public class EnvConfigurationTest
         try
         {
             webappA = new WebAppContext();
-            webappA.getServerClassMatcher().exclude("org.eclipse.jetty.jndi.");
             webappA.setConfigurations(new Configuration[]{new PlusConfiguration(), new EnvConfiguration()});
             webappA.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), webappA));
 
@@ -103,7 +102,6 @@ public class EnvConfigurationTest
             Context namingContextA = getCompEnvFor(webappA);
 
             webappB = new WebAppContext();
-            webappB.getServerClassMatcher().exclude("org.eclipse.jetty.jndi.");
             webappB.setConfigurations(new Configuration[]{new PlusConfiguration(), new EnvConfiguration()});
             webappB.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), webappB));
 
