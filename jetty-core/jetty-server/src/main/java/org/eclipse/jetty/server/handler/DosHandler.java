@@ -60,7 +60,6 @@ public class DosHandler extends ConditionalHandler.ElseNext
      */
     public static final Function<Request, String> ID_FROM_REMOTE_ADDRESS = request ->
     {
-        String id;
         SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
         if (remoteSocketAddress instanceof InetSocketAddress inetSocketAddress)
             return inetSocketAddress.getAddress().toString();
@@ -73,7 +72,6 @@ public class DosHandler extends ConditionalHandler.ElseNext
      */
     public static final Function<Request, String> ID_FROM_REMOTE_PORT = request ->
     {
-        String id;
         SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
         if (remoteSocketAddress instanceof InetSocketAddress inetSocketAddress)
             return Integer.toString(inetSocketAddress.getPort());
@@ -195,6 +193,9 @@ public class DosHandler extends ConditionalHandler.ElseNext
         String id;
         id = _getId.apply(request);
 
+        if (id == null)
+            return _rejectHandler.handle(request, response, callback);
+
         // Obtain a tracker
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
@@ -306,7 +307,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * A RateControlFactory that uses an
+     * A {@link RateControlFactory} that uses an
      * <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">Exponential Moving Average</a>
      * to limit the request rate to a maximum number of requests per second.
      */
@@ -321,8 +322,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
             this(-1, -1.0, 1000);
         }
 
-        public ExponentialMovingAverageRateControlFactory(
-            @Name("maxRequestsPerSecond") int maxRateRequestsPerSecond)
+        public ExponentialMovingAverageRateControlFactory(@Name("maxRequestsPerSecond") int maxRateRequestsPerSecond)
         {
             this(-1, -1.0, maxRateRequestsPerSecond);
         }
@@ -463,7 +463,6 @@ public class DosHandler extends ConditionalHandler.ElseNext
         {
             super.doStart();
             _scheduler = getServer().getScheduler();
-            _scheduler.schedule(this::onTick, _delayMs / 2, TimeUnit.MILLISECONDS);
             addBean(_scheduler);
         }
 
@@ -485,6 +484,9 @@ public class DosHandler extends ConditionalHandler.ElseNext
                     Exchange exchange = _delayQueue.removeFirst();
                     Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.ENHANCE_YOUR_CALM_420);
                 }
+
+                if (_delayQueue.isEmpty())
+                    _scheduler.schedule(this::onTick, _delayMs / 2, TimeUnit.MILLISECONDS);
                 _delayQueue.addLast(new Exchange(request, response, callback));
             }
             return true;
@@ -506,10 +508,10 @@ public class DosHandler extends ConditionalHandler.ElseNext
                         Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.ENHANCE_YOUR_CALM_420);
                     }
                 }
-            }
 
-            if (isStarted())
-                _scheduler.schedule(this::onTick, _delayMs / 2, TimeUnit.MILLISECONDS);
+                if (!_delayQueue.isEmpty())
+                    _scheduler.schedule(this::onTick, _delayMs / 2, TimeUnit.MILLISECONDS);
+            }
         }
     }
 }
