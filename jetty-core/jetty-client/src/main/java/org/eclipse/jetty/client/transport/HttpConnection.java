@@ -20,7 +20,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.Authentication;
 import org.eclipse.jetty.client.AuthenticationStore;
-import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRequestException;
@@ -191,25 +190,25 @@ public abstract class HttpConnection implements IConnection, Attachable
 
         // Add content headers.
         Request.Content content = request.getBody();
-        if (content == null)
-            request.body(content = new BytesRequestContent());
-
-        if (!headers.contains(HttpHeader.CONTENT_TYPE))
+        if (content != null)
         {
-            String contentType = content.getContentType();
-            if (contentType == null)
-                contentType = getHttpClient().getDefaultRequestContentType();
-            if (contentType != null)
-                request.addHeader(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
-        }
-        long contentLength = content.getLength();
-        if (contentLength >= 0)
-        {
-            if (!headers.contains(HttpHeader.CONTENT_LENGTH))
-                request.addHeader(new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, contentLength));
+            if (!headers.contains(HttpHeader.CONTENT_TYPE))
+            {
+                String contentType = content.getContentType();
+                if (contentType == null)
+                    contentType = getHttpClient().getDefaultRequestContentType();
+                if (contentType != null)
+                    request.addHeader(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
+            }
+            long contentLength = content.getLength();
+            if (contentLength >= 0)
+            {
+                if (!headers.contains(HttpHeader.CONTENT_LENGTH))
+                    request.addHeader(new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, contentLength));
+            }
         }
         // RFC 9110, section 10.1.1.
-        if (contentLength == 0)
+        if (content == null || content.getLength() == 0)
             request.headers(h -> h.remove(HttpHeader.EXPECT));
 
         // Cookies.
