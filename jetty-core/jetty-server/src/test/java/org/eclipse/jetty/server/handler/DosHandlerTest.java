@@ -17,6 +17,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
@@ -56,8 +57,8 @@ public class DosHandlerTest
             assertFalse(exceeded);
             now += TimeUnit.MILLISECONDS.toNanos(11);
         }
-        int rate = tracker.getCurrentRatePerSecond(now);
-        assertThat(rate, both(greaterThan((1000 / 11) - 5)).and(lessThan(100)));
+        double rate = tracker.getRateControl() instanceof DosHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        assertThat(rate, both(greaterThan((1000.0D / 11) - 5)).and(lessThan(100.0D)));
     }
 
     @Test
@@ -184,8 +185,8 @@ public class DosHandlerTest
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
 
-        int rate = tracker.getCurrentRatePerSecond(now);
-        assertThat(rate, both(greaterThan(90)).and(lessThan(100)));
+        double rate = tracker.getRateControl() instanceof DosHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        assertThat(rate, both(greaterThan(90.0D)).and(lessThan(100.0D)));
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
@@ -195,8 +196,8 @@ public class DosHandlerTest
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
 
-        rate = tracker.getCurrentRatePerSecond(now);
-        assertThat(rate, both(greaterThan(40)).and(lessThan(50)));
+        rate = tracker.getRateControl() instanceof DosHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        assertThat(rate, both(greaterThan(40.0D)).and(lessThan(50.0D)));
     }
 
     @Test
@@ -260,7 +261,7 @@ public class DosHandlerTest
 
         long now = System.nanoTime();
         long end = now + TimeUnit.SECONDS.toNanos(5);
-        CountDownLatch latch = new CountDownLatch(90);
+        AtomicInteger outstanding = new AtomicInteger(0);
         AtomicInteger calm = new AtomicInteger();
         for (int thread = 0; thread < 90; thread++)
         {
@@ -270,16 +271,23 @@ public class DosHandlerTest
                 {
                     while (System.nanoTime() < end)
                     {
-                        String response = connector.getResponse("""
+                        try
+                        {
+                            outstanding.incrementAndGet();
+                            String response = connector.getResponse("""
                                 GET / HTTP/1.1\r
                                 Host: local\r
                                 
                                 """);
-                        if (response.contains(" 420 "))
-                            calm.incrementAndGet();
-                        Thread.sleep(70);
+                            if (response.contains(" 420 "))
+                                calm.incrementAndGet();
+                            Thread.sleep(70);
+                        }
+                        finally
+                        {
+                            outstanding.decrementAndGet();
+                        }
                     }
-                    latch.countDown();
                 }
                 catch (Throwable x)
                 {
@@ -288,7 +296,7 @@ public class DosHandlerTest
             });
         }
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Awaitility.waitAtMost(10, TimeUnit.SECONDS).until(() -> outstanding.get() == 0);
         assertThat(calm.get(), greaterThan(0));
     }
 }

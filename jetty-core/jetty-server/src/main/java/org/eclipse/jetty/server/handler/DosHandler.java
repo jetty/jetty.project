@@ -16,18 +16,20 @@ package org.eclipse.jetty.server.handler;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.CyclicTimeout;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -67,63 +69,90 @@ public class DosHandler extends ConditionalHandler.ElseNext
         return remoteSocketAddress.toString();
     };
 
+    public interface RateControl
+    {
+        boolean isRateExceeded(long now, boolean addSample);
+
+        boolean isIdle(long now);
+    }
+
+    public interface RateControlFactory
+    {
+        RateControl newRate();
+    }
+
     private final Map<String, Tracker> _trackers = new ConcurrentHashMap<>();
     private final Function<Request, String> _getId;
-    private final RateFactory _rateFactory;
-    private final int _maxRequestsPerSecond;
+    private final RateControlFactory _rateControlFactory;
+    private final Handler _rejector;
     private final int _maxTrackers;
-    private final int _maxDelayQueueSize;
-    private Scheduler _scheduler;
+    private CyclicTimeouts<Tracker> _cyclicTimeouts;
 
     public DosHandler()
     {
-        this(null, null, 100, -1, null, -1);
+        this(null, 100, -1);
     }
 
     public DosHandler(int maxRequestsPerSecond)
     {
-        this(null, null, maxRequestsPerSecond, -1, null, -1);
+        this(null, maxRequestsPerSecond, -1);
     }
 
     /**
      * @param getId Function to extract an remote ID from a request.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
-     * @param rateFactory Factory to create a Rate per Tracker
-     * @param maxDelayQueueSize The maximum number of request to hold in a delay queue before rejecting them.  Delaying rejection can slow some DOS attackers.
      */
     public DosHandler(
         @Name("getId") Function<Request, String> getId,
         @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
-        @Name("maxTrackers") int maxTrackers,
-        @Name("rateFactory") RateFactory rateFactory,
-        @Name("maxDelayQueueSize") int maxDelayQueueSize)
+        @Name("maxTrackers") int maxTrackers)
     {
-        this(null, getId, maxRequestsPerSecond, maxTrackers, rateFactory, maxDelayQueueSize);
+        this(null, getId, new ExponentialMovingAverageRateControlFactory(maxRequestsPerSecond), null, maxTrackers);
+    }
+
+    /**
+     * @param getId Function to extract an remote ID from a request.
+     * @param rateControlFactory Factory to create a Rate per Tracker
+     * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
+     */
+    public DosHandler(
+        @Name("getId") Function<Request, String> getId,
+        @Name("rateFactory") RateControlFactory rateControlFactory,
+        @Name("rejector") Handler rejector,
+        @Name("maxTrackers") int maxTrackers)
+    {
+        this(null, getId, rateControlFactory, rejector, maxTrackers);
     }
 
     /**
      * @param handler Then next {@link Handler} or {@code null}
      * @param getId Function to extract an remote ID from a request.
-     * @param maxRequestsPerSecond The maximum number of requests per second to allow
+     * @param rateControlFactory Factory to create a Rate per Tracker
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
-     * @param rateFactory Factory to create a Rate per Tracker
-     * @param maxDelayQueueSize The maximum number of request to hold in a delay queue before rejecting them.  Delaying rejection can slow some DOS attackers.
      */
     public DosHandler(
         @Name("handler") Handler handler,
         @Name("getId") Function<Request, String> getId,
-        @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
-        @Name("maxTrackers") int maxTrackers,
-        @Name("rateFactory") RateFactory rateFactory,
-        @Name("maxDelayQueueSize") int maxDelayQueueSize)
+        @Name("rateFactory") RateControlFactory rateControlFactory,
+        @Name("rejector") Handler rejector,
+        @Name("maxTrackers") int maxTrackers)
     {
         super(handler);
         installBean(_trackers);
-        _getId = Objects.requireNonNullElse(getId, ID_FROM_REMOTE_ADDRESS_PORT);
-        _rateFactory = Objects.requireNonNullElseGet(rateFactory, ExponentialMovingAverageRateFactory::new);
-        _maxRequestsPerSecond = maxRequestsPerSecond;
+        _getId = Objects.requireNonNullElse(getId, ID_FROM_REMOTE_ADDRESS);
+        installBean(_getId);
+        _rateControlFactory = Objects.requireNonNull(rateControlFactory);
+        installBean(_rateControlFactory);
         _maxTrackers = maxTrackers <= 0 ? 10_000 : maxTrackers;
-        _maxDelayQueueSize = maxDelayQueueSize <= 0 ? 1_000 : maxDelayQueueSize;
+        _rejector = Objects.requireNonNullElseGet(rejector, DelayedEnhanceYourCalmRejector::new);
+        installBean(_rejector);
+    }
+
+    @Override
+    public void setServer(Server server)
+    {
+        super.setServer(server);
+        _rejector.setServer(server);
     }
 
     @Override
@@ -131,10 +160,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
     {
         // Reject if we have too many Trackers
         if (_maxTrackers > 0 && _trackers.size() > _maxTrackers)
-        {
-            reject(request, response, callback);
-            return true;
-        }
+            return _rejector.handle(request, response, callback);
 
         // Calculate an id for the request (which may be global empty string)
         String id;
@@ -144,22 +170,35 @@ public class DosHandler extends ConditionalHandler.ElseNext
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
         // If we are not over-limit then handle normally
-        if (!tracker.isRateExceeded(request, response, callback))
+        if (!tracker.isRateExceeded(request.getBeginNanoTime(), true))
             return nextHandler(request, response, callback);
 
-        // Otherwise the Tracker will reject the request
-        return true;
+        // Otherwise reject the request
+        return _rejector.handle(request, response, callback);
     }
 
     Tracker newTracker(String id)
     {
-        return new Tracker(id, _rateFactory.newRate());
+        return new Tracker(id, _rateControlFactory.newRate());
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        _scheduler = getServer().getScheduler();
+        _cyclicTimeouts = new CyclicTimeouts<>(getServer().getScheduler())
+        {
+            @Override
+            protected Iterator<Tracker> iterator()
+            {
+                return _trackers.values().iterator();
+            }
+
+            @Override
+            protected boolean onExpired(Tracker tracker)
+            {
+                return tracker.isIdle(System.nanoTime());
+            }
+        };
         super.doStart();
     }
 
@@ -167,36 +206,88 @@ public class DosHandler extends ConditionalHandler.ElseNext
     protected void doStop() throws Exception
     {
         super.doStop();
-        _scheduler = null;
+        _cyclicTimeouts.destroy();
+        _cyclicTimeouts = null;
     }
 
-    protected void reject(Request request, Response response, Callback callback)
+    /**
+     * A RateTracker is associated with a connection, and stores request rate data.
+     */
+    class Tracker implements CyclicTimeouts.Expirable
     {
-        Response.writeError(request, response, callback, HttpStatus.ENHANCE_YOUR_CALM_420);
+        private final AutoLock _lock = new AutoLock();
+        private final String _id;
+        private final RateControl _rateControl;
+        private long _expireAt;
+
+        Tracker(String id, RateControl rateControl)
+        {
+            _id = id;
+            _rateControl = rateControl;
+            _expireAt = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        }
+
+        public String getId()
+        {
+            return _id;
+        }
+
+        RateControl getRateControl()
+        {
+            return _rateControl;
+        }
+
+        public boolean isRateExceeded(long now, boolean addSample)
+        {
+            try (AutoLock l = _lock.lock())
+            {
+                CyclicTimeouts<Tracker> cyclicTimeouts = _cyclicTimeouts;
+                if (addSample && cyclicTimeouts != null)
+                {
+                    // schedule a check to remove this tracker if idle
+                    _expireAt = now + TimeUnit.SECONDS.toNanos(2L);
+                    cyclicTimeouts.schedule(this);
+                }
+                return _rateControl.isRateExceeded(now, addSample);
+            }
+        }
+
+        public boolean isIdle(long now)
+        {
+            try (AutoLock l = _lock.lock())
+            {
+                return _rateControl.isIdle(now);
+            }
+        }
+
+        @Override
+        public long getExpireNanoTime()
+        {
+            return _expireAt;
+        }
+
+        @Override
+        public String toString()
+        {
+            try (AutoLock l = _lock.lock())
+            {
+                return "Tracker@%s{rc=%s}".formatted(_id, _rateControl);
+            }
+        }
     }
 
-    public interface Rate
-    {
-        int getRate(long now, boolean addSample);
-    }
-
-    public interface RateFactory
-    {
-        Rate newRate();
-    }
-
-    public static class ExponentialMovingAverageRateFactory implements RateFactory
+    public static class ExponentialMovingAverageRateControlFactory implements RateControlFactory
     {
         private final long _samplePeriod;
         private final double _alpha;
-        private final int _checkAt;
+        private final int _maxRate;
 
-        private ExponentialMovingAverageRateFactory()
+        private ExponentialMovingAverageRateControlFactory(int maxRate)
         {
-            this(-1, -1.0, 100);
+            this(-1, -1.0, maxRate);
         }
 
-        private ExponentialMovingAverageRateFactory(long samplePeriodMs, double alpha, int checkAt)
+        private ExponentialMovingAverageRateControlFactory(long samplePeriodMs, double alpha, int maxRate)
         {
             _samplePeriod = TimeUnit.MILLISECONDS.toNanos(samplePeriodMs <= 0 ? 100 : samplePeriodMs);
             _alpha = alpha <= 0.0 ? 0.2 : alpha;
@@ -204,28 +295,28 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 throw new IllegalArgumentException("Sample period must be less than or equal to 1 second");
             if (_alpha > 1.0)
                 throw new IllegalArgumentException("Alpha " + _alpha + " is too large");
-            _checkAt = checkAt;
+            _maxRate = maxRate;
         }
 
         @Override
-        public Rate newRate()
+        public RateControl newRate()
         {
-            return new ExponentialMovingAverageRate();
+            return new ExponentialMovingAverageRateControl();
         }
 
-        private class ExponentialMovingAverageRate implements Rate
+        class ExponentialMovingAverageRateControl implements RateControl
         {
             private double _exponentialMovingAverage;
             private int _sampleCount;
             private long _sampleStart;
 
-            private ExponentialMovingAverageRate()
+            private ExponentialMovingAverageRateControl()
             {
                 _sampleStart = System.nanoTime();
             }
 
             @Override
-            public int getRate(long now, boolean addSample)
+            public boolean isRateExceeded(long now, boolean addSample)
             {
                 // Count the request
                 if (addSample)
@@ -237,7 +328,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 //    + we didn't add a sample
                 //    + the sample exceeds the rate
                 //    + the sample period has been exceeded
-                if (!addSample || _sampleCount > _checkAt || (_sampleStart != 0 && elapsedTime > _samplePeriod))
+                if (!addSample || _sampleCount > _maxRate || (_sampleStart != 0 && elapsedTime > _samplePeriod))
                 {
                     double elapsedTime1 = (double)(now - _sampleStart);
                     double count = _sampleCount;
@@ -264,119 +355,106 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 }
 
                 // if the rate has been exceeded?
-                return (int)_exponentialMovingAverage;
+                return _exponentialMovingAverage > _maxRate;
+            }
+
+            @Override
+            public boolean isIdle(long now)
+            {
+                return !isRateExceeded(now, false) && _exponentialMovingAverage <= 0.0001;
+            }
+
+            double getCurrentRatePerSecond()
+            {
+                return _exponentialMovingAverage;
             }
         }
     }
 
-    /**
-     * A RateTracker is associated with a connection, and stores request rate data.
-     */
-    class Tracker extends CyclicTimeout
+    public static class EnhanceYourCalmRejector extends Handler.Abstract
     {
-        protected record Exchange(Request request, Response response, Callback callback)
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
+            Response.writeError(request, response, callback, HttpStatus.ENHANCE_YOUR_CALM_420);
+            return true;
         }
+    }
+
+    public static class DelayedEnhanceYourCalmRejector extends Handler.Abstract
+    {
+        record Exchange(Request request, Response response, Callback callback)
+        {}
 
         private final AutoLock _lock = new AutoLock();
-        private final String _id;
-        private final Rate _rate;
-        private Queue<Exchange> _delayQueue;
+        private final Deque<Exchange> _delayQueue = new ArrayDeque<>();
+        private final int _maxQueue;
+        private final long _delayMs;
+        private Scheduler _scheduler;
 
-        Tracker(String id, Rate rate)
+        public DelayedEnhanceYourCalmRejector()
         {
-            super(_scheduler);
-            _id = id;
-            _rate = rate;
+            this(1000, 1000);
         }
 
-        public String getId()
+        public DelayedEnhanceYourCalmRejector(long delayMs, int maxQueue)
         {
-            return _id;
+            _delayMs = delayMs;
+            _maxQueue = maxQueue;
         }
 
-        int getCurrentRatePerSecond(long now)
+        @Override
+        protected void doStart() throws Exception
         {
-            try (AutoLock l = _lock.lock())
+            super.doStart();
+            _scheduler = getServer().getScheduler();
+            _scheduler.schedule(this::onTick, _delayMs / 2, TimeUnit.MILLISECONDS);
+            addBean(_scheduler);
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            super.doStop();
+            removeBean(_scheduler);
+            _scheduler = null;
+        }
+
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        {
+            try (AutoLock ignored = _lock.lock())
             {
-                return _rate.getRate(now, false);
-            }
-        }
-
-        public boolean isRateExceeded()
-        {
-            return isRateExceeded(System.nanoTime(), false);
-        }
-
-        public boolean isRateExceeded(long now, boolean addSample)
-        {
-            try (AutoLock l = _lock.lock())
-            {
-                return _rate.getRate(now, addSample) > _maxRequestsPerSecond;
-            }
-        }
-
-        public boolean isRateExceeded(Request request, Response response, Callback callback)
-        {
-            final long last;
-
-            // Use the request begin time as now. This might not monotonically increase, so algorithm needs
-            // to be robust for some jitter.
-            long now = request.getBeginNanoTime();
-            boolean exceeded;
-            try (AutoLock l = _lock.lock())
-            {
-                exceeded = _rate.getRate(now, true) > _maxRequestsPerSecond;
-                if (exceeded)
+                while (_delayQueue.size() >= _maxQueue)
                 {
-                    // Add the request to the delay queue
-                    if (_delayQueue == null)
-                        _delayQueue = new ArrayDeque<>();
-                    _delayQueue.add(new Exchange(request, response, callback));
+                    Exchange exchange = _delayQueue.removeFirst();
+                    Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.ENHANCE_YOUR_CALM_420);
+                }
+                _delayQueue.addLast(new Exchange(request, response, callback));
+            }
+            return true;
+        }
 
-                    // If the delay queue is getting too large, then reject oldest requests
-                    while (_delayQueue.size() > _maxDelayQueueSize)
+        private void onTick()
+        {
+            long expired = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(_delayMs);
+
+            try (AutoLock ignored = _lock.lock())
+            {
+                Iterator<Exchange> iterator = _delayQueue.iterator();
+                while (iterator.hasNext())
+                {
+                    Exchange exchange = iterator.next();
+                    if (exchange.request.getBeginNanoTime() <= expired)
                     {
-                        Exchange oldest = _delayQueue.remove();
-                        reject(oldest.request, oldest.response, oldest.callback);
+                        iterator.remove();
+                        Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.ENHANCE_YOUR_CALM_420);
                     }
                 }
             }
 
-            // Schedule a check on the Tracker to either reject delayed requests, or remove the tracker if idle.
-            schedule(2, TimeUnit.SECONDS);
-
-            return exceeded;
-        }
-
-        @Override
-        public void onTimeoutExpired()
-        {
-            try (AutoLock l = _lock.lock())
-            {
-                if (_delayQueue == null || _delayQueue.isEmpty())
-                {
-                    // Has the Tracker has gone idle, so remove it
-                    if (_rate.getRate(System.nanoTime(), false) == 0)
-                        _trackers.remove(_id);
-                }
-                else
-                {
-                    // Reject the delayed over-limit requests
-                    for (Exchange exchange : _delayQueue)
-                        reject(exchange.request, exchange.response, exchange.callback);
-                    _delayQueue.clear();
-                }
-            }
-        }
-
-        @Override
-        public String toString()
-        {
-            try (AutoLock l = _lock.lock())
-            {
-                return "Tracker@%s{ema=%d/s}".formatted(_id, _rate);
-            }
+            if (isStarted())
+                _scheduler.schedule(this::onTick, _delayMs / 2, TimeUnit.MILLISECONDS);
         }
     }
 }
