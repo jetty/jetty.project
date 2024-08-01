@@ -550,6 +550,10 @@ include::{jetty-home}/modules/ssl.mod[tags=documentation-ssl-context]
 [[ssl-keystore-tls]]
 === KeyStore Properties and TLS Properties
 
+The Jetty component that manages the KeyStore, that contains the cryptographic material and the TLS configuration is an instance of `SslContextFactory.Server`.
+
+You can configure the `SslContextFactory.Server` by specifying properties, or by invoking its method for a more xref:ssl-advanced[advanced configuration].
+
 Among the configurable properties, the most relevant are:
 
 `jetty.sslContext.keyStorePath`::
@@ -566,6 +570,57 @@ Whether client certificate authentication should be required.
 Whether client certificate authentication should be requested.
 
 If you configure client certificate authentication, you need to configure and distribute a client KeyStore as explained in xref:keystore/index.adoc#client-authn[this section].
+
+[[ssl-advanced]]
+=== Advanced TLS Configuration
+
+Configuring `SslContextFactory.Server` using properties as explained in xref:ssl-keystore-tls[this section] is sufficient for most cases.
+
+For the cases where Jetty module properties are not defined, or when you need more advanced configuration (for example the ability to include and/or exclude the TLS cipher suites), you can follow these steps:
+
+. Modify `$JETTY_BASE/start.d/ssl.ini` by adding a path to a custom XML file, for example:
++
+.ssl.ini
+[source,subs="verbatim,quotes"]
+----
+--module=ssl
+*etc/ssl-config.xml* <1>
+...
+----
+<1> The path to the custom XML file, relative to `$JETTY_BASE`.
+. Create the custom XML file, with your advanced configuration.
+For example, to exclude certain TLS ciphers you can use the following file:
++
+.ssl-config.xml
+[source,xml,subs="verbatim"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory"> <1>
+    <Set name="ExcludeCipherSuites"> <2>
+      <Array type="String">
+        <Item>^TLS_RSA_.*$</Item>
+        <Item>^.*_RSA_.*_(MD5|SHA|SHA1)$</Item>
+        <Item>^.*_DHE_RSA_.*$</Item>
+        <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
+        <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
+      </Array>
+    </Set>
+  </Ref>
+</Configure>
+----
+<1> Reference the existing `sslContextFactory` object.
+<2> Call the method `setExcludeCipherSuites(String\...)` to specify the TLS ciphers you want to exclude.
+
+In the custom XML file you can call any `SslContextFactory.Server` method.
+Refer to the `SslContextFactory.Server` link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Server.html[javadocs] for further information.
 
 [[ssl-reload]]
 == Module `ssl-reload`
