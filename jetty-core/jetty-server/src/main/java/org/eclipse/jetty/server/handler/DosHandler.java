@@ -113,6 +113,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
     /**
      * @param getId Function to extract an remote ID from a request.
      * @param rateControlFactory Factory to create a Rate per Tracker
+     * @param rejector A {@link Handler} used to reject excess requests, or {@code null} for a default.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DosHandler(
@@ -128,6 +129,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
      * @param handler Then next {@link Handler} or {@code null}
      * @param getId Function to extract an remote ID from a request.
      * @param rateControlFactory Factory to create a Rate per Tracker
+     * @param rejector A {@link Handler} used to reject excess requests, or {@code null} for a default.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DosHandler(
