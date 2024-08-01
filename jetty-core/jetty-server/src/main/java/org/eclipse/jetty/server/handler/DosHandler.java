@@ -69,6 +69,9 @@ public class DosHandler extends ConditionalHandler.ElseNext
         return remoteSocketAddress.toString();
     };
 
+    /**
+     * An interface implemented to track and control the rate of requests for a specific ID.
+     */
     public interface RateControl
     {
         boolean isRateExceeded(long now, boolean addSample);
@@ -76,6 +79,9 @@ public class DosHandler extends ConditionalHandler.ElseNext
         boolean isIdle(long now);
     }
 
+    /**
+     * A factory to create new {@link RateControl} instances
+     */
     public interface RateControlFactory
     {
         RateControl newRate();
@@ -84,7 +90,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
     private final Map<String, Tracker> _trackers = new ConcurrentHashMap<>();
     private final Function<Request, String> _getId;
     private final RateControlFactory _rateControlFactory;
-    private final Handler _rejector;
+    private final Request.Handler _rejectHandler;
     private final int _maxTrackers;
     private CyclicTimeouts<Tracker> _cyclicTimeouts;
 
@@ -93,13 +99,17 @@ public class DosHandler extends ConditionalHandler.ElseNext
         this(null, 100, -1);
     }
 
-    public DosHandler(int maxRequestsPerSecond)
+    /**
+     * @param maxRequestsPerSecond The maximum requests per second allows per ID.
+     */
+    public DosHandler(@Name("maxRequestsPerSecond") int maxRequestsPerSecond)
     {
         this(null, maxRequestsPerSecond, -1);
     }
 
     /**
      * @param getId Function to extract an remote ID from a request.
+     * @param maxRequestsPerSecond The maximum requests per second allows per ID.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DosHandler(
@@ -113,30 +123,30 @@ public class DosHandler extends ConditionalHandler.ElseNext
     /**
      * @param getId Function to extract an remote ID from a request.
      * @param rateControlFactory Factory to create a Rate per Tracker
-     * @param rejector A {@link Handler} used to reject excess requests, or {@code null} for a default.
+     * @param rejectHandler A {@link Handler} used to reject excess requests, or {@code null} for a default.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DosHandler(
         @Name("getId") Function<Request, String> getId,
         @Name("rateFactory") RateControlFactory rateControlFactory,
-        @Name("rejector") Handler rejector,
+        @Name("rejectHandler") Request.Handler rejectHandler,
         @Name("maxTrackers") int maxTrackers)
     {
-        this(null, getId, rateControlFactory, rejector, maxTrackers);
+        this(null, getId, rateControlFactory, rejectHandler, maxTrackers);
     }
 
     /**
      * @param handler Then next {@link Handler} or {@code null}
      * @param getId Function to extract an remote ID from a request.
      * @param rateControlFactory Factory to create a Rate per Tracker
-     * @param rejector A {@link Handler} used to reject excess requests, or {@code null} for a default.
+     * @param rejectHandler A {@link Handler} used to reject excess requests, or {@code null} for a default.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DosHandler(
         @Name("handler") Handler handler,
         @Name("getId") Function<Request, String> getId,
         @Name("rateFactory") RateControlFactory rateControlFactory,
-        @Name("rejector") Handler rejector,
+        @Name("rejectHandler") Request.Handler rejectHandler,
         @Name("maxTrackers") int maxTrackers)
     {
         super(handler);
@@ -146,15 +156,16 @@ public class DosHandler extends ConditionalHandler.ElseNext
         _rateControlFactory = Objects.requireNonNull(rateControlFactory);
         installBean(_rateControlFactory);
         _maxTrackers = maxTrackers <= 0 ? 10_000 : maxTrackers;
-        _rejector = Objects.requireNonNullElseGet(rejector, DelayedEnhanceYourCalmRejector::new);
-        installBean(_rejector);
+        _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, DelayedEnhanceYourCalmRejectHandler::new);
+        installBean(_rejectHandler);
     }
 
     @Override
     public void setServer(Server server)
     {
         super.setServer(server);
-        _rejector.setServer(server);
+        if (_rejectHandler instanceof Handler handler)
+            handler.setServer(server);
     }
 
     @Override
@@ -162,7 +173,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
     {
         // Reject if we have too many Trackers
         if (_maxTrackers > 0 && _trackers.size() > _maxTrackers)
-            return _rejector.handle(request, response, callback);
+            return _rejectHandler.handle(request, response, callback);
 
         // Calculate an id for the request (which may be global empty string)
         String id;
@@ -176,7 +187,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
             return nextHandler(request, response, callback);
 
         // Otherwise reject the request
-        return _rejector.handle(request, response, callback);
+        return _rejectHandler.handle(request, response, callback);
     }
 
     Tracker newTracker(String id)
@@ -278,18 +289,32 @@ public class DosHandler extends ConditionalHandler.ElseNext
         }
     }
 
+    /**
+     * A RateControlFactory that uses an
+     * <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">Exponential Moving Average</a>
+     * to limit the request rate to a maximum number of requests per second.
+     */
     public static class ExponentialMovingAverageRateControlFactory implements RateControlFactory
     {
         private final long _samplePeriod;
         private final double _alpha;
-        private final int _maxRate;
+        private final int _maxRequestsPerSecond;
 
-        private ExponentialMovingAverageRateControlFactory(int maxRate)
+        public ExponentialMovingAverageRateControlFactory()
         {
-            this(-1, -1.0, maxRate);
+            this(-1, -1.0, 1000);
         }
 
-        private ExponentialMovingAverageRateControlFactory(long samplePeriodMs, double alpha, int maxRate)
+        public ExponentialMovingAverageRateControlFactory(
+            @Name("maxRequestsPerSecond") int maxRateRequestsPerSecond)
+        {
+            this(-1, -1.0, maxRateRequestsPerSecond);
+        }
+
+        public ExponentialMovingAverageRateControlFactory(
+            @Name("samplePeriodMs") long samplePeriodMs,
+            @Name("alpha") double alpha,
+            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
         {
             _samplePeriod = TimeUnit.MILLISECONDS.toNanos(samplePeriodMs <= 0 ? 100 : samplePeriodMs);
             _alpha = alpha <= 0.0 ? 0.2 : alpha;
@@ -297,7 +322,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 throw new IllegalArgumentException("Sample period must be less than or equal to 1 second");
             if (_alpha > 1.0)
                 throw new IllegalArgumentException("Alpha " + _alpha + " is too large");
-            _maxRate = maxRate;
+            _maxRequestsPerSecond = maxRequestsPerSecond;
         }
 
         @Override
@@ -330,7 +355,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 //    + we didn't add a sample
                 //    + the sample exceeds the rate
                 //    + the sample period has been exceeded
-                if (!addSample || _sampleCount > _maxRate || (_sampleStart != 0 && elapsedTime > _samplePeriod))
+                if (!addSample || _sampleCount > _maxRequestsPerSecond || (_sampleStart != 0 && elapsedTime > _samplePeriod))
                 {
                     double elapsedTime1 = (double)(now - _sampleStart);
                     double count = _sampleCount;
@@ -357,7 +382,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 }
 
                 // if the rate has been exceeded?
-                return _exponentialMovingAverage > _maxRate;
+                return _exponentialMovingAverage > _maxRequestsPerSecond;
             }
 
             @Override
@@ -373,7 +398,10 @@ public class DosHandler extends ConditionalHandler.ElseNext
         }
     }
 
-    public static class EnhanceYourCalmRejector extends Handler.Abstract
+    /**
+     * A Handler to reject DOS requests with {@link HttpStatus#ENHANCE_YOUR_CALM_420}.
+     */
+    public static class EnhanceYourCalmRejectHandler implements Request.Handler
     {
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -383,26 +411,35 @@ public class DosHandler extends ConditionalHandler.ElseNext
         }
     }
 
-    public static class DelayedEnhanceYourCalmRejector extends Handler.Abstract
+    /**
+     * A Handler to reject DOS requests with {@link HttpStatus#ENHANCE_YOUR_CALM_420}.
+     */
+    public static class DelayedEnhanceYourCalmRejectHandler extends Handler.Abstract
     {
         record Exchange(Request request, Response response, Callback callback)
         {}
 
         private final AutoLock _lock = new AutoLock();
         private final Deque<Exchange> _delayQueue = new ArrayDeque<>();
-        private final int _maxQueue;
+        private final int _maxDelayQueue;
         private final long _delayMs;
         private Scheduler _scheduler;
 
-        public DelayedEnhanceYourCalmRejector()
+        public DelayedEnhanceYourCalmRejectHandler()
         {
             this(1000, 1000);
         }
 
-        public DelayedEnhanceYourCalmRejector(long delayMs, int maxQueue)
+        /**
+         * @param delayMs The delay in milliseconds to hold rejected requests before sending a response
+         * @param maxDelayQueue The maximum number of delayed requests to hold.
+         */
+        public DelayedEnhanceYourCalmRejectHandler(
+            @Name("delayMs") long delayMs,
+            @Name("maxDelayQueue") int maxDelayQueue)
         {
             _delayMs = delayMs;
-            _maxQueue = maxQueue;
+            _maxDelayQueue = maxDelayQueue;
         }
 
         @Override
@@ -427,7 +464,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
         {
             try (AutoLock ignored = _lock.lock())
             {
-                while (_delayQueue.size() >= _maxQueue)
+                while (_delayQueue.size() >= _maxDelayQueue)
                 {
                     Exchange exchange = _delayQueue.removeFirst();
                     Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.ENHANCE_YOUR_CALM_420);

@@ -14,11 +14,12 @@ etc/jetty-dos.xml
 
 [ini-template]
 
-## The maximum requests per second per client
-#jetty.dos.maxRequestsPerSecond=100
+## The algorithm to use for obtaining an Id from an Request: ID_FROM_REMOTE_ADDRESS, ID_FROM_REMOTE_PORT, ID_FROM_REMOTE_ADDRESS_PORT
+#jetty.dos.id.type=ID_FROM_REMOTE_ADDRESS
+#jetty.dos.id.class=org.eclipse.jetty.server.handler.DosHandler
 
-## The maximum number of clients to track or -1 for a default value
-#jetty.dos.maxTrackers=10000
+## The class to use to create RateControl instances to track the rate of requests
+#jetty.dos.rateControlFactory=org.eclipse.jetty.server.handler.DosHandler$ExponentialMovingAverageRateControlFactory
 
 ## The sample period(ms) to determine the request rate, or -1 for a default value
 #jetty.dos.samplePeriodMs=100
@@ -26,8 +27,20 @@ etc/jetty-dos.xml
 ## The Exponential factor for the moving average rate
 #jetty.dos.alpha=0.2
 
+## The maximum requests per second per client
+#jetty.dos.maxRequestsPerSecond=100
+
+## The Handler class to use to reject DOS requests
+#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DosHandler$DelayedEnhanceYourCalmRejectHandler
+
+## The period to delay dos requests before rejecting them.
+#jetty.dos.delayMs=1000
+
 ## The maximum number of requests to be held in the delay queue
 #jetty.dos.maxDelayQueueSize=1000
+
+## The maximum number of clients to track or -1 for a default value
+#jetty.dos.maxTrackers=10000
 
 ## List of InetAddress patterns to include
 #jetty.dos.include.inet=10.10.10-14.0-128

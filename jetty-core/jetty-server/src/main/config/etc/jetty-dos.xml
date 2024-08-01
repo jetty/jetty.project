@@ -5,12 +5,29 @@
   <Call name="insertHandler">
     <Arg>
       <New id="DosHandler" class="org.eclipse.jetty.server.handler.DosHandler">
-      <Arg name="getId"><Get class="org.eclipse.jetty.server.handler.DosHandler" name="ID_FROM_REMOTE_ADDRESS_PORT"/></Arg>
-        <Arg name="maxRequestsPerSecond"><Property name="jetty.dos.maxRequestsPerSecond" default="100"/></Arg>
-        <Arg name="maxTrackers"><Property name="jetty.dos.maxTrackers" default="-1"/></Arg>
-        <Arg name="samplePeriodMs"><Property name="jetty.dos.samplePeriodMs" default="-1"/></Arg>
-        <Arg name="alpha"><Property name="jetty.dos.alpha" default="-1.0"/></Arg>
-        <Arg name="maxDelayQueueSize"><Property name="jetty.dos.maxDelayQueueSize" default="-1"/></Arg>
+        <Arg name="getId">
+          <Get>
+            <Name><Property name="jetty.dos.id.type" default="ID_FROM_REMOTE_ADDRESS"/></Name>
+            <Class><Property name="jetty.dos.id.class" default="org.eclipse.jetty.server.handler.DosHandler"/></Class>
+          </Get>
+        </Arg>
+        <Arg name="rateFactory">
+          <New>
+            <Class><Property name="jetty.dos.rateControlFactory" default="org.eclipse.jetty.server.handler.DosHandler$ExponentialMovingAverageRateControlFactory"/></Class>
+            <Arg name="samplePeriodMs" type="long"><Property name="jetty.dos.samplePeriodMs" default="-1"/></Arg>
+            <Arg name="alpha" type="double"><Property name="jetty.dos.alpha" default="-1.0"/></Arg>
+            <Arg name="maxRequestsPerSecond" type="int"><Property name="jetty.dos.maxRequestsPerSecond" default="100"/></Arg>
+          </New>
+        </Arg>
+        <Arg name="rejectHandler">
+          <New>
+            <Class><Property name="jetty.dos.rejectHandler" default="org.eclipse.jetty.server.handler.DosHandler$DelayedEnhanceYourCalmRejectHandler"/></Class>
+            <Arg name="delayMs" type="long"><Property name="jetty.dos.delayMs" default="1000"/></Arg>
+            <Arg name="maxDelayQueue" type="int"><Property name="jetty.dos.maxDelayQueue" default="1000"/></Arg>
+          </New>
+        </Arg>
+        <Arg name="maxTrackers" type="int"><Property name="jetty.dos.maxTrackers" default="-1"/></Arg>
+
         <Call name="includeInetAddressPattern">
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
