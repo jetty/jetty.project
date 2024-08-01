@@ -316,7 +316,7 @@
     <maven.install.plugin.version>3.1.2</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.7.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
-    <maven.javadoc.plugin.version>3.7.0</maven.javadoc.plugin.version>
+    <maven.javadoc.plugin.version>3.8.0</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.13.1</maven.plugin-tools.version>
     <maven.release.plugin.version>3.1.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.2.0</maven.remote-resources-plugin.version>
@@ -348,7 +348,7 @@
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.19.8</testcontainers.version>
+    <testcontainers.version>1.20.1</testcontainers.version>
     <versions.maven.plugin.version>2.17.1</versions.maven.plugin.version>
     <weld.version>4.0.3.Final</weld.version>
     <wildfly.common.version>1.7.0.Final</wildfly.common.version>
