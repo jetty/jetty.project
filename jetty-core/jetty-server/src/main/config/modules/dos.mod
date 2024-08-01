@@ -14,7 +14,7 @@ etc/jetty-dos.xml
 
 [ini-template]
 
-## The algorithm to use for obtaining an Id from an Request: ID_FROM_REMOTE_ADDRESS, ID_FROM_REMOTE_PORT, ID_FROM_REMOTE_ADDRESS_PORT
+## The algorithm to use for obtaining an Id from an Request: ID_FROM_REMOTE_ADDRESS, ID_FROM_REMOTE_PORT, ID_FROM_REMOTE_ADDRESS_PORT, ID_CONNECTION
 #jetty.dos.id.type=ID_FROM_REMOTE_ADDRESS
 #jetty.dos.id.class=org.eclipse.jetty.server.handler.DosHandler
 

@@ -26,6 +26,7 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.CyclicTimeouts;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -43,6 +44,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject("DOS Prevention Handler")
 public class DosHandler extends ConditionalHandler.ElseNext
 {
+    /**
+     * An id {@link Function} to create an ID from the remote address and port of a {@link Request}
+     */
     public static final Function<Request, String> ID_FROM_REMOTE_ADDRESS_PORT = request ->
     {
         SocketAddress remoteSocketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
@@ -51,6 +55,9 @@ public class DosHandler extends ConditionalHandler.ElseNext
         return remoteSocketAddress.toString();
     };
 
+    /**
+     * An id {@link Function} to create an ID from the remote address of a {@link Request}
+     */
     public static final Function<Request, String> ID_FROM_REMOTE_ADDRESS = request ->
     {
         String id;
@@ -60,6 +67,10 @@ public class DosHandler extends ConditionalHandler.ElseNext
         return remoteSocketAddress.toString();
     };
 
+    /**
+     * An id {@link Function} to create an ID from the remote port of a {@link Request}.
+     * This can be useful if there is an untrusted intermediary, where the remote port can be a surrogate for the connection.
+     */
     public static final Function<Request, String> ID_FROM_REMOTE_PORT = request ->
     {
         String id;
@@ -68,6 +79,11 @@ public class DosHandler extends ConditionalHandler.ElseNext
             return Integer.toString(inetSocketAddress.getPort());
         return remoteSocketAddress.toString();
     };
+
+    /**
+     * An id {@link Function} to create an ID from {@link ConnectionMetaData#getId()} of the {@link Request}
+     */
+    public static final Function<Request, String> ID_CONNECTION = request -> request.getConnectionMetaData().getId();
 
     /**
      * An interface implemented to track and control the rate of requests for a specific ID.
