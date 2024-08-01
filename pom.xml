@@ -209,7 +209,7 @@
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
     <commons-codec.version>1.17.1</commons-codec.version>
-    <commons-lang3.version>3.14.0</commons-lang3.version>
+    <commons-lang3.version>3.15.0</commons-lang3.version>
     <commons.compress.version>1.26.2</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
     <compiler.release>11</compiler.release>
@@ -221,7 +221,7 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.29.0</google.errorprone.version>
+    <google.errorprone.version>2.29.2</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
     <grpc.version>1.65.1</grpc.version>
     <gson.version>2.11.0</gson.version>
@@ -230,7 +230,7 @@
     <h2spec.maven.plugin.version>1.0.12</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>3.0.2</hawtio.version>
-    <hazelcast.version>5.3.7</hazelcast.version>
+    <hazelcast.version>5.5.0</hazelcast.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
     <infinispan.version>11.0.19.Final</infinispan.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
@@ -299,7 +299,7 @@
     <log4j2.version>2.23.1</log4j2.version>
     <logback.version>1.5.6</logback.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.4.0</mariadb.version>
+    <mariadb.version>3.4.1</mariadb.version>
     <maven-plugin.plugin.version>3.13.1</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
@@ -2550,7 +2550,7 @@
         </property>
       </activation>
       <properties>
-        <cbi-plugins.version>1.4.3</cbi-plugins.version>
+        <cbi-plugins.version>1.5.0</cbi-plugins.version>
       </properties>
       <pluginRepositories>
         <pluginRepository>
