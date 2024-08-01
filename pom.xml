@@ -35,11 +35,11 @@
     <commons-codec.version>1.17.1</commons-codec.version>
     <commons.compress.version>1.26.2</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
-    <commons.lang3.version>3.14.0</commons.lang3.version>
+    <commons.lang3.version>3.15.0</commons.lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
     <disruptor.version>3.4.4</disruptor.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <google.errorprone.version>2.29.0</google.errorprone.version>
+    <google.errorprone.version>2.29.2</google.errorprone.version>
     <grpc.version>1.65.1</grpc.version>
     <gson.version>2.11.0</gson.version>
     <guava.version>33.2.1-jre</guava.version>
@@ -90,7 +90,7 @@
     <slf4j.version>1.7.36</slf4j.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.19.8</testcontainers.version>
+    <testcontainers.version>1.20.1</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
     <!-- Stay on 2.2.x as 2.3.x is for Java 11 -->
     <wildfly.elytron.version>2.2.6.Final</wildfly.elytron.version>
@@ -143,14 +143,14 @@
 
     <jsr250-api.version>1.0</jsr250-api.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <maria.version>3.4.0</maria.version>
+    <maria.version>3.4.1</maria.version>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
     <mongo.docker.version>3.2.20</mongo.docker.version>
     <settingsPath>src/it/settings.xml</settingsPath>
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.19.8</testcontainers.version>
+    <testcontainers.version>1.20.1</testcontainers.version>
     <unix.socket.tmp></unix.socket.tmp>
 
   </properties>
@@ -1652,7 +1652,7 @@
         </property>
       </activation>
       <properties>
-        <cbi-plugins.version>1.4.3</cbi-plugins.version>
+        <cbi-plugins.version>1.5.0</cbi-plugins.version>
       </properties>
       <build>
         <plugins>
