@@ -3,10 +3,9 @@ version: '10'
 title: Eclipse Jetty
 asciidoc:
   attributes:
-    javadoc-url: https://jetty.org/javadoc/jetty-10
-    jdurl: '{javadoc-url}'
+    javadoc-url: https://javadoc.jetty.org/jetty-10
     jetty-home: ${jetty.home}@
-    version: 10.0.21-SNAPSHOT
+    jetty-version: ${project.version}
     idprefix: ''
     idseparator: ''
     run-jetty-classpath: ${settings.localRepository}/org/eclipse/jetty/tests/jetty-home-tester/${project.version}/jetty-home-tester-${project.version}.jar${path.separator}${run.jetty.classpath}
