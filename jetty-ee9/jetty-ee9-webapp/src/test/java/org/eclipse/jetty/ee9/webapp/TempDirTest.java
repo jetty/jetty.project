@@ -39,8 +39,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -127,11 +129,11 @@ public class TempDirTest
         File tempDirectory = webAppContext.getTempDirectory();
         assertTrue(tempDirectory.exists());
         assertThat(tempDirectory.getParentFile().toPath(), is(tmpDir));
+        assertThat(webAppContext.getAttribute(ServletContext.TEMPDIR), is(webAppContext.getTempDirectory()));
     }
 
     /**
      * <code>${jetty.base}</code> directory exists and has a subdirectory called work
-     * so webappContent#tempDirectory is created under <code>java.io.tmpdir</code>
      */
     @Test
     public void jettyBaseWorkExists(WorkDir workDirExt) throws Exception
@@ -146,6 +148,7 @@ public class TempDirTest
         server.setHandler(webAppContext);
         webInfConfiguration.resolveTempDirectory(webAppContext);
         assertThat(webAppContext.getTempDirectory().getParentFile().toPath(), PathMatchers.isSame(workDir));
+        assertThat(webAppContext.getAttribute(ServletContext.TEMPDIR), is(webAppContext.getTempDirectory()));
     }
 
     @Test
@@ -174,8 +177,114 @@ public class TempDirTest
         server.setHandler(webAppContext);
         server.start();
         File tempDirectory = webAppContext.getTempDirectory();
+        assertThat(webAppContext.getAttribute(ServletContext.TEMPDIR), is(webAppContext.getTempDirectory()));
         server.stop();
         assertNull(webAppContext.getTempDirectory());
         assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
+    }
+
+    @Test
+    public void testExplicitTempDir(WorkDir workDir) throws Exception
+    {
+        Path jettyBase = workDir.getEmptyPathDir();
+        Path myTempDir = jettyBase.resolve("my-temp-dir");
+        FS.ensureDirExists(myTempDir);
+
+        // Create war on the fly
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path warFile = workDir.getEmptyPathDir().resolve("test.war");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(testWebappDir, root);
+        }
+
+        //Tell jetty what the temp dir is for the webapp
+        Server server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        webAppContext.setWarResource(webAppContext.getResourceFactory().newResource(warFile));
+        webAppContext.setTempDirectory(myTempDir.toFile());
+        server.setHandler(webAppContext);
+        server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        assertThat(webAppContext.getAttribute(ServletContext.TEMPDIR), is(tempDirectory));
+        assertThat(tempDirectory.toPath(), is(myTempDir));
+        server.stop();
+    }
+
+
+    @Test
+    public void testFreshTempDir(WorkDir workDir) throws Exception
+    {
+        // Create war on the fly
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path warFile = workDir.getEmptyPathDir().resolve("test.war");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(testWebappDir, root);
+        }
+
+        //Test that if jetty is creating a tmp dir for the webapp, it is different on
+        //restart
+        Server server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        webAppContext.setWarResource(webAppContext.getResourceFactory().newResource(warFile));
+        server.setHandler(webAppContext);
+        server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        webAppContext.stop();
+        assertNull(webAppContext.getTempDirectory());
+        webAppContext.start();
+        assertThat(tempDirectory.toPath(), not(PathMatchers.isSame(webAppContext.getTempDirectory().toPath())));
+    }
+
+    @Test
+    public void testSameTempDir(WorkDir workDir) throws Exception
+    {
+        // Create war on the fly
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path warFile = workDir.getEmptyPathDir().resolve("test.war");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
+        // Use ZipFS so that we can create paths that are just "/"
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            IO.copyDir(testWebappDir, root);
+        }
+
+        //Test that if we explicitly configure the temp dir, it is the same after restart
+        Server server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        Path configuredTmpDir = workDir.getPath().resolve("tmp");
+        webAppContext.setTempDirectory(configuredTmpDir.toFile());
+        webAppContext.setWarResource(webAppContext.getResourceFactory().newResource(warFile));
+        server.setHandler(webAppContext);
+        server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        assertThat(tempDirectory.toPath(), PathMatchers.isSame(configuredTmpDir));
+        webAppContext.stop();
+        assertNotNull(webAppContext.getTempDirectory());
+        webAppContext.start();
+        assertThat(tempDirectory.toPath(), PathMatchers.isSame(webAppContext.getTempDirectory().toPath()));
     }
 }
