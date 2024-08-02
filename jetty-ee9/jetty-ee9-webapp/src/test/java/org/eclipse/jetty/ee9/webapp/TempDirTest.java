@@ -218,8 +218,7 @@ public class TempDirTest
         assertThat(tempDirectory.toPath(), is(myTempDir));
         server.stop();
     }
-
-
+    
     @Test
     public void testFreshTempDir(WorkDir workDir) throws Exception
     {
