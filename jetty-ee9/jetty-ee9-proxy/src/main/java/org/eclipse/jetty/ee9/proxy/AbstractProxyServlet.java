@@ -771,6 +771,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
     }
 
+    /**
+     * <p>Returns the action to perform when the proxy receives
+     * a 100 Continue response from the server.</p>
+     *
+     * @param clientRequest the client request
+     * @param proxyRequest the request being proxied
+     * @return the 100 Continue action to run
+     */
     protected Runnable onContinue(HttpServletRequest clientRequest, Request proxyRequest)
     {
         return null;
