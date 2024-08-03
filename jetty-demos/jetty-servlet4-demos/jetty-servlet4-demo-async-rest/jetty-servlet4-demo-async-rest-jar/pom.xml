@@ -26,9 +26,9 @@
       <artifactId>jetty-util-ajax</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
-      <version>${ee8.jetty.servlet.api.version}</version>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>${ee8.jakarta.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
