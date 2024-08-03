@@ -198,9 +198,6 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctor.maven.plugin.version>2.2.6</asciidoctor.maven.plugin.version>
-    <asciidoctorj-diagram.version>2.3.1</asciidoctorj-diagram.version>
-    <asciidoctorj.version>2.5.13</asciidoctorj.version>
     <asm.version>9.7</asm.version>
     <awaitility.version>4.2.1</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
@@ -717,16 +714,6 @@
             <artifactId>jsp-api</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>${asciidoctor.maven.plugin.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctorj</artifactId>
-        <version>${asciidoctorj.version}</version>
       </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
@@ -1756,49 +1743,6 @@
           <groupId>org.apache.servicemix.tooling</groupId>
           <artifactId>depends-maven-plugin</artifactId>
           <version>${depends.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.asciidoctor</groupId>
-          <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>${asciidoctor.maven.plugin.version}</version>
-          <configuration>
-            <backend>html5</backend>
-            <requires>
-              <require>asciidoctor-diagram</require>
-            </requires>
-            <attributes>
-              <JDURL>https://eclipse.dev/jetty/javadoc/jetty-10</JDURL>
-              <SRCDIR>${basedir}/..</SRCDIR>
-              <GITBROWSEURL>https://github.com/jetty/jetty.project/tree/jetty-10.0.x</GITBROWSEURL>
-              <GITDOCURL>https://github.com/jetty/jetty.project/tree/jetty-10.0.x/documentation/jetty-documentation/src/main/asciidoc</GITDOCURL>
-              <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
-              <VERSION>${project.version}</VERSION>
-              <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
-              <toc>left</toc>
-              <icons>font</icons>
-            </attributes>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.asciidoctor</groupId>
-              <artifactId>asciidoctorj-diagram</artifactId>
-              <version>${asciidoctorj-diagram.version}</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <id>index</id>
-              <goals>
-                <goal>process-asciidoc</goal>
-              </goals>
-              <phase>generate-resources</phase>
-              <configuration>
-                <sourceDirectory>src/main/asciidoc</sourceDirectory>
-                <sourceDocumentName>index.adoc</sourceDocumentName>
-                <outputDirectory>${project.build.directory}/html</outputDirectory>
-              </configuration>
-            </execution>
-          </executions>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

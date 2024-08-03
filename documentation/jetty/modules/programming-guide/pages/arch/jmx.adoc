@@ -33,7 +33,7 @@ The Maven coordinates for the Jetty JMX support are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-jmx</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
