@@ -612,8 +612,9 @@ IMPORTANT: We recommend that you backup your stored sessions before running the 
 
 How to use the converter:
 
+[source,subs=attributes]
 ----
-java -cp jetty-jakarta-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:[other classpath]  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter
+java -cp jakarta.servlet-api-6.0.0.jar:jetty-util-{jetty-version}.jar:jetty-server-{jetty-version}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{jetty-version}.jar:[other classpath]  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter
 
 Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] [-Dverbose=true|false] <cache-name> [check]
 ----
@@ -631,8 +632,9 @@ check::: the optional check command will verify sessions have been converted. Us
 To perform the conversion, run the InfinispanSessionLegacyConverter with just the `cache-name`, and optionally the `host` system property.
 The following command will attempt to convert all sessions in the cached named `my-remote-cache` on the machine `myhost`, ensuring that application classes in the `/my/custom/classes` directory are on the classpath:
 
+[source,subs=attributes]
 ----
-java -cp jetty-jakarta-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:/my/custom/classes  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter -Dhost=myhost my-remote-cache
+java -cp jakarta.servlet-api-6.0.0.jar:jetty-util-{jetty-version}.jar:jetty-server-{jetty-version}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{jetty-version}.jar:/my/custom/classes  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter -Dhost=myhost my-remote-cache
 ----
 
 If the converter fails to convert a session, an error message and stacktrace will be printed and the conversion will abort. The failed session should be untouched, however _it is prudent to take a backup of your cache before attempting the conversion_.
