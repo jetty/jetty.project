@@ -105,7 +105,7 @@ Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directo
       <!-- Adapt this to a version found on
            https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-maven-plugin/
         -->
-      <jettyVersion>{VERSION}</jettyVersion>
+      <jettyVersion>{jetty-version}</jettyVersion>
   </properties>
 
   <dependencies>
@@ -257,7 +257,7 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
   <name>Jetty HelloWorld WebApp</name>
 
   <properties>
-      <jettyVersion>{VERSION}</jettyVersion>
+      <jettyVersion>{jetty-version}</jettyVersion>
   </properties>
 
   <dependencies>

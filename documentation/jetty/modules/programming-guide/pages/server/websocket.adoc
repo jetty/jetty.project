@@ -75,7 +75,7 @@ Jetty's implementation of the standard `jakarta.websocket` APIs is provided by t
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>
   <artifactId>websocket-jakarta-server</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -176,7 +176,7 @@ Jetty's WebSocket APIs are provided by the following Maven artifact:
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>
   <artifactId>websocket-jetty-api</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -187,7 +187,7 @@ Jetty's implementation of the Jetty WebSocket APIs is provided by the following 
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>
   <artifactId>websocket-jetty-server</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 

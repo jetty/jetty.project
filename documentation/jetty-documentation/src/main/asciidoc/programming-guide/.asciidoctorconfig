@@ -1,5 +1,0 @@
-// Asciidoctor IDE configuration file.
-// See https://github.com/asciidoctor/asciidoctor-intellij-plugin/wiki/Support-project-specific-configurations
-:experimental:
-:imagesdir: images
-:doc_code: ../../java

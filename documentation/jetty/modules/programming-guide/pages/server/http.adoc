@@ -26,7 +26,7 @@ The Maven artifact coordinates are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-server</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -385,7 +385,7 @@ A faster alternative, implemented natively, is Google's https://github.com/googl
 
 CAUTION: As Conscrypt eventually binds to a native library, there is a higher risk that a bug in Conscrypt or in the native library causes a JVM crash, while the Java implementation will not cause a JVM crash.
 
-To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty dependency `jetty-alpn-conscrypt-server-{version}.jar` in the class-path or module-path.
+To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty dependency `jetty-alpn-conscrypt-server-{jetty-version}.jar` in the class-path or module-path.
 
 Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
 
@@ -657,7 +657,7 @@ The Maven artifact coordinates are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-rewrite</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -785,7 +785,7 @@ The Maven artifact coordinates are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-servlet</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 

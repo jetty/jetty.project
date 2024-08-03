@@ -26,6 +26,7 @@
         <configuration>
           <options>
             <option>attribute[] jetty-home=${project.build.directory}/jetty-home-${project.version}</option>
+            <option>attribute[] jetty-version=${project.version}</option>
           </options>
           <playbookProvider>
             <repository>jetty/jetty.website</repository>

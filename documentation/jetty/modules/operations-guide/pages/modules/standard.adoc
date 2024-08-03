@@ -294,7 +294,7 @@ Whether you want to send the `Server` header in every HTTP response:
 ----
 HTTP/1.1 200 OK
 Content-Length: 0
-Server: Jetty({version})
+Server: Jetty({jetty-version})
 ----
 
 [[server-config]]

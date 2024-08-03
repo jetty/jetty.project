@@ -25,7 +25,7 @@ Here's the basic setup required to put the jspc plugin into your build:
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
    <artifactId>jetty-jspc-maven-plugin</artifactId>
-   <version>{VERSION}</version>
+   <version>{jetty-version}</version>
    <executions>
      <execution>
        <id>jspc</id>
@@ -152,7 +152,7 @@ For example, the following profile will only be invoked if the flag `-Dprod` is 
         <plugin>
           <groupId>org.eclipse.jetty</groupId>
           <artifactId>jetty-jspc-maven-plugin</artifactId>
-          <version>{VERSION}</version>
+          <version>{jetty-version}</version>
           <!-- put your configuration in here -->
         </plugin>
         <plugin>
@@ -226,7 +226,7 @@ Using the default settings, the `web.xml` merged with the jsp servlet definition
 <plugin>
     <groupId>org.eclipse.jetty</groupId>
      <artifactId>jetty-jspc-maven-plugin</artifactId>
-     <version>{VERSION}</version>
+     <version>{jetty-version}</version>
      <executions>
        <execution>
          <id>jspc</id>
