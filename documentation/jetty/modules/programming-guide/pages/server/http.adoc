@@ -239,6 +239,18 @@ WebSocket over HTTP/2 or over HTTP/3 initiate the WebSocket communication with a
 
 For more information about how to configure `HostHeaderCustomizer`, see also link:{javadoc-url}/org/eclipse/jetty/server/HostHeaderCustomizer.html[the javadocs].
 
+[[request-customizer-authority]]
+=== `AuthorityCustomizer`
+
+`AuthorityCustomizer` should be added when Jetty receives HTTP/2 or HTTP/3 requests that lack the  `:authority` pseudo-header, and web applications have logic that depends on this value, exposed through the `Request` URI authority via `Request.getHttpURI().getAuthority()`.
+
+The `:authority` pseudo-header may be missing if the request arrived to a proxy in HTTP/1.1 format, and the proxy is converting it to HTTP/2 or HTTP/3 before sending it to the backend server.
+
+`AuthorityCustomizer` will synthesize the authority using the `Host` header field, if present.
+If the `Host` header is also missing, it will use the request _server name_ and _server port_, values that may be influenced by the <<request-customizer-forwarded,`Forwarded` HTTP header>> and the <<connector-protocol-proxy-http11,PROXY protocol>>.
+
+The synthesized authority will be exposed as the `Request` URI authority via `Request.getHttpURI().getAuthority()`.
+
 [[request-customizer-proxy]]
 === `ProxyCustomizer`
 
