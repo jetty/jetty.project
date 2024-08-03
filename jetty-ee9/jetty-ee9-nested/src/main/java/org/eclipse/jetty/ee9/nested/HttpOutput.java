@@ -672,8 +672,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (_aggregate != null)
         {
-            if (failure && _pool != null)
-                _pool.removeAndRelease(_aggregate);
+            if (failure)
+                _aggregate.releaseForRemoval();
             else
                 _aggregate.release();
             _aggregate = null;
@@ -1852,7 +1852,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onFailure(Throwable x)
         {
-            _buffer.release();
+            _buffer.releaseForRemoval();
             IO.close(_in);
             super.onFailure(x);
         }
@@ -1923,7 +1923,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onFailure(Throwable x)
         {
-            _buffer.release();
+            _buffer.releaseForRemoval();
             IO.close(_in);
             super.onFailure(x);
         }

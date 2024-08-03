@@ -132,9 +132,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private State _state = State.OPEN;
     private boolean _softClose = false;
     private long _written;
-    private long _flushed;
     private long _firstByteNanoTime = -1;
-    private ByteBufferPool _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -588,8 +586,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (_aggregate == null)
         {
-            _pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
-            _aggregate = _pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
+            _aggregate = _servletChannel.getRequest().getComponents().getByteBufferPool().acquire(getBufferSize(), useOutputDirectByteBuffers);
         }
         return _aggregate;
     }
@@ -600,12 +597,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (_aggregate != null)
         {
-            if (failure && _pool != null)
-                _pool.removeAndRelease(_aggregate);
+            if (failure)
+                _aggregate.releaseForRemoval();
             else
                 _aggregate.release();
             _aggregate = null;
-            _pool = null;
         }
     }
 
@@ -1260,7 +1256,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _writeListener = null;
             _onError = null;
             _firstByteNanoTime = -1;
-            _flushed = 0;
             _closedCallback = null;
         }
     }
@@ -1643,7 +1638,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onFailure(Throwable x)
         {
-            _buffer.release();
+            _buffer.releaseForRemoval();
             IO.close(_in);
             super.onFailure(x);
         }
@@ -1716,7 +1711,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onFailure(Throwable x)
         {
-            _buffer.release();
+            _buffer.releaseForRemoval();
             IO.close(_in);
             super.onFailure(x);
         }

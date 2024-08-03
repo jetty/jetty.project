@@ -163,6 +163,11 @@ public interface RetainableByteBuffer extends Retainable
         throw new ReadOnlyBufferException();
     }
 
+    default boolean releaseForRemoval()
+    {
+        return release();
+    }
+
     /**
      * Appends and consumes the contents of this buffer to the passed buffer, limited by the capacity of the target buffer.
      * @param buffer The buffer to append bytes to, whose limit will be updated.
@@ -654,6 +659,12 @@ public interface RetainableByteBuffer extends Retainable
         public RetainableByteBuffer getWrapped()
         {
             return (RetainableByteBuffer)super.getWrapped();
+        }
+
+        @Override
+        public boolean releaseForRemoval()
+        {
+            return getWrapped().releaseForRemoval();
         }
 
         @Override
@@ -1298,6 +1309,12 @@ public interface RetainableByteBuffer extends Retainable
         {
             super(byteBuffer, retainable);
             _pool = pool;
+        }
+
+        @Override
+        public boolean releaseForRemoval()
+        {
+            return _pool.releaseForRemoval(this);
         }
 
         @Override
