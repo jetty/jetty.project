@@ -183,15 +183,24 @@ public abstract class IteratingCallback implements Callback
      * <p>
      * Calls to this method are serialized with respect to {@link #onAborted(Throwable)}, {@link #process()},
      * {@link #onCompleteFailure(Throwable)} and {@link #onCompleted(Throwable)}.
-     *
+     * <p>
+     * Because {@code onFailure} can be called due to an {@link #abort(Throwable)} or {@link #close()} operation, it is
+     * possible that any resources passed to a {@link Action#SCHEDULED} operation may still be in use, and thus should not
+     * be recycled by this call. For example any buffers passed to a write operation should not be returned to a buffer
+     * pool by implementations of {@code onFailure}.   Such resources may be discarded here, or safely recycled in a
+     * subsequent call to {@link #onCompleted(Throwable)} or {@link #onCompleteFailure(Throwable)}, when
+     * the {@link Action#SCHEDULED} operation has completed.
      * @param cause The cause of the failure or abort
+     * @see #onCompleted(Throwable)
+     * @see #onCompleteFailure(Throwable)
      */
     protected void onFailure(Throwable cause)
     {
     }
 
     /**
-     * Invoked when the overall task has completed successfully.
+     * Invoked when the overall task has completed successfully, specifically after any {@link Action#SCHEDULED} operations
+     * have {@link Callback#succeeded()} and {@link #process()} has returned {@link Action#SUCCEEDED}.
      * <p>
      * Calls to this method are serialized with respect to {@link #process()}, {@link #onAborted(Throwable)}
      * and {@link #onCompleted(Throwable)}.
@@ -226,8 +235,16 @@ public abstract class IteratingCallback implements Callback
      * <p>
      * The default implementation of this method calls {@link #failed(Throwable)}.  Overridden implementations of
      * this method SHOULD NOT call {@code super.onAborted(Throwable)}.
-     *
+     * <p>
+     * Because {@code onAborted} can be called due to an {@link #abort(Throwable)} or {@link #close()} operation, it is
+     * possible that any resources passed to a {@link Action#SCHEDULED} operation may still be in use, and thus should not
+     * be recycled by this call. For example any buffers passed to a write operation should not be returned to a buffer
+     * pool by implementations of {@code onFailure}.   Such resources may be discarded here, or safely recycled in a
+     * subsequent call to {@link #onCompleted(Throwable)} or {@link #onCompleteFailure(Throwable)}, when
+     * the {@link Action#SCHEDULED} operation has completed.
      * @param cause The cause of the abort
+     * @see #onCompleted(Throwable)
+     * @see #onCompleteFailure(Throwable)
      */
     protected void onAborted(Throwable cause)
     {
