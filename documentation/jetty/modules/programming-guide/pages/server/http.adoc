@@ -37,7 +37,7 @@ The Maven artifact coordinates are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-server</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -560,7 +560,7 @@ A faster alternative, implemented natively, is Google's https://github.com/googl
 
 CAUTION: As Conscrypt eventually binds to a native library, there is a higher risk that a bug in Conscrypt or in the native library causes a JVM crash, while the Java implementation will not cause a JVM crash.
 
-To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty dependency `jetty-alpn-conscrypt-server-{version}.jar` in the class-path or module-path.
+To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty dependency `jetty-alpn-conscrypt-server-{jetty-version}.jar` in the class-path or module-path.
 
 Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
 
@@ -855,7 +855,7 @@ The Maven artifact coordinates are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-rewrite</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -1198,11 +1198,11 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>
   <artifactId>jetty-{ee-all}-servlet</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
-For example, for Jakarta {ee-current-caps} the coordinates are: `org.eclipse.jetty.{ee-current}:jetty-{ee-current}-servlet:{version}`.
+For example, for Jakarta {ee-current-caps} the coordinates are: `org.eclipse.jetty.{ee-current}:jetty-{ee-current}-servlet:{jetty-version}`.
 
 Below you can find an example of how to set up a Jakarta {ee-current-caps} `ServletContextHandler`:
 
@@ -1249,7 +1249,7 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>
   <artifactId>jetty-{ee-all}-webapp</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -1304,15 +1304,24 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>
   <artifactId>jetty-{ee-all}-servlet</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
-Below you can find an example of how to setup `DefaultServlet`:
+Below you can find an example of how to set up `DefaultServlet`:
 
 [,java,indent=0]
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=defaultServlet]
+----
+
+If you wish to serve resources from a non-default location, then `ResourceServlet` should be used instead of the `DefaultServlet`.
+
+Below you can find an example of how to set up both a `DefaultServlet` and a `ResourceServlet`:
+
+[source,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=resourceServlet]
 ----
 
 [[handler-impl]]
@@ -1630,7 +1639,7 @@ The Maven coordinates for the Jetty HTTP session support are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-session</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 

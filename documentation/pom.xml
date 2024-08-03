@@ -14,7 +14,5 @@
 
   <modules>
     <module>jetty</module>
-    <module>jetty-asciidoctor-extensions</module>
-    <module>jetty-documentation</module>
   </modules>
 </project>
