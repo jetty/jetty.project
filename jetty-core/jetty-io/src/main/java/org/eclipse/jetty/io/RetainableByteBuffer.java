@@ -1939,6 +1939,22 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public boolean releaseForRemoval()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("release {}", this);
+            if (super.release())
+            {
+                for (RetainableByteBuffer buffer : _buffers)
+                    buffer.releaseForRemoval();
+                _buffers.clear();
+                _aggregate = null;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
         public void clear()
         {
             if (LOG.isDebugEnabled())
@@ -2331,10 +2347,6 @@ public interface RetainableByteBuffer extends Retainable
                         @Override
                         protected Action process()
                         {
-                            // release the last buffer written
-                            if (_buffer != null)
-                                _buffer.release();
-
                             // write next buffer
                             if (_index < _buffers.size())
                             {
@@ -2354,6 +2366,28 @@ public interface RetainableByteBuffer extends Retainable
                             }
                             _buffers.clear();
                             return Action.SUCCEEDED;
+                        }
+
+                        @Override
+                        protected void onSuccess()
+                        {
+                            // release the last buffer written
+                            if (_buffer != null)
+                            {
+                                _buffer.release();
+                                _buffer = null;
+                            }
+                        }
+
+                        @Override
+                        protected void onCompleteFailure(Throwable x)
+                        {
+                            // release the last buffer written
+                            if (_buffer != null)
+                            {
+                                _buffer.releaseForRemoval();
+                                _buffer = null;
+                            }
                         }
                     }.iterate();
                 }
