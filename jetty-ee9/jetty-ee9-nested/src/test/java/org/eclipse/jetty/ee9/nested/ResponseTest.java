@@ -2415,6 +2415,18 @@ public class ResponseTest
         {
             return null;
         }
+
+        @Override
+        public boolean isRequestedSessionIdFromURL()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isRequestedSessionIdFromCookie()
+        {
+            return false;
+        }
     }
 
     private class MockResponse implements org.eclipse.jetty.server.Response

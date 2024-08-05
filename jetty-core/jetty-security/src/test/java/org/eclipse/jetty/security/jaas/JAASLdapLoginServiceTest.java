@@ -395,6 +395,17 @@ public class JAASLdapLoginServiceTest extends AbstractLdapTestUnit
         {
             return null;
         }
-    }
 
+        @Override
+        public boolean isRequestedSessionIdFromURL()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isRequestedSessionIdFromCookie()
+        {
+            return false;
+        }
+    }
 }
