@@ -332,8 +332,8 @@ public class ContentDocs
             // No chunk, demand to be called back when there will be more chunks.
             if (chunk == null)
             {
-                source.demand(this::iterate);
-                return Action.IDLE;
+                source.demand(this::succeeded);
+                return Action.SCHEDULED;
             }
 
             // The read failed, re-throw the failure
@@ -351,6 +351,9 @@ public class ContentDocs
         {
             // After every successful write, release the chunk.
             chunk.release();
+
+            // Reset the chunk, preserving errors and EOF
+            chunk = Content.Chunk.next(chunk);
         }
 
         @Override
@@ -361,14 +364,19 @@ public class ContentDocs
         }
 
         @Override
+        protected void onFailure(Throwable cause)
+        {
+            // The copy is failed, fail the callback.
+            // This may occur before a write has completed (due to abort or close), so we cannot release the chunk here.
+            callback.failed(cause);
+        }
+
+        @Override
         protected void onCompleteFailure(Throwable failure)
         {
-            // In case of a failure, either on the
-            // read or on the write, release the chunk.
-            chunk.release();
-
-            // The copy is failed, fail the callback.
-            callback.failed(failure);
+            // In case of a failure, we wait until the write has completed before releasing any chunk.
+            if (chunk != null)
+                chunk.release();
         }
 
         @Override

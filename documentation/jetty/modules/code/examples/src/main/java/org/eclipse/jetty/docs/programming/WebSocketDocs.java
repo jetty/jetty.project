@@ -523,6 +523,7 @@ public class WebSocketDocs
             @Override
             public void succeed()
             {
+                // Map the o.e.j.websocket.api.Callback to o.e.jetty.util.Callback API
                 // When the send succeeds, succeed this IteratingCallback.
                 succeeded();
             }
@@ -530,6 +531,7 @@ public class WebSocketDocs
             @Override
             public void fail(Throwable x)
             {
+                // Map the o.e.j.websocket.api.Callback to o.e.jetty.util.Callback API
                 // When the send fails, fail this IteratingCallback.
                 failed(x);
             }

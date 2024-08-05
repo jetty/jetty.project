@@ -176,7 +176,7 @@ public class ServerDocs
         @Override
         public void onFillable()
         {
-            callback.iterate();
+            callback.succeeded();
         }
 
         private class JSONHTTPIteratingCallback extends IteratingCallback
@@ -222,8 +222,8 @@ public class ServerDocs
                         // again interest for fill events.
                         fillInterested();
 
-                        // Signal that the iteration is now IDLE.
-                        return Action.IDLE;
+                        // Signal that the iteration is now SCHEDULED for a callback to onFillable.
+                        return Action.SCHEDULED;
                     }
                     else
                     {
