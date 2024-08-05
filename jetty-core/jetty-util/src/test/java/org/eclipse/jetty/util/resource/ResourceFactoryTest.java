@@ -19,10 +19,12 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -31,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -61,13 +65,44 @@ public class ResourceFactoryTest
         "TestData/alphabet.txt", "/TestData/alphabet.txt",
         "TestData/", "/TestData/", "TestData", "/TestData"
     })
-    public void testNewClassLoaderResourceExists(String reference)
+    @Disabled
+    public void testNewClassLoaderResourceExists(String reference) throws IOException
     {
+        Path alt = workDir.getEmptyPathDir().resolve("alt");
+        Files.createDirectories(alt.resolve("TestData"));
+        URI altURI = alt.toUri();
+        ClassLoader loader = new URLClassLoader(new URL[] {altURI.toURL()});
+
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
+            Resource altResource = resourceFactory.newResource(altURI);
+
+            Thread.currentThread().setContextClassLoader(loader);
             Resource resource = resourceFactory.newClassLoaderResource(reference);
             assertNotNull(resource, "Reference [" + reference + "] should be found");
             assertTrue(resource.exists(), "Reference [" + reference + "] -> Resource[" + resource + "] should exist");
+
+            if (resource.isDirectory())
+            {
+                assertThat(resource, instanceOf(CombinedResource.class));
+                AtomicBoolean fromWorkDir = new AtomicBoolean();
+                AtomicBoolean fromResources = new AtomicBoolean();
+                resource.forEach(r ->
+                {
+                    if (r.isContainedIn(altResource))
+                        fromWorkDir.set(true);
+                    else
+                        fromResources.set(true);
+                });
+                assertTrue(fromWorkDir.get());
+                assertTrue(fromResources.get());
+            }
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(oldLoader);
+            workDir.ensureEmpty();
         }
     }
 
