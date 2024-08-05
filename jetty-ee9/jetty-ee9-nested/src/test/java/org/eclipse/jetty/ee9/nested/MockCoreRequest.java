@@ -187,4 +187,16 @@ public class MockCoreRequest implements org.eclipse.jetty.server.Request
     {
         return null;
     }
+
+    @Override
+    public boolean isRequestedSessionIdFromURL()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isRequestedSessionIdFromCookie()
+    {
+        return false;
+    }
 }

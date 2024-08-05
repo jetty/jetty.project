@@ -309,6 +309,18 @@ public class ServletCoreRequest implements Request
         return Session.getSession(_servletRequest.getSession(create));
     }
 
+    @Override
+    public boolean isRequestedSessionIdFromURL()
+    {
+        return _servletRequest.isRequestedSessionIdFromURL();
+    }
+
+    @Override
+    public boolean isRequestedSessionIdFromCookie()
+    {
+        return _servletRequest.isRequestedSessionIdFromCookie();
+    }
+
     public static class ServletAttributes implements Attributes
     {
         private final HttpServletRequest _servletRequest;
