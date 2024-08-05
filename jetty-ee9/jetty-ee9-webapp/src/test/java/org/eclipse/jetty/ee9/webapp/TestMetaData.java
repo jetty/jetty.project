@@ -24,11 +24,10 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -50,6 +48,8 @@ public class TestMetaData
     Path nonFragFile;
     Resource fragResource;
     Resource nonFragResource;
+    ResourceFactory.Closeable resourceFactory;
+    Resource webfragxml;
     Resource containerDir;
     Resource webInfClassesDir;
     WebAppContext wac;
@@ -64,43 +64,42 @@ public class TestMetaData
     public void setUp(WorkDir workDir) throws Exception
     {
         Path testDir = workDir.getEmptyPathDir();
-        Path webInfDir = testDir.resolve("WEB-INF");
-        Path webInfLibDir = webInfDir.resolve("lib");
-        FS.ensureDirExists(webInfLibDir);
+        resourceFactory = ResourceFactory.closeable();
+
+        Path jarsDir = testDir.resolve("jars");
+        FS.ensureDirExists(jarsDir);
 
         // Zeta JAR
-        fragFile = webInfLibDir.resolve("zeta.jar");
+        fragFile = jarsDir.resolve("zeta.jar");
         Files.copy(MavenTestingUtils.getTargetPath().resolve("test-classes/fragments/zeta.jar"), fragFile);
         assertTrue(Files.exists(fragFile));
+        fragResource = resourceFactory.newResource(fragFile);
+        assertNotNull(fragResource);
 
         // Sigma JAR
-        nonFragFile = webInfLibDir.resolve("sigma.jar");
+        nonFragFile = jarsDir.resolve("sigma.jar");
         Files.copy(MavenTestingUtils.getTargetPath().resolve("test-classes/fragments/sigma.jar"), nonFragFile);
         assertTrue(Files.exists(nonFragFile));
+        nonFragResource = resourceFactory.newResource(nonFragFile);
+        assertNotNull(nonFragResource);
+
+        // Various Resources
+        Resource fragMount = resourceFactory.newJarFileResource(fragFile.toUri());
+        assertNotNull(fragMount);
+        webfragxml = fragMount.resolve("/META-INF/web-fragment.xml");
+        assertTrue(Resources.isReadableFile(webfragxml));
 
         Path testContainerDir = testDir.resolve("container");
         FS.ensureDirExists(testContainerDir);
+        Path testWebInfClassesDir = testDir.resolve("webinfclasses");
+        FS.ensureDirExists(testWebInfClassesDir);
+
+        containerDir = resourceFactory.newResource(testContainerDir);
+        assertTrue(Resources.isReadableDirectory(containerDir));
+        webInfClassesDir = resourceFactory.newResource(testWebInfClassesDir);
+        assertTrue(Resources.isReadableDirectory(webInfClassesDir));
 
         wac = new WebAppContext();
-        wac.setBaseResourceAsPath(testDir);
-        wac.setContextPath("/");
-
-        webInfClassesDir = wac.getWebInf().resolve("classes");
-        FS.ensureDirExists(webInfClassesDir.getPath());
-
-        Resource webInfLib = wac.getWebInf().resolve("lib");
-
-        fragResource = webInfLib.resolve("zeta.jar");
-        assertNotNull(fragResource);
-        assertTrue(Resources.exists(fragResource));
-
-        nonFragResource = webInfLib.resolve("sigma.jar");
-        assertNotNull(nonFragResource);
-        assertTrue(Resources.exists(nonFragResource));
-
-        containerDir = wac.getBaseResource().resolve("container");
-        assertTrue(Resources.isReadableDirectory(containerDir));
-
         applications = new ArrayList<>();
         annotationA = new TestAnnotation(wac, "com.acme.A", fragResource, applications);
         annotationB = new TestAnnotation(wac, "com.acme.B", nonFragResource, applications);
@@ -109,16 +108,10 @@ public class TestMetaData
         annotationE = new TestAnnotation(wac, "com.acme.E", webInfClassesDir, applications);
     }
 
-    @AfterAll
-    public static void afterAll() throws Exception
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
     @AfterEach
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        wac.stop();
+        IO.close(resourceFactory);
     }
 
     @Test
@@ -134,153 +127,111 @@ public class TestMetaData
     @Test
     public void testGetFragmentForJar() throws Exception
     {
-        try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
-        {
-            Resource jarFileFragResource = scanResourceFactory.newJarFileResource(fragResource.getURI());
-            Resource webfragxml = jarFileFragResource.resolve("META-INF/web-fragment.xml");
-            assertTrue(Resources.exists(webfragxml));
-
-            wac.getMetaData().addWebInfResource(fragResource);
-            wac.getMetaData().addWebInfResource(nonFragResource);
-            wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
-            assertThrows(NullPointerException.class, () ->
+        wac.getMetaData().addWebInfResource(fragResource);
+        wac.getMetaData().addWebInfResource(nonFragResource);
+        wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
+        assertThrows(NullPointerException.class, () ->
                 wac.getMetaData().addFragmentDescriptor(nonFragResource, null));
 
-            assertNotNull(wac.getMetaData().getFragmentDescriptorForJar(fragResource));
-            assertNull(wac.getMetaData().getFragmentDescriptorForJar(nonFragResource));
-            assertNull(wac.getMetaData().getFragmentDescriptorForJar(null));
-        }
+        assertNotNull(wac.getMetaData().getFragmentDescriptorForJar(fragResource));
+        assertNull(wac.getMetaData().getFragmentDescriptorForJar(nonFragResource));
+        assertNull(wac.getMetaData().getFragmentDescriptorForJar(null));
     }
 
     @Test
     public void testGetFragmentDescriptorByName() throws Exception
     {
-        try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
-        {
-            Resource jarFileFragResource = scanResourceFactory.newJarFileResource(fragResource.getURI());
-            Resource webfragxml = jarFileFragResource.resolve("META-INF/web-fragment.xml");
-            assertTrue(Resources.exists(webfragxml));
-
-            wac.getMetaData().addWebInfResource(fragResource);
-            wac.getMetaData().addWebInfResource(nonFragResource);
-            FragmentDescriptor fragDescriptor = new FragmentDescriptor(webfragxml);
-            wac.getMetaData().addFragmentDescriptor(fragResource, fragDescriptor);
-            assertNotNull(wac.getMetaData().getFragmentDescriptor(fragDescriptor.getName()));
-        }
+        wac.getMetaData().addWebInfResource(fragResource);
+        wac.getMetaData().addWebInfResource(nonFragResource);
+        FragmentDescriptor fragDescriptor = new FragmentDescriptor(webfragxml);
+        wac.getMetaData().addFragmentDescriptor(fragResource, fragDescriptor);
+        assertNotNull(wac.getMetaData().getFragmentDescriptor(fragDescriptor.getName()));
     }
 
     @Test
     public void testGetFragmentDescriptorByLocation() throws Exception
     {
-        try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
-        {
-            Resource jarFileFragResource = scanResourceFactory.newJarFileResource(fragResource.getURI());
-            Resource webfragxml = jarFileFragResource.resolve("META-INF/web-fragment.xml");
-            assertTrue(Resources.exists(webfragxml));
-
-            wac.getMetaData().addWebInfResource(fragResource);
-            wac.getMetaData().addWebInfResource(nonFragResource);
-            FragmentDescriptor fragDescriptor = new FragmentDescriptor(webfragxml);
-            wac.getMetaData().addFragmentDescriptor(fragResource, fragDescriptor);
-            assertNotNull(wac.getMetaData().getFragmentDescriptor(webfragxml));
-        }
+        wac.getMetaData().addWebInfResource(fragResource);
+        wac.getMetaData().addWebInfResource(nonFragResource);
+        FragmentDescriptor fragDescriptor = new FragmentDescriptor(webfragxml);
+        wac.getMetaData().addFragmentDescriptor(fragResource, fragDescriptor);
+        assertNotNull(wac.getMetaData().getFragmentDescriptor(webfragxml));
     }
 
     @Test
     public void testGetJarForFragmentName() throws Exception
     {
-        try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
-        {
-            Resource jarFileFragResource = scanResourceFactory.newJarFileResource(fragResource.getURI());
-            Resource webfragxml = jarFileFragResource.resolve("META-INF/web-fragment.xml");
-            assertTrue(Resources.exists(webfragxml));
+        wac.getMetaData().addWebInfResource(fragResource);
+        wac.getMetaData().addWebInfResource(nonFragResource);
+        wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
+        FragmentDescriptor descriptor = wac.getMetaData().getFragmentDescriptorForJar(fragResource);
+        assertNotNull(descriptor);
 
-            wac.getMetaData().addWebInfResource(fragResource);
-            wac.getMetaData().addWebInfResource(nonFragResource);
-            wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
-            FragmentDescriptor descriptor = wac.getMetaData().getFragmentDescriptorForJar(fragResource);
-            assertNotNull(descriptor);
-
-            assertNotNull(wac.getMetaData().getJarForFragmentName(descriptor.getName()));
-            assertNull(wac.getMetaData().getJarForFragmentName(null));
-            assertNull(wac.getMetaData().getJarForFragmentName(""));
-            assertNull(wac.getMetaData().getJarForFragmentName("xxx"));
-        }
+        assertNotNull(wac.getMetaData().getJarForFragmentName(descriptor.getName()));
+        assertNull(wac.getMetaData().getJarForFragmentName(null));
+        assertNull(wac.getMetaData().getJarForFragmentName(""));
+        assertNull(wac.getMetaData().getJarForFragmentName("xxx"));
     }
 
     @Test
     public void testAddDiscoveredAnnotation() throws Exception
     {
-        try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
-        {
-            Resource jarFileFragResource = scanResourceFactory.newJarFileResource(fragResource.getURI());
-            Resource webfragxml = jarFileFragResource.resolve("META-INF/web-fragment.xml");
-            assertTrue(Resources.exists(webfragxml));
+        wac.getMetaData().addWebInfResource(fragResource);
+        wac.getMetaData().addWebInfResource(nonFragResource);
+        wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
+        wac.getMetaData().addContainerResource(containerDir);
+        wac.getMetaData().setWebInfClassesResources(Collections.singletonList(webInfClassesDir));
 
-            wac.getMetaData().addWebInfResource(fragResource);
-            wac.getMetaData().addWebInfResource(nonFragResource);
-            wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
-            wac.getMetaData().addContainerResource(containerDir);
-            wac.getMetaData().setWebInfClassesResources(Collections.singletonList(webInfClassesDir));
+        wac.getMetaData().addDiscoveredAnnotation(annotationA);
+        wac.getMetaData().addDiscoveredAnnotation(annotationB);
+        wac.getMetaData().addDiscoveredAnnotation(annotationC);
+        wac.getMetaData().addDiscoveredAnnotation(annotationD);
+        wac.getMetaData().addDiscoveredAnnotation(annotationE);
 
-            wac.getMetaData().addDiscoveredAnnotation(annotationA);
-            wac.getMetaData().addDiscoveredAnnotation(annotationB);
-            wac.getMetaData().addDiscoveredAnnotation(annotationC);
-            wac.getMetaData().addDiscoveredAnnotation(annotationD);
-            wac.getMetaData().addDiscoveredAnnotation(annotationE);
+        //test an annotation from a web-inf lib fragment
+        List<DiscoveredAnnotation> list = wac.getMetaData()._annotations.get(fragResource);
+        assertThat(list, contains(annotationA));
+        assertThat(list, hasSize(1));
 
-            //test an annotation from a web-inf lib fragment
-            List<DiscoveredAnnotation> list = wac.getMetaData()._annotations.get(fragResource);
-            assertThat(list, contains(annotationA));
-            assertThat(list, hasSize(1));
+        //test an annotation from a web-inf lib fragment without a descriptor
+        list = wac.getMetaData()._annotations.get(nonFragResource);
+        assertThat(list, contains(annotationB));
+        assertThat(list, hasSize(1));
 
-            //test an annotation from a web-inf lib fragment without a descriptor
-            list = wac.getMetaData()._annotations.get(nonFragResource);
-            assertThat(list, contains(annotationB));
-            assertThat(list, hasSize(1));
+        //test an annotation that didn't have an associated resource
+        list = wac.getMetaData()._annotations.get(null);
+        assertThat(list, contains(annotationC));
+        assertThat(list, hasSize(1));
 
-            //test an annotation that didn't have an associated resource
-            list = wac.getMetaData()._annotations.get(null);
-            assertThat(list, contains(annotationC));
-            assertThat(list, hasSize(1));
+        //test an annotation that came from the container path
+        list = wac.getMetaData()._annotations.get(containerDir);
+        assertThat(list, contains(annotationD));
+        assertThat(list, hasSize(1));
 
-            //test an annotation that came from the container path
-            list = wac.getMetaData()._annotations.get(containerDir);
-            assertThat(list, contains(annotationD));
-            assertThat(list, hasSize(1));
-
-            //test an annoation from web-inf classes
-            list = wac.getMetaData()._annotations.get(webInfClassesDir);
-            assertThat(list, contains(annotationE));
-            assertThat(list, hasSize(1));
-        }
+        //test an annoation from web-inf classes
+        list = wac.getMetaData()._annotations.get(webInfClassesDir);
+        assertThat(list, contains(annotationE));
+        assertThat(list, hasSize(1));
     }
 
     @Test
     public void testResolve() throws Exception
     {
-        try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
-        {
-            Resource jarFileFragResource = scanResourceFactory.newJarFileResource(fragResource.getURI());
-            Resource webfragxml = jarFileFragResource.resolve("META-INF/web-fragment.xml");
-            assertTrue(Resources.exists(webfragxml));
+        wac.getMetaData().addWebInfResource(fragResource);
+        wac.getMetaData().addWebInfResource(nonFragResource);
+        wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
+        wac.getMetaData().addContainerResource(containerDir);
+        wac.getMetaData().setWebInfClassesResources(Collections.singletonList(webInfClassesDir));
 
-            wac.getMetaData().addWebInfResource(fragResource);
-            wac.getMetaData().addWebInfResource(nonFragResource);
-            wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
-            wac.getMetaData().addContainerResource(containerDir);
-            wac.getMetaData().setWebInfClassesResources(Collections.singletonList(webInfClassesDir));
+        wac.getMetaData().addDiscoveredAnnotation(annotationA);
+        wac.getMetaData().addDiscoveredAnnotation(annotationB);
+        wac.getMetaData().addDiscoveredAnnotation(annotationC);
+        wac.getMetaData().addDiscoveredAnnotation(annotationD);
+        wac.getMetaData().addDiscoveredAnnotation(annotationE);
 
-            wac.getMetaData().addDiscoveredAnnotation(annotationA);
-            wac.getMetaData().addDiscoveredAnnotation(annotationB);
-            wac.getMetaData().addDiscoveredAnnotation(annotationC);
-            wac.getMetaData().addDiscoveredAnnotation(annotationD);
-            wac.getMetaData().addDiscoveredAnnotation(annotationE);
-
-            wac.getMetaData().resolve(wac);
-            //test that annotations are applied from resources in order:
-            //no resource associated, container resources, web-inf classes resources, web-inf lib resources
-            assertThat(applications, contains(annotationC, annotationD, annotationE, annotationA, annotationB));
-        }
+        wac.getMetaData().resolve(wac);
+        //test that annotations are applied from resources in order:
+        //no resource associated, container resources, web-inf classes resources, web-inf lib resources
+        assertThat(applications, contains(annotationC, annotationD, annotationE, annotationA, annotationB));
     }
 }

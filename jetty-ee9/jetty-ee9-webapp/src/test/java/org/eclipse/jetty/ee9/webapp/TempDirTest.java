@@ -25,8 +25,8 @@ import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.FileSystemPool;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,19 +45,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class TempDirTest
 {
-    private Server _server;
 
-    @AfterAll
-    public static void afterAll() throws Exception
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
+    private Server _server;
 
     @AfterEach
     public void afterEach() throws Exception
     {
         if (_server != null)
             _server.stop();
+    }
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     /**

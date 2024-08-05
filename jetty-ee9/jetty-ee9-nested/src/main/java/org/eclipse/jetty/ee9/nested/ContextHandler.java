@@ -2689,7 +2689,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public Resource getResourceForTempDirName()
         {
-           return ContextHandler.this.getNestedResourceForTempDirName();
+           return ContextHandler.this.getResourceAsBaseName();
         }
 
         private Resource getSuperResourceForTempDirName()
@@ -2865,7 +2865,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
     }
 
-    public Resource getNestedResourceForTempDirName()
+    public Resource getResourceAsBaseName()
     {
         return getCoreContextHandler().getSuperResourceForTempDirName();
     }
