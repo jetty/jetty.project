@@ -16,13 +16,11 @@ package org.eclipse.jetty.compression.gzip;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Destroyable;
@@ -38,8 +36,8 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     // Unsigned Integer Max == 2^32
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
+    private final GzipCompression compression;
     private final List<RetainableByteBuffer> inflateds = new ArrayList<>();
-    private final ByteBufferPool pool;
     private final int bufferSize;
     private InflaterPool.Entry inflaterEntry;
     private Inflater inflater;
@@ -49,9 +47,9 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     private byte flags;
     private RetainableByteBuffer inflated;
 
-    public GzipDecoder(GzipCompression gzipCompression, ByteBufferPool pool)
+    public GzipDecoder(GzipCompression gzipCompression)
     {
-        this.pool = Objects.requireNonNull(pool);
+        this.compression = gzipCompression;
         this.bufferSize = gzipCompression.getBufferSize();
         this.inflaterEntry = gzipCompression.getInflaterPool().acquire();
         this.inflater = inflaterEntry.get();
@@ -89,7 +87,7 @@ class GzipDecoder implements Compression.Decoder, Destroyable
         if (inflateds.isEmpty())
         {
             if ((inflated == null || !inflated.hasRemaining()) || state == State.CRC || state == State.ISIZE)
-                return acquire(0);
+                return compression.acquireByteBuffer(0);
             RetainableByteBuffer result = inflated;
             inflated = null;
             return result;
@@ -99,7 +97,7 @@ class GzipDecoder implements Compression.Decoder, Destroyable
             inflateds.add(inflated);
             inflated = null;
             int length = inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
-            RetainableByteBuffer result = acquire(length);
+            RetainableByteBuffer result = compression.acquireByteBuffer(length);
             for (RetainableByteBuffer buffer : inflateds)
             {
                 buffer.appendTo(result);
@@ -120,7 +118,7 @@ class GzipDecoder implements Compression.Decoder, Destroyable
 
     public boolean isFinished()
     {
-        return state == State.INITIAL;
+        return inflaterEntry.get().finished();
     }
 
     /**
@@ -176,7 +174,7 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                         while (true)
                         {
                             if (buffer == null)
-                                buffer = acquire(bufferSize);
+                                buffer = compression.acquireByteBuffer(bufferSize);
 
                             try
                             {
@@ -393,18 +391,6 @@ class GzipDecoder implements Compression.Decoder, Destroyable
             inflateds.add(inflated);
         inflated = chunk;
         return false;
-    }
-
-    /**
-     * @param capacity capacity of the ByteBuffer to acquire
-     * @return a heap buffer of the configured capacity either from the pool or freshly allocated.
-     */
-    private RetainableByteBuffer acquire(int capacity)
-    {
-        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
-        if (capacity == 0)
-            return RetainableByteBuffer.EMPTY;
-        return pool.acquire(capacity, false);
     }
 
     private void reset()

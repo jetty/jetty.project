@@ -20,7 +20,6 @@ import java.util.Set;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Container;
@@ -59,9 +58,27 @@ public abstract class Compression extends ContainerLifeCycle
      *     managed by this Compression implementation (such as ByteOrder or buffer pooling)
      * </p>
      *
+     * <p>
+     *     The size of the buffer comes from {@link Compression} implementation.
+     * </p>
+     *
      * @return the ByteBuffer suitable for this compression implementation.
      */
     public abstract RetainableByteBuffer acquireByteBuffer();
+
+    /**
+     * Acquire a {@link RetainableByteBuffer} that is managed by this {@link Compression} implementation
+     * which is suitable for compressed output from an {@link Encoder} or compressed input from a {@link Decoder}.
+     *
+     * <p>
+     *     It is recommended to use this method so that any compression specific details can be
+     *     managed by this Compression implementation (such as ByteOrder or buffer pooling)
+     * </p>
+     *
+     * @param length the requested size of the buffer
+     * @return the ByteBuffer suitable for this compression implementation.
+     */
+    public abstract RetainableByteBuffer acquireByteBuffer(int length);
 
     /**
      * Get an etag with suffix that represents this compression implementation.
@@ -163,14 +180,6 @@ public abstract class Compression extends ContainerLifeCycle
      * @return a new Decoder
      */
     public abstract Decoder newDecoder();
-
-    /**
-     * Get a new Decoder (possibly pooled) for this compression implementation.
-     *
-     * @param pool the desired ByteBufferPool to use for this Decoder
-     * @return a new Decoder
-     */
-    public abstract Decoder newDecoder(ByteBufferPool pool);
 
     /**
      * Get a new Encoder (possibly pooled) for this compression implementation.

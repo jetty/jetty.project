@@ -15,27 +15,26 @@ package org.eclipse.jetty.compression.brotli;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 import com.aayushatharva.brotli4j.decoder.DecoderJNI;
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Brotli Decoder (decompress)
+ */
 public class BrotliDecoder implements Compression.Decoder
 {
     private static final Logger LOG = LoggerFactory.getLogger(BrotliDecoder.class);
 
-    private final ByteBufferPool pool;
     private final int bufferSize;
     private DecoderJNI.Wrapper decoder;
 
-    public BrotliDecoder(BrotliCompression brotliCompression, ByteBufferPool pool)
+    public BrotliDecoder(BrotliCompression brotliCompression)
     {
-        this.pool = Objects.requireNonNull(pool);
         this.bufferSize = brotliCompression.getBufferSize();
         try
         {

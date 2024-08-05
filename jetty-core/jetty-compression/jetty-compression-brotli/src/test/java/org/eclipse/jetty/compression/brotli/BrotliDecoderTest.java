@@ -177,33 +177,58 @@ public class BrotliDecoderTest extends AbstractBrotliTest
         try (Compression.Decoder decoder = brotli.newDecoder();
              SeekableByteChannel inputChannel = Files.newByteChannel(inputPath, StandardOpenOption.READ))
         {
-            ByteBuffer readBuffer = ByteBuffer.allocate(2048);
-
-            boolean done = false;
-            while (!done)
+            RetainableByteBuffer readRetainableBuffer = brotli.acquireByteBuffer(2048);
+            try
             {
-                BufferUtil.clearToFill(readBuffer);
-                try
-                {
-                    int len = inputChannel.read(readBuffer);
+                ByteBuffer readBuffer = readRetainableBuffer.getByteBuffer();
 
-                    if (len == -1)
-                    {
-                        done = true;
-                        break;
-                    }
-                    if (len > 0)
-                    {
-                        BufferUtil.flipToFlush(readBuffer, 0);
-                        RetainableByteBuffer decoded = decoder.decode(readBuffer);
-                        result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
-                        decoded.release();
-                    }
-                }
-                catch (IOException e)
+                boolean readDone = false;
+                while (!readDone && !decoder.isFinished())
                 {
-                    fail(e);
+                    try
+                    {
+                        if (!readDone)
+                        {
+                            readBuffer.clear();
+                            int len = inputChannel.read(readBuffer);
+
+                            if (len == -1)
+                            {
+                                readDone = true;
+                                break;
+                            }
+                            if (len > 0)
+                            {
+                                readBuffer.flip();
+                                while (readBuffer.hasRemaining())
+                                {
+                                    RetainableByteBuffer decoded = decoder.decode(readBuffer);
+                                    if (decoded.hasRemaining())
+                                        result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                                    decoded.release();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // decode any remaining bytes
+                            while (!decoder.isFinished())
+                            {
+                                RetainableByteBuffer decoded = decoder.decode(BufferUtil.EMPTY_BUFFER);
+                                result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                                decoded.release();
+                            }
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        fail(e);
+                    }
                 }
+            }
+            finally
+            {
+                readRetainableBuffer.release();
             }
         }
 

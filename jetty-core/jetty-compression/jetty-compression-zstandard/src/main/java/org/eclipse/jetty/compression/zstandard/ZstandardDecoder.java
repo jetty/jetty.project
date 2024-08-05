@@ -16,32 +16,54 @@ package org.eclipse.jetty.compression.zstandard;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import com.github.luben.zstd.ZstdDecompressCtx;
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Zstandard Decoder (decompress)
+ */
 public class ZstandardDecoder implements Compression.Decoder
 {
-    public ZstandardDecoder(ZstandardCompression compression, ByteBufferPool pool)
-    {
+    private static final Logger LOG = LoggerFactory.getLogger(ZstandardDecoder.class);
 
+    private final ZstandardCompression compression;
+    private final ZstdDecompressCtx decompressCtx;
+    private boolean finished = false;
+
+    public ZstandardDecoder(ZstandardCompression compression)
+    {
+        this.compression = compression;
+        this.decompressCtx = new ZstdDecompressCtx();
     }
 
     @Override
     public RetainableByteBuffer decode(ByteBuffer input) throws IOException
     {
-        return null;
+        assert input.isDirect(); // zstd-jni requires input be a direct buffer
+        RetainableByteBuffer outputBuffer = compression.acquireByteBuffer();
+        outputBuffer.getByteBuffer().clear();
+        boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(outputBuffer.getByteBuffer(), input);
+        if (fullyFlushed)
+        {
+            LOG.debug("fullyFlushed = TRUE");
+            finished = true;
+        }
+        outputBuffer.getByteBuffer().flip();
+        return outputBuffer;
     }
 
     @Override
     public boolean isFinished()
     {
-        return false;
+        return finished;
     }
 
     @Override
     public void close()
     {
-
+        decompressCtx.close();
     }
 }

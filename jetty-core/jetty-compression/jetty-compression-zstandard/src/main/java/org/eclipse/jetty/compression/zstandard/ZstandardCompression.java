@@ -29,7 +29,13 @@ import org.slf4j.LoggerFactory;
 /**
  * Compression for Zstandard.
  *
+ * <p>
+ *     Note about {@link ByteBufferPool}: the {@code zstd-jni} project requires {@link java.nio.ByteBuffer}
+ *     implementations that are array backed with a zero arrayOffset.
+ * </p>
+ *
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc8478">RFC 8478 - Zstandard Compression and the application/zstd Media Type</a>
+ * @see <a href="https://github.com/luben/zstd-jni">Uses zstd-jni</a>
  */
 public class ZstandardCompression extends Compression
 {
@@ -43,10 +49,31 @@ public class ZstandardCompression extends Compression
     private ByteBufferPool byteBufferPool;
     private int bufferSize = 2048;
     private int minCompressSize = DEFAULT_MIN_ZSTD_SIZE;
+    private int compressionLevel = 3;
 
     public ZstandardCompression()
     {
         super(ENCODING_NAME);
+    }
+
+    public int getCompressionLevel()
+    {
+        return compressionLevel;
+    }
+
+    /**
+     * Set the compression level.
+     *
+     * <p>
+     *     Valid values are {@code 1} to {@code 19}, default {@code 3}
+     * </p>
+     * @param level the compression level
+     */
+    public void setCompressionLevel(int level)
+    {
+        if ((level < 1) || (level > 19))
+            throw new IllegalArgumentException("Invalid compression level");
+        this.compressionLevel = level;
     }
 
     public int getMinCompressSize()
@@ -103,7 +130,23 @@ public class ZstandardCompression extends Compression
     @Override
     public RetainableByteBuffer acquireByteBuffer()
     {
-        RetainableByteBuffer buffer = this.byteBufferPool.acquire(getBufferSize(), false);
+        return acquireByteBuffer(getBufferSize());
+    }
+
+    @Override
+    public RetainableByteBuffer acquireByteBuffer(int length)
+    {
+        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
+        if (length == 0)
+            return RetainableByteBuffer.EMPTY;
+
+        // Per zstd-jni, these MUST be direct ByteBuffer implementations.
+        RetainableByteBuffer.Mutable buffer = this.byteBufferPool.acquire(length, true);
+        if (!buffer.getByteBuffer().isDirect())
+        {
+            buffer.release();
+            throw new IllegalStateException("ByteBufferPool does not return zstd-jni required direct ByteBuffer");
+        }
         buffer.getByteBuffer().order(getByteOrder());
         return buffer;
     }
@@ -124,7 +167,7 @@ public class ZstandardCompression extends Compression
     @Override
     public Set<String> getFileExtensionNames()
     {
-        return Set.of("zstd");
+        return Set.of("zst");
     }
 
     @Override
@@ -142,13 +185,7 @@ public class ZstandardCompression extends Compression
     @Override
     public Compression.Decoder newDecoder()
     {
-        return newDecoder(getByteBufferPool());
-    }
-
-    @Override
-    public Compression.Decoder newDecoder(ByteBufferPool pool)
-    {
-        return new ZstandardDecoder(this, pool);
+        return new ZstandardDecoder(this);
     }
 
     @Override
