@@ -109,7 +109,7 @@ Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directo
   <name>Jetty HelloWorld</name>
 
   <properties>
-      <jettyVersion>{version}</jettyVersion>
+    <jettyVersion>{jetty-version}</jettyVersion>
   </properties>
 
   <dependencies>
@@ -233,7 +233,7 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
   <name>Jetty HelloWorld WebApp</name>
 
   <properties>
-      <jettyVersion>{version}</jettyVersion>
+    <jettyVersion>{jetty-version}</jettyVersion>
   </properties>
 
   <dependencies>
