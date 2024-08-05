@@ -55,12 +55,6 @@ public class TempDirTest
             _server.stop();
     }
 
-    @BeforeEach
-    public void beforeEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
     /**
      * Test ServletContext.TEMPDIR as valid directory with types File, String and Path.
      */

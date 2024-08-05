@@ -1181,9 +1181,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    public Resource getResourceAsBaseName()
+    public Resource getNestedResourceForTempDirName()
     {
-        Resource resource = super.getResourceAsBaseName();
+        Resource resource = super.getNestedResourceForTempDirName();
 
         if (resource == null)
         {
