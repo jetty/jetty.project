@@ -148,6 +148,8 @@ public class SessionHandlerTest
                     {
                         if (session.isNew())
                             out.append("New\n");
+                        out.append("RequestedSessionIdFromCookie: " + request.isRequestedSessionIdFromCookie()).append('\n');
+                        out.append("RequestedSessionIdFromURL: " + request.isRequestedSessionIdFromURL()).append('\n');
                         for (String name : session.getAttributeNameSet())
                             out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
                         out.append("URI [")
@@ -499,6 +501,8 @@ public class SessionHandlerTest
             assertThat(response.getStatus(), equalTo(200));
             content = response.getContent();
             assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+            assertThat(content, containsString("RequestedSessionIdFromCookie: true"));
+            assertThat(content, containsString("RequestedSessionIdFromURL: false"));
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
 
             // Get with parameter
@@ -513,6 +517,8 @@ public class SessionHandlerTest
             assertThat(response.getStatus(), equalTo(200));
             content = response.getContent();
             assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+            assertThat(content, containsString("RequestedSessionIdFromCookie: false"));
+            assertThat(content, containsString("RequestedSessionIdFromURL: true"));
             assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id))); // Cookies not in use
 
             // Get with both, but param wrong
