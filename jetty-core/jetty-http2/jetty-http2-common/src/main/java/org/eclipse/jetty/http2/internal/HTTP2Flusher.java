@@ -308,7 +308,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private void finish()
     {
-        release(false);
+        release();
         processedEntries.forEach(HTTP2Session.Entry::succeeded);
         processedEntries.clear();
         invocationType = InvocationType.NON_BLOCKING;
@@ -328,15 +328,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         }
     }
 
-    private void release(boolean failure)
+    private void release()
     {
         if (!released)
         {
             released = true;
-            if (failure)
-                accumulator.releaseForRemoval();
-            else
-                accumulator.release();
+            accumulator.release();
         }
     }
 
@@ -349,7 +346,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     protected void onFailure(Throwable x)
     {
-        release(true);
         Throwable closed;
         Set<HTTP2Session.Entry> allEntries;
         try (AutoLock ignored = lock.lock())
@@ -376,6 +372,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         // flusher, we need to close the connection.
         if (closed == null)
             session.onWriteFailure(x);
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable x)
+    {
+        release();
     }
 
     public void terminate(Throwable cause)

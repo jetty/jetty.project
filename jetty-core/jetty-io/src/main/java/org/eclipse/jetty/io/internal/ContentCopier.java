@@ -47,9 +47,6 @@ public class ContentCopier extends IteratingNestedCallback
     @Override
     protected Action process() throws Throwable
     {
-        if (current != null)
-            current.release();
-
         if (terminated)
             return Action.SUCCEEDED;
 
@@ -77,13 +74,25 @@ public class ContentCopier extends IteratingNestedCallback
     }
 
     @Override
-    protected void onFailure(Throwable x)
+    protected void onSuccess()
     {
-        if (current != null)
+        super.onSuccess();
+        current.release();
+    }
+
+    @Override
+    protected void onFailure(Throwable cause)
+    {
+        ExceptionUtil.callAndThen(cause, source::fail, super::onFailure);
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable x)
+    {
+        ExceptionUtil.callAndThen(x, ignored ->
         {
-            current.release();
-            current = Content.Chunk.next(current);
-        }
-        ExceptionUtil.callAndThen(x, source::fail, super::onFailure);
+            if (current != null)
+                current.release();
+        }, super::onCompleteFailure);
     }
 }

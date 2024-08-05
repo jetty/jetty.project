@@ -358,7 +358,6 @@ public class IteratingCallbackTest
             @Override
             protected void onCompleteFailure(Throwable cause)
             {
-                super.onCompleteFailure(cause);
                 failure.incrementAndGet();
             }
         };

@@ -772,8 +772,13 @@ public class ConnectHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failed to write {} bytes {}", filled, TunnelConnection.this, x);
-                buffer.release();
                 disconnect(x);
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                buffer.release();
             }
 
             private void disconnect(Throwable x)

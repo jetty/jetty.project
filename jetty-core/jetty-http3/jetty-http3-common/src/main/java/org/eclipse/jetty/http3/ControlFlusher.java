@@ -127,8 +127,6 @@ public class ControlFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write {} on {}", entries, this, failure);
 
-        accumulator.release();
-
         List<Entry> allEntries = new ArrayList<>(entries);
         entries.clear();
         try (AutoLock ignored = lock.lock())
@@ -145,6 +143,12 @@ public class ControlFlusher extends IteratingCallback
 
         // Cannot continue without the control stream, close the session.
         endPoint.getQuicSession().getProtocolSession().outwardClose(error, "control_stream_failure");
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
+        accumulator.release();
     }
 
     @Override

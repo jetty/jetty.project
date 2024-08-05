@@ -322,13 +322,6 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
 
         @Override
-        protected void onFailure(Throwable x)
-        {
-            cleanup();
-            super.onFailure(x);
-        }
-
-        @Override
         protected Action process() throws Exception
         {
             if (LOG.isDebugEnabled())
@@ -371,6 +364,13 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 case FINISHING -> finishing(deflater, _buffer.getByteBuffer());
                 default -> throw new IllegalStateException("Unexpected state [" + _state.get() + "]");
             };
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            cleanup();
+            super.onCompleteFailure(x);
         }
 
         private void cleanup()
