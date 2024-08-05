@@ -277,7 +277,7 @@ public class SelectorManagerDocs
 
                         // No more bytes to read, declare
                         // again interest for fill events.
-                        fillInterested();
+                        fillInterested(this);
 
                         // Signal that the iteration is now IDLE.
                         return Action.IDLE;
