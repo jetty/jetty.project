@@ -86,6 +86,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     {
         private final AtomicReference<ManagedSession> _session = new AtomicReference<>();
         private String _requestedSessionId;
+        private boolean _requestedSessionIdFromCookie;
         private Response _response;
 
         public SessionRequest(Request request)
@@ -123,12 +124,26 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             return session == null || !session.isValid() ? null : session;
         }
 
+        @Override
+        public boolean isRequestedSessionIdFromCookie()
+        {
+            return _requestedSessionId != null && _requestedSessionIdFromCookie;
+        }
+
+        @Override
+        public boolean isRequestedSessionIdFromURL()
+        {
+            return _requestedSessionId != null && !_requestedSessionIdFromCookie;
+        }
+
         public boolean process(Handler handler, Response response, Callback callback) throws Exception
         {
             _response = response;
 
             RequestedSession requestedSession = resolveRequestedSessionId(this);
             _requestedSessionId = requestedSession.sessionId();
+            _requestedSessionIdFromCookie = requestedSession.sessionIdFromCookie();
+
             ManagedSession session = requestedSession.session();
 
             if (session != null)
