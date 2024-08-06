@@ -763,10 +763,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
     }
 
-    protected void onContinue(HttpServletRequest clientRequest, Request proxyRequest)
+    protected Runnable onContinue(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        if (_log.isDebugEnabled())
-            _log.debug("{} handling 100 Continue", getRequestId(clientRequest));
+        return null;
     }
 
     /**
@@ -851,10 +850,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
     class ProxyContinueProtocolHandler extends ContinueProtocolHandler
     {
         @Override
-        protected void onContinue(Request request)
+        protected Runnable onContinue(Request request)
         {
             HttpServletRequest clientRequest = (HttpServletRequest)request.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
-            AbstractProxyServlet.this.onContinue(clientRequest, request);
+            return AbstractProxyServlet.this.onContinue(clientRequest, request);
         }
     }
 }

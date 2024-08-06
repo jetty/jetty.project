@@ -52,8 +52,9 @@ public class ContinueProtocolHandler implements ProtocolHandler
         return new ContinueListener();
     }
 
-    protected void onContinue(Request request)
+    protected Runnable onContinue(Request request)
     {
+        return null;
     }
 
     protected class ContinueListener extends BufferingResponseListener
@@ -79,8 +80,10 @@ public class ContinueProtocolHandler implements ProtocolHandler
             {
                 // All good, continue.
                 exchange.resetResponse();
-                exchange.proceed(null);
-                onContinue(request);
+                Runnable proceedAction = onContinue(request);
+                // Pass the proceed action to be executed
+                // by the sender, not here by the receiver.
+                exchange.proceed(proceedAction, null);
             }
             else
             {
@@ -90,7 +93,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
                 ResponseListeners listeners = exchange.getResponseListeners();
                 HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
                 listeners.emitSuccess(contentResponse);
-                exchange.proceed(new HttpRequestException("Expectation failed", request));
+                exchange.proceed(null, new HttpRequestException("Expectation failed", request));
             }
         }
 

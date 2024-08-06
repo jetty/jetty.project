@@ -24,7 +24,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletOutputStream;
@@ -1246,30 +1245,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         _bufferSize = size;
         _commitSize = size;
-    }
-
-    /**
-     * <p>Invoked when bytes have been flushed to the network.</p>
-     *
-     * @param bytes the number of bytes flushed
-     * @throws IOException if the minimum data rate, when set, is not respected
-     * @see org.eclipse.jetty.io.WriteFlusher.Listener
-     */
-    public void onFlushed(long bytes) throws IOException
-    {
-        if (_firstByteNanoTime == -1 || _firstByteNanoTime == Long.MAX_VALUE)
-            return;
-        long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
-        _flushed += bytes;
-        long minFlushed = minDataRate * NanoTime.millisSince(_firstByteNanoTime) / TimeUnit.SECONDS.toMillis(1);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
-        if (_flushed < minFlushed)
-        {
-            IOException ioe = new IOException(String.format("Response content data rate < %d B/s", minDataRate));
-            _servletChannel.abort(ioe);
-            throw ioe;
-        }
     }
 
     public void recycle()

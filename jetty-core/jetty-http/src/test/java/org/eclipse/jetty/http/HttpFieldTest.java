@@ -21,7 +21,10 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -202,5 +205,20 @@ public class HttpFieldTest
         assertThat(map.get("p1"), is("v1"));
         assertThat(map.get("p2"), is("v2"));
         assertThat(map.get("p3"), is(" v ; 3=three"));
+    }
+
+    @Test
+    public void testWithoutValue()
+    {
+        HttpField field = new HttpField("name", "value");
+        assertThat(field.withoutValue("value"), nullValue());
+        assertThat(field.withoutValue("other"), sameInstance(field));
+        assertThat(field.withoutValue("val"), sameInstance(field));
+
+
+        field = new HttpField("name", "list, of, values");
+        assertThat(field.withoutValue("value"), sameInstance(field));
+        assertThat(field.withoutValue("often"), sameInstance(field));
+        assertThat(field.withoutValue("of"), equalTo(new HttpField("name", "list, values")));
     }
 }
