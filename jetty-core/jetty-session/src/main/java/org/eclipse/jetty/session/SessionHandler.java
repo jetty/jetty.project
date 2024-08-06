@@ -82,11 +82,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         return null;
     }
 
-    private class SessionRequest extends Request.Wrapper
+    public class SessionRequest extends Request.Wrapper
     {
         private final AtomicReference<ManagedSession> _session = new AtomicReference<>();
-        private String _requestedSessionId;
-        private boolean _requestedSessionIdFromCookie;
+        RequestedSession _requestedSession;
         private Response _response;
 
         public SessionRequest(Request request)
@@ -105,6 +104,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         }
 
         @Override
+        public Object getAttribute(String name)
+        {
+            if (RequestedSession.class.getName().equals(name))
+                return _requestedSession;
+            return super.getAttribute(name);
+        }
+
+        @Override
         public Session getSession(boolean create)
         {
             if (_response == null)
@@ -114,7 +121,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
             if (session == null && create)
             {
-                newSession(this, _requestedSessionId, this::setManagedSession);
+                newSession(this, _requestedSession.sessionId(), this::setManagedSession);
                 session = _session.get();
                 HttpCookie cookie = getSessionCookie(session, getConnectionMetaData().isSecure());
                 if (cookie != null)
@@ -124,27 +131,11 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             return session == null || !session.isValid() ? null : session;
         }
 
-        @Override
-        public boolean isRequestedSessionIdFromCookie()
-        {
-            return _requestedSessionId != null && _requestedSessionIdFromCookie;
-        }
-
-        @Override
-        public boolean isRequestedSessionIdFromURL()
-        {
-            return _requestedSessionId != null && !_requestedSessionIdFromCookie;
-        }
-
         public boolean process(Handler handler, Response response, Callback callback) throws Exception
         {
             _response = response;
-
-            RequestedSession requestedSession = resolveRequestedSessionId(this);
-            _requestedSessionId = requestedSession.sessionId();
-            _requestedSessionIdFromCookie = requestedSession.sessionIdFromCookie();
-
-            ManagedSession session = requestedSession.session();
+            _requestedSession = resolveRequestedSessionId(this);
+            ManagedSession session = _requestedSession.session();
 
             if (session != null)
             {

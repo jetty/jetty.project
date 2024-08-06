@@ -188,16 +188,4 @@ public class TestableRequest implements Request
     {
         return null;
     }
-
-    @Override
-    public boolean isRequestedSessionIdFromURL()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromCookie()
-    {
-        return false;
-    }
 }

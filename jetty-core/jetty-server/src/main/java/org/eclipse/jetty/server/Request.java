@@ -359,20 +359,6 @@ public interface Request extends Attributes, Content.Source
      */
     Session getSession(boolean create);
 
-    /** If sessions are supported by a given configuration, return true
-     * if the request URL contains a valid session id, false otherwise.
-     * @return true if the request URL contained a valid session id, false
-     * otherwise.
-     */
-    boolean isRequestedSessionIdFromURL();
-
-    /** If sessions are supported by a given configuration, return true if
-     * the request contained a cookie with a valid session id, false otherwise.
-     * @return true if the request contains a valid session id cookie, false
-     * otherwise.
-     */
-    boolean isRequestedSessionIdFromCookie();
-
     /**
      * Returns a copy of the request that throws {@link UnsupportedOperationException}
      * from all mutative methods.
@@ -891,18 +877,6 @@ public interface Request extends Attributes, Content.Source
         public Session getSession(boolean create)
         {
             return getWrapped().getSession(create);
-        }
-
-        @Override
-        public boolean isRequestedSessionIdFromURL()
-        {
-            return getWrapped().isRequestedSessionIdFromURL();
-        }
-
-        @Override
-        public boolean isRequestedSessionIdFromCookie()
-        {
-            return getWrapped().isRequestedSessionIdFromCookie();
         }
 
         @Override
