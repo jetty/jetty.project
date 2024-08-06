@@ -148,18 +148,6 @@ public class MockRequest implements Request
     }
 
     @Override
-    public boolean isRequestedSessionIdFromURL()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromCookie()
-    {
-        return false;
-    }
-
-    @Override
     public Object removeAttribute(String name)
     {
         return null;

@@ -556,7 +556,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
                             currentSession = currentRequestedSession.session();
                         }
                         else
-                            currentRequestedSession = new AbstractSessionManager.RequestedSession(currentSession, currentSession.getId(), false /*TODO!!!*/);
+                            currentRequestedSession = new AbstractSessionManager.RequestedSession(currentSession, currentSession.getId(), null /*TODO!!!*/);
 
                         coreRequest.setManagedSession(currentSession);
                         coreRequest.setRequestedSession(currentRequestedSession);

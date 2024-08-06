@@ -1087,18 +1087,6 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public boolean isRequestedSessionIdFromURL()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isRequestedSessionIdFromCookie()
-        {
-            return false;
-        }
-
-        @Override
         public int hashCode()
         {
             // Override the implementation from the base class,

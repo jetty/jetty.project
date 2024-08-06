@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,10 +149,21 @@ public class SessionHandlerTest
                     {
                         if (session.isNew())
                             out.append("New\n");
-                        out.append("RequestedSessionIdFromCookie: " + request.isRequestedSessionIdFromCookie()).append('\n');
-                        out.append("RequestedSessionIdFromURL: " + request.isRequestedSessionIdFromURL()).append('\n');
+
+                        RequestedSession requestedSession = RequestedSession.of(request);
+
+                        out.append("RequestedSessionIdFromCookie: ")
+                            .append(requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_COOKIE))
+                            .append('\n');
+                        out.append("RequestedSessionIdFromURL: ")
+                            .append(requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_JSESSION_URI_PARAMETER))
+                            .append('\n');
                         for (String name : session.getAttributeNameSet())
-                            out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
+                            out.append("Attribute ")
+                                .append(name)
+                                .append(" = ")
+                                .append(session.getAttribute(name))
+                                .append('\n');
                         out.append("URI [")
                             .append(session.encodeURI(request, "/some/path", request.getHeaders().contains(HttpHeader.COOKIE)))
                             .append("]");

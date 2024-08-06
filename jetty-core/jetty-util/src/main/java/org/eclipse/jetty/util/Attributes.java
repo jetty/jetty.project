@@ -32,6 +32,10 @@ import org.eclipse.jetty.util.component.Dumpable;
 /**
  * Attributes.
  * Interface commonly used for storing attributes.
+ * <p>
+ * Some attributes may be "hidden" attributes, in that they are only found by an explicit call to
+ * {@link #getAttribute(String)} and they do not otherwise appear in {@link #getAttributeNameSet()}
+ * or {@link #asAttributeMap()}.
  */
 public interface Attributes
 {
@@ -51,7 +55,10 @@ public interface Attributes
     Object setAttribute(String name, Object attribute);
 
     /**
-     * Get an attribute
+     * Get an attribute by name.
+     * Some attributes may be "hidden" attributes, in that they are only found by an explicit call to
+     * {@code getAttribute(String)} and they do not otherwise appear in {@link #getAttributeNameSet()}
+     * or {@link #asAttributeMap()}.
      * @param name the attribute to get
      * @return the value of the attribute, or {@code null} if no such attribute exists
      */
