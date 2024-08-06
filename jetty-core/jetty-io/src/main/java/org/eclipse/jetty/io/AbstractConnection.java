@@ -52,12 +52,9 @@ public abstract class AbstractConnection implements Connection, Invocable
         _readCallback = new ReadCallback();
     }
 
-    @Deprecated
     @Override
     public InvocationType getInvocationType()
     {
-        // TODO consider removing the #fillInterested method from the connection and only use #fillInterestedCallback
-        //      so a connection need not be Invocable
         return Invocable.super.getInvocationType();
     }
 
@@ -170,7 +167,7 @@ public abstract class AbstractConnection implements Connection, Invocable
     protected void onFillInterestedFailed(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillInterestedFailed {}", this, cause);
+            LOG.debug("onFillInterestedFailed {}", this, cause);
         if (_endPoint.isOpen())
         {
             boolean close = true;

@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -99,8 +98,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final Lazy _attributes = new Lazy();
     private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
     private final SendCallback _sendCallback = new SendCallback();
-    private final LongAdder bytesIn = new LongAdder();
-    private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
     private final HttpFields.Mutable _headerBuilder = HttpFields.build();
     private volatile RetainableByteBuffer _retainableByteBuffer;
@@ -108,9 +105,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private Runnable _onRequest;
     private boolean _delayedForContent;
     private long _requests;
-    // TODO why is this not on HttpConfiguration?
-    private boolean _useInputDirectByteBuffers;
-    private boolean _useOutputDirectByteBuffers;
+    private long _responses;
+    private long _bytesIn;
+    private long _bytesOut;
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -132,15 +129,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         return last;
     }
 
-    /**
-     * @deprecated use {@link #HttpConnection(HttpConfiguration, Connector, EndPoint)} instead.  Will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.6", forRemoval = true)
-    public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
-    {
-        this(configuration, connector, endPoint);
-    }
-
     public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint)
     {
         super(connector, configuration, endPoint);
@@ -158,15 +146,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public InvocationType getInvocationType()
     {
         return getServer().getInvocationType();
-    }
-
-    /**
-     * @deprecated No replacement, no longer used within {@link HttpConnection}, will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.6", forRemoval = true)
-    public boolean isRecordHttpComplianceViolations()
-    {
-        return false;
     }
 
     protected HttpGenerator newHttpGenerator()
@@ -291,29 +270,29 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public long getMessagesOut()
     {
-        return _requests; // TODO not strictly correct
+        return _responses;
     }
 
     public boolean isUseInputDirectByteBuffers()
     {
-        return _useInputDirectByteBuffers;
+        return getHttpConfiguration().isUseInputDirectByteBuffers();
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        // TODO why is this not on HttpConfiguration?
-        _useInputDirectByteBuffers = useInputDirectByteBuffers;
+        getHttpConfiguration().setUseInputDirectByteBuffers(useInputDirectByteBuffers);
     }
 
     public boolean isUseOutputDirectByteBuffers()
     {
-        return _useOutputDirectByteBuffers;
+        return getHttpConfiguration().isUseOutputDirectByteBuffers();
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
-        // TODO why is this not on HttpConfiguration?
-        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+        getHttpConfiguration().setUseOutputDirectByteBuffers(useOutputDirectByteBuffers);
     }
 
     @Override
@@ -352,7 +331,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private ByteBuffer getRequestBuffer()
     {
         if (_retainableByteBuffer == null)
+        {
             _retainableByteBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        }
+        else if (_retainableByteBuffer.isRetained())
+        {
+            _retainableByteBuffer.release();
+            _retainableByteBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        }
         return _retainableByteBuffer.getByteBuffer();
     }
 
@@ -403,9 +389,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     _onRequest = null;
                     onRequest.run();
 
-                    // If the _handling boolean has already been CaS'd to false, then stream is completed and we are no longer
+                    // If the _handling boolean has already been CaS'd to false, then stream is completed, and we are no longer
                     // handling, so the caller can continue to fill and parse more connections.  If it is still true, then some
-                    // thread is still handling the request and they will need to organize more filling and parsing once complete.
+                    // thread is still handling the request, and they will need to organize more filling and parsing once complete.
                     if (_handling.compareAndSet(true, false))
                     {
                         if (LOG.isDebugEnabled())
@@ -495,16 +481,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     private int fillRequestBuffer()
     {
-        if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
-        {
-            // TODO this is almost certainly wrong
-            RetainableByteBuffer newBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("replace buffer {} <- {} in {}", _retainableByteBuffer, newBuffer, this);
-            _retainableByteBuffer.release();
-            _retainableByteBuffer = newBuffer;
-        }
-
         if (!isRequestBufferEmpty())
             return _retainableByteBuffer.remaining();
 
@@ -525,7 +501,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             if (filled > 0)
             {
-                bytesIn.add(filled);
+                _bytesIn += filled;
             }
             else
             {
@@ -649,9 +625,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public void onClose(Throwable cause)
     {
-        // TODO: do we really need to do this?
-        //  This event is fired really late, sendCallback should already be failed at this point.
-        //  Revisit whether we still need IteratingCallback.close().
         if (cause == null)
             _sendCallback.close();
         else
@@ -665,21 +638,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         onFillable();
     }
 
-    public void asyncReadFillInterested()
-    {
-        getEndPoint().tryFillInterested(_demandContentCallback);
-    }
-
     @Override
     public long getBytesIn()
     {
-        return bytesIn.longValue();
+        return _bytesIn;
     }
 
     @Override
     public long getBytesOut()
     {
-        return bytesOut.longValue();
+        return _bytesOut;
     }
 
     @Override
@@ -846,7 +814,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                             gatherWrite += 1;
                             bytes += _content.remaining();
                         }
-                        HttpConnection.this.bytesOut.add(bytes);
+                        HttpConnection.this._bytesOut += bytes;
                         switch (gatherWrite)
                         {
                             case 7:
@@ -1281,14 +1249,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             };
 
             Runnable handle = _httpChannel.onRequest(_request);
-            ++_requests;
+            _requests++;
 
             Request request = _httpChannel.getRequest();
             getHttpChannel().getComplianceViolationListener().onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
-                _httpChannel.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
+                _httpChannel.getRequest().setAttribute(ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY, _complianceViolations);
                 _complianceViolations = null;
             }
 
@@ -1442,17 +1410,21 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 callback.failed(new IllegalStateException("Committed"));
             }
-            else if (_expects100Continue)
+            else
             {
-                if (response.getStatus() == HttpStatus.CONTINUE_100)
+                _responses++;
+                if (_expects100Continue)
                 {
-                    _expects100Continue = false;
-                }
-                else
-                {
-                    // Expecting to send a 100 Continue response, but it's a different response,
-                    // then cannot be persistent because likely the client did not send the content.
-                    _generator.setPersistent(false);
+                    if (response.getStatus() == HttpStatus.CONTINUE_100)
+                    {
+                        _expects100Continue = false;
+                    }
+                    else
+                    {
+                        // Expecting to send a 100 Continue response, but it's a different response,
+                        // then cannot be persistent because likely the client did not send the content.
+                        _generator.setPersistent(false);
+                    }
                 }
             }
 
