@@ -320,6 +320,8 @@ public abstract class HttpReceiver
      */
     protected void responseContentAvailable()
     {
+        if (!invoker.isInvoking())
+            throw new IllegalStateException();
         if (LOG.isDebugEnabled())
             LOG.debug("Response content available on {}", this);
         contentSource.onDataAvailable();

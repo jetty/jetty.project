@@ -35,6 +35,15 @@ public class SerializedInvoker
     private static final Logger LOG = LoggerFactory.getLogger(SerializedInvoker.class);
 
     private final AtomicReference<Link> _tail = new AtomicReference<>();
+    private int recursionCounter;
+
+    /**
+     * @return whether this invoker is currently executing a task
+     */
+    public boolean isInvoking()
+    {
+        return recursionCounter > 0;
+    }
 
     /**
      * Arrange for a task to be invoked, mutually excluded from other tasks.
@@ -188,10 +197,13 @@ public class SerializedInvoker
                     LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
                 try
                 {
+                    recursionCounter++;
                     link._task.run();
+                    recursionCounter--;
                 }
                 catch (Throwable t)
                 {
+                    recursionCounter--;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
                     onError(link._task, t);
