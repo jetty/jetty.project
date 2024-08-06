@@ -1613,7 +1613,7 @@ public class ResponseTest
 
         ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
         coreRequest.setSessionManager(sessionHandler.getSessionManager());
-        coreRequest.setRequestedSession(new RequestedSession(null, "12345", RequestedSession.ID_FROM_COOKIE));
+        coreRequest.setRequestedSession(new RequestedSession(null, "12345", RequestedSession.ID_FROM_JSESSION_URI_PARAMETER));
         assertNotNull(request.getSession(true));
         assertThat(request.getSession(false).getId(), is("12345"));
 
