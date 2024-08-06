@@ -1220,7 +1220,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     protected RequestedSession resolveRequestedSessionId(Request request)
     {
         String requestedSessionId = null;
-        String requestedSessionIdFrom = null;
+        boolean requestedSessionIdFromCookie = false;;
         ManagedSession session = null;
 
         List<String> ids = null;
@@ -1297,7 +1297,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     //associate it with the request so its reference count is decremented as the
                     //request exits
                     requestedSessionId = id;
-                    requestedSessionIdFrom = getRequestedSessionIdFrom(i, cookieIds);
+                    requestedSessionIdFromCookie = i < cookieIds;
                     session = s;
 
                     if (LOG.isDebugEnabled())
@@ -1312,7 +1312,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     if (requestedSessionId == null)
                     {
                         requestedSessionId = id;
-                        requestedSessionIdFrom = getRequestedSessionIdFrom(i, cookieIds);
+                        requestedSessionIdFromCookie = i < cookieIds;
                     }
                 }
             }
@@ -1320,7 +1320,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             {
                 //we already have a valid session and now have a duplicate ID for it
                 if (LOG.isDebugEnabled())
-                    LOG.debug(duplicateSession(requestedSessionId, true, requestedSessionIdFrom,
+                    LOG.debug(duplicateSession(requestedSessionId, true, requestedSessionIdFromCookie,
                         id, false, getRequestedSessionIdFrom(i, cookieIds)));
             }
             else
@@ -1350,19 +1350,19 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     }
 
                     throw new BadMessageException(duplicateSession(
-                        requestedSessionId, true, requestedSessionIdFrom,
+                        requestedSessionId, true, requestedSessionIdFromCookie,
                         id, true, getRequestedSessionIdFrom(i, cookieIds)));
                 }
                 else if (LOG.isDebugEnabled())
                 {
                     LOG.debug(duplicateSession(
-                        requestedSessionId, true, requestedSessionIdFrom,
+                        requestedSessionId, true, requestedSessionIdFromCookie,
                         id, false, getRequestedSessionIdFrom(i, cookieIds)));
                 }
             }
         }
 
-        return new RequestedSession((session != null && session.isValid()) ? session : null, requestedSessionId, requestedSessionIdFrom);
+        return new RequestedSession((session != null && session.isValid()) ? session : null, requestedSessionId, requestedSessionIdFromCookie ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER);
     }
 
     private static String getRequestedSessionIdFrom(int index, int cookieIds)
@@ -1370,10 +1370,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         return index < cookieIds ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER;
     }
 
-    private static String duplicateSession(String id0, boolean valid0, String from0, String id1, boolean valid1, String from1)
+    private static String duplicateSession(String id0, boolean valid0, boolean fromCookie0, String id1, boolean valid1, String from1)
     {
         return "Duplicate sessions: %s[%s,%s] & %s[%s,%s]".formatted(
-            id0, valid0 ? "valid" : "unknown", from0,
+            id0, valid0 ? "valid" : "unknown", fromCookie0 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER,
             id1, valid1 ? "valid" : "unknown", from1);
     }
 
@@ -1406,7 +1406,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
          * @param request The attributes to query
          * @return The found {@code RequestedSession} or {@link #NO_REQUESTED_SESSION} if none found. Never {@code null}.
          */
-        public static RequestedSession of(Attributes request)
+        public static RequestedSession byAttribute(Attributes request)
         {
             RequestedSession requestedSession = (RequestedSession)request.getAttribute(RequestedSession.class.getName());
             return requestedSession == null ? NO_REQUESTED_SESSION : requestedSession;

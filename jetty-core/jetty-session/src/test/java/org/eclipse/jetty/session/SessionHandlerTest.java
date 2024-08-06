@@ -150,7 +150,7 @@ public class SessionHandlerTest
                         if (session.isNew())
                             out.append("New\n");
 
-                        RequestedSession requestedSession = RequestedSession.of(request);
+                        RequestedSession requestedSession = RequestedSession.byAttribute(request);
 
                         out.append("RequestedSessionIdFromCookie: ")
                             .append(requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_COOKIE))
