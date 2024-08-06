@@ -163,9 +163,22 @@ public interface RetainableByteBuffer extends Retainable
         throw new ReadOnlyBufferException();
     }
 
-    default boolean releaseForRemoval()
+    /**
+     * {@link #release() Release} the buffer in a way that ensures it will not be recycled in a buffer pool.
+     * This method should be used in cases where it is unclear if operations on the buffer have completed (e.g. when
+     * a write operation has aborted or timed out).
+     * @return True if the buffer was released.
+     * @see ByteBufferPool#releaseAndRemove(RetainableByteBuffer)
+     */
+    default boolean releaseAndRemove()
     {
         return release();
+    }
+
+    @Override
+    default boolean release()
+    {
+        return Retainable.super.release();
     }
 
     /**
@@ -662,9 +675,9 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean releaseForRemoval()
+        public boolean releaseAndRemove()
         {
-            return getWrapped().releaseForRemoval();
+            return getWrapped().releaseAndRemove();
         }
 
         @Override
@@ -1312,9 +1325,9 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean releaseForRemoval()
+        public boolean releaseAndRemove()
         {
-            return _pool.releaseForRemoval(this);
+            return _pool.releaseAndRemove(this);
         }
 
         @Override
@@ -1939,14 +1952,14 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean releaseForRemoval()
+        public boolean releaseAndRemove()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("release {}", this);
             if (super.release())
             {
                 for (RetainableByteBuffer buffer : _buffers)
-                    buffer.releaseForRemoval();
+                    buffer.releaseAndRemove();
                 _buffers.clear();
                 _aggregate = null;
                 return true;

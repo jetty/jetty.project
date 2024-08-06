@@ -329,9 +329,10 @@ public class ContentDocs
             // Read a chunk.
             chunk = source.read();
 
-            // No chunk, demand to be called back when there will be more chunks.
+            // If no chunk,
             if (chunk == null)
             {
+                // schedule a demand callback when there are more chunks.
                 source.demand(this::succeeded);
                 return Action.SCHEDULED;
             }
@@ -341,7 +342,7 @@ public class ContentDocs
             if (Content.Chunk.isFailure(chunk))
                 throw chunk.getFailure();
 
-            // Copy the chunk.
+            // Copy the chunk by scheduling an async write
             sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
             return Action.SCHEDULED;
         }
@@ -349,11 +350,9 @@ public class ContentDocs
         @Override
         protected void onSuccess()
         {
-            // After every successful write, release the chunk.
-            chunk.release();
-
-            // Reset the chunk, preserving errors and EOF
-            chunk = Content.Chunk.next(chunk);
+            // After every successful write, release the chunk
+            // and reset to the next chunk
+            chunk = Content.Chunk.releaseNext(chunk);
         }
 
         @Override
@@ -367,16 +366,17 @@ public class ContentDocs
         protected void onFailure(Throwable cause)
         {
             // The copy is failed, fail the callback.
-            // This may occur before a write has completed (due to abort or close), so we cannot release the chunk here.
+            // This may occur before a {@code write} has completed (due to abort or close),
+            // so we cannot release the chunk here.
             callback.failed(cause);
         }
 
         @Override
         protected void onCompleteFailure(Throwable failure)
         {
-            // In case of a failure, we wait until the write has completed before releasing any chunk.
-            if (chunk != null)
-                chunk.release();
+            // In case of a failure, we wait until here, when the {@code write}
+            // has completed before releasing any chunk.
+            chunk = Content.Chunk.releaseNext(chunk);
         }
 
         @Override

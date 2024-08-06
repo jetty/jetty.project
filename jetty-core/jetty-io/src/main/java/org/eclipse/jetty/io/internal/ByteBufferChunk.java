@@ -145,7 +145,7 @@ public abstract class ByteBufferChunk extends RetainableByteBuffer.FixedCapacity
         public WithRetainable(ByteBuffer byteBuffer, boolean last, Retainable retainable)
         {
             super(byteBuffer, last);
-            this.retainable = retainable;
+            this.retainable = Objects.requireNonNull(retainable);
         }
 
         @Override

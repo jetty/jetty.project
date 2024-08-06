@@ -105,16 +105,20 @@ public class Flusher
         protected void onSuccess()
         {
             if (active != null)
+            {
                 active.succeeded();
-            active = null;
+                active = null;
+            }
         }
 
         @Override
         public void onFailure(Throwable cause)
         {
             if (active != null)
+            {
                 active.failed(cause);
-            active = null;
+                active = null;
+            }
 
             List<Entry> entries;
             try (AutoLock ignored = lock.lock())

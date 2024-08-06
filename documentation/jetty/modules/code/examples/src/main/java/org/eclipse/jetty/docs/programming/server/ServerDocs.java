@@ -176,7 +176,8 @@ public class ServerDocs
         @Override
         public void onFillable()
         {
-            callback.succeeded();
+            // Called from the fill interest in onOpen() to start iteration
+            callback.iterate();
         }
 
         private class JSONHTTPIteratingCallback extends IteratingCallback
@@ -206,11 +207,8 @@ public class ServerDocs
                             // the application completed the request processing.
                             return Action.SCHEDULED;
                         }
-                        else
-                        {
-                            // Did not receive enough JSON bytes,
-                            // loop around to try to read more.
-                        }
+                        // Did not receive enough JSON bytes to complete the parser,
+                        // loop around to try to read more.
                     }
                     else if (filled == 0)
                     {
@@ -218,11 +216,10 @@ public class ServerDocs
                         // don't keep it around while we are idle.
                         buffer = null;
 
-                        // No more bytes to read, declare
-                        // again interest for fill events.
-                        fillInterested();
+                        // No more bytes to read, declare again interest for fill events.
+                        fillInterested(this);
 
-                        // Signal that the iteration is now SCHEDULED for a callback to onFillable.
+                        // Signal that the iteration is now SCHEDULED for fill interest callback.
                         return Action.SCHEDULED;
                     }
                     else

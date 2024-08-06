@@ -215,7 +215,11 @@ Another possibility is that during `process()` the read returns `-1` indicating 
 
 The last case is that during `process()` an exception is thrown, for example by `EndPoint.fill(ByteBuffer)` or, in more advanced implementations, by code that parses the bytes that have been read and finds them unacceptable; any exception thrown within `process()` will be caught by `IteratingCallback` that will exit the loop with a failure and call `onCompleteFailure(Throwable)` with the exception that has been thrown, where you can close the `EndPoint`, passing the exception that is the reason for closing prematurely the `EndPoint`.
 
-Note that some failures may occur whilst a scheduled operation is in progress.  Such failures are notified immediately via the `onFailure(Throwable)` method, but care must be taken to not release any resources that may still be in use by the scheduled operation. The `onCompleteFailure(Throwable)` method is called when both a failure has occurred and any scheduled operation has completed.  An example of this issue is that a buffer used for a write operation cannot be returned to a pool in `onFailure(Throwable)` as the write may still be progressing. Either the buffer must be removed from the pool in `onFailure(Throwable)` or the release of the buffer deferred until `onCompleteFailure(Throwable)` is called.
+Note that some failures may occur whilst a scheduled operation is in progress.
+Such failures are notified immediately via the `onFailure(Throwable)` method, but care must be taken to not release any resources that may still be in use by the scheduled operation.
+The `onCompleteFailure(Throwable)` method is called when both a failure has occurred and any scheduled operation has completed.
+An example of this issue is that a buffer used for a write operation cannot be returned to a pool in `onFailure(Throwable)` as the write may still be progressing.
+Either the buffer must be removed from the pool in `onFailure(Throwable)` or the release of the buffer deferred until `onCompleteFailure(Throwable)` is called.
 
 [IMPORTANT]
 ====

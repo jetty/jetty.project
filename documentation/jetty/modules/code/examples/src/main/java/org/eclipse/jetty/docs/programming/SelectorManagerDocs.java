@@ -24,9 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -225,11 +228,13 @@ public class SelectorManagerDocs
         // tag::echo-correct[]
         class EchoConnection extends AbstractConnection
         {
+            private final ByteBufferPool.Sized pool;
             private final IteratingCallback callback = new EchoIteratingCallback();
 
-            public EchoConnection(EndPoint endp, Executor executor)
+            public EchoConnection(EndPoint endp, ByteBufferPool.Sized pool, Executor executor)
             {
                 super(endp, executor);
+                this.pool = pool;
             }
 
             @Override
@@ -250,20 +255,20 @@ public class SelectorManagerDocs
 
             class EchoIteratingCallback extends IteratingCallback
             {
-                private ByteBuffer buffer;
+                private RetainableByteBuffer buffer;
 
                 @Override
                 protected Action process() throws Throwable
                 {
                     // Obtain a buffer if we don't already have one.
                     if (buffer == null)
-                        buffer = BufferUtil.allocate(1024);
+                        buffer = pool.acquire();
 
-                    int filled = getEndPoint().fill(buffer);
+                    int filled = getEndPoint().fill(buffer.getByteBuffer());
                     if (filled > 0)
                     {
                         // We have filled some bytes, echo them back.
-                        getEndPoint().write(this, buffer);
+                        getEndPoint().write(this, buffer.getByteBuffer());
 
                         // Signal that the iteration should resume
                         // when the write() operation is completed.
@@ -273,14 +278,15 @@ public class SelectorManagerDocs
                     {
                         // We don't need the buffer anymore, so
                         // don't keep it around while we are idle.
-                        buffer = null;
+                        buffer = Retainable.release(buffer);
 
                         // No more bytes to read, declare
                         // again interest for fill events.
                         fillInterested(this);
 
-                        // Signal that the iteration is now IDLE.
-                        return Action.IDLE;
+                        // Signal that the iteration is now SCHEDULED
+                        // for a fillable callback.
+                        return Action.SCHEDULED;
                     }
                     else
                     {
@@ -291,17 +297,11 @@ public class SelectorManagerDocs
                 }
 
                 @Override
-                protected void onCompleteSuccess()
+                protected void onCompleted(Throwable cause)
                 {
-                    // The iteration completed successfully.
-                    getEndPoint().close();
-                }
-
-                @Override
-                protected void onCompleteFailure(Throwable cause)
-                {
-                    // The iteration completed with a failure.
+                    // The iteration completed.
                     getEndPoint().close(cause);
+                    buffer = Retainable.release(buffer);
                 }
 
                 @Override

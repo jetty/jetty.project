@@ -261,7 +261,7 @@ public class ErrorHandler implements Request.Handler
         catch (Throwable x)
         {
             if (buffer != null)
-                buffer.releaseForRemoval();
+                buffer.releaseAndRemove();
             throw x;
         }
     }
@@ -609,9 +609,9 @@ public class ErrorHandler implements Request.Handler
         {
             Callback callback = _callback.getAndSet(null);
             if (callback == null)
-                _buffer.releaseForRemoval();
+                _buffer.releaseAndRemove();
             else
-                ExceptionUtil.callAndThen(x, t -> _buffer.releaseForRemoval(), callback::failed);
+                ExceptionUtil.callAndThen(x, t -> _buffer.releaseAndRemove(), callback::failed);
         }
     }
 }

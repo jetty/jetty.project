@@ -448,7 +448,7 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
-    public void testReleaseForRemoval()
+    public void testReleaseAndRemove()
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool();
 
@@ -471,9 +471,9 @@ public class ArrayByteBufferPoolTest
         retained1 = pool.acquire(1024, false);
         retained1.retain();
 
-        assertTrue(reserved1.releaseForRemoval());
-        assertTrue(acquired1.releaseForRemoval());
-        assertFalse(retained1.releaseForRemoval());
+        assertTrue(reserved1.releaseAndRemove());
+        assertTrue(acquired1.releaseAndRemove());
+        assertFalse(retained1.releaseAndRemove());
         assertTrue(retained1.release());
 
         assertThat(pool.getHeapByteBufferCount(), is(2L));

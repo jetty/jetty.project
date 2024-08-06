@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
@@ -533,7 +534,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("written cipher bytes on {}", QuicSession.this);
-            cipherBuffer.release();
+            cipherBuffer = Retainable.release(cipherBuffer);
         }
 
         @Override
@@ -547,7 +548,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("connection closed {}", QuicSession.this);
-            cipherBuffer.release();
+            cipherBuffer = Retainable.release(cipherBuffer);
             finishOutwardClose(new ClosedChannelException());
             timeout.destroy();
         }
@@ -564,7 +565,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
-            cipherBuffer.release();
+            cipherBuffer = Retainable.release(cipherBuffer);
         }
     }
 
