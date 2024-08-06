@@ -17,6 +17,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.luben.zstd.ZstdInputStream;
@@ -111,6 +112,17 @@ public abstract class AbstractZstdTest
         buf.put(arr);
         buf.flip();
         return buf;
+    }
+
+    /**
+     * Create a Direct ByteBuffer from a String.
+     *
+     * @param str the string to use for bytes. (using {@link StandardCharsets#UTF_8})
+     * @return the Direct ByteBuffer representing the byte array.
+     */
+    public ByteBuffer asDirect(String str)
+    {
+        return asDirect(str.getBytes(UTF_8));
     }
 
     /**

@@ -50,7 +50,7 @@ public class ZstandardEncoderTest extends AbstractZstdTest
         startZstd(2048);
 
         String inputString = "Hello World, this is " + ZstandardEncoderTest.class.getName();
-        ByteBuffer input = BufferUtil.toBuffer(inputString, UTF_8);
+        ByteBuffer input = asDirect(inputString);
 
         try (Compression.Encoder encoder = zstd.newEncoder())
         {
@@ -80,7 +80,7 @@ public class ZstandardEncoderTest extends AbstractZstdTest
 
         String inputString = "Jetty";
 
-        ByteBuffer input = BufferUtil.toBuffer(inputString, UTF_8);
+        ByteBuffer input = asDirect(inputString);
         try (Compression.Encoder encoder = zstd.newEncoder())
         {
             RetainableByteBuffer compressed = zstd.acquireByteBuffer();
@@ -112,7 +112,7 @@ public class ZstandardEncoderTest extends AbstractZstdTest
     {
         startZstd(2048);
 
-        final int readBufferSize = 1000;
+        final int readBufferSize = 64000;
 
         Path textFile = MavenPaths.findTestResourceFile(resourceName);
 
@@ -122,7 +122,7 @@ public class ZstandardEncoderTest extends AbstractZstdTest
         try (Compression.Encoder encoder = zstd.newEncoder();
              SeekableByteChannel channel = Files.newByteChannel(textFile, StandardOpenOption.READ))
         {
-            ByteBuffer input = ByteBuffer.allocate(readBufferSize);
+            ByteBuffer input = ByteBuffer.allocateDirect(readBufferSize);
             ByteBuffer outputBuf = output.getByteBuffer();
 
             // input / encode loop
@@ -130,26 +130,25 @@ public class ZstandardEncoderTest extends AbstractZstdTest
             {
                 if (encoder.needsInput())
                 {
+                    input.clear();
                     int readLen = channel.read(input);
                     input.flip();
-                    if (readLen > 0)
-                    {
-                        encoder.addInput(input);
-                    }
-                    else if (readLen == (-1))
-                    {
+                    if (readLen == -1)
                         encoder.finishInput();
-                    }
-                    input.compact();
+                    else if (readLen > 0)
+                        encoder.addInput(input);
                 }
 
-                BufferUtil.clearToFill(outputBuf);
-                int encodedLen = encoder.encode(outputBuf);
-                if (encodedLen > 0)
+                boolean flushing = true;
+                while (flushing)
                 {
-                    BufferUtil.flipToFlush(outputBuf, 0);
-                    compressed.put(outputBuf);
-                    BufferUtil.clearToFill(outputBuf);
+                    outputBuf.clear();
+                    int encodedLen = encoder.encode(outputBuf);
+                    outputBuf.flip();
+                    if (encodedLen > 0)
+                        compressed.put(outputBuf);
+                    else if (encodedLen == 0)
+                        flushing = false;
                 }
             }
 

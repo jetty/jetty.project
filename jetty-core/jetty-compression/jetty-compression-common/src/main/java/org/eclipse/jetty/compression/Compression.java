@@ -248,7 +248,10 @@ public abstract class Compression extends ContainerLifeCycle
          *
          * @param outputBuffer the buffer to write trailer to
          */
-        void addTrailer(ByteBuffer outputBuffer);
+        default void addTrailer(ByteBuffer outputBuffer)
+        {
+            // no trailers
+        }
 
         /**
          * Encode what exists in the input buffer to the provided output buffer.
@@ -275,7 +278,10 @@ public abstract class Compression extends ContainerLifeCycle
          *
          * @return the size of the trailer (0 for no trailer)
          */
-        int getTrailerSize();
+        default int getTrailerSize()
+        {
+            return 0;
+        }
 
         /**
          * Test if output is finished.

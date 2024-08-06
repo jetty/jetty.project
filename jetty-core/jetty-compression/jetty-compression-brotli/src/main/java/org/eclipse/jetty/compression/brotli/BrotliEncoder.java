@@ -17,15 +17,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritableByteChannel;
-import java.util.ArrayDeque;
-import java.util.Queue;
 
 import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
 import com.aayushatharva.brotli4j.encoder.Encoder;
 import com.aayushatharva.brotli4j.encoder.PreparedDictionary;
+import org.eclipse.jetty.compression.BufferQueue;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -128,19 +126,6 @@ public class BrotliEncoder implements Compression.Encoder
     }
 
     @Override
-    public int getTrailerSize()
-    {
-        // no trailers for brotli
-        return 0;
-    }
-
-    @Override
-    public void addTrailer(ByteBuffer outputBuffer)
-    {
-        // no trailers in brotli
-    }
-
-    @Override
     public void close() throws Exception
     {
         captureChannel.release();
@@ -149,38 +134,22 @@ public class BrotliEncoder implements Compression.Encoder
 
     private static class CaptureByteChannel implements WritableByteChannel
     {
-        private final ByteBufferPool byteBufferPool;
-        private final Queue<RetainableByteBuffer> bufferQueue = new ArrayDeque<>();
-        private RetainableByteBuffer activeBuffer;
+        private final BufferQueue bufferQueue;
         private boolean closed = false;
 
         public CaptureByteChannel(ByteBufferPool byteBufferPool)
         {
-            this.byteBufferPool = byteBufferPool;
+            this.bufferQueue = new BufferQueue(byteBufferPool);
         }
 
         public boolean hasOutput()
         {
-            if (activeBuffer != null && activeBuffer.hasRemaining())
-                return true;
-
-            return !bufferQueue.isEmpty();
+            return bufferQueue.hasRemaining();
         }
 
         public ByteBuffer getBuffer()
         {
-            if (activeBuffer != null && !activeBuffer.hasRemaining())
-            {
-                activeBuffer.release();
-                activeBuffer = null;
-            }
-
-            if (activeBuffer == null)
-                activeBuffer = bufferQueue.poll();
-
-            if (activeBuffer != null)
-                return activeBuffer.getByteBuffer();
-            return null;
+            return bufferQueue.getBuffer();
         }
 
         @Override
@@ -191,9 +160,7 @@ public class BrotliEncoder implements Compression.Encoder
 
         public void release()
         {
-            if (activeBuffer != null)
-                activeBuffer.release();
-            bufferQueue.forEach(RetainableByteBuffer::release);
+            bufferQueue.close();
         }
 
         @Override
@@ -212,22 +179,8 @@ public class BrotliEncoder implements Compression.Encoder
                 LOG.debug("captured.write({})", BufferUtil.toDetailString(src));
 
             int len = src.remaining();
-            RetainableByteBuffer copy = copyOf(src);
-            if (LOG.isDebugEnabled())
-                LOG.debug("capture.write() queue:{}", BufferUtil.toDetailString(copy.getByteBuffer()));
-            bufferQueue.add(copy);
+            bufferQueue.add(src);
             return len;
-        }
-
-        private RetainableByteBuffer copyOf(ByteBuffer buf)
-        {
-            if (buf == null)
-                return null;
-            RetainableByteBuffer.Mutable copy = byteBufferPool.acquire(buf.remaining(), buf.isDirect());
-            copy.getByteBuffer().clear();
-            copy.getByteBuffer().put(buf);
-            copy.getByteBuffer().flip();
-            return copy;
         }
     }
 }
