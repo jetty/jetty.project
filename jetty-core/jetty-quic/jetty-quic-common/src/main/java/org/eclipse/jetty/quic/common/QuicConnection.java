@@ -17,11 +17,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -39,7 +40,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
@@ -344,26 +344,19 @@ public abstract class QuicConnection extends AbstractConnection
 
     private class Flusher extends IteratingCallback
     {
-        private final AutoLock lock = new AutoLock();
-        private final ArrayDeque<Entry> queue = new ArrayDeque<>();
+        private final Queue<Entry> queue = new ConcurrentLinkedQueue<>();
         private Entry entry;
 
         public void offer(Callback callback, SocketAddress address, ByteBuffer[] buffers)
         {
-            try (AutoLock l = lock.lock())
-            {
-                queue.offer(new Entry(callback, address, buffers));
-            }
+            queue.offer(new Entry(callback, address, buffers));
             iterate();
         }
 
         @Override
         protected Action process()
         {
-            try (AutoLock l = lock.lock())
-            {
-                entry = queue.poll();
-            }
+            entry = queue.poll();
             if (entry == null)
                 return Action.IDLE;
 
@@ -372,17 +365,9 @@ public abstract class QuicConnection extends AbstractConnection
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             entry.callback.succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            entry.callback.failed(x);
-            super.failed(x);
         }
 
         @Override
@@ -394,10 +379,11 @@ public abstract class QuicConnection extends AbstractConnection
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            entry.callback.failed(cause);
             QuicConnection.this.close();
         }
 
-        private class Entry
+        private static class Entry
         {
             private final Callback callback;
             private final SocketAddress address;

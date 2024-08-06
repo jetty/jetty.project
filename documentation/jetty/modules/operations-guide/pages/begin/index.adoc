@@ -58,7 +58,7 @@ Read the xref:arch/index.adoc[Jetty architecture section] for more information a
 [[download]]
 == Downloading Jetty
 
-The Jetty distribution is a file of the form `jetty-home-<version>.<ext>`, available for download from https://eclipse.dev/jetty/download.php[]
+The Jetty distribution is a file of the form `jetty-home-<version>.<ext>`, available for download from https://jetty.org/download.html[]
 
 The Jetty distribution is available in both `zip` and `gzip` formats; download the one most appropriate for your system, typically `zip` for Windows and `gzip` for other operating systems.
 
@@ -66,7 +66,7 @@ The Jetty distribution is available in both `zip` and `gzip` formats; download t
 == Installing Jetty
 
 After the download, unpacking Jetty will extract the files into a directory called `jetty-home-<version>`, where `<version>` is the version of Jetty that you downloaded.
-For example, installing Jetty {version} will create a directory called `jetty-home-{version}`.
+For example, installing Jetty {jetty-version} will create a directory called `jetty-home-{jetty-version}`.
 
 IMPORTANT: It is important that *only* stable release versions are used in production environments.
 Versions that have been deprecated or are released as Milestones (M), Alpha, Beta or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.

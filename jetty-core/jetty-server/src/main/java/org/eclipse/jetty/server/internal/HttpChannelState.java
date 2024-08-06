@@ -394,6 +394,17 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Runnable onFailure(Throwable x)
     {
+        return onFailure(x, false);
+    }
+
+    @Override
+    public Runnable onRemoteFailure(Throwable x)
+    {
+        return onFailure(x, true);
+    }
+
+    private Runnable onFailure(Throwable x, boolean remote)
+    {
         HttpStream stream;
         Runnable task;
         try (AutoLock ignored = _lock.lock())
@@ -438,7 +449,9 @@ public class HttpChannelState implements HttpChannel, Components
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
                 _onFailure = null;
-                Runnable invokeOnFailureListeners = onFailure == null ? null : () ->
+
+                boolean skipListeners = remote && !getHttpConfiguration().isNotifyRemoteAsyncErrors();
+                Runnable invokeOnFailureListeners = onFailure == null || skipListeners ? null : () ->
                 {
                     try
                     {

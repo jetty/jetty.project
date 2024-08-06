@@ -24,7 +24,7 @@ You can protect clear-text stored passwords from _casual view_ by obfuscating th
 
 [,bash,subs=attributes+]
 ----
-$ java -cp jetty-util-{version}.jar org.eclipse.jetty.util.security.Password --prompt
+$ java -cp jetty-util-{jetty-version}.jar org.eclipse.jetty.util.security.Password --prompt
 Username: <1>
 Password: secret <2>
 OBF:1yta1t331v8w1v9q1t331ytc <3>

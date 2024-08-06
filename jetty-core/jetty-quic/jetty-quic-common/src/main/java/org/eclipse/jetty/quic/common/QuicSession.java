@@ -319,6 +319,9 @@ public abstract class QuicSession extends ContainerLifeCycle
             ProtocolSession protocol = protocolSession;
             if (protocol == null)
             {
+                if (!validateNewlyEstablishedConnection())
+                    return null;
+
                 protocolSession = protocol = createProtocolSession();
                 addManaged(protocol);
             }
@@ -342,6 +345,11 @@ public abstract class QuicSession extends ContainerLifeCycle
     }
 
     protected abstract ProtocolSession createProtocolSession();
+
+    /**
+     * @return true if the connection is valid, false otherwise.
+     */
+    protected abstract boolean validateNewlyEstablishedConnection();
 
     List<Long> getWritableStreamIds()
     {
@@ -521,12 +529,11 @@ public abstract class QuicSession extends ContainerLifeCycle
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("written cipher bytes on {}", QuicSession.this);
             cipherBuffer.release();
-            super.succeeded();
         }
 
         @Override
