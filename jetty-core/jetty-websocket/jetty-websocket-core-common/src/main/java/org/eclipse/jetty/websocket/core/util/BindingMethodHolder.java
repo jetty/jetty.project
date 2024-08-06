@@ -28,7 +28,17 @@ class BindingMethodHolder implements MethodHolder
     @Override
     public Object invoke(Object... args) throws Throwable
     {
-        return _methodHandle.invokeWithArguments(args);
+        return MethodHolder.doInvoke(_methodHandle, args);
+    }
+
+    public MethodHandle getMethodHandler()
+    {
+        return _methodHandle;
+    }
+
+    public Object invoke(Object o1, Object o2) throws Throwable
+    {
+        return MethodHolder.doInvoke(_methodHandle, o1, o2);
     }
 
     @Override

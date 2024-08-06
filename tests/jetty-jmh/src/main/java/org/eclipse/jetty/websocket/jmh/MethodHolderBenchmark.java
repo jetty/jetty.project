@@ -19,8 +19,6 @@ import java.lang.invoke.MethodType;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.websocket.core.util.BindingMethodHolder2;
-import org.eclipse.jetty.websocket.core.util.LambdaMetafactoryMethodHolder;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -33,6 +31,10 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
 @Threads(4)
@@ -41,60 +43,31 @@ import org.openjdk.jmh.infra.Blackhole;
 public class MethodHolderBenchmark
 {
     private MethodHandle methodHandle;
-    private MethodHolder bindingMethodHolder;
-    private MethodHolder nonBindingMethodHolder;
-    private BindingMethodHolder2 methodHolderWithOptimisation;
-    private LambdaMetafactoryMethodHolder lambdaMetafactoryMethodHolder;
-
-    public static void main(String[] args) throws Throwable
-    {
-        MethodType methodType = MethodType.methodType(void.class, Blackhole.class, String.class, String.class);
-        MethodHandle methodHandle = MethodHandles.lookup()
-            .findVirtual(MethodHolderBenchmark.class, "method87964376", methodType);
-        if (methodHandle == null)
-            throw new IllegalStateException();
-
-        LambdaMetafactoryMethodHolder lambdaMetafactoryMethodHolder = new LambdaMetafactoryMethodHolder(methodHandle, MethodHandles.lookup());
-        lambdaMetafactoryMethodHolder = lambdaMetafactoryMethodHolder.bindTo(null);
-        lambdaMetafactoryMethodHolder = lambdaMetafactoryMethodHolder.bindTo(null);
-        System.err.println(lambdaMetafactoryMethodHolder);
-    }
+    private MethodHolder methodHolderNonBinding;
+    private MethodHolder methodHolderBinding;
 
     @Setup(Level.Trial)
     public void setupTrial(Blackhole blackhole) throws Throwable
     {
         MethodType methodType = MethodType.methodType(void.class, Blackhole.class, String.class, String.class);
         methodHandle = MethodHandles.lookup()
-            .findVirtual(MethodHolderBenchmark.class, "method87964376", methodType);
+            .findVirtual(MethodHolderBenchmark.class, "consume", methodType);
         if (methodHandle == null)
             throw new IllegalStateException();
 
-        bindingMethodHolder = MethodHolder.from(methodHandle, true);
-        bindingMethodHolder.bindTo(this);
-        bindingMethodHolder.bindTo(Objects.requireNonNull(blackhole));
+        methodHolderBinding = MethodHolder.from(methodHandle, true);
+        methodHolderBinding.bindTo(this);
+        methodHolderBinding.bindTo(Objects.requireNonNull(blackhole));
 
-        nonBindingMethodHolder = MethodHolder.from(methodHandle, false);
-        nonBindingMethodHolder.bindTo(this);
-        nonBindingMethodHolder.bindTo(Objects.requireNonNull(blackhole));
-
-        methodHolderWithOptimisation = new BindingMethodHolder2(methodHandle);
-        methodHolderWithOptimisation = methodHolderWithOptimisation.bindTo(this);
-        methodHolderWithOptimisation = methodHolderWithOptimisation.bindTo(Objects.requireNonNull(blackhole));
-
-        optimisedMethodHandle = methodHolderWithOptimisation.getMethodHandler();
-
-        lambdaMetafactoryMethodHolder = new LambdaMetafactoryMethodHolder(methodHandle, MethodHandles.lookup());
-        lambdaMetafactoryMethodHolder = lambdaMetafactoryMethodHolder.bindTo(this);
-        lambdaMetafactoryMethodHolder = lambdaMetafactoryMethodHolder.bindTo(Objects.requireNonNull(blackhole));
-
+        methodHolderNonBinding = MethodHolder.from(methodHandle, false);
+        methodHolderNonBinding.bindTo(this);
+        methodHolderNonBinding.bindTo(Objects.requireNonNull(blackhole));
 
         methodHandle = methodHandle.bindTo(this);
         methodHandle = methodHandle.bindTo(Objects.requireNonNull(blackhole));
     }
 
-    private MethodHandle optimisedMethodHandle;
-
-    public void method87964376(Blackhole blackhole, String a, String b)
+    public void consume(Blackhole blackhole, String a, String b)
     {
         blackhole.consume(a);
         blackhole.consume(b);
@@ -102,68 +75,37 @@ public class MethodHolderBenchmark
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public void methodHandleTest() throws Throwable
+    public void methodHandle() throws Throwable
     {
         methodHandle.invoke("test", "12");
     }
 
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    public void methodHandleWithArgumentsTest() throws Throwable
-//    {
-//        methodHandle.invokeWithArguments("test", "12");
-//    }
-//
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    public void methodHandleWithArgumentsArrayTest() throws Throwable
-//    {
-//        methodHandle.invokeWithArguments(new Object[]{"test", "12"});
-//    }
-
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    public void bindingMethodHolderTest() throws Throwable
-//    {
-//        bindingMethodHolder.invoke("test", "12");
-//    }
-
-//    @Benchmark
-//    @BenchmarkMode({Mode.Throughput})
-//    public void nonBindingMethodHolderTest() throws Throwable
-//    {
-//        nonBindingMethodHolder.invoke("test", "12");
-//    }
-
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public void methodHolderWithOptimisationTest() throws Throwable
+    public void methodHolderNonBinding() throws Throwable
     {
-        methodHolderWithOptimisation.invoke("test", "12");
-//        optimisedMethodHandle.invoke("test", "12");
+        methodHolderNonBinding.invoke("test", "12");
     }
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public void lambdaMetafactoryTest() throws Throwable
+    public void methodHolderBinding() throws Throwable
     {
-        lambdaMetafactoryMethodHolder.invoke("test", "12");
+        methodHolderBinding.invoke("test", "12");
     }
 
-//    public static void main(String[] args) throws RunnerException
-//    {
-//        Options opt = new OptionsBuilder()
-//            .include(MethodHolderBenchmark.class.getSimpleName())
-//            .warmupIterations(5)
-//            .measurementIterations(10)
-//            .addProfiler(LinuxPerfAsmProfiler.class)
-////            .addProfiler(GCProfiler.class)
-//            .forks(1)
-//            .threads(1)
-//            .build();
-//
-//        new Runner(opt).run();
-//    }
+    public static void main(String[] args) throws RunnerException
+    {
+        Options opt = new OptionsBuilder()
+            .include(MethodHolderBenchmark.class.getSimpleName())
+            .warmupIterations(5)
+            .measurementIterations(10)
+            .forks(1)
+            .threads(1)
+            .build();
+
+        new Runner(opt).run();
+    }
 }
 
 
