@@ -738,6 +738,9 @@ public abstract class HttpReceiver
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing demand on {}", this);
 
+            if (!invoker.isInvoking())
+                throw new IllegalStateException();
+
             Content.Chunk current;
             try (AutoLock ignored = lock.lock())
             {
@@ -777,9 +780,15 @@ public abstract class HttpReceiver
                 try
                 {
                     if (invoke)
+                    {
                         invoker.run(demandCallback);
+                    }
                     else
+                    {
+                        if (!invoker.isInvoking())
+                            throw new IllegalStateException();
                         demandCallback.run();
+                    }
                 }
                 catch (Throwable x)
                 {
