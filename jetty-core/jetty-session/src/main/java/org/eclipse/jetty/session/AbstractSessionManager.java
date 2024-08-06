@@ -1321,7 +1321,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 //we already have a valid session and now have a duplicate ID for it
                 if (LOG.isDebugEnabled())
                     LOG.debug(duplicateSession(requestedSessionId, true, requestedSessionIdFromCookie,
-                        id, false, i < cookieIds ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER));
+                        id, false, i < cookieIds));
             }
             else
             {
