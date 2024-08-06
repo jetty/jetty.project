@@ -793,8 +793,8 @@ public class ServletApiRequest implements HttpServletRequest
 
         _servletContextRequest.getServletChannel().setCompleteListener(() ->
         {
-            asyncContext.complete();
             upgradeHandler.destroy();
+            asyncContext.complete();
         });
 
         upgradeHandler.init(webConnection);
