@@ -663,7 +663,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/eclipse/jetty.project/issues/9206
+    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82ExpectInvalid() throws Exception
     {
@@ -688,7 +688,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/eclipse/jetty.project/issues/9206
+    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82ExpectWithBody() throws Exception
     {
@@ -717,7 +717,7 @@ public abstract class RFC2616BaseTest
      * @throws Exception failure
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/eclipse/jetty.project/issues/9206
+    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82UnexpectWithBody() throws Exception
     {
@@ -753,7 +753,7 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/eclipse/jetty.project/issues/9206
+    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82ExpectNormal() throws Exception
     {
@@ -1062,7 +1062,7 @@ public abstract class RFC2616BaseTest
 
         specId = "10.3 Redirection HTTP/1.0 - basic";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(getServer().getScheme() + "://myhost:1234/tests/", response.get("Location"), specId);
+        assertEquals("/tests/", response.get("Location"), specId);
     }
 
     /**
@@ -1091,12 +1091,12 @@ public abstract class RFC2616BaseTest
         HttpTester.Response response = responses.get(0);
         String specId = "10.3 Redirection HTTP/1.1 - basic (response 1)";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(getServer().getScheme() + "://localhost/tests/", response.get("Location"), specId);
+        assertEquals("/tests/", response.get("Location"), specId);
         
         response = responses.get(1);
         specId = "10.3 Redirection HTTP/1.1 - basic (response 2)";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(getServer().getScheme() + "://localhost/tests/", response.get("Location"), specId);
+        assertEquals("/tests/", response.get("Location"), specId);
         assertEquals("close", response.get("Connection"), specId);
     }
 
@@ -1120,7 +1120,7 @@ public abstract class RFC2616BaseTest
 
         String specId = "10.3 Redirection HTTP/1.0 w/content";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
-        assertEquals(getServer().getScheme() + "://localhost/tests/R1.txt", response.get("Location"), specId);
+        assertEquals("/tests/R1.txt", response.get("Location"), specId);
     }
 
     /**
@@ -1143,7 +1143,7 @@ public abstract class RFC2616BaseTest
        
         String specId = "10.3 Redirection HTTP/1.1 w/content";
         assertThat(specId + " [status]", response.getStatus(), is(HttpStatus.FOUND_302));
-        assertThat(specId + " [location]", response.get("Location"), is(getServer().getScheme() + "://localhost/tests/R2.txt"));
+        assertThat(specId + " [location]", response.get("Location"), is("/tests/R2.txt"));
         assertThat(specId + " [connection]", response.get("Connection"), is("close"));
     }
 

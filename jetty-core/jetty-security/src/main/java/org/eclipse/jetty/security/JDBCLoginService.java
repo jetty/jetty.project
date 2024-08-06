@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.Credential;
@@ -96,7 +97,7 @@ public class JDBCLoginService extends AbstractLoginService
     {
         Properties properties = new Properties();
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
-             InputStream in = resourceFactory.newResource(_config).newInputStream())
+             InputStream in = IOResources.asInputStream(resourceFactory.newResource(_config)))
         {
             properties.load(in);
         }
@@ -116,9 +117,9 @@ public class JDBCLoginService extends AbstractLoginService
         final String userRoleTableUserKey = properties.getProperty("userroletableuserkey");
         final String userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
 
-        if (_jdbcDriver == null || _jdbcDriver.equals("") ||
-            _url == null || _url.equals("") ||
-            _userName == null || _userName.equals("") ||
+        if (_jdbcDriver == null || _jdbcDriver.isEmpty() ||
+            _url == null || _url.isEmpty() ||
+            _userName == null || _userName.isEmpty() ||
             _password == null)
         {
             LOG.warn("UserRealm {} has not been properly configured", getName());

@@ -89,7 +89,7 @@ public class ClientConnectTest
         assertThat("Error", capcause, errorMatcher);
 
         // Validate that websocket didn't see an open event
-        assertThat("Open Latch", wsocket.connectLatch.getCount(), is(1L));
+        assertThat("Open Latch", wsocket.openLatch.getCount(), is(1L));
 
         // Return the captured cause
         return (E)capcause;
@@ -115,9 +115,7 @@ public class ClientConnectTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofSeconds(10));
             container.addMapping("/echo", (upgradeRequest, upgradeResponse, callback) ->
@@ -140,6 +138,7 @@ public class ClientConnectTest
                 return null;
             });
         });
+        context.setHandler(wsHandler);
 
         PathMappingsHandler pathsHandler = new PathMappingsHandler();
         wsHandler.setHandler(pathsHandler);

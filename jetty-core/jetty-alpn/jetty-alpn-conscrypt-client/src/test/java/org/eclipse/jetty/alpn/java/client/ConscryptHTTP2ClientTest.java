@@ -36,12 +36,11 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.condition.OS.LINUX;
 
-@EnabledOnOs({LINUX}) // TODO review if should be enabled on other OS
+@DisabledOnOs(architectures = "aarch64", disabledReason = "Conscrypt does not provide aarch64 native libs as of version 2.5.2")
 public class ConscryptHTTP2ClientTest
 {
     @Tag("external")
@@ -54,7 +53,7 @@ public class ConscryptHTTP2ClientTest
         Assumptions.assumeTrue(canConnectTo(host, port));
 
         Security.insertProviderAt(new OpenSSLProvider(), 1);
-        SslContextFactory sslContextFactory = new SslContextFactory.Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setProvider("Conscrypt");
         Conscrypt.setDefaultHostnameVerifier((certs, hostname, session) -> true);
 

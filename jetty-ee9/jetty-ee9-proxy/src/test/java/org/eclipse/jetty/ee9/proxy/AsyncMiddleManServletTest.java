@@ -82,7 +82,6 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1115,7 +1114,6 @@ public class AsyncMiddleManServletTest
     }
 
     @Test
-    @Disabled("idle timeouts do not work yet")
     public void testAfterContentTransformerClosingFilesOnClientRequestException(WorkDir workDir) throws Exception
     {
         Path targetTestsDir = workDir.getEmptyPathDir();

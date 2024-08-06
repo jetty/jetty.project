@@ -33,6 +33,7 @@ public class ContentSinkOutputStream extends OutputStream
 {
     private final Blocker.Shared _blocking = new Blocker.Shared();
     private final Content.Sink sink;
+    private boolean failed;
 
     public ContentSinkOutputStream(Content.Sink sink)
     {
@@ -55,7 +56,7 @@ public class ContentSinkOutputStream extends OutputStream
         }
         catch (Throwable x)
         {
-            throw IO.rethrow(x);
+            handleException(x);
         }
     }
 
@@ -69,7 +70,7 @@ public class ContentSinkOutputStream extends OutputStream
         }
         catch (Throwable x)
         {
-            throw IO.rethrow(x);
+            handleException(x);
         }
     }
 
@@ -83,12 +84,20 @@ public class ContentSinkOutputStream extends OutputStream
         }
         catch (Throwable x)
         {
-            throw IO.rethrow(x);
+            handleException(x);
         }
     }
 
     public void close(Callback callback) throws IOException
     {
         sink.write(true, null, callback);
+    }
+
+    private void handleException(Throwable x) throws IOException
+    {
+        if (failed)
+            throw new IOException(x.toString());
+        failed = true;
+        throw IO.rethrow(x);
     }
 }

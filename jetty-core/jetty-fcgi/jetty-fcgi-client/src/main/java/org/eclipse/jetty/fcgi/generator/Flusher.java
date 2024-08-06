@@ -101,12 +101,11 @@ public class Flusher
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             if (active != null)
                 active.succeeded();
             active = null;
-            super.succeeded();
         }
 
         @Override

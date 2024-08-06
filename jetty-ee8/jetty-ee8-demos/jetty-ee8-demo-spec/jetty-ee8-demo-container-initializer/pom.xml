@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.demos</groupId>
     <artifactId>jetty-ee8-demo-spec</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.13-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-demo-container-initializer</artifactId>
   <packaging>jar</packaging>
@@ -31,7 +31,7 @@
             <Bundle-SymbolicName>org.eclipse.jetty.ee8.demos.ee8-demo-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>
             <Bundle-Description>A bundle containing a ServletContainerInitializer for testing</Bundle-Description>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer</Provide-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
             <Export-Package>org.example.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
             <_nouses>true</_nouses>
           </instructions>

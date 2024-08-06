@@ -58,13 +58,12 @@ public class FrameListenerTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofSeconds(2));
             container.addMapping("/ws", (rq, rs, cb) -> serverEndpoint = new FrameEndpoint());
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();
@@ -130,14 +129,12 @@ public class FrameListenerTest
 
     public static class FrameEndpoint implements Session.Listener
     {
-        public Session session;
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public LinkedBlockingQueue<String> frameEvents = new LinkedBlockingQueue<>();
 
         @Override
         public void onWebSocketOpen(Session session)
         {
-            this.session = session;
             session.demand();
         }
 
@@ -150,7 +147,6 @@ public class FrameListenerTest
                 BufferUtil.toUTF8String(frame.getPayload()),
                 frame.getPayloadLength()));
             callback.succeed();
-            session.demand();
         }
 
         @Override

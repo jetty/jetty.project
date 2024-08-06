@@ -1,0 +1,779 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Standard Modules
+
+[[alpn]]
+== Module `alpn`
+
+The `alpn` module enables support for the ALPN negotiation mechanism of the TLS protocol.
+
+You can configure the list of application protocols negotiated by the ALPN mechanism, as well as the default protocol to use if the ALPN negotiation fails (for example, the client does not support ALPN).
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/alpn.mod[tags=documentation]
+----
+
+[[bytebufferpool]]
+== Module `bytebufferpool`
+
+The `bytebufferpool` module allows you to configure the server-wide `ByteBuffer` pool.
+Pooling ``ByteBuffer``s results in less memory usage and less pressure on the Garbage Collector.
+
+``ByteBuffer``s are pooled in _buckets_; each bucket as a capacity that is a multiple of a capacity factor that you can configure.
+For example, if a request for a `ByteBuffer` of capacity 2000 is requested, and the capacity factor is 1024, then the pool will allocate a buffer from the second bucket, of capacity 2048 (1024 * 2).
+
+Applications that need to sustain many concurrent requests -- or load spikes -- may require many buffers during peak load. These buffers will remain pooled once the system transitions to a lighter load (or becomes idle), and it may be undesirable to retain a lot of memory for an idle system.
+
+It is possible to configure the max heap memory and the max direct memory that the pool retains.
+Excess buffers will not be pooled and will be eventually garbage collected.
+
+The module file is `$JETTY_HOME/modules/bytebufferpool.mod`:
+
+----
+include::{jetty-home}/modules/bytebufferpool.mod[]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.byteBufferPool.maxHeapMemory`::
+This property allows you to cap the max heap memory retained by the pool.
+
+`jetty.byteBufferPool.maxDirectMemory`::
+This property allows you to cap the max direct memory retained by the pool.
+
+[[console-capture]]
+== Module `console-capture`
+
+The `console-capture` module captures `System.out` and `System.err` output and appends it to a rolling file.
+
+The file is rolled every day at the midnight of the configured timezone.
+Old, rolled files are kept for the number of days specified by the `jetty.console-capture.retainDays` property.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/console-capture.mod[tags=documentation]
+----
+
+[[core-deploy]]
+== Module `core-deploy`
+
+include::{jetty-home}/modules/ee10-deploy.mod[tags=description]
+
+Deployment is managed via a `DeploymentManager` component that watches a directory for changes.
+See xref:deploy/index.adoc[how to deploy web applications] for more information.
+
+TODO
+
+[[cross-origin]]
+== Module `cross-origin`
+
+The `cross-origin` module provides support for the https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[CORS protocol] implemented by browsers when performing cross-origin requests.
+
+This module installs the xref:programming-guide:server/http.adoc#handler-use-cross-origin[`CrossOriginHandler`] in the `Handler` tree; `CrossOriginHandler` inspects cross-origin requests and adds the relevant CORS response headers.
+
+`CrossOriginHandler` should be used when an application performs cross-origin requests to your domain, to protect from https://owasp.org/www-community/attacks/csrf[cross-site request forgery] attacks.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/cross-origin.mod[tags=documentation]
+----
+
+You must configure at least the property `jetty.crossorigin.allowedOriginPatterns` to allow one or more origins.
+
+It is recommended that you consider configuring also the property `jetty.crossorigin.allowCredentials`.
+When set to `true`, clients send cookies and authentication headers in cross-origin requests to your domain.
+When set to `false`, cookies and authentication headers are not sent.
+
+[[eeN-deploy]]
+== Module `{ee-all}-deploy`
+
+include::{jetty-home}/modules/ee10-deploy.mod[tags=description]
+
+Deployment is managed via a `DeploymentManager` component that watches a directory for changes.
+See xref:deploy/index.adoc[how to deploy web applications] for more information.
+
+Adding files or directories to this monitored directory will cause the `DeploymentManager` to deploy them as web applications; updating files already existing in this monitored directory will cause the `DeploymentManager` to re-deploy the corresponding web application; removing files in this monitored directory will cause the `DeploymentManager` to "undeploy" the corresponding web application.
+(You can find a more detailed discussion of these rules in the xref:deploy/index.adoc#rules[deployment rules] section.)
+
+Multiple versions of this module exist (`{ee-all}-deploy`) to support each Jakarta EE platform's version of the Java Servlet specification.
+Jetty's configuration properties are nearly identical across these versions; the configuration properties for the `{ee-current}-deploy` Jetty module are:
+
+----
+include::{jetty-home}/modules/ee10-deploy.mod[tags=ini-template]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.deploy.monitoredDir`::
+The name of the monitored directory.
+`jetty.deploy.scanInterval`::
+The scan period in seconds, that is how frequently the `DeploymentManager` wakes up to scan the monitored directory for changes.
+Setting `jetty.deploy.scanInterval=0` disabled _hot_ deployment so that only static deployment will be possible (see also xref:deploy/index.adoc#hot-static[here] for more information).
+
+[[eeN-webapp]]
+== Module `{ee-all}-webapp`
+
+include::{jetty-home}/modules/ee10-webapp.mod[tags=description]
+
+Multiple versions of this module exist (`{ee-all}-webapp`) to support each Jakarta EE platform's version of the Java Servlet specification.
+Jetty's configuration properties are identical across all versions of this module, and are as follows:
+
+----
+include::{jetty-home}/modules/ee10-webapp.mod[tags=ini-template]
+----
+
+[[http]]
+== Module `http`
+
+The `http` module provides the clear-text connector and support for the clear-text HTTP/1.1 protocol, and depends on the <<server,`server` module>>.
+
+The module properties to configure the clear-text connector are:
+
+----
+include::{jetty-home}/modules/http.mod[tags=documentation]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.http.port`::
+The network port that Jetty listens to for clear-text HTTP/1.1 connections -- default `8080`.
+`jetty.http.idleTimeout`::
+The amount of time a connection can be idle (i.e. no bytes received and no bytes sent) until the server decides to close it to save resources -- default `30` seconds.
+`jetty.http.acceptors`::
+The number of threads that compete to accept connections -- default 1. Use -1 to let the accept heuristic decides the value; the current heuristic calculates a value based on the number of cores).
+Refer to <<http-acceptors,this section>> for more information about acceptor threads.
+`jetty.http.selectors`::
+The number of NIO selectors (with an associated thread) that manage connections -- default -1 (i.e. a select heuristic decides the value; the current heuristic calculates a value based on the number of cores).
+
+[[http-acceptors]]
+=== Configuration of Acceptors
+
+Accepting connections from remote clients may be configured as a blocking operation, or a non-blocking operation.
+
+When accepting connections is configured as a blocking operation (the number of acceptors is greater than zero), a thread is blocked in the `accept()` call until a connection is accepted, and other acceptor threads (if any) are blocked on the lock acquired by the accepting thread just before the `accept()` call.
+
+When the accepting thread accepts a connection, it performs a little processing of the just accepted connection, before forwarding it to other components.
+
+During this little processing other connections may be established; if there is only one accepting thread, the newly established connections are waiting for the accepting thread to finish the processing of the previously accepted connection and call again `accept()`.
+
+Servers that manage a very high number of connections that may (naturally) come and go, or that handle inefficient protocols that open and close connections very frequently (such as HTTP/1.0) may benefit of an increased number of acceptor threads, so that when one acceptor thread processes a just accepted connection, another acceptor thread can immediately take over accepting connections.
+
+When accepting connections is configured as a non-blocking operation (the number of acceptors is zero), then the server socket is set in non-blocking mode and added to a NIO selector.
+In this way, no dedicated acceptor threads exist: the work of accepting connections is performed by the selector thread.
+
+[[http-selectors]]
+=== Configuration of Selectors
+
+Performing a NIO `select()` call is a blocking operation, where the selecting thread is blocked in the `select()` call until at least one connection is ready to be processed for an I/O operation.
+There are 4 I/O operations: ready to be accepted, ready to be connected, ready to be read and ready to be written.
+
+A single NIO selector can manage thousands of connections, with the assumption that not many of them will be ready at the same time.
+
+For a single NIO selector, the ratio between the average number of selected connections over the total number of connections for every `select()` call depends heavily on the protocol but also on the application.
+
+Multiplexed TCP protocols such as HTTP/2 tend to be busier than duplex protocols such as HTTP/1.1, leading to a higher ratio.
+
+REST applications that exchange many little JSON messages tend to be busier than file server applications, leading to a higher ratio.
+
+The higher the ratio, the higher the number of selectors you want to have, compatibly with the number of cores -- there is no point in having 64 selector threads on a single core hardware.
+
+[[http2]]
+== Module `http2`
+
+The `http2` module enables support for the secure HTTP/2 protocol.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/http2.mod[tags=documentation]
+----
+
+// tag::rate-control[]
+The `jetty.http2.rateControl.maxEventsPerSecond` property controls the number of "bad" or "unnecessary" frames that a client may send before the server closes the connection (with code https://tools.ietf.org/html/rfc7540#section-7[`ENHANCE_YOUR_CALM`]) to avoid a denial of service.
+
+For example, an attacker may send empty `SETTINGS` frames to a server in a tight loop.
+While the `SETTINGS` frames don't change the server configuration and each of them is somehow harmless, the server will be very busy processing them because they are sent by the attacker one after the other, causing a CPU spike and eventually a denial of service (as all CPUs will be busy processing empty `SETTINGS` frames).
+
+The same attack may be performed with `PRIORITY` frames, empty `DATA` frames, `PING` frames, etc.
+
+[[http2c]]
+== Module `http2c`
+
+The `http2c` module enables support for the clear-text HTTP/2 protocol.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/http2c.mod[tags=documentation]
+----
+
+The `jetty.http2.rateControl.maxEventsPerSecond` property controls the number of "bad" or "unnecessary" frames that a client may send before the server closes the connection (with code https://tools.ietf.org/html/rfc7540#section-7[`ENHANCE_YOUR_CALM`]) to avoid a denial of service.
+
+For example, an attacker may send empty `SETTINGS` frames to a server in a tight loop.
+While the `SETTINGS` frames don't change the server configuration and each of them is somehow harmless, the server will be very busy processing them because they are sent by the attacker one after the other, causing a CPU spike and eventually a denial of service (as all CPUs will be busy processing empty `SETTINGS` frames).
+
+The same attack may be performed with `PRIORITY` frames, empty `DATA` frames, `PING` frames, etc.
+
+[[http3]]
+== Module `http3`
+
+The `http3` module enables support for the HTTP/3 protocol.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/http3.mod[tags=documentation]
+----
+
+[[http-forwarded]]
+== Module `http-forwarded`
+
+The `http-forwarded` module provides support for processing the `Forwarded` HTTP header (defined in https://tools.ietf.org/html/rfc7239[RFC 7239]) and the now obsoleted `X-Forwarded-*` HTTP headers.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/http-forwarded.mod[tags=documentation]
+----
+
+[[https]]
+== Module `https`
+
+The `https` module provides the HTTP/1.1 protocol to the <<ssl,`ssl` module>>.
+
+The module file is `$JETTY_HOME/modules/https.mod`:
+
+----
+include::{jetty-home}/modules/https.mod[]
+----
+
+[[jmx]]
+== Module `jmx`
+
+include::{jetty-home}/modules/ee10-webapp.mod[tags=description]
+
+This configuration is useful for xref:jmx/index.adoc#local[local development and testing].
+If you need to xref:jmx/index.adoc#remote[enable remote access], use the xref:jmx/index.adoc#remote[`jmx-remote` module].
+
+[[jmx-remote]]
+== Module `jmx-remote`
+
+The `jmx-remote` module provides remote access to JMX clients.
+
+The module properties to configure remote JMX connector are:
+
+----
+include::{jetty-home}/modules/jmx-remote.mod[tags=documentation]
+----
+
+The system property `java.rmi.server.hostname` is specified with the usual notation, prepending a `-D` in front of the system property name.
+
+The system property `java.rmi.server.hostname` is uncommented because it is necessary in the default configuration -- most systems do not have the local name resolution configured properly for remote access.
+
+As an example, in a Linux machine named `beryl`, the `/etc/hosts` file may contain these entries:
+
+----
+127.0.0.1 localhost
+127.0.1.1 beryl
+----
+
+If the system property `java.rmi.server.hostname` is not specified, the RMI implementation uses the host name `beryl` to figure out the IP address to store in the RMI stub, in this case `127.0.1.1`.
+However, we the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1`.
+
+If the system property `java.rmi.server.hostname` is not specified, the RMI client will try to connect to `127.0.1.1` (because that's what in the RMI stub) and fail because nothing is listening on that address.
+
+[[requestlog]]
+== Module `requestlog`
+
+The `requestlog` module provides HTTP request/response logging in the standard https://en.wikipedia.org/wiki/Common_Log_Format[NCSA format], or in a custom format of your choice.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/requestlog.mod[tags=documentation]
+----
+
+The property `jetty.requestlog.formatString` can be customized using format codes.
+
+javadoc::code:partial$org/eclipse/jetty/server/CustomRequestLog.java[]
+
+[[resources]]
+== Module `resources`
+
+include::{jetty-home}/modules/resources.mod[tags=description]
+
+A common use-case for this module is to provide resources for third-party libraries via the xref:start/index.adoc#start-class-path[server classpath].
+For instance, many logging libraries (including https://logging.apache.org/log4j/2.x/[Log4j2] and https://logback.qos.ch/[Logback]) look for their configuration files on the classpath.
+
+Jetty provides a logging library implementation -- enabled via the `logging-jetty` module -- whose configuration file is `$JETTY_BASE/resources/jetty-logging.properties`.
+
+[[rewrite]]
+== Module `rewrite`
+
+The `rewrite` module inserts the `RewriteHandler` at the beginning of the `Handler` chain, providing URI-rewriting features similar to the https://httpd.apache.org/docs/current/mod/mod_rewrite.html[Apache's mod_rewrite] or the https://nginx.org/en/docs/http/ngx_http_rewrite_module.html[Nginx rewrite module].
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/rewrite.mod[tags=documentation]
+----
+
+A common use of the `rewrite` module is to redirect/rewrite old URI paths that have been renamed, for example from `+/old/*+` to `+/new/*+`; in this way, the old paths will not result in a `404` response, but rather be redirected/rewritten to the new paths.
+
+`RewriteHandler` matches incoming requests against a set of rules that you can specify in the `$JETTY_BASE/etc/jetty-rewrite-rules.xml` file.
+
+Rules can be matched against request data such as the request URI or the request headers; if there is a match, the rule is applied.
+
+The rule file `$JETTY_BASE/etc/jetty-rewrite-rules.xml` is initially empty, but contains commented examples of rules that you can add.
+
+The list of available rules can be found link:{javadoc-url}/org/eclipse/jetty/rewrite/handler/package-summary.html[here].
+
+An example of `jetty-rewrite-rules.xml` is the following:
+
+[,xml]
+.jetty-rewrite-rules.xml
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<Configure id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RuleContainer">
+  <Call name="addRule">
+    <!-- Redirect with a 301 from /old/* to /new/* -->
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.RedirectRegexRule">
+        <Set name="statusCode">301</Set>
+        <Set name="pattern">/old/(.*)</Set>
+        <Set name="location">/new/$1</Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+----
+
+Rules can be scoped to a specific virtual host.
+In the example below, the rule will only be evaluated if the virtual host matches `example.com`:
+
+[,xml]
+.jetty-rewrite-rules.xml
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<Configure id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RuleContainer">
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.VirtualHostRuleContainer">
+        <Call name="addVirtualHost">
+          <!-- Only match the example.com domain -->
+          <Arg>example.com</Arg>
+        </Call>
+        <Call name="addRule">
+          <Arg>
+            <New class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
+              <Set name="pattern">/advice</Set>
+              <Set name="location">/support</Set>
+            </New>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+----
+
+[[server]]
+== Module `server`
+
+The `server` module provides generic server support, and configures generic HTTP properties that apply to all HTTP protocols, the scheduler properties and the server specific properties.
+
+The `server` module depends on the <<threadpool,`threadpool` module>>, the <<bytebufferpool,`bytebufferpool` module>> and the xref:server/index.adoc#logging[`logging` module].
+
+[NOTE]
+====
+The `server` module configures the shared parameters for generic HTTP handling, but does not enable any specific network protocol.  You have to explicitly enable the protocols you want to support by enabling, for example, the <<http,`http` module>> for clear-text HTTP/1.1 support, or the <<http2,`http2` module>> for secure HTTP/2 support, etc.
+
+See also the xref:protocols/index.adoc[protocols section] for more information about the supported protocols.
+====
+
+[[server-http-config]]
+=== HTTP Configuration Properties
+
+The module properties to configure generic HTTP properties are listed below. Mostly they frequently apply to HTTP/1, HTTP/2 and HTTP/3, but some parameters are version specific:
+
+----
+include::{jetty-home}/modules/server.mod[tags=documentation-http-config]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.httpConfig.headerCacheSize`::
+The header cache is used when parsing HTTP/1 to more efficiently handle fields that are repeated in every request on a connection.  If the server does not receive persistent connection or infrequent repeated fields, then there may be a performance gain in reducing the cache size. If large fields are frequently repeated, then a large cache may be beneficial.
+
+`jetty.httpConfig.delayDispatchUntilContent`::
+It is not uncommon for the network packets containing a request header to arrive before packets that contain the data of any request body. In such cases it may be beneficial for overall performance to delay dispatching the request to be handled until the first data packet arrives, as this may avoid blocking the handling thread.  However, if minimum latency for receiving the request without content is important, then this parameter can be set to false.
+
+`jetty.httpConfig.sendServerVersion`::
+Whether you want to send the `Server` header in every HTTP response:
++
+[source,subs=attributes+]
+----
+HTTP/1.1 200 OK
+Content-Length: 0
+Server: Jetty({jetty-version})
+----
+
+[[server-config]]
+=== Server Configuration Properties
+
+The module properties to configure the Jetty server are:
+
+----
+include::{jetty-home}/modules/server.mod[tags=documentation-server-config]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.server.dumpAfterStart`::
+Whether to perform a `Server.dump()` operation after the `Server` has started.
+The output of the dump operation is sent to `System.err`.
+See also the xref:troubleshooting/index.adoc#dump[Jetty Server Dump] section for more information.
+
+`jetty.server.dumpBeforeStop`::
+Whether to perform a `Server.dump()` operation before the `Server` stops.
+The output of the dump operation is sent to `System.err`.
+See also the xref:troubleshooting/index.adoc#dump[Jetty Server Dump] section for more information.
+
+`jetty.server.stopAtShutdown`::
+Whether to call `Server.stop()` through a JVM shutdown hook when the JVM exits.
+
+[[server-compliance]]
+=== Server Compliance Properties
+
+The Jetty server strives to keep up with the latest https://en.wikipedia.org/wiki/Request_for_Comments[IETF RFC]s for compliance with internet specifications, which are periodically updated. When possible, Jetty will support backwards compatibility by providing compliance modes that can be configured to allow violations of the current specifications that may have been allowed in obsoleted specifications.
+The module properties to configure the Jetty server compliance are:
+
+----
+include::{jetty-home}/modules/server.mod[tags=documentation-server-compliance]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.httpConfig.compliance`::
+Configures the compliance to HTTP specifications.
+The value could be:
+
+* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] constants, such as `RFC7230` or `RFC2616`.
+For example: `jetty.httpConfig.compliance=RFC2616`.
+* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#from(java.lang.String)[`HttpCompliance.from(String)`] method.
+For example, `jetty.httpConfig.compliance=RFC7230,MULTIPLE_CONTENT_LENGTHS` means that the HTTP compliance is that defined by `RFC7230`, but also allows the `HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS`, so that requests that have multiple `Content-Length` headers are accepted (they would be rejected when using just `HttpCompliance.RFC7230`).
++
+For more information about `HttpCompliance` see also xref:programming-guide:server/compliance.adoc#http[this section].
+
+`jetty.httpConfig.uriCompliance`::
+Configures the compliance to URI specifications.
+The value could be:
+
+* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html[`UriCompliance`] constants, such as `DEFAULT` or `RFC3986`.
+For example: `jetty.httpConfig.compliance=RFC3986`.
+* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/UriCompliance.html#from(java.lang.String)[`UriCompliance.from(String)`] method.
+For example, `jetty.httpConfig.uriCompliance=RFC3986,-AMBIGUOUS_PATH_SEPARATOR` means that the URI compliance is that defined by `RFC3986`, but also does not allow the `UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR`, so that requests that have URIs such as `/foo/bar%2Fbaz` (where `%2F` is the URL-encoded `/` character) are rejected (they would be accepted when using just `UriCompliance.RFC3986`).
++
+For more information about `UriCompliance` see also xref:programming-guide:server/compliance.adoc#uri[this section].
+
+`jetty.httpConfig.requestCookieCompliance`::
+`jetty.httpConfig.responseCookieCompliance`::
+Configures the compliance to HTTP cookie specifications.
+The value could be:
+
+* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html[`CookieCompliance`] constants, such as `RFC6265`.
+For example: `jetty.httpConfig.compliance=RFC6265`.
+* A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/CookieCompliance.html#from(java.lang.String)[`CookieCompliance.from(String)`] method.
+For example, `jetty.httpConfig.requestCookieCompliance=RFC6265,-RESERVED_NAMES_NOT_DOLLAR_PREFIXED` means that the cookie compliance is that defined by `RFC6265`, but also does not allow the `CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED`, so that requests that have cookie headers such as `Cookie: $foo=bar` are rejected (they would be accepted when using just `CookieCompliance.RFC6265`).
++
+For more information about `CookieCompliance` see also xref:programming-guide:server/compliance.adoc#cookie[this section].
+
+[[scheduler-config]]
+=== Server Scheduler Configuration Properties
+
+The module properties to configure the Jetty server scheduler are:
+
+----
+include::{jetty-home}/modules/server.mod[tags=documentation-scheduler-config]
+----
+
+[[ssl]]
+== Module `ssl`
+
+The `ssl` module provides the secure connector, and allows you to configure the KeyStore properties and the TLS parameters, and depends on the <<server,`server` module>>.
+
+[[ssl-connector]]
+=== Secure Connector Properties
+
+The module properties to configure the secure connector are:
+
+----
+include::{jetty-home}/modules/ssl.mod[tags=documentation-connector]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.ssl.port`::
+The network port that Jetty listens to for secure connections -- default `8443`.
+`jetty.ssl.idleTimeout`::
+The amount of time a connection can be idle (i.e. no bytes received and no bytes sent) until the server decides to close it to save resources -- default `30000` milliseconds.
+`jetty.ssl.acceptors`::
+The number of threads that compete to accept connections -- default 1. Use -1 to let the accept heuristic decides the value; the current heuristic calculates a value based on the number of cores).
+Refer to <<http-acceptors,this section>> for more information about acceptor threads.
+`jetty.ssl.selectors`::
+The number of NIO selectors (with an associated thread) that manage connections -- default -1 (i.e. a select heuristic decides the value; the current heuristic calculates a value based on the number of cores).
+Refer to <<http-selectors,this section>> for more information about selector threads.
+
+The module properties to configure the KeyStore and TLS parameters are:
+
+----
+include::{jetty-home}/modules/ssl.mod[tags=documentation-ssl-context]
+----
+
+[[ssl-keystore-tls]]
+=== KeyStore Properties and TLS Properties
+
+The Jetty component that manages the KeyStore, that contains the cryptographic material and the TLS configuration is an instance of `SslContextFactory.Server`.
+
+You can configure the `SslContextFactory.Server` by specifying properties, or by invoking its method for a more xref:ssl-advanced[advanced configuration].
+
+Among the configurable properties, the most relevant are:
+
+`jetty.sslContext.keyStorePath`::
+The KeyStore path on the file system, either an absolute path or a relative path to `$JETTY_BASE` -- defaults to `$JETTY_BASE/etc/keystore.p12`.
+`jetty.sslContext.keyStorePassword`::
+The KeyStore password, which you want to explicitly configure.
+The password may be obfuscated with the xref:tools/index.adoc#password[Jetty Password tool].
+
+If you need to configure client certificate authentication, you want to configure one of these properties (they are mutually exclusive):
+
+`jetty.sslContext.needClientAuth`::
+Whether client certificate authentication should be required.
+`jetty.sslContext.wantClientAuth`::
+Whether client certificate authentication should be requested.
+
+If you configure client certificate authentication, you need to configure and distribute a client KeyStore as explained in xref:keystore/index.adoc#client-authn[this section].
+
+[[ssl-advanced]]
+=== Advanced TLS Configuration
+
+Configuring `SslContextFactory.Server` using properties as explained in xref:ssl-keystore-tls[this section] is sufficient for most cases.
+
+For the cases where Jetty module properties are not defined, or when you need more advanced configuration (for example the ability to include and/or exclude the TLS cipher suites), you can follow these steps:
+
+. Modify `$JETTY_BASE/start.d/ssl.ini` by adding a path to a custom XML file, for example:
++
+.ssl.ini
+[source,subs="verbatim,quotes"]
+----
+--module=ssl
+*etc/ssl-config.xml* <1>
+...
+----
+<1> The path to the custom XML file, relative to `$JETTY_BASE`.
+. Create the custom XML file, with your advanced configuration.
+For example, to exclude certain TLS ciphers you can use the following file:
++
+.ssl-config.xml
+[source,xml,subs="verbatim"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory"> <1>
+    <!-- Example using the Set element -->
+    <Set name="ExcludeCipherSuites"> <2>
+      <Array type="String">
+        <Item>^TLS_RSA_.*$</Item>
+        <Item>^.*_(MD5|SHA|SHA1)$</Item>
+      </Array>
+    </Set>
+    <!-- Example using the Call element -->
+    <Call name="addExcludeCipherSuites">
+      <Arg>
+        <Array type="String">
+          <Item>^SSL_.*$</Item>
+        </Array>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
+----
+<1> Reference the existing `sslContextFactory` object.
+<2> Call the method `setExcludeCipherSuites(String\...)` to specify regular expressions of the TLS ciphers you want to exclude.
+
+The syntax to use in the custom XML file is described in xref:xml/index.adoc[this section].
+
+In the custom XML file you can call any `SslContextFactory.Server` method.
+Refer to the `SslContextFactory.Server` link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Server.html[javadocs] for the comprehensive list of methods.
+
+[[ssl-reload]]
+== Module `ssl-reload`
+
+The `ssl-reload` module provides a periodic scanning of the directory where the KeyStore file resides.
+When the scanning detects a change to the KeyStore file, the correspondent `SslContextFactory.Server` component is reloaded with the new KeyStore configuration.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/ssl-reload.mod[tags=documentation]
+----
+
+[[state-tracking]]
+== Module `state-tracking`
+
+The `state-tracking` Jetty module inserts the `StateTrackingHandler` at the beginning of the Handler chain.
+
+`StateTrackingHandler` is a xref:troubleshooting/index.adoc[troubleshooting] `Handler` that tracks usages of `Handler`/`Request`/`Response` asynchronous APIs, and logs at warning level invalid usages of the APIs that may lead to blockages, deadlocks, or missing completion of ``Callback``s.
+
+This module can be enabled to troubleshoot web applications that do not behave as expected, for example:
+
+* That consume a lot of threads (possibly because they block).
+* That do not send responses (or send only partial responses) to clients.
+* That timeout when apparently they have received or have sent all data.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/state-tracking.mod[tags=documentation]
+----
+
+[[test-keystore]]
+== Module `test-keystore`
+
+The `test-keystore` module creates on-the-fly a KeyStore containing a self-signed certificate for domain `localhost`.
+The KeyStore file is automatically deleted when the JVM exits, and re-created when you restart Jetty, to enforce the fact that it is a _test_ KeyStore that should not be reused if not for testing.
+
+The module file is `$JETTY_HOME/modules/test-keystore.mod`:
+
+----
+include::{jetty-home}/modules/test-keystore.mod[]
+----
+
+Note how properties `jetty.sslContext.keyStorePath` and `jetty.sslContext.keyStorePassword` are configured, only if not already set (via the `?=` operator), directly in the module file, rather than in a `+*.ini+` file.
+This is done to avoid that these properties accidentally overwrite a real KeyStore configuration.
+
+[[threadpool]]
+== Module `threadpool`
+
+The `threadpool` module allows you to configure the server-wide thread pool.
+
+The thread pool creates threads on demand up to `maxThreads`, and idles them out if they are not used.
+
+Since Jetty uses the thread pool internally to execute critical tasks, it is not recommended to constrain the thread pool to small values of `maxThreads` with the purpose of limiting HTTP request concurrency, as this could very likely cause a server lockup when Jetty needs to run a critical task but there are no threads available.
+Start with the default value of `maxThreads`, and tune for larger values if needed.
+
+The module properties to configure the thread pool are:
+
+----
+include::{jetty-home}/modules/threadpool.mod[tags=documentation]
+----
+
+Among the configurable properties, the most relevant are:
+
+`jetty.threadPool.namePrefix`::
+The name prefix to use for the thread names.
+
+`jetty.threadPool.detailedDump`::
+Whether the thread pool should dump the whole stack trace of each thread, or just the topmost stack frame -- defaults to `false`.
+
+`jetty.threadPool.idleTimeout`::
+The time, in milliseconds, after which an idle thread is released from the pool -- defaults to 60000, i.e. 60 seconds.
+
+`jetty.threadPool.maxThreads`::
+The max number of threads pooled by the thread pool -- defaults to 200.
+
+If you want to use virtual threads, introduced as a preview feature in Java 19 and Java 20, and become an official feature since Java 21, use the following modules:
+
+* The <<threadpool-virtual,`threadpool-virtual`>> Jetty module for Java 21 or later.
+* The <<threadpool-virtual-preview,`threadpool-virtual-preview`>> Jetty module for Java 19 and Java 20.
+
+See also the xref:server/index.adoc#threadpool[section about configuring the thread pool].
+
+[[threadpool-virtual]]
+== Module `threadpool-virtual`
+
+The `threadpool-virtual` module allows you to configure the server-wide thread pool, similarly to what you can do with the <<threadpool,`threadpool`>> Jetty module, but also specify to use virtual threads, introduced as an official feature since Java 21.
+
+CAUTION: Only use this module if you are using Java 21 or later.
+If you are using Java 19 or Java 20, use the <<threadpool-virtual-preview,`threadpool-virtual-preview`>> Jetty module instead.
+
+Refer to the <<threadpool,`threadpool`>> Jetty module for the general features provided by that Jetty module that also this Jetty module provides.
+
+The module properties to configure the thread pool are:
+
+----
+include::{jetty-home}/modules/threadpool-virtual.mod[tags=documentation]
+----
+
+The specific properties to configure virtual threads are:
+
+`jetty.threadPool.virtual.namePrefix`::
+The name prefix to use for the virtual thread names.
+
+`jetty.threadPool.virtual.inheritInheritableThreadLocals`::
+Whether virtual threads inherit the values of `InheritableThreadLocal` variables.
+
+[[threadpool-virtual-preview]]
+== Module `threadpool-virtual-preview`
+
+The `threadpool-virtual-preview` module allows you to configure the server-wide thread pool, similarly to what you can do with the <<threadpool,`threadpool`>> Jetty module, but also specify to use virtual threads, introduced as a preview feature in Java 19 and in Java 20.
+
+CAUTION: Only use this module if you are using Java 19 or Java 20.
+If you are using Java 21 or later, use the <<threadpool-virtual,`threadpool-virtual`>> Jetty module instead.
+
+NOTE: To enable preview features, this module needs to specify the `+--enable-preview+` command line option using the xref:modules/index.adoc#directive-exec[[exec\] directive], and as such it will fork another JVM.
+
+Refer to the <<threadpool,`threadpool`>> Jetty module for the general features provided by that Jetty module that also this Jetty module provides.
+
+The module properties to configure the thread pool are:
+
+----
+include::{jetty-home}/modules/threadpool-virtual-preview.mod[tags=documentation]
+----
+
+The specific properties to configure virtual threads are:
+
+`jetty.threadPool.virtual.namePrefix`::
+The name prefix to use for the virtual thread names.
+
+`jetty.threadPool.virtual.allowSetThreadLocals`::
+Whether virtual threads are allowed to set thread locals.
+
+`jetty.threadPool.virtual.inheritInheritableThreadLocals`::
+Whether virtual threads inherit the values of `InheritableThreadLocal` variables.
+
+[[well-known]]
+== Module `well-known`
+
+The `well-known` Jetty module creates a `ResourceHandler` deployed at the `/.well-known` context path which serves files from a directory.
+By default, the directory created at `$JETTY_BASE/.well-known` is used, but it can be configured from `well-known.ini` to anywhere in the filesystem.
+Note that the `.well-known` directory may be seen as a hidden directory by the filesystem.
+
+The concept of well-known URIs has been defined in https://datatracker.ietf.org/doc/html/rfc5785[RFC5785].
+This module can be used for things like the automatic renewal of https://letsencrypt.org/[Let's Encrypt] certificates.
+See https://www.iana.org/assignments/well-known-uris/well-known-uris.xhtml[IANA Well-Known URIs] for more possible examples of how this can be used.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/well-known.mod[tags=documentation]
+----

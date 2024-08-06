@@ -73,16 +73,36 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      */
     public static ServerWebSocketContainer ensure(Server server, ContextHandler contextHandler)
     {
-        Context context = contextHandler.getContext();
+        Context context = contextHandler == null ? server.getContext() : contextHandler.getContext();
         ServerWebSocketContainer container = get(context);
         if (container == null)
         {
-            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
+            WebSocketComponents components = (contextHandler == null)
+                ? WebSocketServerComponents.ensureWebSocketComponents(server)
+                : WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
             WebSocketMappings mappings = new WebSocketMappings(components);
             container = new ServerWebSocketContainer(mappings);
+            container.addBean(mappings);
             context.setAttribute(WebSocketContainer.class.getName(), container);
         }
         return container;
+    }
+
+    /**
+     * <p>Returns the {@link ServerWebSocketContainer}, ensuring that
+     * it is available via {@link #get(Context)}.</p>
+     * <p>If the {@link ServerWebSocketContainer} is not already available,
+     * an instance is created, stored to be available via {@link #get(Context)}
+     * and returned.</p>
+     * <p>This method should be invoked during the setup of the
+     * {@link Handler} hierarchy.</p>
+     *
+     * @param server the {@link Server} object used to lookup common WebSocket components and store the {@link ServerWebSocketContainer}
+     * @return a non-{@code null} {@link ServerWebSocketContainer}
+     */
+    public static ServerWebSocketContainer ensure(Server server)
+    {
+        return ensure(server, null);
     }
 
     /**
@@ -111,7 +131,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         this.mappings = mappings;
         this.factory = new ServerFrameHandlerFactory(this, mappings.getWebSocketComponents());
         addSessionListener(sessionTracker);
-        addBean(sessionTracker);
+        installBean(sessionTracker);
     }
 
     @Override
@@ -302,7 +322,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @see #upgrade(WebSocketCreator, Request, Response, Callback)
      */
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws WebSocketException
+    public boolean handle(Request request, Response response, Callback callback)
     {
         return mappings.upgrade(request, response, callback, configuration);
     }
@@ -326,7 +346,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @throws WebSocketException there is an error during the upgrade
      * @see #handle(Request, Response, Callback)
      */
-    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback) throws WebSocketException
+    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback)
     {
         var coreCreator = newWebSocketCreator(creator);
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, factory);

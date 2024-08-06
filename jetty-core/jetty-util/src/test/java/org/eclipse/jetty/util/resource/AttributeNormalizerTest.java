@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -31,11 +32,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -99,6 +102,11 @@ public class AttributeNormalizerTest
         FS.ensureDirExists(path);
 
         return path;
+    }
+
+    private static Resource asTargetResource(String title, String subpath)
+    {
+        return resourceFactory.newResource(asTargetPath(title, subpath));
     }
 
     private static final Map<String, String> originalEnv = new HashMap<>();
@@ -306,6 +314,35 @@ public class AttributeNormalizerTest
         // Normalize WAR deep path as URI
         Path testWarDeep = scenario.war.resolve("deep/ref").getPath();
         assertNormalize(scenario, testWarDeep.toUri(), "${WAR.uri}/deep/ref");
+    }
+
+    @Test
+    public void testCombinedResource() throws Exception
+    {
+        String title = "CombinedResource Setup";
+        Resource r1 = asTargetResource(title, "dir1");
+        Resource r2 = asTargetResource(title, "dir2");
+        Resource r3 = asTargetResource(title, "dir3");
+
+        // Create files in each of these directories.
+        Files.createFile(r1.getPath().resolve("file1")).toFile().deleteOnExit();
+        Files.createFile(r2.getPath().resolve("file2")).toFile().deleteOnExit();
+        Files.createFile(r3.getPath().resolve("file3")).toFile().deleteOnExit();
+
+        Resource combined = CombinedResource.combine(List.of(r1, r2, r3));
+        AttributeNormalizer normalizer = new AttributeNormalizer(combined);
+
+        // Uses the appropriate resource if the target exists.
+        assertThat(normalizer.expand("${WAR.uri}/file1"), containsString("/dir1/file1"));
+        assertThat(normalizer.expand("${WAR.uri}/file2"), containsString("/dir2/file2"));
+        assertThat(normalizer.expand("${WAR.uri}/file3"), containsString("/dir3/file3"));
+        assertThat(normalizer.expand("${WAR.path}/file1"), containsString(FS.separators("/dir1/file1")));
+        assertThat(normalizer.expand("${WAR.path}/file2"), containsString(FS.separators("/dir2/file2")));
+        assertThat(normalizer.expand("${WAR.path}/file3"), containsString(FS.separators("/dir3/file3")));
+
+        // If file cannot be found it just uses the first resource.
+        assertThat(normalizer.expand("${WAR.uri}/file4"), containsString("/dir1/file4"));
+        assertThat(normalizer.expand("${WAR.path}/file4"), containsString(File.separator + "dir1" + File.separator +  "file4"));
     }
 
     public static class Scenario

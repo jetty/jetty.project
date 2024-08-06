@@ -44,6 +44,8 @@ public class ContentSourceConsumer implements Invocable.Task
             if (Content.Chunk.isFailure(chunk))
             {
                 callback.failed(chunk.getFailure());
+                if (!chunk.isLast())
+                    source.fail(chunk.getFailure());
                 return;
             }
 

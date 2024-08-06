@@ -29,8 +29,11 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.server.Request;
@@ -48,11 +51,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * HttpServer Tester for SSL based ServerConnector
@@ -60,7 +65,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ServerConnectorSslServerTest extends HttpServerTestBase
 {
     private SSLContext _sslContext;
-    private ArrayByteBufferPool.Tracking trackingBufferPool;
+    private ArrayByteBufferPool.Tracking _trackingBufferPool;
+    private HttpConfiguration _httpConfiguration;
 
     public ServerConnectorSslServerTest()
     {
@@ -74,18 +80,16 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
-        trackingBufferPool = new ArrayByteBufferPool.Tracking();
+        _trackingBufferPool = new ArrayByteBufferPool.Tracking();
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-        ServerConnector connector = new ServerConnector(_server, null, null, trackingBufferPool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
-        SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
-        secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
-        httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
+        _httpConfiguration = httpConnectionFactory.getHttpConfiguration();
+        ServerConnector connector = new ServerConnector(_server, null, null, _trackingBufferPool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
 
         initServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = sslContextFactory.getKeyStoreResource().newInputStream())
+        try (InputStream stream = IOResources.asInputStream(sslContextFactory.getKeyStoreResource()))
         {
             keystore.load(stream, "storepwd".toCharArray());
         }
@@ -111,7 +115,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     @AfterEach
     public void dispose() throws Exception
     {
-        assertThat("Server Leaks: " + trackingBufferPool.dumpLeaks(), trackingBufferPool.getLeaks().size(), Matchers.is(0));
+        assertThat("Server Leaks: " + _trackingBufferPool.dumpLeaks(), _trackingBufferPool.getLeaks().size(), Matchers.is(0));
     }
 
     @Override
@@ -194,7 +198,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             assertThat(response, containsString("Hello world"));
             assertThat(response, containsString("scheme='https'"));
             assertThat(response, containsString("isSecure='true'"));
-            assertThat(response, containsString("X509Certificate='null'"));
+            assertThat(response, containsString("X509Certificate='false'"));
 
             Matcher matcher = Pattern.compile("cipher_suite='([^']*)'").matcher(response);
             matcher.find();
@@ -220,19 +224,24 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            StringBuilder out = new StringBuilder();
-            SSLSession session = (SSLSession)request.getAttribute("SSL_SESSION");
+            assertThat(request.getAttributeNameSet(), containsInAnyOrder(
+                EndPoint.SslSessionData.ATTRIBUTE,
+                SecureRequestCustomizer.X509_ATTRIBUTE));
 
-            SecureRequestCustomizer.SslSessionData data = (SecureRequestCustomizer.SslSessionData)request.getAttribute("SSL_SESSIONData");
+            StringBuilder out = new StringBuilder();
+            EndPoint.SslSessionData data = (EndPoint.SslSessionData)request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE);
+            assertNotNull(data);
+            SSLSession session = data.sslSession();
 
             out.append("Hello world").append('\n');
             out.append("scheme='").append(request.getHttpURI().getScheme()).append("'").append('\n');
             out.append("isSecure='").append(request.isSecure()).append("'").append('\n');
-            out.append("X509Certificate='").append(data == null ? "" : data.peerCertificates()).append("'").append('\n');
+            out.append("X509Certificate='").append(data.peerCertificates() != null).append("'").append('\n');
             out.append("cipher_suite='").append(session == null ? "" : session.getCipherSuite()).append("'").append('\n');
-            out.append("key_size='").append(data == null ? "" : data.keySize()).append("'").append('\n');
-            out.append("ssl_session_id='").append(data == null ? "" : data.sessionId()).append("'").append('\n');
+            out.append("key_size='").append(data.keySize()).append("'").append('\n');
+            out.append("ssl_session_id='").append(data.sslSessionId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
+
             Content.Sink.write(response, true, out.toString(), callback);
             return true;
         }

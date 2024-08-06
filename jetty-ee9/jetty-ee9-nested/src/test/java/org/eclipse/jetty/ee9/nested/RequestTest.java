@@ -52,8 +52,8 @@ import jakarta.servlet.http.MappingMatch;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -130,12 +130,14 @@ public class RequestTest
         _server = new Server();
         _context = new ContextHandler(_server);
         HttpConnectionFactory http = new HttpConnectionFactory();
+        http.setRecordHttpComplianceViolations(true);
         http.setInputBufferSize(1024);
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         http.getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC6265_LEGACY);
+        http.getHttpConfiguration().addComplianceViolationListener(new ComplianceViolation.CapturingListener());
         _connector = new LocalConnector(_server, http);
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
@@ -494,7 +496,7 @@ public class RequestTest
         endPoint.addInput(request);
         String response = endPoint.getResponse();
         assertThat(response, startsWith("HTTP/1.1 200"));
-        assertThat(response, containsString("Violation: TRANSFER_ENCODING"));
+        assertThat(response, containsString("Violation: CONTENT_TRANSFER_ENCODING"));
 
         // We know the previous request has completed if another request can be processed on the same connection.
         String cleanupRequest = "GET /foo/cleanup HTTP/1.1\r\n" +
@@ -1329,7 +1331,7 @@ public class RequestTest
             "Connection: close\n" +
             "\n");
         assertThat(response, containsString(" 302 Found"));
-        assertThat(response, containsString("Location: http://myhost/foo"));
+        assertThat(response, containsString("Location: /foo"));
     }
 
     @Test
@@ -2263,7 +2265,7 @@ public class RequestTest
             try
             {
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 
                 String field1 = request.getParameter("field1");
                 assertNotNull(field1);
@@ -2272,12 +2274,12 @@ public class RequestTest
                 assertNotNull(foo);
                 assertTrue(foo.getSize() > 0);
                 response.setStatus(200);
-                List<String> violations = (List<String>)request.getAttribute(HttpCompliance.VIOLATIONS_ATTR);
-                if (violations != null)
+                List<ComplianceViolation.Event> violationEvents = (List<ComplianceViolation.Event>)request.getAttribute(ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY);
+                if (violationEvents != null)
                 {
-                    for (String v : violations)
+                    for (ComplianceViolation.Event event : violationEvents)
                     {
-                        response.addHeader("Violation", v);
+                        response.addHeader("Violation", event.violation().toString());
                     }
                 }
 
@@ -2319,7 +2321,7 @@ public class RequestTest
             try
             {
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.toString(), -1, -1, 2);
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 
                 //We should get an error when we getParams if there was a problem parsing the multipart
                 request.getPart("xxx");

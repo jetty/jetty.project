@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -66,9 +67,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -82,8 +85,8 @@ import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -164,10 +167,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
     private static String __serverInfo = "jetty/" + Server.getVersion();
 
-    public static final String MAX_FORM_KEYS_KEY = "org.eclipse.jetty.server.Request.maxFormKeys";
-    public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
-    public static final int DEFAULT_MAX_FORM_KEYS = 1000;
-    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+    public static final String MAX_FORM_KEYS_KEY = FormFields.MAX_FIELDS_ATTRIBUTE;
+    public static final String MAX_FORM_CONTENT_SIZE_KEY = FormFields.MAX_LENGTH_ATTRIBUTE;
+    public static final int DEFAULT_MAX_FORM_KEYS = FormFields.MAX_FIELDS_DEFAULT;
+    public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = FormFields.MAX_LENGTH_DEFAULT;
     private boolean _canonicalEncodingURIs = false;
     private boolean _usingSecurityManager = getSecurityManager() != null;
 
@@ -266,7 +269,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                              String contextPath)
     {
         _coreContextHandler = new CoreContextHandler();
-        addBean(_coreContextHandler, false);
+        installBean(_coreContextHandler, false);
         _apiContext = context == null ? new APIContext() : context;
         _initParams = new HashMap<>();
         if (contextPath != null)
@@ -283,6 +286,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     public CoreContextHandler getCoreContextHandler()
     {
         return _coreContextHandler;
+    }
+
+    /**
+     * Insert a handler between the {@link #getCoreContextHandler()} and this handler.
+     * @param coreHandler A core handler to insert
+     */
+    public void insertHandler(org.eclipse.jetty.server.Handler.Singleton coreHandler)
+    {
+        getCoreContextHandler().insertHandler(coreHandler);
     }
 
     @Override
@@ -312,6 +324,26 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     public void setAllowNullPathInfo(boolean allowNullPathInfo)
     {
         _coreContextHandler.setAllowNullPathInContext(allowNullPathInfo);
+    }
+
+    /**
+     * Cross context dispatch support.
+     * @param supported {@code True} if cross context dispatch is supported
+     * @see org.eclipse.jetty.server.handler.ContextHandler#setCrossContextDispatchSupported(boolean)
+     */
+    public void setCrossContextDispatchSupported(boolean supported)
+    {
+        getCoreContextHandler().setCrossContextDispatchSupported(supported);
+    }
+
+    /**
+     * Cross context dispatch support.
+     * @return {@code True} if cross context dispatch is supported
+     * @see org.eclipse.jetty.server.handler.ContextHandler#isCrossContextDispatchSupported()
+     */
+    public boolean isCrossContextDispatchSupported()
+    {
+        return getCoreContextHandler().isCrossContextDispatchSupported();
     }
 
     @Override
@@ -892,7 +924,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             // check the target.
             String contextPath = getContextPath();
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
+            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) || baseRequest.getCoreRequest().getContext().isCrossContextDispatch(baseRequest.getCoreRequest()))
             {
                 if (target.length() > contextPath.length())
                 {
@@ -1590,26 +1622,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         return Collections.emptySet();
     }
 
-    private String normalizeHostname(String host)
-    {
-        if (host == null)
-            return null;
-        int connectorIndex = host.indexOf('@');
-        String connector = null;
-        if (connectorIndex > 0)
-        {
-            host = host.substring(0, connectorIndex);
-            connector = host.substring(connectorIndex);
-        }
-
-        if (host.endsWith("."))
-            host = host.substring(0, host.length() - 1);
-        if (connector != null)
-            host += connector;
-
-        return host;
-    }
-
     /**
      * Add an AliasCheck instance to possibly permit aliased resources
      *
@@ -1715,7 +1727,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         // this is a dispatch with either a provided URI and/or a dispatched path
         // We will have to modify the request and then revert
         final HttpURI oldUri = baseRequest.getHttpURI();
-        final MultiMap<String> oldQueryParams = baseRequest.getQueryParameters();
+        final Fields oldQueryParams = baseRequest.getQueryFields();
         try
         {
             if (encodedPathQuery == null)
@@ -1757,7 +1769,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         finally
         {
             baseRequest.setHttpURI(oldUri);
-            baseRequest.setQueryParameters(oldQueryParams);
+            baseRequest.setQueryFields(oldQueryParams);
             baseRequest.resetParameters();
         }
     }
@@ -1846,10 +1858,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
 
         @Override
-        public ServletContext getContext(String uripath)
+        public ServletContext getContext(String path)
         {
-            // TODO No cross context dispatch
-            return null;
+            org.eclipse.jetty.server.handler.ContextHandler context = getContextHandler().getCoreContextHandler().getCrossContextHandler(path);
+
+            if (context == null)
+                return null;
+            if (context == _coreContextHandler)
+                return this;
+            return new CrossContextServletContext(_coreContextHandler, context.getContext());
         }
 
         @Override
@@ -1965,7 +1982,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 // Cannot serve directories as an InputStream
                 if (r.isDirectory())
                     return null;
-                return r.newInputStream();
+                return IOResources.asInputStream(r);
             }
             catch (Exception e)
             {
@@ -2447,6 +2464,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private final HttpChannel _httpChannel;
         private SessionManager _sessionManager;
         private ManagedSession _managedSession;
+        private List<ManagedSession> _managedSessions;
+
         AbstractSessionManager.RequestedSession _requestedSession;
 
         protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
@@ -2485,9 +2504,54 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             return _managedSession;
         }
 
+        /**
+         * Retrieve an existing session, if one exists, for a given SessionManager. A
+         * session belongs to a single SessionManager, and a context can only have a single
+         * SessionManager. Thus, calling this method is equivalent to asking
+         * "Does a ManagedSession already exist for the given context?".
+         *
+         * @param manager the SessionManager that should be associated with a ManagedSession
+         * @return the ManagedSession that already exists in the given context and is managed
+         * by the given SessionManager.
+         */
+        public ManagedSession getManagedSession(SessionManager manager)
+        {
+            if (_managedSessions == null)
+                return null;
+
+            for (ManagedSession s : _managedSessions)
+            {
+                if (manager == s.getSessionManager())
+                {
+                   if (s.isValid())
+                       return s;
+                }
+            }
+            return null;
+        }
+
         public void setManagedSession(ManagedSession managedSession)
         {
             _managedSession = managedSession;
+            addManagedSession(managedSession);
+        }
+
+        /**
+         * Add a session to the list of sessions maintained by this request.
+         * A session will be added whenever a request visits a new context
+         * that already has a session associated with it, or one is created
+         * during the dispatch.
+         *
+         * @param managedSession the session to add
+         */
+        private void addManagedSession(ManagedSession managedSession)
+        {
+            if (managedSession == null)
+                return;
+            if (_managedSessions == null)
+                _managedSessions = new ArrayList<>();
+            if (!_managedSessions.contains(managedSession))
+                _managedSessions.add(managedSession);
         }
 
         public SessionManager getSessionManager()
@@ -2495,10 +2559,68 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             return _sessionManager;
         }
 
+        /**
+         * Remember the session that was extracted from the id in the request
+         *
+         * @param requestedSession info about the session matching the id in the request
+         */
         public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
         {
             _requestedSession = requestedSession;
-            _managedSession = requestedSession.session();
+        }
+
+        /**
+         * Release each of the sessions as the request is now complete
+         */
+        public void completeSessions()
+        {
+            if (_managedSessions != null)
+            {
+                for (ManagedSession s : _managedSessions)
+                {
+
+                    if (s.getSessionManager() == null)
+                        continue; //TODO log it
+                    s.getSessionManager().getContext().run(() -> completeSession(s), this);
+                }
+            }
+        }
+
+        /**
+         * Ensure that each session is committed - ie written out to storage if necessary -
+         * because the response is about to be returned to the client.
+         */
+        public void commitSessions()
+        {
+            if (_managedSessions != null)
+            {
+                for (ManagedSession s : _managedSessions)
+                {
+                    if (s.getSessionManager() == null)
+                        continue; //TODO log it
+                    s.getSessionManager().getContext().run(() -> commitSession(s), this);
+                }
+            }
+        }
+
+        private void commitSession(ManagedSession session)
+        {
+            if (session == null)
+                return;
+            SessionManager manager = session.getSessionManager();
+            if (manager == null)
+                return;
+            manager.commit(session);
+        }
+
+        private void completeSession(ManagedSession session)
+        {
+            if (session == null)
+                return;
+            SessionManager manager = session.getSessionManager();
+            if (manager == null)
+                return;
+            manager.complete(session);
         }
 
         public AbstractSessionManager.RequestedSession getRequestedSession()
@@ -2549,7 +2671,36 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         CoreContextHandler()
         {
             super.setHandler(new CoreToNestedHandler());
-            addBean(ContextHandler.this, true);
+            installBean(ContextHandler.this, true);
+        }
+
+        @Override
+        public void makeTempDirectory() throws Exception
+        {
+            super.makeTempDirectory();
+        }
+
+        @Override
+        public String getCanonicalNameForTmpDir()
+        {
+            return super.getCanonicalNameForTmpDir();
+        }
+
+        @Override
+        public Resource getResourceForTempDirName()
+        {
+           return ContextHandler.this.getNestedResourceForTempDirName();
+        }
+
+        private Resource getSuperResourceForTempDirName()
+        {
+           return super.getResourceForTempDirName();
+        }
+
+        public void setTempDirectory(File dir)
+        {
+            super.setTempDirectory(dir);
+            setAttribute(ServletContext.TEMPDIR, super.getTempDirectory());
         }
 
         @Override
@@ -2607,6 +2758,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public void insertHandler(Singleton handler)
         {
+            // We cannot call super.insertHandler here, because it uses this.setHandler
+            // which gives a warning.  This is the same code, but uses super.setHandler
             Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
@@ -2643,7 +2796,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
                 request.getComponents().getCache().setAttribute(HttpChannel.class.getName(), httpChannel);
             }
-            else if (httpChannel.getContextHandler() == ContextHandler.this)
+            else if (httpChannel.getContextHandler() == ContextHandler.this && !request.getContext().isCrossContextDispatch(request))
             {
                 httpChannel.recycle();
             }
@@ -2702,13 +2855,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private class CoreToNestedHandler extends Abstract
         {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
+            public boolean handle(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback)
             {
                 HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
-                httpChannel.onProcess(response, callback);
+                Objects.requireNonNull(httpChannel).onProcess(response, callback);
                 httpChannel.handle();
                 return true;
             }
         }
+    }
+
+    public Resource getNestedResourceForTempDirName()
+    {
+        return getCoreContextHandler().getSuperResourceForTempDirName();
     }
 }

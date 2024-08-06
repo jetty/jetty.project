@@ -126,7 +126,7 @@ public abstract class AbstractSessionDataStoreTest
         throws Exception
     {
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
-        extraClasses = new File(MavenTestingUtils.getTargetDir(), "extraClasses");
+        extraClasses = new File(MavenTestingUtils.getTargetPath().toFile(), "extraClasses");
         extraClasses.mkdirs();
         File fooclass = new File(extraClasses, "Foo.class");
         IO.copy(is, new FileOutputStream(fooclass));
@@ -199,20 +199,15 @@ public abstract class AbstractSessionDataStoreTest
         //before serialization
         final SessionData finalData = data;
 
-        Runnable r = new Runnable()
+        Runnable r = () ->
         {
-
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    store.store("aaa1", finalData);
-                }
-                catch (Exception e)
-                {
-                    fail(e);
-                }
+                store.store("aaa1", finalData);
+            }
+            catch (Exception e)
+            {
+                fail(e);
             }
         };
 
@@ -304,20 +299,15 @@ public abstract class AbstractSessionDataStoreTest
         //before serialization
         final SessionData finalData = data;
 
-        Runnable r = new Runnable()
+        Runnable r = () ->
         {
-
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    store.store("aaa3", finalData);
-                }
-                catch (Exception e)
-                {
-                    fail(e);
-                }
+                store.store("aaa3", finalData);
+            }
+            catch (Exception e)
+            {
+                fail(e);
             }
         };
 
@@ -456,10 +446,9 @@ public abstract class AbstractSessionDataStoreTest
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("aaa6", 100, now, now - 1, -1);
         data.setLastNode(_sessionIdManager.getWorkerName());
-        //persistSession(data);
         store.store("aaa6", data);
         _server.stop();
-        _server.start(); //reindex files
+        _server.start();
         store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //test that we can retrieve it

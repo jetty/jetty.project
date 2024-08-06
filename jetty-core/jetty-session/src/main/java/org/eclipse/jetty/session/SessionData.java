@@ -89,7 +89,7 @@ public class SessionData implements Serializable
                 //Clazz not loaded by context classloader, but ask if loadable by context classloader,
                 //because preferable to use context classloader if possible (eg for deep structures).
                 ClassVisibilityChecker checker = (ClassVisibilityChecker)(contextLoader);
-                isContextLoader = (checker.isSystemClass(clazz) && !(checker.isServerClass(clazz)));
+                isContextLoader = (checker.isProtectedClass(clazz) && !(checker.isHiddenClass(clazz)));
             }
             else
             {
@@ -144,7 +144,8 @@ public class SessionData implements Serializable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Deserialize {} isServerLoader={} serverLoader={} tccl={}", name, isServerClassLoader, serverLoader, contextLoader);
                 Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader ? serverLoader : contextLoader);
-                data._attributes.put(name, value);
+                if (value != null)
+                    data._attributes.put(name, value);
             }
         }
         else

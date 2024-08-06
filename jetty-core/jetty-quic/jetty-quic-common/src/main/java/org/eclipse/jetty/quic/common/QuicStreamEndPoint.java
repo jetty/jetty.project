@@ -13,15 +13,18 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
@@ -220,6 +223,15 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         return session;
     }
 
+    @Override
+    public SslSessionData getSslSessionData()
+    {
+        X509Certificate[] peerCertificates = getQuicSession().getPeerCertificates();
+        if (peerCertificates == null)
+            return null;
+        return SslSessionData.from(null, null, null, peerCertificates);
+    }
+
     public void onWritable()
     {
         if (LOG.isDebugEnabled())
@@ -249,7 +261,32 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} is readable, processing: {}", streamId, interested);
         if (interested)
+        {
             getFillInterest().fillable();
+        }
+        else
+        {
+            if (isStreamFinished())
+            {
+                // Check if the stream was finished normally.
+                try
+                {
+                    fill(BufferUtil.EMPTY_BUFFER);
+                }
+                catch (EOFException x)
+                {
+                    // Got reset.
+                    getFillInterest().onFail(x);
+                    getQuicSession().onFailure(x);
+                }
+                catch (Throwable x)
+                {
+                    EofException e = new EofException(x);
+                    getFillInterest().onFail(e);
+                    getQuicSession().onFailure(e);
+                }
+            }
+        }
         return interested;
     }
 

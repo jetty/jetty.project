@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IteratingCallbackTest
@@ -362,5 +363,101 @@ public class IteratingCallbackTest
         icb.failed(new Throwable("test2"));
         assertEquals(1, process.get());
         assertEquals(1, failure.get());
+    }
+
+    @Test
+    public void testWhenIdleAbortSerializesOnCompleteFailure() throws Exception
+    {
+        AtomicInteger count = new AtomicInteger();
+        CountDownLatch ocfLatch = new CountDownLatch(1);
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                count.incrementAndGet();
+                return Action.IDLE;
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                ocfLatch.countDown();
+            }
+        };
+
+        icb.iterate();
+
+        assertEquals(1, count.get());
+
+        // Aborting should not iterate.
+        icb.abort(new Exception());
+
+        assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(icb.isAborted());
+        assertEquals(1, count.get());
+    }
+
+    @Test
+    public void testWhenProcessingAbortSerializesOnCompleteFailure() throws Exception
+    {
+        AtomicInteger count = new AtomicInteger();
+        CountDownLatch ocfLatch = new CountDownLatch(1);
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process() throws Throwable
+            {
+                count.incrementAndGet();
+                abort(new Exception());
+
+                // After calling abort, onCompleteFailure() must not be called yet.
+                assertFalse(ocfLatch.await(1, TimeUnit.SECONDS));
+
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                ocfLatch.countDown();
+            }
+        };
+
+        icb.iterate();
+
+        assertEquals(1, count.get());
+
+        assertTrue(ocfLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(icb.isAborted());
+
+        // Calling succeeded() won't cause further iterations.
+        icb.succeeded();
+
+        assertEquals(1, count.get());
+    }
+
+    @Test
+    public void testOnSuccessCalledDespiteISE() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                succeeded();
+                return Action.IDLE; // illegal action
+            }
+
+            @Override
+            protected void onSuccess()
+            {
+                latch.countDown();
+            }
+        };
+
+        assertThrows(IllegalStateException.class, icb::iterate);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

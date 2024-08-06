@@ -14,7 +14,15 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,26 +31,37 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -55,13 +74,21 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RequestTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RequestTest.class);
     private Server _server;
     private LocalConnector _connector;
 
     private void startServer(HttpServlet servlet) throws Exception
+    {
+        startServer(null, servlet);
+    }
+
+    private void startServer(Consumer<Server> configureServer, HttpServlet servlet) throws Exception
     {
         _server = new Server();
 
@@ -79,6 +106,9 @@ public class RequestTest
         servletContextHandler.addServlet(servlet, "/*").getRegistration().setMultipartConfig(new MultipartConfigElement("here"));
 
         _server.setHandler(servletContextHandler);
+
+        if (configureServer != null)
+            configureServer.accept(_server);
         _server.start();
     }
 
@@ -86,6 +116,87 @@ public class RequestTest
     public void destroy() throws Exception
     {
         LifeCycle.stop(_server);
+    }
+
+    @Test
+    public void testCaseInsensitiveHeaders() throws Exception
+    {
+        final AtomicReference<Boolean> resultIsSecure = new AtomicReference<>();
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse resp)
+            {
+                assertThat(request.getHeader("accept"), is("*/*"));
+                assertThat(request.getHeader("Accept"), is("*/*"));
+                assertThat(request.getHeader("ACCEPT"), is("*/*"));
+                assertThat(request.getHeader("AcCePt"), is("*/*"));
+
+                assertThat(request.getHeader("random"), is("value"));
+                assertThat(request.getHeader("Random"), is("value"));
+                assertThat(request.getHeader("RANDOM"), is("value"));
+                assertThat(request.getHeader("rAnDoM"), is("value"));
+                assertThat(request.getHeader("RaNdOm"), is("value"));
+
+                assertThat(request.getHeader("Accept-Charset"), is("UTF-8"));
+                assertThat(request.getHeader("accept-charset"), is("UTF-8"));
+
+                assertThat(Collections.list(request.getHeaders("Accept-Charset")), contains("UTF-8", "UTF-16"));
+                assertThat(Collections.list(request.getHeaders("accept-charset")), contains("UTF-8", "UTF-16"));
+
+                assertThat(request.getHeader("foo-bar"), is("one"));
+                assertThat(request.getHeader("Foo-Bar"), is("one"));
+                assertThat(Collections.list(request.getHeaders("foo-bar")), contains("one", "two"));
+                assertThat(Collections.list(request.getHeaders("Foo-Bar")), contains("one", "two"));
+
+                assertThat(Collections.list(request.getHeaderNames()),
+                    contains("Host", "Connection", "Accept", "RaNdOm", "Accept-Charset", "Foo-Bar"));
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET / HTTP/1.1
+                Host: local
+                Connection: close
+                Accept: */*
+                RaNdOm: value
+                Accept-Charset: UTF-8
+                accept-charset: UTF-16
+                Foo-Bar: one
+                foo-bar: two
+                
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    @Test
+    public void testIsSecure() throws Exception
+    {
+        final AtomicReference<Boolean> resultIsSecure = new AtomicReference<>();
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp)
+            {
+                resultIsSecure.set(request.isSecure());
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET / HTTP/1.1
+                Host: local
+                Connection: close
+                X-Forwarded-Proto: https
+                
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("request.isSecure", resultIsSecure.get(), is(true));
     }
 
     @Test
@@ -308,37 +419,28 @@ public class RequestTest
                 Request coreRequest = servletContextRequest.getRequest();
 
                 // Set some fake SSL attributes
-                Object certificate = new Object();
-                coreRequest.setAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE, "quantumKnowledge");
-                coreRequest.setAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE, 42);
-                coreRequest.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, "identity");
-                coreRequest.setAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE, certificate);
+                X509Certificate[] certificates = new X509Certificate[0];
+                coreRequest.setAttribute(EndPoint.SslSessionData.ATTRIBUTE,
+                    EndPoint.SslSessionData.from(null, "identity", "quantum_42_Knowledge", certificates));
 
                 // Check we have all the attribute names in servlet API
                 Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
                 assertThat(names, containsInAnyOrder(
-                    SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE,
-                    "jakarta.servlet.request.cipher_suite",
-                    SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE,
-                    "jakarta.servlet.request.key_size",
-                    SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE,
-                    "jakarta.servlet.request.ssl_session_id",
-                    SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE,
-                    "jakarta.servlet.request.X509Certificate",
+                    EndPoint.SslSessionData.ATTRIBUTE,
+                    ServletContextRequest.SSL_CIPHER_SUITE,
+                    ServletContextRequest.SSL_KEY_SIZE,
+                    ServletContextRequest.SSL_SESSION_ID,
+                    ServletContextRequest.PEER_CERTIFICATES,
                     FormFields.MAX_FIELDS_ATTRIBUTE,
                     FormFields.MAX_LENGTH_ATTRIBUTE,
                     ServletContextRequest.MULTIPART_CONFIG_ELEMENT
                 ));
 
                 // check we can get the expected values
-                assertThat(request.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE), is("quantumKnowledge"));
-                assertThat(request.getAttribute("jakarta.servlet.request.cipher_suite"), is("quantumKnowledge"));
-                assertThat(request.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE), is(42));
-                assertThat(request.getAttribute("jakarta.servlet.request.key_size"), is(42));
-                assertThat(request.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE), is("identity"));
-                assertThat(request.getAttribute("jakarta.servlet.request.ssl_session_id"), is("identity"));
-                assertThat(request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE), sameInstance(certificate));
-                assertThat(request.getAttribute("jakarta.servlet.request.X509Certificate"), sameInstance(certificate));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("quantum_42_Knowledge"));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(42));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("identity"));
+                assertThat(request.getAttribute(ServletContextRequest.PEER_CERTIFICATES), sameInstance(certificates));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), notNullValue());
                 int maxFormKeys = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys();
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(maxFormKeys));
@@ -346,23 +448,19 @@ public class RequestTest
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(maxFormContentSize));
 
                 // check we can set all those attributes in the servlet API
-                request.setAttribute("jakarta.servlet.request.cipher_suite", "piglatin");
-                request.setAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE, 3);
-                request.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, "other");
-                request.setAttribute("jakarta.servlet.request.X509Certificate", "certificate");
+                request.setAttribute(ServletContextRequest.SSL_CIPHER_SUITE, "pig_33_latin");
+                request.setAttribute(ServletContextRequest.SSL_KEY_SIZE, 3);
+                request.setAttribute(ServletContextRequest.SSL_SESSION_ID, "other");
+                request.setAttribute(ServletContextRequest.PEER_CERTIFICATES, "certificate");
                 request.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, "config2");
                 request.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, 101);
                 request.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, 102);
 
                 // check we can get the updated values
-                assertThat(request.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE), is("piglatin"));
-                assertThat(request.getAttribute("jakarta.servlet.request.cipher_suite"), is("piglatin"));
-                assertThat(request.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE), is(3));
-                assertThat(request.getAttribute("jakarta.servlet.request.key_size"), is(3));
-                assertThat(request.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE), is("other"));
-                assertThat(request.getAttribute("jakarta.servlet.request.ssl_session_id"), is("other"));
-                assertThat(request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE), is("certificate"));
-                assertThat(request.getAttribute("jakarta.servlet.request.X509Certificate"), is("certificate"));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("pig_33_latin"));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(3));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("other"));
+                assertThat(request.getAttribute(ServletContextRequest.PEER_CERTIFICATES), is("certificate"));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), is("config2"));
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(101));
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(102));
@@ -373,13 +471,14 @@ public class RequestTest
                 assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize(), is(maxFormContentSize));
 
                 // Check we can remove all the attributes
-                request.removeAttribute("jakarta.servlet.request.cipher_suite");
-                request.removeAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
-                request.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, null);
-                request.setAttribute("jakarta.servlet.request.X509Certificate", null);
+                request.removeAttribute(ServletContextRequest.SSL_CIPHER_SUITE);
+                request.removeAttribute(ServletContextRequest.SSL_KEY_SIZE);
+                request.removeAttribute(ServletContextRequest.SSL_SESSION_ID);
+                request.setAttribute(ServletContextRequest.PEER_CERTIFICATES, null);
                 request.removeAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
                 request.removeAttribute(FormFields.MAX_FIELDS_ATTRIBUTE);
                 request.removeAttribute(FormFields.MAX_LENGTH_ATTRIBUTE);
+                request.removeAttribute(EndPoint.SslSessionData.ATTRIBUTE);
 
                 assertThat(Collections.list(request.getAttributeNames()), empty());
 
@@ -456,5 +555,75 @@ public class RequestTest
                 """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    public static Stream<Arguments> requestHostHeaders()
+    {
+        List<String> hostHeader = new ArrayList<>();
+        hostHeader.add("localhost");
+        hostHeader.add("127.0.0.1");
+        try
+        {
+            InetAddress localhost = InetAddress.getLocalHost();
+            hostHeader.add(localhost.getHostName());
+            hostHeader.add(localhost.getHostAddress());
+        }
+        catch (UnknownHostException e)
+        {
+            LOG.debug("Unable to obtain InetAddress.LocalHost", e);
+        }
+        return hostHeader.stream().map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("requestHostHeaders")
+    public void testDateResponseHeader(String hostHeader) throws Exception
+    {
+        startServer(
+            (server) ->
+            {
+                HttpConfiguration httpConfiguration = new HttpConfiguration();
+                // httpConfiguration.setSendDateHeader(true);
+                ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
+                connector.setPort(0);
+                server.addConnector(connector);
+            },
+            new HttpServlet()
+            {
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+                {
+                    resp.setCharacterEncoding("utf-8");
+                    resp.setContentType("text/plain");
+                    resp.getWriter().println("Foo");
+                }
+            });
+
+        URI serverURI = _server.getURI();
+
+        String rawRequest = """
+            GET /foo HTTP/1.1
+            Host: %s
+            Connection: close
+            
+            """.formatted(hostHeader);
+
+        try (Socket client = new Socket(hostHeader, serverURI.getPort()))
+        {
+            OutputStream out = client.getOutputStream();
+            out.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+
+            InputStream in = client.getInputStream();
+            HttpTester.Response response = HttpTester.parseResponse(in);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            String date = response.get(HttpHeader.DATE);
+            assertNotNull(date);
+            // asserting an exact value is tricky as the Date header is dynamic,
+            // so we just assert that it has some content and isn't blank
+            assertTrue(StringUtil.isNotBlank(date));
+            assertThat(date, containsString(","));
+            assertThat(date, containsString(":"));
+        }
     }
 }

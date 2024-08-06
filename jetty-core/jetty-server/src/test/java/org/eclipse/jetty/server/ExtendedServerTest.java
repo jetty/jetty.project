@@ -91,7 +91,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     {
         public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
         {
-            super(config, connector, endPoint, false);
+            super(config, connector, endPoint);
         }
 
         @Override
@@ -103,7 +103,7 @@ public class ExtendedServerTest extends HttpServerTestBase
                 public Runnable onRequest(MetaData.Request request)
                 {
                     Runnable todo =  super.onRequest(request);
-                    getRequest().setAttribute("DispatchedAt", ((ExtendedEndPoint)getEndPoint()).getLastSelected());
+                    getRequest().setAttribute("DispatchedAt", ((ExtendedEndPoint)getConnectionMetaData().getConnection().getEndPoint()).getLastSelected());
                     return todo;
                 }
             };

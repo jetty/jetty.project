@@ -63,7 +63,7 @@ etc/jetty.xml
 # jetty.httpConfig.maxErrorDispatches=10
 
 ## Relative Redirect Locations allowed
-# jetty.httpConfig.relativeRedirectAllowed=false
+# jetty.httpConfig.relativeRedirectAllowed=true
 
 ## Whether to use direct ByteBuffers for reading or writing
 # jetty.httpConfig.useInputDirectByteBuffers=true
@@ -115,7 +115,7 @@ etc/jetty.xml
 # end::documentation-scheduler-config[]
 
 ## Whether the handlers of the ContextHandlerCollection can be updated once the server is started
-## If set to false, then eeN-deploy module jetty.deploy.scanInterval should also be set to 0.
+## If set to false, then <env>-deploy module jetty.deploy.scanInterval should also be set to 0.
 # jetty.server.contexts.dynamic=true
 
 ## Should the DefaultHandler serve the jetty favicon.ico from the root.

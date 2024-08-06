@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.server;
 
+import java.util.Arrays;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.HttpField;
@@ -20,6 +21,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -32,7 +34,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>HTTP/3+QUIC support is experimental and not suited for production use.
  * APIs may change incompatibly between releases.</p>
+ *
+ * @deprecated use {@link QuicServerConnector} instead
  */
+@Deprecated(since = "12.0.7", forRemoval = true)
 public class HTTP3ServerConnector extends QuicServerConnector
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3ServerConnector.class);
@@ -46,12 +51,17 @@ public class HTTP3ServerConnector extends QuicServerConnector
 
     public HTTP3ServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
-        super(server, executor, scheduler, bufferPool, sslContextFactory, factories);
-        // Max concurrent streams that a client can open.
-        getQuicConfiguration().setMaxBidirectionalRemoteStreams(128);
-        // HTTP/3 requires a few mandatory unidirectional streams.
-        getQuicConfiguration().setMaxUnidirectionalRemoteStreams(8);
-        getQuicConfiguration().setUnidirectionalStreamRecvWindow(1024 * 1024);
+        super(server, executor, scheduler, bufferPool, extractServerQuicConfiguration(factories), factories);
+    }
+
+    private static ServerQuicConfiguration extractServerQuicConfiguration(ConnectionFactory[] factories)
+    {
+        return Arrays.stream(factories)
+            .filter(factory -> factory instanceof AbstractHTTP3ServerConnectionFactory)
+            .map(AbstractHTTP3ServerConnectionFactory.class::cast)
+            .map(AbstractHTTP3ServerConnectionFactory::getQuicConfiguration)
+            .findAny()
+            .orElseThrow(() -> new IllegalArgumentException("Missing HTTP/3 ConnectionFactory"));
     }
 
     @Override

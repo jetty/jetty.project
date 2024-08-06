@@ -108,9 +108,10 @@ public class FileIDTest
             Arguments.of(URI.create("file:///path/to/test.txt"), "test.txt"),
             Arguments.of(URI.create("file:///path/to/dir/"), "dir"),
             Arguments.of(URI.create("jar:file:///home/user/libs/jetty-server-12.jar!/org/eclipse/jetty/server/jetty-dir.css"), "jetty-dir.css"),
-            Arguments.of(URI.create("http://eclipse.org/jetty/"), "jetty"),
-            Arguments.of(URI.create("http://eclipse.org/jetty/index.html"), "index.html"),
-            Arguments.of(URI.create("http://eclipse.org/jetty/docs.html?query=val#anchor"), "docs.html")
+            Arguments.of(URI.create("https://jetty.org/"), ""),
+            Arguments.of(URI.create("https://jetty.org/docs/"), "docs"),
+            Arguments.of(URI.create("https://jetty.org/index.html"), "index.html"),
+            Arguments.of(URI.create("https://jetty.org/docs.html?query=val#anchor"), "docs.html")
         );
     }
 
@@ -419,7 +420,9 @@ public class FileIDTest
         "/META-INF/versions/9/foo.txt",
         "/META-INF/versions/17/org/eclipse/demo/Util.class",
         "/META-INF/versions/17/WEB-INF/web.xml",
-        "/META-INF/versions/10/module-info.class"
+        "/META-INF/versions/10/module-info.class",
+        "/meta-inf/versions/10/Foo.class",
+        "/meta-inf/VERSIONS/10/Zed.class",
     })
     public void testIsMetaInfVersions(String input) throws IOException
     {
@@ -510,8 +513,6 @@ public class FileIDTest
         "/META-INF/services/versions/foo.txt",
         "/META-INF/versions/", // root, no version
         "/META-INF/versions/Zed.class", // root, no version
-        "/meta-inf/versions/10/Foo.class", // not following case sensitivity rules in Java spec
-        "/meta-inf/VERSIONS/10/Zed.class", // not following case sensitivity rules in Java spec
     })
     public void testNotMetaInfVersions(String input) throws IOException
     {

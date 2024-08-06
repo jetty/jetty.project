@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -66,6 +67,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public Stream.Listener getStreamListener()
     {
         return listener;
+    }
+
+    @Override
+    protected Connection getConnection()
+    {
+        return connection;
     }
 
     @Override
@@ -190,29 +197,28 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public void onDataAvailable(Stream stream)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            channel.onDataAvailable();
+            connection.offerTask(channel.onDataAvailable(), false);
         }
 
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
-            // TODO: needs to call HTTP2Channel?
-            receiver.onReset(frame);
-            callback.succeeded();
+            HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
+            connection.offerTask(channel.onReset(frame, callback), false);
         }
 
         @Override
         public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            channel.onTimeout(x, promise);
+            connection.offerTask(channel.onTimeout(x, promise), false);
         }
 
         @Override
         public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            channel.onFailure(failure, callback);
+            connection.offerTask(channel.onFailure(failure, callback), false);
         }
     }
 }

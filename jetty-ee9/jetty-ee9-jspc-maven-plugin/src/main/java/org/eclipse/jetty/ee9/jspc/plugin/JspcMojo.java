@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.IO;
  * <p>
  * Runs jspc compiler to produce .java and .class files
  * </p>
- * @see <a href="https://eclipse.dev/jetty/documentation/">Usage Guide</a>
+ * @see <a href="https://jetty.org/docs/">Usage Guide</a>
  */
 @Mojo(name = "jspc", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
     threadSafe = true)
@@ -271,7 +271,7 @@ public class JspcMojo extends AbstractMojo
             getLog().info("generatedClasses=" + generatedClasses);
             getLog().info("webXmlFragment=" + webXmlFragment);
             getLog().info("webXml=" + webXml);
-            getLog().info("insertionMarker=" + (insertionMarker == null || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker));
+            getLog().info("insertionMarker=" + (insertionMarker == null || insertionMarker.isEmpty() ? END_OF_WEBAPP : insertionMarker));
             getLog().info("keepSources=" + keepSources);
             getLog().info("mergeFragment=" + mergeFragment);
             if (sourceVersion != null)
@@ -350,7 +350,7 @@ public class JspcMojo extends AbstractMojo
 
         try
         {
-            if (jspFiles == null | jspFiles.equals(""))
+            if (jspFiles == null | jspFiles.isEmpty())
             {
                 getLog().info("No files selected to precompile");
             }
@@ -455,7 +455,7 @@ public class JspcMojo extends AbstractMojo
                     // marker
                     boolean atInsertPoint = false;
                     boolean atEOF = false;
-                    String marker = (insertionMarker == null || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
+                    String marker = (insertionMarker == null || insertionMarker.isEmpty() ? END_OF_WEBAPP : insertionMarker);
                     while (!atInsertPoint && !atEOF)
                     {
                         String line = webXmlReader.readLine();

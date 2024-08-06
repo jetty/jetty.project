@@ -111,13 +111,13 @@ import org.slf4j.LoggerFactory;
  *
  * @see Request.Handler
  */
-@ManagedObject("Handler")
+@ManagedObject
 public interface Handler extends LifeCycle, Destroyable, Request.Handler
 {
     /**
      * @return the {@code Server} associated with this {@code Handler}
      */
-    @ManagedAttribute(value = "the Server instance associated to this Handler", readonly = true)
+    @ManagedAttribute(value = "The Server instance associated to this Handler", readonly = true)
     Server getServer();
 
     /**
@@ -132,12 +132,13 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * @see Singleton
      * @see Collection
      */
+    @ManagedObject
     interface Container extends Handler
     {
         /**
          * @return an immutable collection of {@code Handler}s directly contained by this {@code Handler}.
          */
-        @ManagedAttribute("The direct children Handlers of this container")
+        @ManagedAttribute(value = "The direct children Handlers of this Container", readonly = true)
         List<Handler> getHandlers();
 
         /**
@@ -292,11 +293,13 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * @see Wrapper for an implementation of {@link Singleton}.
      * @see Collection
      */
+    @ManagedObject
     interface Singleton extends Container
     {
         /**
          * @return the child {@code Handler}
          */
+        @ManagedAttribute(value = "The child Handler of this Container", readonly = true)
         Handler getHandler();
 
         /**
@@ -322,8 +325,8 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         }
 
         /**
-         * <p>Inserts the given {@code Handler} (and its chain of {@code Handler}s)
-         * in front of the child of this {@code Handler}.</p>
+         * <p>Inserts the given {@code Handler} (and possible chain of {@code Handler}s)
+         * between this {@code Handler} and its current {@link #getHandler() child}.
          * <p>For example, if this {@code Handler} {@code A} has a child {@code B},
          * inserting {@code Handler} {@code X} built as a chain {@code Handler}s
          * {@code X-Y-Z} results in the structure {@code A-X-Y-Z-B}.</p>
@@ -332,11 +335,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
          */
         default void insertHandler(Singleton handler)
         {
-            Singleton tail = handler;
-            while (tail.getHandler() instanceof Wrapper)
-            {
-                tail = (Wrapper)tail.getHandler();
-            }
+            Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
 
@@ -356,7 +355,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         }
 
         /**
-         * <p>Utility method to perform sanity checks before adding the given {@code Handler} to
+         * <p>Utility method to perform sanity checks before updating the given {@code Handler} to
          * the given {@code Singleton}, typically used in implementations of {@link #setHandler(Handler)}.</p>
          * <p>The sanity checks are:</p>
          * <ul>
@@ -365,15 +364,41 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
          *   <li>Sets the {@code Server} on the {@code Handler}</li>
          *   <li>Update the beans on the {@code Singleton} if it is a {@link ContainerLifeCycle}</li>
          * </ul>
+         * @param singleton the {@code Singleton} to set the {@code Handler}
+         * @param handler the {@code Handler} to set
+         * @see #checkHandler(Singleton, Handler)
+         * @return The {@code Handler} to set
+         */
+        static Handler updateHandler(Singleton singleton, Handler handler)
+        {
+            // check state
+            checkHandler(singleton, handler);
+
+            if (singleton instanceof org.eclipse.jetty.util.component.ContainerLifeCycle container)
+                container.updateBean(singleton.getHandler(), handler);
+
+            return handler;
+        }
+
+        /**
+         * <p>Utility method to perform sanity checks on a {{@link Handler} to be added to
+         * the given {@code Singleton}.</p>
+         * <p>The sanity checks are:</p>
+         * <ul>
+         *   <li>Check for the server start state and whether the invocation type is compatible</li>
+         *   <li>Check for {@code Handler} loops</li>
+         *   <li>Sets the {@code Server} on the {@code Handler}</li>
+         *   <li>Update the beans on the {@code Singleton} if it is a {@link ContainerLifeCycle}</li>
+         * </ul>
          *
-         * @param wrapper the {@code Singleton} to set the {@code Handler}
+         * @param singleton the {@code Singleton} to set the {@code Handler}
          * @param handler the {@code Handler} to set
          * @return The {@code Handler} to set
          */
-        static Handler updateHandler(Singleton wrapper, Handler handler)
+        static Handler checkHandler(Singleton singleton, Handler handler)
         {
             // check state
-            Server server = wrapper.getServer();
+            Server server = singleton.getServer();
 
             // If the collection is changed whilst started, then the risk is that if we switch from NON_BLOCKING to BLOCKING
             // whilst the execution strategy may have already dispatched the very last available thread, thinking it would
@@ -387,15 +412,12 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
             }
 
             // Check for loops.
-            if (handler == wrapper || (handler instanceof Handler.Container container &&
-                container.getDescendants().contains(wrapper)))
+            if (handler == singleton || (handler instanceof Handler.Container container &&
+                container.getDescendants().contains(singleton)))
                 throw new IllegalStateException("Handler loop");
 
             if (handler != null && server != null)
                 handler.setServer(server);
-
-            if (wrapper instanceof org.eclipse.jetty.util.component.ContainerLifeCycle container)
-                container.updateBean(wrapper.getHandler(), handler);
 
             return handler;
         }
@@ -409,6 +431,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      *
      * @see NonBlocking
      */
+    @ManagedObject
     abstract class Abstract extends ContainerLifeCycle implements Handler
     {
         private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
@@ -436,6 +459,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         }
 
         @Override
+        @ManagedAttribute(value = "The Server associated with this Handler", readonly = true)
         public Server getServer()
         {
             return _server;
@@ -505,6 +529,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      *
      * @see Abstract
      */
+    @ManagedObject
     abstract class AbstractContainer extends Abstract implements Container
     {
         private boolean _dynamic;
@@ -530,6 +555,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         /**
          * @return whether this container is dynamic
          */
+        @ManagedAttribute("Whether this Handler container is dynamic")
         public boolean isDynamic()
         {
             return _dynamic;
@@ -689,7 +715,8 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         public Wrapper(boolean dynamic, Handler handler)
         {
             super(dynamic);
-            _handler = handler == null ? null : Singleton.updateHandler(this, handler);
+            _handler = handler == null ? null : Singleton.checkHandler(this, handler);
+            installBean(_handler);
         }
 
         @Override
@@ -728,6 +755,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * whose {@link Handler#handle(Request, Response, Callback)} method is invoked
      * in sequence on each child until a child returns {@code true}.</p>
      */
+    @ManagedObject
     class Sequence extends AbstractContainer implements Collection
     {
         private volatile List<Handler> _handlers = new ArrayList<>();

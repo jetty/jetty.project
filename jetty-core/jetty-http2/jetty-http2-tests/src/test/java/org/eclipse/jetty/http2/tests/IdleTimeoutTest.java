@@ -13,7 +13,11 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -33,8 +37,11 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -50,6 +57,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -747,10 +755,10 @@ public class IdleTimeoutTest extends AbstractTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
 
         // Wait for the server to finish serving requests.
-        await().atMost(5, TimeUnit.SECONDS).until(handled::get, Matchers.is(0));
-        assertThat(requests.get(), Matchers.is(count - 1));
+        await().atMost(5, TimeUnit.SECONDS).until(handled::get, is(0));
+        assertThat(requests.get(), is(count - 1));
 
-        await().atMost(5, TimeUnit.SECONDS).until(responses::get, Matchers.is(count - 1));
+        await().atMost(5, TimeUnit.SECONDS).until(responses::get, is(count - 1));
     }
 
     @Test
@@ -835,6 +843,53 @@ public class IdleTimeoutTest extends AbstractTest
         stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(64), true));
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testIdleTimeoutWhenCongested() throws Exception
+    {
+        long idleTimeout = 1000;
+        HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(new HttpConfiguration());
+        prepareServer(h2c);
+        server.removeConnector(connector);
+        connector = new ServerConnector(server, 1, 1, h2c)
+        {
+            @Override
+            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+            {
+                SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
+                {
+                    @Override
+                    public boolean flush(ByteBuffer... buffers)
+                    {
+                        // Fake TCP congestion.
+                        return false;
+                    }
+
+                    @Override
+                    protected void onIncompleteFlush()
+                    {
+                        // Do nothing here to avoid spin loop,
+                        // since the network is actually writable,
+                        // as we are only faking TCP congestion.
+                    }
+                };
+                endpoint.setIdleTimeout(getIdleTimeout());
+                return endpoint;
+            }
+        };
+        connector.setIdleTimeout(idleTimeout);
+        server.addConnector(connector);
+        server.start();
+
+        prepareClient();
+        httpClient.start();
+
+        InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
+        // The connect() will complete exceptionally.
+        http2Client.connect(address, new Session.Listener() {});
+
+        await().atMost(Duration.ofMillis(5 * idleTimeout)).until(() -> connector.getConnectedEndPoints().size(), is(0));
     }
 
     private void sleep(long value)

@@ -59,12 +59,12 @@ public class StringMessageSink extends AbstractMessageSink
 
             if (out == null)
                 out = new Utf8StringBuilder(getCoreSession().getInputBufferSize());
-
             out.append(frame.getPayload());
 
             if (frame.isFin())
             {
                 getMethodHolder().invoke(out.takeCompleteString(BadPayloadException.InvalidUtf8::new));
+                reset();
                 callback.succeeded();
                 autoDemand();
             }
@@ -76,22 +76,20 @@ public class StringMessageSink extends AbstractMessageSink
         }
         catch (Throwable t)
         {
+            reset();
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-            {
-                size = 0;
-                out = null;
-            }
         }
     }
 
     @Override
     public void fail(Throwable failure)
     {
-        if (out != null)
-            out.reset();
+        reset();
+    }
+
+    private void reset()
+    {
+        out = null;
+        size = 0;
     }
 }

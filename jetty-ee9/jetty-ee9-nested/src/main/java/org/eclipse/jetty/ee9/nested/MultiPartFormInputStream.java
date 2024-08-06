@@ -28,9 +28,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,7 +38,9 @@ import java.util.stream.Collectors;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -81,7 +83,7 @@ import static org.eclipse.jetty.ee9.nested.ContextHandler.DEFAULT_MAX_FORM_KEYS;
  * }</pre>
  * @see <a href="https://tools.ietf.org/html/rfc7578">https://tools.ietf.org/html/rfc7578</a>
  */
-public class MultiPartFormInputStream
+public class MultiPartFormInputStream implements MultiPart.Parser
 {
     private enum State
     {
@@ -93,11 +95,11 @@ public class MultiPartFormInputStream
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
-    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().build();
+    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEscapeOnlyForQuotes().allowEmbeddedQuotes().build();
 
     private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
-    private final EnumSet<NonCompliance> _nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
+    private final List<ComplianceViolation.Event> _nonComplianceWarnings = new ArrayList<>();
     private final InputStream _in;
     private final MultipartConfigElement _config;
     private final File _contextTmpDir;
@@ -110,27 +112,11 @@ public class MultiPartFormInputStream
     private volatile int _bufferSize = 16 * 1024;
     private State state = State.UNPARSED;
 
-    public enum NonCompliance
-    {
-        TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7");
-
-        final String _rfcRef;
-
-        NonCompliance(String rfcRef)
-        {
-            _rfcRef = rfcRef;
-        }
-
-        public String getURL()
-        {
-            return _rfcRef;
-        }
-    }
-
     /**
      * @return an EnumSet of non compliances with the RFC that were accepted by this parser
      */
-    public EnumSet<NonCompliance> getNonComplianceWarnings()
+    @Override
+    public List<ComplianceViolation.Event> getNonComplianceWarnings()
     {
         return _nonComplianceWarnings;
     }
@@ -500,6 +486,7 @@ public class MultiPartFormInputStream
      * @return the parts
      * @throws IOException if unable to get the parts
      */
+    @Override
     public Collection<Part> getParts() throws IOException
     {
         parse();
@@ -514,6 +501,7 @@ public class MultiPartFormInputStream
      * @return the parts
      * @throws IOException if unable to get the part
      */
+    @Override
     public Part getPart(String name) throws IOException
     {
         parse();
@@ -644,7 +632,7 @@ public class MultiPartFormInputStream
             if (parser.getState() != MultiPartParser.State.END)
             {
                 if (parser.getState() == MultiPartParser.State.PREAMBLE)
-                    _err = new IOException("Missing initial multi part boundary");
+                    _err = new IOException("Missing content for multipart request");
                 else
                     _err = new IOException("Incomplete Multipart");
             }
@@ -711,12 +699,12 @@ public class MultiPartFormInputStream
             else if (key.equalsIgnoreCase("content-type"))
                 contentType = value;
 
-            // Transfer encoding is not longer considers as it is deprecated as per
+            // Content Transfer encoding is no longer considered as it is deprecated as per
             // https://tools.ietf.org/html/rfc7578#section-4.7
             if (key.equalsIgnoreCase("content-transfer-encoding"))
             {
                 if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
-                    _nonComplianceWarnings.add(NonCompliance.TRANSFER_ENCODING);
+                    _nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
             }
         }
 
@@ -736,8 +724,6 @@ public class MultiPartFormInputStream
                 {
                     throw new IOException("Missing content-disposition");
                 }
-
-                QUOTED_STRING_TOKENIZER.tokenize(contentDisposition);
 
                 String name = null;
                 String filename = null;

@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -155,6 +156,31 @@ public class ErrorHandlerTest
         assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
         assertThat(response.get(HttpHeader.DATE), notNullValue());
         assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+
+        assertContent(response);
+    }
+
+    @Test
+    public void test404NoAcceptButSpecifiedDefaultResponseMimeType() throws Exception
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setDefaultResponseMimeType(MimeTypes.Type.APPLICATION_JSON.asString());
+        server.setErrorHandler(errorHandler);
+
+        String rawResponse = connector.getResponse("""
+                        GET / HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("application/json"));
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
+        assertThat(response.getContent(), containsString("\"status\":\"404\""));
+        assertThat(response.getContent(), containsString("\"message\":\"Not Found\""));
 
         assertContent(response);
     }
@@ -453,6 +479,82 @@ public class ErrorHandlerTest
         assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
 
         assertContent(response);
+    }
+
+    @Test
+    public void testContainsNoStacksByDefault() throws Exception
+    {
+        String rawResponse = connector.getResponse("""
+                        GET /badmessage/444 HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), not(containsString("<h3>Caused by:</h3>")));
+        assertThat(response.getContent(), not(containsString("org.eclipse.jetty.server.ErrorHandlerTest$1.handle")));
+    }
+
+    @Test
+    public void testContainsStacksIfSpecified() throws Exception
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowStacks(true);
+        server.setErrorHandler(errorHandler);
+
+        String rawResponse = connector.getResponse("""
+                        GET /badmessage/444 HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("<h3>Caused by:</h3>"));
+        assertThat(response.getContent(), containsString("org.eclipse.jetty.server.ErrorHandlerTest$1.handle"));
+    }
+
+    @Test
+    public void testContainsNoCausesByDefault() throws Exception
+    {
+        String rawResponse = connector.getResponse("""
+                        GET /badmessage/444 HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), not(containsString("<th>CAUSED BY:</th>")));
+        assertThat(response.getContent(), not(containsString("<td>org.eclipse.jetty.http.BadMessageException: 444: null</td>")));
+    }
+
+    @Test
+    public void testContainsCausesIfSpecified() throws Exception
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowCauses(true);
+        server.setErrorHandler(errorHandler);
+
+        String rawResponse = connector.getResponse("""
+                        GET /badmessage/444 HTTP/1.1
+                        Host: Localhost
+                        
+                        """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("<th>CAUSED BY:</th>"));
+        assertThat(response.getContent(), containsString("<td>org.eclipse.jetty.http.BadMessageException: 444: null</td>"));
     }
 
     @Test

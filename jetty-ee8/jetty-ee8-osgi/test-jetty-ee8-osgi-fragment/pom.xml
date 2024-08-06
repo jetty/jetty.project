@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee8.osgi</groupId>
+    <artifactId>jetty-ee8-osgi</artifactId>
+    <version>12.0.13-SNAPSHOT</version>
+  </parent>
+  <artifactId>test-jetty-ee8-osgi-fragment</artifactId>
+  <name>EE8 :: OSGi :: WebApp Fragment</name>
+  <description>Test Jetty OSGi Webapp Fragment bundle</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.webapp.fragment</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
+            <Bundle-Name>Jetty OSGi Test WebApp Fragment</Bundle-Name>
+            <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+            <Fragment-Host>org.eclipse.jetty.ee8.demos.spec.webapp</Fragment-Host>
+            <Jetty-WarFragmentResourcePath>/</Jetty-WarFragmentResourcePath>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

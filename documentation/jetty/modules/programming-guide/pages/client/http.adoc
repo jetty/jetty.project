@@ -1,0 +1,1008 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= HTTP Client
+
+[[intro]]
+== HttpClient Introduction
+
+The Jetty HTTP client module provides easy-to-use APIs and utility classes to perform HTTP (or HTTPS) requests.
+
+Jetty's HTTP client is non-blocking and asynchronous.
+It offers an asynchronous API that never blocks for I/O, making it very efficient in thread utilization and well suited for high performance scenarios such as load testing or parallel computation.
+
+However, when all you need to do is to perform a `GET` request to a resource, Jetty's HTTP client offers also a synchronous API; a programming interface where the thread that issued the request blocks until the request/response conversation is complete.
+
+Jetty's HTTP client supports different <<transport,HTTP formats>>: HTTP/1.1, HTTP/2, HTTP/3 and FastCGI.
+Each format has a different `HttpClientTransport` implementation, that in turn use a xref:client/io-arch.adoc#transport[low-level transport] to communicate with the server.
+
+This means that the semantic of an HTTP request such as: " ``GET`` the resource ``/index.html`` " can be carried over the low-level transport in different formats.
+The most common and default format is HTTP/1.1.
+That said, Jetty's HTTP client can carry the same request using the HTTP/2 format, the HTTP/3 format, or the FastCGI format.
+
+Furthermore, every format can be transported over different low-level transport, such as TCP, Unix-Domain sockets, QUIC or memory.
+Supports for Unix-Domain sockets requires Java 16 or later, since Unix-Domain sockets support has been introduced in OpenJDK with https://openjdk.java.net/jeps/380[JEP 380].
+
+The <<transport-fcgi,FastCGI format>> is used in Jetty's xref:server/fastcgi.adoc[FastCGI support] that allows Jetty to work as a reverse proxy to PHP (exactly like Apache or Nginx do) and therefore be able to serve, for example, WordPress websites, often in conjunction with Unix-Domain sockets (although it is possible to use FastCGI via network too).
+
+The HTTP/2 format allows Jetty's HTTP client to perform requests using HTTP/2 to HTTP/2 enabled websites, see also Jetty's xref:client/http2.adoc[HTTP/2 support].
+
+The HTTP/3 format allows Jetty's HTTP client to perform requests using HTTP/3 to HTTP/3 enabled websites, see also Jetty's xref:client/http3.adoc[HTTP/3 support].
+
+Out of the box features that you get with the Jetty HTTP client include:
+
+* Redirect support -- redirect codes such as 302 or 303 are automatically followed.
+* Cookies support -- cookies sent by servers are stored and sent back to servers in matching requests.
+* Authentication support -- HTTP "Basic", "Digest" and "SPNEGO" authentications are supported, others are pluggable.
+* Forward proxy support -- HTTP proxying, SOCKS4 and SOCKS5 proxying.
+
+[[start]]
+== Starting HttpClient
+
+The Jetty artifact that provides the main HTTP client implementation is `jetty-client`.
+The Maven artifact coordinates are the following:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-client</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+The main class is named `org.eclipse.jetty.client.HttpClient`.
+
+You can think of a `HttpClient` instance as a browser instance.
+Like a browser it can make requests to different domains, it manages redirects, cookies and authentication, you can configure it with a forward proxy, and it provides you with the responses to the requests you make.
+
+In order to use `HttpClient`, you must instantiate it, configure it, and then start it:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=start]
+----
+
+You may create multiple instances of `HttpClient`, but typically one instance is enough for an application.
+There are several reasons for having multiple `HttpClient` instances including, but not limited to:
+
+* You want to specify different configuration parameters (for example, one instance is configured with a forward proxy while another is not).
+* You want the two instances to behave like two different browsers and hence have different cookies, different authentication credentials, etc.
+* You want to use <<transport,different ``HttpClientTransport``s>>.
+
+Like browsers, HTTPS requests are supported out-of-the-box (see <<configuration-tls,this section>> for the TLS configuration), as long as the server provides a valid certificate.
+In case the server does not provide a valid certificate (or in case it is self-signed) you want to customize ``HttpClient``'s TLS configuration as described in <<configuration-tls,this section>>.
+
+[[stop]]
+== Stopping HttpClient
+
+It is recommended that when your application stops, you also stop the `HttpClient` instance (or instances) that you are using.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=stop]
+----
+
+Stopping `HttpClient` makes sure that the memory it holds (for example, `ByteBuffer` pools, authentication credentials, cookies, etc.) is released, and that the thread pool and scheduler are properly stopped allowing all threads used by `HttpClient` to exit.
+
+[NOTE]
+====
+You cannot call `HttpClient.stop()` from one of its own threads, as it would cause a deadlock.
+It is recommended that you stop `HttpClient` from an unrelated thread, or from a newly allocated thread, for example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=stopFromOtherThread]
+----
+====
+
+[[arch]]
+== HttpClient Architecture
+
+A `HttpClient` instance can be thought as a browser instance, and it manages the following components:
+
+* A `CookieStore` (see <<cookie,this section>>).
+* A `AuthenticationStore` (see <<authentication,this section>>).
+* A `ProxyConfiguration` (see <<proxy,this section>>).
+* A set of ``Destination``s
+
+A `Destination` is the client-side component that represents an _origin_ server, and manages a queue of requests for that origin, and a <<connection-pool,pool of connections>> to that origin.
+
+An _origin_ may be simply thought as the tuple `(scheme, host, port)` and it is where the client connects to in order to communicate with the server.
+However, this is not enough.
+
+If you use `HttpClient` to write a proxy you may have different clients that want to contact the same server.
+In this case, you may not want to use the same proxy-to-server connection to proxy requests for both clients, for example for authentication reasons: the server may associate the connection with authentication credentials, and you do not want to use the same connection for two different users that have different credentials.
+Instead, you want to use different connections for different clients and this can be achieved by "tagging" a destination with a tag object that represents the remote client (for example, it could be the remote client IP address).
+
+Two origins with the same `(scheme, host, port)` but different `tag` create two different destinations and therefore two different connection pools.
+However, also this is not enough.
+
+It is possible for a server to speak different protocols on the same `port`.
+A connection may start by speaking one protocol, for example HTTP/1.1, but then be upgraded to speak a different protocol, for example HTTP/2. After a connection has been upgraded to a second protocol, it cannot speak the first protocol anymore, so it can only be used to communicate using the second protocol.
+
+Two origins with the same `(scheme, host, port, tag)` but different `protocol` create two different destinations and therefore two different connection pools.
+
+Finally, it is possible for a server to speak the same protocol over different xref:client/io-arch.adoc#transport[low-level transports] (represented by `Transport`), for example TCP and Unix-Domain.
+
+Two origins with the same `(scheme, host, port, tag, protocol)` but different low-level transports create two different destinations and therefore two different connection pools.
+
+Therefore, an origin is identified by the tuple `(scheme, host, port, tag, protocol, transport)`.
+
+[[connection-pool]]
+== HttpClient Connection Pooling
+
+A `Destination` manages a `org.eclipse.jetty.client.ConnectionPool`, where connections to a particular origin are pooled for performance reasons: opening a connection is a costly operation, and it's better to reuse them for multiple requests.
+
+NOTE: Remember that to select a specific `Destination` you must select a specific origin, and that an origin is identified by the tuple `(scheme, host, port, tag, protocol, transport)`, so you can have multiple ``Destination``s for the same `host` and `port`, and therefore multiple ``ConnectionPool``s
+
+You can access the `ConnectionPool` in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=getConnectionPool]
+----
+
+Jetty's client library provides the following `ConnectionPool` implementations:
+
+* `DuplexConnectionPool`, historically the first implementation, only used by the HTTP/1.1 transport.
+* `MultiplexConnectionPool`, the generic implementation valid for any transport where connections are reused with a most recently used algorithm (that is, the connections most recently returned to the connection pool are the more likely to be used again).
+* `RoundRobinConnectionPool`, similar to `MultiplexConnectionPool` but where connections are reused with a round-robin algorithm.
+* `RandomRobinConnectionPool`, similar to `MultiplexConnectionPool` but where connections are reused with an algorithm that chooses them randomly.
+
+The `ConnectionPool` implementation can be customized for each destination in by setting a `ConnectionPool.Factory` on the `HttpClientTransport`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=setConnectionPool]
+----
+
+[[request-processing]]
+== HttpClient Request Processing
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant Application
+participant Request
+participant HttpClient
+participant Destination
+participant ConnectionPool
+participant Connection
+
+Application -> HttpClient : newRequest()
+HttpClient -> Request **
+Application -> Request : send()
+Request -> HttpClient : send()
+HttpClient -> Destination ** : get or create
+Destination -> ConnectionPool ** : create
+HttpClient -> Destination : send(Request)
+Destination -> Destination : enqueue(Request)
+Destination -> ConnectionPool : acquire()
+ConnectionPool -> Connection ** : create
+Destination -> Destination : dequeue(Request)
+Destination -> Connection : send(Request)
+----
+
+When a request is sent, an origin is computed from the request; `HttpClient` uses that origin to find (or create if it does not exist) the correspondent destination.
+The request is then queued onto the destination, and this causes the destination to ask its connection pool for a free connection.
+If a connection is available, it is returned, otherwise a new connection is created.
+Once the destination has obtained the connection, it dequeues the request and sends it over the connection.
+
+The first request to a destination triggers the opening of the first connection.
+A second request with the same origin sent _after_ the first request/response cycle is completed may reuse the same connection, depending on the connection pool implementation.
+A second request with the same origin sent _concurrently_ with the first request will likely cause the opening of a second connection, depending on the connection pool implementation.
+The configuration parameter `HttpClient.maxConnectionsPerDestination` (see also the <<configuration,configuration section>>) controls the max number of connections that can be opened for a destination.
+
+NOTE: If opening connections to a given origin takes a long time, then requests for that origin will queue up in the corresponding destination until the connections are established.
+
+Each connection can handle a limited number of concurrent requests.
+For HTTP/1.1, this number is always `1`: there can only be one outstanding request for each connection.
+For HTTP/2 this number is determined by the server `max_concurrent_stream` setting (typically around `100`, i.e. there can be up to `100` outstanding requests for every connection).
+
+When a destination has maxed out its number of connections, and all connections have maxed out their number of outstanding requests, more requests sent to that destination will be queued.
+When the request queue is full, the request will be failed.
+The configuration parameter `HttpClient.maxRequestsQueuedPerDestination` (see also the <<configuration,configuration section>>) controls the max number of requests that can be queued for a destination.
+
+[[api]]
+== HttpClient API Usage
+
+`HttpClient` provides two types of APIs: a blocking API and a non-blocking API.
+
+[[blocking]]
+=== HttpClient Blocking APIs
+
+The simpler way to perform a HTTP request is the following:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=simpleBlockingGet]
+----
+
+The method `HttpClient.GET(\...)` performs a HTTP `GET` request to the given URI and returns a `ContentResponse` when the request/response conversation completes successfully.
+
+The `ContentResponse` object contains the HTTP response information: status code, headers and possibly content.
+The content length is limited by default to 2 MiB; for larger content see <<content-response,the section on response content handling>>.
+
+If you want to customize the request, for example by issuing a `HEAD` request instead of a `GET`, and simulating a browser user agent, you can do it in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=headFluent]
+----
+
+This is a shorthand for:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=headNonFluent]
+----
+
+You first create a request object using `httpClient.newRequest(\...)`, and then you customize it using the fluent API style (that is, a chained invocation of methods on the request object).
+When the request object is customized, you call `request.send()` that produces the `ContentResponse` when the request/response conversation is complete.
+
+IMPORTANT: The `Request` object, despite being mutable, cannot be reused for other requests.
+This is true also when trying to send two or more identical requests: you have to create two or more `Request` objects.
+
+Simple `POST` requests also have a shortcut method:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=postFluent]
+----
+
+The `POST` parameter values added via the `param()` method are automatically URL-encoded.
+
+Jetty's `HttpClient` automatically follows redirects, so it handles the typical web pattern http://en.wikipedia.org/wiki/Post/Redirect/Get[POST/Redirect/GET], and the response object contains the content of the response of the `GET` request.
+Following redirects is a feature that you can enable/disable on a per-request basis or globally.
+
+File uploads also require one line, and make use of `java.nio.file` classes:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=fileFluent]
+----
+
+It is possible to impose a total timeout for the request/response conversation using the `Request.timeout(\...)` method as follows:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=totalTimeout]
+----
+
+In the example above, when the 5 seconds expire, the request/response cycle is aborted and a `java.util.concurrent.TimeoutException` is thrown.
+
+[[non-blocking]]
+=== HttpClient Non-Blocking APIs
+
+So far we have shown how to use Jetty HTTP client in a blocking style -- that is, the thread that issues the request blocks until the request/response conversation is complete.
+
+This section will look at Jetty's `HttpClient` non-blocking, asynchronous APIs that are perfectly suited for large content downloads, for parallel processing of requests/responses and in cases where performance and efficient thread and resource utilization is a key factor.
+
+The asynchronous APIs rely heavily on listeners that are invoked at various stages of request and response processing.
+These listeners are implemented by applications and may perform any kind of logic.
+The implementation invokes these listeners in the same thread that is used to process the request or response.
+Therefore, if the application code in these listeners takes a long time to execute, the request or response processing is delayed until the listener returns.
+
+If you need to execute application code that takes long time inside a listener, it is typically better to spawn your own thread to execute the code that takes long time.
+In this way you return from the listener as soon as possible and allow the implementation to resume the processing of the request or response (or of other requests/responses).
+
+Request and response processing are executed by two different threads and therefore may happen concurrently.
+A typical example of this concurrent processing is an echo server, where a large upload may be concurrent with the large download echoed back.
+
+NOTE: Remember that responses may be processed and completed _before_ requests; a typical example is a large upload that triggers a quick response, for example an error, by the server: the response may arrive and be completed while the request content is still being uploaded.
+
+The application thread that calls `Request.send(Response.CompleteListener)` performs the <<request-processing,processing of the request>> until either the request is fully sent over the network or until it would block on I/O, then it returns (and therefore never blocks).
+If it would block on I/O, the thread asks the I/O system to emit an event when the I/O will be ready to continue, then returns.
+When such an event is fired, a thread taken from the `HttpClient` thread pool will resume the processing of the request.
+
+Response are processed from the I/O thread taken from the `HttpClient` thread pool that processes the event that bytes are ready to be read.
+Response processing continues until either the response is fully processed or until it would block for I/O.
+If it would block for I/O, the thread asks the I/O system to emit an event when the I/O will be ready to continue, then returns.
+When such an event is fired, a (possibly different) thread taken from the `HttpClient` thread pool will resume the processing of the response.
+
+When the request and the response are both fully processed, the thread that finished the last processing (usually the thread that processes the response, but may also be the thread that processes the request -- if the request takes more time than the response to be processed) is used to dequeue the next request for the same destination and to process it.
+
+A simple non-blocking `GET` request that discards the response content can be written in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=simpleNonBlocking]
+----
+
+Method `Request.send(Response.CompleteListener)` returns `void` and does not block; the `Response.CompleteListener` lambda provided as a parameter is notified when the request/response conversation is complete, and the `Result` parameter allows you to access the request and response objects as well as failures, if any.
+
+You can impose a total timeout for the request/response conversation in the same way used by the synchronous API:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=nonBlockingTotalTimeout]
+----
+
+The example above will impose a total timeout of 3 seconds on the request/response conversation.
+
+The HTTP client APIs use listeners extensively to provide hooks for all possible request and response events:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=listeners]
+----
+
+This makes Jetty HTTP client suitable for HTTP load testing because, for example, you can accurately time every step of the request/response conversation (thus knowing where the request/response time is really spent).
+
+[IMPORTANT]
+====
+The code in request and response listeners __should not__ block.
+
+It is allowed to call other blocking APIs, such as the Java file-system APIs.
+You should not call blocking APIs that:
+
+* Wait for other request or response events, such as receiving other request or response content chunks.
+* Use wait/notify primitives such as those available in `java.lang.Object` or `java.util.concurrent.locks.Condition`.
+
+If the listener code blocks, the implementation also will be blocked and will not be able to advance the processing of the request or response that the listener code is likely waiting for, causing a deadlock.
+====
+
+Have a look at the link:{javadoc-url}/org/eclipse/jetty/client/api/Request.Listener.html[`Request.Listener`] class to know about request events, and to the link:{javadoc-url}/org/eclipse/jetty/client/api/Response.Listener.html[`Response.Listener`] class to know about response events.
+
+[[content-request]]
+=== Request Content Handling
+
+Jetty's `HttpClient` provides a number of utility classes off the shelf to handle request content.
+
+You can provide request content as `String`, `byte[]`, `ByteBuffer`, `java.nio.file.Path`, `InputStream`, and provide your own implementation of `org.eclipse.jetty.client.Request.Content`.
+Here’s an example that provides the request content using `java.nio.file.Paths`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=pathRequestContent]
+----
+
+Alternatively, you can use `FileInputStream` via the `InputStreamRequestContent` utility class:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=inputStreamRequestContent]
+----
+
+Since `InputStream` is blocking, then also the send of the request will block if the input stream blocks, even in case of usage of the non-blocking `HttpClient` APIs.
+
+If you have already read the content in memory, you can pass it as a `byte[]` (or a `String`) using the `BytesRequestContent` (or `StringRequestContent`) utility class:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=bytesStringRequestContent]
+----
+
+If the request content is not immediately available, but your application will be notified of the content to send, you can use `AsyncRequestContent` in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=asyncRequestContent]
+----
+
+While the request content is awaited and consequently uploaded by the client application, the server may be able to respond (at least with the response headers) completely asynchronously.
+In this case, `Response.Listener` callbacks will be invoked before the request is fully sent.
+This allows fine-grained control of the request/response conversation: for example the server may reject contents that are too big, send a response to the client, which in turn may stop the content upload.
+
+Another way to provide request content is by using an `OutputStreamRequestContent`, which allows applications to write request content when it is available to the `OutputStream` provided by `OutputStreamRequestContent`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=outputStreamRequestContent]
+----
+
+[[content-response]]
+=== Response Content Handling
+
+Jetty's `HttpClient` allows applications to handle response content in different ways.
+
+You can buffer the response content in memory; this is done when using the <<blocking,blocking APIs>> and the content is buffered within a `ContentResponse` up to 2 MiB.
+
+If you want to control the length of the response content (for example limiting to values smaller than the default of 2 MiB), then you can use a `org.eclipse.jetty.client.CompletableResponseListener` in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=completableResponseListener]
+----
+
+If the response content length is exceeded, the response will be aborted, and an exception will be thrown by method `get(\...)`.
+
+You can buffer the response content in memory also using the <<non-blocking,non-blocking APIs>>, via the `BufferingResponseListener` utility class:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=bufferingResponseListener]
+----
+
+If you want to avoid buffering, you can wait for the response and then stream the content using the `InputStreamResponseListener` utility class:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=inputStreamResponseListener]
+----
+
+Finally, let's look at the advanced usage of the response content handling.
+
+The response content is provided by the `HttpClient` implementation to application listeners following the read/demand model of `org.eclipse.jetty.io.Content.Source`.
+
+The listener that follows this model is `Response.ContentSourceListener`.
+
+After the response headers have been processed by the `HttpClient` implementation, `Response.ContentSourceListener.onContentSource(response, contentSource)` is invoked once and only once.
+This allows the application to control precisely the read/demand loop: when to read a chunk, how to process it and when to demand the next one.
+
+You must provide a `ContentSourceListener` whose implementation reads a `Content.Chunk` from the provided `Content.Source`, as explained in xref:arch/io.adoc#content-source[this section].
+
+The invocation of `onContentSource(Request, Content.Source)` and of the demand callback passed to `contentSource.demand(Runnable)` are serialized with respect to asynchronous events such as timeouts or an asynchronous call to `Request.abort(Throwable)`.
+This means that these asynchronous events are not processed until the invocation of `onContentSource(Request, Content.Source)` returns, or until the invocation of the demand callback returns.
+With this model, applications should not worry too much about concurrent asynchronous events happening during response content handling, because they will eventually see the events as failures while reading the response content.
+
+Demanding for content and consuming the content are orthogonal activities.
+
+An application can read, store aside the `Content.Chunk` objects without releasing them (to consume them later), and demand for more chunks, but it must call `Chunk.retain()` on the stored chunks, and arrange to release them after they have been consumed later.
+
+If not done carefully, this may lead to excessive memory consumption, since the `ByteBuffer` bytes are not consumed.
+Releasing the ``Content.Chunk``s will result in the ``ByteBuffer``s to be disposed/recycled and may be performed at any time.
+
+An application can also read one chunk of content, consume it, release it, and then _not_ demand for more content until a later time.
+
+Subclass `Response.AsyncContentListener` overrides the behavior of `Response.ContentSourceListener`; when an application implements `AsyncContentListener.onContent(response, chunk, demander)`, it can control the disposing/recycling of the `ByteBuffer` by releasing the chunk _and_ it can control when to demand one more chunk by calling `demander.run()`.
+
+Subclass `Response.ContentListener` overrides the behavior of `Response.AsyncContentListener`; when an application implementing its `onContent(response, buffer)` returns from the method itself, it will _both_ the effect of disposing/recycling the `buffer` _and_ the effect of demanding one more chunk of content.
+
+An application that implements a forwarder between two servers can be implemented efficiently by handling the response content without copying the `ByteBuffer` bytes as in the following example:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=forwardContent]
+----
+
+[[api-transport]]
+=== Request `Transport`
+
+The communication between client and server happens over a xref:client/io-arch.adoc#transport[low-level transport], and applications can specify the low-level transport to use for each request.
+
+This gives client applications great flexibility, because they can use the same `HttpClient` instance to communicate, for example, with an external third party web application via TCP, to a different process via Unix-Domain sockets, and efficiently to the same process via memory.
+
+Client application can also choose more esoteric configurations such as using QUIC, typically used to transport HTTP/3, to transport HTTP/1.1 or HTTP/2, because QUIC provides reliable and ordered communication like TCP does.
+
+Provided you have configured a xref:server/http.adoc#connector[`UnixDomainServerConnector`] on the server, this is how you can configure a request to use Unix-Domain sockets:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=unixDomain]
+----
+
+In the same way, if you have configured a xref:server/http.adoc#connector[`MemoryConnector`] on the server, this is how you can configure a request to use memory for communication:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=memory]
+----
+
+This is a fancy example of how to mix HTTP versions and low-level transports:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=mixedTransports]
+----
+
+[[configuration]]
+== HttpClient Configuration
+
+`HttpClient` has a quite large number of configuration parameters.
+Please refer to the `HttpClient` link:{javadoc-url}/org/eclipse/jetty/client/HttpClient.html[javadocs] for the complete list of configurable parameters.
+
+The most common parameters are:
+
+* `HttpClient.idleTimeout`: same as `ClientConnector.idleTimeout` described in xref:client/io-arch.adoc#transport[this section].
+* `HttpClient.connectBlocking`: same as `ClientConnector.connectBlocking` described in xref:client/io-arch.adoc#transport[this section].
+* `HttpClient.connectTimeout`: same as `ClientConnector.connectTimeout` described in xref:client/io-arch.adoc#transport[this section].
+* `HttpClient.maxConnectionsPerDestination`: the max number of TCP connections that are opened for a particular destination (defaults to 64).
+* `HttpClient.maxRequestsQueuedPerDestination`: the max number of requests queued (defaults to 1024).
+
+[[configuration-tls]]
+=== HttpClient TLS Configuration
+
+`HttpClient` supports HTTPS requests out-of-the-box like a browser does.
+
+The support for HTTPS request is provided by a `SslContextFactory.Client` instance, typically configured in the `ClientConnector`.
+If not explicitly configured, the `ClientConnector` will allocate a default one when started.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsExplicit]
+----
+
+The default `SslContextFactory.Client` verifies the certificate sent by the server by verifying the validity of the certificate with respect to the certificate chain, the expiration date, the server host name, etc.
+This means that requests to public websites that have a valid certificate (such as `+https://google.com+`) will work out-of-the-box, without the need to specify a KeyStore or a TrustStore.
+
+However, requests made to sites that return an invalid or a self-signed certificate will fail (like they will in a browser).
+An invalid certificate may be expired or have the wrong server host name; a self-signed certificate has a certificate chain that cannot be verified.
+
+The validation of the server host name present in the certificate is important, to guarantee that the client is connected indeed with the intended server.
+
+The validation of the server host name is performed at two levels: at the TLS level (in the JDK) and, optionally, at the application level.
+
+By default, the validation of the server host name at the TLS level is enabled, while it is disabled at the application level.
+
+You can configure the `SslContextFactory.Client` to skip the validation of the server host name at the TLS level:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsNoValidation]
+----
+
+When you disable the validation of the server host name at the TLS level, you are strongly recommended to enable it at the application level.
+Failing to do so puts you at risk of connecting to a server different from the one you intend to connect to:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsAppValidation]
+----
+
+Enabling server host name validation at both the TLS level and application level allow you to further restrict the set of server hosts the client can connect to, among those allowed in the certificate sent by the server.
+
+Entirely disabling server host name validation is not recommended, but may be done in controlled environments.
+
+Even with server host name validation disabled, the validation of the certificate chain, by validating cryptographic signatures and validity dates is still performed.
+
+Please refer to the `SslContextFactory.Client` link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[javadocs] for the complete list of configurable parameters.
+
+[[configuration-tls-listener]]
+==== HttpClient `SslHandshakeListener`
+
+Applications may register a `org.eclipse.jetty.io.ssl.SslHandshakeListener` to be notified of TLS handshakes success or failure, by adding the `SslHandshakeListener` as a bean to `HttpClient`:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=sslHandshakeListener]
+----
+
+[[configuration-tls-truststore]]
+==== HttpClient TLS TrustStore Configuration
+TODO
+
+[[configuration-tls-client-certs]]
+==== HttpClient TLS Client Certificates Configuration
+TODO
+
+[[cookie]]
+== HttpClient Cookie Support
+
+Jetty's `HttpClient` supports cookies out of the box.
+
+The `HttpClient` instance receives cookies from HTTP responses and stores them in a `java.net.CookieStore`, a class that is part of the JDK.
+When new requests are made, the cookie store is consulted and if there are matching cookies (that is, cookies that are not expired and that match domain and path of the request) then they are added to the requests.
+
+Applications can programmatically access the cookie store to find the cookies that have been set:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=getCookies]
+----
+
+Applications can also programmatically set cookies as if they were returned from a HTTP response:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=setCookie]
+----
+
+Cookies may be added explicitly only for a particular request:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=requestCookie]
+----
+
+You can remove cookies that you do not want to be sent in future HTTP requests:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=removeCookie]
+----
+
+If you want to totally disable cookie handling, you can install a `HttpCookieStore.Empty`.
+This must be done when `HttpClient` is used in a proxy application, in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=emptyCookieStore]
+----
+
+You can enable cookie filtering by installing a cookie store that performs the filtering logic in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=filteringCookieStore]
+----
+
+The example above will retain only cookies that come from the `google.com` domain or sub-domains.
+
+// TODO: move this section to server-side
+=== Special Characters in Cookies
+
+Jetty is compliant with https://tools.ietf.org/html/rfc6265[RFC6265], and as such care must be taken when setting a cookie value that includes special characters such as `;`.
+
+Previously, `Version=1` cookies defined in https://tools.ietf.org/html/rfc2109[RFC2109] (and continued in https://tools.ietf.org/html/rfc2965[RFC2965]) allowed for special/reserved characters to be enclosed within double quotes when declared in a `Set-Cookie` response header:
+
+[,screen]
+----
+Set-Cookie: foo="bar;baz";Version=1;Path="/secure"
+----
+
+This was added to the HTTP Response as follows:
+
+[,java]
+----
+protected void service(HttpServletRequest request, HttpServletResponse response)
+{
+    jakarta.servlet.http.Cookie cookie = new Cookie("foo", "bar;baz");
+    cookie.setPath("/secure");
+    response.addCookie(cookie);
+}
+----
+
+The introduction of RFC6265 has rendered this approach no longer possible; users are now required to encode cookie values that use these special characters.
+This can be done utilizing `jakarta.servlet.http.Cookie` as follows:
+
+[,java]
+----
+jakarta.servlet.http.Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;baz", "UTF-8"));
+----
+
+Jetty validates all cookie names and values being added to the `HttpServletResponse` via the `addCookie(Cookie)` method.
+If an illegal value is discovered Jetty will throw an `IllegalArgumentException` with the details.
+
+[[authentication]]
+== HttpClient Authentication Support
+
+Jetty's `HttpClient` supports the `BASIC` and `DIGEST` authentication mechanisms defined by https://tools.ietf.org/html/rfc7235[RFC 7235], as well as the SPNEGO authentication mechanism defined in https://tools.ietf.org/html/rfc4559[RFC 4559].
+
+The HTTP _conversation_, the sequence of related HTTP requests, for a request that needs authentication is the following:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant Application
+participant HttpClient
+participant Server
+
+Application -> Server : GET /path
+Server -> HttpClient : 401 + WWW-Authenticate
+HttpClient -> Server : GET + Authentication
+Server -> Application : 200 OK
+----
+
+Upon receiving a HTTP 401 response code, `HttpClient` looks at the `WWW-Authenticate` response header (the server _challenge_) and then tries to match configured authentication credentials to produce an `Authentication` header that contains the authentication credentials to access the resource.
+
+You can configure authentication credentials in the `HttpClient` instance as follows:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=addAuthentication]
+----
+
+``Authentication``s are matched against the server challenge first by mechanism (e.g. `BASIC` or `DIGEST`), then by realm and then by URI.
+
+If an `Authentication` match is found, the application does not receive events related to the HTTP 401 response.
+These events are handled internally by `HttpClient` which produces another (internal) request similar to the original request but with an additional `Authorization` header.
+
+If the authentication is successful, the server responds with a HTTP 200 and `HttpClient` caches the `Authentication.Result` so that subsequent requests for a matching URI will not incur in the additional rountrip caused by the HTTP 401 response.
+
+It is possible to clear ``Authentication.Result``s in order to force authentication again:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=clearResults]
+----
+
+Authentication results may be preempted to avoid the additional roundtrip due to the server challenge in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=preemptedResult]
+----
+
+In this way, requests for the given URI are enriched immediately with the `Authorization` header, and the server should respond with HTTP 200 (and the resource content) rather than with the 401 and the challenge.
+
+It is also possible to preempt the authentication for a single request only, in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=requestPreemptedResult]
+----
+
+See also the <<proxy-authentication,proxy authentication section>> for further information about how authentication works with HTTP proxies.
+
+[[authentication-spnego]]
+=== HttpClient SPNEGO Authentication Support
+TODO
+
+[[proxy]]
+== HttpClient Proxy Support
+
+Jetty's `HttpClient` can be configured to use proxies to connect to destinations.
+
+These types of proxies are available out of the box:
+
+* HTTP proxy (provided by class `org.eclipse.jetty.client.HttpProxy`)
+* SOCKS 4 proxy (provided by class `org.eclipse.jetty.client.Socks4Proxy`)
+* <<proxy-socks5,SOCKS 5 proxy>> (provided by class `org.eclipse.jetty.client.Socks5Proxy`)
+
+Other implementations may be written by subclassing `ProxyConfiguration.Proxy`.
+
+The following is a typical configuration:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=proxy]
+----
+
+You specify the proxy host and proxy port, and optionally also the addresses that you do not want to be proxied, and then add the proxy configuration on the `ProxyConfiguration` instance.
+
+Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain-text HTTP requests) or establishes a tunnel via HTTP `CONNECT` (for encrypted HTTPS requests).
+
+Proxying is supported for any version of the HTTP protocol.
+
+The communication between the client and the proxy may be encrypted, so that it would not be possible for another party on the same network as the client to know what servers the client connects to.
+
+[[proxy-socks5]]
+=== SOCKS5 Proxy Support
+
+SOCKS 5 (defined in https://datatracker.ietf.org/doc/html/rfc1928[RFC 1928]) offers choices for authentication methods and supports IPv6 (things that SOCKS 4 does not support).
+
+A typical SOCKS 5 proxy configuration with the username/password authentication method is the following:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=proxySocks5]
+----
+
+[[proxy-authentication]]
+=== HTTP Proxy Authentication Support
+
+Jetty's `HttpClient` supports HTTP proxy authentication in the same way it supports <<authentication,server authentication>>.
+
+In the example below, the HTTP proxy requires `BASIC` authentication, but the server requires `DIGEST` authentication, and therefore:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=proxyAuthentication]
+----
+
+The HTTP conversation for successful authentications on both the proxy and the server is the following:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant Application
+participant HttpClient
+participant Proxy
+participant Server
+
+Application -> Proxy : GET /path
+Proxy -> HttpClient : 407 + Proxy-Authenticate
+HttpClient -> Proxy : GET /path + Proxy-Authorization
+Proxy -> Server : GET /path
+Server -> Proxy : 401 + WWW-Authenticate
+Proxy -> HttpClient : 401 + WWW-Authenticate
+HttpClient -> Proxy : GET /path + Proxy-Authorization + Authorization
+Proxy -> Server : GET /path + Authorization
+Server -> Proxy : 200 OK
+Proxy -> HttpClient : 200 OK
+HttpClient -> Application : 200 OK
+----
+
+The application does not receive events related to the responses with code 407 and 401 since they are handled internally by `HttpClient`.
+
+Similarly to the <<authentication,authentication section>>, the proxy authentication result and the server authentication result can be preempted to avoid, respectively, the 407 and 401 roundtrips.
+
+[[transport]]
+== HttpClient Pluggable Transports
+
+Jetty's `HttpClient` can be configured to use different HTTP formats to carry the semantic of HTTP requests and responses, by specifying different `HttpClientTransport` implementations.
+
+This means that the intention of a client to request resource `/index.html` using the `GET` method can be carried over a <<api-transport,low-level transport>> in different formats.
+
+An `HttpClientTransport` is the component that is in charge of converting a high-level, semantic, HTTP requests such as " ``GET`` resource ``/index.html`` " into the specific format understood by the server (for example, HTTP/2 or HTTP/3), and to convert the server response from the specific format (HTTP/2 or HTTP/3) into high-level, semantic objects that can be used by applications.
+
+The most common protocol format is HTTP/1.1, a textual protocol with lines separated by `\r\n`:
+
+[,screen]
+----
+GET /index.html HTTP/1.1\r\n
+Host: domain.com\r\n
+...
+\r\n
+----
+
+However, the same request can be made using FastCGI, a binary protocol:
+
+[,screen]
+----
+x01 x01 x00 x01 x00 x08 x00 x00
+x00 x01 x01 x00 x00 x00 x00 x00
+x01 x04 x00 x01 xLL xLL x00 x00
+x0C x0B  D   O   C   U   M   E
+ N   T   _   U   R   I   /   i
+ n   d   e   x   .   h   t   m
+ l
+...
+----
+
+Similarly, HTTP/2 is a binary protocol that transports the same information in a yet different format via TCP, while HTTP/3 is a binary protocol that transports the same information in yet another format via QUIC.
+
+The HTTP protocol version may be _negotiated_ between client and server.
+A request for a resource may be sent using one protocol (for example, HTTP/1.1), but the response may arrive in a different protocol (for example, HTTP/2).
+
+`HttpClient` supports these `HttpClientTransport` implementations, each speaking only one protocol:
+
+* `HttpClientTransportOverHTTP`, for <<transport-http11,HTTP/1.1>> (both clear-text and TLS encrypted)
+* `HttpClientTransportOverHTTP2`, for <<transport-http2,HTTP/2>> (both clear-text and TLS encrypted)
+* `HttpClientTransportOverHTTP3`, for <<transport-http3,HTTP/3>> (only encrypted via QUIC)
+* `HttpClientTransportOverFCGI`, for <<transport-fcgi,FastCGI>> (both clear-text and TLS encrypted)
+
+`HttpClient` also supports `HttpClientTransportDynamic`, a <<transport-dynamic,dynamic transport>> that can speak different HTTP formats and can select the right protocol by negotiating it with the server or by explicit indication from applications.
+
+Furthermore, every HTTP format can be sent over different <<api-transport,low-level transports>> such as TCP, Unix-Domain, QUIC or memory.
+Supports for Unix-Domain sockets requires Java 16 or later, since Unix-Domain sockets support has been introduced in OpenJDK with https://openjdk.java.net/jeps/380[JEP 380].
+
+Applications are typically not aware of the actual HTTP format or low-level transport being used.
+This allows them to write their logic against a high-level API that hides the details of the specific HTTP format and low-level transport being used.
+
+[[transport-http11]]
+=== HTTP/1.1 Transport
+
+HTTP/1.1 is the default transport.
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=defaultTransport]
+----
+
+If you want to customize the HTTP/1.1 transport, you can explicitly configure it in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=http11Transport]
+----
+
+[[transport-http2]]
+=== HTTP/2 Transport
+
+The HTTP/2 transport can be configured in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=http2Transport]
+----
+
+`HTTP2Client` is the lower-level client that provides an API based on HTTP/2 concepts such as _sessions_, _streams_ and _frames_ that are specific to HTTP/2. See xref:client/http2.adoc[the HTTP/2 client section] for more information.
+
+`HttpClientTransportOverHTTP2` uses `HTTP2Client` to format high-level semantic HTTP requests into the HTTP/2 specific format.
+
+[[transport-http3]]
+=== HTTP/3 Transport
+
+The HTTP/3 transport can be configured in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=http3Transport]
+----
+
+`HTTP3Client` is the lower-level client that provides an API based on HTTP/3 concepts such as _sessions_, _streams_ and _frames_ that are specific to HTTP/3. See xref:client/http3.adoc[the HTTP/3 client section] for more information.
+
+`HttpClientTransportOverHTTP3` uses `HTTP3Client` to format high-level semantic HTTP requests into the HTTP/3 specific format.
+
+[[transport-fcgi]]
+=== FastCGI Transport
+
+The FastCGI transport can be configured in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=fcgiTransport]
+----
+
+In order to make requests using the FastCGI transport, you need to have a FastCGI server such as https://en.wikipedia.org/wiki/PHP#PHPFPM[PHP-FPM] (see also link:http://php.net/manual/en/install.fpm.php).
+
+The FastCGI transport is primarily used by Jetty's xref:server/fastcgi.adoc[FastCGI support] to serve PHP pages (WordPress for example).
+
+[[transport-dynamic]]
+=== Dynamic Transport
+
+The static `HttpClientTransport` implementations work well if you know in advance the protocol you want to speak with the server, or if the server only supports one protocol (such as FastCGI).
+
+With the advent of HTTP/2 and HTTP/3, however, servers are now able to support multiple protocols.
+
+The HTTP/2 protocol is typically negotiated between client and server.
+This negotiation can happen via ALPN, a TLS extension that allows the client to tell the server the list of protocol that the client supports, so that the server can pick one of the client supported protocols that also the server supports; or via HTTP/1.1 upgrade by means of the `Upgrade` header.
+
+Applications can configure the dynamic transport with one or more HTTP versions such as HTTP/1.1, HTTP/2 or HTTP/3.
+The implementation will take care of using TLS for HTTPS URIs, using ALPN if necessary, negotiating protocols, upgrading from one protocol to another, etc.
+
+By default, the dynamic transport only speaks HTTP/1.1:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicDefault]
+----
+
+The dynamic transport can be configured with just one protocol, making it equivalent to the corresponding static transport:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicOneProtocol]
+----
+
+The dynamic transport, however, has been implemented to support multiple transports, in particular HTTP/1.1, HTTP/2 and HTTP/3:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicH1H2H3]
+----
+
+The order in which the protocols are specified to `HttpClientTransportDynamic` indicates what is the client preference (first the most preferred).
+
+When clear-text communication is used (i.e. URIs with the `http` scheme) there is no HTTP protocol version negotiation, and therefore the application must know _a priori_ whether the server supports the HTTP version or not.
+For example, if the server only supports clear-text HTTP/2, and `HttpClientTransportDynamic` is configured as in the example above, where HTTP/1.1 has precedence over HTTP/2, the client will send, by default, a clear-text HTTP/1.1 request to a clear-text HTTP/2 only server, which will result in a communication failure.
+
+When using TLS (i.e. URIs with the `https` scheme), the HTTP protocol version is _negotiated_ between client and server via ALPN, and it is the server that decides what is the application protocol to use for the communication, regardless of the client preference.
+
+[IMPORTANT]
+====
+HTTP/1.1 and HTTP/2 are _compatible_ because they both use TCP, while HTTP/3 is incompatible with previous HTTP versions because it uses QUIC.
+
+Only compatible HTTP versions can negotiate the HTTP protocol version to use via ALPN, and only compatible HTTP versions can be upgraded from an older version to a newer version.
+====
+
+Provided that the server supports HTTP/1.1, HTTP/2 and HTTP/3, client applications can explicitly hint the version they want to use:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicExplicitVersion]
+----
+
+If the client application explicitly specifies the HTTP version, then ALPN is not used by the client.
+By specifying the HTTP version explicitly, the client application has prior-knowledge of what HTTP version the server supports, and therefore ALPN is not needed.
+If the server does not support the HTTP version chosen by the client, then the communication will fail.
+
+If the client application does not explicitly specify the HTTP version, then ALPN will be used by the client, but only for compatible protocols.
+If the server also supports ALPN, then the protocol will be negotiated via ALPN and the server will choose the protocol to use.
+If the server does not support ALPN, the client will try to use the first protocol configured in `HttpClientTransportDynamic`, and the communication may succeed or fail depending on whether the server supports the protocol chosen by the client.
+
+For example, HTTP/3 is not compatible with previous HTTP version; if `HttpClientTransportDynamic` is configured to prefer HTTP/3, it will be the only protocol attempted by the client:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicPreferH3]
+----
+
+When the client application configures `HttpClientTransportDynamic` to prefer HTTP/2, there could be ALPN negotiation between HTTP/2 and HTTP/1.1 (but not HTTP/3 because it is incompatible); HTTP/3 will only be possible by specifying the HTTP version explicitly:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicPreferH2]
+----

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.13-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-home</artifactId>
@@ -13,7 +13,7 @@
 
   <properties>
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
-    <jetty-setuid-version>2.0.2</jetty-setuid-version>
+    <jetty-setuid-version>2.0.3</jetty-setuid-version>
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
@@ -38,6 +38,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-ee</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -217,6 +221,10 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <!-- jetty deps -->
@@ -409,7 +417,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.quiche</includeGroupIds>
-              <includeArtifactIds>jetty-http3-server,jetty-http3-common,jetty-http3-qpack,jetty-quic-server,jetty-quic-common,jetty-quic-quiche-common,jetty-quic-quiche-jna,jetty-quic-quiche-foreign-incubator,jetty-quiche-native</includeArtifactIds>
+              <includeArtifactIds>jetty-http3-server,jetty-http3-common,jetty-http3-qpack,jetty-quic-server,jetty-quic-common,jetty-quic-quiche-common,jetty-quic-quiche-jna,jetty-quic-quiche-foreign,jetty-quiche-native</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/http3</outputDirectory>
             </configuration>
@@ -593,6 +601,23 @@
                   <filtering>true</filtering>
                 </resource>
               </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.cyclonedx</groupId>
+        <artifactId>cyclonedx-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cyclonedx-makeAggregateBom</id>
+            <goals>
+              <goal>makeAggregateBom</goal>
+            </goals>
+            <phase>prepare-package</phase>
+            <inherited>false</inherited>
+            <configuration>
+              <outputName>${project.artifactId}-${project.version}-cyclonedx</outputName>
             </configuration>
           </execution>
         </executions>

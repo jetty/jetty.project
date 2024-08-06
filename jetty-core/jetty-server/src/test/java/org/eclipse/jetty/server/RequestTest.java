@@ -16,16 +16,21 @@ package org.eclipse.jetty.server;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -94,6 +99,119 @@ public class RequestTest
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+    }
+
+    public static Stream<Arguments> getUriTests()
+    {
+        return Stream.of(
+            Arguments.of(UriCompliance.DEFAULT, "/", 200, "local"),
+            Arguments.of(UriCompliance.DEFAULT, "https://local/", 200, "local"),
+            Arguments.of(UriCompliance.DEFAULT, "https://other/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.UNSAFE, "https://other/", 200, "other"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user@local/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "https://user@local/", 200, "local"),
+            Arguments.of(UriCompliance.LEGACY, "https://user@local:port/", 400, "Bad Request"),
+            Arguments.of(UriCompliance.LEGACY, "https://user@local:8080/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.UNSAFE, "https://user@local:8080/", 200, "local:8080"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user:password@local/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "https://user:password@local/", 200, "local"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user@other/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "https://user@other/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user:password@other/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.LEGACY, "https://user:password@other/", 400, "Authority!=Host"),
+            Arguments.of(UriCompliance.UNSAFE, "https://user:password@other/", 200, "other"),
+            Arguments.of(UriCompliance.DEFAULT, "/%2F/", 400, "Ambiguous URI path separator"),
+            Arguments.of(UriCompliance.UNSAFE, "/%2F/", 200, "local")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getUriTests")
+    public void testGETUris(UriCompliance compliance, String uri, int status, String content) throws Exception
+    {
+        server.stop();
+        for (Connector connector: server.getConnectors())
+        {
+            HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
+            if (httpConnectionFactory != null)
+            {
+                HttpConfiguration httpConfiguration = httpConnectionFactory.getHttpConfiguration();
+                httpConfiguration.setUriCompliance(compliance);
+                if (compliance == UriCompliance.UNSAFE)
+                    httpConfiguration.setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
+            }
+        }
+
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                String msg = String.format("authority=\"%s\"", request.getHttpURI().getAuthority());
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, true, msg, callback);
+                return true;
+            }
+        });
+        server.start();
+        String request = """
+                GET %s HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """.formatted(uri);
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertThat(response.getStatus(), is(status));
+        if (content != null)
+        {
+            if (status == 200)
+                assertThat(response.getContent(), is("authority=\"%s\"".formatted(content)));
+            else
+                assertThat(response.getContent(), containsString(content));
+        }
+    }
+
+    @Test
+    public void testAmbiguousPathSep() throws Exception
+    {
+        server.stop();
+        for (Connector connector: server.getConnectors())
+        {
+            HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
+            if (httpConnectionFactory != null)
+            {
+                HttpConfiguration httpConfiguration = httpConnectionFactory.getHttpConfiguration();
+                httpConfiguration.setUriCompliance(UriCompliance.from(
+                    EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR)
+                ));
+            }
+        }
+
+        ContextHandler fooContext = new ContextHandler();
+        fooContext.setContextPath("/foo");
+        fooContext.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                String pathInContext = Request.getPathInContext(request);
+                String msg = String.format("pathInContext=\"%s\"", pathInContext);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, true, msg, callback);
+                return true;
+            }
+        });
+        server.setHandler(fooContext);
+        server.start();
+        String request = """
+                GET /foo/zed%2Fbar HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getContent(), is("pathInContext=\"/zed%2Fbar\""));
     }
 
     @Test

@@ -17,12 +17,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -52,9 +55,11 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -65,12 +70,19 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link Handler} that scopes a request to a specific {@link Context}.
  */
+@ManagedObject
 public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
+
+    /**
+     * The attribute name that is set as a {@link Request} attribute to indicate the request is a cross context
+     * dispatch.  The value can be set to a ServletDispatcher type if the target is known to be a servlet context.
+     */
+    public static final String CROSS_CONTEXT_ATTRIBUTE = "org.eclipse.jetty.CrossContextDispatch";
 
     /**
      * Get the current Context if any.
@@ -110,11 +122,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         return contextRequest.getContext() instanceof ScopedContext scoped ? scoped.getContextHandler() : null;
     }
 
-    public static String getServerInfo()
-    {
-        return "jetty/" + Server.getVersion();
-    }
-
     /*
      * The context (specifically it's attributes and mimeTypes) are not implemented as a layer over
      * the server context, as  this handler's context replaces the context in the request, it does not
@@ -139,6 +146,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private File _tempDirectory;
     private boolean _tempDirectoryPersisted = false;
     private boolean _tempDirectoryCreated = false;
+    private boolean _createdTempDirectoryName = false;
+    private boolean _crossContextDispatchSupported = false;
 
     public enum Availability
     {
@@ -231,6 +240,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (isStarted())
             throw new IllegalStateException("Started");
 
+        File oldTempDirectory = _tempDirectory;
+
         if (tempDirectory != null)
         {
             try
@@ -242,7 +253,23 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 LOG.warn("Unable to find canonical path for {}", tempDirectory, e);
             }
         }
+
+        if (oldTempDirectory != null)
+        {
+            try
+            {
+                //if we had made up the name of the tmp directory previously, delete it if the new name is different
+                if (_createdTempDirectoryName && (tempDirectory == null || (!Files.isSameFile(oldTempDirectory.toPath(), tempDirectory.toPath()))))
+                    IO.delete(oldTempDirectory);
+            }
+            catch (Exception e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to delete old temp directory {}", oldTempDirectory, e);
+            }
+        }
         _tempDirectory = tempDirectory;
+         _createdTempDirectoryName = false;
     }
 
     /**
@@ -328,25 +355,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             {
                 if (vhost == null)
                     continue;
-                boolean wild = false;
-                String connector = null;
-                int at = vhost.indexOf('@');
-                if (at >= 0)
-                {
-                    connector = vhost.substring(at + 1);
-                    vhost = vhost.substring(0, at);
-                }
-
-                if (StringUtil.isBlank(vhost))
-                {
-                    vhost = null;
-                }
-                else if (vhost.startsWith("*."))
-                {
-                    vhost = vhost.substring(1);
-                    wild = true;
-                }
-                _vhosts.add(new VHost(normalizeHostname(vhost), wild, connector));
+                _vhosts.add(new VHost(vhost));
             }
         }
     }
@@ -356,9 +365,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      *
      * @param virtualHosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
      * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     * {@code "@connectorname"}, in which case they will match only if the {@link Connector#getName()} for the request also matches. If an entry is just
+     * {@code "@connectorname"} it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     * and none of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
      * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
      * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
@@ -377,9 +386,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      *
      * @param virtualHosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
      * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     * {@code "@connectorname"}, in which case they will match only if the {@link Connector#getName()} for the request also matches. If an entry is just
+     * {@code "@connectorname"} it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     * and none of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
      * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
      * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
@@ -390,9 +399,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             return; // do nothing
 
         for (String vh : virtualHosts)
-        {
-            vhosts.remove(normalizeHostname(vh));
-        }
+            _vhosts.remove(new VHost(vh));
     }
 
     /**
@@ -402,8 +409,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      *
      * @return list of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
      * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     * {@code "@connectorname"}, in which case they will match only if the {@link Connector#getName()} for the request also matches. If an entry is just
+     * {@code "@connectorname"} it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
      * and none of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
      * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
      * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
@@ -490,6 +497,83 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if ("/".equals(_contextPath))
             return "ROOT";
         return _contextPath;
+    }
+
+    /**
+     * Get if this context support cross context dispatch, either as originator or target.
+     * @return True if this context supports cross context dispatch.
+     */
+    @ManagedAttribute(value = "Cross context dispatch is support by the context")
+    public boolean isCrossContextDispatchSupported()
+    {
+        return _crossContextDispatchSupported;
+    }
+
+    /**
+     * Set if this context support cross context dispatch, either as originator or target.
+     * @param crossContextDispatchSupported True if this context supports cross context dispatch.
+     */
+    public void setCrossContextDispatchSupported(boolean crossContextDispatchSupported)
+    {
+        _crossContextDispatchSupported = crossContextDispatchSupported;
+    }
+
+    /**
+     * If {@link #isCrossContextDispatchSupported() cross context dispatch is supported} by this context
+     * then find a context by  {@link #getContextPath() contextPath} that also supports cross context dispatch.
+     * If more than one context is found, then those with disjoint {@link #getVirtualHosts() virtual hosts} are
+     * excluded and the first remaining context returned.
+     *
+     * @param path The path that will be served by the context
+     * @return The found {@link ContextHandler} or null.
+     */
+    public ContextHandler getCrossContextHandler(String path)
+    {
+        if (!isCrossContextDispatchSupported())
+            return null;
+
+        List<ContextHandler> contexts = new ArrayList<>();
+        for (ContextHandler contextHandler : getServer().getDescendants(ContextHandler.class))
+        {
+            if (contextHandler == null || !contextHandler.isCrossContextDispatchSupported())
+                continue;
+            String contextPath = contextHandler.getContextPath();
+            if (path.equals(contextPath) ||
+                (path.startsWith(contextPath) && path.charAt(contextPath.length()) == '/') ||
+                "/".equals(contextPath))
+                contexts.add(contextHandler);
+        }
+
+        if (contexts.isEmpty())
+            return null;
+        if (contexts.size() == 1)
+            return contexts.get(0);
+
+        // Remove non-matching virtual hosts
+        List<String> vhosts = getVirtualHosts();
+        if (vhosts != null && !vhosts.isEmpty())
+        {
+            for (ListIterator<ContextHandler> i = contexts.listIterator(); i.hasNext(); )
+            {
+                ContextHandler ch = i.next();
+
+                List<String> targetVhosts = ch.getVirtualHosts();
+                if (targetVhosts == null || targetVhosts.isEmpty() || Collections.disjoint(vhosts, targetVhosts))
+                    i.remove();
+            }
+        }
+
+        if (contexts.isEmpty())
+            return null;
+
+        // return the first longest
+        ContextHandler contextHandler = null;
+        for (ContextHandler c : contexts)
+        {
+            if (contextHandler == null || c.getContextPath().length() > contextHandler.getContextPath().length())
+                contextHandler = c;
+        }
+        return contextHandler;
     }
 
     /**
@@ -652,6 +736,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             if (!Resources.isReadable(baseResource))
                 throw new IllegalArgumentException("Base Resource is not valid: " + baseResource);
+            if (baseResource.isAlias())
+            {
+                URI realUri = baseResource.getRealURI();
+                if (realUri == null)
+                    LOG.warn("Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {}", baseResource);
+                else
+                    LOG.warn("Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {} points to {}",
+                        baseResource, realUri.toASCIIString());
+            }
         }
 
         _availability.set(Availability.STARTING);
@@ -707,14 +800,197 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     protected void doStop() throws Exception
     {
         _context.call(super::doStop, null);
+        cleanupAfterStop();
+        _tempDirectoryCreated = false;
+    }
 
+    protected void cleanupAfterStop() throws Exception
+    {
         File tempDirectory = getTempDirectory();
 
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
+        {
             IO.delete(tempDirectory);
+        }
 
-        _tempDirectoryCreated = false;
+        //if it was jetty that created the tmp dir, it can be reset, otherwise we need to retain the name
+        if (_createdTempDirectoryName)
+        {
+            setTempDirectory(null);
+            _createdTempDirectoryName = false;
+        }
+    }
+
+    /** Generate a reasonable name for the temp directory because one has not been
+     * explicitly configured by the user with {@link #setTempDirectory(File)}. The
+     * directory may also be created, if it is not persistent. If it is persistent
+     * it will be created as necessary by {@link #createTempDirectory()} later
+     * during the startup of the context.
+     *
+     * @throws Exception IllegalStateException if the parent tmp directory does
+     * not exist, or IOException if the child tmp directory cannot be created.
+     */
+    protected void makeTempDirectory()
+        throws Exception
+    {
+        File parent = getServer().getContext().getTempDirectory();
+        if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
+            throw new IllegalStateException("Parent for temp dir not configured correctly: " + (parent == null ? "null" : "writeable=" + parent.canWrite()));
+
+        boolean persistent = isTempDirectoryPersistent() || "work".equals(parent.toPath().getFileName().toString());
+
+        //Create a name for the temp dir
+        String temp = getCanonicalNameForTmpDir();
+        File tmpDir;
+        if (persistent)
+        {
+            //if it is to be persisted, make sure it will be the same name
+            //by not using File.createTempFile, which appends random digits
+            tmpDir = new File(parent, temp);
+        }
+        else
+        {
+            // ensure dir will always be unique by having classlib generate random path name
+            tmpDir = Files.createTempDirectory(parent.toPath(), temp).toFile();
+            tmpDir.deleteOnExit();
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Set temp dir {}", tmpDir);
+        setTempDirectory(tmpDir);
+        setTempDirectoryPersistent(persistent);
+        _createdTempDirectoryName = true;
+    }
+
+    /**
+     * Create a canonical name for a context temp directory.
+     * <p>
+     * The form of the name is:
+     *
+     * <pre>"jetty-"+host+"-"+port+"-"+resourceBase+"-_"+context+"-"+virtualhost+"-"+randomdigits+".dir"</pre>
+     *
+     * host and port uniquely identify the server
+     * context and virtual host uniquely identify the context
+     * randomdigits ensure every tmp directory is unique
+     *
+     * @return the canonical name for the context temp directory
+     */
+    protected String getCanonicalNameForTmpDir()
+    {
+        StringBuilder canonicalName = new StringBuilder();
+        canonicalName.append("jetty-");
+
+        //get the host and the port from the first connector
+        Server server = getServer();
+        if (server != null)
+        {
+            Connector[] connectors = server.getConnectors();
+
+            if (connectors.length > 0)
+            {
+                //Get the host
+                String host = null;
+                int port = 0;
+                if (connectors[0] instanceof NetworkConnector connector)
+                {
+                    host = connector.getHost();
+                    port = connector.getLocalPort();
+                    if (port < 0)
+                        port = connector.getPort();
+                }
+                if (host == null)
+                    host = "0.0.0.0";
+                canonicalName.append(host);
+                canonicalName.append("-");
+                canonicalName.append(port);
+                canonicalName.append("-");
+            }
+        }
+
+        // Resource base
+        try
+        {
+            Resource resource = getResourceForTempDirName();
+            String resourceBaseName = getBaseName(resource);
+            canonicalName.append(resourceBaseName);
+            canonicalName.append("-");
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Can't get resource base name", e);
+
+            canonicalName.append("-"); // empty resourceBaseName segment
+        }
+
+        //Context name
+        String contextPath = getContextPath();
+        contextPath = contextPath.replace('/', '_');
+        contextPath = contextPath.replace('\\', '_');
+        canonicalName.append(contextPath);
+
+        //Virtual host (if there is one)
+        canonicalName.append("-");
+        List<String> vhosts = getVirtualHosts();
+        if (vhosts == null || vhosts.size() <= 0)
+            canonicalName.append("any");
+        else
+            canonicalName.append(vhosts.get(0));
+
+        // sanitize
+        for (int i = 0; i < canonicalName.length(); i++)
+        {
+            char c = canonicalName.charAt(i);
+            if (!Character.isJavaIdentifierPart(c) && "-.".indexOf(c) < 0)
+                canonicalName.setCharAt(i, '.');
+        }
+
+        canonicalName.append("-");
+
+        return StringUtil.sanitizeFileSystemName(canonicalName.toString());
+    }
+
+    /**
+     * @return the baseResource for the context to use in the temp dir name
+     */
+    protected Resource getResourceForTempDirName()
+    {
+        return getBaseResource();
+    }
+
+    /**
+     * @param resource the resource whose filename minus suffix to extract
+     * @return the filename of the resource without suffix
+     */
+    protected static String getBaseName(Resource resource)
+    {
+        // Use File System and File interface if present
+        Path resourceFile = resource.getPath();
+
+        if ((resourceFile != null) && (resource instanceof MountedPathResource))
+        {
+            resourceFile = ((MountedPathResource)resource).getContainerPath();
+        }
+
+        if (resourceFile != null)
+        {
+            Path fileName = resourceFile.getFileName();
+            return fileName == null ? "" : fileName.toString();
+        }
+
+        // Use URI itself.
+        URI uri = resource.getURI();
+        if (uri == null)
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Resource has no URI reference: {}", resource);
+            }
+            return "";
+        }
+
+        return URIUtil.getUriLastPathSegment(uri);
     }
 
     public boolean checkVirtualHost(Request request)
@@ -722,41 +998,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (_vhosts.isEmpty())
             return true;
 
-        String host = normalizeHostname(request.getHttpURI().getHost());
+        String host = Request.getServerName(request);
         String connectorName = request.getConnectionMetaData().getConnector().getName();
 
         for (VHost vhost : _vhosts)
         {
-            String contextVhost = vhost._vHost;
-            String contextVConnector = vhost._vConnector;
-
-            if (contextVConnector != null)
-            {
-                if (!contextVConnector.equalsIgnoreCase(connectorName))
-                    continue;
-
-                if (contextVhost == null)
-                {
-                    return true;
-                }
-            }
-
-            if (contextVhost != null)
-            {
-                if (vhost._wild)
-                {
-                    // wildcard only at the beginning, and only for one additional subdomain level
-                    int index = host.indexOf(".");
-                    if (index >= 0 && host.substring(index).equalsIgnoreCase(contextVhost))
-                    {
-                        return true;
-                    }
-                }
-                else if (host.equalsIgnoreCase(contextVhost))
-                {
-                    return true;
-                }
-            }
+            if (vhost.matches(connectorName, host))
+                return true;
         }
         return false;
     }
@@ -831,11 +1079,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     protected void handleMovedPermanently(Request request, Response response, Callback callback)
     {
+        // TODO: should this be a fully qualified URI? (with scheme and host?)
         String location = _contextPath + "/";
         if (request.getHttpURI().getParam() != null)
             location += ";" + request.getHttpURI().getParam();
         if (request.getHttpURI().getQuery() != null)
-            location += ";" + request.getHttpURI().getQuery();
+            location += "?" + request.getHttpURI().getQuery();
 
         response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
         response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
@@ -869,7 +1118,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * @return Returns the base resource as a string.
      */
-    @ManagedAttribute("document root for context")
+    @ManagedAttribute(value = "document root for context", readonly = true)
     public Resource getBaseResource()
     {
         return _baseResource;
@@ -1088,7 +1337,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             b.append(getDisplayName()).append(',');
         b.append(getContextPath());
         b.append(",b=").append(getBaseResource());
-        b.append(",a=").append(_availability.get());
+        b.append(",a=").append(_availability);
 
         if (!vhosts.isEmpty())
         {
@@ -1107,24 +1356,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         return b.toString();
     }
 
-    private String normalizeHostname(String host)
+    private static String normalizeVirtualHostname(String host)
     {
-        // TODO is this needed? if so, should be it somewhere eles?
         if (host == null)
             return null;
-        int connectorIndex = host.indexOf('@');
-        String connector = null;
-        if (connectorIndex > 0)
-        {
-            host = host.substring(0, connectorIndex);
-            connector = host.substring(connectorIndex);
-        }
-
+        // names with trailing "." are absolute and not searched for in any local resolv.conf domain
         if (host.endsWith("."))
             host = host.substring(0, host.length() - 1);
-        if (connector != null)
-            host += connector;
-
         return host;
     }
 
@@ -1185,7 +1423,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             File tempDirectory = ContextHandler.this.getTempDirectory();
             if (tempDirectory == null)
-                tempDirectory = getServer().getTempDirectory();
+                tempDirectory = getServer().getContext().getTempDirectory();
             return tempDirectory;
         }
 
@@ -1278,7 +1516,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         @Override
         public void execute(Runnable runnable)
         {
-            getServer().getContext().execute(() -> run(runnable));
+            execute(runnable, null);
+        }
+
+        public void execute(Runnable runnable, Request request)
+        {
+            getServer().getContext().execute(() -> run(runnable, request));
         }
 
         protected DecoratedObjectFactory getDecoratedObjectFactory()
@@ -1311,6 +1554,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             return _rootContext ? canonicallyEncodedPath : Context.getPathInContext(_contextPath, canonicallyEncodedPath);
         }
+
+        @Override
+        public boolean isCrossContextDispatch(Request request)
+        {
+            return isCrossContextDispatchSupported() && request.getAttribute(CROSS_CONTEXT_ATTRIBUTE) != null;
+        }
+
+        @Override
+        public String getCrossContextDispatchType(Request request)
+        {
+            return isCrossContextDispatchSupported() ? (String)request.getAttribute(CROSS_CONTEXT_ATTRIBUTE) : null;
+        }
     }
 
     /**
@@ -1337,11 +1592,61 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         private final boolean _wild;
         private final String _vConnector;
 
-        private VHost(String vHost, boolean wild, String vConnector)
+        public VHost(String vhost)
         {
-            _vHost = vHost;
+            boolean wild = false;
+            String connector = null;
+            int at = vhost.indexOf('@');
+            if (at >= 0)
+            {
+                connector = vhost.substring(at + 1);
+                vhost = vhost.substring(0, at);
+            }
+
+            if (StringUtil.isBlank(vhost))
+            {
+                vhost = null;
+            }
+            else if (vhost.startsWith("*."))
+            {
+                vhost = vhost.substring(1);
+                wild = true;
+            }
+
+            _vHost = normalizeVirtualHostname(vhost);
             _wild = wild;
-            _vConnector = vConnector;
+            _vConnector = connector;
+        }
+
+        public boolean matches(String connectorName, String host)
+        {
+            // Do we have a connector name to match
+            if (_vConnector != null)
+            {
+                // then it must match
+                if (!_vConnector.equalsIgnoreCase(connectorName))
+                    return false;
+
+                // if we don't also have a vhost then we are match, otherwise check the vhost as well
+                if (_vHost == null)
+                    return true;
+            }
+
+            // if we have a vhost
+            if (_vHost != null && host != null)
+            {
+                // vHost pattern must be last or next to last if the host ends with '.' (indicates absolute DNS name)
+                int offset = host.length() - _vHost.length() - (host.charAt(host.length() - 1) == '.' ? 1 : 0);
+                if (host.regionMatches(true, offset, _vHost, 0, _vHost.length()))
+                {
+                    // if wild then we only match one level, so check for no more dots
+                    if (_wild)
+                        return host.lastIndexOf('.', offset - 1) < 0;
+                    // otherwise the offset must be 0 for a complete match
+                    return offset == 0;
+                }
+            }
+            return false;
         }
 
         String getVHost()
@@ -1355,6 +1660,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 return '@' + _vConnector;
             else
                 return _vHost;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_vHost, _wild, _vConnector);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            return o instanceof VHost vhost &&
+                Objects.equals(_vHost, vhost._vHost) &&
+                Objects.equals(_wild, vhost._wild) &&
+                Objects.equals(_vConnector, vhost._vConnector);
         }
 
         @Override

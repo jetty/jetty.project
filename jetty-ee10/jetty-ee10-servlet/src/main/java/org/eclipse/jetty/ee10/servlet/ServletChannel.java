@@ -17,15 +17,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
@@ -43,7 +40,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +55,7 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
  * {@link jakarta.servlet.ServletInputStream}.
  * <p>
  * This class is reusable over multiple requests for the same {@link ServletContextHandler}
- * and is {@link #recycle() recycled} after each use before being
+ * and is {@link #recycle(Throwable) recycled} after each use before being
  * {@link #associate(ServletContextRequest) associated} with a new {@link ServletContextRequest}
  * and then {@link #associate(Request, Response, Callback) associated} with possibly wrapped
  * request, response and callback.
@@ -76,13 +72,12 @@ public class ServletChannel
     private final ServletContextHandler.ServletContextApi _servletContextApi;
     private final ConnectionMetaData _connectionMetaData;
     private final AtomicLong _requests = new AtomicLong();
-    private final HttpInput _httpInput;
+    final HttpInput _httpInput;
     private final HttpOutput _httpOutput;
     private ServletContextRequest _servletContextRequest;
     private Request _request;
     private Response _response;
     private Callback _callback;
-    private boolean _expects100Continue;
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
@@ -112,20 +107,16 @@ public class ServletChannel
     /**
      * Associate this channel with a specific request.
      * This method is called by the {@link ServletContextHandler} when a core {@link Request} is accepted and associated with
-     * a servlet mapping. The association remains until {@link #recycle()} is called.
+     * a servlet mapping. The association remains functional until {@link #recycle(Throwable)} is called,
+     * and it remains readable until a call to {@link #recycle(Throwable)} or a subsequent call to {@code associate}.
      * @param servletContextRequest The servlet context request to associate
-     * @see #recycle()
+     * @see #recycle(Throwable)
      */
     public void associate(ServletContextRequest servletContextRequest)
     {
-        // We need to recycle here sometimes as requests that are handled before the
-        // ServletHandler (e.g. by SecurityHandler) are not recycled.
-        if (_servletContextRequest != null)
-            recycle();
         _httpInput.reopen();
         _request = _servletContextRequest = servletContextRequest;
         _response = _servletContextRequest.getServletContextResponse();
-        _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
         if (LOG.isDebugEnabled())
             LOG.debug("associate {} -> {} : {}",
@@ -202,7 +193,9 @@ public class ServletChannel
         return _state.isSendError();
     }
 
-    /** Format the address or host returned from Request methods
+    /**
+     * Format the address or host returned from Request methods
+     *
      * @param addr The address or host
      * @return Default implementation returns {@link HostPort#normalizeHost(String)}
      */
@@ -216,8 +209,11 @@ public class ServletChannel
         return _state;
     }
 
-    public long getBytesWritten()
+    private long getBytesWritten()
     {
+        // This returns the bytes written to the network,
+        // which may be different from those written by the
+        // application as they might have been compressed.
         return Response.getContentBytesWritten(getServletContextResponse());
     }
 
@@ -283,7 +279,9 @@ public class ServletChannel
     public ServletContextResponse getServletContextResponse()
     {
         ServletContextRequest request = _servletContextRequest;
-        return request == null ? null : request.getServletContextResponse();
+        if (_servletContextRequest == null)
+            throw new IllegalStateException("Request/Response does not exist (likely recycled)");
+        return request.getServletContextResponse();
     }
 
     /**
@@ -295,6 +293,8 @@ public class ServletChannel
      */
     public Response getResponse()
     {
+        if (_response == null)
+            throw new IllegalStateException("Response does not exist (likely recycled)");
         return _response;
     }
 
@@ -327,18 +327,9 @@ public class ServletChannel
      */
     public String getLocalName()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress).getHostName();
-        }
-
         InetSocketAddress local = getLocalAddress();
         if (local != null)
-            return local.getHostString();
-
+            return Request.getHostName(local);
         return null;
     }
 
@@ -361,40 +352,20 @@ public class ServletChannel
      */
     public int getLocalPort()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress).getPort();
-        }
-
         InetSocketAddress local = getLocalAddress();
         return local == null ? 0 : local.getPort();
     }
 
     public InetSocketAddress getLocalAddress()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress);
-        }
-
-        SocketAddress local = getEndPoint().getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return (InetSocketAddress)local;
-        return null;
+        return getRequest().getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress : null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        SocketAddress remote = getEndPoint().getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress)
-            return (InetSocketAddress)remote;
-        return null;
+        return getRequest().getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress : null;
     }
 
     /**
@@ -411,46 +382,20 @@ public class ServletChannel
     }
 
     /**
-     * If the associated response has the Expect header set to 100 Continue,
-     * then accessing the input stream indicates that the handler/servlet
-     * is ready for the request body and thus a 100 Continue response is sent.
-     *
-     * @param available estimate of the number of bytes that are available
-     * @throws IOException if the InputStream cannot be created
-     */
-    public void continue100(int available) throws IOException
-    {
-        if (isExpecting100Continue())
-        {
-            _expects100Continue = false;
-            if (available == 0)
-            {
-                if (isCommitted())
-                    throw new IOException("Committed before 100 Continue");
-                try
-                {
-                    getServletContextResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY).get();
-                }
-                catch (Throwable x)
-                {
-                    throw IO.rethrow(x);
-                }
-            }
-        }
-    }
-
-    /**
+     * Prepare to be reused.
+     * @param x Any completion exception, or null for successful completion.
      * @see #associate(ServletContextRequest)
      */
-    private void recycle()
+    void recycle(Throwable x)
     {
-        _state.recycle();
+        // _httpInput must be recycled before _state.
         _httpInput.recycle();
         _httpOutput.recycle();
-        _request = _servletContextRequest = null;
+        _state.recycle();
+        _servletContextRequest = null;
+        _request = null;
         _response = null;
         _callback = null;
-        _expects100Continue = false;
     }
 
     /**
@@ -533,26 +478,22 @@ public class ServletChannel
                             // If we can't have a body or have no ErrorHandler, then create a minimal error response.
                             if (HttpStatus.hasNoBody(getServletContextResponse().getStatus()) || errorHandler == null)
                             {
-                                sendResponseAndComplete();
+                                sendErrorResponseAndComplete();
                             }
                             else
                             {
-                                AtomicBoolean asyncCompletion = new AtomicBoolean(false);
-                                Callback errorCallback = Callback.from(() ->
-                                {
-                                    if (!asyncCompletion.compareAndSet(false, true))
-                                        _state.scheduleDispatch();
-                                });
-
                                 // We do not notify ServletRequestListener on this dispatch because it might not
                                 // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
                                 reopen();
-                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), errorCallback);
+                                _state.errorHandling();
 
-                                // If the callback has already been completed we should continue in handle loop.
-                                // Otherwise, the callback will schedule a dispatch to handle().
-                                if (asyncCompletion.compareAndSet(false, true))
-                                    return;
+                                // TODO We currently directly call the errorHandler here, but this is not correct in the case of async errors,
+                                //      because since a failure has already occurred, the errorHandler is unable to write a response.
+                                //      Instead, we should fail the callback, so that it calls Response.writeError(...) with an ErrorResponse
+                                //      that ignores existing failures.   However, the error handler needs to be able to call servlet pages,
+                                //      so it will need to do a new call to associate(req,res,callback) or similar, to make the servlet request and
+                                //      response wrap the error request and response.  Have to think about what callback is passed.
+                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(() -> _state.errorHandlingComplete(null), _state::errorHandlingComplete));
                             }
                         }
                         catch (Throwable x)
@@ -562,23 +503,25 @@ public class ServletChannel
                             else
                                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform ERROR dispatch, aborting", cause);
-                            if (_state.isResponseCommitted())
+                                LOG.debug("Could not perform error handling, aborting", cause);
+
+                            try
                             {
-                                abort(cause);
-                            }
-                            else
-                            {
-                                try
+                                if (_state.isResponseCommitted())
+                                {
+                                    // Perform the same behavior as when the callback is failed.
+                                    _state.errorHandlingComplete(cause);
+                                }
+                                else
                                 {
                                     getServletContextResponse().resetContent();
-                                    sendResponseAndComplete();
+                                    sendErrorResponseAndComplete();
                                 }
-                                catch (Throwable t)
-                                {
-                                    ExceptionUtil.addSuppressedIfNotAssociated(cause, t);
-                                    abort(cause);
-                                }
+                            }
+                            catch (Throwable t)
+                            {
+                                ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
+                                abort(t);
                             }
                         }
                         finally
@@ -608,24 +551,29 @@ public class ServletChannel
 
                     case COMPLETE:
                     {
-                        if (!getServletContextResponse().isCommitted())
+                        ServletContextResponse response = getServletContextResponse();
+                        if (!response.isCommitted())
                         {
                             // Indicate Connection:close if we can't consume all.
-                            if (getServletContextResponse().getStatus() >= 200)
-                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
+                            if (response.getStatus() >= 200)
+                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, response);
                         }
 
                         // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.
-                        if (!_servletContextRequest.isHead() && getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304)
+                        if (!_servletContextRequest.isHead() && response.getStatus() != HttpStatus.NOT_MODIFIED_304)
                         {
-                            long written = getBytesWritten();
-                            if (getServletContextResponse().isContentIncomplete(written) && sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, getServletContextResponse().getContentLength())))
+                            // Compare the bytes written by the application, even if
+                            // they might be compressed (or changed) by child Handlers.
+                            long written = response.getContentBytesWritten();
+                            if (response.isContentIncomplete(written))
+                            {
+                                sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, response.getContentLength()));
                                 break;
+                            }
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        getServletContextResponse().completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
-
+                        response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
                         break;
                     }
 
@@ -751,7 +699,7 @@ public class ServletChannel
         return null;
     }
 
-    public void sendResponseAndComplete()
+    public void sendErrorResponseAndComplete()
     {
         try
         {
@@ -761,12 +709,8 @@ public class ServletChannel
         catch (Throwable x)
         {
             abort(x);
+            _state.completed(x);
         }
-    }
-
-    public boolean isExpecting100Continue()
-    {
-        return _expects100Continue;
     }
 
     @Override
@@ -804,7 +748,7 @@ public class ServletChannel
     {
         ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
         if (LOG.isDebugEnabled())
-            LOG.debug("onCompleted for {} written={}", apiRequest.getRequestURI(), getBytesWritten());
+            LOG.debug("onCompleted for {} written app={} net={}", apiRequest.getRequestURI(), getHttpOutput().getWritten(), getBytesWritten());
 
         if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
@@ -814,19 +758,13 @@ public class ServletChannel
             _servletContextRequest.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
-        // Callback will either be succeeded here or failed in abort().
+        // Callback is completed only here.
         Callback callback = _callback;
-        if (_state.completeResponse())
-        {
-            // Must recycle before callback notification to allow for reuse.
-            recycle();
+        Throwable failure = _state.completeResponse();
+        if (failure == null)
             callback.succeeded();
-        }
         else
-        {
-            // Recycle always done here even if an abort is called.
-            recycle();
-        }
+            callback.failed(failure);
     }
 
     public boolean isCommitted()
@@ -855,6 +793,11 @@ public class ServletChannel
         _context.execute(task);
     }
 
+    protected void execute(Runnable task, Request request)
+    {
+        _context.execute(task, request);
+    }
+
     /**
      * If a write or similar operation to this channel fails,
      * then this method should be called.
@@ -864,13 +807,8 @@ public class ServletChannel
      */
     public void abort(Throwable failure)
     {
-        // Callback will either be failed here or succeeded in onCompleted().
-        if (_state.abortResponse())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("abort {}", this, failure);
-            _callback.failed(failure);
-        }
+        // Callback will be failed in onCompleted().
+        _state.abort(failure);
     }
 
     private void dispatch() throws Exception

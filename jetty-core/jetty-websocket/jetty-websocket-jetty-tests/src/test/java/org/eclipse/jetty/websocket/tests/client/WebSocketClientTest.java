@@ -90,9 +90,7 @@ public class WebSocketClientTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofSeconds(10));
             container.addMapping("/echo", (upgradeRequest, upgradeResponse, callback) ->
@@ -105,6 +103,7 @@ public class WebSocketClientTest
             container.addMapping("/connect-msg", (rq, rs, cb) -> new ConnectMessageEndpoint());
             container.addMapping("/get-params", (rq, rs, cb) -> new ParamsEndpoint());
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();
@@ -386,7 +385,7 @@ public class WebSocketClientTest
 
         try (Session ignored = future.get(5, TimeUnit.SECONDS))
         {
-            Assertions.assertTrue(cliSock.connectLatch.await(1, TimeUnit.SECONDS));
+            Assertions.assertTrue(cliSock.openLatch.await(1, TimeUnit.SECONDS));
 
             InetSocketAddress local = (InetSocketAddress)cliSock.getSession().getLocalSocketAddress();
             InetSocketAddress remote = (InetSocketAddress)cliSock.getSession().getRemoteSocketAddress();

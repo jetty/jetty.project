@@ -20,9 +20,11 @@ import java.nio.file.Path;
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,10 +32,21 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class TempDirTest
 {
+    private Server _server;
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        if (_server != null)
+            _server.stop();
+    }
 
     /**
      * Test ServletContext.TEMPDIR as valid directory with types File, String and Path.
@@ -127,4 +140,87 @@ public class TempDirTest
         webInfConfiguration.resolveTempDirectory(webAppContext);
         assertThat(webAppContext.getTempDirectory().getParentFile().getParentFile().toPath(), PathMatchers.isSame(workDir.getPath()));
     }
-}
+
+    @Test
+    public void testFreshTempDir(WorkDir workDir) throws Exception
+    {
+        // Create war on the fly
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+
+        //Test that if jetty is creating a tmp dir for the webapp, it is different on
+        //restart
+        _server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        webAppContext.setWar(testWebappDir.toFile().getAbsolutePath());
+        _server.setHandler(webAppContext);
+        _server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        webAppContext.stop();
+        assertNull(webAppContext.getTempDirectory());
+        webAppContext.start();
+        assertThat(tempDirectory.toPath(), not(PathMatchers.isSame(webAppContext.getTempDirectory().toPath())));
+    }
+
+    @Test
+    public void testSameTempDir(WorkDir workDir) throws Exception
+    {
+        // Create war on the fly
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+
+        //Test that if we explicitly configure the temp dir, it is the same after restart
+        _server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        Path configuredTmpDir = workDir.getEmptyPathDir().resolve("tmp");
+        webAppContext.setTempDirectory(configuredTmpDir.toFile());
+        webAppContext.setWar(testWebappDir.toFile().getAbsolutePath());
+        _server.setHandler(webAppContext);
+        _server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        assertThat(tempDirectory.toPath(), PathMatchers.isSame(configuredTmpDir));
+        webAppContext.stop();
+        assertNotNull(webAppContext.getTempDirectory());
+        webAppContext.start();
+        assertThat(tempDirectory.toPath(), PathMatchers.isSame(webAppContext.getTempDirectory().toPath()));
+        _server.stop();
+    }
+
+    @Test
+    public void testTempDirDeleted(WorkDir workDir) throws Exception
+    {
+        // Create war on the fly
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+
+         _server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        webAppContext.setWar(testWebappDir.toFile().getAbsolutePath());
+        _server.setHandler(webAppContext);
+        _server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        _server.stop();
+        assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
+        assertNull(webAppContext.getTempDirectory());
+    }
+
+    @Test
+    public void testExplicitTempDir(WorkDir workDir) throws Exception
+    {
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path myTempDir = workDir.getEmptyPathDir().resolve("my-temp-dir");
+        FS.ensureDirExists(myTempDir);
+
+        //Tell jetty what the temp dir is for the webapp
+        _server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        webAppContext.setWar(testWebappDir.toFile().getAbsolutePath());
+        webAppContext.setTempDirectory(myTempDir.toFile());
+        _server.setHandler(webAppContext);
+        _server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        assertThat(webAppContext.getAttribute(ServletContext.TEMPDIR), is(tempDirectory));
+        assertThat(tempDirectory.toPath(), is(myTempDir));
+    }
+ }

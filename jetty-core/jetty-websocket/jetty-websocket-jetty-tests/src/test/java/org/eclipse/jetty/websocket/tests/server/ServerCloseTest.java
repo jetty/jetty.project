@@ -63,13 +63,12 @@ public class ServerCloseTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofSeconds(2));
             container.addMapping("/ws", serverEndpointCreator = new ServerCloseCreator());
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();
@@ -270,7 +269,7 @@ public class ServerCloseTest
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-        assertTrue(serverEndpoint.connectLatch.await(5, SECONDS));
+        assertTrue(serverEndpoint.openLatch.await(5, SECONDS));
         Session session = serverEndpoint.getSession();
         session.close(StatusCode.SHUTDOWN, "SHUTDOWN hard close", Callback.NOOP);
 
@@ -295,7 +294,7 @@ public class ServerCloseTest
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
-        assertTrue(serverEndpoint.connectLatch.await(5, SECONDS));
+        assertTrue(serverEndpoint.openLatch.await(5, SECONDS));
         Session session = serverEndpoint.getSession();
         session.close(StatusCode.SHUTDOWN, "SHUTDOWN hard close", Callback.NOOP);
 

@@ -84,6 +84,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
     private final List<UpgradeListener> upgradeListeners = new ArrayList<>();
     private List<ExtensionConfig> requestedExtensions = new ArrayList<>();
+    private boolean upgraded;
 
     public CoreClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
@@ -237,19 +238,17 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         return futureCoreSession;
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public void onComplete(Result result)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("onComplete() - {}", result);
-        }
 
         URI requestURI = result.getRequest().getURI();
+        Request request = result.getRequest();
         Response response = result.getResponse();
-        int responseStatusCode = response.getStatus();
-        String responseLine = responseStatusCode + " " + response.getReason();
+        int status = response.getStatus();
+        String responseLine = status + " " + response.getReason();
 
         if (result.isFailed())
         {
@@ -266,15 +265,26 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             Throwable failure = result.getFailure();
             boolean wrapFailure = !(failure instanceof IOException) && !(failure instanceof UpgradeException);
             if (wrapFailure)
-                failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
+                failure = new UpgradeException(requestURI, status, responseLine, failure);
             handleException(failure);
             return;
         }
 
-        if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
+        if (!upgraded)
+        {
+            // We have failed to upgrade but have received a response, so notify the listener.
+            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
+            if (listenerError != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("error from listener", listenerError);
+            }
+        }
+
+        if (status != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI, responseStatusCode,
+            handleException(new UpgradeException(requestURI, status,
                 "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
@@ -290,7 +300,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             }
             catch (Throwable t)
             {
-                LOG.warn("FrameHandler onError threw", t);
+                LOG.info("FrameHandler onError threw", t);
             }
         }
     }
@@ -485,6 +495,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);
+        upgraded = true;
 
         // Now swap out the connection
         try

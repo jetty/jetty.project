@@ -46,7 +46,7 @@ function gitFindRemoteByUrl() {
     return 0
 }
 
-GIT_REMOTE_URL="github.com:eclipse/jetty.project.git"
+GIT_REMOTE_URL="github.com:jetty/jetty.project.git"
 GIT_REMOTE_ID=$(gitFindRemoteByUrl "$GIT_REMOTE_URL")
 GIT_BRANCH_ID=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 
@@ -92,7 +92,7 @@ DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=fa
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
-export MAVEN_OPTS="-Xmx2g"
+export MAVEN_OPTS="-Xmx4g"
 
 echo ""
 echo "-----------------------------------------------"
@@ -131,7 +131,7 @@ reportMavenTestFailures() {
 
 echo ""
 if proceedyn "Are you sure you want to release using above? (y/N)" n; then
-    mvn clean install -pl build -Dmaven.build.cache.enabled=false
+    mvn clean install -pl build/build-resources/ -Peclipse-release -Dmaven.build.cache.enabled=false
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
         mvn -N -Pupdate-version generate-resources -Dmaven.build.cache.enabled=false

@@ -61,7 +61,6 @@ import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1051,7 +1050,6 @@ public class ConstraintTest
     }
 
     @Test
-    @Disabled("Dispatch unsupported")
     public void testFormDispatch() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", true));
@@ -1680,7 +1678,6 @@ public class ConstraintTest
     }
 
     @Test
-    @Disabled("Dispatch unsupported")
     public void testStrictFormDispatch()
         throws Exception
     {
@@ -1808,7 +1805,7 @@ public class ConstraintTest
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\nHost:wibble.com:8888\r\n\r\n");
         assertThat(response, containsString(" 302 Found"));
-        assertThat(response, containsString("http://wibble.com:8888/ctx/testLoginPage"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 

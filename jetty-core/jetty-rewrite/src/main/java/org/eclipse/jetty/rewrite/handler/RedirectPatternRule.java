@@ -17,7 +17,6 @@ import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
@@ -54,7 +53,7 @@ public class RedirectPatternRule extends PatternRule
     }
 
     /**
-     * Set the location to redirect..
+     * Set the location to redirect.
      * @param value the location to redirect.
      */
     public void setLocation(String value)
@@ -88,7 +87,7 @@ public class RedirectPatternRule extends PatternRule
             {
                 String location = getLocation();
                 response.setStatus(getStatusCode());
-                response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, location));
+                response.getHeaders().put(HttpHeader.LOCATION, Response.toRedirectURI(this, location));
                 callback.succeeded();
                 return true;
             }

@@ -25,7 +25,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.quic.common.ProtocolSession;
-import org.eclipse.jetty.quic.common.QuicConnection;
+import org.eclipse.jetty.quic.common.QuicErrorCode;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -46,7 +46,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private final Connector connector;
     private long expireNanoTime = Long.MAX_VALUE;
 
-    protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
+    public ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, QuicheConnection quicheConnection, ServerQuicConnection connection, SocketAddress remoteAddress, Connector connector)
     {
         super(executor, scheduler, bufferPool, quicheConnection, connection, remoteAddress);
         this.connector = connector;
@@ -65,6 +65,18 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         if (connectionFactory instanceof ProtocolSession.Factory)
             return ((ProtocolSession.Factory)connectionFactory).newProtocolSession(this, Map.of());
         return new ServerProtocolSession(this);
+    }
+
+    @Override
+    protected boolean validateNewlyEstablishedConnection()
+    {
+        if (getQuicConnection().getQuicConfiguration().getSslContextFactory().getNeedClientAuth() && getPeerCertificates() == null)
+        {
+            outwardClose(QuicErrorCode.CONNECTION_REFUSED.code(), "missing_client_certificate_chain");
+            flush();
+            return false;
+        }
+        return true;
     }
 
     @Override

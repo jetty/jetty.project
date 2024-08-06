@@ -21,15 +21,20 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -41,6 +46,7 @@ import org.eclipse.jetty.util.IO;
  */
 public abstract class Resource implements Iterable<Resource>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
 
     public static String dump(Resource resource)
@@ -54,7 +60,7 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * Return the Path corresponding to this resource.
      *
-     * @return the path.
+     * @return the path or null if there is no Path representation.
      */
     public abstract Path getPath();
 
@@ -62,14 +68,78 @@ public abstract class Resource implements Iterable<Resource>
      * Return true if this resource is contained in the Resource r, either because
      * r is a folder or a jar file or any form of resource capable of containing other resources.
      *
-     * @param r the containing resource
+     * @param container the containing resource
      * @return true if this Resource is contained, false otherwise
+     * @see #contains(Resource)
      */
-    public abstract boolean isContainedIn(Resource r);
+    public boolean isContainedIn(Resource container)
+    {
+        return container != null && container.contains(this);
+    }
+
+    /**
+     * Return true if this resource deeply contains the other Resource.  This resource must be
+     * a directory or a jar file or any form of resource capable of containing other resources.
+     *
+     * @param other the resource
+     * @return true if this Resource is deeply contains the other Resource, false otherwise
+     * @see #isContainedIn(Resource)
+     */
+    public boolean contains(Resource other)
+    {
+        if (other == null)
+            return false;
+
+        URI thisURI = getURI();
+        if (thisURI == null)
+            throw new UnsupportedOperationException("Resources without a URI must implement contains");
+
+        URI otherURI = other.getURI();
+        if (otherURI == null)
+            return false;
+
+        // Different schemes? not a chance it contains the other
+        if (!StringUtil.asciiEqualsIgnoreCase(thisURI.getScheme(), otherURI.getScheme()))
+            return false;
+
+        // Different authorities? not a valid contains() check
+        if (!Objects.equals(thisURI.getAuthority(), otherURI.getAuthority()))
+            return false;
+
+        // Ensure that if `file` scheme is used, it's using a consistent convention to allow for startsWith check
+        String thisURIString = URIUtil.correctURI(thisURI).toASCIIString();
+        String otherURIString = URIUtil.correctURI(otherURI).toASCIIString();
+
+        return otherURIString.startsWith(thisURIString) &&
+            (thisURIString.length() == otherURIString.length() || otherURIString.charAt(thisURIString.length()) == '/');
+    }
+
+    /**
+     * Get the relative path from this Resource to a possibly contained resource.
+     * @param other The other resource that may be contained in this resource
+     * @return a relative Path representing the path from this resource to the other resource,
+     *   or null if not able to represent other resources as relative to this resource
+     */
+    public Path getPathTo(Resource other)
+    {
+        Path thisPath = getPath();
+        if (thisPath == null)
+            throw new UnsupportedOperationException("Resources without a Path must implement getPathTo");
+
+        if (!contains(other))
+            return null;
+
+        Path otherPath = other.getPath();
+        if (otherPath == null)
+            return null;
+
+        return thisPath.relativize(otherPath);
+    }
 
     /**
      * <p>Return an Iterator of all Resource's referenced in this Resource.</p>
-     * <p>This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator of this resource.</p>
+     * <p>This is meaningful if you have a {@link CombinedResource},
+     * otherwise it will be a single entry Iterator of this resource.</p>
      *
      * @return the iterator of Resources.
      */
@@ -127,14 +197,14 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * URI representing the resource.
      *
-     * @return a URI representing the given resource
+     * @return a URI representing the given resource, or null if there is no URI representation of the resource.
      */
     public abstract URI getURI();
 
     /**
      * The full name of the resource.
      *
-     * @return the full name of the resource, or null if not backed by a Path
+     * @return the full name of the resource, or null if there is no name for the resource.
      */
     public abstract String getName();
 
@@ -143,7 +213,8 @@ public abstract class Resource implements Iterable<Resource>
      *
      * <p>This is the last segment of the path.</p>
      *
-     * @return the filename of the resource, or "" if there are no path segments (eg: path of "/"), or null if resource has no path.
+     * @return the filename of the resource, or "" if there are no path segments (eg: path of "/"), or null if resource
+     *         cannot determine a filename.
      * @see Path#getFileName()
      */
     public abstract String getFileName();
@@ -167,7 +238,9 @@ public abstract class Resource implements Iterable<Resource>
      *
      * @return a readable {@link java.nio.channels.ByteChannel} to the resource or null if one is not available.
      * @throws IOException if unable to open the readable bytechannel for the resource.
+     * @deprecated use {@link #newInputStream()} or {@code IOResources} instead.
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public ReadableByteChannel newReadableByteChannel() throws IOException
     {
         Path path = getPath();
@@ -195,7 +268,8 @@ public abstract class Resource implements Iterable<Resource>
      * Resolve an existing Resource.
      *
      * @param subUriPath the encoded subUriPath
-     * @return an existing Resource representing the requested subUriPath, or null if resource does not exist.
+     * @return a Resource representing the requested subUriPath, which may not {@link #exists() exist},
+     * or null if the resource cannot exist.
      * @throws IllegalArgumentException if subUriPath is invalid
      */
     public abstract Resource resolve(String subUriPath);
@@ -222,49 +296,144 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Copy the Resource to the new destination file.
-     * <p>
-     * Will not replace existing destination file.
+     * Copy the Resource to the new destination file or directory.
      *
-     * @param destination the destination file to create
+     * <p>If this Resource is a File:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist then {@link IO#copyFile(Path, Path)} is used.</li>
+     *     <li>And the {@code destination} is a File then {@link IO#copyFile(Path, Path)} is used.</li>
+     *     <li>And the {@code destination} is a Directory then
+     *         a new {@link Path} reference is created in the destination with the same
+     *         filename as this Resource, which is used via {@link IO#copyFile(Path, Path)}.</li>
+     * </ul>
+     *
+     * <p>If this Resource is a Directory:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist then
+     *         the destination is created as a directory via {@link Files#createDirectories(Path, FileAttribute[])}
+     *         before the {@link IO#copyDir(Path, Path)} method is used.</li>
+     *     <li>And the {@code destination} is a File then this results in an {@link IllegalArgumentException}.</li>
+     *     <li>And the {@code destination} is a Directory then all files in this Resource
+     *         directory tree are copied to the {@code destination}, using {@link IO#copyFile(Path, Path)}
+     *         maintaining the same directory structure.</li>
+     * </ul>
+     *
+     * <p>If this Resource is not backed by a {@link Path}, use {@link #newInputStream()}:</p>
+     * <ul>
+     *     <li>And the {@code destination} does not exist, copy {@link InputStream}
+     *         to the {@code destination} as a new file.</li>
+     *     <li>And the {@code destination} is a File, copy {@link InputStream}
+     *         to the existing {@code destination} file.</li>
+     *     <li>And the {@code destination} is a Directory, copy {@link InputStream}
+     *         to a new {@code destination} file in the destination directory
+     *         based on this the result of {@link #getFileName()} as the filename.</li>
+     * </ul>
+     *
+     * @param destination the destination file or directory to use (created if it does not exist).
      * @throws IOException if unable to copy the resource
      */
     public void copyTo(Path destination)
         throws IOException
     {
-        if (Files.exists(destination))
-            throw new IllegalArgumentException(destination + " exists");
+        if (!exists())
+            throw new IOException("Resource does not exist: " + getFileName());
 
-        // attempt simple file copy
         Path src = getPath();
-        if (src != null)
+        if (src == null)
         {
-            // TODO ATOMIC_MOVE seems useless for a copy and REPLACE_EXISTING contradicts the
-            //  javadoc that explicitly states "Will not replace existing destination file."
-            Files.copy(src, destination,
-                StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+            // this implementation is not backed by a Path.
+
+            // is this a Directory?
+            if (isDirectory())
+            {
+                // if we reached this point, we have a Resource implementation that needs custom copyTo.
+                throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo: " + this);
+            }
+
+            // assume that this Resource is a File.
+            String filename = getFileName();
+            if (StringUtil.isBlank(filename))
+            {
+                throw new UnsupportedOperationException("File Resources without a Path must implement getFileName: " + this);
+            }
+
+            Path destFile = destination;
+            if (Files.isDirectory(destFile))
+            {
+                destFile = destFile.resolve(filename);
+            }
+
+            // use old school stream based copy (without a Path)
+            try (InputStream in = newInputStream(); // use non-path newInputStream
+                 OutputStream out = Files.newOutputStream(destFile,
+                     StandardOpenOption.CREATE,
+                     StandardOpenOption.WRITE,
+                     StandardOpenOption.TRUNCATE_EXISTING))
+            {
+                IO.copy(in, out);
+            }
             return;
         }
 
-        // use old school stream based copy
-        try (InputStream in = newInputStream();
-             OutputStream out = Files.newOutputStream(destination))
+        // Is this a File resource?
+        if (Files.isRegularFile(src))
         {
-            IO.copy(in, out);
+            if (Files.isDirectory(destination))
+            {
+                // to a directory, preserve the filename
+                Path destPath = destination.resolve(src.getFileName().toString());
+                IO.copyFile(src, destPath);
+            }
+            else
+            {
+                // to a file, use destination as-is
+                IO.copyFile(src, destination);
+            }
+            return;
         }
+
+        // At this point this PathResource is a directory,
+        // wanting to copy to a destination directory (that might not exist yet)
+        assert isDirectory();
+
+        IO.copyDir(src, destination);
     }
 
+    /**
+     * Get a deep collection of contained resources.
+     * @return A collection of all Resources deeply contained within this resource if it is a directory,
+     * otherwise an empty collection is returned.
+     */
     public Collection<Resource> getAllResources()
     {
         try
         {
-            ArrayList<Resource> deep = new ArrayList<>();
-            for (Resource r: list())
+            List<Resource> children = list();
+            if (children == null || children.isEmpty())
+                return List.of();
+
+            boolean noDepth = true;
+
+            for (Iterator<Resource> i = children.iterator(); noDepth && i.hasNext(); )
             {
+                Resource resource = i.next();
+                if (resource.isDirectory())
+                {
+                    // If the directory is a symlink we do not want to go any deeper.
+                    Path resourcePath = resource.getPath();
+                    if (resourcePath == null || !Files.isSymbolicLink(resourcePath))
+                        noDepth = false;
+                }
+            }
+            if (noDepth)
+                return children;
+
+            ArrayList<Resource> deep = new ArrayList<>();
+            for (Resource r: children)
+            {
+                deep.add(r);
                 if (r.isDirectory())
                     deep.addAll(r.getAllResources());
-                else
-                    deep.add(r);
             }
             return deep;
         }
@@ -272,5 +441,32 @@ public abstract class Resource implements Iterable<Resource>
         {
             throw new IllegalStateException(e);
         }
+    }
+
+    public boolean isSameFile(Path path)
+    {
+        Path resourcePath = getPath();
+        if (Objects.equals(path, resourcePath))
+            return true;
+        try
+        {
+            if (Files.isSameFile(path, resourcePath))
+                return true;
+        }
+        catch (Throwable t)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ignored", t);
+        }
+        return false;
+    }
+
+    public String toString()
+    {
+        String str = getName();
+        URI uri = getURI();
+        if (uri != null)
+            str = getURI().toASCIIString();
+        return "(" + this.getClass().getSimpleName() + ") " + str;
     }
 }

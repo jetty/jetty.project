@@ -15,16 +15,15 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -45,7 +44,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
  * Content.Source content = ...;
  *
  * // Create and configure MultiPartByteRanges.
- * MultiPartByteRanges byteRanges = new MultiPartByteRanges(boundary);
+ * MultiPartByteRanges.Parser byteRanges = new MultiPartByteRanges.Parser(boundary);
  *
  * // Parse the content.
  * byteRanges.parse(content)
@@ -164,46 +163,55 @@ public class MultiPartByteRanges
     }
 
     /**
-     * <p>A specialized {@link org.eclipse.jetty.io.content.PathContentSource}
-     * whose content is sliced by a byte range.</p>
+     * <p>A specialized {@link Content.Source}
+     * whose {@link Path} content is sliced by a byte range.</p>
+     *
+     * @deprecated use {@link Content.Source#from(ByteBufferPool.Sized, Path, long, long)}
      */
-    public static class PathContentSource extends org.eclipse.jetty.io.content.PathContentSource
+    @Deprecated(forRemoval = true, since = "12.0.11")
+    public static class PathContentSource implements Content.Source
     {
-        private final ByteRange byteRange;
-        private long toRead;
+        private final Content.Source contentSource;
 
         public PathContentSource(Path path, ByteRange byteRange)
         {
-            super(path);
-            this.byteRange = byteRange;
+            contentSource = Content.Source.from(null, path, byteRange.first(), byteRange.getLength());
         }
 
         @Override
-        protected SeekableByteChannel open() throws IOException
+        public void demand(Runnable demandCallback)
         {
-            SeekableByteChannel channel = super.open();
-            channel.position(byteRange.first());
-            toRead = byteRange.getLength();
-            return channel;
+            contentSource.demand(demandCallback);
         }
 
         @Override
-        protected int read(SeekableByteChannel channel, ByteBuffer byteBuffer) throws IOException
+        public void fail(Throwable failure)
         {
-            int read = super.read(channel, byteBuffer);
-            if (read <= 0)
-                return read;
-
-            read = (int)Math.min(read, toRead);
-            toRead -= read;
-            byteBuffer.position(read);
-            return read;
+            contentSource.fail(failure);
         }
 
         @Override
-        protected boolean isReadComplete(long read)
+        public void fail(Throwable failure, boolean last)
         {
-            return read == byteRange.getLength();
+            contentSource.fail(failure, last);
+        }
+
+        @Override
+        public long getLength()
+        {
+            return contentSource.getLength();
+        }
+
+        @Override
+        public Content.Chunk read()
+        {
+            return contentSource.read();
+        }
+
+        @Override
+        public boolean rewind()
+        {
+            return contentSource.rewind();
         }
     }
 
@@ -214,36 +222,37 @@ public class MultiPartByteRanges
     {
         private final Resource resource;
         private final ByteRange byteRange;
+        private final ByteBufferPool bufferPool;
 
         public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength)
         {
             this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
-                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange);
+                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, null);
+        }
+
+        public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength, ByteBufferPool bufferPool)
+        {
+            this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
+                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange, bufferPool);
         }
 
         public Part(HttpFields headers, Resource resource, ByteRange byteRange)
         {
+            this(headers, resource, byteRange, null);
+        }
+
+        public Part(HttpFields headers, Resource resource, ByteRange byteRange, ByteBufferPool bufferPool)
+        {
             super(null, null, headers);
             this.resource = resource;
             this.byteRange = byteRange;
+            this.bufferPool = bufferPool == null ? ByteBufferPool.NON_POOLING : bufferPool;
         }
 
         @Override
         public Content.Source newContentSource()
         {
-            // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
-            Path path = resource.getPath();
-            if (path != null)
-                return new PathContentSource(path, byteRange);
-
-            try
-            {
-                return new InputStreamContentSource(resource.newInputStream(), byteRange);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeIOException(e);
-            }
+            return IOResources.asContentSource(resource, bufferPool, 0, false, byteRange.first(), byteRange.getLength());
         }
     }
 

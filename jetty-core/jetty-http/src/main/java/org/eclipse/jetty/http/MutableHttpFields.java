@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
@@ -68,7 +67,7 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields)
     {
-        if (fields instanceof ImmutableHttpFields immutable)
+        if (fields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
         {
             _immutable = true;
             _fields = immutable._fields;
@@ -181,7 +180,7 @@ class MutableHttpFields implements HttpFields.Mutable
     public HttpFields asImmutable()
     {
         _immutable = true;
-        return new ImmutableHttpFields(_fields, _size);
+        return new org.eclipse.jetty.http.ImmutableHttpFields(_fields, _size);
     }
 
     private void copyImmutable()
@@ -356,20 +355,6 @@ class MutableHttpFields implements HttpFields.Mutable
         return (value == null)
             ? remove(header)
             : put(new HttpField(header, value));
-    }
-
-    @Override
-    public Mutable put(String name, List<String> list)
-    {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(list);
-        remove(name);
-        for (String v : list)
-        {
-            if (v != null)
-                add(name, v);
-        }
-        return this;
     }
 
     @Override

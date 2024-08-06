@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.PermissionCollection;
@@ -30,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRegistration.Dynamic;
@@ -40,6 +38,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ErrorHandler;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
@@ -59,7 +58,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -90,32 +88,35 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee9/webapp/webdefault-ee9.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
-    public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.ee9.webapp.systemClasses";
-    public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.ee9.webapp.serverClasses";
+    /**
+     * @deprecated use {@link WebAppClassLoading#PROTECTED_CLASSES_ATTRIBUTE} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.0.9")
+    public static final String SERVER_SYS_CLASSES = WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE;
+    /**
+     * @deprecated use {@link WebAppClassLoading#HIDDEN_CLASSES_ATTRIBUTE} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.0.9")
+    public static final String SERVER_SRV_CLASSES = WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE;
 
-    private static String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
+    private static final String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
-    // System classes are classes that cannot be replaced by
-    // the web application, and they are *always* loaded via
-    // system classloader.
-    public static final ClassMatcher __dftSystemClasses = new ClassMatcher(
-        "java.",                            // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
-        "jakarta.",                         // Jakarta classes (per servlet spec v5.0 / Section 15.2.1)
-        "org.xml.",                         // javax.xml
-        "org.w3c."                          // javax.xml
-    );
+    /**
+     * @deprecated use {@link WebAppClassLoading#DEFAULT_PROTECTED_CLASSES}
+     */
+    @Deprecated(forRemoval = true, since = "12.0.9")
+    public static final org.eclipse.jetty.ee9.webapp.ClassMatcher __dftSystemClasses =
+        new org.eclipse.jetty.ee9.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_PROTECTED_CLASSES);
 
-    // Server classes are classes that are hidden from being
-    // loaded by the web application using system classloader,
-    // so if web application needs to load any of such classes,
-    // it has to include them in its distribution.
-    public static final ClassMatcher __dftServerClasses = new ClassMatcher(
-        "org.eclipse.jetty."                // hide jetty classes
-    );
+    /**
+     * @deprecated use {@link WebAppClassLoading#DEFAULT_HIDDEN_CLASSES}
+     */
+    @Deprecated(forRemoval = true, since = "12.0.9")
+    public static final org.eclipse.jetty.ee9.webapp.ClassMatcher __dftServerClasses =
+        new org.eclipse.jetty.ee9.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_HIDDEN_CLASSES);
 
-    private final ClassMatcher _systemClasses = new ClassMatcher(__dftSystemClasses);
-    private final ClassMatcher _serverClasses = new ClassMatcher(__dftServerClasses);
+    private final ClassMatcher _systemClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _serverClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
 
     private Configurations _configurations;
     private String _defaultsDescriptor = WEB_DEFAULTS_XML;
@@ -671,7 +672,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the server classes patterns.
      * <p>
-     * Server classes/packages are classes used to implement the server and are hidden
+     * These classes/packages are used to implement the server and are hidden
      * from the context.  If the context needs to load these classes, it must have its
      * own copy of them in WEB-INF/lib or WEB-INF/classes.
      *
@@ -686,7 +687,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the system classes patterns.
      * <p>
-     * System classes/packages are classes provided by the JVM and that
+     * These classes/packages are provided by the JVM and
      * cannot be replaced by classes of the same name from WEB-INF,
      * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
      *
@@ -749,6 +750,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
+    public boolean isHiddenClass(Class<?> clazz)
+    {
+        return isServerClass(clazz);
+    }
+
+    @Override
+    public boolean isProtectedClass(Class<?> clazz)
+    {
+        return isSystemClass(clazz);
+    }
+
+    @Override
     public boolean isServerClass(Class<?> clazz)
     {
         return _serverClasses.match(clazz);
@@ -778,23 +791,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super.setServer(server);
         if (server != null)
         {
-            if (__dftSystemClasses.equals(_systemClasses))
-            {
-                Object systemClasses = server.getAttribute(SERVER_SYS_CLASSES);
-                if (systemClasses instanceof String[])
-                    systemClasses = new ClassMatcher((String[])systemClasses);
-                if (systemClasses instanceof ClassMatcher)
-                    _systemClasses.add(((ClassMatcher)systemClasses).getPatterns());
-            }
-
-            if (__dftServerClasses.equals(_serverClasses))
-            {
-                Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
-                if (serverClasses instanceof String[])
-                    serverClasses = new ClassMatcher((String[])serverClasses);
-                if (serverClasses instanceof ClassMatcher)
-                    _serverClasses.add(((ClassMatcher)serverClasses).getPatterns());
-            }
+            _systemClasses.add(WebAppClassLoading.getProtectedClasses(server).getPatterns());
+            _serverClasses.add(WebAppClassLoading.getHiddenClasses(server).getPatterns());
         }
     }
 
@@ -1164,13 +1162,38 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setTempDirectory(File dir)
     {
         getCoreContextHandler().setTempDirectory(dir);
-        setAttribute(ServletContext.TEMPDIR, getCoreContextHandler().getTempDirectory());
     }
 
     @ManagedAttribute(value = "temporary directory location", readonly = true)
     public File getTempDirectory()
     {
         return getCoreContextHandler().getTempDirectory();
+    }
+
+    protected void makeTempDirectory() throws Exception
+    {
+        getCoreContextHandler().makeTempDirectory();
+    }
+
+    protected String getCanonicalNameForTmpDir()
+    {
+        return getCoreContextHandler().getCanonicalNameForTmpDir();
+    }
+
+    @Override
+    public Resource getNestedResourceForTempDirName()
+    {
+        Resource resource = super.getNestedResourceForTempDirName();
+
+        if (resource == null)
+        {
+            if (getWar() == null || getWar().length() == 0)
+                throw new IllegalStateException("No resourceBase or war set for context");
+
+            // Use name of given resource in the temporary dirname
+            resource = getResourceFactory().newResource(getWar());
+        }
+        return resource;
     }
 
     /**
@@ -1242,8 +1265,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
-        List<URI> uris = URIUtil.split(extraClasspath);
-        setExtraClasspath(uris.stream().map(this.getResourceFactory()::newResource).collect(Collectors.toList()));
+        setExtraClasspath(getResourceFactory().split(extraClasspath));
     }
 
     public void setExtraClasspath(List<Resource> extraClasspath)
@@ -1294,14 +1316,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             //resolve the metadata
             _metadata.resolve(this);
-            super.startContext();
+            startWebapp();
         }
     }
 
     @Override
     protected void stopContext() throws Exception
     {
-        super.stopContext();
+        stopWebapp();
         try
         {
             for (int i = _configurations.size(); i-- > 0; )
@@ -1325,6 +1347,24 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             _unavailableException = null;
         }
+    }
+
+    /**
+     * Continue the {@link #startContext()} before calling {@code super.startContext()}.
+     * @throws Exception If there was a problem starting
+     */
+    protected void startWebapp() throws Exception
+    {
+        super.startContext();
+    }
+
+    /**
+     * Continue the {@link #stopContext()} before calling {@code super.stopContext()}.
+     * @throws Exception If there was a problem stopping
+     */
+    protected void stopWebapp() throws Exception
+    {
+        super.stopContext();
     }
 
     @Override
@@ -1429,7 +1469,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             // If a WAR file is mounted, or is extracted to a temp directory,
             // then the first entry of the resource base must be the WAR file.
             Resource resource = WebAppContext.this.getResource(path);
-            if (resource == null)
+            if (Resources.missing(resource))
                 return null;
 
             for (Resource r: resource)
@@ -1472,38 +1512,31 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _metadata;
     }
 
-    public static void addServerClasses(Attributes attributes, String... pattern)
+    /**
+     * Add a Server Class pattern to use for all ee9 WebAppContexts.
+     * @param attributes The {@link Server} instance to add classes to
+     * @param patterns the patterns to use
+     * @see #getServerClassMatcher()
+     * @see #getServerClasses()
+     * @deprecated use {@link WebAppClassLoading#addProtectedClasses(Server, String...)}
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    public static void addServerClasses(Attributes attributes, String... patterns)
     {
-        addClasses(__dftServerClasses, SERVER_SRV_CLASSES, attributes, pattern);
+        WebAppClassLoading.addHiddenClasses(attributes, patterns);
     }
 
-    public static void addSystemClasses(Attributes attributes, String... pattern)
+    /**
+     * Add a System Class pattern to use for all ee9 WebAppContexts.
+     * @param attributes The {@link Server} instance to add classes to
+     * @param patterns the patterns to use
+     * @see #getSystemClassMatcher()
+     * @see #getSystemClasses()
+     * @deprecated use {@link WebAppClassLoading#addHiddenClasses(Server, String...)}
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    public static void addSystemClasses(Attributes attributes, String... patterns)
     {
-        addClasses(__dftSystemClasses, SERVER_SYS_CLASSES, attributes, pattern);
-    }
-
-    private static void addClasses(ClassMatcher matcher, String attribute, Attributes attributes, String... pattern)
-    {
-        if (pattern == null || pattern.length == 0)
-            return;
-
-        // look for a Server attribute with the list of System classes
-        // to apply to every web application. If not present, use our defaults.
-        Object o = attributes.getAttribute(attribute);
-        if (o instanceof ClassMatcher)
-        {
-            ((ClassMatcher)o).add(pattern);
-            return;
-        }
-
-        String[] classes;
-        if (o instanceof String[])
-            classes = (String[])o;
-        else
-            classes = matcher.getPatterns();
-        int l = classes.length;
-        classes = Arrays.copyOf(classes, l + pattern.length);
-        System.arraycopy(pattern, 0, classes, l, pattern.length);
-        attributes.setAttribute(attribute, classes);
+        WebAppClassLoading.addProtectedClasses(attributes, patterns);
     }
 }

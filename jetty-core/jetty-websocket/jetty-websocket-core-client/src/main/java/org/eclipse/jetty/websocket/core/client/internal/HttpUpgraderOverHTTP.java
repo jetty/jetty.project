@@ -89,11 +89,20 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
                 String respHash = responseHeaders.get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
                 if (expectedHash.equalsIgnoreCase(respHash))
                 {
-                    clientUpgradeRequest.upgrade(response, endPoint);
-                    callback.succeeded();
+                    try
+                    {
+                        clientUpgradeRequest.upgrade(response, endPoint);
+                        callback.succeeded();
+                    }
+                    catch (Throwable x)
+                    {
+                        callback.failed(x);
+                    }
                 }
                 else
+                {
                     callback.failed(new HttpResponseException("Invalid Sec-WebSocket-Accept hash (was: " + respHash + " expected: " + expectedHash + ")", response));
+                }
             }
             else
             {

@@ -17,19 +17,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.BufferedContentSink;
+import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourcePublisher;
+import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.internal.ByteBufferChunk;
+import org.eclipse.jetty.io.internal.ByteChannelContentSource;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
@@ -41,6 +47,8 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Namespace class that contains the definitions of a {@link Source content source},
@@ -48,6 +56,8 @@ import org.eclipse.jetty.util.Promise;
  */
 public class Content
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Content.class);
+
     private Content()
     {
     }
@@ -56,12 +66,13 @@ public class Content
      * <p>Copies the given content source to the given content sink, notifying
      * the given callback when the copy is complete (either succeeded or failed).</p>
      * <p>In case of {@link Chunk#getFailure() failure chunks},
-     * the content source is {@link Source#fail(Throwable) failed} if the failure
-     * chunk is {@link Chunk#isLast() last}, else the failing is transient and is ignored.</p>
+     * the content source is {@link Source#fail(Throwable) failed}.</p>
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
      * @param callback the callback to notify when the copy is complete
+     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual {@link Chunk}s, including
+     *      the ability to ignore transient failures.
      */
     public static void copy(Source source, Sink sink, Callback callback)
     {
@@ -85,7 +96,7 @@ public class Content
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
-     * @param chunkProcessor a (possibly {@code null}) predicate to handle the current chunk and its callback
+     * @param chunkProcessor a (possibly {@code null}) processor to handle the current {@link Chunk} and its callback
      * @param callback the callback to notify when the copy is complete
      */
     public static void copy(Source source, Sink sink, Chunk.Processor chunkProcessor, Callback callback)
@@ -95,6 +106,11 @@ public class Content
 
     /**
      * <p>A source of content that can be read with a read/demand model.</p>
+     * <p>To avoid leaking its resources, a source <b>must</b> either:</p>
+     * <ul>
+     * <li>be read until it returns a {@link Chunk#isLast() last chunk}, either EOF or a terminal failure</li>
+     * <li>be {@link #fail(Throwable) failed}</li>
+     * </ul>
      * <h2><a id="idiom">Idiomatic usage</a></h2>
      * <p>The read/demand model typical usage is the following:</p>
      * <pre>{@code
@@ -110,12 +126,19 @@ public class Content
      *         }
      *
      *         // The chunk is a failure.
-     *         if (Content.Chunk.isFailure(chunk)) {
-     *             // Handle the failure.
-     *             Throwable cause = chunk.getFailure();
-     *             boolean transient = !chunk.isLast();
-     *             // ...
-     *             return;
+     *         if (Content.Chunk.isFailure(chunk))
+     *         {
+     *             boolean fatal = chunk.isLast();
+     *             if (fatal)
+     *             {
+     *                 handleFatalFailure(chunk.getFailure());
+     *                 return;
+     *             }
+     *             else
+     *             {
+     *                 handleTransientFailure(chunk.getFailure());
+     *                 continue;
+     *             }
      *         }
      *
      *         // It's a valid chunk, consume the chunk's bytes.
@@ -124,12 +147,147 @@ public class Content
      *
      *         // Release the chunk when it has been consumed.
      *         chunk.release();
+     *
+     *         // Exit if the Content.Source is fully consumed.
+     *         if (chunk.isLast())
+     *             break;
      *     }
      * }
      * }</pre>
      */
     public interface Source
     {
+        /**
+         * Create a {@code Content.Source} from zero or more {@link ByteBuffer}s
+         * @param byteBuffers The {@link ByteBuffer}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBuffer... byteBuffers)
+        {
+            return new ByteBufferContentSource(byteBuffers);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param path The {@link Path}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(Path path)
+        {
+            return from(null, path, 0, -1);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param path The {@link Path}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(Path path, long offset, long length)
+        {
+            return from(null, path, offset, length);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param path The {@link Path}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path)
+        {
+            return from(byteBufferPool, path, 0, -1);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param path The {@link Path}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
+        {
+            return new ByteChannelContentSource.PathContentSource(byteBufferPool, path, offset, length);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link ByteChannel}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteChannel The {@link ByteChannel}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
+        {
+            return new ByteChannelContentSource(byteBufferPool, byteChannel);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link ByteChannel}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param seekableByteChannel The {@link ByteChannel}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
+        {
+            return new ByteChannelContentSource(byteBufferPool, seekableByteChannel, offset, length);
+        }
+
+        static Content.Source from(InputStream inputStream)
+        {
+            return from(null, inputStream);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param inputStream The {@link InputStream}s to use as the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream)
+        {
+            return new InputStreamContentSource(inputStream, byteBufferPool);
+        }
+
+        /**
+         * Create a {@code Content.Source} from a {@link Path}.
+         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param inputStream The {@link InputStream}s to use as the source.
+         * @param offset The offset in bytes from which to start the source
+         * @param length The length in bytes of the source.
+         * @return A {@code Content.Source}
+         */
+        static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
+        {
+            return new InputStreamContentSource(inputStream, byteBufferPool)
+            {
+                private long skip = offset;
+                private long toRead = length;
+
+                @Override
+                protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
+                {
+                    if (skip > 0)
+                    {
+                        inputStream.skipNBytes(skip);
+                        skip = 0;
+                    }
+
+                    if (toRead == 0)
+                        return -1;
+                    int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
+                    int len = toReadInt > -1 ? Math.min(toReadInt, buffer.length) : buffer.length;
+                    int read = inputStream.read(buffer, 0, len);
+                    toRead -= read;
+                    return read;
+                }
+            };
+        }
+
         /**
          * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
          *
@@ -650,15 +808,22 @@ public class Content
          * @param last whether the Chunk is the last one
          * @param retainable the Retainable this Chunk links to
          * @return a new Chunk
-         * @throws IllegalArgumentException if the {@code Retainable}
-         * {@link Retainable#canRetain() cannot be retained}
          */
         static Chunk asChunk(ByteBuffer byteBuffer, boolean last, Retainable retainable)
         {
-            if (!retainable.canRetain())
-                throw new IllegalArgumentException("Cannot create chunk from non-retainable " + retainable);
             if (byteBuffer.hasRemaining())
-                return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+            {
+                if (retainable.canRetain())
+                {
+                    return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Copying buffer because could not retain");
+                    return new ByteBufferChunk.WithReferenceCount(BufferUtil.copy(byteBuffer), last);
+                }
+            }
             retainable.release();
             return last ? EOF : EMPTY;
         }
@@ -859,9 +1024,11 @@ public class Content
          */
         default Chunk asReadOnly()
         {
-            if (!canRetain())
+            if (!getByteBuffer().hasRemaining() || getByteBuffer().isReadOnly())
                 return this;
-            return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            if (canRetain())
+                return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            return from(getByteBuffer().asReadOnlyBuffer(), isLast());
         }
 
         /**
@@ -873,9 +1040,12 @@ public class Content
         interface Processor
         {
             /**
-             * @param chunk The chunk to be considered for processing.
+             * @param chunk The chunk to be considered for processing, including persistent and transient failures.
              * @param callback The callback that will be called once the accepted chunk is processed.
-             * @return True if the chunk will be process and the callback will be called (or may have already been called), false otherwise.
+             *                 {@link Callback#succeeded() Succeeding} this callback will allow the processing of subsequent chunks.
+             *                 {@link Callback#failed(Throwable) Failing} this callback will fail the processing of all chunks.
+             * @return {@code true} if the chunk will be processed asynchronously and the callback will be called (or may have already been called),
+             *         {@code false} otherwise, in which case subsequent chunks may be processed and the passed callback ignored.
              */
             boolean process(Chunk chunk, Callback callback);
         }

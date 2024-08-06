@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -97,7 +98,7 @@ public class DefaultHandler extends Handler.Abstract
             Resource faviconRes = server.getDefaultFavicon();
             if (faviconRes != null)
             {
-                try (InputStream is = faviconRes.newInputStream())
+                try (InputStream is = IOResources.asInputStream(faviconRes))
                 {
                     favbytes = IO.readBytes(is);
                 }
@@ -214,8 +215,8 @@ public class DefaultHandler extends Handler.Abstract
             }
 
             writer.append("</tbody></table><hr/>\n");
-            writer.append("<a href=\"https://eclipse.org/jetty\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
-            writer.append("<a href=\"https://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
+            writer.append("<a href=\"https://jetty.org\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
+            writer.append("<a href=\"https://jetty.org\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
             writer.append("</body>\n</html>\n");
             writer.flush();
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());

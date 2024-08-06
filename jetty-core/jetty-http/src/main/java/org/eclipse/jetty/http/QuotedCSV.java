@@ -118,7 +118,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     }
 
     @Override
-    protected void parsedValueAndParams(StringBuffer buffer)
+    protected void parsedValueAndParams(StringBuilder buffer)
     {
         _values.add(buffer.toString());
     }
@@ -142,6 +142,18 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     public Iterator<String> iterator()
     {
         return _values.iterator();
+    }
+
+    public String asString()
+    {
+        if (_values.isEmpty())
+            return null;
+        if (_values.size() == 1)
+            return _values.get(0);
+
+        StringBuilder builder = new StringBuilder();
+        join(builder, _values);
+        return builder.toString();
     }
 
     @Override

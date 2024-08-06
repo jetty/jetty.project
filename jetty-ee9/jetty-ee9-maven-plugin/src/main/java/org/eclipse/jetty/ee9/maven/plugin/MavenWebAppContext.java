@@ -37,6 +37,7 @@ import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.maven.Overlay;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -231,11 +232,10 @@ public class MavenWebAppContext extends WebAppContext
 
             // This is a user provided list of configurations.
             // We have to assume that mounting can happen.
-            List<URI> uris = Stream.of(resourceBases)
-                .map(URI::create)
+            List<Resource> resources = Stream.of(resourceBases)
+                .map(s -> ResourceFactory.of(this).newResource(s))
                 .toList();
-            Resource r = ResourceFactory.of(this).newResource(uris);
-
+            Resource r = ResourceFactory.combine(resources);
             setBaseResource(r);
         }
         catch (Throwable t)

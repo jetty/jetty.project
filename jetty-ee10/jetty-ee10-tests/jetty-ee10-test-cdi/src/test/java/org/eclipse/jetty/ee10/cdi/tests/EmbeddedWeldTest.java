@@ -29,7 +29,6 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -204,17 +203,17 @@ public class EmbeddedWeldTest
         webapp.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
 
         String pkg = EmbeddedWeldTest.class.getPackage().getName();
-        webapp.getServerClassMatcher().add("-" + pkg + ".");
-        webapp.getSystemClassMatcher().add(pkg + ".");
+        webapp.getHiddenClassMatcher().add("-" + pkg + ".");
+        webapp.getProtectedClassMatcher().add(pkg + ".");
 
-        webapp.addServlet(GreetingsServlet.class, "/");
+        webapp.addServlet(GreetingsServlet.class, "/greet");
         webapp.addFilter(MyFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         webapp.getServletHandler().addListener(new ListenerHolder(MyContextListener.class));
 
         server.start();
 
         LocalConnector connector = server.getBean(LocalConnector.class);
-        String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        String response = connector.getResponse("GET /greet HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Hello GreetingsServlet filtered by Weld BeanManager "));
         assertThat(response, containsString("Beans from Weld BeanManager "));
@@ -240,17 +239,17 @@ public class EmbeddedWeldTest
 
         // This is ugly but needed for maven for testing in a overlaid war pom
         String pkg = EmbeddedWeldTest.class.getPackage().getName();
-        webapp.getServerClassMatcher().add("-" + pkg + ".");
-        webapp.getSystemClassMatcher().add(pkg + ".");
+        webapp.getHiddenClassMatcher().add("-" + pkg + ".");
+        webapp.getProtectedClassMatcher().add(pkg + ".");
 
         webapp.getServletHandler().addListener(new ListenerHolder(MyContextListener.class));
         webapp.addFilter(MyFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-        webapp.addServlet(GreetingsServlet.class, "/");
+        webapp.addServlet(GreetingsServlet.class, "/greet");
 
         server.start();
 
         LocalConnector connector = server.getBean(LocalConnector.class);
-        String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        String response = connector.getResponse("GET /greet HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Hello GreetingsServlet filtered by Weld BeanManager "));
         assertThat(response, containsString("Beans from Weld BeanManager "));

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.server.internal;
 
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
@@ -25,12 +24,11 @@ import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -40,31 +38,29 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerFCGIConnection extends AbstractConnection implements ConnectionMetaData
+public class ServerFCGIConnection extends AbstractMetaDataConnection implements ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
-    private final ByteBufferPool networkByteBufferPool;
+    private final ByteBufferPool bufferPool;
     private final boolean sendStatus200;
     private final Flusher flusher;
-    private final HttpConfiguration configuration;
     private final ServerParser parser;
     private final String id;
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
-    private RetainableByteBuffer networkBuffer;
+    private RetainableByteBuffer inputBuffer;
     private HttpStreamOverFCGI stream;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
-        super(endPoint, connector.getExecutor());
+        super(connector, configuration, endPoint);
         this.connector = connector;
-        this.networkByteBufferPool = connector.getByteBufferPool();
+        this.bufferPool = connector.getByteBufferPool();
         this.flusher = new Flusher(endPoint);
-        this.configuration = configuration;
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
         this.id = StringUtil.randomAlphaNumeric(16);
@@ -107,12 +103,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
-    public HttpConfiguration getHttpConfiguration()
-    {
-        return configuration;
-    }
-
-    @Override
     public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_1_1;
@@ -125,18 +115,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
-    public Connection getConnection()
-    {
-        return this;
-    }
-
-    @Override
-    public Connector getConnector()
-    {
-        return connector;
-    }
-
-    @Override
     public boolean isPersistent()
     {
         return true;
@@ -146,18 +124,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     public boolean isSecure()
     {
         return false;
-    }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return getEndPoint().getRemoteSocketAddress();
-    }
-
-    @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        return getEndPoint().getLocalSocketAddress();
     }
 
     @Override
@@ -200,6 +166,8 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     @Override
     public void onFillable()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug(">>onFillable enter {} {} {}", this, stream, inputBuffer);
         acquireInputBuffer();
         try
         {
@@ -210,20 +178,24 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
                     LOG.debug("Read {} bytes from {} {}", read, getEndPoint(), this);
                 if (read > 0)
                 {
-                    if (parse(networkBuffer.getByteBuffer()))
+                    // The inputBuffer cannot be released immediately after parse()
+                    // even if the buffer has been fully consumed because releaseInputBuffer()
+                    // must be called as the last release for it to be able to null out the
+                    // inputBuffer field exactly when the latter isn't used anymore.
+                    if (parse(inputBuffer.getByteBuffer()))
                         return;
                 }
                 else if (read == 0)
                 {
                     releaseInputBuffer();
                     fillInterested();
-                    break;
+                    return;
                 }
                 else
                 {
                     releaseInputBuffer();
                     shutdown();
-                    break;
+                    return;
                 }
             }
         }
@@ -231,9 +203,14 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to fill endpoint", x);
-            networkBuffer.clear();
+            inputBuffer.clear();
             releaseInputBuffer();
             // TODO: fail and close ?
+        }
+        finally
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("<<onFillable exit {} {} {}", this, stream, inputBuffer);
         }
     }
 
@@ -246,42 +223,51 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parseAndFill {}", this);
+        acquireInputBuffer();
         // This loop must run only until the request is completed.
         // See also HttpConnection.parseAndFillForContent().
         while (stream != null)
         {
-            if (parse(networkBuffer.getByteBuffer()))
+            // The inputBuffer cannot be released immediately after parse()
+            // even if the buffer has been fully consumed because releaseInputBuffer()
+            // must be called as the last release for it to be able to null out the
+            // inputBuffer field exactly when the latter isn't used anymore.
+            if (parse(inputBuffer.getByteBuffer()))
                 return;
+
             // Check if the request was completed by the parsing.
-            if (stream == null)
+            if (stream == null || fillInputBuffer() <= 0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("parseAndFill completed the request by parsing {}", this);
+                releaseInputBuffer();
                 return;
-            if (fillInputBuffer() <= 0)
-                break;
+            }
         }
     }
 
     private void acquireInputBuffer()
     {
-        if (networkBuffer == null)
-            networkBuffer = networkByteBufferPool.acquire(configuration.getResponseHeaderSize(), isUseInputDirectByteBuffers());
+        if (inputBuffer == null)
+            inputBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
     }
 
     private void releaseInputBuffer()
     {
-        if (networkBuffer == null)
+        if (inputBuffer == null)
             return;
-        boolean released = networkBuffer.release();
+        boolean released = inputBuffer.release();
         if (LOG.isDebugEnabled())
             LOG.debug("releaseInputBuffer {} {}", released, this);
         if (released)
-            networkBuffer = null;
+            inputBuffer = null;
     }
 
     private int fillInputBuffer()
     {
         try
         {
-            return getEndPoint().fill(networkBuffer.getByteBuffer());
+            return getEndPoint().fill(inputBuffer.getByteBuffer());
         }
         catch (Throwable x)
         {
@@ -383,9 +369,9 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
                 LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);
             if (stream != null)
             {
-                // No need to call networkBuffer.retain() here.
+                // No need to call inputBuffer.retain() here.
                 // The receiver of the chunk decides whether to consume/retain it.
-                Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
+                Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, inputBuffer);
                 stream.onContent(chunk);
                 // Signal that the content is processed asynchronously, to ensure backpressure.
                 return true;
@@ -411,7 +397,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
         public void onFailure(int request, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Request {} failure on {}: {}", request, stream, failure);
+                LOG.debug("Request {} failure on {}", request, stream, failure);
             if (stream != null)
             {
                 Runnable runnable = stream.getHttpChannel().onFailure(new BadMessageException(null, failure));
@@ -420,5 +406,17 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             }
             stream = null;
         }
+    }
+
+    @Override
+    public void close()
+    {
+        if (stream != null)
+        {
+            Runnable task = stream.getHttpChannel().onClose();
+            if (task != null)
+                task.run();
+        }
+        super.close();
     }
 }

@@ -217,6 +217,11 @@ public class MetaData implements Iterable<HttpField>
             return null;
         }
 
+        public boolean is100ContinueExpected()
+        {
+            return getHttpFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+        }
+
         @Override
         public String toString()
         {
@@ -233,26 +238,35 @@ public class MetaData implements Iterable<HttpField>
     {
         private final String _protocol;
 
-        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol)
+        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String pathQuery, HttpFields headers, String protocol)
         {
-            this(NanoTime.now(), scheme == null ? null : scheme.asString(), authority, path, headers, protocol);
+            this(scheme == null ? null : scheme.asString(), authority, pathQuery, headers, protocol);
         }
 
-        public ConnectRequest(long beginNanoTime, HttpScheme scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol)
+        public ConnectRequest(long beginNanoTime, HttpScheme scheme, HostPortHttpField authority, String pathQuery, HttpFields headers, String protocol)
         {
-            this(beginNanoTime, scheme == null ? null : scheme.asString(), authority, path, headers, protocol);
+            this(beginNanoTime, scheme == null ? null : scheme.asString(), authority, pathQuery, headers, protocol);
         }
 
-        public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol)
+        public ConnectRequest(String scheme, HostPortHttpField authority, String pathQuery, HttpFields headers, String protocol)
         {
-            this(NanoTime.now(), scheme, authority, path, headers, protocol);
+            this(NanoTime.now(), scheme, authority, pathQuery, headers, protocol);
         }
 
-        public ConnectRequest(long beginNanoTime, String scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol)
+        public ConnectRequest(long beginNanoTime, String scheme, HostPortHttpField authority, String pathQuery, HttpFields headers, String protocol)
         {
-            super(beginNanoTime, HttpMethod.CONNECT.asString(),
-                HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(path),
-                HttpVersion.HTTP_2, headers, -1, null);
+            super(beginNanoTime,
+                HttpMethod.CONNECT.asString(),
+                HttpURI.build()
+                    .scheme(scheme)
+                    .host(authority == null ? null : authority.getHost())
+                    .port(authority == null ? -1 : authority.getPort())
+                    .pathQuery(pathQuery),
+                HttpVersion.HTTP_2,
+                headers,
+                -1,
+                null
+            );
             _protocol = protocol;
         }
 

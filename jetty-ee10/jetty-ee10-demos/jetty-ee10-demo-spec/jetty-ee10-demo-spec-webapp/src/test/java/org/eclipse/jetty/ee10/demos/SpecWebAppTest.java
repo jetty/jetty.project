@@ -87,7 +87,7 @@ public class SpecWebAppTest
         SecurityHandler securityHandler = webapp.getSecurityHandler();
         securityHandler.setLoginService(hashLoginService);
 
-        new org.eclipse.jetty.ee10.plus.jndi.Resource(webapp, "jdbc/mydatasource", new MockDataSource());
+        new org.eclipse.jetty.plus.jndi.Resource(webapp, "jdbc/mydatasource", new MockDataSource());
         new org.eclipse.jetty.ee10.plus.jndi.Transaction("ee10", new MockUserTransaction());
 
         server.setHandler(webapp);

@@ -42,12 +42,6 @@ public class PoolStrategyBenchmark
     public static String POOL_TYPE;
 
     @Param({
-        "false",
-        "true"
-    })
-    public static boolean CACHE;
-
-    @Param({
         "4",
         "16"
     })
@@ -64,10 +58,10 @@ public class PoolStrategyBenchmark
 
         pool = switch (POOL_TYPE)
         {
-            case "First" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, SIZE, CACHE);
-            case "Random" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.RANDOM, SIZE, CACHE);
-            case "ThreadId" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, SIZE, CACHE);
-            case "RoundRobin" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.ROUND_ROBIN, SIZE, CACHE);
+            case "First" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, SIZE);
+            case "Random" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.RANDOM, SIZE);
+            case "ThreadId" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, SIZE);
+            case "RoundRobin" -> new ConcurrentPool<>(ConcurrentPool.StrategyType.ROUND_ROBIN, SIZE);
             default -> throw new IllegalStateException();
         };
 

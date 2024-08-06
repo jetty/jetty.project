@@ -29,6 +29,7 @@ import org.eclipse.jetty.http2.client.transport.internal.HTTPSessionListenerProm
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Promise;
@@ -37,19 +38,19 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle implements ClientConnectionFactory
 {
     private final ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
-    private final HTTP2Client client;
+    private final HTTP2Client http2Client;
 
-    public ClientConnectionFactoryOverHTTP2(HTTP2Client client)
+    public ClientConnectionFactoryOverHTTP2(HTTP2Client http2Client)
     {
-        this.client = client;
-        addBean(client);
+        this.http2Client = http2Client;
+        installBean(http2Client);
     }
 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HTTPSessionListenerPromise listenerPromise = new HTTPSessionListenerPromise(context);
-        context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, client);
+        context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, http2Client);
         context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listenerPromise);
         context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, listenerPromise);
         return factory.newConnection(endPoint, context);
@@ -65,15 +66,21 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
         private static final List<String> protocols = List.of("h2", "h2c");
         private static final List<String> h2c = List.of("h2c");
 
-        public HTTP2(HTTP2Client client)
+        public HTTP2(HTTP2Client http2Client)
         {
-            super(new ClientConnectionFactoryOverHTTP2(client));
+            super(new ClientConnectionFactoryOverHTTP2(http2Client));
         }
 
         @Override
         public List<String> getProtocols(boolean secure)
         {
             return secure ? protocols : h2c;
+        }
+
+        @Override
+        public Transport newTransport()
+        {
+            return Transport.TCP_IP;
         }
 
         @Override

@@ -24,6 +24,7 @@ import java.util.function.Function;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -176,6 +177,13 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         if (endpointClass == null)
         {
             throw new DeploymentException("Unable to deploy null endpoint class from ServerEndpointConfig: " + config.getClass().getName());
+        }
+
+        if (!(jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass)) &&
+            endpointClass.getAnnotation(ServerEndpoint.class) == null &&
+            endpointClass.getAnnotation(ClientEndpoint.class) == null)
+        {
+            throw new DeploymentException("Unable to deploy unknown endpoint class: " + endpointClass.getName());
         }
 
         if (!Modifier.isPublic(endpointClass.getModifiers()))

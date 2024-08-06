@@ -18,16 +18,23 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Multiple resource directories presented as a single Resource.
+ * Multiple {@link Resource} directories presented as a single overlayed {@link Resource} directory.
+ * <p>This class differs from a {@link List}&lt;{@link Resource}&gt;, as a relative path can {@link #resolve(String) resolve}
+ * to only a single {@link Resource} in a {@code CombinedResource}, whilst it may resolve to multiple in a
+ * {@link List}&lt;{@link Resource}&gt;.</p>
  */
 public class CombinedResource extends Resource
 {
@@ -142,20 +149,23 @@ public class CombinedResource extends Resource
 
         // Attempt a simple (single) Resource lookup that exists
         Resource resolved = null;
+        Resource notFound = null;
         for (Resource res : _resources)
         {
             resolved = res.resolve(subUriPath);
-            if (Resources.missing(resolved))
-                continue; // skip, doesn't exist
-            if (!resolved.isDirectory())
+            if (!Resources.missing(resolved) && !resolved.isDirectory())
                 return resolved; // Return simple (non-directory) Resource
+
+            if (Resources.missing(resolved) && notFound == null)
+                notFound = resolved;
+
             if (resources == null)
                 resources = new ArrayList<>();
             resources.add(resolved);
         }
 
         if (resources == null)
-            return resolved; // This will not exist
+            return notFound; // This will not exist
 
         if (resources.size() == 1)
             return resources.get(0);
@@ -166,13 +176,28 @@ public class CombinedResource extends Resource
     @Override
     public boolean exists()
     {
-        return _resources.stream().anyMatch(Resource::exists);
+        for (Resource r : _resources)
+            if (r.exists())
+                return true;
+        return false;
     }
 
     @Override
     public Path getPath()
     {
-        return null;
+        int exists = 0;
+        Path path = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                path = r.getPath();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getPath();
+            case 1 -> path;
+            default -> null;
+        };
     }
 
     @Override
@@ -202,7 +227,19 @@ public class CombinedResource extends Resource
     @Override
     public URI getURI()
     {
-        return null;
+        int exists = 0;
+        URI uri = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                uri = r.getURI();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getURI();
+            case 1 -> uri;
+            default -> null;
+        };
     }
 
     @Override
@@ -252,24 +289,40 @@ public class CombinedResource extends Resource
     @Override
     public List<Resource> list()
     {
-        List<Resource> result = new ArrayList<>();
-        for (Resource r : _resources)
+        Map<String, Resource> results = new TreeMap<>();
+        for (Resource base : _resources)
         {
-            if (r.isDirectory())
-                result.addAll(r.list());
-            else
-                result.add(r);
+            for (Resource r : base.list())
+            {
+                if (r.isDirectory())
+                    results.computeIfAbsent(r.getFileName(), this::resolve);
+                else
+                    results.putIfAbsent(r.getFileName(), r);
+            }
         }
-        return result;
+        return new ArrayList<>(results.values());
     }
 
     @Override
     public void copyTo(Path destination) throws IOException
     {
-        // Copy in reverse order
-        for (int r = _resources.size(); r-- > 0; )
+        Collection<Resource> all = getAllResources();
+        for (Resource r : all)
         {
-            _resources.get(r).copyTo(destination);
+            if (!r.exists())
+                continue;
+            Path relative = getPathTo(r);
+            Path pathTo = IO.resolvePath(destination, relative);
+
+            if (r.isDirectory())
+            {
+                IO.ensureDirExists(pathTo);
+            }
+            else
+            {
+                IO.ensureDirExists(pathTo.getParent());
+                r.copyTo(pathTo);
+            }
         }
     }
 
@@ -290,6 +343,37 @@ public class CombinedResource extends Resource
         return Objects.hash(_resources);
     }
 
+    @Override
+    public boolean isAlias()
+    {
+        for (Resource r : _resources)
+        {
+            if (r.isAlias())
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public URI getRealURI()
+    {
+        if (!isAlias())
+            return getURI();
+        int exists = 0;
+        URI uri = null;
+        for (Resource r : _resources)
+        {
+            if (r.exists() && exists++ == 0)
+                uri = r.getRealURI();
+        }
+        return switch (exists)
+        {
+            case 0 -> _resources.get(0).getRealURI();
+            case 1 -> uri;
+            default -> null;
+        };
+    }
+
     /**
      * @return the list of resources
      */
@@ -302,9 +386,79 @@ public class CombinedResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r)
+    public boolean contains(Resource other)
     {
-        // TODO could look at implementing the semantic of is this collection a subset of the Resource r?
+        // Every resource from the (possibly combined) other resource ...
+        loop: for (Resource o : other)
+        {
+            // Must be contained in at least one of this resources
+            for (Resource r : _resources)
+            {
+                if (r.contains(o))
+                    continue loop;
+            }
+            // A resource of the other did not match any in this
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public Path getPathTo(Resource other)
+    {
+        Path otherPath = other.getPath();
+
+        // If the other resource has a single Path
+        if (otherPath != null)
+        {
+            // return true it's relative location to the first matching resource.
+            for (Resource r : _resources)
+            {
+                if (!r.exists())
+                    continue;
+                Path path = r.getPath();
+                if (otherPath.startsWith(path))
+                    return path.relativize(otherPath);
+            }
+            return null;
+        }
+
+        // otherwise the other resource must also be some kind of combined resource.
+        // So every resource in the other combined must have the same relative relationship to us
+        Path relative = null;
+        loop : for (Resource o : other)
+        {
+            if (!o.exists())
+                continue;
+
+            for (Resource r : _resources)
+            {
+                if (!r.exists())
+                    continue;
+
+                if (o.getPath().startsWith(r.getPath()))
+                {
+                    Path rel = r.getPath().relativize(o.getPath());
+                    if (relative == null)
+                        relative = rel;
+                    else if (!relative.equals(rel))
+                        return null;
+                    continue loop;
+                }
+            }
+            return null;
+        }
+        return relative;
+    }
+
+    @Override
+    public boolean isSameFile(Path path)
+    {
+        for (Resource r : this)
+        {
+            if (r.isSameFile(path))
+                return true;
+        }
         return false;
     }
 }

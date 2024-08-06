@@ -108,23 +108,27 @@ public class ErrorHandler implements Request.Handler
         {
             try
             {
-                contextHandler.requestInitialized(servletContextRequest, httpServletRequest);
-                errorDispatcher.error(httpServletRequest, httpServletResponse);
+                try
+                {
+                    contextHandler.requestInitialized(servletContextRequest, httpServletRequest);
+                    errorDispatcher.error(httpServletRequest, httpServletResponse);
+                }
+                finally
+                {
+                    contextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
+                }
                 callback.succeeded();
                 return true;
             }
             catch (ServletException e)
             {
-                LOG.debug("Unable to call error dispatcher", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to call error dispatcher", e);
                 if (response.isCommitted())
                 {
                     callback.failed(e);
                     return true;
                 }
-            }
-            finally
-            {
-                contextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
             }
         }
 
@@ -346,7 +350,7 @@ public class ErrorHandler implements Request.Handler
         }
 
         // Do an asynchronous completion.
-        baseRequest.getServletChannel().sendResponseAndComplete();
+        baseRequest.getServletChannel().sendErrorResponseAndComplete();
     }
 
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message) throws IOException

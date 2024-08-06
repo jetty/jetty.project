@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.osgi.boot;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -116,8 +115,8 @@ public class EE9Activator implements BundleActivator
             List<URL> contributedURLs = new ArrayList<>();
             List<Bundle> contributedBundles = new ArrayList<>();
             Collection<ServerClasspathContributor> serverClasspathContributors = getServerClasspathContributors();
-            serverClasspathContributors.stream().forEach(c -> contributedBundles.addAll(c.getScannableBundles()));
-            contributedBundles.stream().forEach(b -> contributedURLs.addAll(convertBundleToURL(b)));
+            serverClasspathContributors.forEach(c -> contributedBundles.addAll(c.getScannableBundles()));
+            contributedBundles.forEach(b -> contributedURLs.addAll(convertBundleToURL(b)));
 
             if (!contributedURLs.isEmpty())
             {
@@ -126,7 +125,7 @@ public class EE9Activator implements BundleActivator
                 if (serverClassLoader != null)
                 {
                     server.setAttribute(OSGiServerConstants.SERVER_CLASSLOADER,
-                        new FakeURLClassLoader(serverClassLoader, contributedURLs.toArray(new URL[contributedURLs.size()])));
+                        new FakeURLClassLoader(serverClassLoader, contributedURLs.toArray(new URL[0])));
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Server classloader for contexts = {}", server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER));
@@ -139,11 +138,11 @@ public class EE9Activator implements BundleActivator
             BundleContextProvider contextProvider = null;
 
             String containerScanBundlePattern = null;
-            if (contributedBundles != null)
+            if (!contributedBundles.isEmpty())
             {
                 StringBuffer strbuff = new StringBuffer();
-                contributedBundles.stream().forEach(b -> strbuff.append(b.getSymbolicName()).append("|"));
-                containerScanBundlePattern = strbuff.toString().substring(0, strbuff.length() - 1);
+                contributedBundles.forEach(b -> strbuff.append(b.getSymbolicName()).append("|"));
+                containerScanBundlePattern = strbuff.substring(0, strbuff.length() - 1);
             }
 
             if (deployer.isPresent())
@@ -354,9 +353,11 @@ public class EE9Activator implements BundleActivator
         public ContextHandler createContextHandler(AbstractContextProvider provider, App app)
             throws Exception
         {
-            OSGiApp osgiApp = OSGiApp.class.cast(app);
+            if (!(app instanceof OSGiApp osgiApp))
+                throw new IllegalArgumentException("App is not OSGi");
+
             String jettyHome = (String)app.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
-            Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
+            Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : ResourceFactory.of(provider.getServer()).newResource(jettyHome).getPath();
 
             WebAppContext webApp = new WebAppContext();
 

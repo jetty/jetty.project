@@ -20,7 +20,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -72,25 +71,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         {
             EventsRequest wrappedRequest = new EventsRequest(request, roRequest);
             EventsResponse wrappedResponse = new EventsResponse(roRequest, response);
-            request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
+            Request.addCompletionListener(request, x ->
             {
-                @Override
-                public void succeeded()
-                {
-                    notifyOnResponseBegin(roRequest, wrappedResponse);
-                    notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
-                    notifyOnComplete(roRequest, null);
-                    super.succeeded();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    notifyOnResponseBegin(roRequest, wrappedResponse);
-                    notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
-                    notifyOnComplete(roRequest, x);
-                    super.failed(x);
-                }
+                notifyOnResponseBegin(roRequest, wrappedResponse);
+                notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
+                notifyOnComplete(roRequest, wrappedResponse, x);
             });
 
             boolean handled = super.handle(wrappedRequest, wrappedResponse, callback);
@@ -194,11 +179,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void notifyOnComplete(Request request, Throwable failure)
+    private void notifyOnComplete(Request request, Response response, Throwable failure)
     {
         try
         {
-            onComplete(request, failure);
+            onComplete(request, response.getStatus(), response.getHeaders().asImmutable(), failure);
         }
         catch (Throwable x)
         {
@@ -323,12 +308,31 @@ public abstract class EventsHandler extends Handler.Wrapper
      * has been completed).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
-     * @param failure if there was a failure to complete
+     * @param failure if there was a failure to complete.
+     * @deprecated Override {@link #onComplete(Request, int, HttpFields, Throwable)} instead.
      */
+    @Deprecated
     protected void onComplete(Request request, Throwable failure)
     {
+    }
+
+    /**
+     * Invoked when the request <em>and</em> response processing are complete,
+     * just before the request and response will be recycled (i.e. after the
+     * {@link Runnable} return from {@link org.eclipse.jetty.server.HttpChannel#onRequest(MetaData.Request)}
+     * has returned and the {@link Callback} passed to {@link Handler#handle(Request, Response, Callback)}
+     * has been completed).
+     *
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param status the response status.
+     * @param headers the immutable fields of the response object.
+     * @param failure if there was a failure to complete.
+     */
+    protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("onComplete of {}", request, failure);
+            LOG.debug("onComplete of {} status={} headers={}", request, status, headers);
+        onComplete(request, failure);
     }
 
     private class EventsResponse extends Response.Wrapper

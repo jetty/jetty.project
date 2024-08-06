@@ -8,16 +8,17 @@
     -->
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>build-resources</artifactId>
-  <version>12.0.3-SNAPSHOT</version>
+  <version>12.0.13-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>Build :: Resources</name>
 
   <properties>
+    <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.plugin.version>3.4.0</maven.javadoc.plugin.version>
     <maven.javadoc.skip>true</maven.javadoc.skip>
-    <!-- versions for these plugins are not based on parent pom -->
-    <maven.remote-resources.plugin.version>3.1.0</maven.remote-resources.plugin.version>
-    <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
+    <maven.remote-resources.plugin.version>3.2.0</maven.remote-resources.plugin.version>
+    <maven.surefire.plugin.version>3.3.1</maven.surefire.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <skipTests>true</skipTests>
   </properties>
@@ -40,7 +41,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.39.0</version>
+        <version>2.43.0</version>
         <configuration>
           <pom>
             <includes>
@@ -100,4 +101,34 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>eclipse-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <version>3.4.1</version>
+            <executions>
+              <execution>
+                <id>enforce-java</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireJavaVersion>
+                      <version>[22,)</version>
+                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 22 or newer</message>
+                    </requireJavaVersion>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

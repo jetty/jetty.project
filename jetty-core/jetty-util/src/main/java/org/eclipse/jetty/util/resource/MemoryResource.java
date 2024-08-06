@@ -55,6 +55,11 @@ public class MemoryResource extends Resource
         }
     }
 
+    public byte[] getBytes()
+    {
+        return _bytes;
+    }
+
     @Override
     public Path getPath()
     {
@@ -75,7 +80,7 @@ public class MemoryResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r)
+    public boolean isContainedIn(Resource container)
     {
         // memory resource can never be contained in another memory resource
         return false;
@@ -150,6 +155,6 @@ public class MemoryResource extends Resource
     @Override
     public String toString()
     {
-        return getName();
+        return "(Memory) " + _uri.toASCIIString();
     }
 }

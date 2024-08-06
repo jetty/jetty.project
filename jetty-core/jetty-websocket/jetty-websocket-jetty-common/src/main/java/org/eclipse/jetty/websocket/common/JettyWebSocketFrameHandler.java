@@ -146,14 +146,15 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
 
             callback.succeeded();
+
+            if (openHandle != null)
+                autoDemand();
+            else
+                internalDemand();
         }
         catch (Throwable cause)
         {
             callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause));
-        }
-        finally
-        {
-            autoDemand();
         }
     }
 
@@ -321,7 +322,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 public void succeed()
                 {
                     callback.succeeded();
-                    autoDemand();
+                    internalDemand();
                 }
 
                 @Override
@@ -329,6 +330,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 {
                     // Ignore failures, we might be output closed and receive a PING.
                     callback.succeeded();
+                    internalDemand();
                 }
             });
         }
@@ -356,7 +358,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         else
         {
-            autoDemand();
+            internalDemand();
         }
     }
 
@@ -385,14 +387,15 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
-            autoDemand();
+            internalDemand();
             return;
         }
 
         // Accept the payload into the message sink.
-        activeMessageSink.accept(frame, callback);
+        MessageSink messageSink = activeMessageSink;
         if (frame.isFin())
             activeMessageSink = null;
+        messageSink.accept(frame, callback);
     }
 
     boolean isAutoDemand()
@@ -403,7 +406,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private void autoDemand()
     {
         if (isAutoDemand())
-            session.getCoreSession().demand();
+            internalDemand();
+    }
+
+    private void internalDemand()
+    {
+        session.getCoreSession().demand();
     }
 
     public String toString()

@@ -19,7 +19,8 @@ basehome:modules/conscrypt/conscrypt.xml|etc/conscrypt.xml
 etc/conscrypt.xml
 
 [lib]
-lib/conscrypt/**.jar
+lib/conscrypt/conscrypt-uber-${conscrypt.version}.jar
+lib/conscrypt/conscrypt-${conscrypt.version}-linux-x86_64.jar
 lib/jetty-alpn-conscrypt-server-${jetty.version}.jar
 
 [license]

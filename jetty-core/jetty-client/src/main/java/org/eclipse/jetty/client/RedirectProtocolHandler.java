@@ -52,8 +52,16 @@ public class RedirectProtocolHandler implements ProtocolHandler, Response.Listen
     public boolean onHeader(Response response, HttpField field)
     {
         // Avoid that the content is decoded, which could generate
-        // errors, since we are discarding the content anyway.
+        // errors, since we are discarding the response content anyway.
         return field.getHeader() != HttpHeader.CONTENT_ENCODING;
+    }
+
+    @Override
+    public void onSuccess(Response response)
+    {
+        // The request may still be sending content, stop it.
+        Request request = response.getRequest();
+        request.abort(new HttpRequestException("Aborting request after receiving a %d response".formatted(response.getStatus()), request));
     }
 
     @Override
@@ -61,7 +69,7 @@ public class RedirectProtocolHandler implements ProtocolHandler, Response.Listen
     {
         Request request = result.getRequest();
         Response response = result.getResponse();
-        if (result.isSucceeded())
+        if (result.getResponseFailure() == null)
             redirector.redirect(request, response, null);
         else
             redirector.fail(request, response, result.getFailure());

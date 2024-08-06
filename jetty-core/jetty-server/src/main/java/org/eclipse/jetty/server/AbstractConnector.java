@@ -31,6 +31,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -180,13 +181,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _server = Objects.requireNonNull(server);
 
         _executor = executor != null ? executor : _server.getThreadPool();
-        addBean(_executor, executor != null);
+        installBean(_executor, executor != null);
 
         _scheduler = scheduler != null ? scheduler : _server.getScheduler();
-        addBean(_scheduler, scheduler != null);
+        installBean(_scheduler, scheduler != null);
 
         _bufferPool = bufferPool != null ? bufferPool : server.getByteBufferPool();
-        addBean(_bufferPool, bufferPool != null);
+        installBean(_bufferPool, bufferPool != null);
 
         for (ConnectionFactory factory : factories)
         {
@@ -195,7 +196,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         int cores = ProcessorUtils.availableProcessors();
         if (acceptors < 0)
-            acceptors = Math.max(1, Math.min(4, cores / 8));
+            acceptors = 1;
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: {} ", this);
         _acceptors = new Thread[acceptors];
@@ -270,6 +271,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
+        if (!getBeans(ComplianceViolation.Listener.class).isEmpty() ||
+            !getServer().getBeans(ComplianceViolation.Listener.class).isEmpty())
+            LOG.warn("ComplianceViolation.Listeners must now be set on HttpConfiguration");
+
         getConnectionFactories().stream()
             .filter(ConnectionFactory.Configuring.class::isInstance)
             .map(ConnectionFactory.Configuring.class::cast)

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.13-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-runner</artifactId>
   <name>EE9 :: Runner</name>
@@ -36,6 +36,12 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-plus</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.websocket</groupId>
@@ -123,6 +129,29 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <configuration>
+          <debug>${it.debug}</debug>
+          <addTestClassPath>true</addTestClassPath>
+          <junitPackageName>org.eclipse.jetty.maven.its.ee9.runner</junitPackageName>
+          <goals>
+            <goal>clean</goal>
+          </goals>
+        </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>install</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <phase>integration-test</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -132,34 +161,6 @@
           </execution>
         </executions>
       </plugin>
-      <!-- TODO -->
-      <!--plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-invoker-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>integration-test</id>
-            <phase>integration-test</phase>
-            <goals>
-              <goal>install</goal>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <debug>${it.debug}</debug>
-          <addTestClassPath>true</addTestClassPath>
-          <scriptVariables>
-            <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
-            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
-            <hamcrest.version>${hamcrest.version}</hamcrest.version>
-          </scriptVariables>
-          <goals>
-            <goal>clean</goal>
-          </goals>
-        </configuration>
-      </plugin-->
     </plugins>
   </build>
 </project>

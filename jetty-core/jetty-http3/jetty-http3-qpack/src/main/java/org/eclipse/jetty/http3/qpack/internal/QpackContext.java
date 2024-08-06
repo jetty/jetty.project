@@ -66,14 +66,6 @@ public class QpackContext
         return _dynamicTable.get(StringUtil.asciiToLowerCase(name));
     }
 
-    public Entry get(int index)
-    {
-        if (index <= StaticTable.STATIC_SIZE)
-            return __staticTable.get(index);
-
-        return _dynamicTable.get(index);
-    }
-
     /**
      * Get the relative Index of an entry.
      * @param entry the entry to get the index of.
@@ -83,7 +75,6 @@ public class QpackContext
     {
         if (entry.isStatic())
             return entry.getIndex();
-
-        return _dynamicTable.index(entry);
+        return _dynamicTable.relativeIndexOf(entry);
     }
 }

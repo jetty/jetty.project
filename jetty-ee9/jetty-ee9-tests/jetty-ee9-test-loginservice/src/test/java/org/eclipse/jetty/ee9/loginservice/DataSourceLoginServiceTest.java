@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee9.plus.security.DataSourceLoginService;
+import org.eclipse.jetty.plus.security.DataSourceLoginService;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Loader;
@@ -73,8 +73,8 @@ public class DataSourceLoginServiceTest
         ds.setUser(DatabaseLoginServiceTestServer.MARIA_DB_USER);
         ds.setPassword(DatabaseLoginServiceTestServer.MARIA_DB_PASSWORD);
         ds.setUrl(DatabaseLoginServiceTestServer.MARIA_DB_FULL_URL);
-        org.eclipse.jetty.ee9.plus.jndi.Resource binding = 
-            new org.eclipse.jetty.ee9.plus.jndi.Resource(null, "dstest", ds);
+        org.eclipse.jetty.plus.jndi.Resource binding = 
+            new org.eclipse.jetty.plus.jndi.Resource(null, "dstest", ds);
         
         __testServer = new DatabaseLoginServiceTestServer();
         

@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -96,12 +98,13 @@ public class ServletMultiPartFormData
                 return CompletableFuture.failedFuture(new IllegalStateException("No core request"));
 
             // Get a temporary directory for larger parts.
-            File filesDirectory = StringUtil.isBlank(config.getLocation())
-                ? servletContextRequest.getContext().getTempDirectory()
-                : new File(config.getLocation());
+            Path filesDirectory = StringUtil.isBlank(config.getLocation())
+                ? servletContextRequest.getContext().getTempDirectory().toPath()
+                : new File(config.getLocation()).toPath();
 
             // Look for an existing future MultiPartFormData.Parts
-            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.from(servletContextRequest, boundary, parser ->
+            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.get(servletContextRequest);
+            if (futureFormData == null)
             {
                 try
                 {
@@ -124,24 +127,24 @@ public class ServletMultiPartFormData
                         source = iscs;
                     }
 
-                    parser.setMaxParts(contextHandler.getMaxFormKeys());
-                    parser.setFilesDirectory(filesDirectory.toPath());
-                    parser.setMaxMemoryFileSize(config.getFileSizeThreshold());
-                    parser.setMaxFileSize(config.getMaxFileSize());
-                    parser.setMaxLength(config.getMaxRequestSize());
-                    parser.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
+                    MultiPartConfig multiPartConfig = Request.getMultiPartConfig(servletContextRequest, filesDirectory)
+                        .location(filesDirectory)
+                        .maxParts(contextHandler.getMaxFormKeys())
+                        .maxMemoryPartSize(config.getFileSizeThreshold())
+                        .maxPartSize(config.getMaxFileSize())
+                        .maxSize(config.getMaxRequestSize())
+                        .build();
 
-                    // parse the core parts.
-                    return parser.parse(source);
+                    futureFormData = MultiPartFormData.from(source, servletContextRequest, contentType, multiPartConfig);
                 }
                 catch (Throwable failure)
                 {
                     return CompletableFuture.failedFuture(failure);
                 }
-            });
+            }
 
             // When available, convert the core parts to servlet parts
-            futureServletParts = futureFormData.thenApply(formDataParts -> new Parts(filesDirectory.toPath(), formDataParts));
+            futureServletParts = futureFormData.thenApply(formDataParts -> new Parts(filesDirectory, formDataParts));
 
             // cache the result in attributes.
             servletRequest.setAttribute(ServletMultiPartFormData.class.getName(), futureServletParts);

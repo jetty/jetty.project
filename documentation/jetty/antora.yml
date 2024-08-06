@@ -1,0 +1,27 @@
+name: jetty
+version: '12'
+title: Eclipse Jetty
+asciidoc:
+  attributes:
+    javadoc-url: https://javadoc.jetty.org/jetty-12
+    jetty-home: ${jetty.home}@
+    jetty-version: ${project.version}
+    idprefix: ''
+    idseparator: ''
+    ee-all: ee{8,9,10}
+    ee-current: ee10
+    ee-current-caps: EE 10
+    run-jetty-classpath: ${settings.localRepository}/org/eclipse/jetty/tests/jetty-testers/${project.version}/jetty-testers-${project.version}.jar${path.separator}${run.jetty.classpath}
+nav:
+- modules/operations-guide/nav.adoc
+- modules/programming-guide/nav.adoc
+ext:
+  collector:
+  - run:
+      command: mvn install -ntp -B -Dcollector -Pfast -am -pl documentation/jetty
+    scan:
+      dir: documentation/jetty/target/collector
+  - scan:
+      dir: jetty-core/jetty-server/src/main/java
+      files: org/eclipse/jetty/server/CustomRequestLog.java
+      base: modules/code/partials

@@ -40,7 +40,6 @@ public class HttpSenderOverHTTP extends HttpSender
     private final IteratingCallback headersCallback = new HeadersCallback();
     private final IteratingCallback contentCallback = new ContentCallback();
     private final HttpGenerator generator = new HttpGenerator();
-    private HttpExchange exchange;
     private MetaData.Request metaData;
     private ByteBuffer contentByteBuffer;
     private boolean lastContent;
@@ -63,7 +62,6 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         try
         {
-            this.exchange = exchange;
             this.contentByteBuffer = contentBuffer;
             this.lastContent = lastContent;
             this.callback = callback;
@@ -92,7 +90,6 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         try
         {
-            this.exchange = exchange;
             this.contentByteBuffer = contentBuffer;
             this.lastContent = lastContent;
             this.callback = callback;
@@ -158,6 +155,7 @@ public class HttpSenderOverHTTP extends HttpSender
         protected Action process() throws Exception
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
+            HttpExchange exchange = getHttpExchange();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
@@ -237,17 +235,9 @@ public class HttpSenderOverHTTP extends HttpSender
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             release();
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            release();
-            super.failed(x);
         }
 
         @Override
@@ -261,6 +251,7 @@ public class HttpSenderOverHTTP extends HttpSender
         protected void onCompleteFailure(Throwable cause)
         {
             super.onCompleteFailure(cause);
+            release();
             callback.failed(cause);
         }
 

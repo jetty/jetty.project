@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -69,7 +70,25 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     private boolean stale;
     private long activeNanoTime;
 
+    /**
+     * @param client the {@link HttpClient}
+     * @param origin the {@link Origin}
+     * @param intrinsicallySecure whether the destination is intrinsically secure
+     * @deprecated use {@link #HttpDestination(HttpClient, Origin)} instead
+     */
+    @Deprecated(since = "12.0.7", forRemoval = true)
     public HttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
+    {
+        this(client, origin);
+    }
+
+    /**
+     * <p>Creates a new HTTP destination.</p>
+     *
+     * @param client the {@link HttpClient}
+     * @param origin the {@link Origin}
+     */
+    public HttpDestination(HttpClient client, Origin origin)
     {
         this.client = client;
         this.origin = origin;
@@ -80,13 +99,16 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
 
         String host = HostPort.normalizeHost(getHost());
         int port = getPort();
-        if (port != HttpScheme.getDefaultPort(getScheme()))
+        String scheme = getScheme();
+        if (port != URIUtil.getDefaultPortForScheme(scheme))
             host += ":" + port;
         hostField = new HttpField(HttpHeader.HOST, host);
 
+        ClientConnectionFactory connectionFactory = client.getTransport();
+        boolean intrinsicallySecure = origin.getTransport().isIntrinsicallySecure();
+
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxy = proxyConfig.match(origin);
-        ClientConnectionFactory connectionFactory = client.getTransport();
         if (proxy != null)
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
@@ -166,7 +188,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     protected void doStop() throws Exception
     {
         requestTimeouts.destroy();
-        abort(new AsynchronousCloseException());
+        abortExchanges(new AsynchronousCloseException());
         Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
         if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
             connectionPoolSweeper.remove((Sweeper.Sweepable)connectionPool);
@@ -272,7 +294,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     @Override
     public void failed(Throwable x)
     {
-        abort(x);
+        abortExchanges(x);
     }
 
     @Override
@@ -383,7 +405,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             if (cause != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                    LOG.debug("Aborted before processing {}", exchange, cause);
                 // Won't use this connection, release it back.
                 boolean released = connectionPool.release(connection);
                 if (!released)
@@ -491,7 +513,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
      *
      * @param cause the abort cause
      */
-    public void abort(Throwable cause)
+    private void abortExchanges(Throwable cause)
     {
         // Copy the queue of exchanges and fail only those that are queued at this moment.
         // The application may queue another request from the failure/complete listener

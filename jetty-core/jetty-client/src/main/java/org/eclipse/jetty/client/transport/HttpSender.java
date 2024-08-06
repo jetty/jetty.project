@@ -201,19 +201,18 @@ public abstract class HttpSender
         };
     }
 
-    private void anyToFailure(Throwable failure)
+    private boolean failRequest(Throwable failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return;
+            return false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Request failure {}", exchange.getRequest(), failure);
+            LOG.debug("Request failure {}, response {}", exchange.getRequest(), exchange.getResponse(), failure);
 
         // Mark atomically the request as completed, with respect
         // to concurrency between request success and request failure.
-        if (exchange.requestComplete(failure))
-            executeAbort(exchange, failure);
+        return exchange.requestComplete(failure);
     }
 
     private void executeAbort(HttpExchange exchange, Throwable failure)
@@ -243,7 +242,7 @@ public abstract class HttpSender
         dispose();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Request abort {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
+            LOG.debug("Request abort {} {} on {}", request, exchange, getHttpChannel(), failure);
         request.notifyFailure(failure);
 
         // Mark atomically the request as terminated, with
@@ -318,20 +317,33 @@ public abstract class HttpSender
     {
     }
 
-    public void proceed(HttpExchange exchange, Throwable failure)
+    public void proceed(HttpExchange exchange, Runnable proceedAction, Throwable failure)
     {
-        // Received a 100 Continue, although Expect header was not sent.
+        // Received a 100 Continue, although the Expect header was not sent.
         if (!contentSender.expect100)
             return;
 
+        // Write the fields in this order, since the reader of
+        // these fields will read them in the opposite order.
+        contentSender.proceedAction = proceedAction;
         contentSender.expect100 = false;
         if (failure == null)
+        {
             contentSender.iterate();
+        }
         else
-            anyToFailure(failure);
+        {
+            if (failRequest(failure))
+                executeAbort(exchange, failure);
+        }
     }
 
     public void abort(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)
+    {
+        externalAbort(failure, promise);
+    }
+
+    private boolean anyToFailure(Throwable failure)
     {
         // Store only the first failure.
         this.failure.compareAndSet(null, failure);
@@ -343,8 +355,8 @@ public abstract class HttpSender
             RequestState current = requestState.get();
             if (current == RequestState.FAILURE)
             {
-                promise.succeeded(false);
-                return;
+                abort = false;
+                break;
             }
             else
             {
@@ -355,11 +367,16 @@ public abstract class HttpSender
                 }
             }
         }
+        return abort;
+    }
 
+    private void externalAbort(Throwable failure, Promise<Boolean> promise)
+    {
+        boolean abort = anyToFailure(failure);
         if (abort)
         {
-            abortRequest(exchange);
-            promise.succeeded(true);
+            contentSender.abort = promise;
+            contentSender.abort(this.failure.get());
         }
         else
         {
@@ -367,6 +384,12 @@ public abstract class HttpSender
                 LOG.debug("Concurrent failure: request termination skipped, performed by helpers");
             promise.succeeded(false);
         }
+    }
+
+    private void internalAbort(HttpExchange exchange, Throwable failure)
+    {
+        anyToFailure(failure);
+        abortRequest(exchange);
     }
 
     private boolean updateRequestState(RequestState from, RequestState to)
@@ -442,30 +465,39 @@ public abstract class HttpSender
 
     private class ContentSender extends IteratingCallback
     {
-        private HttpExchange exchange;
+        // Fields that are set externally.
+        private volatile HttpExchange exchange;
+        private volatile Runnable proceedAction;
+        private volatile boolean expect100;
+        // Fields only used internally.
         private Content.Chunk chunk;
         private ByteBuffer contentBuffer;
-        private boolean expect100;
         private boolean committed;
         private boolean success;
         private boolean complete;
+        private Promise<Boolean> abort;
+        private boolean demanded;
 
         @Override
         public boolean reset()
         {
             exchange = null;
+            proceedAction = null;
+            expect100 = false;
             chunk = null;
             contentBuffer = null;
-            expect100 = false;
             committed = false;
             success = false;
             complete = false;
+            abort = null;
+            demanded = false;
             return super.reset();
         }
 
         @Override
         protected Action process() throws Throwable
         {
+            HttpExchange exchange = this.exchange;
             if (complete)
             {
                 if (success)
@@ -476,15 +508,26 @@ public abstract class HttpSender
             HttpRequest request = exchange.getRequest();
             Content.Source content = request.getBody();
 
+            boolean expect100 = this.expect100;
             if (expect100)
             {
+                // If the request was sent already, wait for
+                // the 100 response before sending the content.
                 if (committed)
                     return Action.IDLE;
-                else
-                    chunk = null;
+                // Do not send any content yet.
+                chunk = null;
             }
             else
             {
+                // Run the proceed action first, which likely will provide
+                // content after having received the 100 Continue response.
+                Runnable action = proceedAction;
+                proceedAction = null;
+                if (action != null)
+                    action.run();
+
+                // Read the request content.
                 chunk = content.read();
             }
             if (LOG.isDebugEnabled())
@@ -494,17 +537,24 @@ public abstract class HttpSender
             {
                 if (committed)
                 {
-                    content.demand(this::iterate);
-                    return Action.IDLE;
+                    // No content after the headers, demand.
+                    demanded = true;
+                    content.demand(this::succeeded);
+                    return Action.SCHEDULED;
                 }
                 else
                 {
+                    // Normalize to avoid null checks.
                     chunk = Content.Chunk.EMPTY;
                 }
             }
 
             if (Content.Chunk.isFailure(chunk))
-                throw chunk.getFailure();
+            {
+                Content.Chunk failure = chunk;
+                chunk = Content.Chunk.next(failure);
+                throw failure.getFailure();
+            }
 
             ByteBuffer buffer = chunk.getByteBuffer();
             contentBuffer = buffer.asReadOnlyBuffer();
@@ -517,71 +567,69 @@ public abstract class HttpSender
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
-            boolean proceed = true;
-            if (committed)
+            if (demanded)
             {
-                if (contentBuffer.hasRemaining())
-                    proceed = someToContent(exchange, contentBuffer);
+                // Content is now available, reset
+                // the demand and iterate again.
+                demanded = false;
             }
             else
             {
-                committed = true;
-                if (headersToCommit(exchange))
+                boolean proceed = true;
+                if (committed)
                 {
-                    // Was any content sent while committing?
                     if (contentBuffer.hasRemaining())
                         proceed = someToContent(exchange, contentBuffer);
                 }
                 else
                 {
-                    proceed = false;
+                    committed = true;
+                    proceed = headersToCommit(exchange);
+                    if (proceed)
+                    {
+                        // Was any content sent while committing?
+                        if (contentBuffer.hasRemaining())
+                            proceed = someToContent(exchange, contentBuffer);
+                    }
                 }
-            }
 
-            boolean last = chunk.isLast();
-            chunk.release();
-            chunk = null;
+                boolean last = chunk.isLast();
+                chunk.release();
+                chunk = null;
 
-            if (proceed)
-            {
-                if (last)
+                if (proceed)
                 {
-                    success = true;
+                    if (last)
+                    {
+                        success = true;
+                        complete = true;
+                    }
+                }
+                else
+                {
+                    // There was some concurrent error, terminate.
                     complete = true;
                 }
-                else if (expect100)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Expecting 100 Continue for {}", exchange.getRequest());
-                }
             }
-            else
-            {
-                // There was some concurrent error, terminate.
-                complete = true;
-            }
-
-            super.succeeded();
         }
 
         @Override
-        public void failed(Throwable x)
+        protected void onCompleteFailure(Throwable x)
         {
             if (chunk != null)
             {
                 chunk.release();
-                chunk = null;
+                chunk = Content.Chunk.next(chunk);
             }
 
-            HttpRequest request = exchange.getRequest();
-            Content.Source content = request.getBody();
-            if (content != null)
-                content.fail(x);
+            failRequest(x);
+            internalAbort(exchange, x);
 
-            anyToFailure(x);
-            super.failed(x);
+            Promise<Boolean> promise = abort;
+            if (promise != null)
+                promise.succeeded(true);
         }
 
         @Override

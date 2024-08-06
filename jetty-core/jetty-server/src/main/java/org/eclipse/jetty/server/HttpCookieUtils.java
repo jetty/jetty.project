@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -46,6 +47,7 @@ public final class HttpCookieUtils
         .with(HttpCookie.PATH_ATTRIBUTE)
         .with(HttpCookie.SAME_SITE_ATTRIBUTE)
         .with(HttpCookie.SECURE_ATTRIBUTE)
+        .with(HttpCookie.PARTITIONED_ATTRIBUTE)
         .build();
     // RFC 1123 format of epoch for the Expires attribute.
     private static final String EPOCH_EXPIRES = "Thu, 01 Jan 1970 00:00:00 GMT";
@@ -187,6 +189,9 @@ public final class HttpCookieUtils
         if (httpCookie.isHttpOnly())
             builder.append(";HttpOnly");
 
+        if (httpCookie.isPartitioned())
+            builder.append(";Partitioned");
+
         HttpCookie.SameSite sameSite = httpCookie.getSameSite();
         if (sameSite != null)
             builder.append(";SameSite=").append(sameSite.getAttributeValue());
@@ -207,9 +212,17 @@ public final class HttpCookieUtils
         if (name == null || name.length() == 0)
             throw new IllegalArgumentException("Bad cookie name");
 
-        // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
-        // Per RFC6265, Cookie.name follows RFC2616 Section 2.2 token rules
-        Syntax.requireValidRFC2616Token(name, "RFC6265 Cookie name");
+        try
+        {
+            // Name is checked for legality by servlet spec, but can also be passed directly so check again for quoting
+            // Per RFC6265, Cookie.name follows RFC2616 Section 2.2 token rules
+            Syntax.requireValidRFC2616Token(name, "RFC6265 Cookie name");
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ComplianceViolationException(CookieCompliance.RFC6265, CookieCompliance.Violation.INVALID_COOKIES, "RFC6265 Cookie name must be a valid RFC2616 Token");
+        }
+
         // Ensure that Per RFC6265, Cookie.value follows syntax rules
         String value = httpCookie.getValue();
         Syntax.requireValidRFC6265CookieValue(value);
@@ -249,6 +262,8 @@ public final class HttpCookieUtils
             builder.append("; Secure");
         if (httpCookie.isHttpOnly())
             builder.append("; HttpOnly");
+        if (httpCookie.isPartitioned())
+            builder.append("; Partitioned");
 
         Map<String, String> attributes = httpCookie.getAttributes();
 
@@ -393,13 +408,14 @@ public final class HttpCookieUtils
     public static class SetCookieHttpField extends HttpField
     {
         private final HttpCookie _cookie;
-        private final CookieCompliance _compliance;
+        private final String _value;
 
         public SetCookieHttpField(HttpCookie cookie, CookieCompliance compliance)
         {
             super(HttpHeader.SET_COOKIE, (String)null);
             this._cookie = cookie;
-            _compliance = compliance;
+            // trigger compliance check
+            this._value = getSetCookie(this._cookie, compliance);
         }
 
         public HttpCookie getHttpCookie()
@@ -410,7 +426,7 @@ public final class HttpCookieUtils
         @Override
         public String getValue()
         {
-            return getSetCookie(_cookie, _compliance);
+            return this._value;
         }
     }
 }

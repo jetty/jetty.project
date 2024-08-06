@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import org.slf4j.Logger;
@@ -188,6 +189,23 @@ public class UrlEncoded
         {
             map.add(key, val);
             checkMaxKeys(map, maxKeys);
+        }, charset);
+    }
+
+    /**
+     * Decoded parameters to Map.
+     *
+     * @param content the string containing the encoded parameters
+     * @param adder Function to add parameter
+     * @param charset the charset to use for decoding
+     */
+    public static void decodeTo(String content, BiConsumer<String, String> adder, Charset charset, int maxKeys)
+    {
+        AtomicInteger keys = new AtomicInteger(0);
+        decodeTo(content, (key, val) ->
+        {
+            adder.accept(key, val);
+            checkMaxKeys(keys.incrementAndGet(), maxKeys);
         }, charset);
     }
 
@@ -396,6 +414,21 @@ public class UrlEncoded
     public static void decode88591To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
         throws IOException
     {
+        decode88591To(in, map::add, maxLength, maxKeys);
+    }
+
+    /**
+     * Decoded parameters to MultiMap, using ISO8859-1 encodings.
+     *
+     * @param in InputSteam to read
+     * @param adder Function to add parameter
+     * @param maxLength maximum length of form to read or -1 for no limit
+     * @param maxKeys maximum number of keys to read or -1 for no limit
+     * @throws IOException if unable to decode the InputStream as ISO8859-1
+     */
+    public static void decode88591To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys)
+        throws IOException
+    {
         StringBuilder buffer = new StringBuilder();
         String key = null;
         String value;
@@ -403,6 +436,7 @@ public class UrlEncoded
         int b;
 
         int totalLength = 0;
+        int keys = 0;
         while ((b = in.read()) >= 0)
         {
             switch ((char)b)
@@ -412,14 +446,16 @@ public class UrlEncoded
                     buffer.setLength(0);
                     if (key != null)
                     {
-                        map.add(key, value);
+                        adder.accept(key, value);
+                        keys++;
                     }
                     else if (value.length() > 0)
                     {
-                        map.add(value, "");
+                        adder.accept(value, "");
+                        keys++;
                     }
                     key = null;
-                    checkMaxKeys(map, maxKeys);
+                    checkMaxKeys(keys, maxKeys);
                     break;
 
                 case '=':
@@ -453,13 +489,15 @@ public class UrlEncoded
         {
             value = buffer.length() == 0 ? "" : buffer.toString();
             buffer.setLength(0);
-            map.add(key, value);
+            adder.accept(key, value);
+            keys++;
         }
         else if (buffer.length() > 0)
         {
-            map.add(buffer.toString(), "");
+            adder.accept(buffer.toString(), "");
+            keys++;
         }
-        checkMaxKeys(map, maxKeys);
+        checkMaxKeys(keys, maxKeys);
     }
 
     /**
@@ -474,6 +512,21 @@ public class UrlEncoded
     public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
         throws IOException
     {
+        decodeUtf8To(in, map::add, maxLength, maxKeys);
+    }
+
+    /**
+     * Decoded parameters to Map.
+     *
+     * @param in InputSteam to read
+     * @param adder Function to add parameters to
+     * @param maxLength maximum form length to decode or -1 for no limit
+     * @param maxKeys the maximum number of keys to read or -1 for no limit
+     * @throws IOException if unable to decode the input stream
+     */
+    public static void decodeUtf8To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys)
+        throws IOException
+    {
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         String key = null;
         String value;
@@ -481,6 +534,7 @@ public class UrlEncoded
         int b;
 
         int totalLength = 0;
+        int keys = 0;
         while ((b = in.read()) >= 0)
         {
             switch ((char)b)
@@ -490,14 +544,16 @@ public class UrlEncoded
                     buffer.reset();
                     if (key != null)
                     {
-                        map.add(key, value);
+                        adder.accept(key, value);
+                        keys++;
                     }
                     else if (value != null && value.length() > 0)
                     {
-                        map.add(value, "");
+                        adder.accept(value, "");
+                        keys++;
                     }
                     key = null;
-                    checkMaxKeys(map, maxKeys);
+                    checkMaxKeys(keys, maxKeys);
                     break;
 
                 case '=':
@@ -531,22 +587,29 @@ public class UrlEncoded
         {
             value = buffer.toCompleteString();
             buffer.reset();
-            map.add(key, value);
+            adder.accept(key, value);
+            keys++;
         }
         else if (buffer.length() > 0)
         {
-            map.add(buffer.toCompleteString(), "");
+            adder.accept(buffer.toCompleteString(), "");
+            keys++;
         }
-        checkMaxKeys(map, maxKeys);
+        checkMaxKeys(keys, maxKeys);
     }
 
     public static void decodeUtf16To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys) throws IOException
+    {
+        decodeUtf16To(in, map::add, maxLength, maxKeys);
+    }
+
+    public static void decodeUtf16To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys) throws IOException
     {
         InputStreamReader input = new InputStreamReader(in, StandardCharsets.UTF_16);
         StringWriter buf = new StringWriter(8192);
         IO.copy(input, buf, maxLength);
 
-        decodeTo(buf.getBuffer().toString(), map, StandardCharsets.UTF_16, maxKeys);
+        decodeTo(buf.getBuffer().toString(), adder, StandardCharsets.UTF_16, maxKeys);
     }
 
     /**
@@ -573,25 +636,41 @@ public class UrlEncoded
     public static void decodeTo(InputStream in, MultiMap<String> map, Charset charset, int maxLength, int maxKeys)
         throws IOException
     {
+        decodeTo(in, map::add, charset, maxLength, maxKeys);
+    }
+
+    /**
+     * Decoded parameters to Map.
+     *
+     * @param in the stream containing the encoded parameters
+     * @param adder Function to add a parameter
+     * @param charset the charset to use for decoding
+     * @param maxLength the maximum length of the form to decode
+     * @param maxKeys the maximum number of keys to decode
+     * @throws IOException if unable to decode input stream
+     */
+    public static void decodeTo(InputStream in, BiConsumer<String, String> adder, Charset charset, int maxLength, int maxKeys)
+        throws IOException
+    {
         //no charset present, use the configured default
         if (charset == null)
             charset = ENCODING;
 
         if (StandardCharsets.UTF_8.equals(charset))
         {
-            decodeUtf8To(in, map, maxLength, maxKeys);
+            decodeUtf8To(in, adder, maxLength, maxKeys);
             return;
         }
 
         if (StandardCharsets.ISO_8859_1.equals(charset))
         {
-            decode88591To(in, map, maxLength, maxKeys);
+            decode88591To(in, adder, maxLength, maxKeys);
             return;
         }
 
         if (StandardCharsets.UTF_16.equals(charset)) // Should be all 2 byte encodings
         {
-            decodeUtf16To(in, map, maxLength, maxKeys);
+            decodeUtf16To(in, adder, maxLength, maxKeys);
             return;
         }
 
@@ -604,6 +683,7 @@ public class UrlEncoded
 
         try (ByteArrayOutputStream2 output = new ByteArrayOutputStream2())
         {
+            int keys = 0;
             int size;
 
             while ((c = in.read()) > 0)
@@ -616,14 +696,16 @@ public class UrlEncoded
                         output.setCount(0);
                         if (key != null)
                         {
-                            map.add(key, value);
+                            adder.accept(key, value);
+                            keys++;
                         }
                         else if (value != null && value.length() > 0)
                         {
-                            map.add(value, "");
+                            adder.accept(value, "");
+                            keys++;
                         }
                         key = null;
-                        checkMaxKeys(map, maxKeys);
+                        checkMaxKeys(keys, maxKeys);
                         break;
                     case '=':
                         if (key != null)
@@ -655,14 +737,22 @@ public class UrlEncoded
             {
                 value = size == 0 ? "" : output.toString(charset);
                 output.setCount(0);
-                map.add(key, value);
+                adder.accept(key, value);
+                keys++;
             }
             else if (size > 0)
             {
-                map.add(output.toString(charset), "");
+                adder.accept(output.toString(charset), "");
+                keys++;
             }
-            checkMaxKeys(map, maxKeys);
+            checkMaxKeys(keys, maxKeys);
         }
+    }
+
+    private static void checkMaxKeys(int size, int maxKeys)
+    {
+        if (maxKeys >= 0 && size > maxKeys)
+            throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", size, maxKeys));
     }
 
     private static void checkMaxKeys(MultiMap<String> map, int maxKeys)

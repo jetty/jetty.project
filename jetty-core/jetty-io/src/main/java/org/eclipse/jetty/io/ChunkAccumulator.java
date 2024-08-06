@@ -51,7 +51,7 @@ public class ChunkAccumulator
                 chunk.retain();
                 return _chunks.add(chunk);
             }
-            return _chunks.add(Chunk.from(BufferUtil.copy(chunk.getByteBuffer()), chunk.isLast(), () -> {}));
+            return _chunks.add(Chunk.from(BufferUtil.copy(chunk.getByteBuffer()), chunk.isLast()));
         }
         else if (Chunk.isFailure(chunk))
         {
@@ -72,7 +72,7 @@ public class ChunkAccumulator
     public byte[] take()
     {
         if (_length == 0)
-            return BufferUtil.EMPTY_BUFFER.array();
+            return BufferUtil.EMPTY_BYTES;
         byte[] bytes = new byte[_length];
         int offset = 0;
         for (Chunk chunk : _chunks)
@@ -191,6 +191,8 @@ public class ChunkAccumulator
                 if (Chunk.isFailure(chunk))
                 {
                     completeExceptionally(chunk.getFailure());
+                    if (!chunk.isLast())
+                        _source.fail(chunk.getFailure());
                     break;
                 }
 

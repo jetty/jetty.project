@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.EOFException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -43,6 +44,11 @@ import org.slf4j.LoggerFactory;
 public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory implements CipherDiscriminator
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerConnectionFactory.class);
+
+    public HTTP2ServerConnectionFactory()
+    {
+        this(new HttpConfiguration());
+    }
 
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -150,7 +156,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
-            EofException failure = new EofException("Reset " + ErrorCode.toString(frame.getError(), null));
+            EOFException failure = new EOFException("Reset " + ErrorCode.toString(frame.getError(), null));
             onFailure(stream, failure, callback);
         }
 

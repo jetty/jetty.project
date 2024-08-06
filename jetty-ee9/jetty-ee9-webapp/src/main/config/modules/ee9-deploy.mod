@@ -19,10 +19,10 @@ etc/jetty-ee9-deploy.xml
 # jetty.deploy.monitoredDir=webapps
 
 ## Defaults Descriptor for all deployed webapps
-# jetty.deploy.defaultsDescriptor=${jetty.base}/etc/webdefault-ee9.xml
+# jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault-ee9.xml
 
 ## Monitored directory scan period (seconds)
-# jetty.deploy.scanInterval=1
+# jetty.deploy.scanInterval=0
 
 ## Whether to extract *.war files
 # jetty.deploy.extractWars=true

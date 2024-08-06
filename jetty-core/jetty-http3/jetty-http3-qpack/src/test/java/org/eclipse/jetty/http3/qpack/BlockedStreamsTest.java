@@ -24,6 +24,7 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.LiteralNameEntryInstru
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +54,7 @@ public class BlockedStreamsTest
         _decoderHandler = new TestDecoderHandler();
         _encoder = new QpackEncoder(_encoderHandler);
         _decoder = new QpackDecoder(_decoderHandler);
+        _decoder.setBeginNanoTimeSupplier(NanoTime::now);
     }
 
     @Test

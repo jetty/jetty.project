@@ -20,7 +20,9 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
 import jakarta.transaction.UserTransaction;
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.plus.jndi.NamingEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +39,11 @@ public class Transaction extends NamingEntry
     public static void bindTransactionToENC(String scope)
         throws NamingException
     {
-        Transaction txEntry = (Transaction)NamingEntryUtil.lookupNamingEntry(scope, Transaction.USER_TRANSACTION);
+        NamingEntry txEntry = NamingEntryUtil.lookupNamingEntry(scope, Transaction.USER_TRANSACTION);
 
-        if (txEntry != null)
+        if (txEntry instanceof Transaction)
         {
-            txEntry.bindToComp();
+            ((Transaction)txEntry).bindToComp();
         }
         else
         {
@@ -57,8 +59,7 @@ public class Transaction extends NamingEntry
     public Transaction(String scope, UserTransaction userTransaction)
         throws NamingException
     {
-        super(scope, USER_TRANSACTION);
-        save(userTransaction);
+        super(scope, USER_TRANSACTION, userTransaction);
     }
 
     /**

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.NanoTime;
@@ -35,7 +36,7 @@ public abstract class LatencyRecordingHandler extends EventsHandler
     }
 
     @Override
-    protected final void onComplete(Request request, Throwable failure)
+    protected final void onComplete(Request request, int status, HttpFields headers, Throwable failure)
     {
         onRequestComplete(request.getId(), NanoTime.since(request.getBeginNanoTime()));
     }

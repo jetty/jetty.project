@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.test.client.transport;
 
-import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.AnnotatedElement;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyStore;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -45,10 +43,11 @@ import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
-import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -60,7 +59,9 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -71,22 +72,25 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith(WorkDirExtension.class)
 public class AbstractTest
 {
+    public WorkDir workDir;
+
     @RegisterExtension
     public final BeforeTestExecutionCallback printMethodName = context ->
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected SslContextFactory.Server sslContextFactoryServer;
+    protected ServerQuicConfiguration serverQuicConfig;
     protected Server server;
     protected AbstractConnector connector;
     protected HttpClient client;
-    protected Path unixDomainPath;
     protected ArrayByteBufferPool.Tracking serverBufferPool;
     protected ArrayByteBufferPool.Tracking clientBufferPool;
 
@@ -105,19 +109,18 @@ public class AbstractTest
         return transports;
     }
 
-    public static Collection<Transport> transportsNoUnixDomain()
-    {
-        Collection<Transport> transports = transports();
-        transports.remove(Transport.UNIX_DOMAIN);
-        return List.copyOf(transports);
-    }
-
     public static Collection<Transport> transportsTCP()
     {
         Collection<Transport> transports = transports();
         transports.remove(Transport.H3);
-        transports.remove(Transport.UNIX_DOMAIN);
-        return List.copyOf(transports);
+        return transports;
+    }
+
+    public static Collection<Transport> transportsTLS()
+    {
+        Collection<Transport> transports = transports();
+        transports.retainAll(EnumSet.of(Transport.HTTPS, Transport.H2));
+        return transports;
     }
 
     @AfterEach
@@ -132,9 +135,14 @@ public class AbstractTest
         }
         finally
         {
-            LifeCycle.stop(client);
-            LifeCycle.stop(server);
+            stop();
         }
+    }
+
+    public void stop()
+    {
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
     }
 
     private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, TestInfo testInfo, String prefix, String msg) throws Exception
@@ -159,7 +167,7 @@ public class AbstractTest
         String[] transportNames = transports.split("\\|");
 
         boolean disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) ||
-            isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
+                           isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
         if (disabled)
         {
             System.err.println("Not tracking " + tagSubValue + " leaks");
@@ -169,7 +177,7 @@ public class AbstractTest
         for (String transportName : transportNames)
         {
             disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName) ||
-                isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName);
+                       isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName);
             if (disabled)
             {
                 System.err.println("Not tracking " + tagSubValue + " leaks for transport " + transportName);
@@ -178,7 +186,7 @@ public class AbstractTest
         }
 
         disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue) ||
-            isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue);
+                   isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue);
         if (disabled)
         {
             System.err.println("Not tracking " + tagSubValue + " leaks");
@@ -188,7 +196,7 @@ public class AbstractTest
         for (String transportName : transportNames)
         {
             disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName) ||
-                isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName);
+                       isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName);
             if (disabled)
             {
                 System.err.println("Not tracking " + tagSubValue + " leaks for transport " + transportName);
@@ -254,14 +262,8 @@ public class AbstractTest
 
     protected void prepareServer(Transport transport, Handler handler) throws Exception
     {
-        if (transport == Transport.UNIX_DOMAIN)
-        {
-            String unixDomainDir = System.getProperty("jetty.unixdomain.dir", System.getProperty("java.io.tmpdir"));
-            unixDomainPath = Files.createTempFile(Path.of(unixDomainDir), "unix_", ".sock");
-            assertTrue(unixDomainPath.toAbsolutePath().toString().length() < UnixDomainServerConnector.MAX_UNIX_DOMAIN_PATH_LENGTH, "Unix-Domain path too long");
-            Files.delete(unixDomainPath);
-        }
         sslContextFactoryServer = newSslContextFactoryServer();
+        serverQuicConfig = new ServerQuicConfiguration(sslContextFactoryServer, workDir.getEmptyPathDir());
         if (server == null)
             server = newServer();
         connector = newConnector(transport, server);
@@ -277,25 +279,14 @@ public class AbstractTest
         return new Server(serverThreads, null, serverBufferPool);
     }
 
-    protected SslContextFactory.Server newSslContextFactoryServer() throws Exception
+    protected SslContextFactory.Server newSslContextFactoryServer()
     {
         SslContextFactory.Server ssl = new SslContextFactory.Server();
-        configureSslContextFactory(ssl);
+        ssl.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        ssl.setKeyStorePassword("storepwd");
+        ssl.setUseCipherSuitesOrder(true);
+        ssl.setCipherComparator(HTTP2Cipher.COMPARATOR);
         return ssl;
-    }
-
-    private void configureSslContextFactory(SslContextFactory sslContextFactory) throws Exception
-    {
-        KeyStore keystore = KeyStore.getInstance("PKCS12");
-        try (InputStream is = Files.newInputStream(Path.of("src/test/resources/keystore.p12")))
-        {
-            keystore.load(is, "storepwd".toCharArray());
-        }
-        sslContextFactory.setTrustStore(keystore);
-        sslContextFactory.setKeyStore(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setUseCipherSuitesOrder(true);
-        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
     }
 
     protected void startClient(Transport transport) throws Exception
@@ -321,13 +312,7 @@ public class AbstractTest
             case FCGI:
                 yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
             case H3:
-                HTTP3ServerConnector h3Connector = new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
-                h3Connector.getQuicConfiguration().setPemWorkDirectory(Path.of(System.getProperty("java.io.tmpdir")));
-                yield h3Connector;
-            case UNIX_DOMAIN:
-                UnixDomainServerConnector unixConnector = new UnixDomainServerConnector(server, 1, 1, newServerConnectionFactory(transport));
-                unixConnector.setUnixDomainPath(unixDomainPath);
-                yield unixConnector;
+                yield new QuicServerConnector(server, serverQuicConfig, newServerConnectionFactory(transport));
         };
     }
 
@@ -335,7 +320,7 @@ public class AbstractTest
     {
         List<ConnectionFactory> list = switch (transport)
         {
-            case HTTP, UNIX_DOMAIN -> List.of(new HttpConnectionFactory(httpConfig));
+            case HTTP -> List.of(new HttpConnectionFactory(httpConfig));
             case HTTPS ->
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
@@ -361,57 +346,47 @@ public class AbstractTest
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
                 httpConfig.addCustomizer(new HostHeaderCustomizer());
-                yield List.of(new HTTP3ServerConnectionFactory(httpConfig));
+                yield List.of(new HTTP3ServerConnectionFactory(serverQuicConfig, httpConfig));
             }
             case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
         };
         return list.toArray(ConnectionFactory[]::new);
     }
 
-    protected SslContextFactory.Client newSslContextFactoryClient() throws Exception
+    protected SslContextFactory.Client newSslContextFactoryClient()
     {
-        SslContextFactory.Client ssl = new SslContextFactory.Client();
-        configureSslContextFactory(ssl);
-        ssl.setEndpointIdentificationAlgorithm(null);
-        return ssl;
+        return new SslContextFactory.Client(true);
     }
 
     protected HttpClientTransport newHttpClientTransport(Transport transport) throws Exception
     {
         return switch (transport)
+        {
+            case HTTP, HTTPS ->
             {
-                case HTTP, HTTPS ->
-                {
-                    ClientConnector clientConnector = new ClientConnector();
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                    yield new HttpClientTransportOverHTTP(clientConnector);
-                }
-                case H2C, H2 ->
-                {
-                    ClientConnector clientConnector = new ClientConnector();
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                    HTTP2Client http2Client = new HTTP2Client(clientConnector);
-                    yield new HttpClientTransportOverHTTP2(http2Client);
-                }
-                case H3 ->
-                {
-                    HTTP3Client http3Client = new HTTP3Client();
-                    ClientConnector clientConnector = http3Client.getClientConnector();
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                    yield new HttpClientTransportOverHTTP3(http3Client);
-                }
-                case FCGI -> new HttpClientTransportOverFCGI(1, "");
-                case UNIX_DOMAIN ->
-                {
-                    ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                    yield new HttpClientTransportOverHTTP(clientConnector);
-                }
-            };
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                yield new HttpClientTransportOverHTTP(clientConnector);
+            }
+            case H2C, H2 ->
+            {
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
+                HTTP2Client http2Client = new HTTP2Client(clientConnector);
+                yield new HttpClientTransportOverHTTP2(http2Client);
+            }
+            case H3 ->
+            {
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                SslContextFactory.Client sslClient = newSslContextFactoryClient();
+                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslClient, null), clientConnector);
+                yield new HttpClientTransportOverHTTP3(http3Client);
+            }
+            case FCGI -> new HttpClientTransportOverFCGI(1, "");
+        };
     }
 
     protected URI newURI(Transport transport)
@@ -456,13 +431,13 @@ public class AbstractTest
 
     public enum Transport
     {
-        HTTP, HTTPS, H2C, H2, H3, FCGI, UNIX_DOMAIN;
+        HTTP, HTTPS, H2C, H2, H3, FCGI;
 
         public boolean isSecure()
         {
             return switch (this)
             {
-                case HTTP, H2C, FCGI, UNIX_DOMAIN -> false;
+                case HTTP, H2C, FCGI -> false;
                 case HTTPS, H2, H3 -> true;
             };
         }
@@ -471,7 +446,7 @@ public class AbstractTest
         {
             return switch (this)
             {
-                case HTTP, HTTPS, FCGI, UNIX_DOMAIN -> false;
+                case HTTP, HTTPS, FCGI -> false;
                 case H2C, H2, H3 -> true;
             };
         }

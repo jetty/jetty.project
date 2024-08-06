@@ -9,6 +9,9 @@ pipeline {
     buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
   }
+  environment {
+    LAUNCHABLE_TOKEN = credentials('launchable-token')
+  }
   stages {
     stage("Parallel Stage") {
       parallel {
@@ -18,7 +21,20 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+              recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
+                            tools: [mavenConsole(), java(), checkStyle(), javaDoc()],
+                            skipPublishingChecks: true, skipBlames: true
+            }
+          }
+        }
+
+        stage("Build / Test - JDK22") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk22", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk22", name: "Static Analysis jdk22", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
             }
           }
         }
@@ -29,29 +45,11 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk17", "clean install -Perrorprone", "maven3") // javadoc:javadoc
-              // Collect up the jacoco execution results (only on main build)
-              jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                     exclusionPattern: '' +
-                             // build tools
-                             '**/org/eclipse/jetty/ant/**' +
-                             ',*/org/eclipse/jetty/maven/its/**' +
-                             ',**/org/eclipse/jetty/its/**' +
-                             // example code / documentation
-                             ',**/org/eclipse/jetty/embedded/**' +
-                             ',**/org/eclipse/jetty/asyncrest/**' +
-                             ',**/org/eclipse/jetty/demo/**' +
-                             // special environments / late integrations
-                             ',**/org/eclipse/jetty/gcloud/**' +
-                             ',**/org/eclipse/jetty/infinispan/**' +
-                             ',**/org/eclipse/jetty/osgi/**' +
-                             ',**/org/eclipse/jetty/http/spi/**' +
-                             // test classes
-                             ',**/org/eclipse/jetty/tests/**' +
-                             ',**/org/eclipse/jetty/test/**',
-                     execPattern: '**/target/jacoco.exec',
-                     classPattern: '**/target/classes',
-                     sourcePattern: '**/src/main/java'
-              recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()]
+              recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
+                            tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
+                            skipPublishingChecks: true, skipBlames: true
+              recordCoverage id: "coverage-jdk17", name: "Coverage jdk17", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED',
+                             sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
             }
           }
         }
@@ -67,6 +65,10 @@ pipeline {
     }
     fixed {
       slackNotif()
+      websiteBuild()
+    }
+    success {
+      websiteBuild()
     }
   }
 }
@@ -103,7 +105,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
-               "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
+               "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
           configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
@@ -111,25 +113,32 @@ def mavenBuild(jdk, cmdline, mvnName) {
           //-Dmaven.build.cache.configPath=$MVN_BUILD_CACHE_CONFIG
           buildCache = useBuildCache()
           if (buildCache) {
-          echo "Using build cache"
-            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server "
+            echo "Using build cache"
+            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server -Daether.connector.http.supportWebDav=true "
           } else {
             // when not using cache
             echo "Not using build cache"
-            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.enabled=false "
+            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server -Daether.connector.http.supportWebDav=true "
           }
           if (env.BRANCH_NAME ==~ /PR-\d+/) {
             if (pullRequest.labels.contains("build-all-tests")) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
+          runLaunchable ("verify")
+          runLaunchable ("record build --name jetty-12.0.x")
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          if(saveHome()) {
+            archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
+          }
         }
       }
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      junit testDataPublishers: [[$class: 'JUnitFlakyTestDataPublisher']], testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      echo "Launchable record tests"
+      runLaunchable ("record tests --build jetty-12.0.x maven '**/target/surefire-reports/**/*.xml' '**/target/invoker-reports/TEST*.xml'")
     }
   }
 }
@@ -146,6 +155,38 @@ def useBuildCache() {
   return !noBuildCache;
   // want to skip build cache
   // return false
+}
+
+def saveHome() {
+  if (env.BRANCH_NAME ==~ /PR-\d+/) {
+    return pullRequest.labels.contains("save-home")
+  }
+  return false;
+}
+
+def websiteBuild() {
+  script {
+    try {
+      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x') {
+        build(job: 'website/jetty.website/main', propagate: false, wait: false)
+      }
+    } catch (Exception e) {
+      e.printStackTrace()
+      echo "skip website build triggering: " + e.getMessage()
+    }
+  }
+}
+/**
+ * run launchable with args and ignore any errors
+ * @param args
+ */
+def runLaunchable(args) {
+  try {
+    sh "launchable $args"
+  } catch (Exception e) {
+    e.printStackTrace()
+    echo "skip failure running Launchable: " + e.getMessage()
+  }
 }
 
 // vim: et:ts=2:sw=2:ft=groovy

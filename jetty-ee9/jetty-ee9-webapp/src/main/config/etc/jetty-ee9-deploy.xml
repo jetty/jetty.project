@@ -1,11 +1,7 @@
 <?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <!-- =============================================================== -->
-<!-- Create the deployment manager                                   -->
-<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-<!-- The deplyment manager handles the lifecycle of deploying web    -->
-<!-- applications. Apps are provided by instances of the             -->
-<!-- AppProvider interface.                                          -->
+<!-- Attach the "ee9" environment app deployment provider            -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call id="DeploymentManager" name="getBean">
@@ -20,7 +16,7 @@
   <Ref refid="DeploymentManager">
     <Call name="addAppProvider">
       <Arg>
-        <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.ContextProvider">
+        <New id="WebAppProvider-ee9" class="org.eclipse.jetty.deploy.providers.ContextProvider">
           <Set name="EnvironmentName">ee9</Set>
           <Set name="monitoredDirName">
             <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
@@ -32,8 +28,17 @@
               </Arg>
             </Call>
           </Set>
+          <Set name="defaultsDescriptor">
+            <Property>
+              <Name>jetty.deploy.defaultsDescriptorPath</Name>
+              <Deprecated>jetty.deploy.defaultsDescriptor</Deprecated>
+              <Default>
+                <Property name="jetty.home" default="." />/etc/webdefault-ee9.xml
+              </Default>
+            </Property>
+          </Set>
+          <Set name="deferInitialScan" property="jetty.deploy.deferInitialScan"/>
           <Set name="scanInterval" property="jetty.deploy.scanInterval"/>
-          <Set name="defaultsDescriptor" property="jetty.deploy.defaultsDescriptor"/>
           <Set name="extractWars" property="jetty.deploy.extractWars" />
           <Set name="parentLoaderPriority" property="jetty.deploy.parentLoaderPriority" />
           <Set name="configurationClasses" property="jetty.deploy.configurationClasses" />

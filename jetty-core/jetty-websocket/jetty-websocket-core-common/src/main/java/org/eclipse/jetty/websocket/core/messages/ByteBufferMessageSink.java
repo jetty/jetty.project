@@ -58,7 +58,9 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 return;
             }
 
-            if (frame.isFin() && accumulator == null)
+            // If the frame is fin and no accumulator has been
+            // created or used, then we don't need to aggregate.
+            if (frame.isFin() && (accumulator == null || accumulator.getLength() == 0))
             {
                 invoke(getMethodHolder(), frame.getPayload(), callback);
                 autoDemand();
@@ -94,14 +96,8 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         }
         catch (Throwable t)
         {
-            if (accumulator != null)
-                accumulator.fail(t);
+            fail(t);
             callback.failed(t);
-        }
-        finally
-        {
-            if (frame.isFin())
-                accumulator = null;
         }
     }
 

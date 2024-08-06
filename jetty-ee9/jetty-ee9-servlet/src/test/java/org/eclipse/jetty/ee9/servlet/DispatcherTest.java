@@ -41,9 +41,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
@@ -68,8 +66,10 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -77,6 +77,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -124,6 +125,12 @@ public class DispatcherTest
         _contextCollection.addHandler(resourceContextHandler);
 
         return _contextCollection;
+    }
+
+    @BeforeEach
+    public void ensureFileSystemPoolIsSane()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @AfterEach
@@ -314,7 +321,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testForwardWithParam() throws Exception
     {
         createDefaultContextHandlerCollection();
@@ -841,7 +847,6 @@ public class DispatcherTest
     }
 
     @Test
-    @Disabled // TODO
     public void testDispatchMapping() throws Exception
     {
         createDefaultContextHandlerCollection();

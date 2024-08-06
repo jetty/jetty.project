@@ -21,18 +21,21 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
+import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.http.CookieCache;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -40,8 +43,11 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartCompliance;
+import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.internal.CompletionStreamWrapper;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
@@ -51,7 +57,11 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The representation of an HTTP request, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
@@ -121,7 +131,8 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface Request extends Attributes, Content.Source
 {
-    String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
+    Logger LOG = LoggerFactory.getLogger(Request.class);
+
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
     List<Locale> DEFAULT_LOCALES = List.of(Locale.getDefault());
 
@@ -203,10 +214,6 @@ public interface Request extends Attributes, Content.Source
     /**
      * {@inheritDoc}
      * @param demandCallback the demand callback to invoke when there is a content chunk available.
-     *                       In addition to the invocation guarantees of {@link Content.Source#demand(Runnable)},
-     *                       this implementation serializes the invocation of the {@code Runnable} with
-     *                       invocations of any {@link Response#write(boolean, ByteBuffer, Callback)}
-     *                       {@code Callback} invocations.
      * @see Content.Source#demand(Runnable)
      */
     @Override
@@ -278,43 +285,70 @@ public interface Request extends Attributes, Content.Source
     /**
      * <p>Adds a listener for idle timeouts.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
-     * that the idle timeout should be handled by the container as a hard failure
-     * (see {@link #addFailureListener(Consumer)}); or {@code false} to ignore that specific timeout and for another timeout
-     * to occur after another idle period.</p>
-     * <p>Any pending {@link #demand(Runnable)} or {@link Response#write(boolean, ByteBuffer, Callback)} operations
-     * are not affected by this call. Applications need to be mindful of any such pending operations if attempting
-     * to make new operations.</p>
-     * <p>Listeners are processed in sequence, and the first that returns {@code true}
-     * stops the processing of subsequent listeners, which are therefore not invoked.</p>
+     * that the idle timeout should be handled by the container as a fatal failure
+     * (see {@link #addFailureListener(Consumer)}); or {@code false} to ignore that specific
+     * timeout and for another timeout to occur after another idle period.</p>
+     * <p>Idle timeout listeners are only invoked if there are no pending
+     * {@link #demand(Runnable)} or {@link Response#write(boolean, ByteBuffer, Callback)}
+     * operations.</p>
+     * <p>Listeners are processed in the same order they are added, and the first that
+     * returns {@code true} stops the processing of subsequent listeners, which are
+     * therefore not invoked.</p>
      *
-     * @param onIdleTimeout the predicate function
+     * @param onIdleTimeout the idle timeout listener as a predicate function
      * @see #addFailureListener(Consumer)
      */
     void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout);
 
     /**
-     * <p>Adds a listener for asynchronous hard errors.</p>
-     * <p>When a listener is called, the effects of the error will already have taken place:</p>
+     * <p>Adds a listener for asynchronous fatal failures.</p>
+     * <p>When a listener is called, the effects of the failure have already taken place:</p>
      * <ul>
-     *     <li>Pending {@link #demand(Runnable)} will be woken up.</li>
-     *     <li>Calls to {@link #read()} will return the {@code Throwable}.</li>
-     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls will be failed by
-     *     calling {@link Callback#failed(Throwable)} on the callback passed to {@code write(...)}.</li>
-     *     <li>Any call to {@link Callback#succeeded()} on the callback passed to
-     *     {@link Handler#handle(Request, Response, Callback)} will effectively be a call to {@link Callback#failed(Throwable)}
-     *     with the notified {@link Throwable}.</li>
+     *     <li>Pending {@link #demand(Runnable)} have been woken up.</li>
+     *     <li>Calls to {@link #read()} will return the {@code Throwable} failure.</li>
+     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls
+     *     will be failed by calling {@link Callback#failed(Throwable)} on the callback
+     *     passed to {@link Response#write(boolean, ByteBuffer, Callback)}.</li>
      * </ul>
-     * <p>Listeners are processed in sequence. When all listeners are invoked then {@link Callback#failed(Throwable)}
-     * will be called on the callback passed to {@link Handler#handle(Request, Response, Callback)}.</p>
+     * <p>Listeners are processed in the same order they are added.</p>
      *
-     * @param onFailure the consumer function
+     * @param onFailure the failure listener as a consumer function
      * @see #addIdleTimeoutListener(Predicate)
      */
     void addFailureListener(Consumer<Throwable> onFailure);
 
     TunnelSupport getTunnelSupport();
 
+    /**
+     * Add a {@link HttpStream.Wrapper} to the current {@link HttpStream}.
+     * @param wrapper A function that wraps the passed stream.
+     * @see #addCompletionListener(Request, Consumer)
+     */
     void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper);
+
+    /**
+     * <p>Adds a completion listener that is an optimized equivalent to overriding the
+     * {@link HttpStream#succeeded()} and {@link HttpStream#failed(Throwable)} methods of a
+     * {@link HttpStream.Wrapper} created by a call to {@link #addHttpStreamWrapper(Function)}.</p>
+     * <p>Because adding completion listeners relies on {@link HttpStream} wrapping,
+     * the completion listeners are invoked in reverse order they are added.</p>
+     * <p>In the case of a failure, the {@link Throwable} cause is passed to the listener, but unlike
+     * {@link #addFailureListener(Consumer)} listeners, which are called when the failure occurs, completion
+     * listeners are called only once the {@link HttpStream} is completed at the very end of processing.</p>
+     *
+     * @param listener A {@link Consumer} of {@link Throwable} to call when the request handling is complete.
+     * The listener is passed a {@code null} {@link Throwable} on success.
+     * @see #addHttpStreamWrapper(Function)
+     */
+    static void addCompletionListener(Request request, Consumer<Throwable> listener)
+    {
+        request.addHttpStreamWrapper(stream ->
+        {
+            if (stream instanceof CompletionStreamWrapper completionStreamWrapper)
+                return completionStreamWrapper.addListener(listener);
+            return new CompletionStreamWrapper(stream, listener);
+        });
+    }
 
     /**
      * <p>Get a {@link Session} associated with the request.
@@ -360,19 +394,25 @@ public interface Request extends Attributes, Content.Source
         };
     }
 
+    static String getHostName(InetSocketAddress inetSocketAddress)
+    {
+        if (inetSocketAddress.isUnresolved())
+            return inetSocketAddress.getHostString();
+
+        InetAddress address = inetSocketAddress.getAddress();
+        String result = address == null
+            ? inetSocketAddress.getHostString()
+            : address.getHostAddress();
+        return HostPort.normalizeHost(result);
+    }
+
     static String getLocalAddr(Request request)
     {
         if (request == null)
             return null;
         SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-        {
-            InetAddress address = ((InetSocketAddress)local).getAddress();
-            String result = address == null
-                ? ((InetSocketAddress)local).getHostString()
-                : address.getHostAddress();
-            return HostPort.normalizeHost(result);
-        }
+        if (local instanceof InetSocketAddress inetSocketAddress)
+            return getHostName(inetSocketAddress);
         return local == null ? null : local.toString();
     }
 
@@ -392,16 +432,7 @@ public interface Request extends Attributes, Content.Source
             return null;
         SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
         if (remote instanceof InetSocketAddress inetSocketAddress)
-        {
-            if (inetSocketAddress.isUnresolved())
-                return inetSocketAddress.getHostString();
-
-            InetAddress address = inetSocketAddress.getAddress();
-            String result = address == null
-                ? inetSocketAddress.getHostString()
-                : address.getHostAddress();
-            return HostPort.normalizeHost(result);
-        }
+            return getHostName(inetSocketAddress);
         return remote == null ? null : remote.toString();
     }
 
@@ -551,65 +582,52 @@ public interface Request extends Attributes, Content.Source
     @SuppressWarnings("unchecked")
     static List<HttpCookie> getCookies(Request request)
     {
-        // TODO modify Request and HttpChannel to be optimised for the known attributes
-        List<HttpCookie> cookies = (List<HttpCookie>)request.getAttribute(COOKIE_ATTRIBUTE);
-        if (cookies != null)
-            return cookies;
-
-        // TODO: review whether to store the cookie cache at the connection level, or whether to cache them at all.
-        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().getAttribute(CACHE_ATTRIBUTE);
-        if (cookieCache == null)
-        {
-            // TODO compliance listeners?
-            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), null);
-            request.getComponents().getCache().setAttribute(CACHE_ATTRIBUTE, cookieCache);
-        }
-
-        cookies = cookieCache.getCookies(request.getHeaders());
-        request.setAttribute(COOKIE_ATTRIBUTE, cookies);
-        return cookies;
+        return CookieCache.getCookies(request);
     }
 
     /**
-     * Common point to generate a proper "Location" header for redirects.
+     * <p>Get a {@link MultiPartConfig.Builder} given a {@link Request} and a location.</p>
+     *
+     * <p>If the location is null this will extract the {@link Context} temp directory from the request.
+     * The {@code maxHeaderSize}, {@link MultiPartCompliance}, {@link ComplianceViolation.Listener}
+     * are also extracted from the request. Additional settings can be configured through the
+     * {@link MultiPartConfig.Builder} which is returned.</p>
+     *
+     * @param request the request.
+     * @param location the temp directory location, or null to use the context default.
+     * @return a {@link MultiPartConfig} with settings extracted from the request.
+     */
+    static MultiPartConfig.Builder getMultiPartConfig(Request request, Path location)
+    {
+        HttpChannel httpChannel = HttpChannel.from(request);
+        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+        MultiPartCompliance multiPartCompliance = httpConfiguration.getMultiPartCompliance();
+        ComplianceViolation.Listener complianceViolationListener = httpChannel.getComplianceViolationListener();
+        int maxHeaderSize = httpConfiguration.getRequestHeaderSize();
+
+        if (location == null)
+            location = request.getContext().getTempDirectory().toPath();
+
+        return new MultiPartConfig.Builder()
+            .location(location)
+            .maxHeadersSize(maxHeaderSize)
+            .complianceMode(multiPartCompliance)
+            .violationListener(complianceViolationListener);
+    }
+
+    /**
+     * Generate a proper "Location" header for redirects.
      *
      * @param request the request the redirect should be based on (needed when relative locations are provided, so that
      * server name, scheme, port can be built out properly)
      * @param location the location URL to redirect to (can be a relative path)
      * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
+     * @deprecated use {@link Response#toRedirectURI(Request, String)}
      */
+    @Deprecated
     static String toRedirectURI(Request request, String location)
     {
-        if (!URIUtil.hasScheme(location) && !request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
-        {
-            StringBuilder url = new StringBuilder(128);
-            HttpURI uri = request.getHttpURI();
-            URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
-
-            if (location.startsWith("/"))
-            {
-                // absolute in context
-                location = URIUtil.normalizePathQuery(location);
-            }
-            else
-            {
-                // relative to request
-                String path = uri.getPath();
-                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.normalizePathQuery(URIUtil.addEncodedPaths(parent, location));
-                if (location != null && !location.startsWith("/"))
-                    url.append('/');
-            }
-
-            if (location == null)
-                throw new IllegalStateException("redirect path cannot be above root");
-            url.append(location);
-
-            location = url.toString();
-        }
-        // TODO do we need to do request relative without scheme?
-
-        return location;
+        return Response.toRedirectURI(request, location);
     }
 
     /**
@@ -660,6 +678,7 @@ public interface Request extends Attributes, Content.Source
      * <p>A handler for an HTTP request and response.</p>
      * <p>The handling typically involves reading the request content (if any) and producing a response.</p>
      */
+    @ManagedObject
     @FunctionalInterface
     interface Handler extends Invocable
     {
@@ -699,16 +718,33 @@ public interface Request extends Attributes, Content.Source
          *                   called and thus should attempt to complete the request as if a false had been returned.
          */
         boolean handle(Request request, Response response, Callback callback) throws Exception;
+
+        @Override
+        @ManagedAttribute("The InvocationType of this Handler")
+        default InvocationType getInvocationType()
+        {
+            return InvocationType.BLOCKING;
+        }
     }
 
     /**
      * <p>A wrapper for {@code Request} instances.</p>
      */
-    class Wrapper extends Attributes.Wrapper implements Request
+    class Wrapper implements Request
     {
+        /**
+         * Implementation note: {@link Request.Wrapper} does not extend from {@link Attributes.Wrapper}
+         * as {@link #getWrapped()} would either need to be implemented as {@code return (Request)getWrapped()}
+         * which would require a cast from one interface type to another, spoiling the JVM's
+         * {@code secondary_super_cache}, or by storing the same {@code _wrapped} object in two fields
+         * (one in {@link Attributes.Wrapper} as type {@link Attributes} and one in {@link Request.Wrapper} as
+         * type {@link Request}) to save the costly cast from interface type to another.
+         */
+        private final Request _request;
+
         public Wrapper(Request wrapped)
         {
-            super(wrapped);
+            _request = Objects.requireNonNull(wrapped);
         }
 
         @Override
@@ -844,9 +880,50 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public Object removeAttribute(String name)
+        {
+            return getWrapped().removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return getWrapped().setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return getWrapped().getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return getWrapped().getAttributeNameSet();
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return getWrapped().asAttributeMap();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            getWrapped().clearAttributes();
+        }
+
         public Request getWrapped()
         {
-            return (Request)super.getWrapped();
+            return _request;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
         }
     }
 
@@ -935,6 +1012,61 @@ public interface Request extends Attributes, Content.Source
         default Principal getUserPrincipal()
         {
             return null;
+        }
+    }
+
+    /**
+     * <p>A {@link Request.Wrapper} that separately provides the request {@link Attributes}.</p>
+     * <p>The provided {@link Attributes} should be an {@link Attributes.Wrapper} over the request.</p>
+     */
+    class AttributesWrapper extends Wrapper
+    {
+        private final Attributes _attributes;
+
+        /**
+         * @param wrapped the request to wrap
+         * @param attributes the provided request attributes, typically a {@link Attributes.Wrapper} over the request
+         */
+        public AttributesWrapper(Request wrapped, Attributes attributes)
+        {
+            super(wrapped);
+            _attributes = Objects.requireNonNull(attributes);
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return _attributes.asAttributeMap();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            _attributes.clearAttributes();
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return _attributes.removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return _attributes.setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _attributes.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return _attributes.getAttributeNameSet();
         }
     }
 }

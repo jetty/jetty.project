@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
@@ -29,8 +30,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
@@ -38,6 +41,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,9 +154,6 @@ public interface Response extends Content.Sink
      * has returned.</p>
      * <p>Thus a {@code Callback} should not block waiting for a callback
      * of a future call to this method.</p>
-     * <p>Furthermore, the invocation of the passed callback is serialized
-     * with invocations of the {@link Runnable} demand callback passed to
-     * {@link Request#demand(Runnable)}.</p>
      *
      * @param last whether the ByteBuffer is the last to write
      * @param byteBuffer the ByteBuffer to write
@@ -238,7 +239,7 @@ public interface Response extends Content.Sink
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
@@ -256,7 +257,7 @@ public interface Response extends Content.Sink
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @param consumeAvailable whether to consumer the available request content
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
@@ -275,9 +276,9 @@ public interface Response extends Content.Sink
      * @param response the HTTP response
      * @param callback the callback to complete
      * @param code the redirect HTTP status code
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @param consumeAvailable whether to consumer the available request content
-     * @see Request#toRedirectURI(Request, String)
+     * @see #toRedirectURI(Request, String)
      * @throws IllegalArgumentException if the status code is not a redirect, or the location is {@code null}
      * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
      */
@@ -301,32 +302,89 @@ public interface Response extends Content.Sink
             return;
         }
 
-        if (consumeAvailable)
+        try
         {
-            while (true)
+            if (consumeAvailable)
             {
-                Content.Chunk chunk = response.getRequest().read();
-                if (chunk == null)
+                while (true)
                 {
-                    response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                    break;
+                    Content.Chunk chunk = response.getRequest().read();
+                    if (chunk == null)
+                    {
+                        response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                        break;
+                    }
+                    chunk.release();
+                    if (chunk.isLast())
+                        break;
                 }
-                chunk.release();
-                if (chunk.isLast())
-                    break;
             }
-        }
 
-        response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
-        response.setStatus(code);
-        response.write(true, null, callback);
+            response.getHeaders().put(HttpHeader.LOCATION, toRedirectURI(request, location));
+            response.setStatus(code);
+            response.write(true, null, callback);
+        }
+        catch (Throwable failure)
+        {
+            callback.failed(failure);
+        }
     }
 
     /**
-     * <p>Adds an HTTP cookie to the response.</p>
+     * Common point to generate a proper "Location" header for redirects.
+     *
+     * @param request the request the redirect should be based on (needed when relative locations are provided, so that
+     * server name, scheme, port can be built out properly)
+     * @param location the redirect location as an absolute URI or encoded relative URI path. If a relative path starts
+     *                 with '/', then it is relative to the root, otherwise it is relative to the request.
+     * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
+     */
+    static String toRedirectURI(Request request, String location)
+    {
+        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+
+        // is the URI absolute already?
+        if (!URIUtil.hasScheme(location))
+        {
+            // The location is relative
+            HttpURI uri = request.getHttpURI();
+
+            // Is it relative to the request?
+            if (!location.startsWith("/"))
+            {
+                String path = uri.getPath();
+                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
+                location = URIUtil.addEncodedPaths(parent, location);
+            }
+
+            // Normalize out any dot dot segments
+            location = URIUtil.normalizePathQuery(location);
+            if (location == null)
+                throw new IllegalStateException("redirect path cannot be above root");
+
+            // if relative redirects are not allowed?
+            if (!httpConfiguration.isRelativeRedirectAllowed())
+                // make the location an absolute URI
+                location = URIUtil.newURI(uri.getScheme(), Request.getServerName(request), Request.getServerPort(request), location, null);
+        }
+
+        UriCompliance redirectCompliance = httpConfiguration.getRedirectUriCompliance();
+        if (redirectCompliance != null)
+        {
+            String violations = UriCompliance.checkUriCompliance(redirectCompliance, HttpURI.from(location), null);
+            if (StringUtil.isNotBlank(violations))
+                throw new IllegalArgumentException(violations);
+        }
+
+        return location;
+    }
+
+    /**
+     * <p>Adds an HTTP {@link HttpHeader#SET_COOKIE} header to the response.</p>
      *
      * @param response the HTTP response
      * @param cookie the HTTP cookie to add
+     * @see #putCookie(Response, HttpCookie)
      */
     static void addCookie(Response response, HttpCookie cookie)
     {
@@ -334,52 +392,108 @@ public interface Response extends Content.Sink
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
-        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()),
-            request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
+        CookieCompliance compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
+        try
+        {
+            response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
+        }
+        catch (ComplianceViolationException e)
+        {
+            HttpChannel.from(request).getComplianceViolationListener().onComplianceViolation(e.getEvent());
+            throw e;
+        }
 
-        // Expire responses with set-cookie headers so they do not get cached.
-        response.getHeaders().put(HttpFields.EXPIRES_01JAN1970);
+        // Expire responses with set-cookie headers, so they do not get cached.
+        if (!response.getHeaders().contains(HttpHeader.EXPIRES))
+            response.getHeaders().add(HttpFields.EXPIRES_01JAN1970);
     }
 
     /**
-     * <p>Replaces (if already exists, otherwise adds) an HTTP cookie to the response.</p>
+     * <p>Put a HTTP {@link HttpHeader#SET_COOKIE} header to the response.</p>
+     * <p>If a matching {@link HttpHeader#SET_COOKIE} already exists for matching name, path, domain etc.
+     * then it will be replaced.</p>
      *
      * @param response the HTTP response
-     * @param cookie the HTTP cookie to replace or add
+     * @param cookie the HTTP cookie to add
+     * @see #addCookie(Response, HttpCookie)
      */
-    static void replaceCookie(Response response, HttpCookie cookie)
+    static void putCookie(Response response, HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
         HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+        CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
+
+        HttpField setCookie;
+        try
+        {
+            setCookie = new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
+        }
+        catch (ComplianceViolationException e)
+        {
+            HttpChannel.from(request).getComplianceViolationListener().onComplianceViolation(e.getEvent());
+            throw e;
+        }
+
+        boolean expires = false;
 
         for (ListIterator<HttpField> i = response.getHeaders().listIterator(); i.hasNext(); )
         {
             HttpField field = i.next();
+            HttpHeader header = field.getHeader();
+            if (header == null)
+                continue;
 
-            if (field.getHeader() == HttpHeader.SET_COOKIE)
+            switch (header)
             {
-                CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
-                if (field instanceof HttpCookieUtils.SetCookieHttpField)
+                case SET_COOKIE ->
                 {
-                    if (!HttpCookieUtils.match(((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
-                        continue;
-                }
-                else
-                {
-                    if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
-                        continue;
+                    if (field instanceof HttpCookieUtils.SetCookieHttpField setCookieHttpField)
+                    {
+                        if (!HttpCookieUtils.match(setCookieHttpField.getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                            continue;
+                    }
+                    else
+                    {
+                        if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                            continue;
+                    }
+
+                    if (setCookie == null)
+                    {
+                        i.remove();
+                    }
+                    else
+                    {
+                        i.set(setCookie);
+                        setCookie = null;
+                    }
                 }
 
-                i.set(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
-                return;
+                case EXPIRES -> expires = true;
             }
         }
 
-        // Not replaced, so add normally
-        addCookie(response, cookie);
+        if (setCookie != null)
+            response.getHeaders().add(setCookie);
+
+        // Expire responses with set-cookie headers, so they do not get cached.
+        if (!expires)
+            response.getHeaders().add(HttpFields.EXPIRES_01JAN1970);
+    }
+
+    /**
+     * Replace a cookie
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to add
+     * @deprecated use {@link #putCookie(Response, HttpCookie)}
+     */
+    @Deprecated
+    static void replaceCookie(Response response, HttpCookie cookie)
+    {
+        putCookie(response, cookie);
     }
 
     /**
@@ -491,7 +605,7 @@ public interface Response extends Content.Sink
                 if (errorHandler.handle(errorRequest, response, callback))
                     return;
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 if (cause != null && cause != e)
                     cause.addSuppressed(e);
@@ -521,7 +635,7 @@ public interface Response extends Content.Sink
 
     /**
      * @param response the HTTP response
-     * @return the number of response content bytes written so far,
+     * @return the number of response content bytes written to the network so far,
      * or {@code -1} if the number is unknown
      */
     static long getContentBytesWritten(Response response)

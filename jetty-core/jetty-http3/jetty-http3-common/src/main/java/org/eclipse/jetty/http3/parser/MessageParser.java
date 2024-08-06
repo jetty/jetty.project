@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.util.function.BooleanSupplier;
 import java.util.function.UnaryOperator;
 
+import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
@@ -43,20 +44,17 @@ public class MessageParser
     private final BooleanSupplier isLast;
     private BodyParser unknownBodyParser;
     private State state = State.HEADER;
-    protected boolean dataMode;
+    private boolean dataMode;
     private long beginNanoTime;
+    private boolean beginNanoTimeStored;
 
     public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
     {
         this.listener = listener;
         this.decoder = decoder;
+        decoder.setBeginNanoTimeSupplier(this::getBeginNanoTime);
         this.streamId = streamId;
         this.isLast = isLast;
-    }
-
-    public long getBeginNanoTime()
-    {
-        return beginNanoTime;
     }
 
     public void init(UnaryOperator<ParserListener> wrapper)
@@ -72,6 +70,21 @@ public class MessageParser
     {
         headerParser.reset();
         state = State.HEADER;
+        beginNanoTimeStored = false;
+    }
+
+    private void storeBeginNanoTime()
+    {
+        if (!beginNanoTimeStored)
+        {
+            beginNanoTime = NanoTime.now();
+            beginNanoTimeStored = true;
+        }
+    }
+
+    private long getBeginNanoTime()
+    {
+        return beginNanoTime;
     }
 
     public ParserListener getListener()
@@ -107,6 +120,7 @@ public class MessageParser
                 {
                     case HEADER ->
                     {
+                        storeBeginNanoTime();
                         if (headerParser.parse(buffer))
                         {
                             state = State.BODY;
@@ -123,7 +137,6 @@ public class MessageParser
                     {
                         BodyParser bodyParser = null;
                         long frameType = headerParser.getFrameType();
-                        beginNanoTime = NanoTime.now(); // TODO #9900 check beginNanoTime's accuracy
                         if (frameType >= 0 && frameType < bodyParsers.length)
                             bodyParser = bodyParsers[(int)frameType];
 
@@ -138,8 +151,9 @@ public class MessageParser
                                 return Result.NO_FRAME;
                             }
 
+                            // SPEC: grease and unknown frame types are ignored.
                             if (LOG.isDebugEnabled())
-                                LOG.debug("ignoring unknown frame type {}", Long.toHexString(frameType));
+                                LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
 
                             BodyParser.Result result = unknownBodyParser.parse(buffer);
                             if (result == BodyParser.Result.NO_FRAME)

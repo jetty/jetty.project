@@ -24,11 +24,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpException;
@@ -40,15 +40,18 @@ import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +61,9 @@ import org.slf4j.LoggerFactory;
  * It is called by the {@link Response#writeError(Request, Response, Callback, int, String)}
  * to generate an error page.
  */
+@ManagedObject
 public class ErrorHandler implements Request.Handler
 {
-    // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_STATUS = "org.eclipse.jetty.server.error_status";
     public static final String ERROR_MESSAGE = "org.eclipse.jetty.server.error_message";
@@ -69,9 +72,10 @@ public class ErrorHandler implements Request.Handler
     public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD");
     public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
-    boolean _showServlet = true;
-    boolean _showStacks = true;
+    boolean _showStacks = false;
+    boolean _showCauses = false;
     boolean _showMessageInTitle = true;
+    String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     public ErrorHandler()
@@ -84,7 +88,7 @@ public class ErrorHandler implements Request.Handler
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback)
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("handle({}, {}, {})", request, response, callback);
@@ -110,16 +114,7 @@ public class ErrorHandler implements Request.Handler
         {
             if (message == null)
                 message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
-
-            try
-            {
-                generateResponse(request, response, code, message, cause, callback);
-            }
-            catch (Throwable x)
-            {
-                // TODO: cannot write the error response, give up and close the stream.
-                LOG.warn("Failure whilst generate error response", x);
-            }
+            generateResponse(request, response, code, message, cause, callback);
         }
         return true;
     }
@@ -134,7 +129,7 @@ public class ErrorHandler implements Request.Handler
                 callback.succeeded();
                 return;
             }
-            acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
+            acceptable = Collections.singletonList(_defaultResponseMimeType);
         }
         List<Charset> charsets = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET).stream()
             .map(s ->
@@ -205,13 +200,14 @@ public class ErrorHandler implements Request.Handler
 
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         bufferSize = Math.min(8192, bufferSize); // TODO ?
-        RetainableByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
+        ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
+        RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
 
         try
         {
             // write into the response aggregate buffer and flush it asynchronously.
             // Looping to reduce size if buffer overflows
-            boolean showStacks = _showStacks;
+            boolean showStacks = isShowStacks();
             while (true)
             {
                 try
@@ -236,7 +232,7 @@ public class ErrorHandler implements Request.Handler
                     if (showStacks)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Disable stacks for " + e.toString());
+                            LOG.debug("Disable stacks for " + e);
 
                         showStacks = false;
                         continue;
@@ -258,13 +254,14 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
+            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, byteBufferPool, buffer));
 
             return true;
         }
         catch (Throwable x)
         {
-            buffer.release();
+            if (buffer != null)
+                byteBufferPool.removeAndRelease(buffer);
             throw x;
         }
     }
@@ -294,7 +291,7 @@ public class ErrorHandler implements Request.Handler
         writer.write("<title>Error ");
         String status = Integer.toString(code);
         writer.write(status);
-        if (message != null && !message.equals(status))
+        if (isShowMessageInTitle() && message != null && !message.equals(status))
         {
             writer.write(' ');
             writer.write(StringUtil.sanitizeXmlString(message));
@@ -329,7 +326,7 @@ public class ErrorHandler implements Request.Handler
         htmlRow(writer, "URI", uri);
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
-        while (cause != null)
+        while (_showCauses && cause != null)
         {
             htmlRow(writer, "CAUSED BY", cause);
             cause = cause.getCause();
@@ -353,13 +350,16 @@ public class ErrorHandler implements Request.Handler
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
-        writer.write(' ');
-        writer.write(StringUtil.sanitizeXmlString(message));
+        if (isShowMessageInTitle())
+        {
+            writer.write(' ');
+            writer.write(StringUtil.sanitizeXmlString(message));
+        }
         writer.write("\n");
         writer.printf("URI: %s%n", request.getHttpURI());
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
-        while (cause != null)
+        while (_showCauses && cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
             if (showStacks)
@@ -376,7 +376,7 @@ public class ErrorHandler implements Request.Handler
         json.put("status", Integer.toString(code));
         json.put("message", message);
         int c = 0;
-        while (cause != null)
+        while (_showCauses && cause != null)
         {
             json.put("cause" + c++, cause.toString());
             cause = cause.getCause();
@@ -417,15 +417,12 @@ public class ErrorHandler implements Request.Handler
      * @param reason The reason for the error code (may be null)
      * @param fields The header fields that will be sent with the response.
      * @return The content as a ByteBuffer, or null for no body.
+     * @deprecated Do not override. No longer invoked by Jetty.
      */
+    @Deprecated(since = "12.0.8", forRemoval = true)
     public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)
     {
-        if (reason == null)
-            reason = HttpStatus.getMessage(status);
-        if (HttpStatus.hasNoBody(status))
-            return BufferUtil.EMPTY_BUFFER;
-        fields.put(HttpHeader.CONTENT_TYPE, Type.TEXT_HTML_8859_1.asString());
-        return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
+        return null;
     }
 
     /**
@@ -433,6 +430,7 @@ public class ErrorHandler implements Request.Handler
      *
      * @return the cacheControl header to set on error responses.
      */
+    @ManagedAttribute("The value of the Cache-Control response header")
     public String getCacheControl()
     {
         return _cacheControl == null ? null : _cacheControl.getValue();
@@ -449,24 +447,9 @@ public class ErrorHandler implements Request.Handler
     }
 
     /**
-     * @return True if the error page will show the Servlet that generated the error
-     */
-    public boolean isShowServlet()
-    {
-        return _showServlet;
-    }
-
-    /**
-     * @param showServlet True if the error page will show the Servlet that generated the error
-     */
-    public void setShowServlet(boolean showServlet)
-    {
-        _showServlet = showServlet;
-    }
-
-    /**
      * @return True if stack traces are shown in the error pages
      */
+    @ManagedAttribute("Whether the error page shows the stack trace")
     public boolean isShowStacks()
     {
         return _showStacks;
@@ -481,6 +464,29 @@ public class ErrorHandler implements Request.Handler
     }
 
     /**
+     * @return True if exception causes are shown in the error pages
+     */
+    @ManagedAttribute("Whether the error page shows the exception causes")
+    public boolean isShowCauses()
+    {
+        return _showCauses;
+    }
+
+    /**
+     * @param showCauses True if exception causes are shown in the error pages
+     */
+    public void setShowCauses(boolean showCauses)
+    {
+        _showCauses = showCauses;
+    }
+
+    @ManagedAttribute("Whether the error message is shown in the error page title")
+    public boolean isShowMessageInTitle()
+    {
+        return _showMessageInTitle;
+    }
+
+    /**
      * Set if true, the error message appears in page title.
      * @param showMessageInTitle if true, the error message appears in page title
      */
@@ -489,9 +495,21 @@ public class ErrorHandler implements Request.Handler
         _showMessageInTitle = showMessageInTitle;
     }
 
-    public boolean getShowMessageInTitle()
+    /**
+     * @return The mime type to be used when a client does not specify an Accept header, or the request did not fully parse
+     */
+    @ManagedAttribute("Mime type to be used when a client does not specify an Accept header, or the request did not fully parse")
+    public String getDefaultResponseMimeType()
     {
-        return _showMessageInTitle;
+        return _defaultResponseMimeType;
+    }
+
+    /**
+     * @param defaultResponseMimeType The mime type to be used when a client does not specify an Accept header, or the request did not fully parse
+     */
+    public void setDefaultResponseMimeType(String defaultResponseMimeType)
+    {
+        _defaultResponseMimeType = Objects.requireNonNull(defaultResponseMimeType);
     }
 
     protected void write(Writer writer, String string) throws IOException
@@ -512,18 +530,32 @@ public class ErrorHandler implements Request.Handler
         return errorHandler;
     }
 
-    public static class ErrorRequest extends Request.Wrapper
+    public static class ErrorRequest extends Request.AttributesWrapper
     {
-        private final int _status;
-        private final String _message;
-        private final Throwable _cause;
+        private static final Set<String> ATTRIBUTES = Set.of(ERROR_MESSAGE, ERROR_EXCEPTION, ERROR_STATUS);
 
         public ErrorRequest(Request request, int status, String message, Throwable cause)
         {
-            super(request);
-            _status = status;
-            _message = message;
-            _cause = cause;
+            super(request, new Attributes.Synthetic(request)
+            {
+                @Override
+                protected Object getSyntheticAttribute(String name)
+                {
+                    return switch (name)
+                    {
+                        case ERROR_MESSAGE -> message;
+                        case ERROR_EXCEPTION -> cause;
+                        case ERROR_STATUS -> status;
+                        default -> null;
+                    };
+                }
+
+                @Override
+                protected Set<String> getSyntheticNameSet()
+                {
+                    return ATTRIBUTES;
+                }
+            });
         }
 
         @Override
@@ -539,31 +571,6 @@ public class ErrorHandler implements Request.Handler
         }
 
         @Override
-        public Object getAttribute(String name)
-        {
-            return switch (name)
-            {
-                case ERROR_MESSAGE -> _message;
-                case ERROR_EXCEPTION -> _cause;
-                case ERROR_STATUS -> _status;
-                default -> super.getAttribute(name);
-            };
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            Set<String> names = new HashSet<>(super.getAttributeNameSet());
-            if (_message != null)
-                names.add(ERROR_MESSAGE);
-            if (_status > 0)
-                names.add(ERROR_STATUS);
-            if (_cause != null)
-                names.add(ERROR_EXCEPTION);
-            return names;
-        }
-
-        @Override
         public String toString()
         {
             return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
@@ -576,20 +583,33 @@ public class ErrorHandler implements Request.Handler
      * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
      * so that the {@link RetainableByteBuffer} used can be released.
      */
-    private static class WriteErrorCallback extends Callback.Nested
+    private static class WriteErrorCallback implements Callback
     {
-        private final Retainable _retainable;
+        private final AtomicReference<Callback>  _callback;
+        private final ByteBufferPool _pool;
+        private final RetainableByteBuffer _buffer;
 
-        public WriteErrorCallback(Callback callback, Retainable retainable)
+        public WriteErrorCallback(Callback callback, ByteBufferPool pool, RetainableByteBuffer retainable)
         {
-            super(callback);
-            _retainable = retainable;
+            _callback = new AtomicReference<>(callback);
+            _pool = pool;
+            _buffer = retainable;
         }
 
         @Override
-        public void completed()
+        public void succeeded()
         {
-            _retainable.release();
+            Callback callback = _callback.getAndSet(null);
+            if (callback != null)
+                ExceptionUtil.callAndThen(_buffer::release, callback::succeeded);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            Callback callback = _callback.getAndSet(null);
+            if (callback != null)
+                ExceptionUtil.callAndThen(x, t -> _pool.removeAndRelease(_buffer), callback::failed);
         }
     }
 }

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -63,6 +65,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     private ResponseWriter _writer;
     private long _contentLength = -1;
     private Supplier<Map<String, String>> _trailers;
+    private long _written;
 
     public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
@@ -278,6 +281,24 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         return _contentLength;
     }
 
+    @Override
+    public void write(boolean last, ByteBuffer content, Callback callback)
+    {
+        _written += BufferUtil.length(content);
+        super.write(last, content, callback);
+    }
+
+    /**
+     * <p>Returns the number of bytes written via this class {@link #write(boolean, ByteBuffer, Callback)} method.</p>
+     * <p>The number of bytes written to the network may be different.</p>
+     *
+     * @return the number of bytes written via this class {@link #write(boolean, ByteBuffer, Callback)} method.
+     */
+    long getContentBytesWritten()
+    {
+        return _written;
+    }
+
     public void closeOutput() throws IOException
     {
         if (_outputType == OutputType.WRITER)
@@ -338,7 +359,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                 {
                     HttpCookie c = sh.getSessionCookie(managedSession, getRequest().isSecure());
                     if (c != null)
-                        Response.addCookie(getWrapped(), c);
+                        Response.putCookie(getWrapped(), c);
                 }
                 else
                 {
@@ -540,58 +561,65 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         @Override
         public HttpField onAddField(HttpField field)
         {
-            if (field.getHeader() != null)
-            {
-                switch (field.getHeader())
-                {
-                    case CONTENT_LENGTH ->
-                    {
-                        if (!isCommitted())
-                        {
-                            return setContentLength(field);
-                        }
-                    }
-                    case CONTENT_TYPE ->
-                    {
-                        if (!isCommitted())
-                        {
-                            return setContentType(field);
-                        }
-                    }
-                }
-            }
+            if (isCommitted())
+                return null;
 
-            return super.onAddField(field);
+            if (field.getHeader() == null)
+                return super.onAddField(field);
+
+            return switch (field.getHeader())
+            {
+                case CONTENT_LENGTH -> setContentLength(field);
+                case CONTENT_TYPE -> setContentType(field);
+                default -> super.onAddField(field);
+            };
         }
 
         @Override
         public boolean onRemoveField(HttpField field)
         {
-            if (field.getHeader() != null)
+            if (isCommitted())
+                return false;
+            if (field.getHeader() == null)
+                return true;
+            switch (field.getHeader())
             {
-                switch (field.getHeader())
+                case CONTENT_LENGTH -> _contentLength = -1;
+                case CONTENT_TYPE ->
                 {
-                    case CONTENT_LENGTH ->
+                    _contentType = null;
+                    _mimeType = null;
+                    if (!isWriting())
                     {
-                        if (!isCommitted())
-                            _contentLength = -1;
-                    }
-                    case CONTENT_TYPE ->
-                    {
-                        if (!isCommitted())
+                        _characterEncoding = switch (_encodingFrom)
                         {
-                            _contentType = null;
-                            _mimeType = null;
-                            _characterEncoding = switch (_encodingFrom)
-                            {
-                                case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
-                                default -> null;
-                            };
-                        }
+                            case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
+                            default -> null;
+                        };
                     }
                 }
             }
+
             return true;
+        }
+
+        @Override
+        public HttpField onReplaceField(HttpField oldField, HttpField newField)
+        {
+            assert oldField != null && newField != null;
+
+            if (isCommitted())
+                return null;
+
+            if (newField.getHeader() == null)
+                return newField;
+
+            return switch (newField.getHeader())
+            {
+                case CONTENT_LENGTH -> setContentLength(newField);
+                case CONTENT_TYPE -> setContentType(newField);
+                default -> newField;
+            };
         }
 
         private HttpField setContentLength(HttpField field)

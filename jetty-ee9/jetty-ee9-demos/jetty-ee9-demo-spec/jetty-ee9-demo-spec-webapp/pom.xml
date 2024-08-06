@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9.demos</groupId>
     <artifactId>jetty-ee9-demos</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.13-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
@@ -39,20 +39,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- deliberately old version to test classloading -->
-    <!-- TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>9.4.19.vXXXXXXXX</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jakarta.servlet</groupId>
-          <artifactId>jakarta.servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
- -->
   </dependencies>
   <build>
     <pluginManagement>
@@ -63,7 +49,7 @@
           <version>${project.version}</version>
           <configuration>
             <scan>10</scan>
-            <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+            <contextXml>src/main/templates/plugin-context.xml</contextXml>
             <webApp>
               <war>src/main/webapp</war>
               <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
@@ -75,11 +61,18 @@
             <loginServices>
               <loginService implementation="org.eclipse.jetty.security.HashLoginService">
                 <name>Test Realm</name>
-                <config>src/etc/realm.properties</config>
+                <config implementation="org.eclipse.jetty.maven.MavenResource">
+                  <resourceAsString>src/etc/realm.properties</resourceAsString>
+                </config>
               </loginService>
             </loginServices>
           </configuration>
           <dependencies>
+            <dependency>
+              <groupId>org.eclipse.jetty.ee9</groupId>
+              <artifactId>jetty-ee9-jndi</artifactId>
+              <version>${project.version}</version>
+            </dependency>
             <dependency>
               <groupId>org.eclipse.jetty.ee9.demos</groupId>
               <artifactId>jetty-ee9-demo-mock-resources</artifactId>
@@ -113,28 +106,6 @@
         </configuration>
       </plugin>
 
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-xml-files</id>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/plugin-context.xml">
-                  <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-                <concat destfile="${project.build.directory}/test-spec.xml">
-                  <filelist dir="src/main/templates/" files="annotations-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -213,7 +184,7 @@
             <resource>
               <directory>target</directory>
               <includes>
-                <include>plugin-context.xml</include>
+                <include>src/main/templates/plugin-context.xml</include>
               </includes>
               <targetPath>META-INF</targetPath>
             </resource>

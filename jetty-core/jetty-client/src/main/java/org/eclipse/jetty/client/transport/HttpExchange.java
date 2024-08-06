@@ -233,6 +233,14 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         return result;
     }
 
+    boolean isResponseCompleteOrTerminated()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            return responseState == State.COMPLETED || responseState == State.TERMINATED;
+        }
+    }
+
     public void abort(Throwable failure, Promise<Boolean> promise)
     {
         // Atomically change the state of this exchange to be completed.
@@ -245,14 +253,14 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             abortResponse = completeResponse(failure);
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("Failed {}: req={}/rsp={}", this, abortRequest, abortResponse, failure);
-
         if (!abortRequest && !abortResponse)
         {
             promise.succeeded(false);
             return;
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Failed {}: req={}/rsp={}", this, abortRequest, abortResponse, failure);
 
         // We failed this exchange, deal with it.
 
@@ -266,7 +274,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         if (destination.remove(this))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Aborting while queued {}: {}", this, failure);
+                LOG.debug("Aborting while queued {}", this, failure);
             notifyFailureComplete(failure);
             promise.succeeded(true);
             return;
@@ -279,7 +287,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             // Because this exchange is failed, when associate() is called
             // it will return false, and the caller will dispose the channel.
             if (LOG.isDebugEnabled())
-                LOG.debug("Aborting before association {}: {}", this, failure);
+                LOG.debug("Aborting before association {}", this, failure);
             notifyFailureComplete(failure);
             promise.succeeded(true);
             return;
@@ -287,7 +295,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
         // Case #3: exchange was already associated.
         if (LOG.isDebugEnabled())
-            LOG.debug("Aborting while active {}: {}", this, failure);
+            LOG.debug("Aborting while active {}", this, failure);
         channel.abort(this, abortRequest ? failure : null, abortResponse ? failure : null, promise);
     }
 
@@ -309,11 +317,11 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         }
     }
 
-    public void proceed(Throwable failure)
+    public void proceed(Runnable proceedAction, Throwable failure)
     {
         HttpChannel channel = getHttpChannel();
         if (channel != null)
-            channel.proceed(this, failure);
+            channel.proceed(this, proceedAction, failure);
     }
 
     @Override

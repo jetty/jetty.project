@@ -21,6 +21,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -76,8 +78,8 @@ import org.slf4j.LoggerFactory;
  * <p>For XML configured contexts, the ID map will contain a reference to the {@link Server} instance called "Server" and
  * properties for the webapp file such as "jetty.webapp" and directory as "jetty.webapps".
  * The properties will be initialized with:<ul>
- *     <li>The properties set on the application via {@link App#getProperties()}; otherwise:</li>
- *     <li>The properties set on this provider via {@link #getProperties()}</li>
+ * <li>The properties set on the application via {@link App#getProperties()}; otherwise:</li>
+ * <li>The properties set on this provider via {@link #getProperties()}</li>
  * </ul>
  */
 @ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
@@ -149,7 +151,7 @@ public class ContextProvider extends ScanningAppProvider
     public void loadProperties(Resource resource) throws IOException
     {
         Properties props = new Properties();
-        try (InputStream inputStream = resource.newInputStream())
+        try (InputStream inputStream = IOResources.asInputStream(resource))
         {
             props.load(inputStream);
             props.forEach((key, value) -> _properties.put((String)key, (String)value));
@@ -242,6 +244,7 @@ public class ContextProvider extends ScanningAppProvider
 
     /**
      * This is equivalent to setting the {@link Deployable#CONFIGURATION_CLASSES} property.
+     *
      * @param configurations The configuration class names as a comma separated list
      */
     public void setConfigurationClasses(String configurations)
@@ -251,6 +254,7 @@ public class ContextProvider extends ScanningAppProvider
 
     /**
      * This is equivalent to setting the {@link Deployable#CONFIGURATION_CLASSES} property.
+     *
      * @param configurations The configuration class names.
      */
     public void setConfigurationClasses(String[] configurations)
@@ -261,8 +265,8 @@ public class ContextProvider extends ScanningAppProvider
     }
 
     /**
-     *
      * This is equivalent to getting the {@link Deployable#CONFIGURATION_CLASSES} property.
+     *
      * @return The configuration class names.
      */
     @ManagedAttribute("configuration classes for webapps to be processed through")
@@ -340,32 +344,48 @@ public class ContextProvider extends ScanningAppProvider
 
             // prepare properties
             Map<String, String> properties = new HashMap<>();
+
+            //add in properties from start mechanism
             properties.putAll(getProperties());
+
+            Object context = null;
+            //check if there is a specific ContextHandler type to create set in the
+            //properties associated with the webapp. If there is, we create it _before_
+            //applying the environment xml file.
+            String contextHandlerClassName = app.getProperties().get(Deployable.CONTEXT_HANDLER_CLASS);
+            if (contextHandlerClassName != null)
+                context = Class.forName(contextHandlerClassName).getDeclaredConstructor().newInstance();
+
+            //add in environment-specific properties
+            String env = app.getEnvironmentName() == null ? "" : app.getEnvironmentName();
+            Path envProperties = app.getPath().getParent().resolve(env + ".properties");
+            if (Files.exists(envProperties))
+            {
+                try (InputStream stream = Files.newInputStream(envProperties))
+                {
+                    Properties p = new Properties();
+                    p.load(stream);
+                    p.stringPropertyNames().forEach(k -> properties.put(k, p.getProperty(k)));
+                }
+
+                String str = properties.get(Deployable.ENVIRONMENT_XML);
+                if (!StringUtil.isEmpty(str))
+                {
+                    Path envXmlPath = Paths.get(str);
+                    if (!envXmlPath.isAbsolute())
+                        envXmlPath = getMonitoredDirResource().getPath().getParent().resolve(envXmlPath);
+
+                    context = applyXml(context, envXmlPath, env, properties);
+                }
+            }
+
+            //add in properties specific to the deployable
             properties.putAll(app.getProperties());
 
             // Handle a context XML file
             if (FileID.isXml(path))
             {
-                XmlConfiguration xmlc = new XmlConfiguration(ResourceFactory.of(this).newResource(path), null, properties)
-                {
-                    @Override
-                    public void initializeDefaults(Object context)
-                    {
-                        super.initializeDefaults(context);
-                        ContextProvider.this.initializeContextHandler(context, path, properties);
-                    }
-                };
-
-                xmlc.getIdMap().put("Environment", environment);
-                xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), path);
-
-                // If it is a core context environment, then look for a classloader
-                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
-                if (coreContextClassLoader != null)
-                    Thread.currentThread().setContextClassLoader(coreContextClassLoader);
-
-                // Create the context by running the configuration
-                Object context = xmlc.configure();
+                context = applyXml(context, path, env, properties);
 
                 // Look for the contextHandler itself
                 ContextHandler contextHandler = null;
@@ -381,33 +401,69 @@ public class ContextProvider extends ScanningAppProvider
                     throw new IllegalStateException("Unknown context type of " + context);
 
                 // Set the classloader if we have a coreContextClassLoader
+                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
                 if (coreContextClassLoader != null)
                     contextHandler.setClassLoader(coreContextClassLoader);
 
                 return contextHandler;
             }
+
             // Otherwise it must be a directory or an archive
             else if (!Files.isDirectory(path) && !FileID.isWebArchive(path))
             {
                 throw new IllegalStateException("unable to create ContextHandler for " + app);
             }
 
-            // Build the web application
-            String contextHandlerClassName = (String)environment.getAttribute("contextHandlerClass");
-            if (StringUtil.isBlank(contextHandlerClassName))
-                throw new IllegalStateException("No ContextHandler classname for " + app);
-            Class<?> contextHandlerClass = Loader.loadClass(contextHandlerClassName);
-            if (contextHandlerClass == null)
-                throw new IllegalStateException("Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
+            // Build the web application if necessary
+            if (context == null)
+            {
+                contextHandlerClassName = (String)environment.getAttribute("contextHandlerClass");
+                if (StringUtil.isBlank(contextHandlerClassName))
+                    throw new IllegalStateException("No ContextHandler classname for " + app);
+                Class<?> contextHandlerClass = Loader.loadClass(contextHandlerClassName);
+                if (contextHandlerClass == null)
+                    throw new IllegalStateException("Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
 
-            Object context = contextHandlerClass.getDeclaredConstructor().newInstance();
-            properties.put(Deployable.WAR, path.toString());
+                context = contextHandlerClass.getDeclaredConstructor().newInstance();
+                properties.put(Deployable.WAR, path.toString());
+            }
+
             return initializeContextHandler(context, path, properties);
         }
         finally
         {
             Thread.currentThread().setContextClassLoader(old);
         }
+    }
+
+    protected Object applyXml(Object context, Path xml, String environment, Map<String, String> properties) throws Exception
+    {
+        if (!FileID.isXml(xml))
+            return null;
+
+        XmlConfiguration xmlc = new XmlConfiguration(ResourceFactory.of(this).newResource(xml), null, properties)
+        {
+            @Override
+            public void initializeDefaults(Object context)
+            {
+                super.initializeDefaults(context);
+                ContextProvider.this.initializeContextHandler(context, xml, properties);
+            }
+        };
+
+        xmlc.getIdMap().put("Environment", environment);
+        xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), xml);
+
+        // If it is a core context environment, then look for a classloader
+        ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(xml) : null;
+        if (coreContextClassLoader != null)
+            Thread.currentThread().setContextClassLoader(coreContextClassLoader);
+
+        // Create or configure the context
+        if (context == null)
+            return xmlc.configure();
+
+        return xmlc.configure(context);
     }
 
     protected ClassLoader findCoreContextClassLoader(Path path) throws IOException
@@ -501,7 +557,7 @@ public class ContextProvider extends ScanningAppProvider
                 !Files.exists(path.getParent().resolve(basename + ".WAR"));
         }
 
-        // deploy if there is not a .war for of the same basename
+        // deploy if it is a .war and there is not a .xml for of the same basename
         if (FileID.isWebArchive(path))
         {
             // if a .xml file exists for it
@@ -518,5 +574,12 @@ public class ContextProvider extends ScanningAppProvider
     {
         if (isDeployable(path))
             super.pathAdded(path);
+    }
+
+    @Override
+    protected void pathChanged(Path path) throws Exception
+    {
+        if (isDeployable(path))
+            super.pathChanged(path);
     }
 }

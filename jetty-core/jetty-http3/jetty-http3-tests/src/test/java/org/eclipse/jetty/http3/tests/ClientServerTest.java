@@ -38,7 +38,9 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
+import org.eclipse.jetty.quic.common.QuicErrorCode;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -365,6 +367,7 @@ public class ClientServerTest extends AbstractClientServerTest
     }
 
     @Test
+    @Tag("flaky")
     public void testRequestHeadersTooLarge() throws Exception
     {
         start(new Session.Server.Listener()
@@ -377,13 +380,22 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         });
 
-        int maxRequestHeadersSize = 128;
+        int maxRequestHeadersSize = 256;
         HTTP3Configuration http3Configuration = http3Client.getHTTP3Configuration();
         http3Configuration.setMaxRequestHeadersSize(maxRequestHeadersSize);
         // Disable the dynamic table, otherwise the large header
-        // is sent as string literal on the encoder stream.
+        // is sent as string literal on the encoder stream, rather than the message stream.
         http3Configuration.setMaxEncoderTableCapacity(0);
-        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+        CountDownLatch settingsLatch = new CountDownLatch(1);
+        Session.Client clientSession = newSession(new Session.Client.Listener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+        });
+        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         CountDownLatch requestFailureLatch = new CountDownLatch(1);
         HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxRequestHeadersSize));
@@ -417,7 +429,7 @@ public class ClientServerTest extends AbstractClientServerTest
     @Test
     public void testResponseHeadersTooLarge() throws Exception
     {
-        int maxResponseHeadersSize = 128;
+        int maxResponseHeadersSize = 256;
         CountDownLatch settingsLatch = new CountDownLatch(2);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch responseFailureLatch = new CountDownLatch(1);
@@ -462,7 +474,7 @@ public class ClientServerTest extends AbstractClientServerTest
         assertNotNull(h3);
         HTTP3Configuration http3Configuration = h3.getHTTP3Configuration();
         // Disable the dynamic table, otherwise the large header
-        // is sent as string literal on the encoder stream.
+        // is sent as string literal on the encoder stream, rather than the message stream.
         http3Configuration.setMaxEncoderTableCapacity(0);
         http3Configuration.setMaxResponseHeadersSize(maxResponseHeadersSize);
 
@@ -523,10 +535,10 @@ public class ClientServerTest extends AbstractClientServerTest
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
-                        // TODO: we should not be needing this!!!
+                        // Calling readData() triggers the read+parse
+                        // of the trailer, and returns no data.
                         Stream.Data data = stream.readData();
                         assertNull(data);
-                        stream.demand();
                     }
 
                     @Override
@@ -628,5 +640,25 @@ public class ClientServerTest extends AbstractClientServerTest
         clientStream.data(new DataFrame(ByteBuffer.allocate(512), true));
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testMissingNeededClientCertificateDeniesConnection() throws Exception
+    {
+        start(new Session.Server.Listener() {});
+        connector.getQuicConfiguration().getSslContextFactory().setNeedClientAuth(true);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        newSession(new Session.Client.Listener()
+        {
+            @Override
+            public void onDisconnect(Session session, long error, String reason)
+            {
+                assertEquals(QuicErrorCode.CONNECTION_REFUSED.code(), error);
+                assertEquals("missing_client_certificate_chain", reason);
+                latch.countDown();
+            }
+        });
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

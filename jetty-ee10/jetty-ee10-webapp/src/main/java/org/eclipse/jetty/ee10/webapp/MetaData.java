@@ -25,6 +25,7 @@ import java.util.Objects;
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -401,24 +402,19 @@ public class MetaData
      */
     private Resource getEnclosingResource(List<Resource> resources, Resource resource)
     {
-        Resource enclosingResource = null;
         try
         {
             for (Resource r : resources)
             {
-                if (resource.isContainedIn(r))
-                {
-                    enclosingResource = r;
-                    break;
-                }
+                if (r.contains(resource))
+                    return r;
             }
-            return enclosingResource;
         }
         catch (Exception e)
         {
             LOG.warn("Not contained within?", e);
-            return null;
         }
+        return null;
     }
 
     public void addDescriptorProcessor(DescriptorProcessor p)
@@ -719,8 +715,13 @@ public class MetaData
 
     public void addContainerResource(Resource jar)
     {
-        Objects.requireNonNull(jar);
-        _orderedContainerResources.add(jar);
+        if (!Resources.isReadable(jar))
+            throw new IllegalArgumentException("Resource is not readable: " + jar);
+
+        if (!_orderedContainerResources.contains(jar))
+            _orderedContainerResources.add(jar);
+        else
+            LOG.warn("Duplicate Container Resource {}", jar);
     }
 
     public void setWebInfClassesResources(List<Resource> dirs)

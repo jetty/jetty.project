@@ -393,7 +393,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /**
      * Get a known existing session
      *
-     * @param extendedId The session id, possibly imcluding worker name suffix.
+     * @param extendedId The session id, possibly including worker name suffix.
      * @return the Session matching the id or null if none exists
      */
     @Override
@@ -415,7 +415,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     }
                     catch (Exception e)
                     {
-                        LOG.warn("Invalidating session {} found to be expired when requested", id, e);
+                        if (LOG.isDebugEnabled())
+                            LOG.warn("Invalidating session {} found to be expired when requested", id, e);
                     }
 
                     return null;
@@ -665,7 +666,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             path = (path == null ? "" : path);
             int port = httpURI.getPort();
             if (port < 0)
-                port = HttpScheme.getDefaultPort(httpURI.getScheme());
+            {
+                String scheme = httpURI.getScheme();
+                port = URIUtil.getDefaultPortForScheme(scheme);
+            }
 
             // Is it the same server?
             if (!Request.getServerName(request).equalsIgnoreCase(httpURI.getHost()))
@@ -833,8 +837,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
     /**
-     * @return true if session cookies should be HTTP-only (Microsoft extension)
-     * @see org.eclipse.jetty.http.HttpCookie#isHttpOnly()
+     * @return true if session cookies should be HTTP only
+     * @see HttpCookie#isHttpOnly()
      */
     @Override
     public boolean isHttpOnly()
@@ -854,6 +858,28 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _sessionCookieAttributes.put(HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(httpOnly));
     }
     
+    /**
+     * @return true if session cookies should have the {@code Partitioned} attribute
+     * @see HttpCookie#isPartitioned()
+     */
+    @Override
+    public boolean isPartitioned()
+    {
+        return Boolean.parseBoolean(_sessionCookieAttributes.get(HttpCookie.PARTITIONED_ATTRIBUTE));
+    }
+
+    /**
+     * Sets whether session cookies should have the {@code Partitioned} attribute
+     *
+     * @param partitioned whether session cookies should have the {@code Partitioned} attribute
+     * @see HttpCookie
+     */
+    @Override
+    public void setPartitioned(boolean partitioned)
+    {
+        _sessionCookieAttributes.put(HttpCookie.PARTITIONED_ATTRIBUTE, Boolean.toString(partitioned));
+    }
+
     /**
      * Check if id is in use by this context
      *
@@ -1240,6 +1266,18 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
         }
 
+        //try getting a session id for our context that has been newly created by another context
+        if (request.getContext().isCrossContextDispatch(request))
+        {
+            String tmp = (String)request.getAttribute(DefaultSessionIdManager.__NEW_SESSION_ID);
+            if (!StringUtil.isEmpty(tmp))
+            {
+                if (ids == null)
+                    ids = new ArrayList<>();
+                ids.add(tmp);
+            }
+        }
+
         if (ids == null)
             return NO_REQUESTED_SESSION;
 
@@ -1399,7 +1437,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
     /**
      * StreamWrapper to intercept commit and complete events to ensure
-     * session handling happens in context, with request available.
+     * session handling happens in context, with the request available.
+     * This implementation assumes that a request only has a single session.
      */
     private class SessionStreamWrapper extends HttpStream.Wrapper
     {

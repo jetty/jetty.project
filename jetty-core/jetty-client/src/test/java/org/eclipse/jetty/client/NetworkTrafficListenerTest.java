@@ -45,6 +45,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -247,8 +248,8 @@ public class NetworkTrafficListenerTest
         assertTrue(serverIncomingLatch.await(1, TimeUnit.SECONDS));
         assertTrue(serverOutgoingLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientIncomingLatch.await(1, TimeUnit.SECONDS));
-        assertEquals(clientOutgoing.get(), serverIncoming.get());
-        assertEquals(serverOutgoing.get(), clientIncoming.get());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientOutgoing.get().equals(serverIncoming.get()));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> serverOutgoing.get().equals(clientIncoming.get()));
     }
 
     @Test

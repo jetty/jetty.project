@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -42,8 +41,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final ServletChannel _servletChannel;
     private final ServletChannelState _channelState;
     private final byte[] _oneByteBuffer = new byte[1];
-    private final BlockingContentProducer _blockingContentProducer;
-    private final AsyncContentProducer _asyncContentProducer;
+    final BlockingContentProducer _blockingContentProducer;
+    final AsyncContentProducer _asyncContentProducer;
     private final LongAdder _contentConsumed = new LongAdder();
     private volatile ContentProducer _contentProducer;
     private volatile boolean _consumedEof;
@@ -66,6 +65,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug("recycle {}", this);
             _blockingContentProducer.recycle();
             _contentProducer = _blockingContentProducer;
+            _readListener = null;
         }
     }
 
@@ -189,14 +189,14 @@ public class HttpInput extends ServletInputStream implements Runnable
             LOG.debug("setting read listener to {} {}", readListener, this);
         if (_readListener != null)
             throw new IllegalStateException("ReadListener already set");
-        //illegal if async not started
+        // illegal if async not started
         if (!_channelState.isAsyncStarted())
             throw new IllegalStateException("Async not started");
         _readListener = Objects.requireNonNull(readListener);
 
         _contentProducer = _asyncContentProducer;
         // trigger content production
-        if (isReady() && _channelState.onReadEof()) // onReadEof b/c we want to transition from WAITING to WOKEN
+        if (isReady() && _channelState.onReadListenerReady()) // onReadListenerReady b/c we want to transition from WAITING to WOKEN
             scheduleReadListenerNotification(); // this is needed by AsyncServletIOTest.testStolenAsyncRead
     }
 
@@ -245,6 +245,8 @@ public class HttpInput extends ServletInputStream implements Runnable
             Content.Chunk chunk = _contentProducer.nextChunk();
             if (chunk == null)
                 throw new IllegalStateException("read on unready input");
+
+            // Is it not empty?
             if (chunk.hasRemaining())
             {
                 int read = buffer == null ? get(chunk, b, off, len) : get(chunk, buffer);
@@ -255,6 +257,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 return read;
             }
 
+            // Is it a failure?
             if (Content.Chunk.isFailure(chunk))
             {
                 Throwable failure = chunk.getFailure();
@@ -265,10 +268,11 @@ public class HttpInput extends ServletInputStream implements Runnable
                 throw new IOException(failure);
             }
 
+            // Empty and not a failure; can only be EOF as per ContentProducer.nextChunk() contract.
             if (LOG.isDebugEnabled())
                 LOG.debug("read at EOF, setting consumed EOF to true {}", this);
             _consumedEof = true;
-            // If EOF do we need to wake for allDataRead callback?
+            // Do we need to wake for allDataRead callback?
             if (onContentProducible())
                 scheduleReadListenerNotification();
             return -1;
@@ -277,6 +281,8 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private void scheduleReadListenerNotification()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("scheduling ReadListener notification {}", this);
         _servletChannel.execute(_servletChannel::handle);
     }
 
@@ -348,8 +354,6 @@ public class HttpInput extends ServletInputStream implements Runnable
             Throwable failure = chunk.getFailure();
             if (LOG.isDebugEnabled())
                 LOG.debug("running failure={} {}", failure, this);
-            // TODO is this necessary to add here?
-            _servletChannel.getServletContextResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
             _readListener.onError(failure);
         }
         else if (chunk.isLast() && !chunk.hasRemaining())

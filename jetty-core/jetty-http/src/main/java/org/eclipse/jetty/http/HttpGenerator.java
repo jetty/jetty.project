@@ -18,8 +18,6 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
@@ -195,7 +193,7 @@ public class HttpGenerator
                 int pos = BufferUtil.flipToFill(header);
                 try
                 {
-                    // generate ResponseLine
+                    // generate request line
                     generateRequestLine(info, header);
 
                     if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
@@ -520,7 +518,7 @@ public class HttpGenerator
         String reason = response.getReason();
         if (preprepared != null)
         {
-            if (reason == null)
+            if (reason == null || preprepared._reason.equals(reason))
                 header.put(preprepared._responseLine);
             else
             {
@@ -627,23 +625,58 @@ public class HttpGenerator
 
                         case CONNECTION:
                         {
-                            boolean keepAlive = field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
-                            if (keepAlive && _info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null)
+                            String value = field.getValue();
+
+                            // Handle simple case of close value only
+                            if (HttpHeaderValue.CLOSE.is(value))
                             {
-                                _persistent = true;
-                            }
-                            if (field.contains(HttpHeaderValue.CLOSE.asString()))
-                            {
+                                if (!close)
+                                    header.put(CONNECTION_CLOSE);
                                 close = true;
                                 _persistent = false;
                             }
-                            if (keepAlive && _persistent == Boolean.FALSE)
+                            // Handle close with other values
+                            else if (field.contains(HttpHeaderValue.CLOSE.asString()))
                             {
-                                field = new HttpField(HttpHeader.CONNECTION,
-                                    Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
-                                        .collect(Collectors.joining(", ")));
+                                close = true;
+                                _persistent = false;
+
+                                // Add the field, but without keep-alive
+                                putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
                             }
-                            putTo(field, header);
+                            // Handle Keep-Alive value only
+                            else if (HttpHeaderValue.KEEP_ALIVE.is(value))
+                            {
+                                // If we can persist for HTTP/1.0
+                                if (_persistent != Boolean.FALSE && _info.getHttpVersion() == HttpVersion.HTTP_1_0)
+                                {
+                                    // then do so
+                                    _persistent = true;
+                                    header.put(CONNECTION_KEEP_ALIVE);
+                                }
+                                // otherwise we just ignore the keep-alive
+                            }
+                            // Handle Keep-Alive with other values, but no close
+                            else if (field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            {
+                                // If we can persist for HTTP/1.0
+                                if (_persistent != Boolean.FALSE && _info.getHttpVersion() == HttpVersion.HTTP_1_0)
+                                {
+                                    // then do so
+                                    _persistent = true;
+                                    putTo(field, header);
+                                }
+                                else
+                                {
+                                    // otherwise we add the field, but without keep-alive
+                                    putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
+                                }
+                            }
+                            // Handle connection header without either close nor keep-alive
+                            else
+                            {
+                                putTo(field, header);
+                            }
                             break;
                         }
 
@@ -779,11 +812,9 @@ public class HttpGenerator
         }
     }
 
+    @Deprecated(forRemoval = true)
     public static byte[] getReasonBuffer(int code)
     {
-        PreparedResponse status = code < __preprepared.length ? __preprepared[code] : null;
-        if (status != null)
-            return status._reason;
         return null;
     }
 
@@ -801,15 +832,23 @@ public class HttpGenerator
     private static final byte[] LAST_CHUNK = {(byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n'};
     private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\r\n");
     private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\r\n");
+    private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\r\n");
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1 + " ");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\r\n");
 
     // Build cache of response lines for status
     private static class PreparedResponse
     {
-        byte[] _reason;
-        byte[] _schemeCode;
-        byte[] _responseLine;
+        final String _reason;
+        final byte[] _schemeCode;
+        final byte[] _responseLine;
+
+        private PreparedResponse(String reason, byte[] schemeCode, byte[] responseLine)
+        {
+            _reason = reason;
+            _schemeCode = schemeCode;
+            _responseLine = responseLine;
+        }
     }
 
     private static final PreparedResponse[] __preprepared = new PreparedResponse[HttpStatus.MAX_CODE + 1];
@@ -838,10 +877,7 @@ public class HttpGenerator
             line[versionLength + 5 + reason.length()] = HttpTokens.CARRIAGE_RETURN;
             line[versionLength + 6 + reason.length()] = HttpTokens.LINE_FEED;
 
-            __preprepared[i] = new PreparedResponse();
-            __preprepared[i]._schemeCode = Arrays.copyOfRange(line, 0, versionLength + 5);
-            __preprepared[i]._reason = Arrays.copyOfRange(line, versionLength + 5, line.length - 2);
-            __preprepared[i]._responseLine = line;
+            __preprepared[i] = new PreparedResponse(reason, Arrays.copyOfRange(line, 0, versionLength + 5), line);
         }
     }
 

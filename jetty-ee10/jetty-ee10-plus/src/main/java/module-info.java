@@ -16,21 +16,16 @@ import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 
 module org.eclipse.jetty.ee10.plus
 {
-    requires org.eclipse.jetty.jndi;
+    requires transitive org.eclipse.jetty.plus;
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.ee10.webapp;
 
-    // Only required if using DataSourceLoginService.
-    requires static java.sql;
     // Only required if using Transaction.
-    requires static jakarta.transaction;
-    // Only required if using RunAs.
-    requires static org.eclipse.jetty.ee10.servlet;
+    requires static transitive jakarta.transaction;
+    requires org.eclipse.jetty.jndi;
 
-    exports org.eclipse.jetty.ee10.plus.annotation;
     exports org.eclipse.jetty.ee10.plus.jndi;
-    exports org.eclipse.jetty.ee10.plus.security;
     exports org.eclipse.jetty.ee10.plus.webapp;
 
     provides org.eclipse.jetty.ee10.webapp.Configuration with

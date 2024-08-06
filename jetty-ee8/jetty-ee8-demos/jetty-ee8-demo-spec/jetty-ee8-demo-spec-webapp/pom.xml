@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.demos</groupId>
     <artifactId>jetty-ee8-demo-spec</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.13-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-demo-spec-webapp</artifactId>
   <packaging>war</packaging>
@@ -39,20 +39,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- deliberately old version to test classloading -->
-    <!-- TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>9.4.19.vXXXXXXXX</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jakarta.servlet</groupId>
-          <artifactId>jakarta.servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
- -->
   </dependencies>
   <build>
     <pluginManagement>
@@ -75,7 +61,9 @@
             <loginServices>
               <loginService implementation="org.eclipse.jetty.security.HashLoginService">
                 <name>Test Realm</name>
-                <config>${project.build.directory}/realm.properties</config>
+                <config implementation="org.eclipse.jetty.maven.MavenResource">
+                  <resourceAsString>${project.build.directory}/realm.properties</resourceAsString>
+                </config>
               </loginService>
             </loginServices>
           </configuration>
@@ -102,36 +90,15 @@
           <instructions>
             <Bundle-Description>Test Webapp for Servlet 5.0 Features</Bundle-Description>
             <!-- TODO Add 'org.eclipse.jetty.util;version="[9.4.19,9.4.20)",' below, once 9.4.19 is released with a fix for #3726 -->
-            <Import-Package>jakarta.transaction*;version="2.0.0", jakarta.servlet*;version="[5,6)", org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", *</Import-Package>
+            <Import-Package>javax.transaction*;version="[1.1,2.0)", javax.servlet*;version="[2.6,4.1)", org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", *</Import-Package>
             <_nouses></_nouses>
             <Export-Package>org.example.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";-noimport:=true</Export-Package>
             <Web-ContextPath>/</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes,WEB-INF/lib</Bundle-ClassPath>
-            <Jetty-ContextFilePath>/META-INF/plugin-context.xml</Jetty-ContextFilePath>
+            <Jetty-ContextFilePath>META-INF/plugin-context.xml</Jetty-ContextFilePath>
+            <Jetty-Environment>ee8</Jetty-Environment>
           </instructions>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-xml-files</id>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/plugin-context.xml">
-                  <filelist dir="${project.build.directory}/templates" files="plugin-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-                <concat destfile="${project.build.directory}/test-spec.xml">
-                  <filelist dir="${project.build.directory}/templates" files="annotations-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -249,7 +216,7 @@
           </archive>
           <webResources>
             <resource>
-              <directory>target</directory>
+              <directory>target/templates</directory>
               <includes>
                 <include>plugin-context.xml</include>
               </includes>

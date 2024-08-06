@@ -35,6 +35,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -215,6 +216,23 @@ public class XmlConfiguredJetty
         }
     }
 
+    public ContextHandler getContextHandler(String contextPath)
+    {
+        ContextHandler contextHandler = null;
+        for (Handler handler : _contexts.getHandlers())
+        {
+            if (handler instanceof ContextHandler ch)
+            {
+                if (ch.getContextPath().equals(contextPath))
+                {
+                    contextHandler = ch;
+                    break;
+                }
+            }
+        }
+        return contextHandler;
+    }
+
     private void copyFile(String type, Path srcFile, Path destFile) throws IOException
     {
         assertThat(srcFile, PathMatchers.isRegularFile());
@@ -249,9 +267,7 @@ public class XmlConfiguredJetty
 
     public URI getServerURI() throws UnknownHostException
     {
-        StringBuilder uri = new StringBuilder();
-        URIUtil.appendSchemeHostPort(uri, getScheme(), InetAddress.getLocalHost().getHostAddress(), getServerPort());
-        return URI.create(uri.toString());
+        return HttpURI.from(getScheme(), InetAddress.getLocalHost().getHostAddress(), getServerPort(), null).toURI();
     }
 
     public Path getJettyBasePath()
@@ -332,7 +348,7 @@ public class XmlConfiguredJetty
 
     public void setScheme(String scheme)
     {
-        this._scheme = scheme;
+        this._scheme = URIUtil.normalizeScheme(scheme);
     }
 
     public void start() throws Exception

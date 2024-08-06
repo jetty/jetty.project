@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
@@ -26,7 +26,7 @@
         </Arg>
         <Call name="addEventListener">
           <Arg>
-            <New class="org.eclipse.jetty.ee10.maven.plugin.ServerConnectorListener">
+            <New class="org.eclipse.jetty.maven.ServerConnectorListener">
               <Set name="fileName"><Property name="jetty.port.file" default="port.txt"/></Set>
             </New>
           </Arg>

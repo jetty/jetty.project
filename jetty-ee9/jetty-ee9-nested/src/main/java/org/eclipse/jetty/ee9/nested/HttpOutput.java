@@ -32,7 +32,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
@@ -43,7 +45,9 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.ThreadIdPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,7 +180,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
-    private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
+    private static final ThreadIdPool<CharsetEncoder> _encoder = new ThreadIdPool<>();
 
     private final HttpChannel _channel;
     private final HttpChannelState _channelState;
@@ -188,6 +192,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private long _written;
     private long _flushed;
     private long _firstByteNanoTime = -1;
+    private ByteBufferPool _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -289,7 +294,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                releaseBuffer();
+                lockedReleaseBuffer(failure != null);
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -510,7 +515,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             _state = State.CLOSED;
-            releaseBuffer();
+            lockedReleaseBuffer(failure != null);
         }
     }
 
@@ -639,23 +644,34 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (AutoLock l = _channelState.lock())
         {
-            return acquireBuffer().getByteBuffer();
+            return lockedAcquireBuffer().getByteBuffer();
         }
     }
 
-    private RetainableByteBuffer acquireBuffer()
+    private RetainableByteBuffer lockedAcquireBuffer()
     {
+        assert _channelState.isLockHeldByCurrentThread();
+
         if (_aggregate == null)
-            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.isUseOutputDirectByteBuffers());
+        {
+            _pool = _channel.getByteBufferPool();
+            _aggregate = _pool.acquire(getBufferSize(), _channel.isUseOutputDirectByteBuffers());
+        }
         return _aggregate;
     }
 
-    private void releaseBuffer()
+    private void lockedReleaseBuffer(boolean failure)
     {
+        assert _channelState.isLockHeldByCurrentThread();
+
         if (_aggregate != null)
         {
-            _aggregate.release();
+            if (failure && _pool != null)
+                _pool.removeAndRelease(_aggregate);
+            else
+                _aggregate.release();
             _aggregate = null;
+            _pool = null;
         }
     }
 
@@ -737,7 +753,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             catch (Throwable t)
             {
                 onWriteComplete(false, t);
-                throw t;
+                if (t instanceof IOException)
+                    throw t;
+                throw new IOException(t);
             }
         }
     }
@@ -816,7 +834,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // Should we aggregate?
             if (aggregate)
             {
-                acquireBuffer();
+                lockedAcquireBuffer();
                 int filled = BufferUtil.fill(_aggregate.getByteBuffer(), b, off, len);
 
                 // return if we are not complete, not full and filled all the content
@@ -1021,7 +1039,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             _written = written;
 
-            acquireBuffer();
+            lockedAcquireBuffer();
             BufferUtil.append(_aggregate.getByteBuffer(), (byte)b);
         }
 
@@ -1069,13 +1087,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         s = String.valueOf(s);
 
         String charset = _channel.getResponse().getCharacterEncoding();
-        CharsetEncoder encoder = _encoder.get();
+        CharsetEncoder encoder = _encoder.take();
         if (encoder == null || !encoder.charset().name().equalsIgnoreCase(charset))
         {
             encoder = Charset.forName(charset).newEncoder();
             encoder.onMalformedInput(CodingErrorAction.REPLACE);
             encoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
-            _encoder.set(encoder);
         }
         else
         {
@@ -1136,6 +1153,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         finally
         {
             out.release();
+            encoder.reset();
+            _encoder.offer(encoder);
         }
     }
 
@@ -1164,7 +1183,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (Blocker blocker = _writeBlocker.acquire())
         {
-            new InputStreamWritingCB(in, blocker).iterate();
+            sendContent(in, blocker);
             blocker.block();
         }
     }
@@ -1179,7 +1198,22 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (Blocker blocker = _writeBlocker.acquire())
         {
-            new ReadableByteChannelWritingCB(in, blocker).iterate();
+            sendContent(in, blocker);
+            blocker.block();
+        }
+    }
+
+    /**
+     * Blocking send of resource.
+     *
+     * @param resource The resource content to send
+     * @throws IOException if the send fails
+     */
+    public void sendContent(Resource resource) throws IOException
+    {
+        try (Blocker blocker = _writeBlocker.acquire())
+        {
+            sendContent(resource, blocker);
             blocker.block();
         }
     }
@@ -1211,23 +1245,24 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.debug("sendContent(buffer={},{})", BufferUtil.toDetailString(content), callback);
 
         if (prepareSendContent(content.remaining(), callback))
-            channelWrite(content, true,
-                new Callback.Nested(callback)
+        {
+            channelWrite(content, true, new Callback.Nested(callback)
+            {
+                @Override
+                public void succeeded()
                 {
-                    @Override
-                    public void succeeded()
-                    {
-                        onWriteComplete(true, null);
-                        super.succeeded();
-                    }
+                    onWriteComplete(true, null);
+                    super.succeeded();
+                }
 
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        onWriteComplete(true, x);
-                        super.failed(x);
-                    }
-                });
+                @Override
+                public void failed(Throwable x)
+                {
+                    onWriteComplete(true, x);
+                    super.failed(x);
+                }
+            });
+        }
     }
 
     /**
@@ -1260,6 +1295,67 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (prepareSendContent(0, callback))
             new ReadableByteChannelWritingCB(in, callback).iterate();
+    }
+
+    /**
+     * Asynchronous send of whole resource.
+     *
+     * @param resource The resource content to send
+     * @param callback The callback to use to notify success or failure
+     */
+    public void sendContent(Resource resource, Callback callback)
+    {
+        try
+        {
+            if (prepareSendContent(0, callback))
+            {
+                IOResources.copy(resource, (last, byteBuffer, cb) ->
+                {
+                    _written += byteBuffer.remaining();
+                    channelWrite(byteBuffer, last, cb);
+                }, _channel.getByteBufferPool(), getBufferSize(), _channel.isUseOutputDirectByteBuffers(), new Callback.Nested(callback)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        onWriteComplete(true, null);
+                        super.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        onWriteComplete(true, x);
+                        super.failed(x);
+                    }
+                });
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to send resource {}", resource, x);
+            _channel.abort(x);
+            callback.failed(x);
+        }
+    }
+
+    /**
+     * Asynchronous send of HTTP content.
+     *
+     * @param httpContent The HTTP content to send
+     * @param callback The callback to use to notify success or failure
+     */
+    public void sendContent(HttpContent httpContent, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendContent(http={},{})", httpContent, callback);
+
+        ByteBuffer buffer = httpContent.getByteBuffer();
+        if (buffer != null)
+            sendContent(buffer, callback);
+        else
+            sendContent(httpContent.getResource(), callback);
     }
 
     private boolean prepareSendContent(int len, Callback callback)
@@ -1301,38 +1397,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (len > 0)
                 _written += len;
             return true;
-        }
-    }
-
-    /**
-     * Asynchronous send of HTTP content.
-     *
-     * @param httpContent The HTTP content to send
-     * @param callback The callback to use to notify success or failure
-     */
-    public void sendContent(HttpContent httpContent, Callback callback)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("sendContent(http={},{})", httpContent, callback);
-
-        ByteBuffer buffer = httpContent.getByteBuffer();
-        if (buffer != null)
-        {
-            sendContent(buffer, callback);
-            return;
-        }
-
-        try
-        {
-            ReadableByteChannel rbc = httpContent.getResource().newReadableByteChannel();
-            sendContent(rbc, callback);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to access ReadableByteChannel for content {}", httpContent, x);
-            _channel.abort(x);
-            callback.failed(x);
         }
     }
 
@@ -1380,6 +1444,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (AutoLock l = _channelState.lock())
         {
+            lockedReleaseBuffer(_state != State.CLOSED);
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
             _softClose = true; // Stay closed until next request
@@ -1389,7 +1454,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _commitSize = config.getOutputAggregationSize();
             if (_commitSize > _bufferSize)
                 _commitSize = _bufferSize;
-            releaseBuffer();
             _written = 0;
             _writeListener = null;
             _onError = null;

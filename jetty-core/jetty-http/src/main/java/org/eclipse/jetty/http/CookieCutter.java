@@ -33,7 +33,7 @@ import static org.eclipse.jetty.http.CookieCompliance.Violation.SPECIAL_CHARS_IN
 @Deprecated
 public class CookieCutter implements CookieParser
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(CookieCutter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CookieCutter.class);
 
     private final CookieParser.Handler _handler;
     private final CookieCompliance _complianceMode;
@@ -366,7 +366,7 @@ public class CookieCutter implements CookieParser
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         if (_complianceListener != null)
-            _complianceListener.onComplianceViolation(_complianceMode, violation, reason);
+            _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
     }
 
     protected boolean isRFC6265RejectedCharacter(char c)

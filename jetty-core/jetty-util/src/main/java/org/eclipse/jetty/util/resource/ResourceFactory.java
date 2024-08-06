@@ -13,15 +13,21 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.StringTokenizer;
 
+import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
@@ -110,13 +116,13 @@ import org.slf4j.LoggerFactory;
  *     urlResourceFactory.setConnectTimeout(1000);
  *     ResourceFactory.registerResourceFactory("https", urlResourceFactory);
  *
- *     URI web = URI.create("https://eclipse.dev/jetty/");
+ *     URI web = URI.create("https://jetty.org/");
  *     Resource resource = ResourceFactory.root().newResource(web);
  * </pre>
  */
 public interface ResourceFactory
 {
-    static final Logger LOG = LoggerFactory.getLogger(ResourceFactory.class);
+    Logger LOG = LoggerFactory.getLogger(ResourceFactory.class);
 
     /**
      * <p>Make a directory Resource containing a collection of other directory {@link Resource}s</p>
@@ -150,7 +156,7 @@ public interface ResourceFactory
      * Construct a resource from a uri.
      *
      * @param uri A URI.
-     * @return A Resource object, or null if uri points to a location that does not exist.
+     * @return A Resource object.
      */
     Resource newResource(URI uri);
 
@@ -158,7 +164,7 @@ public interface ResourceFactory
      * <p>Construct a Resource from a string reference into classloaders.</p>
      *
      * @param resource Resource as string representation
-     * @return The new Resource, or null if string points to a location that does not exist
+     * @return The new Resource
      * @throws IllegalArgumentException if string is blank
      * @see #newClassLoaderResource(String, boolean)
      * @deprecated use {@link #newClassLoaderResource(String)} or {@link #newClassLoaderResource(String, boolean)} instead, will be removed in Jetty 12.1.0
@@ -192,7 +198,7 @@ public interface ResourceFactory
      *
      * @param resource the resource name to find in a classloader
      * @param searchSystemClassLoader true to search {@link ClassLoader#getSystemResource(String)}, false to skip
-     * @return The new Resource, or null if string points to a location that does not exist
+     * @return The new Resource, which may be a {@link CombinedResource} if multiple directory resources are found.
      * @throws IllegalArgumentException if resource name or resulting URL from ClassLoader is invalid.
      */
     default Resource newClassLoaderResource(String resource, boolean searchSystemClassLoader)
@@ -200,47 +206,60 @@ public interface ResourceFactory
         if (StringUtil.isBlank(resource))
             throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
-        URL url = null;
-
-        List<Function<String, URL>> loaders = new ArrayList();
-        loaders.add(Thread.currentThread().getContextClassLoader()::getResource);
-        loaders.add(ResourceFactory.class.getClassLoader()::getResource);
-        if (searchSystemClassLoader)
-            loaders.add(ClassLoader::getSystemResource);
-
-        for (Function<String, URL> loader : loaders)
+        // We need a local interface to combine static and non-static methods
+        interface Source
         {
-            if (url != null)
-                break;
+            Enumeration<URL> getResources(String name) throws IOException;
+        }
 
-            try
+        List<Source> sources = new ArrayList<>();
+        sources.add(Thread.currentThread().getContextClassLoader()::getResources);
+        sources.add(ResourceFactory.class.getClassLoader()::getResources);
+        if (searchSystemClassLoader)
+            sources.add(ClassLoader::getSystemResources);
+
+        List<Resource> resources = new ArrayList<>();
+        String[] names = resource.startsWith("/") ? new String[] {resource, resource.substring(1)} : new String[] {resource};
+
+        // For each source of resource
+        for (Source source : sources)
+        {
+            // for each variation of the resource name
+            for (String name : names)
             {
-                url = loader.apply(resource);
-                if (url == null && resource.startsWith("/"))
-                    url = loader.apply(resource.substring(1));
-            }
-            catch (IllegalArgumentException e)
-            {
-                // Catches scenario where a bad Windows path like "C:\dev" is
-                // improperly escaped, which various downstream classloaders
-                // tend to have a problem with
-                if (LOG.isTraceEnabled())
-                    LOG.trace("Ignoring bad getResource(): {}", resource, e);
+                try
+                {
+                    // Get all matching URLs
+                    Enumeration<URL> urls = source.getResources(name);
+                    while (urls.hasMoreElements())
+                    {
+                        // Get the resource
+                        Resource r = newResource(urls.nextElement().toURI());
+                        // If it is not a directory, then return it as the singular found resource
+                        if (!r.isDirectory())
+                            return r;
+                        // otherwise add it to a list of resource to combine.
+                        resources.add(r);
+                    }
+                }
+                catch (Throwable e)
+                {
+                    // Catches scenario where a bad Windows path like "C:\dev" is
+                    // improperly escaped, which various downstream classloaders
+                    // tend to have a problem with
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("Ignoring bad getResource(): {}", resource, e);
+                }
             }
         }
 
-        if (url == null)
+        if (resources.isEmpty())
             return null;
 
-        try
-        {
-            URI uri = url.toURI();
-            return newResource(uri);
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
-        }
+        if (resources.size() == 1)
+            return resources.get(0);
+
+        return combine(resources);
     }
 
     /**
@@ -251,7 +270,7 @@ public interface ResourceFactory
      * </p>
      *
      * @param resource string representation of resource to find in a classloader
-     * @return The new Resource, or null if string points to a location that does not exist
+     * @return The new Resource
      * @throws IllegalArgumentException if string is blank
      * @see #newClassLoaderResource(String, boolean)
      */
@@ -268,7 +287,7 @@ public interface ResourceFactory
      * </p>
      *
      * @param resource the relative name of the resource
-     * @return Resource, or null if string points to a location that does not exist
+     * @return Resource
      * @throws IllegalArgumentException if string is blank
      * @see #newClassLoaderResource(String, boolean)
      * @deprecated use {@link #newClassLoaderResource(String, boolean)} instead, will be removed in Jetty 12.1.0
@@ -317,7 +336,44 @@ public interface ResourceFactory
         if (StringUtil.isBlank(resource))
             throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
-        return newResource(URIUtil.toURI(resource));
+        if (URIUtil.hasScheme(resource))
+        {
+            try
+            {
+                URI uri = new URI(resource);
+                if (isSupported(uri))
+                    return newResource(URIUtil.correctURI(uri));
+
+                if (uri.getScheme().length() != 1)
+                    throw new IllegalArgumentException("URI scheme not registered: " + uri.getScheme());
+            }
+            catch (URISyntaxException x)
+            {
+                // We have an input string that has what looks like a scheme, but isn't a URI.
+                // Eg: "C:\path\to\resource.txt"
+                LOG.trace("ignored", x);
+            }
+        }
+
+        // If we reached this point, we have a String with no valid/supported scheme.
+        // Treat it as a Path, as that's all we have left to investigate.
+        try
+        {
+            Path path = Paths.get(resource);
+            URI uri = new URI(path.toUri().toASCIIString());
+            return new PathResource(path, uri, true);
+        }
+        catch (InvalidPathException | URISyntaxException x)
+        {
+            LOG.trace("ignored", x);
+        }
+
+        // If we reached this here, that means the input string cannot be used as
+        // a URI or a File Path.  The cause is usually due to bad input (eg:
+        // characters that are not supported by file system)
+        if (LOG.isDebugEnabled())
+            LOG.debug("Input string cannot be converted to URI \"{}\"", resource);
+        throw new IllegalArgumentException("Cannot be converted to URI");
     }
 
     /**
@@ -388,6 +444,62 @@ public interface ResourceFactory
         if (!uri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + uri);
         return newResource(URIUtil.toJarFileUri(uri));
+    }
+
+    /**
+     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into URIs.
+     * <p>
+     *     Each part of the input string could be path references (unix or windows style), or string URI references.
+     * </p>
+     * <p>
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
+     * </p>
+     *
+     * @param str the input string of references
+     */
+    default List<Resource> split(String str)
+    {
+        List<Resource> list = new ArrayList<>();
+
+        StringTokenizer tokenizer = new StringTokenizer(str, ",;|");
+        while (tokenizer.hasMoreTokens())
+        {
+            String reference = tokenizer.nextToken();
+            try
+            {
+                // Is this a glob reference?
+                if (reference.endsWith("/*") || reference.endsWith("\\*"))
+                {
+                    Resource dir = newResource(reference.substring(0, reference.length() - 2));
+                    if (dir.isDirectory())
+                    {
+                        List<Resource> expanded = dir.list();
+                        expanded.sort(ResourceCollators.byName(true));
+                        // TODO it is unclear why non archive files are not expanded into the list
+                        expanded.stream().filter(r -> FileID.isLibArchive(r.getName())).forEach(list::add);
+                    }
+                }
+                else
+                {
+                    // Simple reference
+                    list.add(newResource(reference));
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Invalid Resource Reference: " + reference);
+                throw e;
+            }
+        }
+
+        for (ListIterator<Resource> i = list.listIterator(); i.hasNext(); )
+        {
+            Resource resource = i.next();
+            if (resource.exists() && !resource.isDirectory() && FileID.isLibArchive(resource.getName()))
+                i.set(newResource(URIUtil.toJarFileUri(resource.getURI())));
+        }
+
+        return list;
     }
 
     /**
@@ -498,7 +610,9 @@ public interface ResourceFactory
      *
      * @param baseResource the resource to base this ResourceFactory from
      * @return the ResourceFactory that builds from the Resource
+     * @deprecated Use {@link Resource#resolve(String)}
      */
+    @Deprecated (since = "12.0.8", forRemoval = true)
     static ResourceFactory of(Resource baseResource)
     {
         Objects.requireNonNull(baseResource);

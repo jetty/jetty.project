@@ -14,13 +14,15 @@
 package org.eclipse.jetty.quic.common;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -38,7 +40,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
@@ -71,17 +72,9 @@ public abstract class QuicConnection extends AbstractConnection
     protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
-        if (!(endPoint instanceof DatagramChannelEndPoint))
-            throw new IllegalArgumentException("EndPoint must be a " + DatagramChannelEndPoint.class.getSimpleName());
         this.scheduler = scheduler;
         this.bufferPool = bufferPool;
         this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor());
-    }
-
-    @Override
-    public DatagramChannelEndPoint getEndPoint()
-    {
-        return (DatagramChannelEndPoint)super.getEndPoint();
     }
 
     public Scheduler getScheduler()
@@ -211,6 +204,8 @@ public abstract class QuicConnection extends AbstractConnection
 
     protected abstract QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException;
 
+    public abstract InetSocketAddress getLocalInetSocketAddress();
+
     public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
     {
         flusher.offer(callback, remoteAddress, buffers);
@@ -232,10 +227,9 @@ public abstract class QuicConnection extends AbstractConnection
             {
                 BufferUtil.clear(cipherBuffer);
                 SocketAddress remoteAddress = getEndPoint().receive(cipherBuffer);
-                int fill = remoteAddress == DatagramChannelEndPoint.EOF ? -1 : cipherBuffer.remaining();
+                int fill = remoteAddress == EndPoint.EOF ? -1 : cipherBuffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled cipher buffer with {} byte(s)", fill);
-                // DatagramChannelEndPoint will only return -1 if input is shut down.
                 if (fill < 0)
                 {
                     buffer.release();
@@ -314,7 +308,7 @@ public abstract class QuicConnection extends AbstractConnection
         }
     }
 
-    private Runnable process(QuicSession session, SocketAddress remoteAddress, ByteBuffer cipherBuffer)
+    protected Runnable process(QuicSession session, SocketAddress remoteAddress, ByteBuffer cipherBuffer)
     {
         try
         {
@@ -350,26 +344,19 @@ public abstract class QuicConnection extends AbstractConnection
 
     private class Flusher extends IteratingCallback
     {
-        private final AutoLock lock = new AutoLock();
-        private final ArrayDeque<Entry> queue = new ArrayDeque<>();
+        private final Queue<Entry> queue = new ConcurrentLinkedQueue<>();
         private Entry entry;
 
         public void offer(Callback callback, SocketAddress address, ByteBuffer[] buffers)
         {
-            try (AutoLock l = lock.lock())
-            {
-                queue.offer(new Entry(callback, address, buffers));
-            }
+            queue.offer(new Entry(callback, address, buffers));
             iterate();
         }
 
         @Override
         protected Action process()
         {
-            try (AutoLock l = lock.lock())
-            {
-                entry = queue.poll();
-            }
+            entry = queue.poll();
             if (entry == null)
                 return Action.IDLE;
 
@@ -378,17 +365,9 @@ public abstract class QuicConnection extends AbstractConnection
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             entry.callback.succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            entry.callback.failed(x);
-            super.failed(x);
         }
 
         @Override
@@ -400,10 +379,11 @@ public abstract class QuicConnection extends AbstractConnection
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            entry.callback.failed(cause);
             QuicConnection.this.close();
         }
 
-        private class Entry
+        private static class Entry
         {
             private final Callback callback;
             private final SocketAddress address;

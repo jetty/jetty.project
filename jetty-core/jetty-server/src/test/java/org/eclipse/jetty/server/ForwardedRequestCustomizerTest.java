@@ -85,7 +85,7 @@ public class ForwardedRequestCustomizerTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
+                HttpConnection connection = new HttpConnection(getHttpConfiguration(), connector, endPoint)
                 {
                     @Override
                     public SocketAddress getLocalSocketAddress()
@@ -131,8 +131,11 @@ public class ForwardedRequestCustomizerTest
         {
             actual = new Actual();
             actual.wasSecure.set(request.isSecure());
-            actual.sslSession.set(String.valueOf(request.getAttribute("jakarta.servlet.request.ssl_session_id")));
-            actual.sslCertificate.set(String.valueOf(request.getAttribute("jakarta.servlet.request.cipher_suite")));
+            if (request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData)
+            {
+                actual.sslSession.set(sslSessionData.sslSessionId());
+                actual.sslCertificate.set(sslSessionData.cipherSuite());
+            }
             actual.scheme.set(request.getHttpURI().getScheme());
             actual.serverName.set(Request.getServerName(request));
             actual.serverPort.set(Request.getServerPort(request));

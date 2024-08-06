@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.tests.distribution;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -21,8 +20,10 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.ee10.tests.distribution.openid.OpenIdProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -30,6 +31,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Isolated
 public class OpenIdTests extends AbstractJettyHomeTest
 {
     @Test
@@ -56,10 +58,10 @@ public class OpenIdTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File webApp = distribution.resolveArtifact("org.eclipse.jetty.ee10:jetty-ee10-test-openid-webapp:war:" + jettyVersion);
-            distribution.installWarFile(webApp, "test");
+            Path webApp = distribution.resolveArtifact("org.eclipse.jetty.ee10:jetty-ee10-test-openid-webapp:war:" + jettyVersion);
+            distribution.installWar(webApp, "test");
 
-            int port = distribution.freePort();
+            int port = Tester.freePort();
             openIdProvider.addRedirectUri("http://localhost:" + port + "/test/j_security_check");
             openIdProvider.start();
             String[] args2 = {

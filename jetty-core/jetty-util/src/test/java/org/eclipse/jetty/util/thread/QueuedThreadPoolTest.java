@@ -808,11 +808,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         waitForIdle(pool, 3);
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
-        assertThat(count(dump, " - STARTED"), is(2));
+        assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=3,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        assertThat(count(dump, " IDLE"), is(3));
-        assertThat(count(dump, " RESERVED"), is(0));
 
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch waiting = new CountDownLatch(1);
@@ -828,42 +826,42 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
                 e.printStackTrace();
             }
         });
+        pool.tryExecute(() -> {});
         started.await();
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
-        assertThat(count(dump, " - STARTED"), is(2));
-        assertThat(dump, containsString(",3<=3<=4,i=2,r=2,"));
+        assertThat(count(dump, " - STARTED"), is(3));
+        assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        assertThat(count(dump, " IDLE"), is(2));
-        assertThat(count(dump, " WAITING"), is(1));
-        assertThat(count(dump, " RESERVED"), is(0));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(0));
 
         pool.setDetailedDump(true);
         dump = pool.dump();
-        assertThat(count(dump, " - STARTED"), is(2));
-        assertThat(dump, containsString(",3<=3<=4,i=2,r=2,"));
-        assertThat(dump, containsString("reserved=0/2"));
+        assertThat(count(dump, " - STARTED"), is(3));
+        assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        assertThat(count(dump, " IDLE"), is(2));
-        assertThat(count(dump, " WAITING"), is(1));
-        assertThat(count(dump, " RESERVED"), is(0));
         assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
 
-        assertFalse(pool.tryExecute(() ->
+        CountDownLatch latch = new CountDownLatch(1);
+        assertTrue(pool.tryExecute(() ->
         {
+            try
+            {
+                latch.await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
         }));
-        waitForReserved(pool, 1);
         Thread.sleep(250); // TODO need to give time for threads to read idle poll after setting idle
         dump = pool.dump();
-        assertThat(count(dump, " - STARTED"), is(2));
+        assertThat(count(dump, " - STARTED"), is(3));
         assertThat(dump, containsString(",3<=3<=4,i=1,r=2,"));
-        assertThat(dump, containsString("reserved=1/2"));
         assertThat(dump, containsString("[ReservedThreadExecutor@"));
-        assertThat(count(dump, " IDLE"), is(1));
-        assertThat(count(dump, " WAITING"), is(1));
-        assertThat(count(dump, " RESERVED"), is(1));
-        assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(1));
+        assertThat(count(dump, "> ReservedThread@"), is(0));
+        assertThat(count(dump, "QueuedThreadPoolTest.lambda$testDump$"), is(2));
+        latch.countDown();
     }
 
     @Test

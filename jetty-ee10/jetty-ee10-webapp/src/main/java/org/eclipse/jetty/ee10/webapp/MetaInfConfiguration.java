@@ -20,16 +20,15 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UriPatternPredicate;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -119,6 +119,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * To find them, examine the classloaders in the hierarchy above the
      * webapp classloader that are URLClassLoaders. For jdk-9 we also
      * look at the java.class.path, and the jdk.module.path.
+     * <p>
+     * Any {@code jar:file:} resources found will be mounted in the
+     * {@link ResourceFactory} of the context.
+     * </p>
      *
      * @param context the WebAppContext being deployed
      */
@@ -130,21 +134,22 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (StringUtil.isBlank(pattern))
             return; // TODO review if this short cut will allow later code simplifications
 
-        ResourceFactory resourceFactory = ResourceFactory.of(context);
+        ResourceFactory resourceFactory = context.getResourceFactory();
 
         // Apply an initial name filter to the jars to select which will be eventually
         // scanned for META-INF info and annotations. The filter is based on inclusion patterns.
         UriPatternPredicate uriPatternPredicate = new UriPatternPredicate(pattern, false);
-        Consumer<URI> addContainerResource = (uri) ->
+        Consumer<Resource> addContainerResource = (resource) ->
         {
-            Resource resource = resourceFactory.newResource(uri);
             if (Resources.missing(resource))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Classpath URI doesn't exist: " + uri);
+                    LOG.debug("Classpath URI doesn't exist: " + resource);
             }
             else
+            {
                 context.getMetaData().addContainerResource(resource);
+            }
         };
 
         List<URI> containerUris = getAllContainerJars(context);
@@ -152,6 +157,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
             LOG.debug("All container urls {}", containerUris);
         containerUris.stream()
             .filter(uriPatternPredicate)
+            .map(resourceFactory::newResource)
+            .filter(Objects::nonNull)
             .forEach(addContainerResource);
 
         // When running on jvm 9 or above, we won't be able to look at the application
@@ -160,8 +167,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (classPath != null)
         {
             Stream.of(classPath.split(File.pathSeparator))
-                .map(URIUtil::toURI)
-                .filter(uriPatternPredicate)
+                .map(resourceFactory::newResource)
+                .filter(Objects::nonNull)
+                .filter(r -> uriPatternPredicate.test(r.getURI()))
                 .forEach(addContainerResource);
         }
 
@@ -172,31 +180,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
         String modulePath = System.getProperty("jdk.module.path");
         if (modulePath != null)
         {
-            List<Path> matchingBasePaths =
             Stream.of(modulePath.split(File.pathSeparator))
-                .map(URIUtil::toURI)
-                .filter(uriPatternPredicate)
-                .map(Paths::get)
-                .toList();
-            for (Path path: matchingBasePaths)
-            {
-                if (Files.isDirectory(path))
+                .map(resourceFactory::newResource)
+                .filter(Objects::nonNull)
+                .filter(r -> uriPatternPredicate.test(r.getURI()))
+                .forEach(r ->
                 {
-                    try (Stream<Path> listing = Files.list(path))
-                    {
-                        for (Path listEntry: listing.toList())
-                        {
-                            Resource resource = resourceFactory.newResource(listEntry);
-                            context.getMetaData().addContainerResource(resource);
-                        }
-                    }
-                }
-                else
-                {
-                    Resource resource = resourceFactory.newResource(path);
-                    context.getMetaData().addContainerResource(resource);
-                }
-            }
+                    if (r.isDirectory())
+                        r.list().forEach(i -> context.getMetaData().addContainerResource(i));
+                    else
+                        context.getMetaData().addContainerResource(r);
+                });
         }
 
         if (LOG.isDebugEnabled())
@@ -354,74 +348,84 @@ public class MetaInfConfiguration extends AbstractConfiguration
         //Scan jars for META-INF information
         if (jars != null)
         {
-            for (Resource r : jars)
+            try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
             {
-                if (scanTypes.contains(METAINF_RESOURCES))
-                    scanForResources(context, r, metaInfResourceCache);
-                if (scanTypes.contains(METAINF_FRAGMENTS))
-                    scanForFragment(context, r, metaInfFragmentCache);
-                if (scanTypes.contains(METAINF_TLDS))
-                    scanForTlds(context, r, metaInfTldCache);
+                for (Resource dir : jars)
+                {
+                    try
+                    {
+                        //If not already a directory, convert by mounting as jar file
+                        if (!dir.isDirectory())
+                            dir = scanResourceFactory.newJarFileResource(dir.getURI());
+                    }
+                    catch (Exception e)
+                    {
+                        //not an appropriate uri, skip it
+                        continue;
+                    }
+
+                    if (isEmptyResource(dir))
+                        continue;
+
+                    if (scanTypes.contains(METAINF_RESOURCES))
+                        scanForResources(context, dir, metaInfResourceCache);
+                    if (scanTypes.contains(METAINF_FRAGMENTS))
+                        scanForFragment(context, dir, metaInfFragmentCache);
+                    if (scanTypes.contains(METAINF_TLDS))
+                        scanForTlds(context, dir, metaInfTldCache);
+                }
             }
         }
     }
 
     /**
-     * Scan for META-INF/resources dir in the given jar.
+     * Scan for META-INF/resources dir in the given directory.
      *
      * @param context the context for the scan
-     * @param target the target resource to scan for
+     * @param dir the target directory to scan
      * @param cache the resource cache
      */
-    public void scanForResources(WebAppContext context, Resource target, ConcurrentHashMap<Resource, Resource> cache)
+    public void scanForResources(WebAppContext context, Resource dir, ConcurrentHashMap<Resource, Resource> cache)
     {
         // Resource target does not exist
-        if (Resources.missing(target))
+        if (isEmptyResource(dir))
             return;
-        ResourceFactory resourceFactory = ResourceFactory.of(context);
 
-        Resource resourcesDir;
-        if (cache != null && cache.containsKey(target))
+        Resource resourcesDir = null;
+
+        if (cache != null && cache.containsKey(dir))
         {
-            resourcesDir = cache.get(target);
+            resourcesDir = cache.get(dir);
             if (isEmptyResource(resourcesDir))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} cached as containing no META-INF/resources", target);
+                    LOG.debug("{} cached as containing no META-INF/resources", dir);
                 return;
             }
             else if (LOG.isDebugEnabled())
-                LOG.debug("{} META-INF/resources found in cache ", target);
+                LOG.debug("{} META-INF/resources found in cache ", dir);
         }
         else
         {
             //not using caches or not in the cache so check for the resources dir
             if (LOG.isDebugEnabled())
-                LOG.debug("{} META-INF/resources checked", target);
-            if (target.isDirectory())
-            {
-                //TODO think  how to handle an unpacked jar file (eg for osgi)
-                resourcesDir = target.resolve("/META-INF/resources");
-            }
-            else
-            {
-                // Resource represents a packed jar
-                URI uri = target.getURI();
-                resourcesDir = resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
-            }
+                LOG.debug("{} META-INF/resources checked", dir);
 
-            if (Resources.isReadableDirectory(resourcesDir) && (cache != null))
+            resourcesDir = dir.resolve("/META-INF/resources");
+
+            if (isEmptyResource(resourcesDir))
+                return;
+
+            //convert from an ephemeral Resource to one that is associated with the context's lifecycle
+            resourcesDir = context.getResourceFactory().newResource(resourcesDir.getURI());
+
+            if (cache != null)
             {
-                Resource old = cache.putIfAbsent(target, resourcesDir);
+                Resource old = cache.putIfAbsent(dir, resourcesDir);
                 if (old != null)
                     resourcesDir = old;
                 else if (LOG.isDebugEnabled())
-                    LOG.debug("{} META-INF/resources cache updated", target);
-            }
-
-            if (isEmptyResource(resourcesDir))
-            {
-                return;
+                    LOG.debug("{} META-INF/resources cache updated", dir);
             }
         }
 
@@ -429,7 +433,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Set<Resource> dirs = (Set<Resource>)context.getAttribute(METAINF_RESOURCES);
         if (dirs == null)
         {
-            dirs = new HashSet<>();
+            dirs = new HashSet<Resource>();
             context.setAttribute(METAINF_RESOURCES, dirs);
         }
         if (LOG.isDebugEnabled())
@@ -444,65 +448,69 @@ public class MetaInfConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Scan for META-INF/web-fragment.xml file in the given jar.
+     * Scan for META-INF/web-fragment.xml file in the given directory.
      *
      * @param context the context for the scan
-     * @param jar the jar resource to scan for fragments in
+     * @param dir the dir to scan for fragments
      * @param cache the resource cache
      */
-    public void scanForFragment(WebAppContext context, Resource jar, ConcurrentHashMap<Resource, Resource> cache)
+    public void scanForFragment(WebAppContext context, Resource dir, ConcurrentHashMap<Resource, Resource> cache)
     {
-        ResourceFactory resourceFactory = ResourceFactory.of(context);
-
-        Resource webFrag;
-        if (cache != null && cache.containsKey(jar))
+        Resource webFrag = null;
+        if (cache != null && cache.containsKey(dir))
         {
-            webFrag = cache.get(jar);
+            webFrag = cache.get(dir);
             if (isEmptyFragment(webFrag))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} cached as containing no META-INF/web-fragment.xml", jar);
+                    LOG.debug("{} cached as containing no META-INF/web-fragment.xml", dir);
                 return;
             }
             else if (LOG.isDebugEnabled())
-                LOG.debug("{} META-INF/web-fragment.xml found in cache ", jar);
+                LOG.debug("{} META-INF/web-fragment.xml found in cache ", dir);
         }
         else
         {
             //not using caches or not in the cache so check for the web-fragment.xml
             if (LOG.isDebugEnabled())
-                LOG.debug("{} META-INF/web-fragment.xml checked", jar);
-            if (jar.isDirectory())
-            {
-                webFrag = resourceFactory.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
-            }
-            else
-            {
-                URI uri = jar.getURI();
-                webFrag = resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
-            }
+                LOG.debug("{} META-INF/web-fragment.xml checked", dir);
 
-            if (Resources.isReadable(webFrag) && (cache != null))
-            {
-                //web-fragment.xml doesn't exist: put token in cache to signal we've seen the jar
-                Resource old = cache.putIfAbsent(jar, webFrag);
-                if (old != null)
-                    webFrag = old;
-                else if (LOG.isDebugEnabled())
-                    LOG.debug("{} META-INF/web-fragment.xml cache updated", jar);
-            }
+            Resource metaInf = dir.resolve("META-INF");
+            if (isEmptyResource(metaInf))
+                return;
+
+            webFrag = metaInf.resolve("web-fragment.xml");
 
             if (isEmptyFragment(webFrag))
                 return;
+
+            //convert ephemeral Resource to one associated with the context's lifecycle ResourceFactory
+            webFrag = context.getResourceFactory().newResource(webFrag.getURI());
+
+            if (cache != null)
+            {
+                Resource old = cache.putIfAbsent(dir, webFrag);
+                if (old != null)
+                    webFrag = old;
+                else if (LOG.isDebugEnabled())
+                    LOG.debug("{} META-INF/web-fragment.xml cache updated", dir);
+            }
         }
 
         Map<Resource, Resource> fragments = (Map<Resource, Resource>)context.getAttribute(METAINF_FRAGMENTS);
         if (fragments == null)
         {
-            fragments = new HashMap<>();
+            fragments = new HashMap<Resource, Resource>();
             context.setAttribute(METAINF_FRAGMENTS, fragments);
         }
-        fragments.put(jar, webFrag);
+
+        if (dir instanceof MountedPathResource)
+        {
+            //ensure we link from the original .jar rather than jar:file:
+            dir = context.getResourceFactory().newResource(((MountedPathResource)dir).getContainerPath());
+        }
+        
+        fragments.put(dir, webFrag);
         if (LOG.isDebugEnabled())
             LOG.debug("{} added to context", webFrag);
     }
@@ -513,53 +521,45 @@ public class MetaInfConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Discover META-INF/*.tld files in the given jar
+     * Discover META-INF/*.tld files in the given directory
      *
      * @param context the context for the scan
-     * @param jar the jar resources to scan tlds for
+     * @param dir the directory resource to scan for .tlds
      * @param cache the resource cache
-     * @throws Exception if unable to scan for tlds
+     * @throws Exception if unable to scan for .tlds
      */
-    public void scanForTlds(WebAppContext context, Resource jar, ConcurrentHashMap<Resource, Collection<URL>> cache)
+    public void scanForTlds(WebAppContext context, Resource dir, ConcurrentHashMap<Resource, Collection<URL>> cache)
         throws Exception
     {
         Collection<URL> tlds;
 
-        if (cache != null && cache.containsKey(jar))
+        if (cache != null && cache.containsKey(dir))
         {
-            Collection<URL> tmp = cache.get(jar);
+            Collection<URL> tmp = cache.get(dir);
             if (tmp.isEmpty())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} cached as containing no tlds", jar);
+                    LOG.debug("{} cached as containing no tlds", dir);
                 return;
             }
             else
             {
                 tlds = tmp;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} tlds found in cache ", jar);
+                    LOG.debug("{} tlds found in cache ", dir);
             }
         }
         else
         {
             //not using caches or not in the cache so find all tlds
             tlds = new HashSet<>();
-            if (jar.isDirectory())
-            {
-                tlds.addAll(getTlds(jar.getPath()));
-            }
-            else
-            {
-                URI uri = jar.getURI();
-                tlds.addAll(getTlds(context, uri));
-            }
+            tlds.addAll(getTlds(context, dir));
 
             if (cache != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} tld cache updated", jar);
-                Collection<URL> old = cache.putIfAbsent(jar, tlds);
+                    LOG.debug("{} tld cache updated", dir);
+                Collection<URL> old = cache.putIfAbsent(dir, tlds);
                 if (old != null)
                     tlds = old;
             }
@@ -590,45 +590,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Find all .tld files in all subdirs of the given dir.
+     * Find all .tld files in the given directory.
      *
-     * @param dir the directory to scan
-     * @return the list of tlds found
-     * @throws IOException if unable to scan the directory
-     */
-    private Collection<URL> getTlds(Path dir) throws IOException
-    {
-        if (dir == null || !Files.isDirectory(dir))
-            return Collections.emptySet();
-
-        Set<URL> tlds = new HashSet<>();
-
-        try (Stream<Path> entries = Files.walk(dir)
-            .filter(Files::isRegularFile)
-            .filter(FileID::isTld))
-        {
-            Iterator<Path> iter = entries.iterator();
-            while (iter.hasNext())
-            {
-                Path entry = iter.next();
-                tlds.add(entry.toUri().toURL());
-            }
-        }
-        return tlds;
-    }
-
-    /**
-     * Find all .tld files in the given jar.
-     *
-     * @param uri the uri to jar file
+     * @param dir the directory
      * @return the collection of tlds as url references
      * @throws IOException if unable to scan the jar file
      */
-    private Collection<URL> getTlds(WebAppContext context, URI uri) throws IOException
+    private Collection<URL> getTlds(WebAppContext context, Resource dir) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-        Resource r = ResourceFactory.of(context).newResource(URIUtil.uriJarPrefix(uri, "!/"));
-        try (Stream<Path> stream = Files.walk(r.getPath()))
+
+        Resource metaInf = dir.resolve("META-INF");
+        if (isEmptyResource(metaInf))
+            return tlds; //no tlds
+
+        try (Stream<Path> stream = Files.walk(metaInf.getPath()))
         {
             Iterator<Path> it = stream
                 .filter(Files::isRegularFile)

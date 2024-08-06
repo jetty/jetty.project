@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -26,6 +31,7 @@ import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -35,10 +41,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FormTest
@@ -194,5 +203,130 @@ public class FormTest
             ? HttpStatus.OK_200
             : HttpStatus.BAD_REQUEST_400;
         assertEquals(expected, response.getStatus());
+    }
+
+    @Test
+    public void testContentTypeWithNonCharsetParameter() throws Exception
+    {
+        String contentType = MimeTypes.Type.FORM_ENCODED.asString() + "; p=v";
+        String paramName = "name1";
+        String paramValue = "value1";
+        start(handler -> new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals(contentType, request.getContentType());
+                Map<String, String[]> params = request.getParameterMap();
+                assertEquals(1, params.size());
+                assertEquals(paramValue, params.get(paramName)[0]);
+            }
+        });
+
+        Fields formParams = new Fields();
+        formParams.add(paramName, paramValue);
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .path(contextPath + servletPath)
+            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, contentType))
+            .body(new FormRequestContent(formParams))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    public static Stream<Arguments> invalidForm()
+    {
+        return Stream.of(
+            Arguments.of("%A", "java.lang.IllegalArgumentException: Not valid encoding &apos;%A?&apos;"),
+            Arguments.of("name%",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%??&apos;"),
+            Arguments.of("name%A",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%A?&apos;"),
+            Arguments.of("name%A&",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%A&amp;&apos;"),
+            Arguments.of("name=%",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%??&apos;"),
+            Arguments.of("name=A%%A",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%%A&apos;"),
+            Arguments.of("name=A%%3D",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%%3&apos;"),
+            Arguments.of("%=",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%=?&apos;"),
+            Arguments.of("name=%A",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%A?&apos;"),
+            Arguments.of("name=value%A",  "ava.lang.IllegalArgumentException: Not valid encoding &apos;%A?&apos;"),
+            Arguments.of("n%AH=v",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%AH&apos;"),
+            Arguments.of("n=v%AH",  "java.lang.IllegalArgumentException: Not valid encoding &apos;%AH&apos;")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidForm")
+    public void testContentTypeWithoutCharsetDecodeBadUTF8(String rawForm, String expectedCauseMessage) throws Exception
+    {
+        start(handler -> new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                // This is expected to throw an exception due to the bad form input
+                request.getParameterMap();
+            }
+        });
+
+        StringRequestContent requestContent = new StringRequestContent("application/x-www-form-urlencoded", rawForm);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .path(contextPath + servletPath)
+            .body(requestContent)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), response::getContentAsString);
+        String responseContent = response.getContentAsString();
+        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString(expectedCauseMessage));
+    }
+
+    public static Stream<Arguments> utf8Form()
+    {
+        return Stream.of(
+            Arguments.of("euro=%E2%82%AC", List.of("param[euro] = \"€\"")),
+            Arguments.of("name=%AB%CD", List.of("param[name] = \"��\"")),
+            Arguments.of("name=x%AB%CDz", List.of("param[name] = \"x��z\"")),
+            Arguments.of("name=%FF%FF%FF%FF", List.of("param[name] = \"����\""))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("utf8Form")
+    public void testUtf8Decoding(String rawForm, List<String> expectedParams) throws Exception
+    {
+        start(handler -> new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+                PrintWriter out = response.getWriter();
+
+                Map<String, String[]> paramMap = request.getParameterMap();
+                List<String> names = paramMap.keySet().stream().sorted().toList();
+                for (String name: names)
+                {
+                    out.printf("param[%s] = \"%s\"%n", name, String.join(",", paramMap.get(name)));
+                }
+            }
+        });
+
+        StringRequestContent requestContent = new StringRequestContent("application/x-www-form-urlencoded", rawForm);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .path(contextPath + servletPath)
+            .body(requestContent)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus(), response::getContentAsString);
+        String responseContent = response.getContentAsString();
+        for (String expectedParam: expectedParams)
+            assertThat(responseContent, containsString(expectedParam));
     }
 }

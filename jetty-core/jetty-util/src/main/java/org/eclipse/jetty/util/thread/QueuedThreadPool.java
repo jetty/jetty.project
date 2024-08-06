@@ -213,9 +213,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         }
         else
         {
-            ReservedThreadExecutor reserved = new ReservedThreadExecutor(this, _reservedThreads);
-            reserved.setIdleTimeout(_idleTimeout, TimeUnit.MILLISECONDS);
-            _tryExecutor = reserved;
+            int reserved = ReservedThreadExecutor.reservedThreads(this, _reservedThreads);
+            if (reserved == 0)
+            {
+                _tryExecutor = NO_TRY;
+            }
+            else
+            {
+                ReservedThreadExecutor rte = new ReservedThreadExecutor(this, _reservedThreads);
+                rte.setIdleTimeout(_idleTimeout, TimeUnit.MILLISECONDS);
+                _tryExecutor = rte;
+            }
         }
         addBean(_tryExecutor);
 
@@ -441,7 +449,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
-     * @return the name of the this thread pool
+     * @return the name of this thread pool
      */
     @ManagedAttribute("name of the thread pool")
     public String getName()
@@ -452,7 +460,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     /**
      * <p>Sets the name of this thread pool, used as a prefix for the thread names.</p>
      *
-     * @param name the name of the this thread pool
+     * @param name the name of this thread pool
      */
     public void setName(String name)
     {
@@ -827,7 +835,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
 
         while (isStopping())
         {
-            Thread.sleep(1);
+            Thread.onSpinWait();
         }
     }
 
@@ -969,6 +977,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     protected void runJob(Runnable job)
     {
         job.run();
+    }
+
+    protected void onJobFailure(Throwable x)
+    {
+        LOG.warn("Job failed", x);
     }
 
     /**
@@ -1197,7 +1210,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             }
             catch (Throwable e)
             {
-                LOG.warn("Job failed", e);
+                onJobFailure(e);
             }
             finally
             {

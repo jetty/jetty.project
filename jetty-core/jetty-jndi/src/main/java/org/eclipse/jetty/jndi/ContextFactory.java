@@ -61,12 +61,6 @@ public class ContextFactory implements ObjectFactory
     private static final Map<ClassLoader, Context> __contextMap = new WeakHashMap<>();
 
     /**
-     * Threadlocal for injecting a context to use
-     * instead of looking up the map.
-     */
-    private static final ThreadLocal<Context> __threadContext = new ThreadLocal<Context>();
-
-    /**
      * Threadlocal for setting a classloader which must be used
      * when finding the comp context.
      */
@@ -97,17 +91,10 @@ public class ContextFactory implements ObjectFactory
                                     Hashtable env)
         throws Exception
     {
-        //First, see if we have had a context injected into us to use.
-        Context ctx = (Context)__threadContext.get();
-        if (ctx != null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Using the Context that is bound on the thread");
-            return ctx;
-        }
+        Context ctx = null;
 
-        //See if there is a classloader to use for finding the comp context
-        //Don't use its parent hierarchy if set.
+        //See if there is a classloader already set to use for finding the comp
+        //naming Context
         ClassLoader loader = (ClassLoader)__threadClassLoader.get();
         if (loader != null)
         {
@@ -127,7 +114,8 @@ public class ContextFactory implements ObjectFactory
             }
         }
 
-        //If the thread context classloader is set, then try its hierarchy to find a matching context
+        //If the thread context classloader is set, then try it and its
+        //classloader hierarchy to find a matching naming Context
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         loader = tccl;
         if (loader != null)
@@ -139,7 +127,7 @@ public class ContextFactory implements ObjectFactory
                 while (ctx == null && loader != null)
                 {
                     ctx = getContextForClassLoader(loader);
-                    if (ctx == null && loader != null)
+                    if (ctx == null)
                         loader = loader.getParent();
                 }
 
@@ -155,10 +143,10 @@ public class ContextFactory implements ObjectFactory
         }
 
         //If trying thread context classloader hierarchy failed, try the
-        //classloader associated with the current context
+        //classloader associated with the current ContextHandler
         if (ContextHandler.getCurrentContext() != null)
         {
-            if (LOG.isDebugEnabled() && loader != null)
+            if (LOG.isDebugEnabled())
                 LOG.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
             try (AutoLock l = __lock.lock())
             {
@@ -221,25 +209,6 @@ public class ContextFactory implements ObjectFactory
         {
             return __contextMap.get(loader);
         }
-    }
-
-    /**
-     * Associate the given Context with the current thread.
-     * disassociate method should be called to reset the context.
-     *
-     * @param ctx the context to associate to the current thread.
-     * @return the previous context associated on the thread (can be null)
-     */
-    public static Context associateContext(final Context ctx)
-    {
-        Context previous = (Context)__threadContext.get();
-        __threadContext.set(ctx);
-        return previous;
-    }
-
-    public static void disassociateContext(final Context ctx)
-    {
-        __threadContext.set(null);
     }
 
     public static ClassLoader associateClassLoader(final ClassLoader loader)

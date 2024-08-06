@@ -98,7 +98,23 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Allow Bad UTF-8 encodings to be substituted by the replacement character.
          */
-        BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding");
+        BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding"),
+
+        /**
+         * Allow encoded path characters not allowed by the Servlet spec rules.
+         */
+        SUSPICIOUS_PATH_CHARACTERS("https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization", "Suspicious Path Character"),
+
+        /**
+         * Allow path characters not allowed in the path portion of the URI and HTTP specs.
+         * <p>This would allow characters that fall outside of the {@code unreserved / pct-encoded / sub-delims / ":" / "@"} ABNF</p>
+         */
+        ILLEGAL_PATH_CHARACTERS("https://datatracker.ietf.org/doc/html/rfc3986#section-3.3", "Illegal Path Character"),
+
+        /**
+         * Allow user info in the authority portion of the URI and HTTP specs.
+         */
+        USER_INFO("https://datatracker.ietf.org/doc/html/rfc9110#name-deprecation-of-userinfo-in-", "Deprecated User Info");
 
         private final String _url;
         private final String _description;
@@ -164,10 +180,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
-            Violation.UTF16_ENCODINGS));
+            Violation.UTF16_ENCODINGS,
+            Violation.USER_INFO));
 
     /**
-     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form.
+     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form, and illegal characters
      */
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
@@ -191,7 +208,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
             if (compliance.getName().equals(name))
                 return compliance;
         }
-        LOG.warn("Unknown UriCompliance mode {}", name);
+        if (name.indexOf(',') == -1) // skip warning if delimited, will be handled by .from() properly as a CUSTOM mode.
+            LOG.warn("Unknown UriCompliance mode {}", name);
         return null;
     }
 
@@ -255,10 +273,6 @@ public final class UriCompliance implements ComplianceViolation.Mode
                 if (exclude)
                     element = element.substring(1);
 
-                // Ignore removed name. TODO: remove in future release.
-                if (element.equals("NON_CANONICAL_AMBIGUOUS_PATHS"))
-                    continue;
-
                 Violation section = Violation.valueOf(element);
                 if (exclude)
                     violations.remove(section);
@@ -268,8 +282,6 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
             compliance = new UriCompliance("CUSTOM" + __custom.getAndIncrement(), violations);
         }
-        if (LOG.isDebugEnabled())
-            LOG.debug("UriCompliance from {}->{}", spec, compliance);
         return compliance;
     }
 
@@ -360,12 +372,27 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
-    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri)
+    public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
     {
-        for (UriCompliance.Violation violation : UriCompliance.Violation.values())
+        if (uri.hasViolations())
         {
-            if (uri.hasViolation(violation) && (compliance == null || !compliance.allows(violation)))
-                return violation.getDescription();
+            StringBuilder violations = null;
+            for (UriCompliance.Violation violation : uri.getViolations())
+            {
+                if (compliance == null || !compliance.allows(violation))
+                {
+                    if (listener != null)
+                        listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
+
+                    if (violations == null)
+                        violations = new StringBuilder();
+                    else
+                        violations.append(", ");
+                    violations.append(violation.getDescription());
+                }
+            }
+            if (violations != null)
+                return violations.toString();
         }
         return null;
     }

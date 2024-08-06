@@ -44,10 +44,11 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -250,10 +251,21 @@ public class HttpChannelTest
         assertThat(content, containsString("<pre>0123456789</pre>"));
     }
 
-    @Test
-    public void testEchoPOST() throws Exception
+    public static Stream<EchoHandler> echoHandlers()
     {
-        EchoHandler echoHandler = new EchoHandler();
+        return Stream.of(
+            new EchoHandler(),
+            new EchoHandler.Reactive(),
+            new EchoHandler.Stream(),
+            new EchoHandler.Buffered(),
+            new EchoHandler.BufferedAsync()
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("echoHandlers")
+    public void testEchoPOST(EchoHandler echoHandler) throws Exception
+    {
         _server.setHandler(echoHandler);
         _server.start();
 
@@ -282,10 +294,10 @@ public class HttpChannelTest
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
     }
 
-    @Test
-    public void testMultiEchoPOST() throws Exception
+    @ParameterizedTest
+    @MethodSource("echoHandlers")
+    public void testMultiEchoPOST(EchoHandler echoHandler) throws Exception
     {
-        EchoHandler echoHandler = new EchoHandler();
         _server.setHandler(echoHandler);
         _server.start();
 
@@ -325,10 +337,11 @@ public class HttpChannelTest
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
     }
 
-    @Test
-    public void testAsyncEchoPOST() throws Exception
+    @ParameterizedTest
+    @MethodSource("echoHandlers")
+    public void testAsyncEchoPOST(EchoHandler echoHandler) throws Exception
     {
-        EchoHandler echoHandler = new EchoHandler();
+        Assumptions.assumeTrue(echoHandler.getInvocationType() == Invocable.InvocationType.NON_BLOCKING);
         _server.setHandler(echoHandler);
         _server.start();
 
@@ -356,38 +369,29 @@ public class HttpChannelTest
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
         Runnable task = channel.onRequest(request);
-        assertThat(stream.isComplete(), is(false));
-        assertThat(stream.isDemanding(), is(false));
-        assertThat(sendCB.get(), nullValue());
-
-        task.run();
-        assertThat(stream.isComplete(), is(false));
-        assertThat(stream.isDemanding(), is(true));
-        assertThat(sendCB.get(), nullValue());
+        if (task != null)
+            task.run();
+        Callback callback = sendCB.getAndSet(null);
+        if (callback != null)
+            callback.succeeded();
 
         for (int i = 0; i < parts.length; i++)
         {
             String part = parts[i];
             boolean last = i == (parts.length - 1);
             task = stream.addContent(BufferUtil.toBuffer(part), last);
-            assertThat(task, notNullValue());
+            if (task != null)
+                task.run();
 
-            assertThat(stream.isComplete(), is(false));
-            assertThat(stream.isDemanding(), is(false));
-
-            task.run();
-            assertThat(stream.isComplete(), is(false));
-            assertThat(stream.isDemanding(), is(false));
-
-            Callback callback = sendCB.getAndSet(null);
-            assertThat(callback, notNullValue());
-
-            callback.succeeded();
-            assertThat(stream.isComplete(), is(last));
-            assertThat(stream.isDemanding(), is(!last));
+            callback = sendCB.getAndSet(null);
+            if (callback != null)
+                callback.succeeded();
         }
 
+        assertTrue(stream.waitForComplete(5, TimeUnit.SECONDS));
         assertThat(stream.isComplete(), is(true));
+        if (stream.getFailure() != null)
+            stream.getFailure().printStackTrace();
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
@@ -506,6 +510,8 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                request.addFailureListener(callback::failed);
+
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false, null, Callback.from(() ->
@@ -791,7 +797,7 @@ public class HttpChannelTest
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("Content not consumed"));
+        assertThat(stream.getFailure().getMessage(), containsString("Unconsumed request content"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
@@ -1164,7 +1170,7 @@ public class HttpChannelTest
     }
 
     @Test
-    public void testOnError() throws Exception
+    public void testOnFailure() throws Exception
     {
         AtomicReference<Response> handling = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -1193,24 +1199,24 @@ public class HttpChannelTest
         Runnable onRequest = channel.onRequest(request);
         onRequest.run();
 
-        // check we are handling
+        // Check we are handling.
         assertNotNull(handling.get());
         assertThat(stream.isComplete(), is(false));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), nullValue());
 
-        // failure happens
+        // Failure happens.
         IOException failure = new IOException("Testing");
-        Runnable onError = channel.onFailure(failure);
-        assertNotNull(onError);
+        Runnable onFailure = channel.onFailure(failure);
+        assertNotNull(onFailure);
 
-        // onError not yet called
+        // Failure listeners not yet called.
         assertThat(error.get(), nullValue());
 
-        // request still handling
+        // Request still handling.
         assertFalse(stream.isComplete());
 
-        // but now we cannot read, demand nor write
+        // Can read the failure.
         Request rq = handling.get().getRequest();
         Content.Chunk chunk = rq.read();
         assertTrue(chunk.isLast());
@@ -1218,30 +1224,28 @@ public class HttpChannelTest
         assertThat(chunk.getFailure(), sameInstance(failure));
 
         CountDownLatch demand = new CountDownLatch(1);
-        // Callback serialized until after onError task
+        // Demand callback is serialized after the onFailure task runs.
         rq.demand(demand::countDown);
         assertThat(demand.getCount(), is(1L));
 
-        FuturePromise<Throwable> callback = new FuturePromise<>();
-        // Callback serialized until after onError task
-        handling.get().write(false, null, Callback.from(() ->
-        {}, callback::succeeded));
-        assertFalse(callback.isDone());
+        Callback.Completable callback = new Callback.Completable();
+        // Writes are possible, unless a pending write is failed.
+        handling.get().write(false, null, callback);
+        assertTrue(callback.isDone());
+        assertFalse(callback.isCompletedExceptionally());
 
-        // process error callback
+        // Run the onFailure task.
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
-            onError.run();
+            onFailure.run();
         }
 
-        // onError was called
+        // onFailure listeners were called.
         assertThat(error.get(), sameInstance(failure));
-        // demand callback was called
+        // Demand callback was called.
         assertTrue(demand.await(5, TimeUnit.SECONDS));
-        // write callback was failed
-        assertThat(callback.get(5, TimeUnit.SECONDS), sameInstance(failure));
 
-        // request completed handling
+        // Request handling was completed.
         assertTrue(stream.isComplete());
     }
 

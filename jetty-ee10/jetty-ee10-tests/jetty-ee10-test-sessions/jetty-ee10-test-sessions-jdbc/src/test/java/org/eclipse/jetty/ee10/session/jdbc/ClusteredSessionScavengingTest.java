@@ -37,7 +37,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
     }
 
     @AfterEach

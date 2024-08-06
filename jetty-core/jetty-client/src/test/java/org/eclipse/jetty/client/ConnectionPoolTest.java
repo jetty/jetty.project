@@ -494,7 +494,7 @@ public class ConnectionPoolTest
                 }
 
                 @Override
-                protected void removed(Connection connection)
+                protected void onRemoved(Connection connection)
                 {
                     poolRemoveCounter.incrementAndGet();
                 }
@@ -548,7 +548,7 @@ public class ConnectionPoolTest
                 }
 
                 @Override
-                protected void removed(Connection connection)
+                protected void onRemoved(Connection connection)
                 {
                     poolRemoveCounter.incrementAndGet();
                 }
@@ -675,7 +675,7 @@ public class ConnectionPoolTest
             return connectionPool;
         });
 
-        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(new HttpDestination(client, new Origin("", "", 0), false));
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(new HttpDestination(client, new Origin("", "", 0)));
         assertThat(connectionPool.getConnectionCount(), is(0));
         assertThat(connectionPool.getActiveConnectionCount(), is(0));
         assertThat(connectionPool.getIdleConnectionCount(), is(0));

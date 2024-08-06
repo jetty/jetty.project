@@ -48,11 +48,13 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -69,6 +71,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ManagedObject
 public class Server extends Handler.Wrapper implements Attributes
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
@@ -113,7 +116,7 @@ public class Server extends Handler.Wrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
         addConnector(connector);
-        addBean(_attributes);
+        installBean(_attributes);
     }
 
     /**
@@ -135,18 +138,19 @@ public class Server extends Handler.Wrapper implements Attributes
     public Server(@Name("threadPool") ThreadPool pool)
     {
         this(pool, null, null);
+        installBean(new DumpableMap("System Properties", System.getProperties()));
     }
 
     public Server(@Name("threadPool") ThreadPool threadPool, @Name("scheduler") Scheduler scheduler, @Name("bufferPool") ByteBufferPool bufferPool)
     {
         _threadPool = threadPool != null ? threadPool : new QueuedThreadPool();
-        addBean(_threadPool);
+        installBean(_threadPool);
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler();
-        addBean(_scheduler);
+        installBean(_scheduler);
         _bufferPool = bufferPool != null ? bufferPool : new ArrayByteBufferPool();
-        addBean(_bufferPool);
+        installBean(_bufferPool);
         setServer(this);
-        addBean(FileSystemPool.INSTANCE, false);
+        installBean(FileSystemPool.INSTANCE, false);
     }
 
     public Handler getDefaultHandler()
@@ -218,7 +222,7 @@ public class Server extends Handler.Wrapper implements Attributes
      * @see #getContext()
      * @see Context#getTempDirectory()
      */
-    @ManagedAttribute("temporary directory")
+    @ManagedAttribute(value = "The server temporary directory", readonly = true)
     public File getTempDirectory()
     {
         return _tempDirectory;
@@ -304,7 +308,7 @@ public class Server extends Handler.Wrapper implements Attributes
         _errorHandler = errorHandler;
     }
 
-    @ManagedAttribute("version of this server")
+    @ManagedAttribute("The version of this server")
     public static String getVersion()
     {
         return Jetty.VERSION;
@@ -425,17 +429,19 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return Returns the threadPool.
      */
-    @ManagedAttribute("the server thread pool")
+    @ManagedAttribute("The server Thread pool")
     public ThreadPool getThreadPool()
     {
         return _threadPool;
     }
 
+    @ManagedAttribute("The server Scheduler")
     public Scheduler getScheduler()
     {
         return _scheduler;
     }
 
+    @ManagedAttribute("The server ByteBuffer pool")
     public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
@@ -444,7 +450,7 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called after starting
      */
-    @ManagedAttribute("dump state to stderr after start")
+    @ManagedAttribute("Whether to dump the server to stderr after start")
     public boolean isDumpAfterStart()
     {
         return _dumpAfterStart;
@@ -462,7 +468,7 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called before stopping
      */
-    @ManagedAttribute("dump state to stderr before stop")
+    @ManagedAttribute("Whether to dump the server to stderr before stop")
     public boolean isDumpBeforeStop()
     {
         return _dumpBeforeStop;
@@ -787,7 +793,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public Resource getDefaultStyleSheet()
     {
-        return newResource("jetty-dir.css");
+        return newResource("/org/eclipse/jetty/server/jetty-dir.css");
     }
 
     /**
@@ -797,7 +803,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public Resource getDefaultFavicon()
     {
-        return newResource("favicon.ico");
+        return newResource("/org/eclipse/jetty/server/favicon.ico");
     }
 
     /**

@@ -155,7 +155,7 @@ public class URLResourceFactory implements ResourceFactory
         }
 
         @Override
-        public boolean isContainedIn(Resource r)
+        public boolean isContainedIn(Resource container)
         {
             // compare starting URIs?
             return false;
@@ -176,7 +176,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public URI getURI()
         {
-            return URIUtil.correctFileURI(uri);
+            return URIUtil.correctURI(uri);
         }
 
         @Override
@@ -308,7 +308,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public String toString()
         {
-            return String.format("URLResource@%X(%s)", this.uri.hashCode(), this.uri.toASCIIString());
+            return "(URL) " + this.uri.toASCIIString();
         }
 
         private static class InputStreamReference extends AtomicReference<InputStream> implements Runnable

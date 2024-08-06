@@ -197,7 +197,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         boolean exceeded = false;
         ContextHandler contextHandler = new ContextHandler();
         ServletContext context = contextHandler.getServletContext();
-        RateTracker rateTracker = new RateTracker(context, doSFilter.getName(), "test2", DoSFilter.RateType.UNKNOWN, 4);
+        RateTracker rateTracker = new RateTracker(context, doSFilter.getName(), "test2", 4);
 
         for (int i = 0; i < 5; i++)
         {

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8</groupId>
     <artifactId>jetty-ee8</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.13-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-annotations</artifactId>
   <name>EE8 :: Servlet Annotations</name>
@@ -20,6 +20,10 @@
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-plus</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
@@ -44,16 +48,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.transaction</groupId>
-      <artifactId>jakarta.transaction-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -82,7 +76,7 @@
         <configuration>
           <instructions>
             <Import-Package>${osgi.slf4j.import.packages},org.objectweb.asm;version="[$(version;==;${asm.version}),$(version;+;${asm.version}))",*</Import-Package>
-            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)", osgi.serviceloader; filter:="(osgi.serviceloader=jakarta.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional</Require-Capability>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)", osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee8.webapp.Configuration</Provide-Capability>
           </instructions>
         </configuration>
@@ -112,7 +106,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee8.annotations=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.ee8.annotations/org.eclipse.jetty.ee8.annotations.resources=org.eclipse.jetty.ee8.plus</argLine>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee8.annotations=org.eclipse.jetty.logging --add-opens org.eclipse.jetty.ee8.annotations/org.eclipse.jetty.ee8.annotations.resources=org.eclipse.jetty.plus</argLine>
         </configuration>
       </plugin>
     </plugins>

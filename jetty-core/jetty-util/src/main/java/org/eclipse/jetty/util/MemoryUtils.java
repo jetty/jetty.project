@@ -52,4 +52,11 @@ public class MemoryUtils
     {
         return getCacheLineBytes() >> 3;
     }
+
+    public static int getReferencesPerCacheLine()
+    {
+        // Use getIntegersPerCacheLine() instead of getLongsPerCacheLine() b/c refs (oops) could be
+        // compressed down to 32-bit; maybe this could be detected?
+        return getIntegersPerCacheLine();
+    }
 }

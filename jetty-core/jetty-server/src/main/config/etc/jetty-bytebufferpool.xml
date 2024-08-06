@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 <Configure>
   <New id="byteBufferPool" class="org.eclipse.jetty.io.ArrayByteBufferPool">
     <Arg type="int"><Property name="jetty.byteBufferPool.minCapacity" default="0"/></Arg>
@@ -8,5 +8,6 @@
     <Arg type="int"><Property name="jetty.byteBufferPool.maxBucketSize" default="-1"/></Arg>
     <Arg type="long"><Property name="jetty.byteBufferPool.maxHeapMemory" default="0"/></Arg>
     <Arg type="long"><Property name="jetty.byteBufferPool.maxDirectMemory" default="0"/></Arg>
+    <Set name="statisticsEnabled" property="jetty.byteBufferPool.statisticsEnabled" />
   </New>
 </Configure>

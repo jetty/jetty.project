@@ -33,7 +33,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
 
-public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implements ConnectionMetaData
+public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
 {
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Attributes.Lazy();
@@ -51,7 +51,9 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
 
     public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
-        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
+        // Create new metadata for every request as the local or remote address may have changed.
+        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(new MetaData());
+        httpChannel.initialize();
         HttpStreamOverHTTP3 httpStream = new HttpStreamOverHTTP3(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
@@ -87,107 +89,119 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
         session.offer(task, false);
     }
 
-    @Override
-    public String getId()
+    private class MetaData implements ConnectionMetaData
     {
-        return session.getQuicSession().getConnectionId().toString();
-    }
+        private final SocketAddress localSocketAddress;
+        private final SocketAddress remoteSocketAddress;
 
-    @Override
-    public HttpConfiguration getHttpConfiguration()
-    {
-        return httpConfiguration;
-    }
+        private MetaData()
+        {
+            this.localSocketAddress = httpConfiguration.getLocalAddress() == null ? getEndPoint().getLocalSocketAddress() : httpConfiguration.getLocalAddress();
+            this.remoteSocketAddress = getEndPoint().getRemoteSocketAddress();
+        }
 
-    @Override
-    public HttpVersion getHttpVersion()
-    {
-        return HttpVersion.HTTP_3;
-    }
+        @Override
+        public String getId()
+        {
+            return session.getQuicSession().getConnectionId().toString();
+        }
 
-    @Override
-    public String getProtocol()
-    {
-        return getHttpVersion().asString();
-    }
+        @Override
+        public HttpConfiguration getHttpConfiguration()
+        {
+            return httpConfiguration;
+        }
 
-    @Override
-    public Connection getConnection()
-    {
-        return getEndPoint().getConnection();
-    }
+        @Override
+        public HttpVersion getHttpVersion()
+        {
+            return HttpVersion.HTTP_3;
+        }
 
-    @Override
-    public Connector getConnector()
-    {
-        return connector;
-    }
+        @Override
+        public String getProtocol()
+        {
+            return getHttpVersion().asString();
+        }
 
-    @Override
-    public boolean isPersistent()
-    {
-        return true;
-    }
+        @Override
+        public Connection getConnection()
+        {
+            return getEndPoint().getConnection();
+        }
 
-    @Override
-    public boolean isSecure()
-    {
-        return true;
-    }
+        @Override
+        public Connector getConnector()
+        {
+            return connector;
+        }
 
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return getEndPoint().getRemoteSocketAddress();
-    }
+        @Override
+        public boolean isPersistent()
+        {
+            return true;
+        }
 
-    @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        return getEndPoint().getLocalSocketAddress();
-    }
+        @Override
+        public boolean isSecure()
+        {
+            return true;
+        }
 
-    @Override
-    public HostPort getServerAuthority()
-    {
-        HostPort override = httpConfiguration.getServerAuthority();
-        if (override != null)
-            return override;
+        @Override
+        public SocketAddress getRemoteSocketAddress()
+        {
+            return remoteSocketAddress;
+        }
 
-        // TODO cache the HostPort?
-        SocketAddress addr = getLocalSocketAddress();
-        if (addr instanceof InetSocketAddress inet)
-            return new HostPort(inet.getHostString(), inet.getPort());
-        return new HostPort(addr.toString(), -1);
-    }
+        @Override
+        public SocketAddress getLocalSocketAddress()
+        {
+            return localSocketAddress;
+        }
 
-    @Override
-    public Object getAttribute(String name)
-    {
-        return attributes.getAttribute(name);
-    }
+        @Override
+        public HostPort getServerAuthority()
+        {
+            HostPort override = httpConfiguration.getServerAuthority();
+            if (override != null)
+                return override;
 
-    @Override
-    public Object setAttribute(String name, Object attribute)
-    {
-        return attributes.setAttribute(name, attribute);
-    }
+            // TODO cache the HostPort?
+            SocketAddress addr = getLocalSocketAddress();
+            if (addr instanceof InetSocketAddress inet)
+                return new HostPort(inet.getHostString(), inet.getPort());
+            return new HostPort(addr.toString(), -1);
+        }
 
-    @Override
-    public Object removeAttribute(String name)
-    {
-        return attributes.removeAttribute(name);
-    }
+        @Override
+        public Object getAttribute(String name)
+        {
+            return attributes.getAttribute(name);
+        }
 
-    @Override
-    public Set<String> getAttributeNameSet()
-    {
-        return attributes.getAttributeNameSet();
-    }
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return attributes.setAttribute(name, attribute);
+        }
 
-    @Override
-    public void clearAttributes()
-    {
-        attributes.clearAttributes();
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return attributes.removeAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return attributes.getAttributeNameSet();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            attributes.clearAttributes();
+        }
     }
 }

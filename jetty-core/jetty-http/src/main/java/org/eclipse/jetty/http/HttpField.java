@@ -550,6 +550,41 @@ public class HttpField
         return _name.equalsIgnoreCase(name);
     }
 
+    /**
+     * Return a {@link HttpField} without a given value (case-insensitive)
+     * @param value The value to remove
+     * @return A new {@link HttpField} if the value was removed, but others remain; this {@link HttpField} if it
+     *         did not contain the value; or {@code null} if the value was the only value.
+     */
+    public HttpField withoutValue(String value)
+    {
+        if (_value.length() < value.length())
+            return this;
+
+        if (_value.equalsIgnoreCase(value))
+            return null;
+
+        if (_value.length() == value.length())
+            return this;
+
+        QuotedCSV csv = new QuotedCSV(false, _value);
+        boolean removed = false;
+        for (Iterator<String> i = csv.iterator(); i.hasNext();)
+        {
+            String element = i.next();
+            if (element.equalsIgnoreCase(value))
+            {
+                removed = true;
+                i.remove();
+            }
+        }
+
+        if (!removed)
+            return this;
+
+        return new HttpField(_header, _name, csv.asString());
+    }
+
     private int nameHashCode()
     {
         int h = this._hash;
@@ -666,6 +701,49 @@ public class HttpField
         public long getLongValue()
         {
             return _long;
+        }
+    }
+
+    static class MultiHttpField extends HttpField
+    {
+        private final List<String> _list;
+
+        public MultiHttpField(String name, List<String> list)
+        {
+            super(name, buildValue(list));
+            _list = list;
+        }
+
+        private static String buildValue(List<String> list)
+        {
+            StringBuilder builder = null;
+            for (String v : list)
+            {
+                if (StringUtil.isBlank(v))
+                    throw new IllegalArgumentException("blank element");
+                if (builder == null)
+                    builder = new StringBuilder(list.size() * (v == null ? 5 : v.length()) * 2);
+                else
+                    builder.append(", ");
+                builder.append(v);
+            }
+
+            return builder == null ? null : builder.toString();
+        }
+
+        @Override
+        public List<String> getValueList()
+        {
+            return _list;
+        }
+
+        @Override
+        public boolean contains(String search)
+        {
+            for (String v : _list)
+                if (StringUtil.asciiEqualsIgnoreCase(v, search))
+                    return true;
+            return false;
         }
     }
 }

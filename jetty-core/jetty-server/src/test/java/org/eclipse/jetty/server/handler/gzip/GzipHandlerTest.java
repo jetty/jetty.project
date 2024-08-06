@@ -49,6 +49,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -59,6 +60,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -90,6 +92,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
@@ -194,6 +197,64 @@ public class GzipHandlerTest
     }
 
     @Test
+    public void testFailureDuringGzipWrite() throws Exception
+    {
+        Handler leafHandler = new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                try (var out = Content.Sink.asOutputStream(response))
+                {
+                    out.write("Hello, Jetty".getBytes(StandardCharsets.UTF_8));
+                }
+                return true;
+            }
+        };
+        Handler rootHandler = new Handler.Wrapper(new GzipHandler(leafHandler))
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                return super.handle(request, new Response.Wrapper(request, response)
+                {
+                    @Override
+                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    {
+                        throw new ArithmeticException("expected");
+                    }
+                }, callback);
+            }
+        };
+        _server.setHandler(rootHandler);
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowStacks(true);
+        errorHandler.setShowCauses(true);
+        _server.setErrorHandler(errorHandler);
+        _server.start();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
+        {
+            response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        }
+
+        assertThat(response.getStatus(), is(500));
+        String content = response.getContent();
+        assertThat(content, containsString("ArithmeticException: expected"));
+        assertThat(content, not(containsString("Suppressed: ")));
+    }
+
+    @Test
     public void testAddIncludePaths()
     {
         GzipHandler gzip = new GzipHandler();
@@ -291,7 +352,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
         assertThat(response.get("ETag"), is(CONTENT_ETAG_GZIP));
-        assertThat(response.getCSV("Vary", false), contains("Accept-Encoding", "Other"));
+        assertThat(response.getCSV("Vary", false), hasItems("Accept-Encoding", "Other"));
 
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
@@ -547,7 +608,7 @@ public class GzipHandlerTest
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        assertThat(response.get("Content-Encoding"), nullValue());
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
     }
 
@@ -580,7 +641,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat("Should not be compressed with gzip", response.get("Content-Encoding"), nullValue());
         assertThat(response.get("ETag"), nullValue());
-        assertThat(response.get("Vary"), nullValue());
+        assertThat(response.get("Vary"), containsString("Accept-Encoding"));
 
         // Request something that is present on MimeTypes and is also compressible
         // by the GzipHandler configuration
@@ -776,7 +837,7 @@ public class GzipHandlerTest
         assertThat("Response[Content-Type]", response.get("Content-Type"), containsString("text/wibble"));
         assertThat("Response[Content-Type]", response.get("Content-Type"), containsString("charset=utf-8"));
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
-        assertThat("Response[Vary]", response.get("Vary"), is(nullValue()));
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
@@ -1473,7 +1534,7 @@ public class GzipHandlerTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
         assertThat("Response[ETag]", response.get("ETag"), nullValue());
-        assertThat("Response[Vary]", response.get("Vary"), nullValue());
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
     }
 
     /**
@@ -1555,7 +1616,7 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
         assertThat(response.get("ETag"), is(CONTENT_ETAG_GZIP));
-        assertThat(response.getCSV("Vary", false), contains("Accept-Encoding", "Other"));
+        assertThat(response.getCSV("Vary", false), hasItems("Accept-Encoding", "Other"));
 
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();

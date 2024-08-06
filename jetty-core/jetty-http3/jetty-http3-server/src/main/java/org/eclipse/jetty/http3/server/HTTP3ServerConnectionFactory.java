@@ -16,7 +16,8 @@ package org.eclipse.jetty.http3.server;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Session;
@@ -27,34 +28,40 @@ import org.eclipse.jetty.http3.server.internal.HttpStreamOverHTTP3;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionFactory
 {
-    public HTTP3ServerConnectionFactory()
+    public HTTP3ServerConnectionFactory(ServerQuicConfiguration quicConfiguration)
     {
-        this(new HttpConfiguration());
+        this(quicConfiguration, new HttpConfiguration());
     }
 
-    public HTTP3ServerConnectionFactory(HttpConfiguration configuration)
+    public HTTP3ServerConnectionFactory(ServerQuicConfiguration quicConfiguration, HttpConfiguration configuration)
     {
-        super(configuration, new HTTP3SessionListener());
-        configuration.addCustomizer((request, responseHeaders) ->
+        super(quicConfiguration, configuration, new HTTP3SessionListener());
+        configuration.addCustomizer(new AltSvcCustomizer());
+    }
+
+    private static class AltSvcCustomizer implements HttpConfiguration.Customizer
+    {
+        @Override
+        public Request customize(Request request, HttpFields.Mutable responseHeaders)
         {
             ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
-            HTTP3ServerConnector http3Connector = connectionMetaData.getConnector().getServer().getBean(HTTP3ServerConnector.class);
-            if (http3Connector != null && HttpVersion.HTTP_2 == connectionMetaData.getHttpVersion())
-            {
-                HttpField altSvc = http3Connector.getAltSvcHttpField();
-                if (altSvc != null)
-                    responseHeaders.add(altSvc);
-            }
+            Connector connector = connectionMetaData.getConnector();
+            if (connector instanceof NetworkConnector networkConnector && HttpVersion.HTTP_2 == connectionMetaData.getHttpVersion())
+                responseHeaders.add(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", networkConnector.getLocalPort()));
             return request;
-        });
+        }
     }
 
     private static class HTTP3SessionListener implements Session.Server.Listener

@@ -33,6 +33,7 @@ import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.UnavailableException;
@@ -678,7 +679,7 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
         assertThat(responseBody, Matchers.containsString("getQueryString()=[code=param]"));
-        assertThat(responseBody, Matchers.containsString("getRequestURL()=[http://test:80/error/599?code=param]"));
+        assertThat(responseBody, Matchers.containsString("getRequestURL()=[http://test/error/599?code=param]"));
         assertThat(responseBody, Matchers.containsString("getParameterMap().size=2"));
         assertThat(responseBody, Matchers.containsString("getParameterMap()[code]=[param]"));
         assertThat(responseBody, Matchers.containsString("getParameterMap()[value]=[zed]"));
@@ -1618,6 +1619,115 @@ public class ErrorPageTest
             String responseBody = response.getContent();
             assertThat(responseBody, Matchers.containsString("<h1>This is the 500 HTML</h1>"));
         }
+    }
+
+    @Test
+    public void testErrorHandlerCallsStartAsync() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler("/");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(598, "/error/598");
+        context.setErrorHandler(errorPageErrorHandler);
+
+        HttpServlet appServlet = new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.sendError(598);
+            }
+        };
+        context.addServlet(appServlet, "/async/*");
+        HttpServlet error598Servlet = new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                AsyncContext asyncContext = req.startAsync();
+                asyncContext.start(() ->
+                {
+                    try
+                    {
+                        int originalStatus = resp.getStatus();
+                        resp.setStatus(599);
+                        ServletOutputStream output = resp.getOutputStream();
+                        output.print("ORIGINAL STATUS CODE: " + originalStatus);
+                        asyncContext.complete();
+                    }
+                    catch (Throwable x)
+                    {
+                        asyncContext.complete();
+                    }
+                });
+            }
+        };
+        context.addServlet(error598Servlet, "/error/598");
+
+        startServer(context);
+
+        String request = """
+            GET /async/ HTTP/1.1
+            Host: localhost
+            
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+
+        assertThat(response.getStatus(), is(599));
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString("ORIGINAL STATUS CODE: 598"));
+    }
+
+    @Test
+    public void testErrorHandlerCallsSendError() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler("/");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(597, "/error/597");
+        errorPageErrorHandler.addErrorPage(598, "/error/598");
+        context.setErrorHandler(errorPageErrorHandler);
+
+        HttpServlet appServlet = new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.sendError(597);
+            }
+        };
+        context.addServlet(appServlet, "/async/*");
+        HttpServlet error597Servlet = new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.sendError(598);
+            }
+        };
+        context.addServlet(error597Servlet, "/error/597");
+        // Cannot land on an error page from another
+        // error page, so this Servlet is never called.
+        HttpServlet error598Servlet = new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp)
+            {
+                resp.setStatus(599);
+            }
+        };
+        context.addServlet(error598Servlet, "/error/598");
+
+        startServer(context);
+
+        String request = """
+            GET /async/ HTTP/1.1
+            Host: localhost
+            
+            """;
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+
+        assertThat(response.getStatus(), is(598));
     }
 
     public static class ErrorDumpServlet extends HttpServlet

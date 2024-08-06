@@ -4,4 +4,24 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
          version="3.1">
   <display-name>Jetty Simple Webapp run-mojo-it</display-name>
+
+   <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Any Authenticated User</web-resource-name>
+      <url-pattern>/auth/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>*</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <login-config>
+    <auth-method>FORM</auth-method>
+    <realm-name>Test Realm</realm-name>
+    <form-login-config>
+       <form-login-page>/logon.html?param=test</form-login-page>
+       <form-error-page>/logonError.html?param=test</form-error-page>
+    </form-login-config>
+  </login-config>
+
 </web-app>

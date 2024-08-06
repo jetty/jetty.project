@@ -14,9 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -38,6 +35,7 @@ public interface HttpCookie
     String PATH_ATTRIBUTE = "Path";
     String SAME_SITE_ATTRIBUTE = "SameSite";
     String SECURE_ATTRIBUTE = "Secure";
+    String PARTITIONED_ATTRIBUTE = "Partitioned";
 
     /**
      * @return the cookie name
@@ -151,6 +149,15 @@ public interface HttpCookie
     }
 
     /**
+     * @return whether the {@code Partitioned} attribute is present
+     * @see #PARTITIONED_ATTRIBUTE
+     */
+    default boolean isPartitioned()
+    {
+        return Boolean.parseBoolean(getAttributes().get(PARTITIONED_ATTRIBUTE));
+    }
+
+    /**
      * @return the cookie hash code
      * @see #hashCode(HttpCookie)
      */
@@ -258,6 +265,12 @@ public interface HttpCookie
         public boolean isHttpOnly()
         {
             return getWrapped().isHttpOnly();
+        }
+
+        @Override
+        public boolean isPartitioned()
+        {
+            return getWrapped().isPartitioned();
         }
 
         @Override
@@ -560,6 +573,12 @@ public interface HttpCookie
                         throw new IllegalArgumentException("Invalid Secure attribute");
                     secure(true);
                 }
+                case "partitioned" ->
+                {
+                    if (!isTruthy(value))
+                        throw new IllegalArgumentException("Invalid Partitioned attribute");
+                    partitioned(true);
+                }
                 default -> _attributes = lazyAttributePut(_attributes, name, value);
             }
             return this;
@@ -630,6 +649,15 @@ public interface HttpCookie
             return this;
         }
 
+        public Builder partitioned(boolean partitioned)
+        {
+            if (partitioned)
+                _attributes = lazyAttributePut(_attributes, PARTITIONED_ATTRIBUTE, Boolean.TRUE.toString());
+            else
+                _attributes = lazyAttributeRemove(_attributes, PARTITIONED_ATTRIBUTE);
+            return this;
+        }
+
         /**
          * @return an immutable {@link HttpCookie} instance.
          */
@@ -657,8 +685,8 @@ public interface HttpCookie
      * @param value the value of the cookie
      * @param attributes the map of attributes to use with this cookie (this map is used for field values
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
-     * {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
-     * code base.
+     * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
+     * attributes unknown to this code base.
      */
     static HttpCookie from(String name, String value, Map<String, String> attributes)
     {
@@ -673,8 +701,8 @@ public interface HttpCookie
      * @param version the version of the cookie (only used in RFC2965 mode)
      * @param attributes the map of attributes to use with this cookie (this map is used for field values
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
-     * {@link #isSecure()}, {@link #getComment()}, plus any newly defined attributes unknown to this
-     * code base.
+     * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
+     * attributes unknown to this code base.
      */
     static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
     {
@@ -786,6 +814,8 @@ public interface HttpCookie
     {
         if (httpCookie.getSameSite() != null)
             throw new IllegalArgumentException("SameSite attribute not supported by " + java.net.HttpCookie.class.getName());
+        if (httpCookie.isPartitioned())
+            throw new IllegalArgumentException("Partitioned attribute not supported by " + java.net.HttpCookie.class.getName());
         java.net.HttpCookie cookie = new java.net.HttpCookie(httpCookie.getName(), httpCookie.getValue());
         cookie.setVersion(httpCookie.getVersion());
         cookie.setComment(httpCookie.getComment());
@@ -888,22 +918,19 @@ public interface HttpCookie
      */
     static String formatExpires(Instant expires)
     {
-        return DateTimeFormatter.RFC_1123_DATE_TIME
-            .withZone(ZoneOffset.UTC)
-            .format(expires);
+        return HttpDateTime.format(expires);
     }
 
     /**
-     * <p>Parses the {@code Expires} attribute value
-     * (in RFC 1123 format) into an {@link Instant}.</p>
+     * <p>Parses the {@code Expires} Date/Time attribute value
+     * into an {@link Instant}.</p>
      *
-     * @param expires an instant in the RFC 1123 string format
+     * @param expires a date/time in one of the RFC6265 supported formats
      * @return an {@link Instant} parsed from the given string
      */
     static Instant parseExpires(String expires)
     {
-        // TODO: RFC 1123 format only for now, see https://www.rfc-editor.org/rfc/rfc2616#section-3.3.1.
-        return ZonedDateTime.parse(expires, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        return HttpDateTime.parse(expires).toInstant();
     }
 
     private static Map<String, String> lazyAttributePut(Map<String, String> attributes, String key, String value)

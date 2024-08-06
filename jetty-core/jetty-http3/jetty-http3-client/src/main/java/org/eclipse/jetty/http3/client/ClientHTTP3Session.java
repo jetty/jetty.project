@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.http3.ControlFlusher;
 import org.eclipse.jetty.http3.DecoderStreamConnection;
 import org.eclipse.jetty.http3.EncoderStreamConnection;
+import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.InstructionFlusher;
@@ -57,38 +58,38 @@ public class ClientHTTP3Session extends ClientProtocolSession
         super(quicSession);
         this.configuration = configuration;
         session = new HTTP3SessionClient(this, listener, promise);
-        addBean(session);
+        installBean(session);
         session.setStreamIdleTimeout(configuration.getStreamIdleTimeout());
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
 
-        long encoderStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
+        long encoderStreamId = newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
         InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
         encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher));
         encoder.setMaxHeadersSize(configuration.getMaxRequestHeadersSize());
-        addBean(encoder);
+        installBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
 
-        long decoderStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
+        long decoderStreamId = newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
         InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
         decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher));
-        addBean(decoder);
+        installBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
 
-        long controlStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
+        long controlStreamId = newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = openControlEndPoint(controlStreamId);
         controlFlusher = new ControlFlusher(quicSession, controlEndPoint, true);
-        addBean(controlFlusher);
+        installBean(controlFlusher);
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
         messageFlusher = new MessageFlusher(quicSession.getByteBufferPool(), encoder, configuration.isUseOutputDirectByteBuffers());
-        addBean(messageFlusher);
+        installBean(messageFlusher);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -104,6 +105,11 @@ public class ClientHTTP3Session extends ClientProtocolSession
     public HTTP3SessionClient getSessionClient()
     {
         return session;
+    }
+
+    public long newStreamId(StreamType streamType)
+    {
+        return getQuicSession().newStreamId(streamType);
     }
 
     @Override
@@ -171,20 +177,26 @@ public class ClientHTTP3Session extends ClientProtocolSession
         {
             if (key == SettingsFrame.MAX_TABLE_CAPACITY)
             {
-                int maxTableCapacity = value.intValue();
+                int maxTableCapacity = (int)Math.min(value, Integer.MAX_VALUE);
                 encoder.setMaxTableCapacity(maxTableCapacity);
                 encoder.setTableCapacity(Math.min(maxTableCapacity, configuration.getMaxEncoderTableCapacity()));
             }
             else if (key == SettingsFrame.MAX_FIELD_SECTION_SIZE)
             {
                 // Must cap the maxHeaderSize to avoid large allocations.
-                int maxHeadersSize = Math.min(value.intValue(), configuration.getMaxRequestHeadersSize());
+                int maxHeadersSize = (int)Math.min(value, configuration.getMaxRequestHeadersSize());
                 encoder.setMaxHeadersSize(maxHeadersSize);
             }
             else if (key == SettingsFrame.MAX_BLOCKED_STREAMS)
             {
-                int maxBlockedStreams = value.intValue();
+                int maxBlockedStreams = (int)Math.min(value, Integer.MAX_VALUE);
                 encoder.setMaxBlockedStreams(maxBlockedStreams);
+            }
+            else
+            {
+                // SPEC: grease and unknown settings are ignored.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ignored {} setting {}={}", Grease.isGreaseValue(key) ? "grease" : "unknown", key, value);
             }
         });
     }

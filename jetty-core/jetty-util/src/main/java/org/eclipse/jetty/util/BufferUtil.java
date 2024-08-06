@@ -21,6 +21,7 @@ import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.ReadableByteChannel;
@@ -105,7 +106,8 @@ public class BufferUtil
             (byte)'E', (byte)'F'
         };
 
-    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
+    public static final byte[] EMPTY_BYTES = new byte[0];
+    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(EMPTY_BYTES);
 
     /**
      * Allocate ByteBuffer in flush mode.
@@ -717,7 +719,7 @@ public class BufferUtil
     }
 
     /**
-     * Convert the buffer to an ISO-8859-1 String
+     * Convert buffer to a String with specified Charset
      *
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes
@@ -1102,7 +1104,7 @@ public class BufferUtil
         ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
 
         int pos = BufferUtil.flipToFill(buffer);
-        try (ReadableByteChannel channel = resource.newReadableByteChannel())
+        try (ReadableByteChannel channel = Channels.newChannel(resource.newInputStream()))
         {
             long needed = len;
             while (needed > 0 && buffer.hasRemaining())

@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -71,6 +72,7 @@ public class ServletChannelState
     /*
      * The state of the request processing lifecycle.
      * <pre>
+     *       ERRORING
      *       BLOCKING <----> COMPLETING ---> COMPLETED
      *       ^  |  ^            ^
      *      /   |   \           |
@@ -89,6 +91,7 @@ public class ServletChannelState
     private enum RequestState
     {
         BLOCKING,    // Blocking request dispatched
+        ERRORING,    // Request passed to ErrorHandler (may execute Servlets)
         ASYNC,       // AsyncContext.startAsync() has been called
         DISPATCH,    // AsyncContext.dispatch() has been called
         EXPIRE,      // AsyncContext timeout has happened
@@ -100,12 +103,51 @@ public class ServletChannelState
 
     /*
      * The input readiness state.
+     * <pre>
+     *              read() without preceding
+     *              isReady()  ------
+     *                         \     \   unhandle() returns Action.READ_CALLBACK to call the ReadListener,
+     *                          \     \  or read() stole available content after setReadListener()
+     *                           --> IDLE <--------------
+     *     blocking read() unblocked  ^                  \
+     *                                |                   \
+     *                                |                    \  setReadListener() called while
+     *            registering demand  v                     v content is available
+     *                               UNREADY ------------> READY
+     *                                         demand
+     *                                         serviced
+     * </pre>
      */
     private enum InputState
     {
-        IDLE,       // No isReady; No data
-        UNREADY,    // isReady()==false; No data
-        READY       // isReady() was false; data is available
+        /**
+         * The 'default' state, when there is no pending demand nor a pending notification to the ReadListener.
+         * There are 3 ways to transition to this state:
+         * <ul>
+         *  <li>from IDLE: when an async read() is called without a preceding call to isReady()</li>
+         *  <li>from READY: just before unhandle() returns Action.READ_CALLBACK to call read listener or
+         *  when read() steals available content after setReadListener()</li>
+         *  <li>from UNREADY: when a blocking read() got unblocked</li>
+         * </ul>
+         */
+        IDLE,
+
+        /**
+         * The 'demand registered' state. There is only 1 way to transition to this state:
+         * <ul>
+         *  <li>from IDLE: when isReady() is called and there is no content available, so a demand is registered</li>
+         * </ul>
+         */
+        UNREADY,
+
+        /**
+         * The 'dispatch a notification to the ReadListener' state. There are 2 ways to transition to this state:
+         * <ul>
+         *  <li>from IDLE: when setReadListener() is called while there is content available</li>
+         *  <li>from UNREADY: when demand is serviced because content is now available</li>
+         * </ul>
+         */
+        READY
     }
 
     /*
@@ -149,6 +191,8 @@ public class ServletChannelState
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
     private Thread _onTimeoutThread;
+    private Throwable _failure;
+    private boolean _failureListener;
 
     protected ServletChannelState(ServletChannel servletChannel)
     {
@@ -181,6 +225,11 @@ public class ServletChannelState
     AutoLock lock()
     {
         return _lock.lock();
+    }
+
+    boolean isLockHeldByCurrentThread()
+    {
+        return _lock.isHeldByCurrentThread();
     }
 
     public State getState()
@@ -290,19 +339,19 @@ public class ServletChannelState
         }
     }
 
-    public boolean completeResponse()
+    public Throwable completeResponse()
     {
         try (AutoLock ignored = lock())
         {
-            switch (_outputState)
-            {
-                case OPEN:
-                    _outputState = OutputState.COMPLETED;
-                    return true;
+            // This method is called when the state machine
+            // is about to terminate the processing, just
+            // before completing the Handler's callback.
+            assert _outputState == OutputState.OPEN || _failure != null;
 
-                default:
-                    return false;
-            }
+            if (_outputState == OutputState.OPEN)
+                _outputState = OutputState.COMPLETED;
+
+            return _failure;
         }
     }
 
@@ -319,7 +368,7 @@ public class ServletChannelState
         }
     }
 
-    public boolean abortResponse()
+    private boolean abortResponse(Throwable failure)
     {
         try (AutoLock ignored = lock())
         {
@@ -329,16 +378,32 @@ public class ServletChannelState
                 case ABORTED:
                     return false;
 
-                case OPEN:
-                    _servletChannel.getServletContextResponse().setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                    _outputState = OutputState.ABORTED;
-                    return true;
-
                 default:
                     _outputState = OutputState.ABORTED;
+                    _failure = failure;
                     return true;
             }
         }
+    }
+
+    public void abort(Throwable failure)
+    {
+        boolean handle = false;
+        try (AutoLock ignored = lock())
+        {
+            boolean aborted = abortResponse(failure);
+            if (LOG.isDebugEnabled())
+                LOG.debug("abort={} {}", aborted, this, failure);
+            if (aborted)
+            {
+                handle = _state == State.WAITING;
+                if (handle)
+                    _state = State.WOKEN;
+                _requestState = RequestState.COMPLETED;
+            }
+        }
+        if (handle)
+            scheduleDispatch();
     }
 
     /**
@@ -484,6 +549,7 @@ public class ServletChannelState
                 _requestState = RequestState.COMPLETING;
                 return Action.COMPLETE;
 
+            case ERRORING:
             case COMPLETING:
                 _state = State.WAITING;
                 return Action.WAIT;
@@ -505,9 +571,14 @@ public class ServletChannelState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("startAsync {}", toStringLocked());
-            if (_state != State.HANDLING || _requestState != RequestState.BLOCKING)
+            if (_state != State.HANDLING || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING))
                 throw new IllegalStateException(this.getStatusStringLocked());
 
+            if (!_failureListener)
+            {
+                _failureListener = true;
+                _servletChannel.getRequest().addFailureListener(this::asyncError);
+            }
             _requestState = RequestState.ASYNC;
             _event = event;
             lastAsyncListeners = _asyncListeners;
@@ -544,6 +615,51 @@ public class ServletChannelState
 
             runInContext(event, callback);
         }
+    }
+
+    /**
+     * Called when an asynchronous call to {@code ErrorHandler.handle()} is about to happen.
+     *
+     * @see #errorHandlingComplete(Throwable)
+     */
+    void errorHandling()
+    {
+        try (AutoLock ignored = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("errorHandling {}", toStringLocked());
+            _requestState = RequestState.ERRORING;
+        }
+    }
+
+    /**
+     * Called when the {@code Callback} passed to {@code ErrorHandler.handle()} is completed.
+     *
+     * @param failure the failure reported by the error handling,
+     * or {@code null} if there was no failure
+     */
+    void errorHandlingComplete(Throwable failure)
+    {
+        boolean handle;
+        try (AutoLock ignored = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("errorHandlingComplete {}", toStringLocked(), failure);
+
+            handle = _state == State.WAITING;
+            if (handle)
+                _state = State.WOKEN;
+
+            // If there is a failure while trying to
+            // handle a previous failure, just bail out.
+            if (failure != null)
+                abortResponse(failure);
+
+            if (_requestState == RequestState.ERRORING)
+                _requestState = RequestState.COMPLETE;
+        }
+        if (handle)
+            scheduleDispatch();
     }
 
     public void dispatch(ServletContext context, String path)
@@ -956,13 +1072,9 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("completing {}", toStringLocked());
 
-            switch (_requestState)
-            {
-                case COMPLETED:
-                    throw new IllegalStateException(getStatusStringLocked());
-                default:
-                    _requestState = RequestState.COMPLETING;
-            }
+            if (_requestState == RequestState.COMPLETED)
+                throw new IllegalStateException(getStatusStringLocked());
+            _requestState = RequestState.COMPLETING;
         }
     }
 
@@ -978,7 +1090,10 @@ public class ServletChannelState
                 LOG.debug("completed {}", toStringLocked());
 
             if (_requestState != RequestState.COMPLETING)
-                throw new IllegalStateException(this.getStatusStringLocked());
+                failure = ExceptionUtil.combine(failure, new IllegalStateException(getStatusStringLocked()));
+
+            if (failure != null)
+                abortResponse(failure);
 
             if (_event == null)
             {
@@ -1068,6 +1183,7 @@ public class ServletChannelState
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
+            _failureListener = false;
         }
     }
 
@@ -1079,18 +1195,14 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {}", toStringLocked());
 
-            switch (_state)
-            {
-                case IDLE:
-                    break;
-                default:
-                    throw new IllegalStateException(getStatusStringLocked());
-            }
+            if (_state != State.IDLE)
+                throw new IllegalStateException(getStatusStringLocked());
+            if (_inputState != InputState.IDLE)
+                throw new IllegalStateException(getStatusStringLocked());
             _asyncListeners = null;
             _state = State.UPGRADED;
             _requestState = RequestState.BLOCKING;
             _initial = true;
-            _inputState = InputState.IDLE;
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
@@ -1099,7 +1211,7 @@ public class ServletChannelState
 
     protected void scheduleDispatch()
     {
-        _servletChannel.execute(_servletChannel::handle);
+        _servletChannel.execute(_servletChannel::handle, _servletChannel.getRequest());
     }
 
     protected void cancelTimeout()
@@ -1159,7 +1271,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (_state == State.HANDLING)
-                return _requestState != RequestState.BLOCKING;
+                return _requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING;
             return _requestState == RequestState.ASYNC || _requestState == RequestState.EXPIRING;
         }
     }
@@ -1168,7 +1280,7 @@ public class ServletChannelState
     {
         try (AutoLock ignored = lock())
         {
-            return !_initial || _requestState != RequestState.BLOCKING;
+            return !_initial || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING);
         }
     }
 
@@ -1231,19 +1343,17 @@ public class ServletChannelState
         return woken;
     }
 
-    public boolean onReadEof()
+    public boolean onReadListenerReady()
     {
         boolean woken = false;
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onReadEof {}", toStringLocked());
+                LOG.debug("onReadListenerReady {}", toStringLocked());
 
             switch (_inputState)
             {
                 case IDLE:
-                case READY:
-                case UNREADY:
                     _inputState = InputState.READY;
                     if (_state == State.WAITING)
                     {
@@ -1252,36 +1362,13 @@ public class ServletChannelState
                     }
                     break;
 
+                case READY:
+                case UNREADY:
                 default:
                     throw new IllegalStateException(toStringLocked());
             }
         }
         return woken;
-    }
-
-    /**
-     * Called to indicate that some content was produced and is
-     * ready for consumption.
-     */
-    public void onContentAdded()
-    {
-        try (AutoLock ignored = lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onContentAdded {}", toStringLocked());
-
-            switch (_inputState)
-            {
-                case IDLE:
-                case UNREADY:
-                case READY:
-                    _inputState = InputState.READY;
-                    break;
-
-                default:
-                    throw new IllegalStateException(toStringLocked());
-            }
-        }
     }
 
     /**
@@ -1323,11 +1410,11 @@ public class ServletChannelState
             switch (_inputState)
             {
                 case IDLE:
-                case UNREADY:
-                case READY:  // READY->UNREADY is needed by AsyncServletIOTest.testStolenAsyncRead
                     _inputState = InputState.UNREADY;
                     break;
 
+                case READY:
+                case UNREADY:
                 default:
                     throw new IllegalStateException(toStringLocked());
             }

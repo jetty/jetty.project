@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * Content.Source content = ...;
  *
  * // Create and configure MultiPartFormData.
- * MultiPartFormData formData = new MultiPartFormData(boundary);
+ * MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
  * // Where to store the files.
  * formData.setFilesDirectory(Path.of("/tmp"));
  * // Max 1 MiB files.
@@ -77,16 +78,84 @@ public class MultiPartFormData
     {
     }
 
-    public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    /**
+     * Returns {@code multipart/form-data} parts using the given {@link Content.Source} and {@link MultiPartConfig}.
+     *
+     * @param content the source of the multipart content.
+     * @param attributes the attributes where the futureParts are tracked.
+     * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
+     * @param config the multipart configuration.
+     * @return the future parts
+     */
+    public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config)
     {
-        @SuppressWarnings("unchecked")
-        CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
+        // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
+        CompletableFuture<MultiPartFormData.Parts> futureParts = MultiPartFormData.get(attributes);
         if (futureParts == null)
         {
-            futureParts = parse.apply(new Parser(boundary));
+            // No existing parts, so we need to try to read them ourselves
+
+            // Are we the right content type to produce our own parts?
+            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.getValueParameters(contentType, null)))
+                return CompletableFuture.failedFuture(new IllegalStateException("Not multipart Content-Type"));
+
+            // Do we have a boundary?
+            String boundary = MultiPart.extractBoundary(contentType);
+            if (boundary == null)
+                return CompletableFuture.failedFuture(new IllegalStateException("No multipart boundary parameter in Content-Type"));
+
+            Parser parser = new Parser(boundary);
+            parser.configure(config);
+            futureParts = parser.parse(content);
+            attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
+            return futureParts;
+        }
+        return futureParts;
+    }
+
+    /**
+     * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
+     * @deprecated use {@link #from(Content.Source, Attributes, String, MultiPartConfig)}.
+     */
+    @Deprecated
+    public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    {
+        return from(attributes, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP, boundary, parse);
+    }
+
+    /**
+     * Returns {@code multipart/form-data} parts using the given {@link MultiPartCompliance} and listener.
+     *
+     * @param attributes the attributes where the futureParts are tracked
+     * @param compliance the compliance mode
+     * @param listener the compliance violation listener
+     * @param boundary the boundary for the {@code multipart/form-data} parts
+     * @param parse the parser completable future
+     * @return the future parts
+     * @deprecated use {@link #from(Content.Source, Attributes, String, MultiPartConfig)}.
+     */
+    @Deprecated
+    public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    {
+        CompletableFuture<Parts> futureParts = get(attributes);
+        if (futureParts == null)
+        {
+            futureParts = parse.apply(new Parser(boundary, compliance, listener));
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
         }
         return futureParts;
+    }
+
+    /**
+     * Returns {@code multipart/form-data} parts if they have already been created.
+     *
+     * @param attributes the attributes where the futureParts are tracked
+     * @return the future parts
+     */
+    @SuppressWarnings("unchecked")
+    public static CompletableFuture<Parts> get(Attributes attributes)
+    {
+        return (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
     }
 
     /**
@@ -200,7 +269,9 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
-        private boolean useFilesForPartsWithoutFileName;
+        private MultiPartCompliance compliance;
+        private ComplianceViolation.Listener complianceListener;
+        private boolean useFilesForPartsWithoutFileName = true;
         private Path filesDirectory;
         private long maxFileSize = -1;
         private long maxMemoryFileSize;
@@ -210,7 +281,18 @@ public class MultiPartFormData
 
         public Parser(String boundary)
         {
-            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
+            this(boundary, MultiPartCompliance.RFC7578, ComplianceViolation.Listener.NOOP);
+        }
+
+        /**
+         * @deprecated use {@link Parser#Parser(String)} with {@link #configure(MultiPartConfig)}.
+         */
+        @Deprecated
+        public Parser(String boundary, MultiPartCompliance multiPartCompliance, ComplianceViolation.Listener complianceViolationListener)
+        {
+            compliance = Objects.requireNonNull(multiPartCompliance);
+            complianceListener = Objects.requireNonNull(complianceViolationListener);
+            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), compliance, listener);
         }
 
         public CompletableFuture<Parts> parse(Content.Source content)
@@ -317,6 +399,21 @@ public class MultiPartFormData
             this.filesDirectory = filesDirectory;
         }
 
+        private Path findFilesDirectory()
+        {
+            Path dir = getFilesDirectory();
+            if (dir != null)
+                return dir;
+            String jettyBase = System.getProperty("jetty.base");
+            if (jettyBase != null)
+            {
+                dir = Path.of(jettyBase).resolve("work");
+                if (Files.exists(dir))
+                    return dir;
+            }
+            throw new IllegalArgumentException("No files directory configured");
+        }
+
         /**
          * @return the maximum file size in bytes, or -1 for unlimited file size
          */
@@ -386,6 +483,23 @@ public class MultiPartFormData
             parser.setMaxParts(maxParts);
         }
 
+        /**
+         * Configure the Parser given a {@link MultiPartConfig} instance.
+         * @param config the configuration.
+         */
+        public void configure(MultiPartConfig config)
+        {
+            parser.setMaxParts(config.getMaxParts());
+            maxMemoryFileSize = config.getMaxMemoryPartSize();
+            maxFileSize = config.getMaxPartSize();
+            maxLength = config.getMaxSize();
+            parser.setPartHeadersMaxLength(config.getMaxHeadersSize());
+            useFilesForPartsWithoutFileName = config.isUseFilesForPartsWithoutFileName();
+            filesDirectory = config.getLocation();
+            complianceListener = config.getViolationListener();
+            compliance = config.getMultiPartCompliance();
+        }
+
         // Only used for testing.
         int getPartsSize()
         {
@@ -397,8 +511,7 @@ public class MultiPartFormData
             private final AutoLock lock = new AutoLock();
             private final List<MultiPart.Part> parts = new ArrayList<>();
             private final List<Content.Chunk> partChunks = new ArrayList<>();
-            private long fileSize;
-            private long memoryFileSize;
+            private long size;
             private Path filePath;
             private SeekableByteChannel fileChannel;
             private Throwable failure;
@@ -407,22 +520,21 @@ public class MultiPartFormData
             public void onPartContent(Content.Chunk chunk)
             {
                 ByteBuffer buffer = chunk.getByteBuffer();
+                long maxPartSize = getMaxFileSize();
+                size += buffer.remaining();
+                if (maxPartSize >= 0 && size > maxPartSize)
+                {
+                    onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxPartSize)));
+                    return;
+                }
+
                 String fileName = getFileName();
                 if (fileName != null || isUseFilesForPartsWithoutFileName())
                 {
-                    long maxFileSize = getMaxFileSize();
-                    fileSize += buffer.remaining();
-                    if (maxFileSize >= 0 && fileSize > maxFileSize)
+                    long maxMemoryPartSize = getMaxMemoryFileSize();
+                    if (maxMemoryPartSize >= 0)
                     {
-                        onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxFileSize)));
-                        return;
-                    }
-
-                    long maxMemoryFileSize = getMaxMemoryFileSize();
-                    if (maxMemoryFileSize >= 0)
-                    {
-                        memoryFileSize += buffer.remaining();
-                        if (memoryFileSize > maxMemoryFileSize)
+                        if (size > maxMemoryPartSize)
                         {
                             try
                             {
@@ -439,6 +551,11 @@ public class MultiPartFormData
                                     {
                                         write(c.getByteBuffer());
                                     }
+                                    try (AutoLock ignored = lock.lock())
+                                    {
+                                        this.partChunks.forEach(Content.Chunk::release);
+                                        this.partChunks.clear();
+                                    }
                                 }
                                 write(buffer);
                                 if (chunk.isLast())
@@ -448,16 +565,23 @@ public class MultiPartFormData
                             {
                                 onFailure(x);
                             }
-
-                            try (AutoLock ignored = lock.lock())
-                            {
-                                partChunks.forEach(Content.Chunk::release);
-                                partChunks.clear();
-                            }
                             return;
                         }
                     }
                 }
+                else
+                {
+                    long maxMemoryPartSize = getMaxMemoryFileSize();
+                    if (maxMemoryPartSize >= 0)
+                    {
+                        if (size > maxMemoryPartSize)
+                        {
+                            onFailure(new IllegalStateException("max memory file size exceeded: %d".formatted(maxMemoryPartSize)));
+                            return;
+                        }
+                    }
+                }
+
                 // Retain the chunk because it is stored for later use.
                 chunk.retain();
                 try (AutoLock ignored = lock.lock())
@@ -498,10 +622,43 @@ public class MultiPartFormData
             @Override
             public void onPart(String name, String fileName, HttpFields headers)
             {
-                fileSize = 0;
-                memoryFileSize = 0;
+                size = 0;
                 try (AutoLock ignored = lock.lock())
                 {
+                    // Content-Transfer-Encoding is not a multi-valued field.
+                    String value = headers.get(HttpHeader.CONTENT_TRANSFER_ENCODING);
+                    if (value != null)
+                    {
+                        switch (StringUtil.asciiToLowerCase(value))
+                        {
+                            case "base64" ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
+                                        value));
+                            }
+                            case "quoted-printable" ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
+                                        value));
+                            }
+                            case "8bit", "binary" ->
+                            {
+                                // ignore
+                            }
+                            default ->
+                            {
+                                complianceListener.onComplianceViolation(
+                                    new ComplianceViolation.Event(compliance,
+                                        MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
+                                        value));
+                            }
+                        }
+                    }
+
                     MultiPart.Part part;
                     if (fileChannel != null)
                         part = new MultiPart.PathPart(name, fileName, headers, filePath);
@@ -554,6 +711,21 @@ public class MultiPartFormData
             public void onFailure(Throwable failure)
             {
                 fail(failure);
+            }
+
+            @Override
+            public void onViolation(MultiPartCompliance.Violation violation)
+            {
+                try
+                {
+                    ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation");
+                    complianceListener.onComplianceViolation(event);
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failure while notifying listener {}", complianceListener, x);
+                }
             }
 
             private void fail(Throwable cause)
@@ -627,7 +799,7 @@ public class MultiPartFormData
             {
                 try (AutoLock ignored = lock.lock())
                 {
-                    Path directory = getFilesDirectory();
+                    Path directory = findFilesDirectory();
                     Files.createDirectories(directory);
                     String fileName = "MultiPart";
                     filePath = Files.createTempFile(directory, fileName, "");
