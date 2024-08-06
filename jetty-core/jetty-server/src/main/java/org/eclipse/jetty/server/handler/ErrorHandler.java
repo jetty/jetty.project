@@ -254,7 +254,7 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, byteBufferPool, buffer));
+            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
 
             return true;
         }
@@ -586,13 +586,11 @@ public class ErrorHandler implements Request.Handler
     private static class WriteErrorCallback implements Callback
     {
         private final AtomicReference<Callback>  _callback;
-        private final ByteBufferPool _pool;
         private final RetainableByteBuffer _buffer;
 
-        public WriteErrorCallback(Callback callback, ByteBufferPool pool, RetainableByteBuffer retainable)
+        public WriteErrorCallback(Callback callback, RetainableByteBuffer retainable)
         {
             _callback = new AtomicReference<>(callback);
-            _pool = pool;
             _buffer = retainable;
         }
 

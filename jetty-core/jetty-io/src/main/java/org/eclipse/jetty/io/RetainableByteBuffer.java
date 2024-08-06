@@ -2385,7 +2385,7 @@ public interface RetainableByteBuffer extends Retainable
                             // release the last buffer written
                             if (_buffer != null)
                             {
-                                _buffer.releaseForRemoval();
+                                _buffer.release();
                                 _buffer = null;
                             }
                         }
