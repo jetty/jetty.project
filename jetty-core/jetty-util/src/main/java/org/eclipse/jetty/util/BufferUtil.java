@@ -108,7 +108,7 @@ public class BufferUtil
         };
 
     public static final byte[] EMPTY_BYTES = new byte[0];
-    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(EMPTY_BYTES).asReadOnlyBuffer();
+    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(EMPTY_BYTES);
 
     /**
      * Allocate ByteBuffer in flush mode.
@@ -285,6 +285,23 @@ public class BufferUtil
         buffer.put((byte)((value >>> 16) & 0xFF));
         buffer.put((byte)((value >>> 24) & 0xFF));
         flipToFlush(buffer, p);
+    }
+
+    /**
+     * Slice a buffer given an offset and a length.
+     * @param buffer the buffer to slice
+     * @param offset the offset
+     * @param length the length, -1 meaning use the current limit
+     * @return the sliced buffer
+     */
+    public static ByteBuffer slice(ByteBuffer buffer, int offset, int length)
+    {
+        ByteBuffer slice = buffer.slice();
+        if (offset > 0)
+            slice.position(slice.position() + offset);
+        if (length > -1)
+            slice.limit(slice.position() + length);
+        return slice;
     }
 
     /**

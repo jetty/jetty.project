@@ -24,7 +24,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletOutputStream;
@@ -1357,12 +1356,40 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(http={},{})", httpContent, callback);
+        try
+        {
+            if (prepareSendContent(0, callback))
+            {
+                Content.Sink sink = (last, byteBuffer, cb) ->
+                {
+                    _written += byteBuffer.remaining();
+                    channelWrite(byteBuffer, last, cb);
+                };
+                httpContent.writeTo(sink, 0L, -1L, new Callback.Nested(callback)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        onWriteComplete(true, null);
+                        super.succeeded();
+                    }
 
-        ByteBuffer buffer = httpContent.getByteBuffer();
-        if (buffer != null)
-            sendContent(buffer, callback);
-        else
-            sendContent(httpContent.getResource(), callback);
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        onWriteComplete(true, x);
+                        super.failed(x);
+                    }
+                });
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to send http content {}", httpContent, x);
+            _channel.abort(x);
+            callback.failed(x);
+        }
     }
 
     private boolean prepareSendContent(int len, Callback callback)
@@ -1416,35 +1443,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         _bufferSize = size;
         _commitSize = size;
-    }
-
-    /**
-     * <p>Invoked when bytes have been flushed to the network.</p>
-     * <p>The number of flushed bytes may be different from the bytes written
-     * by the application if an {@link Interceptor} changed them, for example
-     * by compressing them.</p>
-     *
-     * @param bytes the number of bytes flushed
-     * @throws IOException if the minimum data rate, when set, is not respected
-     * @see org.eclipse.jetty.io.WriteFlusher.Listener
-     */
-    public void onFlushed(long bytes) throws IOException
-    {
-        // TODO not called.... do we need this now?
-        if (_firstByteNanoTime == -1 || _firstByteNanoTime == Long.MAX_VALUE)
-            return;
-        long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
-        _flushed += bytes;
-        long elapsed = NanoTime.since(_firstByteNanoTime);
-        long minFlushed = minDataRate * TimeUnit.NANOSECONDS.toMillis(elapsed) / TimeUnit.SECONDS.toMillis(1);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
-        if (_flushed < minFlushed)
-        {
-            IOException ioe = new IOException(String.format("Response content data rate < %d B/s", minDataRate));
-            _channel.abort(ioe);
-            throw ioe;
-        }
     }
 
     public void recycle()

@@ -111,10 +111,14 @@ import org.slf4j.LoggerFactory;
  *  maxCachedFileSize The maximum size of a file to cache
  *  maxCachedFiles    The maximum number of files to cache
  *
+ *  byteBufferSize
+ *                    The size of the buffers used to serve static content when using NIO connector.
+ *  useDirectByteBuffers
+ *                    Whether to use direct buffers to serve static content when using NIO connector.
  *  useFileMappedBuffer
  *                    If set to true, it will use mapped file buffer to serve static content
  *                    when using NIO connector. Setting this value to false means that
- *                    a direct buffer will be used instead of a mapped file buffer.
+ *                    buffers sized with the above parameters will be used instead of a mapped file buffer.
  *                    This is set to false by default by this class, but may be overridden
  *                    by eg webdefault-ee9.xml
  *
@@ -255,7 +259,9 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
             HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
             if (contentFactory == null)
             {
-                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes)
+                ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
+                ByteBufferPool.Sized sizedBufferPool = new ByteBufferPool.Sized(bufferPool, getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
+                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes, sizedBufferPool)
                 {
                     @Override
                     protected Resource resolve(String pathInContext)
@@ -265,7 +271,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 };
                 if (_useFileMappedBuffer)
                     contentFactory = new FileMappingHttpContentFactory(contentFactory);
-                contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css");
+                contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css", sizedBufferPool);
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
 
                 int maxCacheSize = getInitInt("maxCacheSize", -2);
@@ -274,7 +280,6 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
                 if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
                 {
-                    ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
                     _cachingContentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
                         (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
                     contentFactory = _cachingContentFactory;

@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -29,6 +30,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IOResourcesTest
 {
@@ -177,6 +179,30 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(500L));
+        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testOutOfRangeOffset(Resource resource)
+    {
+        TestSink sink = new TestSink();
+        Blocker.Callback callback = Blocker.callback();
+        IOResources.copy(resource, sink, bufferPool, 1, false, Integer.MAX_VALUE, 1, callback);
+        assertThrows(IllegalArgumentException.class, callback::block);
+    }
+
+    @ParameterizedTest
+    @MethodSource("all")
+    public void testOutOfRangeOffsetWithZeroLength(Resource resource) throws Exception
+    {
+        TestSink sink = new TestSink();
+        Callback.Completable callback = new Callback.Completable();
+        IOResources.copy(resource, sink, bufferPool, 1, false, Integer.MAX_VALUE, 0, callback);
+        callback.get();
+        List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
+        long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        assertThat(sum, is(0L));
         assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
     }
 }

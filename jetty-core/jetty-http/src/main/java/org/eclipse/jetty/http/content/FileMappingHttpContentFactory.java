@@ -15,10 +15,16 @@ package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Objects;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +32,11 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileMappingHttpContentFactory.class);
     private static final int DEFAULT_MIN_FILE_SIZE = 16 * 1024;
+    private static final int DEFAULT_MAX_BUFFER_SIZE = Integer.MAX_VALUE;
 
     private final HttpContent.Factory _factory;
     private final int _minFileSize;
+    private final int _maxBufferSize;
 
     /**
      * Construct a {@link FileMappingHttpContentFactory} which can use file mapped buffers.
@@ -39,7 +47,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
      */
     public FileMappingHttpContentFactory(HttpContent.Factory factory)
     {
-        this(factory, DEFAULT_MIN_FILE_SIZE);
+        this(factory, DEFAULT_MIN_FILE_SIZE, DEFAULT_MAX_BUFFER_SIZE);
     }
 
     /**
@@ -47,11 +55,13 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
      *
      * @param factory the wrapped {@link HttpContent.Factory} to use.
      * @param minFileSize the minimum size of an {@link HttpContent} before trying to use a file mapped buffer.
+     * @param maxBufferSize the maximum size of the memory mapped buffers
      */
-    public FileMappingHttpContentFactory(HttpContent.Factory factory, int minFileSize)
+    public FileMappingHttpContentFactory(HttpContent.Factory factory, int minFileSize, int maxBufferSize)
     {
         _factory = Objects.requireNonNull(factory);
         _minFileSize = minFileSize;
+        _maxBufferSize = maxBufferSize;
     }
 
     @Override
@@ -60,71 +70,195 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
         HttpContent content = _factory.getContent(path);
         if (content != null)
         {
-            long contentLength = content.getContentLengthValue();
-            if (contentLength > _minFileSize && contentLength < Integer.MAX_VALUE)
-                return new FileMappedHttpContent(content);
+            try
+            {
+                long contentLength = content.getContentLengthValue();
+                if (contentLength < _minFileSize)
+                    return content;
+                return contentLength <= _maxBufferSize ? new SingleBufferFileMappedHttpContent(content) : new MultiBufferFileMappedHttpContent(content, _maxBufferSize);
+            }
+            catch (IOException e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error getting Mapped Buffer", e);
+                // Fall through to return the content gotten from the factory.
+            }
         }
         return content;
     }
 
-    private static class FileMappedHttpContent extends HttpContent.Wrapper
+    private static class SingleBufferFileMappedHttpContent extends HttpContent.Wrapper
     {
-        private static final ByteBuffer SENTINEL_BUFFER = BufferUtil.allocate(0);
+        private final ByteBuffer _buffer;
+        private final HttpField _contentLength;
+        private final HttpField _lastModified;
+        private final Instant _lastModifiedInstant;
 
-        private final AutoLock _lock = new AutoLock();
-        private final HttpContent _content;
-        private volatile ByteBuffer _buffer;
-
-        public FileMappedHttpContent(HttpContent content)
+        private SingleBufferFileMappedHttpContent(HttpContent content) throws IOException
         {
             super(content);
-            this._content = content;
+            Path path = content.getResource().getPath();
+            if (path == null)
+                throw new IOException("Cannot memory map Content whose Resource is not backed by a Path: " + content.getResource());
+            _buffer = BufferUtil.toMappedBuffer(path);
+            _contentLength = new HttpField(HttpHeader.CONTENT_LENGTH, Integer.toString(_buffer.remaining()));
+            _lastModified = content.getLastModified();
+            _lastModifiedInstant = content.getLastModifiedInstant();
         }
 
         @Override
-        public ByteBuffer getByteBuffer()
-        {
-            ByteBuffer buffer = _buffer;
-            if (buffer != null)
-                return (buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : buffer.asReadOnlyBuffer();
-
-            try (AutoLock lock = _lock.lock())
-            {
-                if (_buffer == null)
-                    _buffer = getMappedByteBuffer();
-                return (_buffer == SENTINEL_BUFFER) ? super.getByteBuffer() : _buffer.asReadOnlyBuffer();
-            }
-        }
-
-        @Override
-        public long getBytesOccupied()
-        {
-            ByteBuffer buffer = _buffer;
-            if (buffer != null)
-                return (buffer == SENTINEL_BUFFER) ? super.getBytesOccupied() : 0;
-
-            try (AutoLock lock = _lock.lock())
-            {
-                if (_buffer == null)
-                    _buffer = getMappedByteBuffer();
-                return (_buffer == SENTINEL_BUFFER) ? super.getBytesOccupied() : 0;
-            }
-        }
-
-        private ByteBuffer getMappedByteBuffer()
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
             try
             {
-                ByteBuffer byteBuffer = BufferUtil.toMappedBuffer(_content.getResource().getPath());
-                return (byteBuffer == null) ? SENTINEL_BUFFER : byteBuffer;
+                sink.write(true, BufferUtil.slice(_buffer, (int)offset, (int)length), callback);
             }
-            catch (Throwable t)
+            catch (Throwable x)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Error getting Mapped Buffer", t);
+                callback.failed(x);
             }
+        }
 
-            return SENTINEL_BUFFER;
+        @Override
+        public HttpField getContentLength()
+        {
+            return _contentLength;
+        }
+
+        @Override
+        public long getContentLengthValue()
+        {
+            return _buffer.remaining();
+        }
+
+        @Override
+        public Instant getLastModifiedInstant()
+        {
+            return _lastModifiedInstant;
+        }
+
+        @Override
+        public HttpField getLastModified()
+        {
+            return _lastModified;
+        }
+    }
+
+    private static class MultiBufferFileMappedHttpContent extends HttpContent.Wrapper
+    {
+        private final ByteBuffer[] _buffers;
+        private final int maxBufferSize;
+        private final HttpField _contentLength;
+        private final long _contentLengthValue;
+        private final HttpField _lastModified;
+        private final Instant _lastModifiedInstant;
+
+        private MultiBufferFileMappedHttpContent(HttpContent content, int maxBufferSize) throws IOException
+        {
+            super(content);
+            this.maxBufferSize = maxBufferSize;
+            Path path = content.getResource().getPath();
+            if (path == null)
+                throw new IOException("Cannot memory map Content whose Resource is not backed by a Path: " + content.getResource());
+
+            long contentLength = content.getContentLengthValue();
+            int bufferCount = Math.toIntExact(contentLength / maxBufferSize);
+            _buffers = new ByteBuffer[bufferCount];
+            long currentPos = 0L;
+            long total = 0L;
+            for (int i = 0; i < _buffers.length; i++)
+            {
+                long len = Math.min(contentLength - currentPos, maxBufferSize);
+                _buffers[i] = BufferUtil.toMappedBuffer(path, currentPos, len);
+                currentPos += len;
+                total += _buffers[i].remaining();
+            }
+            _contentLengthValue = total;
+            _contentLength = new HttpField(HttpHeader.CONTENT_LENGTH, Long.toString(total));
+            _lastModified = content.getLastModified();
+            _lastModifiedInstant = content.getLastModifiedInstant();
+        }
+
+        @Override
+        public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
+        {
+            try
+            {
+                if (offset > getContentLengthValue())
+                    throw new IllegalArgumentException("Offset outside of mapped file range");
+                if (length > -1 && length + offset > getContentLengthValue())
+                    throw new IllegalArgumentException("Offset / length outside of mapped file range");
+
+                int beginIndex = Math.toIntExact(offset / maxBufferSize);
+                int firstOffset = Math.toIntExact(offset % maxBufferSize);
+
+                int endIndex = calculateEndIndex(offset, length);
+                int lastLen = calculateLastLen(offset, length);
+                new IteratingNestedCallback(callback)
+                {
+                    int index = beginIndex;
+                    @Override
+                    protected Action process()
+                    {
+                        if (index > endIndex)
+                            return Action.SUCCEEDED;
+
+                        ByteBuffer currentBuffer = _buffers[index];
+                        int offset = index == beginIndex ? firstOffset : 0;
+                        int len = index == endIndex ? lastLen : -1;
+                        boolean last = index == endIndex;
+                        index++;
+                        sink.write(last, BufferUtil.slice(currentBuffer, offset, len), this);
+                        return Action.SCHEDULED;
+                    }
+                }.iterate();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
+
+        private int calculateLastLen(long offset, long length)
+        {
+            if (length == 0)
+                return 0;
+            int lastLen = length < 0 ? -1 : Math.toIntExact((length + offset) % maxBufferSize);
+            if (Math.toIntExact((length + offset) / maxBufferSize) == _buffers.length)
+                lastLen = -1;
+            return lastLen;
+        }
+
+        private int calculateEndIndex(long offset, long length)
+        {
+            int endIndex = length < 0 ? (_buffers.length - 1) : Math.toIntExact((length + offset) / maxBufferSize);
+            if (endIndex == _buffers.length)
+                endIndex--;
+            return endIndex;
+        }
+
+        @Override
+        public HttpField getContentLength()
+        {
+            return _contentLength;
+        }
+
+        @Override
+        public long getContentLengthValue()
+        {
+            return _contentLengthValue;
+        }
+
+        @Override
+        public Instant getLastModifiedInstant()
+        {
+            return _lastModifiedInstant;
+        }
+
+        @Override
+        public HttpField getLastModified()
+        {
+            return _lastModified;
         }
     }
 }

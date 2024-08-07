@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.jndi.NamingDump;
@@ -123,6 +124,7 @@ public class EnvConfiguration extends AbstractConfiguration
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        ContextFactory.associateClassLoader(context.getClassLoader());
         try
         {
             Context ic = new InitialContext();
@@ -147,6 +149,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
+            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
@@ -218,14 +221,26 @@ public class EnvConfiguration extends AbstractConfiguration
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+        //ensure that we create a unique comp/env context for this webapp based off
+        //its classloader
+        ContextFactory.associateClassLoader(wac.getClassLoader());
         try
         {
-            Context context = new InitialContext();
-            Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.createSubcontext("env");
+            WebAppClassLoader.runWithServerClassAccess(() ->
+            {
+                Context context = new InitialContext();
+                Context compCtx = (Context)context.lookup("java:comp");
+                compCtx.createSubcontext("env");
+                return null;
+            });
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
         finally
         {
+            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }

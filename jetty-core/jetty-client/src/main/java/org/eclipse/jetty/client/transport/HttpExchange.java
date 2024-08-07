@@ -317,11 +317,11 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         }
     }
 
-    public void proceed(Throwable failure)
+    public void proceed(Runnable proceedAction, Throwable failure)
     {
         HttpChannel channel = getHttpChannel();
         if (channel != null)
-            channel.proceed(this, failure);
+            channel.proceed(this, proceedAction, failure);
     }
 
     @Override

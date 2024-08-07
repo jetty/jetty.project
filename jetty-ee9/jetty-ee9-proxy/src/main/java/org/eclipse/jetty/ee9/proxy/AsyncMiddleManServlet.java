@@ -171,11 +171,11 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     }
 
     @Override
-    protected void onContinue(HttpServletRequest clientRequest, Request proxyRequest)
+    protected Runnable onContinue(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        super.onContinue(clientRequest, proxyRequest);
-        Runnable action = (Runnable)proxyRequest.getAttributes().get(CONTINUE_ACTION_ATTRIBUTE);
-        action.run();
+        if (_log.isDebugEnabled())
+            _log.debug("{} handling 100 Continue", getRequestId(clientRequest));
+        return (Runnable)proxyRequest.getAttributes().get(CONTINUE_ACTION_ATTRIBUTE);
     }
 
     private void transform(ContentTransformer transformer, ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException

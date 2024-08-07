@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http.content;
 
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Set;
 
@@ -25,6 +23,10 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -36,28 +38,22 @@ import org.eclipse.jetty.util.resource.Resource;
 public class ResourceHttpContent implements HttpContent
 {
     final Resource _resource;
-    final Path _path;
-    final String _contentType;
+    final HttpField _contentType;
     final HttpField _etag;
+    final ByteBufferPool.Sized _sizedBufferPool;
 
-    public ResourceHttpContent(final Resource resource, final String contentType)
+    public ResourceHttpContent(Resource resource, String contentType, ByteBufferPool.Sized sizedByteBufferPool)
     {
         _resource = resource;
-        _path = resource.getPath();
-        _contentType = contentType;
+        _contentType = contentType == null ? null : new HttpField(HttpHeader.CONTENT_TYPE, contentType);
         _etag = EtagUtils.createWeakEtagField(resource);
-    }
-
-    @Override
-    public String getContentTypeValue()
-    {
-        return _contentType;
+        _sizedBufferPool = sizedByteBufferPool;
     }
 
     @Override
     public HttpField getContentType()
     {
-        return _contentType == null ? null : new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+        return _contentType;
     }
 
     @Override
@@ -67,21 +63,15 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public String getContentEncodingValue()
-    {
-        return null;
-    }
-
-    @Override
     public String getCharacterEncoding()
     {
-        return _contentType == null ? null : MimeTypes.getCharsetFromContentType(_contentType);
+        return _contentType == null ? null : MimeTypes.getCharsetFromContentType(_contentType.getValue());
     }
 
     @Override
     public Type getMimeType()
     {
-        return _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType));
+        return _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType.getValue()));
     }
 
     @Override
@@ -98,31 +88,16 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public String getLastModifiedValue()
-    {
-        Instant lm = _resource.lastModified();
-        return DateGenerator.formatDate(lm);
-    }
-
-    @Override
     public HttpField getETag()
     {
         return _etag;
     }
 
     @Override
-    public String getETagValue()
-    {
-        if (_etag == null)
-            return null;
-        return _etag.getValue();
-    }
-
-    @Override
     public HttpField getContentLength()
     {
         long l = getContentLengthValue();
-        return l == -1 ? null : new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, l);
+        return l == -1L ? null : new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, l);
     }
 
     @Override
@@ -144,19 +119,14 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public ByteBuffer getByteBuffer()
+    public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
     {
-        return null;
+        IOResources.copy(_resource, sink, _sizedBufferPool, _sizedBufferPool.getSize(), _sizedBufferPool.isDirect(), offset, length, callback);
     }
 
     @Override
     public Set<CompressedContentFormat> getPreCompressedContentFormats()
     {
         return null;
-    }
-
-    @Override
-    public void release()
-    {
     }
 }
