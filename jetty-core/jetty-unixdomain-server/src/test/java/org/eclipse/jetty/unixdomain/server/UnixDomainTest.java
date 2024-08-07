@@ -116,13 +116,13 @@ public class UnixDomainTest
             }
         });
 
-        // Use the deprecated APIs for backwards compatibility testing.
-        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+        ClientConnector clientConnector = new ClientConnector();
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
         httpClient.start();
         try
         {
             ContentResponse response = httpClient.newRequest(uri)
+                .transport(new Transport.TCPUnix(unixDomainPath))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 

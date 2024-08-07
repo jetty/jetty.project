@@ -71,18 +71,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     private long activeNanoTime;
 
     /**
-     * @param client the {@link HttpClient}
-     * @param origin the {@link Origin}
-     * @param intrinsicallySecure whether the destination is intrinsically secure
-     * @deprecated use {@link #HttpDestination(HttpClient, Origin)} instead
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public HttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
-    {
-        this(client, origin);
-    }
-
-    /**
      * <p>Creates a new HTTP destination.</p>
      *
      * @param client the {@link HttpClient}

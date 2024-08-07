@@ -471,13 +471,7 @@ public class HttpClient extends ContainerLifeCycle
         port = normalizePort(scheme, port);
         Transport transport = request.getTransport();
         if (transport == null)
-        {
-            // Ask the ClientConnector for backwards compatibility
-            // until ClientConnector.Configurator is removed.
-            transport = connector.newTransport();
-            if (transport == null)
-                transport = Transport.TCP_IP;
-        }
+            transport = Transport.TCP_IP;
         return new Origin(scheme, new Origin.Address(host, port), request.getTag(), protocol, transport);
     }
 
