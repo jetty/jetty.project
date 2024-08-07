@@ -35,14 +35,30 @@ public class SerializedInvoker
     private static final Logger LOG = LoggerFactory.getLogger(SerializedInvoker.class);
 
     private final AtomicReference<Link> _tail = new AtomicReference<>();
-    private int recursionCounter;
+    private final String _name;
+    private volatile Thread _invokerThread;
+
+    public SerializedInvoker()
+    {
+        this("anonymous");
+    }
+
+    public SerializedInvoker(Class<?> clazz)
+    {
+        this(clazz.getSimpleName());
+    }
+
+    public SerializedInvoker(String name)
+    {
+        _name = name;
+    }
 
     /**
-     * @return whether this invoker is currently executing a task
+     * @return whether the current thread is currently executing a task using this invoker
      */
-    public boolean isInvoking()
+    public boolean isCurrentThreadInvoking()
     {
-        return recursionCounter > 0;
+        return _invokerThread == Thread.currentThread();
     }
 
     /**
@@ -147,7 +163,7 @@ public class SerializedInvoker
     @Override
     public String toString()
     {
-        return String.format("%s@%x{tail=%s}", getClass().getSimpleName(), hashCode(), _tail);
+        return String.format("%s@%x{name=%s,tail=%s,invoker=%s}", getClass().getSimpleName(), hashCode(), _name, _tail, _invokerThread);
     }
 
     protected void onError(Runnable task, Throwable t)
@@ -197,13 +213,13 @@ public class SerializedInvoker
                     LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
                 try
                 {
-                    recursionCounter++;
+                    _invokerThread = Thread.currentThread();
                     link._task.run();
-                    recursionCounter--;
+                    _invokerThread = null;
                 }
                 catch (Throwable t)
                 {
-                    recursionCounter--;
+                    _invokerThread = null;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
                     onError(link._task, t);

@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 public class InputStreamContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker = new SerializedInvoker(InputStreamContentSource.class);
     private final InputStream inputStream;
     private ByteBufferPool.Sized bufferPool;
     private Runnable demandCallback;

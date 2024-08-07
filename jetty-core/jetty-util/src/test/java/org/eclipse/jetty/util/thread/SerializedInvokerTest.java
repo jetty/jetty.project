@@ -14,7 +14,10 @@
 package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,11 +28,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SerializedInvokerTest
 {
     private SerializedInvoker _serializedInvoker;
+    private ExecutorService _executor;
 
     @BeforeEach
     public void beforeEach()
     {
-        _serializedInvoker = new SerializedInvoker();
+        _serializedInvoker = new SerializedInvoker(SerializedInvokerTest.class);
+        _executor = Executors.newSingleThreadExecutor();
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        _executor.shutdownNow();
     }
 
     @Test
@@ -46,20 +57,20 @@ public class SerializedInvokerTest
         assertFalse(task1.hasRun());
         assertFalse(task2.hasRun());
         assertFalse(task3.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         todo.run();
 
         assertTrue(task1.hasRun());
         assertTrue(task2.hasRun());
         assertTrue(task3.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         Task task4 = new Task();
         todo = _serializedInvoker.offer(task4);
         todo.run();
         assertTrue(task4.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
     }
 
     @Test
@@ -74,20 +85,20 @@ public class SerializedInvokerTest
         assertFalse(task1.hasRun());
         assertFalse(task2.hasRun());
         assertFalse(task3.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         todo.run();
 
         assertTrue(task1.hasRun());
         assertTrue(task2.hasRun());
         assertTrue(task3.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         Task task4 = new Task();
         todo = _serializedInvoker.offer(task4);
         todo.run();
         assertTrue(task4.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
     }
 
     @Test
@@ -118,25 +129,25 @@ public class SerializedInvokerTest
         assertFalse(task1.hasRun());
         assertFalse(task2.hasRun());
         assertFalse(task3.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         todo.run();
 
         assertTrue(task1.hasRun());
         assertTrue(task2.hasRun());
         assertTrue(task3.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         Task task4 = new Task();
         todo = _serializedInvoker.offer(task4);
         todo.run();
         assertTrue(task4.hasRun());
-        assertFalse(_serializedInvoker.isInvoking());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
     }
 
     public class Task implements Runnable
     {
-        CountDownLatch _run = new CountDownLatch(1);
+        final CountDownLatch _run = new CountDownLatch(1);
 
         boolean hasRun()
         {
@@ -146,8 +157,17 @@ public class SerializedInvokerTest
         @Override
         public void run()
         {
-            assertTrue(_serializedInvoker.isInvoking());
-            _run.countDown();
+            try
+            {
+                assertTrue(_serializedInvoker.isCurrentThreadInvoking());
+                assertFalse(_executor.submit(() -> _serializedInvoker.isCurrentThreadInvoking()).get());
+
+                _run.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

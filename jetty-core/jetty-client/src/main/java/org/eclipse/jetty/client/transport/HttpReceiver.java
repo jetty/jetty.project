@@ -67,7 +67,7 @@ public abstract class HttpReceiver
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiver.class);
 
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker = new SerializedInvoker(HttpReceiver.class);
     private final HttpChannel channel;
     private ResponseState responseState = ResponseState.IDLE;
     private NotifiableContentSource contentSource;
@@ -320,7 +320,7 @@ public abstract class HttpReceiver
      */
     protected void responseContentAvailable()
     {
-        if (!invoker.isInvoking())
+        if (!invoker.isCurrentThreadInvoking())
             throw new IllegalStateException();
         if (LOG.isDebugEnabled())
             LOG.debug("Response content available on {}", this);
@@ -738,7 +738,7 @@ public abstract class HttpReceiver
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing demand on {}", this);
 
-            if (!invoker.isInvoking())
+            if (!invoker.isCurrentThreadInvoking())
                 throw new IllegalStateException();
 
             Content.Chunk current;
@@ -785,7 +785,7 @@ public abstract class HttpReceiver
                     }
                     else
                     {
-                        if (!invoker.isInvoking())
+                        if (!invoker.isCurrentThreadInvoking())
                             throw new IllegalStateException();
                         demandCallback.run();
                     }
