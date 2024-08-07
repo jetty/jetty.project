@@ -352,7 +352,7 @@ public class ContentDocs
         {
             // After every successful write, release the chunk
             // and reset to the next chunk
-            chunk = Content.Chunk.releaseNext(chunk);
+            chunk = Content.Chunk.releaseAndNext(chunk);
         }
 
         @Override
@@ -376,7 +376,7 @@ public class ContentDocs
         {
             // In case of a failure, we wait until here, when the {@code write}
             // has completed before releasing any chunk.
-            chunk = Content.Chunk.releaseNext(chunk);
+            chunk = Content.Chunk.releaseAndNext(chunk);
         }
 
         @Override

@@ -1093,7 +1093,7 @@ public class Content
          * @param chunk The chunk to release or {@code null}
          * @return The {@link #next(Chunk)} chunk;
          */
-        static Chunk releaseNext(Chunk chunk)
+        static Chunk releaseAndNext(Chunk chunk)
         {
             if (chunk == null)
                 return null;

@@ -176,12 +176,6 @@ public interface RetainableByteBuffer extends Retainable
         return release();
     }
 
-    @Override
-    default boolean release()
-    {
-        return Retainable.super.release();
-    }
-
     /**
      * Appends and consumes the contents of this buffer to the passed buffer, limited by the capacity of the target buffer.
      * @param buffer The buffer to append bytes to, whose limit will be updated.
@@ -2404,22 +2398,14 @@ public interface RetainableByteBuffer extends Retainable
                         protected void onSuccess()
                         {
                             // release the last buffer written
-                            if (_buffer != null)
-                            {
-                                _buffer.release();
-                                _buffer = null;
-                            }
+                            _buffer = Retainable.release(_buffer);
                         }
 
                         @Override
                         protected void onCompleteFailure(Throwable x)
                         {
                             // release the last buffer written
-                            if (_buffer != null)
-                            {
-                                _buffer.release();
-                                _buffer = null;
-                            }
+                            _buffer = Retainable.release(_buffer);
                         }
                     }.iterate();
                 }

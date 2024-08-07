@@ -76,7 +76,7 @@ public class ContentCopier extends IteratingNestedCallback
     @Override
     protected void onSuccess()
     {
-        chunk = Content.Chunk.releaseNext(chunk);
+        chunk = Content.Chunk.releaseAndNext(chunk);
     }
 
     @Override
@@ -88,6 +88,6 @@ public class ContentCopier extends IteratingNestedCallback
     @Override
     protected void onCompleteFailure(Throwable x)
     {
-        chunk = Content.Chunk.releaseNext(chunk);
+        chunk = Content.Chunk.releaseAndNext(chunk);
     }
 }

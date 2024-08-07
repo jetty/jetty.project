@@ -742,8 +742,8 @@ public class ConnectHandler extends Handler.Wrapper
 
                     if (filled == 0)
                     {
-                        fillInterested();
-                        return Action.IDLE;
+                        fillInterested(this);
+                        return Action.SCHEDULED;
                     }
 
                     connection.getEndPoint().shutdownOutput();
