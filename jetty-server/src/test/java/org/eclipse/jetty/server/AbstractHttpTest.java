@@ -21,6 +21,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,11 +29,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -43,12 +46,15 @@ public abstract class AbstractHttpTest
     protected static Server server;
     protected static ServerConnector connector;
     private StacklessLogging stacklessChannelLogging;
+    private ArrayRetainableByteBufferPool.Tracking retainableByteBufferPool;
 
     @BeforeEach
     public void setUp() throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server, null, null, new ArrayByteBufferPool(64, 2048, 64 * 1024), 1, 1, new HttpConnectionFactory());
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking(64, 2048, 64 * 1024);
+        retainableByteBufferPool = (ArrayRetainableByteBufferPool.Tracking)bufferPool.asRetainableByteBufferPool();
+        connector = new ServerConnector(server, null, null, bufferPool, 1, 1, new HttpConnectionFactory());
         connector.setIdleTimeout(100000);
 
         server.addConnector(connector);
@@ -58,8 +64,15 @@ public abstract class AbstractHttpTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        server.stop();
-        stacklessChannelLogging.close();
+        try
+        {
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + retainableByteBufferPool.dumpLeaks(), retainableByteBufferPool.getLeaks().size(), is(0)));
+        }
+        finally
+        {
+            server.stop();
+            stacklessChannelLogging.close();
+        }
     }
 
     protected HttpTester.Response executeRequest(HttpVersion httpVersion) throws URISyntaxException, IOException
