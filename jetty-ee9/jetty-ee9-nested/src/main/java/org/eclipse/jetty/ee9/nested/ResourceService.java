@@ -15,13 +15,9 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -36,10 +32,8 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.resource.HttpContentRangeWriter;
-import org.eclipse.jetty.ee9.nested.resource.RangeWriter;
-import org.eclipse.jetty.ee9.nested.resource.SeekableByteChannelRangeWriter;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.HttpField;
@@ -50,12 +44,12 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
-import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.ResourceListing;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -249,7 +243,6 @@ public class ResourceService
         boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith("/");
 
         HttpContent content = null;
-        boolean releaseContent = true;
         try
         {
             // Find the content
@@ -287,7 +280,7 @@ public class ResourceService
             {
                 String q = request.getQueryString();
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
-                if (q != null && q.length() != 0)
+                if (q != null && !q.isEmpty())
                     pathInContext += "?" + q;
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), pathInContext)));
                 return true;
@@ -329,7 +322,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
 
             // Send the data
-            releaseContent = sendData(request, response, included, content, reqRanges);
+            sendData(request, response, included, content, reqRanges);
         }
         // Can be thrown from contentFactory.getContent() call when using invalid characters
         catch (InvalidPathException e)
@@ -347,15 +340,6 @@ public class ResourceService
             if (!response.isCommitted())
                 response.sendError(500, e.getMessage());
         }
-        finally
-        {
-            if (releaseContent)
-            {
-                if (content != null)
-                    content.release();
-            }
-        }
-
         return true;
     }
 
@@ -609,7 +593,7 @@ public class ResourceService
             if (ifms != null && ifnm == null)
             {
                 //Get jetty's Response impl
-                String mdlm = content.getLastModifiedValue();
+                String mdlm = DateGenerator.formatDate(content.getLastModifiedInstant());
                 if (ifms.equals(mdlm))
                 {
                     sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
@@ -683,7 +667,7 @@ public class ResourceService
         response.getOutputStream().write(data);
     }
 
-    protected boolean sendData(HttpServletRequest request,
+    protected void sendData(HttpServletRequest request,
                                HttpServletResponse response,
                                boolean include,
                                final HttpContent content,
@@ -744,7 +728,6 @@ public class ResourceService
                         public void succeeded()
                         {
                             context.complete();
-                            content.release();
                         }
 
                         @Override
@@ -756,7 +739,6 @@ public class ResourceService
                             else
                                 LOG.warn(msg, x);
                             context.complete();
-                            content.release();
                         }
 
                         @Override
@@ -771,7 +753,7 @@ public class ResourceService
                             return String.format("ResourceService@%x$CB", ResourceService.this.hashCode());
                         }
                     });
-                    return false;
+                    return;
                 }
                 // otherwise write content blocking
                 ((HttpOutput)out).sendContent(content);
@@ -783,13 +765,13 @@ public class ResourceService
             List<InclusiveByteRange> ranges = InclusiveByteRange.satisfiableRanges(reqRanges, content_length);
 
             //  if there are no satisfiable ranges, send 416 response
-            if (ranges == null || ranges.size() == 0)
+            if (ranges == null || ranges.isEmpty())
             {
                 response.setContentLength(0);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
-                return true;
+                return;
             }
 
             //  if there is only a single valid range (must be satisfiable
@@ -805,7 +787,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     singleSatisfiableRange.toHeaderRangeString(content_length));
                 writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
-                return true;
+                return;
             }
 
             //  multiple non-overlapping valid ranges cause a multipart
@@ -855,55 +837,42 @@ public class ResourceService
             length += CRLF + DASHDASH + BOUNDARY + DASHDASH + CRLF;
             response.setContentLengthLong(length);
 
-            try (RangeWriter rangeWriter = HttpContentRangeWriter.newRangeWriter(content))
+            i = 0;
+            for (InclusiveByteRange ibr : ranges)
             {
-                i = 0;
-                for (InclusiveByteRange ibr : ranges)
-                {
-                    multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
-                    rangeWriter.writeTo(multi, ibr.getFirst(), ibr.getSize());
-                    i++;
-                }
+                multi.startPart(mimetype, new String[]{HttpHeader.CONTENT_RANGE + ": " + header[i]});
+                writeContent(content, multi, ibr.getFirst(), ibr.getSize());
+                i++;
             }
 
             multi.close();
         }
-        return true;
     }
 
     private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
     {
-        // attempt efficient ByteBuffer based write
-        ByteBuffer buffer = content.getByteBuffer();
-        if (buffer != null)
+        try (Blocker.Callback blocker = Blocker.callback())
         {
-            // no need to modify buffer pointers when whole content is requested
-            if (start != 0 || content.getResource().length() != contentLength)
+            // Do not use Content.Sink.from(out) as HttpContent.writeTo() may write a last Chunk
+            // which would then be converted to OutputStream.close(), and we do not want to
+            // close the OutputStream here;
+            // this happens because Content.copy() and IOResources.copy() assume that when they
+            // read a last Chunk from a Content.Source, it should be written as a last Chunk
+            // to the Content.Sink.
+            Content.Sink sink = (last, byteBuffer, callback) ->
             {
-                buffer = buffer.asReadOnlyBuffer();
-                buffer.position((int)(buffer.position() + start));
-                buffer.limit((int)(buffer.position() + contentLength));
-            }
-            BufferUtil.writeTo(buffer, out);
-            return;
-        }
-
-        // Use a ranged writer if resource backed by path
-        Path path = content.getResource().getPath();
-        if (path != null)
-        {
-            try (SeekableByteChannelRangeWriter rangeWriter = new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(path)))
-            {
-                rangeWriter.writeTo(out, start, contentLength);
-            }
-            return;
-        }
-
-        // Perform ranged write
-        try (InputStream input = IOResources.asInputStream(content.getResource()))
-        {
-            input.skipNBytes(start);
-            IO.copy(input, out, contentLength);
+                try
+                {
+                    BufferUtil.writeTo(byteBuffer, out);
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
+            };
+            content.writeTo(sink, start, contentLength, blocker);
+            blocker.block();
         }
     }
 

@@ -2674,6 +2674,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
 
         @Override
+        public void makeTempDirectory() throws Exception
+        {
+            super.makeTempDirectory();
+        }
+
+        @Override
+        public String getCanonicalNameForTmpDir()
+        {
+            return super.getCanonicalNameForTmpDir();
+        }
+
+        @Override
+        public Resource getResourceForTempDirName()
+        {
+           return super.getResourceForTempDirName();
+        }
+
+        @Override
         public void setContextPath(String contextPath)
         {
             super.setContextPath(contextPath);

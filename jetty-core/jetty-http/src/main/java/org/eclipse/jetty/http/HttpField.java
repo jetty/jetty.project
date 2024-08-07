@@ -550,6 +550,41 @@ public class HttpField
         return _name.equalsIgnoreCase(name);
     }
 
+    /**
+     * Return a {@link HttpField} without a given value (case-insensitive)
+     * @param value The value to remove
+     * @return A new {@link HttpField} if the value was removed, but others remain; this {@link HttpField} if it
+     *         did not contain the value; or {@code null} if the value was the only value.
+     */
+    public HttpField withoutValue(String value)
+    {
+        if (_value.length() < value.length())
+            return this;
+
+        if (_value.equalsIgnoreCase(value))
+            return null;
+
+        if (_value.length() == value.length())
+            return this;
+
+        QuotedCSV csv = new QuotedCSV(false, _value);
+        boolean removed = false;
+        for (Iterator<String> i = csv.iterator(); i.hasNext();)
+        {
+            String element = i.next();
+            if (element.equalsIgnoreCase(value))
+            {
+                removed = true;
+                i.remove();
+            }
+        }
+
+        if (!removed)
+            return this;
+
+        return new HttpField(_header, _name, csv.asString());
+    }
+
     private int nameHashCode()
     {
         int h = this._hash;

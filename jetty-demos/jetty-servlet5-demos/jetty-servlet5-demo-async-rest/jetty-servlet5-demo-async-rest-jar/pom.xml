@@ -27,9 +27,9 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <version>${ee9.jetty.servlet.api.version}</version>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>${ee9.jakarta.servlet.api.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

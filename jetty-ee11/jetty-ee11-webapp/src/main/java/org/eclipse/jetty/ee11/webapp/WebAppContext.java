@@ -1464,4 +1464,66 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         return _metadata;
     }
+
+    @Override
+    protected void makeTempDirectory() throws Exception
+    {
+        super.makeTempDirectory();
+    }
+
+    @Override
+    protected String getCanonicalNameForTmpDir()
+    {
+        return super.getCanonicalNameForTmpDir();
+    }
+
+    /**
+     * If the webapp has no baseresource yet, use
+     * the war to make the temp directory name.
+     *
+     * @return the baseresource if non null, or the war
+     */
+    @Override
+    protected Resource getResourceForTempDirName()
+    {
+        Resource resource = super.getResourceForTempDirName();
+
+        if (resource == null)
+        {
+            if (getWar() == null || getWar().length() == 0)
+                throw new IllegalStateException("No resourceBase or war set for context");
+
+            // Use name of given resource in the temporary dirname
+            resource = newResource(getWar());
+        }
+        return resource;
+    }
+
+    /**
+     * Add a Server Class pattern to use for all WebAppContexts.
+     * @param server The {@link Server} instance to add classes to
+     * @param patterns the patterns to use
+     * @see #getHiddenClassMatcher()
+     * @see #getHiddenClasses()
+     * @deprecated use {@link WebAppClassLoading#addProtectedClasses(Server, String...)}
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    public static void addServerClasses(Server server, String... patterns)
+    {
+        WebAppClassLoading.addHiddenClasses(server, patterns);
+    }
+
+    /**
+     * Add a System Class pattern to use for all WebAppContexts.
+     * @param server The {@link Server} instance to add classes to
+     * @param patterns the patterns to use
+     * @see #getProtectedClassMatcher()
+     * @see #getProtectedClasses()
+     * @deprecated use {@link WebAppClassLoading#addHiddenClasses(Server, String...)}
+     */
+    @Deprecated(since = "12.0.8", forRemoval = true)
+    public static void addSystemClasses(Server server, String... patterns)
+    {
+        WebAppClassLoading.addProtectedClasses(server, patterns);
+    }
 }

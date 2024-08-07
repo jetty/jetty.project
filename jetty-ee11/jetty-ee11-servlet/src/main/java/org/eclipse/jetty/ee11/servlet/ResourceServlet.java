@@ -149,9 +149,20 @@ import org.slf4j.LoggerFactory;
  *     Defaults to the {@code Server}'s default stylesheet, {@code jetty-dir.css}.
  *     The path of a custom stylesheet to style the directory listing HTML.
  *   </dd>
+ *   <dt>byteBufferSize</dt>
+ *   <dd>
+ *     The size of the buffers to use to serve static resources.
+ *     Defaults to {@code 32 KiB}.
+ *   </dd>
+ *   <dt>useDirectByteBuffers</dt>
+ *   <dd>
+ *     Use {@code true} to use direct byte buffers to serve static resources.
+ *     Defaults to {@code true}.
+ *   </dd>
  *   <dt>useFileMappedBuffer</dt>
  *   <dd>
- *     Use {@code true} to use file mapping to serve static resources.
+ *     Use {@code true} to use file mapping to serve static resources instead of
+ *     buffers configured with the above two settings.
  *     Defaults to {@code false}.
  *   </dd>
  *   <dt>welcomeServlets</dt>
@@ -174,6 +185,7 @@ public class ResourceServlet extends HttpServlet
     private ServletResourceService _resourceService;
     private WelcomeServletMode _welcomeServletMode;
     private boolean _pathInfoOnly;
+    private ByteBufferPool.Sized _bufferPool;
 
     public ResourceService getResourceService()
     {
@@ -214,7 +226,8 @@ public class ResourceServlet extends HttpServlet
         if (contentFactory == null)
         {
             MimeTypes mimeTypes = contextHandler.getMimeTypes();
-            contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes);
+            ByteBufferPool.Sized bufferPool = new ByteBufferPool.Sized(getByteBufferPool(contextHandler), getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
+            contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes, bufferPool);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
             Resource styleSheet = contextHandler.getServer().getDefaultStyleSheet();
@@ -242,7 +255,7 @@ public class ResourceServlet extends HttpServlet
             if (getInitBoolean("useFileMappedBuffer", false))
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
 
-            contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css");
+            contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css", bufferPool);
             contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
             int maxCacheSize = getInitInt("maxCacheSize", -2);
@@ -251,7 +264,6 @@ public class ResourceServlet extends HttpServlet
             long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
             if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
             {
-                ByteBufferPool bufferPool = getByteBufferPool(contextHandler);
                 ValidatingCachingHttpContentFactory cached = new ValidatingCachingHttpContentFactory(contentFactory,
                     (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
                 contentFactory = cached;
@@ -325,14 +337,17 @@ public class ResourceServlet extends HttpServlet
         }
     }
 
-    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    private ByteBufferPool.Sized getByteBufferPool(ContextHandler contextHandler)
     {
+        if (_bufferPool != null)
+            return _bufferPool;
         if (contextHandler == null)
-            return ByteBufferPool.NON_POOLING;
+            return ByteBufferPool.SIZED_NON_POOLING;
         Server server = contextHandler.getServer();
         if (server == null)
-            return ByteBufferPool.NON_POOLING;
-        return server.getByteBufferPool();
+            return ByteBufferPool.SIZED_NON_POOLING;
+        _bufferPool = new ByteBufferPool.Sized(server.getByteBufferPool(), getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
+        return _bufferPool;
     }
 
     private String getInitParameter(String name, String... deprecated)
@@ -827,7 +842,7 @@ public class ResourceServlet extends HttpServlet
     private static class ForcedCharacterEncodingHttpContent extends HttpContent.Wrapper
     {
         private final String characterEncoding;
-        private final String contentType;
+        private final HttpField contentType;
 
         public ForcedCharacterEncodingHttpContent(HttpContent content, String characterEncoding)
         {
@@ -843,20 +858,14 @@ public class ResourceServlet extends HttpServlet
                 int idx = mimeType.indexOf(";charset");
                 if (idx >= 0)
                     mimeType = mimeType.substring(0, idx);
-                this.contentType = mimeType + ";charset=" + characterEncoding;
+                this.contentType = new HttpField(HttpHeader.CONTENT_TYPE, mimeType + ";charset=" + characterEncoding);
             }
         }
 
         @Override
         public HttpField getContentType()
         {
-            return new HttpField(HttpHeader.CONTENT_TYPE, this.contentType);
-        }
-
-        @Override
-        public String getContentTypeValue()
-        {
-            return this.contentType;
+            return contentType;
         }
 
         @Override

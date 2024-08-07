@@ -24,7 +24,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletOutputStream;
@@ -135,7 +134,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private long _written;
     private long _flushed;
     private long _firstByteNanoTime = -1;
-    private ByteBufferPool _pool;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -581,17 +580,21 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    private ByteBufferPool.Sized getSizedByteBufferPool()
+    {
+        int bufferSize = getBufferSize();
+        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+        if (_pool == null || _pool.getSize() != bufferSize || _pool.isDirect() != useOutputDirectByteBuffers)
+            _pool = new ByteBufferPool.Sized(_servletChannel.getRequest().getComponents().getByteBufferPool(), useOutputDirectByteBuffers, bufferSize);
+        return _pool;
+    }
+
     private RetainableByteBuffer lockedAcquireBuffer()
     {
         assert _channelState.isLockHeldByCurrentThread();
 
-        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-
         if (_aggregate == null)
-        {
-            _pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
-            _aggregate = _pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
-        }
+            _aggregate = getSizedByteBufferPool().acquire();
         return _aggregate;
     }
 
@@ -1242,30 +1245,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         _bufferSize = size;
         _commitSize = size;
-    }
-
-    /**
-     * <p>Invoked when bytes have been flushed to the network.</p>
-     *
-     * @param bytes the number of bytes flushed
-     * @throws IOException if the minimum data rate, when set, is not respected
-     * @see org.eclipse.jetty.io.WriteFlusher.Listener
-     */
-    public void onFlushed(long bytes) throws IOException
-    {
-        if (_firstByteNanoTime == -1 || _firstByteNanoTime == Long.MAX_VALUE)
-            return;
-        long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
-        _flushed += bytes;
-        long minFlushed = minDataRate * NanoTime.millisSince(_firstByteNanoTime) / TimeUnit.SECONDS.toMillis(1);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
-        if (_flushed < minFlushed)
-        {
-            IOException ioe = new IOException(String.format("Response content data rate < %d B/s", minDataRate));
-            _servletChannel.abort(ioe);
-            throw ioe;
-        }
     }
 
     public void recycle()

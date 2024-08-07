@@ -54,8 +54,6 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     @Override
     public void attributeAdded(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributedAdded "+se);
-
         _called.put("attributeAdded", new Throwable());
     }
 
@@ -63,20 +61,17 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     public void attributeAdded(ServletContextAttributeEvent scab)
     {
         _called.put("attributeAdded", new Throwable());
-        // System.err.println("attributeAdded "+scab);
     }
 
     @Override
     public void attributeAdded(ServletRequestAttributeEvent srae)
     {
         _called.put("attributeAdded", new Throwable());
-        // System.err.println("attributeAdded "+srae);
     }
 
     @Override
     public void attributeRemoved(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributeRemoved "+se);
         _called.put("attributeRemoved", new Throwable());
     }
 
@@ -84,20 +79,17 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     public void attributeRemoved(ServletContextAttributeEvent scab)
     {
         _called.put("attributeRemoved", new Throwable());
-        // System.err.println("attributeRemoved "+scab);
     }
 
     @Override
     public void attributeRemoved(ServletRequestAttributeEvent srae)
     {
         _called.put("attributeRemoved", new Throwable());
-        // System.err.println("attributeRemoved "+srae);
     }
 
     @Override
     public void attributeReplaced(HttpSessionBindingEvent se)
     {
-        // System.err.println("attributeReplaced "+se);
         _called.put("attributeReplaced", new Throwable());
     }
 
@@ -105,28 +97,23 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     public void attributeReplaced(ServletContextAttributeEvent scab)
     {
         _called.put("attributeReplaced", new Throwable());
-        // System.err.println("attributeReplaced "+scab);
     }
 
     @Override
     public void attributeReplaced(ServletRequestAttributeEvent srae)
     {
         _called.put("attributeReplaced", new Throwable());
-        // System.err.println("attributeReplaced "+srae);
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
         _called.put("contextDestroyed", new Throwable());
-        // System.err.println("contextDestroyed "+sce);
     }
 
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-
-        // System.err.println("contextInitialized "+sce);
         _called.put("contextInitialized", new Throwable());
 
         //configure programmatic security
@@ -136,14 +123,12 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
             ServletSecurity.TransportGuarantee.NONE, new String[]{"admin"});
         ServletSecurityElement securityElement = new ServletSecurityElement(constraintElement, null);
         Set<String> unchanged = rego.setServletSecurity(securityElement);
-        //// System.err.println("Security constraints registered: "+unchanged.isEmpty());
 
         //Test that a security constraint from web.xml can't be overridden programmatically
         ServletRegistration.Dynamic rego2 = sce.getServletContext().addServlet("RegoTest2", RegTest.class.getName());
         rego2.addMapping("/rego2/*");
         securityElement = new ServletSecurityElement(constraintElement, null);
         unchanged = rego2.setServletSecurity(securityElement);
-        //// System.err.println("Overridding web.xml constraints not possible:" +!unchanged.isEmpty());
 
         /* For servlet 3.0 */
         FilterRegistration registration = sce.getServletContext().addFilter("TestFilter", TestFilter.class.getName());
@@ -191,7 +176,6 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
         _called.put("requestDestroyed", new Throwable());
         ((HttpServletRequest)sre.getServletRequest()).getSession(false);
         sre.getServletRequest().setAttribute("requestInitialized", null);
-        // System.err.println("requestDestroyed "+sre);
     }
 
     @Override
@@ -199,34 +183,29 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     {
         _called.put("requestInitialized", new Throwable());
         sre.getServletRequest().setAttribute("requestInitialized", "'" + sre.getServletContext().getContextPath() + "'");
-        // System.err.println("requestInitialized "+sre);
     }
 
     @Override
     public void sessionCreated(HttpSessionEvent se)
     {
         _called.put("sessionCreated", new Throwable());
-        // System.err.println("sessionCreated "+se);
     }
 
     @Override
     public void sessionDestroyed(HttpSessionEvent se)
     {
         _called.put("sessionDestroyed", new Throwable());
-        // System.err.println("sessionDestroyed "+se);
     }
 
     @Override
     public void sessionDidActivate(HttpSessionEvent se)
     {
-        // System.err.println("sessionDidActivate "+se);
         _called.put("sessionDidActivate", new Throwable());
     }
 
     @Override
     public void sessionWillPassivate(HttpSessionEvent se)
     {
-        // System.err.println("sessionWillPassivate "+se);
         _called.put("sessionWillPassivate", new Throwable());
     }
 }

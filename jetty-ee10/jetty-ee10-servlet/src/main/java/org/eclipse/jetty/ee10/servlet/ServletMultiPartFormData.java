@@ -110,9 +110,6 @@ public class ServletMultiPartFormData
                 {
                     // No existing core parts, so we need to configure the parser.
                     ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
-                    ByteBufferPool byteBufferPool = servletContextRequest.getComponents().getByteBufferPool();
-                    ConnectionMetaData connectionMetaData = servletContextRequest.getConnectionMetaData();
-                    Connection connection = connectionMetaData.getConnection();
 
                     Content.Source source;
                     if (servletRequest instanceof ServletApiRequest servletApiRequest)
@@ -121,10 +118,12 @@ public class ServletMultiPartFormData
                     }
                     else
                     {
+                        // TODO use the size specified in ByteBufferPool.SIZED_NON_POOLING instead of specifying a 2K buffer size?
+                        ByteBufferPool byteBufferPool = servletContextRequest.getComponents().getByteBufferPool();
+                        ConnectionMetaData connectionMetaData = servletContextRequest.getConnectionMetaData();
+                        Connection connection = connectionMetaData.getConnection();
                         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-                        InputStreamContentSource iscs = new InputStreamContentSource(servletRequest.getInputStream(), byteBufferPool);
-                        iscs.setBufferSize(bufferSize);
-                        source = iscs;
+                        source = new InputStreamContentSource(servletRequest.getInputStream(), new ByteBufferPool.Sized(byteBufferPool, false, bufferSize));
                     }
 
                     MultiPartConfig multiPartConfig = Request.getMultiPartConfig(servletContextRequest, filesDirectory)
