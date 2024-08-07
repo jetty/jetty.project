@@ -366,7 +366,7 @@ public abstract class HttpReceiver
         if (!exchange.responseComplete(null))
             return;
 
-        invoker.run(() ->
+        Runnable successTask = () ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseSuccess on {}", this);
@@ -387,7 +387,12 @@ public abstract class HttpReceiver
             // Mark atomically the response as terminated, with
             // respect to concurrency between request and response.
             terminateResponse(exchange);
-        }, afterSuccessTask);
+        };
+
+        if (afterSuccessTask == null)
+            invoker.run(successTask);
+        else
+            invoker.run(successTask, afterSuccessTask);
     }
 
     /**
