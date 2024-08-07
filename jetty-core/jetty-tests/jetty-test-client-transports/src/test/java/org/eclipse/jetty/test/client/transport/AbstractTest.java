@@ -129,9 +129,15 @@ public class AbstractTest
         try
         {
             if (serverBufferPool != null && !isLeakTrackingDisabled(testInfo, "server"))
+            {
+                Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(serverBufferPool.getLeaks()::isEmpty);
                 assertNoLeaks(serverBufferPool, testInfo, "server-", "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
+            }
             if (clientBufferPool != null && !isLeakTrackingDisabled(testInfo, "client"))
+            {
+                Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(clientBufferPool.getLeaks()::isEmpty);
                 assertNoLeaks(clientBufferPool, testInfo, "client-", "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
+            }
         }
         finally
         {
