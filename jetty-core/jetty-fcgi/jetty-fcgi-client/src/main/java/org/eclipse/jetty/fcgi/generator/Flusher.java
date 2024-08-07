@@ -106,6 +106,7 @@ public class Flusher
         {
             if (active != null)
             {
+                active.release();
                 active.succeeded();
                 active = null;
             }
@@ -115,11 +116,7 @@ public class Flusher
         public void onFailure(Throwable cause)
         {
             if (active != null)
-            {
                 active.failed(cause);
-                active = null;
-            }
-
             List<Entry> entries;
             try (AutoLock ignored = lock.lock())
             {
@@ -131,6 +128,11 @@ public class Flusher
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            if (active != null)
+            {
+                active.release();
+                active = null;
+            }
             List<Entry> entries;
             try (AutoLock ignored = lock.lock())
             {
@@ -145,7 +147,6 @@ public class Flusher
     {
         public void succeeded()
         {
-            release();
             callback.succeeded();
         }
 
