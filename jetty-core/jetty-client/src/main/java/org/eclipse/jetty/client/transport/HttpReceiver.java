@@ -315,15 +315,37 @@ public abstract class HttpReceiver
      * Method to be invoked when response content is available to be read.
      * <p>
      * This method takes care of ensuring the {@link Content.Source} passed to
-     * {@link Response.ContentSourceListener#onContentSource(Response, Content.Source)} calls the
-     * demand callback.
+     * {@link Response.ContentSourceListener#onContentSource(Response, Content.Source)}
+     * calls the demand callback.
+     * The call to the demand callback is serialized with other events.
      */
-    protected void responseContentAvailable()
+    protected void responseContentAvailable(HttpExchange exchange)
     {
         if (!invoker.isCurrentThreadInvoking())
             throw new IllegalStateException();
         if (LOG.isDebugEnabled())
-            LOG.debug("Response content available on {}", this);
+            LOG.debug("Invoking responseContentAvailable on {}", this);
+
+        invoker.run(() ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Executing responseContentAvailable on {}", this);
+
+            if (exchange.isResponseCompleteOrTerminated())
+                return;
+
+            responseContentAvailable();
+        });
+    }
+
+    /**
+     * Method to be invoked when response content is available to be read.
+     * <p>
+     * This method directly invokes the demand callback, assuming the caller
+     * is already serialized with other events.
+     */
+    protected void responseContentAvailable()
+    {
         contentSource.onDataAvailable();
     }
 
@@ -346,7 +368,7 @@ public abstract class HttpReceiver
         if (!exchange.responseComplete(null))
             return;
 
-        invoker.run(() ->
+        Runnable successTask = () ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseSuccess on {}", this);
@@ -367,7 +389,12 @@ public abstract class HttpReceiver
             // Mark atomically the response as terminated, with
             // respect to concurrency between request and response.
             terminateResponse(exchange);
-        }, afterSuccessTask);
+        };
+
+        if (afterSuccessTask == null)
+            invoker.run(successTask);
+        else
+            invoker.run(successTask, afterSuccessTask);
     }
 
     /**
@@ -714,9 +741,9 @@ public abstract class HttpReceiver
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onDataAvailable on {}", this);
-            // The demandCallback will call read() that will itself call
-            // HttpReceiver.read(boolean) so it must be called by the invoker.
-            invokeDemandCallback(true);
+            // The onDataAvailable() method is only ever called
+            // by the invoker so avoid using the invoker again.
+            invokeDemandCallback(false);
         }
 
         @Override
@@ -765,8 +792,8 @@ public abstract class HttpReceiver
                 }
             }
 
-            // The processDemand method is only ever called by the
-            // invoker so there is no need to use the latter here.
+            // The processDemand() method is only ever called
+            // by the invoker so avoid using the invoker again.
             invokeDemandCallback(false);
         }
 
@@ -774,26 +801,25 @@ public abstract class HttpReceiver
         {
             Runnable demandCallback = demandCallbackRef.getAndSet(null);
             if (LOG.isDebugEnabled())
-                LOG.debug("Invoking demand callback on {}", this);
-            if (demandCallback != null)
+                LOG.debug("Invoking demand callback {} on {}", demandCallback, this);
+            if (demandCallback == null)
+                return;
+            try
             {
-                try
+                if (invoke)
                 {
-                    if (invoke)
-                    {
-                        invoker.run(demandCallback);
-                    }
-                    else
-                    {
-                        if (!invoker.isCurrentThreadInvoking())
-                            throw new IllegalStateException();
-                        demandCallback.run();
-                    }
+                    invoker.run(demandCallback);
                 }
-                catch (Throwable x)
+                else
                 {
-                    fail(x);
+                    if (!invoker.isCurrentThreadInvoking())
+                        throw new IllegalStateException();
+                    demandCallback.run();
                 }
+            }
+            catch (Throwable x)
+            {
+                fail(x);
             }
         }
 
