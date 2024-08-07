@@ -489,15 +489,18 @@ public class MultiPartFormData
          */
         public void configure(MultiPartConfig config)
         {
-            parser.setMaxParts(config.getMaxParts());
-            maxMemoryFileSize = config.getMaxMemoryPartSize();
-            maxFileSize = config.getMaxPartSize();
-            maxLength = config.getMaxSize();
-            parser.setPartHeadersMaxLength(config.getMaxHeadersSize());
-            useFilesForPartsWithoutFileName = config.isUseFilesForPartsWithoutFileName();
-            filesDirectory = config.getLocation();
-            complianceListener = config.getViolationListener();
-            compliance = config.getMultiPartCompliance();
+            if (config != null)
+            {
+                parser.setMaxParts(config.getMaxParts());
+                maxMemoryFileSize = config.getMaxMemoryPartSize();
+                maxFileSize = config.getMaxPartSize();
+                maxLength = config.getMaxSize();
+                parser.setPartHeadersMaxLength(config.getMaxHeadersSize());
+                useFilesForPartsWithoutFileName = config.isUseFilesForPartsWithoutFileName();
+                filesDirectory = config.getLocation();
+                complianceListener = config.getViolationListener();
+                compliance = config.getMultiPartCompliance();
+            }
         }
 
         // Only used for testing.
