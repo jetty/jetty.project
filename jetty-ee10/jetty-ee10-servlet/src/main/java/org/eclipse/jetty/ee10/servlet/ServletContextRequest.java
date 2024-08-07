@@ -330,8 +330,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public Object getAttribute(String name)
     {
-        if (AbstractSessionManager.RequestedSession.class.getName().equals(name))
-            return _requestedSession;
+        if (AbstractSessionManager.RequestedSession.isApplicableAttribute(name))
+            return _requestedSession.getAttribute(name);
         return _attributes.getAttribute(name);
     }
 

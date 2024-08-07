@@ -720,8 +720,8 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         @Override
         public Object getAttribute(String name)
         {
-            if (RequestedSession.class.getName().equals(name))
-                return _requestedSession;
+            if (AbstractSessionManager.RequestedSession.isApplicableAttribute(name))
+                return _requestedSession.getAttribute(name);
             return super.getAttribute(name);
         }
 
