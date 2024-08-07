@@ -880,27 +880,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            SocketAddress local = getLocalSocketAddress();
-            if (local instanceof InetSocketAddress)
-                return (InetSocketAddress)local;
-            return null;
-        }
-
-        @Override
         public SocketAddress getLocalSocketAddress()
         {
             return _local;
-        }
-
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            SocketAddress remote = getRemoteSocketAddress();
-            if (remote instanceof InetSocketAddress)
-                return (InetSocketAddress)remote;
-            return null;
         }
 
         @Override
