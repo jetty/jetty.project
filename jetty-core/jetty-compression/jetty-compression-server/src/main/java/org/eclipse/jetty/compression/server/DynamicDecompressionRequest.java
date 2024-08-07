@@ -49,8 +49,7 @@ public class DynamicDecompressionRequest extends Request.Wrapper implements Dest
         int inflateBufferSize = config.getInflateBufferSize();
         if (inflateBufferSize > 0)
         {
-            ByteBufferPool pool = getComponents().getByteBufferPool();
-            decoder = compression.newDecoder(pool);
+            decoder = compression.newDecoder();
             decoderTransformer = new CompressionDecoderTransformer(getWrapped(), decoder);
         }
     }
