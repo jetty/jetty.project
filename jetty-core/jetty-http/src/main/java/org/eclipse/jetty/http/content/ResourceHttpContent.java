@@ -121,7 +121,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
     {
-        IOResources.copy(_resource, sink, _sizedBufferPool, _sizedBufferPool.getSize(), _sizedBufferPool.isDirect(), offset, length, callback);
+        IOResources.copy(_resource, sink, _sizedBufferPool, offset, length, callback);
     }
 
     @Override

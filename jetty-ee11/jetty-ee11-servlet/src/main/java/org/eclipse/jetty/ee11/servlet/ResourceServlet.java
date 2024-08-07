@@ -185,6 +185,7 @@ public class ResourceServlet extends HttpServlet
     private ServletResourceService _resourceService;
     private WelcomeServletMode _welcomeServletMode;
     private boolean _pathInfoOnly;
+    private ByteBufferPool.Sized _bufferPool;
 
     public ResourceService getResourceService()
     {
@@ -225,9 +226,8 @@ public class ResourceServlet extends HttpServlet
         if (contentFactory == null)
         {
             MimeTypes mimeTypes = contextHandler.getMimeTypes();
-            ByteBufferPool bufferPool = getByteBufferPool(contextHandler);
-            ByteBufferPool.Sized sizedBufferPool = new ByteBufferPool.Sized(bufferPool, getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
-            contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes, sizedBufferPool);
+            ByteBufferPool.Sized bufferPool = new ByteBufferPool.Sized(getByteBufferPool(contextHandler), getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
+            contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes, bufferPool);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
             Resource styleSheet = contextHandler.getServer().getDefaultStyleSheet();
@@ -255,7 +255,7 @@ public class ResourceServlet extends HttpServlet
             if (getInitBoolean("useFileMappedBuffer", false))
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
 
-            contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css", sizedBufferPool);
+            contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css", bufferPool);
             contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
             int maxCacheSize = getInitInt("maxCacheSize", -2);
@@ -337,14 +337,17 @@ public class ResourceServlet extends HttpServlet
         }
     }
 
-    private static ByteBufferPool getByteBufferPool(ContextHandler contextHandler)
+    private ByteBufferPool.Sized getByteBufferPool(ContextHandler contextHandler)
     {
+        if (_bufferPool != null)
+            return _bufferPool;
         if (contextHandler == null)
-            return ByteBufferPool.NON_POOLING;
+            return ByteBufferPool.SIZED_NON_POOLING;
         Server server = contextHandler.getServer();
         if (server == null)
-            return ByteBufferPool.NON_POOLING;
-        return server.getByteBufferPool();
+            return ByteBufferPool.SIZED_NON_POOLING;
+        _bufferPool = new ByteBufferPool.Sized(server.getByteBufferPool(), getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
+        return _bufferPool;
     }
 
     private String getInitParameter(String name, String... deprecated)

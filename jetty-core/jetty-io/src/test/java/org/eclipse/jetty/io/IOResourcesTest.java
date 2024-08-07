@@ -34,25 +34,28 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IOResourcesTest
 {
-    private ArrayByteBufferPool.Tracking bufferPool;
+    private ArrayByteBufferPool.Tracking trackingPool;
+    private ByteBufferPool.Sized bufferPool;
 
     @BeforeEach
     public void setUp()
     {
-        bufferPool = new ArrayByteBufferPool.Tracking();
+        trackingPool = new ArrayByteBufferPool.Tracking();
+        bufferPool = new ByteBufferPool.Sized(trackingPool, false, 1);
     }
 
     @AfterEach
     public void tearDown()
     {
-        assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+        assertThat("Leaks: " + trackingPool.dumpLeaks(), trackingPool.getLeaks().size(), is(0));
     }
 
-    public static Stream<Resource> all()
+    public static Stream<Resource> all() throws Exception
     {
         URI resourceUri = MavenTestingUtils.getTestResourcePath("keystore.p12").toUri();
         return Stream.of(
             ResourceFactory.root().newResource(resourceUri),
+            ResourceFactory.root().newMemoryResource(resourceUri.toURL()),
             new URLResourceFactory().newResource(resourceUri)
         );
     }
@@ -61,7 +64,7 @@ public class IOResourcesTest
     @MethodSource("all")
     public void testToRetainableByteBuffer(Resource resource)
     {
-        RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool, false);
+        RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool);
         assertThat(retainableByteBuffer.remaining(), is((int)resource.length()));
         retainableByteBuffer.release();
     }
@@ -72,7 +75,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false);
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 0L, -1L);
         Content.copy(contentSource, sink, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
@@ -87,7 +90,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, 100, -1);
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 100, -1);
         Content.copy(contentSource, sink, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
@@ -102,7 +105,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, -1, 500);
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, -1, 500);
         Content.copy(contentSource, sink, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
@@ -117,7 +120,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 1, false, 100, 500);
+        Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 100, 500);
         Content.copy(contentSource, sink, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
@@ -132,7 +135,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 1, false, callback);
+        IOResources.copy(resource, sink, bufferPool, 0L, -1L, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
@@ -146,7 +149,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 1, false, 100, -1, callback);
+        IOResources.copy(resource, sink, bufferPool, 100, -1, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
@@ -160,7 +163,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 1, false, -1, 500, callback);
+        IOResources.copy(resource, sink, bufferPool, -1, 500, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
@@ -174,7 +177,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 1, false, 100, 500, callback);
+        IOResources.copy(resource, sink, bufferPool, 100, 500, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
@@ -188,7 +191,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Blocker.Callback callback = Blocker.callback();
-        IOResources.copy(resource, sink, bufferPool, 1, false, Integer.MAX_VALUE, 1, callback);
+        IOResources.copy(resource, sink, bufferPool, Integer.MAX_VALUE, 1, callback);
         assertThrows(IllegalArgumentException.class, callback::block);
     }
 
@@ -198,7 +201,7 @@ public class IOResourcesTest
     {
         TestSink sink = new TestSink();
         Callback.Completable callback = new Callback.Completable();
-        IOResources.copy(resource, sink, bufferPool, 1, false, Integer.MAX_VALUE, 0, callback);
+        IOResources.copy(resource, sink, bufferPool, Integer.MAX_VALUE, 0, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
