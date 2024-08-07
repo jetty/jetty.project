@@ -1613,7 +1613,7 @@ public class ResponseTest
 
         ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
         coreRequest.setSessionManager(sessionHandler.getSessionManager());
-        coreRequest.setRequestedSession(new RequestedSession(null, "12345", RequestedSession.ID_FROM_JSESSION_URI_PARAMETER));
+        coreRequest.setRequestedSession(new RequestedSession(null, "12345", RequestedSession.ID_FROM_URI_PARAMETER));
         assertNotNull(request.getSession(true));
         assertThat(request.getSession(false).getId(), is("12345"));
 
@@ -1724,7 +1724,7 @@ public class ResponseTest
                 ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
                 coreRequest.setSessionManager(sessionHandler.getSessionManager());
                 ManagedSession session = sessionHandler.getSessionManager().getManagedSession("12345");
-                coreRequest.setRequestedSession(new RequestedSession(session, "12345", cookie ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER));
+                coreRequest.setRequestedSession(new RequestedSession(session, "12345", cookie ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_URI_PARAMETER));
                 if (session == null)
                     request.getSession(true);
 
@@ -1793,7 +1793,7 @@ public class ResponseTest
                     request.setContext(_context._apiContext, "/info");
 
                     ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
-                    coreRequest.setRequestedSession(new RequestedSession(null, "12345", i > 2 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER));
+                    coreRequest.setRequestedSession(new RequestedSession(null, "12345", i > 2 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_URI_PARAMETER));
                     SessionHandler handler = new SessionHandler();
 
                     NullSessionDataStore dataStore = new NullSessionDataStore();

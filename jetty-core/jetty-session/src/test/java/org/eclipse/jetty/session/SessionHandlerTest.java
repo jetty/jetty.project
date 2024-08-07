@@ -156,7 +156,7 @@ public class SessionHandlerTest
                             .append(requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_COOKIE))
                             .append('\n');
                         out.append("RequestedSessionIdFromURL: ")
-                            .append(requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_JSESSION_URI_PARAMETER))
+                            .append(requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_URI_PARAMETER))
                             .append('\n');
                         for (String name : session.getAttributeNameSet())
                             out.append("Attribute ")

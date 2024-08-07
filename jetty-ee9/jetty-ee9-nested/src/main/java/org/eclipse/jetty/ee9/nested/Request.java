@@ -1535,7 +1535,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        return _coreRequest.getRequestedSession().isSessionIdFrom(RequestedSession.ID_FROM_JSESSION_URI_PARAMETER);
+        return _coreRequest.getRequestedSession().isSessionIdFrom(RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     @Override

@@ -1363,14 +1363,14 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
 
         return new RequestedSession((session != null && session.isValid()) ? session : null, requestedSessionId,
-            requestedSessionIdFromCookie ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER);
+            requestedSessionIdFromCookie ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     private static String duplicateSession(String id0, boolean valid0, boolean fromCookie0, String id1, boolean valid1, boolean fromCookie1)
     {
         return "Duplicate sessions: %s[%s,%s] & %s[%s,%s]".formatted(
-            id0, valid0 ? "valid" : "unknown", fromCookie0 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER,
-            id1, valid1 ? "valid" : "unknown", fromCookie1 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_JSESSION_URI_PARAMETER);
+            id0, valid0 ? "valid" : "unknown", fromCookie0 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_URI_PARAMETER,
+            id1, valid1 ? "valid" : "unknown", fromCookie1 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     /**
@@ -1389,13 +1389,13 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      *                request was received; or {@code null} if no session existed matching the requested ID.
      * @param sessionId The requested session ID.
      * @param sessionIdFrom A {@link String} representing the source of the session ID.  Common values include:
-     *                      {@link #ID_FROM_COOKIE} or {@link #ID_FROM_JSESSION_URI_PARAMETER} if there is no ID.
+     *                      {@link #ID_FROM_COOKIE} or {@link #ID_FROM_URI_PARAMETER} if there is no ID.
      */
     public record RequestedSession(ManagedSession session, String sessionId, String sessionIdFrom)
     {
         public static final RequestedSession NO_REQUESTED_SESSION = new RequestedSession(null, null, null);
         public static String ID_FROM_COOKIE = "cookie";
-        public static String ID_FROM_JSESSION_URI_PARAMETER = "jsession";
+        public static String ID_FROM_URI_PARAMETER = "uri";
 
         /**
          * Get the {@code RequestedSession} by attribute
@@ -1411,7 +1411,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         /**
          * Test if this {@code RequestedSession} ID is from a particular session source
          * @param source A {@link String} representing the source of the session ID.  Common values include:
-         *               {@link #ID_FROM_COOKIE} or {@link #ID_FROM_JSESSION_URI_PARAMETER} if there is no ID.
+         *               {@link #ID_FROM_COOKIE} or {@link #ID_FROM_URI_PARAMETER} if there is no ID.
          * @return {@code True} iff this {@code RequestedSession} ID is from the source.
          */
         public boolean isSessionIdFrom(String source)

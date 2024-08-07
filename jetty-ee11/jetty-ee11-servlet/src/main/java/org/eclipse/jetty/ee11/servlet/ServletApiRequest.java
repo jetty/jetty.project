@@ -573,7 +573,7 @@ public class ServletApiRequest implements HttpServletRequest
     public boolean isRequestedSessionIdFromURL()
     {
         RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_JSESSION_URI_PARAMETER);
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     @Override
