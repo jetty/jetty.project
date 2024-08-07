@@ -69,16 +69,15 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     private final HttpContent.Factory _authority;
     private final ConcurrentHashMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
-    private final ByteBufferPool _bufferPool;
+    private final ByteBufferPool.Sized _bufferPool;
     private int _maxCachedFileSize = DEFAULT_MAX_CACHED_FILE_SIZE;
     private int _maxCachedFiles = DEFAULT_MAX_CACHED_FILES;
     private long _maxCacheSize = DEFAULT_MAX_CACHE_SIZE;
-    private boolean _useDirectByteBuffers = true;
 
-    public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool bufferPool)
+    public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool.Sized bufferPool)
     {
         _authority = authority;
-        _bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.NON_POOLING;
+        _bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.SIZED_NON_POOLING;
     }
 
     protected ConcurrentMap<String, CachingHttpContent> getCache()
@@ -135,16 +134,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     {
         _maxCachedFiles = maxCachedFiles;
         shrinkCache();
-    }
-
-    public boolean isUseDirectByteBuffers()
-    {
-        return _useDirectByteBuffers;
-    }
-
-    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
-    {
-        _useDirectByteBuffers = useDirectByteBuffers;
     }
 
     private void shrinkCache()
@@ -334,7 +323,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                 throw new IllegalArgumentException("Resource is too large: length " + contentLengthValue + " > " + _maxCachedFileSize);
 
             // Read the content into memory
-            _buffer = IOResources.toRetainableByteBuffer(httpContent.getResource(), _bufferPool, _useDirectByteBuffers);
+            _buffer = IOResources.toRetainableByteBuffer(httpContent.getResource(), _bufferPool);
 
             _characterEncoding = httpContent.getCharacterEncoding();
             _compressedFormats = httpContent.getPreCompressedContentFormats();

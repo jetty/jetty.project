@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1383,11 +1384,9 @@ public interface RetainableByteBuffer extends Retainable
     {
         private static final Logger LOG = LoggerFactory.getLogger(RetainableByteBuffer.DynamicCapacity.class);
 
-        private final ByteBufferPool _pool;
-        private final boolean _direct;
+        private final ByteBufferPool.Sized _pool;
         private final long _maxSize;
         private final List<RetainableByteBuffer> _buffers;
-        private final int _aggregationSize;
         private final int _minRetainSize;
         private Mutable _aggregate;
 
@@ -1400,11 +1399,41 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         /**
+         * @param sizedPool The pool from which to allocate buffers, with {@link ByteBufferPool.Sized#isDirect()} configured
+         *                  and {@link ByteBufferPool.Sized#getSize()} used for the size of aggregation buffers.
+         */
+        public DynamicCapacity(ByteBufferPool.Sized sizedPool)
+        {
+            this(null, sizedPool, -1, -1);
+        }
+
+        /**
+         * @param sizedPool The pool from which to allocate buffers, with {@link ByteBufferPool.Sized#isDirect()} configured
+         *                  and {@link ByteBufferPool.Sized#getSize()} used for the size of aggregation buffers.
+         * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
+         */
+        public DynamicCapacity(ByteBufferPool.Sized sizedPool, long maxSize)
+        {
+            this(null, sizedPool, maxSize, -1);
+        }
+
+        /**
+         * @param sizedPool The pool from which to allocate buffers, with {@link ByteBufferPool.Sized#isDirect()} configured
+         *                  and {@link ByteBufferPool.Sized#getSize()} used for the size of aggregation buffers.
+         * @param maxSize The maximum length of the accumulated buffers or -1 for 2GB limit
+         * @param minRetainSize The minimal size of a {@link RetainableByteBuffer} before it will be retained; or 0 to always retain; or -1 for a heuristic;
+         */
+        public DynamicCapacity(ByteBufferPool.Sized sizedPool, long maxSize, int minRetainSize)
+        {
+            this(null, sizedPool, maxSize, minRetainSize);
+        }
+
+        /**
          * @param pool The pool from which to allocate buffers
          */
         public DynamicCapacity(ByteBufferPool pool)
         {
-            this(pool, false, -1, -1, -1);
+            this(null, pool instanceof ByteBufferPool.Sized sized ? sized : new ByteBufferPool.Sized(pool), -1, -1);
         }
 
         /**
@@ -1441,30 +1470,19 @@ public interface RetainableByteBuffer extends Retainable
          */
         public DynamicCapacity(ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
         {
-            this(new ArrayList<>(), pool, direct, maxSize, aggregationSize, minRetainSize);
+            this(null, new ByteBufferPool.Sized(pool, direct, maxSize > 0 && maxSize < IO.DEFAULT_BUFFER_SIZE ? (int)maxSize : aggregationSize), maxSize, minRetainSize);
         }
 
-        private DynamicCapacity(List<RetainableByteBuffer> buffers, ByteBufferPool pool, boolean direct, long maxSize, int aggregationSize, int minRetainSize)
+        private DynamicCapacity(List<RetainableByteBuffer> buffers, ByteBufferPool.Sized pool, long maxSize, int minRetainSize)
         {
             super();
-            _pool = pool == null ? ByteBufferPool.NON_POOLING : pool;
-            _direct = direct;
+            _pool = pool == null ? ByteBufferPool.SIZED_NON_POOLING : pool;
             _maxSize = maxSize < 0 ? Long.MAX_VALUE : maxSize;
-            _buffers = buffers;
+            _buffers = buffers == null ? new ArrayList<>() : buffers;
 
-            if (aggregationSize < 0)
-            {
-                _aggregationSize = (int)Math.min(_maxSize, 8192L);
-            }
-            else
-            {
-                if (aggregationSize > _maxSize)
-                    throw new IllegalArgumentException("aggregationSize(%d) must be <= maxCapacity(%d)".formatted(aggregationSize, _maxSize));
-                _aggregationSize = aggregationSize;
-            }
             _minRetainSize = minRetainSize;
 
-            if (_aggregationSize == 0 && _maxSize >= Integer.MAX_VALUE && _minRetainSize != 0)
+            if (_pool.getSize() == 0 && _maxSize >= Integer.MAX_VALUE && _minRetainSize != 0)
                 throw new IllegalArgumentException("must always retain if cannot aggregate");
         }
 
@@ -1475,7 +1493,7 @@ public interface RetainableByteBuffer extends Retainable
 
         public int getAggregationSize()
         {
-            return _aggregationSize;
+            return _pool.getSize();
         }
 
         public int getMinRetainSize()
@@ -1513,7 +1531,7 @@ public interface RetainableByteBuffer extends Retainable
                         throw new BufferOverflowException();
 
                     int length = (int)size;
-                    RetainableByteBuffer combined = _pool.acquire(length, _direct);
+                    RetainableByteBuffer combined = _pool.acquire(length);
                     ByteBuffer byteBuffer = combined.getByteBuffer();
                     BufferUtil.flipToFill(byteBuffer);
                     for (RetainableByteBuffer buffer : _buffers)
@@ -1592,7 +1610,7 @@ public interface RetainableByteBuffer extends Retainable
                     break;
                 }
             }
-            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
+            return new DynamicCapacity(buffers, _pool, _maxSize, _minRetainSize);
         }
 
         @Override
@@ -1653,7 +1671,7 @@ public interface RetainableByteBuffer extends Retainable
                     skip = 0;
                 }
             }
-            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
+            return new DynamicCapacity(buffers, _pool, _maxSize, _minRetainSize);
         }
 
         /**
@@ -1772,7 +1790,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean isDirect()
         {
-            return _direct;
+            return _pool.isDirect();
         }
 
         @Override
@@ -1871,7 +1889,7 @@ public interface RetainableByteBuffer extends Retainable
 
         private Mutable newSlice(List<RetainableByteBuffer> buffers)
         {
-            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
+            return new DynamicCapacity(buffers, _pool, _maxSize, _minRetainSize);
         }
 
         @Override
@@ -1895,7 +1913,7 @@ public interface RetainableByteBuffer extends Retainable
             for (RetainableByteBuffer rbb : _buffers)
                 buffers.add(rbb.copy());
 
-            return new DynamicCapacity(buffers, _pool, _direct, _maxSize, _aggregationSize, _minRetainSize);
+            return new DynamicCapacity(buffers, _pool, _maxSize, _minRetainSize);
         }
 
         /**
@@ -2027,7 +2045,7 @@ public interface RetainableByteBuffer extends Retainable
             else
             {
                 // acquire a new aggregate buffer
-                int aggregateSize = _aggregationSize;
+                int aggregateSize = _pool.getSize();
 
                 // If we cannot grow, allow a single allocation only if we have not already retained.
                 if (aggregateSize == 0 && _buffers.isEmpty() && _maxSize < Integer.MAX_VALUE)
@@ -2036,8 +2054,7 @@ public interface RetainableByteBuffer extends Retainable
                 aggregateSize = Math.max(length, aggregateSize);
                 if (aggregateSize > space)
                     aggregateSize = (int)space;
-
-                _aggregate = _pool.acquire(aggregateSize, _direct).asMutable(); // TODO don't allocate more than space
+                _aggregate = _pool.acquire(aggregateSize, _pool.isDirect());
                 checkAggregateLimit(space);
                 _buffers.add(_aggregate);
             }
@@ -2261,12 +2278,14 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             // We need a new aggregate, acquire a new aggregate buffer
-            int aggregateSize = _aggregationSize;
-
+            int aggregateSize = _pool.getSize();
             // If we cannot grow, allow a single allocation only if we have not already retained.
             if (aggregateSize == 0 && _buffers.isEmpty() && _maxSize < Integer.MAX_VALUE)
-                aggregateSize = (int)_maxSize;
-            _aggregate = _pool.acquire(Math.max(needed, aggregateSize), _direct).asMutable();
+                _aggregate = _pool.acquire(Math.toIntExact(_maxSize));
+            else if (needed > aggregateSize)
+                _aggregate = _pool.acquire(needed);
+            else
+                _aggregate = _pool.acquire();
 
             // If the new aggregate buffer is larger than the space available, then adjust the capacity
             checkAggregateLimit(space);
@@ -2411,8 +2430,8 @@ public interface RetainableByteBuffer extends Retainable
         protected void addExtraStringInfo(StringBuilder builder)
         {
             super.addExtraStringInfo(builder);
-            builder.append(",aggSize=");
-            builder.append(_aggregationSize);
+            builder.append(",pool=");
+            builder.append(_pool);
             builder.append(",minRetain=");
             builder.append(_minRetainSize);
             builder.append(",buffers=");

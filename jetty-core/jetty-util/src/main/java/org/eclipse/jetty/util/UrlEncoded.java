@@ -606,7 +606,7 @@ public class UrlEncoded
     public static void decodeUtf16To(InputStream in, BiConsumer<String, String> adder, int maxLength, int maxKeys) throws IOException
     {
         InputStreamReader input = new InputStreamReader(in, StandardCharsets.UTF_16);
-        StringWriter buf = new StringWriter(8192);
+        StringWriter buf = new StringWriter(IO.DEFAULT_BUFFER_SIZE);
         IO.copy(input, buf, maxLength);
 
         decodeTo(buf.getBuffer().toString(), adder, StandardCharsets.UTF_16, maxKeys);
