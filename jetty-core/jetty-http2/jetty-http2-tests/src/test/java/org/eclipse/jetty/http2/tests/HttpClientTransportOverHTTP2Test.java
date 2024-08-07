@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -33,6 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
@@ -791,6 +794,37 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, not(nullValue()));
         assertThat(resultRef.get().getFailure(), instanceOf(ArrayStoreException.class));
         assertThat(onContentSourceErrorRef.get(), is(nullValue()));
+    }
+
+    @Test
+    public void testRequestContentResponseContent() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Content.copy(request, response, callback);
+                return true;
+            }
+        });
+
+        AsyncRequestContent content = new AsyncRequestContent();
+        var request = httpClient.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .body(content);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
+
+        for (int i = 0; i < 16; ++i)
+        {
+            content.write(false, ByteBuffer.allocate(512), Callback.NOOP);
+            Thread.sleep(10);
+        }
+        content.close();
+
+        ContentResponse response = completable.get(15, TimeUnit.SECONDS);
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
