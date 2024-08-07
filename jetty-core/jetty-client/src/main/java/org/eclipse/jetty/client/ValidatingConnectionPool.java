@@ -80,8 +80,6 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
         quarantine.put(connection, holder);
         if (LOG.isDebugEnabled())
             LOG.debug("Validating for {}ms {}", timeout, connection);
-
-        released(connection);
         return true;
     }
 
@@ -135,7 +133,6 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
                 quarantine.remove(connection);
                 if (!closed)
                     deactivate(connection);
-                idle(connection, closed);
                 proceed();
             }
         }
