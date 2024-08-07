@@ -30,8 +30,6 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
-    private boolean _useInputDirectByteBuffers;
-    private boolean _useOutputDirectByteBuffers;
 
     public HttpConnectionFactory()
     {
