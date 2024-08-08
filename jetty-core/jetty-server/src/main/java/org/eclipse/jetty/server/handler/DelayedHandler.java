@@ -100,8 +100,8 @@ public class DelayedHandler extends Handler.Wrapper
         if (!contentExpected)
             return null;
 
-        // if we are not configured to delay dispatch, then no delay
-        if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
+        // if no mimeType, then no delay
+        if (mimeType == null)
             return null;
 
         // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
