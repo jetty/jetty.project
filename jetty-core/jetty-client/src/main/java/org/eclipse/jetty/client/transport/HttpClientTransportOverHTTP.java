@@ -22,7 +22,6 @@ import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -37,7 +36,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     public static final Origin.Protocol HTTP11 = new Origin.Protocol(List.of("http/1.1"), false);
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportOverHTTP.class);
 
-    private final ClientConnectionFactory factory = new HttpClientConnectionFactory();
+    private final HttpClientConnectionFactory factory = new HttpClientConnectionFactory();
     private int headerCacheSize = 1024;
     private boolean headerCacheCaseSensitive;
 
@@ -99,5 +98,15 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     public void setHeaderCacheCaseSensitive(boolean headerCacheCaseSensitive)
     {
         this.headerCacheCaseSensitive = headerCacheCaseSensitive;
+    }
+
+    public boolean isInitializeConnections()
+    {
+        return factory.isInitializeConnections();
+    }
+
+    public void setInitializeConnections(boolean initialize)
+    {
+        factory.setInitializeConnections(initialize);
     }
 }

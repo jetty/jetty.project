@@ -28,10 +28,23 @@ public class HttpClientConnectionFactory implements ClientConnectionFactory
      */
     public static final Info HTTP11 = new HTTP11(new HttpClientConnectionFactory());
 
+    private boolean initializeConnections;
+
+    public boolean isInitializeConnections()
+    {
+        return initializeConnections;
+    }
+
+    public void setInitializeConnections(boolean initialize)
+    {
+        this.initializeConnections = initialize;
+    }
+
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, context);
+        connection.setInitialize(isInitializeConnections());
         return customize(connection, context);
     }
 

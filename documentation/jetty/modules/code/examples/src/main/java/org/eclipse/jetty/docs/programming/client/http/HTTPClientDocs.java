@@ -1049,6 +1049,31 @@ public class HTTPClientDocs
         // end::setConnectionPool[]
     }
 
+    public void preCreateConnections() throws Exception
+    {
+        // tag::preCreateConnections[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // For HTTP/1.1, you need to explicitly configure to initialize connections.
+        if (httpClient.getTransport() instanceof HttpClientTransportOverHTTP http1)
+            http1.setInitializeConnections(true);
+
+        // Create a dummy request to the server you want to pre-create connections to.
+        Request request = httpClient.newRequest("https://host/");
+
+        // Resolve the destination for that request.
+        Destination destination = httpClient.resolveDestination(request);
+
+        // Pre-create, for example, half of the connections.
+        int preCreate = httpClient.getMaxConnectionsPerDestination() / 2;
+        CompletableFuture<Void> completable = destination.getConnectionPool().preCreateConnections(preCreate);
+
+        // Wait for the connections to be created.
+        completable.get(5, TimeUnit.SECONDS);
+        // end::preCreateConnections[]
+    }
+
     public void unixDomain() throws Exception
     {
         // tag::unixDomain[]
