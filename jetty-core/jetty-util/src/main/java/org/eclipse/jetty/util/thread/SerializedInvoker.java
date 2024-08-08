@@ -206,27 +206,32 @@ public class SerializedInvoker
         @Override
         public void run()
         {
-            Link link = this;
-            while (link != null)
+            _invokerThread = Thread.currentThread();
+            try
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
-                try
+                Link link = this;
+                while (link != null)
                 {
-                    _invokerThread = Thread.currentThread();
-                    link._task.run();
-                    _invokerThread = null;
-                }
-                catch (Throwable t)
-                {
-                    _invokerThread = null;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
-                    onError(link._task, t);
+                        LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
+                    try
+                    {
+                        link._task.run();
+                    }
+                    catch (Throwable t)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
+                        onError(link._task, t);
+                    }
+                    link = link.next();
+                    if (link == null && LOG.isDebugEnabled())
+                        LOG.debug("Next link is null, execution is over in {}", SerializedInvoker.this);
                 }
-                link = link.next();
-                if (link == null && LOG.isDebugEnabled())
-                    LOG.debug("Next link is null, execution is over in {}", SerializedInvoker.this);
+            }
+            finally
+            {
+                _invokerThread = null;
             }
         }
 

@@ -324,6 +324,14 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("Invoking responseContentAvailable on {}", this);
 
+        // No need to invoke onDataAvailable() if we currently are invoking from a demand callback.
+        if (invoker.isCurrentThreadInvoking())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Skipping invocation of onDataAvailable on {}", this);
+            return;
+        }
+
         invoker.run(() ->
         {
             if (LOG.isDebugEnabled())
@@ -332,21 +340,8 @@ public abstract class HttpReceiver
             if (exchange.isResponseCompleteOrTerminated())
                 return;
 
-            responseContentAvailable();
+            contentSource.onDataAvailable();
         });
-    }
-
-    /**
-     * Method to be invoked when response content is available to be read.
-     * <p>
-     * This method directly invokes the demand callback, assuming the caller
-     * is already serialized with other events.
-     */
-    protected void responseContentAvailable()
-    {
-        if (!invoker.isCurrentThreadInvoking())
-            throw new IllegalStateException();
-        contentSource.onDataAvailable();
     }
 
     /**

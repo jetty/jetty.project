@@ -117,7 +117,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         // Retain the chunk because it is stored for later reads.
         chunk.retain();
         this.chunk = chunk;
-        responseContentAvailable();
+        responseContentAvailable(exchange);
     }
 
     void end(HttpExchange exchange)

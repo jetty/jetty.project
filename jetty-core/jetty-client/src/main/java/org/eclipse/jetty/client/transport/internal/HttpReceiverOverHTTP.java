@@ -458,7 +458,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         if (LOG.isDebugEnabled())
             LOG.debug("Setting action to responseContentAvailable on {}", this);
-        if (getAndSetAction(this::responseContentAvailable) != null)
+        if (getAndSetAction(() -> responseContentAvailable(exchange)) != null)
             throw new IllegalStateException();
         if (getHttpConnection().isFillInterested())
             throw new IllegalStateException();
