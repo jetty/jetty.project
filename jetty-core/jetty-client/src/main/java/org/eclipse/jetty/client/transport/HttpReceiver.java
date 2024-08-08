@@ -321,8 +321,6 @@ public abstract class HttpReceiver
      */
     protected void responseContentAvailable(HttpExchange exchange)
     {
-        if (!invoker.isCurrentThreadInvoking())
-            throw new IllegalStateException();
         if (LOG.isDebugEnabled())
             LOG.debug("Invoking responseContentAvailable on {}", this);
 
@@ -346,6 +344,8 @@ public abstract class HttpReceiver
      */
     protected void responseContentAvailable()
     {
+        if (!invoker.isCurrentThreadInvoking())
+            throw new IllegalStateException();
         contentSource.onDataAvailable();
     }
 
