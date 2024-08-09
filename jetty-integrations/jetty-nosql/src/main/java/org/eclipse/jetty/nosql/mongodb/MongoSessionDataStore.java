@@ -16,6 +16,7 @@ package org.eclipse.jetty.nosql.mongodb;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -540,8 +541,13 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 //                        .add("unique", true)
 //                        .get());
 
-        String createResult = _dbSessions.createIndex(Indexes.text("id"), new IndexOptions().unique(true).name("id_1").sparse(false));
-
+        List<String> indexesNames =
+                StreamSupport.stream(_dbSessions.listIndexes().map(document -> document.getString("name")).spliterator(), false).toList();
+        if (!indexesNames.contains("id_1"))
+        {
+            String createResult = _dbSessions.createIndex(Indexes.text("id"), new IndexOptions().unique(true).name("id_1").sparse(false));
+            LOG.info("create index {}, result: {}", "id_1", createResult);
+        }
 //        DBObject versionKey = BasicDBObjectBuilder.start().add("id", 1).add("version", 1).get();
 //        _dbSessions.createIndex(versionKey, BasicDBObjectBuilder.start()
 //                .add("name", "id_1_version_1")
@@ -549,10 +555,12 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 //                .add("sparse", false)
 //                .add("unique", true)
 //                .get());
-
-        createResult = _dbSessions.createIndex(Indexes.compoundIndex(Indexes.text("id"), Indexes.text("version")),
-                new IndexOptions().unique(true).name("id_1_version_1").sparse(false));
-
+        if (!indexesNames.contains("id_1_version_1"))
+        {
+            String createResult = _dbSessions.createIndex(Indexes.compoundIndex(Indexes.text("id"), Indexes.text("version")),
+                    new IndexOptions().unique(true).name("id_1_version_1").sparse(false));
+            LOG.info("create index {}, result: {}", "id_1_version_1", createResult);
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("Done ensure Mongodb indexes existing");
         //TODO perhaps index on expiry time?
