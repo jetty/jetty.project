@@ -235,11 +235,14 @@ Virtual threads have been introduced in Java 19 and Java 20 as a preview feature
 
 NOTE: In Java versions where virtual threads are a preview feature, remember to add `+--enable-preview+` to the JVM command line options to use virtual threads.
 
+[[thread-pool-virtual-threads-queued]]
+==== Virtual Threads Support with `QueuedThreadPool`
+
 `QueuedThreadPool` can be configured to use virtual threads by specifying the virtual threads `Executor`:
 
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=virtual]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=queuedVirtual]
 ----
 
 [CAUTION]
@@ -255,3 +258,17 @@ Enabling virtual threads in `QueuedThreadPool` will default the number of reserv
 
 Defaulting the number of reserved threads to zero ensures that the <<execution-strategy-pec,Produce-Execute-Consume mode>> is always used, which means that virtual threads will always be used for blocking tasks.
 ====
+
+[[thread-pool-virtual-threads-virtual]]
+==== Virtual Threads Support with `VirtualThreadPool`
+
+`VirtualThreadPool`  is an alternative to `QueuedThreadPool` that creates only virtual threads (no platform threads).
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=virtualVirtual]
+----
+
+Despite the name, `VirtualThreadPool` does not pool virtual threads, but allows you to impose a limit on the maximum number of concurrent virtual threads, in order to limit resource consumption.
+
+Furthermore, you can configure it to track virtual threads so that a Jetty component dump will show all virtual threads, including those that are unmounted.
