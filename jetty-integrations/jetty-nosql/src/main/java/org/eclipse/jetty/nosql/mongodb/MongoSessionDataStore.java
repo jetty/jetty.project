@@ -29,6 +29,7 @@ import com.mongodb.MongoException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.IndexModel;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
 import com.mongodb.client.model.Projections;
@@ -529,36 +530,22 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
 
     protected void ensureIndexes() throws MongoException
     {
-
-        // FIXME
-//        _version1 = new BasicDBObject(getContextSubfield(__VERSION), 1);
-//        DBObject idKey = BasicDBObjectBuilder.start().add("id", 1).get();
-//        _dbSessions.createIndex(idKey,
-//                BasicDBObjectBuilder.start()
-//                        .add("name", "id_1")
-//                        .add("ns", _dbSessions.getNamespace().getFullName())
-//                        .add("sparse", false)
-//                        .add("unique", true)
-//                        .get());
-
-        List<String> indexesNames =
-                StreamSupport.stream(_dbSessions.listIndexes().map(document -> document.getString("name")).spliterator(), false).toList();
+        var indexes =
+                StreamSupport.stream(_dbSessions.listIndexes().spliterator(), false)
+                        .toList();
+        var indexesNames = indexes.stream().map(document -> document.getString("name")).toList();
         if (!indexesNames.contains("id_1"))
         {
-            String createResult = _dbSessions.createIndex(Indexes.text("id"), new IndexOptions().unique(true).name("id_1").sparse(false));
+            String createResult = _dbSessions.createIndex(Indexes.text("id"),
+                    new IndexOptions().unique(true).name("id_1").sparse(false));
             LOG.info("create index {}, result: {}", "id_1", createResult);
         }
-//        DBObject versionKey = BasicDBObjectBuilder.start().add("id", 1).add("version", 1).get();
-//        _dbSessions.createIndex(versionKey, BasicDBObjectBuilder.start()
-//                .add("name", "id_1_version_1")
-//                .add("ns", _dbSessions.getFullName())
-//                .add("sparse", false)
-//                .add("unique", true)
-//                .get());
         if (!indexesNames.contains("id_1_version_1"))
         {
-            String createResult = _dbSessions.createIndex(Indexes.compoundIndex(Indexes.text("id"), Indexes.text("version")),
-                    new IndexOptions().unique(true).name("id_1_version_1").sparse(false));
+            // Command failed with error 67 (CannotCreateIndex): 'only one text index per collection allowed, found existing text index "id_1"'
+            String createResult = _dbSessions.createIndex(
+                    Indexes.compoundIndex(Indexes.descending("id"), Indexes.descending("version")),
+                    new IndexOptions().unique(false).name("id_1_version_1").sparse(false));
             LOG.info("create index {}, result: {}", "id_1_version_1", createResult);
         }
         if (LOG.isDebugEnabled())
