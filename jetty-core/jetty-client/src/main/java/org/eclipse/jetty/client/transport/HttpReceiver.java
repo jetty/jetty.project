@@ -321,18 +321,7 @@ public abstract class HttpReceiver
      */
     protected void responseContentAvailable(HttpExchange exchange)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Invoking responseContentAvailable on {}", this);
-
-        // No need to invoke onDataAvailable() if we currently are invoking from a demand callback.
-        if (invoker.isCurrentThreadInvoking())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Skipping invocation of onDataAvailable on {}", this);
-            return;
-        }
-
-        invoker.run(() ->
+        Runnable runnable = () ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseContentAvailable on {}", this);
@@ -341,7 +330,15 @@ public abstract class HttpReceiver
                 return;
 
             contentSource.onDataAvailable();
-        });
+        };
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} responseContentAvailable on {}", invoker.isCurrentThreadInvoking() ? "Running" : "Invoking" , this);
+
+        if (invoker.isCurrentThreadInvoking())
+            runnable.run();
+        else
+            invoker.run(runnable);
     }
 
     /**
@@ -697,7 +694,6 @@ public abstract class HttpReceiver
 
         private final AtomicReference<Runnable> demandCallbackRef = new AtomicReference<>();
         private final AutoLock lock = new AutoLock();
-        private final Runnable processDemand = this::processDemand;
         private Content.Chunk currentChunk;
 
         @Override
@@ -752,7 +748,7 @@ public abstract class HttpReceiver
                 throw new IllegalStateException();
             // The processDemand method may call HttpReceiver.read(boolean)
             // so it must be called by the invoker.
-            invoker.run(processDemand);
+            invoker.run(this::processDemand);
         }
 
         private void processDemand()
