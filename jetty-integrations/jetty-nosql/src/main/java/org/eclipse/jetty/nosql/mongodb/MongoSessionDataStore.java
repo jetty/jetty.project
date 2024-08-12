@@ -323,11 +323,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     @Override
     public boolean doExists(String id) throws Exception
     {
-//        DBObject fields = new BasicDBObject();
-//        fields.put(__EXPIRY, 1);
-//        fields.put(__VALID, 1);
-//        fields.put(getContextSubfield(__VERSION), 1);
-
         Bson projection = Projections.fields(Projections.include(__ID, __VALID, __EXPIRY, __VERSION, getContextField()), Projections.excludeId());
         Bson filterId = Filters.eq(__ID, id);
         Document sessionDocument = _dbSessions.find(filterId).projection(projection).first();
@@ -342,7 +337,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         Long expiry = (Long)sessionDocument.get(__EXPIRY);
 
         //expired?
-        if (expiry > 0 && expiry < System.currentTimeMillis())
+        if (expiry != null && expiry > 0 && expiry < System.currentTimeMillis())
             return false; //it's expired
 
         //does it exist for this context?
@@ -404,28 +399,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         Set<String> expiredSessions = StreamSupport.stream(documents.spliterator(), false)
                 .map(document -> document.getString(__ID))
                 .collect(Collectors.toSet());
-//
-//        DBCursor oldExpiredSessions = null;
-//        try
-//        {
-//            BasicDBObject bo = new BasicDBObject(__ID, 1);
-//            bo.append(__EXPIRY, 1);
-//
-//            oldExpiredSessions = _dbSessions.find(query, bo);
-//            for (DBObject session : oldExpiredSessions)
-//            {
-//                String id = (String)session.get(__ID);
-//
-//
-//                expiredSessions.add(id);
-//            }
-//        }
-//        finally
-//        {
-//            if (oldExpiredSessions != null)
-//                oldExpiredSessions.close();
-//        }
-
         return expiredSessions;
     }
 

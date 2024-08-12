@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.session.nosql.mongodb;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.Duration;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -97,7 +96,6 @@ public class AttributeNameTest
         {
 
             HttpClient client = new HttpClient();
-            client.setIdleTimeout(Duration.ofSeconds(100000).toMillis());
             client.start();
             try
             {
