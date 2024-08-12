@@ -333,7 +333,7 @@ public abstract class HttpReceiver
         };
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} responseContentAvailable on {}", invoker.isCurrentThreadInvoking() ? "Running" : "Invoking" , this);
+            LOG.debug("{} responseContentAvailable on {}", invoker.isCurrentThreadInvoking() ? "Running" : "Invoking", this);
 
         if (invoker.isCurrentThreadInvoking())
             runnable.run();
