@@ -375,20 +375,31 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     filled = getEndPoint().fill(requestBuffer);
 
                 if (filled > 0)
+                {
                     bytesIn.add(filled);
-                else if (filled < 0)
-                    _parser.atEOF();
+                }
+                else
+                {
+                    if (filled < 0)
+                        _parser.atEOF();
+                    releaseRequestBuffer();
+                }
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
 
                 return filled;
             }
-            catch (IOException e)
+            catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to fill from endpoint {}", getEndPoint(), e);
+                    LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
                 _parser.atEOF();
+                if (_retainableByteBuffer != null)
+                {
+                    _retainableByteBuffer.clear();
+                    releaseRequestBuffer();
+                }
                 return -1;
             }
         }
