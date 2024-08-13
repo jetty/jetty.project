@@ -1855,6 +1855,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         protected void onCompleteSuccess()
         {
+            super.onCompleteSuccess();
             _buffer.release();
             IO.close(_in);
         }
@@ -1862,12 +1863,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         protected void onFailure(Throwable cause)
         {
+            super.onFailure(cause);
             IO.close(_in);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
+            super.onCompleteFailure(x);
             _buffer.release();
         }
     }
@@ -1929,6 +1932,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         protected void onCompleteSuccess()
         {
+            super.onCompleteSuccess();
             _buffer.release();
             IO.close(_in);
         }
@@ -1936,12 +1940,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         protected void onFailure(Throwable cause)
         {
+            super.onFailure(cause);
             IO.close(_in);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
+            super.onCompleteFailure(x);
             _buffer.release();
         }
     }
