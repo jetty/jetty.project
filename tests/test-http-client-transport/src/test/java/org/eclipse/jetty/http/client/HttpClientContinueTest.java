@@ -45,14 +45,21 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -63,6 +70,22 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 {
+    @AfterEach
+    public void dispose()
+    {
+        if (scenario == null || scenario.connector == null)
+            return;
+        ByteBufferPool bbp = scenario.connector.getByteBufferPool();
+        if (bbp == null)
+            return;
+        RetainableByteBufferPool rbbp = bbp.asRetainableByteBufferPool();
+        if (rbbp instanceof ArrayRetainableByteBufferPool.Tracking)
+        {
+            ArrayRetainableByteBufferPool.Tracking tracking = (ArrayRetainableByteBufferPool.Tracking)rbbp;
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + tracking.dumpLeaks(), tracking.getLeaks().size(), is(0)));
+        }
+    }
+
     @Override
     public void init(Transport transport) throws IOException
     {
@@ -847,6 +870,28 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 output.write(response2.getBytes(StandardCharsets.UTF_8));
                 output.flush();
             }
+
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testExpect100ContinueThen404(Transport transport) throws Exception
+    {
+        init(transport);
+
+        // No Handler so every request is a 404.
+        scenario.start((Handler)null);
+
+        for (int i = 0; i < 100; ++i)
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            AsyncRequestContent requestContent = new AsyncRequestContent("text-plain");
+            scenario.client.newRequest(scenario.newURI())
+                .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
+                .body(requestContent)
+                .send(result -> latch.countDown());
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
