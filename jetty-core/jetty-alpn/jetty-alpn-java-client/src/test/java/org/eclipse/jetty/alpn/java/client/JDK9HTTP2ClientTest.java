@@ -45,8 +45,7 @@ public class JDK9HTTP2ClientTest
 
         Assumptions.assumeTrue(canConnectTo(host, port));
 
-        HTTP2Client client = new HTTP2Client();
-        try
+        try (HTTP2Client client = new HTTP2Client())
         {
             SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
             client.addBean(sslContextFactory);
@@ -86,10 +85,6 @@ public class JDK9HTTP2ClientTest
             });
 
             latch.await(15, TimeUnit.SECONDS);
-        }
-        finally
-        {
-            client.stop();
         }
     }
 
