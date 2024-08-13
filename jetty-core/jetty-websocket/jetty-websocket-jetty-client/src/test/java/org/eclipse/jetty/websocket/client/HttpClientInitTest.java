@@ -30,8 +30,7 @@ public class HttpClientInitTest
     @Test
     public void testDefaultInit() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        try
+        try (WebSocketClient client = new WebSocketClient())
         {
             client.start();
             HttpClient httpClient = client.getHttpClient();
@@ -43,27 +42,20 @@ public class HttpClientInitTest
             QueuedThreadPool threadPool = (QueuedThreadPool)executor;
             assertThat("QueuedThreadPool.name", threadPool.getName(), startsWith("WebSocket@"));
         }
-        finally
-        {
-            client.stop();
-        }
     }
 
     @Test
     public void testManualInit() throws Exception
     {
         HttpClient http = new HttpClient();
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            threadPool.setName("ManualWSClient@" + http.hashCode());
-            http.setExecutor(threadPool);
-            http.setConnectTimeout(7777);
-        }
+        QueuedThreadPool httpThreadPool = new QueuedThreadPool();
+        httpThreadPool.setName("ManualWSClient@" + http.hashCode());
+        http.setExecutor(httpThreadPool);
+        http.setConnectTimeout(7777);
 
-        WebSocketClient client = new WebSocketClient(http);
-        client.addBean(http);
-        try
+        try (WebSocketClient client = new WebSocketClient(http))
         {
+            client.addBean(http);
             client.start();
             HttpClient httpClient = client.getHttpClient();
             assertThat("HttpClient exists", httpClient, notNullValue());
@@ -74,10 +66,6 @@ public class HttpClientInitTest
             assertThat("Executor instanceof", executor, instanceOf(QueuedThreadPool.class));
             QueuedThreadPool threadPool = (QueuedThreadPool)executor;
             assertThat("QueuedThreadPool.name", threadPool.getName(), startsWith("ManualWSClient@"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }
