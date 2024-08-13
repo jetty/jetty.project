@@ -40,7 +40,9 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         }
         else
         {
-            responseContentAvailable();
+            HttpExchange exchange = getHttpExchange();
+            if (exchange != null)
+                responseContentAvailable(exchange);
         }
     }
 
@@ -107,6 +109,9 @@ public class HttpReceiverOverFCGI extends HttpReceiver
 
     void content(Content.Chunk chunk)
     {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
         if (this.chunk != null)
             throw new IllegalStateException();
         // Retain the chunk because it is stored for later reads.
