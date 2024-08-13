@@ -73,7 +73,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     @AfterEach
     public void dispose()
     {
-        if (scenario == null)
+        if (scenario == null || scenario.connector == null)
             return;
         ByteBufferPool bbp = scenario.connector.getByteBufferPool();
         if (bbp == null)
