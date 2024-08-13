@@ -321,7 +321,10 @@ public abstract class HttpReceiver
      */
     protected void responseContentAvailable(HttpExchange exchange)
     {
-        Runnable runnable = () ->
+        if (LOG.isDebugEnabled())
+            LOG.debug("Invoking responseContentAvailable on {}", this);
+
+        invoker.run(() ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseContentAvailable on {}", this);
@@ -330,15 +333,7 @@ public abstract class HttpReceiver
                 return;
 
             contentSource.onDataAvailable();
-        };
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} responseContentAvailable on {}", invoker.isCurrentThreadInvoking() ? "Running" : "Invoking", this);
-
-        if (invoker.isCurrentThreadInvoking())
-            runnable.run();
-        else
-            invoker.run(runnable);
+        });
     }
 
     /**
