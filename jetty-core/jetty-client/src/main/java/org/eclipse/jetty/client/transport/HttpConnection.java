@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -145,7 +146,7 @@ public abstract class HttpConnection implements IConnection, Attachable
 
         // Make sure the path is there
         String path = request.getPath();
-        if (path.trim().isEmpty())
+        if (StringUtil.isBlank(path))
         {
             path = "/";
             request.path(path);
