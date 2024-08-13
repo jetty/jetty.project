@@ -287,7 +287,7 @@
     <gson.version>2.11.0</gson.version>
     <guava.version>33.2.1-jre</guava.version>
     <guice.version>7.0.0</guice.version>
-    <h2spec.maven.plugin.version>1.0.12</h2spec.maven.plugin.version>
+    <h2spec.maven.plugin.version>1.0.13</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hazelcast.version>5.4.0</hazelcast.version>
     <hibernate.search.version>7.1.1.Final</hibernate.search.version>

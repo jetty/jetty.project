@@ -528,7 +528,7 @@ public abstract class HttpSender
                     action.run();
 
                 // Read the request content.
-                chunk = content.read();
+                chunk = content != null ? content.read() : Content.Chunk.EOF;
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Content {} for {}", chunk, request);
@@ -539,6 +539,7 @@ public abstract class HttpSender
                 {
                     // No content after the headers, demand.
                     demanded = true;
+                    assert content != null;
                     content.demand(this::succeeded);
                     return Action.SCHEDULED;
                 }

@@ -81,7 +81,6 @@
           <skip>${h2spec.skip}</skip>
           <junitPackage>org.eclipse.jetty.h2spec</junitPackage>
           <skipNoDockerAvailable>true</skipNoDockerAvailable>
-          <reportsDirectory>${project.build.directory}/h2spec-reports</reportsDirectory>
           <excludeSpecs>
             <excludeSpec>3.5 - Sends invalid connection preface</excludeSpec>
           </excludeSpecs>
