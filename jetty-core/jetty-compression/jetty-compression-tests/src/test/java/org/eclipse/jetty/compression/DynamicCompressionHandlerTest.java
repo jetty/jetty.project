@@ -84,7 +84,7 @@ public class DynamicCompressionHandlerTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "texts/plain;charset=utf-8");
                 Content.Sink.write(response, true, "Hello World", callback);
                 return true;
             }
@@ -116,7 +116,7 @@ public class DynamicCompressionHandlerTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "texts/plain;charset=utf-8");
                 response.write(true, ByteBuffer.wrap(buffer), callback);
                 return true;
             }

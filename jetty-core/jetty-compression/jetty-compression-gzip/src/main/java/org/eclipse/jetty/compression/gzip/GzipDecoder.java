@@ -13,53 +13,57 @@
 
 package org.eclipse.jetty.compression.gzip;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
+import org.eclipse.jetty.compression.BufferQueue;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class GzipDecoder implements Compression.Decoder, Destroyable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(GzipDecoder.class);
+
     private enum State
     {
-        INITIAL, ID, CM, FLG, MTIME, XFL, OS, FLAGS, EXTRA_LENGTH, EXTRA, NAME, COMMENT, HCRC, DATA, CRC, ISIZE
+        INITIAL, ID, CM, FLG, MTIME, XFL, OS, FLAGS, EXTRA_LENGTH, EXTRA, NAME, COMMENT, HCRC, DATA, CRC, ISIZE, FINISHED, ERROR
     }
 
     // Unsigned Integer Max == 2^32
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
     private final GzipCompression compression;
-    private final List<RetainableByteBuffer> inflateds = new ArrayList<>();
-    private final int bufferSize;
+    private final BufferQueue outputBuffers;
     private InflaterPool.Entry inflaterEntry;
     private Inflater inflater;
     private State state;
     private int size;
     private long value;
     private byte flags;
-    private RetainableByteBuffer inflated;
 
     public GzipDecoder(GzipCompression gzipCompression)
     {
-        this.compression = gzipCompression;
-        this.bufferSize = gzipCompression.getBufferSize();
+        this.compression = Objects.requireNonNull(gzipCompression);
+        this.outputBuffers = new BufferQueue(compression.getByteBufferPool());
         this.inflaterEntry = gzipCompression.getInflaterPool().acquire();
         this.inflater = inflaterEntry.get();
-        reset();
+        this.inflater.reset();
+        this.state = State.INITIAL;
     }
 
     @Override
     public void close()
     {
-        // do nothing
+        outputBuffers.close();
     }
 
     /**
@@ -74,71 +78,77 @@ class GzipDecoder implements Compression.Decoder, Destroyable
      * it's already fully consumed) and that will produce another
      * chunk of inflated bytes. Termination happens when the input
      * buffer is fully consumed, and the returned buffer is empty.</p>
-     * <p>See {@link #decodedChunk(RetainableByteBuffer)} to perform inflating
-     * in a non-blocking way that allows to apply backpressure.</p>
      *
      * @param compressed the buffer containing compressed data.
      * @return a buffer containing inflated data.
+     * @throws IOException if unable to decode/parser chunks
      */
-    public RetainableByteBuffer decode(ByteBuffer compressed)
+    public RetainableByteBuffer decode(ByteBuffer compressed) throws IOException
     {
-        decodeChunks(compressed);
+        if (state == State.FINISHED && compressed.hasRemaining())
+            throw new IllegalStateException("finishInput already called, cannot read input buffer");
 
-        if (inflateds.isEmpty())
+        // can we progress any?
+        if (compressed.hasRemaining())
+            decodeChunks(compressed);
+
+        RetainableByteBuffer uncompressed = outputBuffers.getRetainableBuffer();
+        if (uncompressed == null)
+            return compression.acquireByteBuffer(0);
+
+        return uncompressed;
+    }
+
+    @Override
+    public void finishInput() throws IOException
+    {
+        if (state == State.FINISHED)
+            return;
+
+        if (state != State.INITIAL)
         {
-            if ((inflated == null || !inflated.hasRemaining()) || state == State.CRC || state == State.ISIZE)
-                return compression.acquireByteBuffer(0);
-            RetainableByteBuffer result = inflated;
-            inflated = null;
-            return result;
+            StringBuilder msg = new StringBuilder();
+            msg.append("Decoder failure [").append(state).append("] - needsInput:");
+            msg.append(inflater.needsInput());
+            state = State.FINISHED;
+            throw new IOException(msg.toString());
         }
-        else
-        {
-            inflateds.add(inflated);
-            inflated = null;
-            int length = inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
-            RetainableByteBuffer result = compression.acquireByteBuffer(length);
-            for (RetainableByteBuffer buffer : inflateds)
-            {
-                buffer.appendTo(result);
-                buffer.release();
-            }
-            inflateds.clear();
-            return result;
-        }
+    }
+
+    @Override
+    public boolean isOutputComplete()
+    {
+        return !outputBuffers.hasRemaining();
     }
 
     @Override
     public void destroy()
     {
+        close();
+        inflater.reset();
         inflaterEntry.release();
-        inflaterEntry = null;
         inflater = null;
-    }
-
-    public boolean isFinished()
-    {
-        return inflaterEntry.get().finished();
+        inflaterEntry = null;
     }
 
     /**
      * <p>Inflates compressed data.</p>
-     * <p>Inflation continues until the compressed block end is reached, there is no
-     * more compressed data or a call to {@link #decodedChunk(RetainableByteBuffer)} returns true.</p>
      *
      * @param compressed the buffer of compressed data to inflate
+     * @throws IOException if unable to parse/decode chunks
      */
-    protected void decodeChunks(ByteBuffer compressed)
+    protected void decodeChunks(ByteBuffer compressed) throws IOException
     {
-        RetainableByteBuffer buffer = null;
+        // parse
         try
         {
-            while (true)
+            while (compressed.hasRemaining())
             {
                 switch (state)
                 {
                     case INITIAL:
                     {
+                        inflater.reset();
                         state = State.ID;
                         break;
                     }
@@ -173,30 +183,28 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                     {
                         while (true)
                         {
-                            if (buffer == null)
-                                buffer = compression.acquireByteBuffer(bufferSize);
-
                             try
                             {
+                                RetainableByteBuffer buffer = compression.acquireByteBuffer();
                                 ByteBuffer decoded = buffer.getByteBuffer();
                                 int pos = BufferUtil.flipToFill(decoded);
                                 inflater.inflate(decoded);
                                 BufferUtil.flipToFlush(decoded, pos);
+                                if (decoded.hasRemaining())
+                                {
+                                    outputBuffers.add(buffer);
+                                }
+                                else
+                                {
+                                    buffer.release();
+                                }
                             }
                             catch (DataFormatException x)
                             {
                                 throw new ZipException(x.getMessage());
                             }
 
-                            if (buffer.hasRemaining())
-                            {
-                                boolean stop = decodedChunk(buffer);
-                                buffer.release();
-                                buffer = null;
-                                if (stop)
-                                    return;
-                            }
-                            else if (inflater.needsInput())
+                            if (inflater.needsInput())
                             {
                                 if (!compressed.hasRemaining())
                                     return;
@@ -217,12 +225,16 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                         break;
                 }
 
-                if (!compressed.hasRemaining())
-                    break;
-
                 byte currByte = compressed.get();
                 switch (state)
                 {
+                    case ERROR, FINISHED:
+                    {
+                        // skip rest of content (nothing else possible to read safely)
+                        compressed.position(compressed.limit());
+                        return;
+                    }
+
                     case ID:
                     {
                         value += (currByte & 0xFF) << 8 * size;
@@ -230,7 +242,13 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                         if (size == 2)
                         {
                             if (value != 0x8B1F)
-                                throw new ZipException("Invalid gzip bytes");
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Skipping rest of input, no gzip magic number detected");
+                                state = State.INITIAL;
+                                compressed.position(compressed.limit());
+                                return;
+                            }
                             state = State.CM;
                         }
                         break;
@@ -346,8 +364,9 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                             // RFC 1952: Section 2.3.1; ISIZE is the input size modulo 2^32
                             if (value != (inflater.getBytesWritten() & UINT_MAX))
                                 throw new ZipException("Invalid input size");
-
-                            reset();
+                            state = State.INITIAL;
+                            size = 0;
+                            value = 0;
                             return;
                         }
                         break;
@@ -359,46 +378,8 @@ class GzipDecoder implements Compression.Decoder, Destroyable
         }
         catch (ZipException x)
         {
-            throw new RuntimeException(x);
+            state = State.ERROR;
+            throw x;
         }
-        finally
-        {
-            if (buffer != null)
-                buffer.release();
-        }
-    }
-
-    /**
-     * <p>Called when a chunk of data is inflated.</p>
-     * <p>The default implementation aggregates all the chunks
-     * into a single buffer returned from {@link #decode(ByteBuffer)}.</p>
-     * <p>Derived implementations may choose to consume inflated chunks
-     * individually and return {@code true} from this method to prevent
-     * further inflation until a subsequent call to {@link #decode(ByteBuffer)}
-     * or {@link #decodeChunks(ByteBuffer)} is made.
-     *
-     * @param chunk the inflated chunk of data
-     * @return false if inflating should continue, or true if the call
-     * to {@link #decodeChunks(ByteBuffer)} or {@link #decode(ByteBuffer)}
-     * should return, allowing to consume the inflated chunk and apply
-     * backpressure
-     */
-    protected boolean decodedChunk(RetainableByteBuffer chunk)
-    {
-        // Retain the chunk because it is stored for later use.
-        chunk.retain();
-        if (inflated != null)
-            inflateds.add(inflated);
-        inflated = chunk;
-        return false;
-    }
-
-    private void reset()
-    {
-        inflater.reset();
-        state = State.INITIAL;
-        size = 0;
-        value = 0;
-        flags = 0;
     }
 }

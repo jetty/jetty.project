@@ -28,6 +28,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,6 +37,7 @@ import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractGzipTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractGzipTest.class);
     // Signed Integer Max
     protected static final long INT_MAX = Integer.MAX_VALUE;
     // Unsigned Integer Max == 2^32
@@ -67,17 +70,30 @@ public abstract class AbstractGzipTest
             public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
             {
                 poolCounter.incrementAndGet();
-                return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
+                RetainableByteBuffer.Mutable buf = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
                 {
+                    @Override
+                    public void retain()
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("retain() - buf={}", this, new RuntimeException("retain()"));
+                        super.retain();
+                    }
+
                     @Override
                     public boolean release()
                     {
                         boolean released = super.release();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("release() - released={}, buf={}", released, this, new RuntimeException("release()"));
                         if (released)
                             poolCounter.decrementAndGet();
                         return released;
                     }
                 };
+                if (LOG.isDebugEnabled())
+                    LOG.debug("acquire() - buf={}", buf, new RuntimeException("acquire()"));
+                return buf;
             }
         };
         gzip.setByteBufferPool(pool);

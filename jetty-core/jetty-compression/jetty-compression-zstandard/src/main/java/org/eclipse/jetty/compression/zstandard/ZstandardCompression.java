@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.compression.zstandard;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteOrder;
-import java.util.Set;
+import java.util.List;
 
+import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
+import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -45,9 +50,8 @@ public class ZstandardCompression extends Compression
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
     private static final int DEFAULT_MIN_ZSTD_SIZE = 48;
+    public static final List<String> EXTENSIONS = List.of("zst");
 
-    private ByteBufferPool byteBufferPool;
-    private int bufferSize = 2048;
     private int minCompressSize = DEFAULT_MIN_ZSTD_SIZE;
     private int compressionLevel = 3;
 
@@ -86,26 +90,6 @@ public class ZstandardCompression extends Compression
         this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_ZSTD_SIZE);
     }
 
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
-    {
-        this.byteBufferPool = byteBufferPool;
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return byteBufferPool;
-    }
-
-    public int getBufferSize()
-    {
-        return bufferSize;
-    }
-
-    public void setBufferSize(int bufferSize)
-    {
-        this.bufferSize = bufferSize;
-    }
-
     @Override
     public boolean acceptsCompression(HttpFields headers, long contentLength)
     {
@@ -141,7 +125,7 @@ public class ZstandardCompression extends Compression
             return RetainableByteBuffer.EMPTY;
 
         // Per zstd-jni, these MUST be direct ByteBuffer implementations.
-        RetainableByteBuffer.Mutable buffer = this.byteBufferPool.acquire(length, true);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, true);
         if (!buffer.getByteBuffer().isDirect())
         {
             buffer.release();
@@ -165,9 +149,9 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public Set<String> getFileExtensionNames()
+    public List<String> getFileExtensionNames()
     {
-        return Set.of("zst");
+        return EXTENSIONS;
     }
 
     @Override
@@ -189,25 +173,20 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
+    public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
+    {
+        return new ZstdOutputStreamNoFinalizer(out);
+    }
+
+    @Override
     public Compression.Encoder newEncoder()
     {
         return new ZstandardEncoder(this);
     }
 
     @Override
-    protected void doStart() throws Exception
+    public InputStream newEncoderInputStream(InputStream in) throws IOException
     {
-        super.doStart();
-
-        if (byteBufferPool == null)
-        {
-            byteBufferPool = ByteBufferPool.NON_POOLING;
-        }
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
+        return new ZstdInputStreamNoFinalizer(in);
     }
 }

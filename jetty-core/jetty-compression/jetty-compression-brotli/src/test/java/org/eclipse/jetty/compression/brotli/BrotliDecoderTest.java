@@ -39,12 +39,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class BrotliDecoderTest extends AbstractBrotliTest
@@ -61,7 +65,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
             StringBuilder actual = new StringBuilder();
 
             RetainableByteBuffer decoded = decoder.decode(bytes);
-            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actual.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
 
             assertEquals(data, actual.toString());
@@ -102,7 +106,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
                 assertThat(output, notNullValue());
                 if (output.hasRemaining())
                 {
-                    actualContent.append(BufferUtil.toString(output.getByteBuffer(), UTF_8));
+                    actualContent.append(UTF_8.decode(output.getByteBuffer()));
                 }
                 output.release();
             }
@@ -133,17 +137,17 @@ public class BrotliDecoderTest extends AbstractBrotliTest
             while (bytes.hasRemaining())
             {
                 RetainableByteBuffer decoded = decoder.decode(bytes);
-                actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                actual.append(UTF_8.decode(decoded.getByteBuffer()));
                 decoded.release();
-                if (decoder.isFinished())
-                    break;
             }
 
-            assertEquals(data1, actual.toString());
+            decoder.finishInput();
+            assertTrue(decoder.isOutputComplete(), "Output has been completed");
 
+            assertEquals(data1, actual.toString());
             // brotli4j consumes the entire input buffer always.
-            // even if there is extra content outside of the brotli data stream.
-            assertFalse(bytes.hasRemaining());
+            // even if there is extra content after the end of the brotli data stream.
+            assertThat(actual.toString(), not(containsString(data2)));
         }
     }
 
@@ -156,7 +160,9 @@ public class BrotliDecoderTest extends AbstractBrotliTest
             RetainableByteBuffer buf = decoder.decode(BufferUtil.EMPTY_BUFFER);
             assertThat(buf, is(notNullValue()));
             assertThat(buf.getByteBuffer().hasRemaining(), is(false));
-            assertThat("Decoder hasn't reached the end of the compressed content", decoder.isFinished(), is(false));
+            IOException ioException = assertThrows(IOException.class, () -> decoder.finishInput());
+            assertThat(ioException.getMessage(), startsWith("Decoder failure"));
+            buf.release();
         }
     }
 
@@ -183,7 +189,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
                 ByteBuffer readBuffer = readRetainableBuffer.getByteBuffer();
 
                 boolean readDone = false;
-                while (!readDone && !decoder.isFinished())
+                while (!readDone)
                 {
                     try
                     {
@@ -195,16 +201,16 @@ public class BrotliDecoderTest extends AbstractBrotliTest
                             if (len == -1)
                             {
                                 readDone = true;
-                                break;
+                                decoder.finishInput();
                             }
-                            if (len > 0)
+                            else if (len > 0)
                             {
                                 readBuffer.flip();
                                 while (readBuffer.hasRemaining())
                                 {
                                     RetainableByteBuffer decoded = decoder.decode(readBuffer);
                                     if (decoded.hasRemaining())
-                                        result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                                        result.append(UTF_8.decode(decoded.getByteBuffer()));
                                     decoded.release();
                                 }
                             }
@@ -212,10 +218,10 @@ public class BrotliDecoderTest extends AbstractBrotliTest
                         else
                         {
                             // decode any remaining bytes
-                            while (!decoder.isFinished())
+                            while (!decoder.isOutputComplete())
                             {
                                 RetainableByteBuffer decoded = decoder.decode(BufferUtil.EMPTY_BUFFER);
-                                result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                                result.append(UTF_8.decode(decoded.getByteBuffer()));
                                 decoded.release();
                             }
                         }
@@ -309,8 +315,9 @@ public class BrotliDecoderTest extends AbstractBrotliTest
             RetainableByteBuffer output = decoder.decode(compressed);
             assertThat(output, notNullValue());
             assertThat(output.getByteBuffer().remaining(), is(0));
-            assertThat(decoder.isFinished(), is(true));
             output.release();
+            decoder.finishInput();
+            assertTrue(decoder.isOutputComplete(), "Output has been completed");
         }
     }
 
@@ -338,8 +345,9 @@ public class BrotliDecoderTest extends AbstractBrotliTest
             RetainableByteBuffer output = decoder.decode(compressed);
             assertThat(output, notNullValue());
             assertThat(output.getByteBuffer().remaining(), is(0));
-            assertThat(decoder.isFinished(), is(true));
             output.release();
+            decoder.finishInput();
+            assertTrue(decoder.isOutputComplete(), "Output has been completed");
         }
     }
 
@@ -354,7 +362,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
         {
             ByteBuffer compressed = ByteBuffer.wrap(compressedBytes);
             RetainableByteBuffer decoded = decoder.decode(compressed);
-            assertEquals(data, BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            assertEquals(data, UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
         }
     }
@@ -383,15 +391,16 @@ public class BrotliDecoderTest extends AbstractBrotliTest
 
             RetainableByteBuffer decoded = decoder.decode(slice1);
             assertNotNull(decoded);
-            assertThat(decoder.isFinished(), is(false));
-            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actual.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
 
             decoded = decoder.decode(slice2);
             assertNotNull(decoded);
-            assertThat(decoder.isFinished(), is(true));
-            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actual.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
+
+            decoder.finishInput();
+            assertTrue(decoder.isOutputComplete(), "Output has been completed");
 
             assertEquals(data, actual.toString());
         }
@@ -432,7 +441,7 @@ public class BrotliDecoderTest extends AbstractBrotliTest
                 assertThat(output, notNullValue());
                 if (output.hasRemaining())
                 {
-                    actualContent.append(BufferUtil.toString(output.getByteBuffer(), UTF_8));
+                    actualContent.append(UTF_8.decode(output.getByteBuffer()));
                 }
                 output.release();
             }
@@ -461,11 +470,11 @@ public class BrotliDecoderTest extends AbstractBrotliTest
         {
             StringBuilder actualContent = new StringBuilder();
             RetainableByteBuffer decoded = decoder.decode(slice1);
-            actualContent.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actualContent.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
 
             decoded = decoder.decode(slice2);
-            actualContent.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actualContent.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
 
             assertEquals(data, actualContent.toString());

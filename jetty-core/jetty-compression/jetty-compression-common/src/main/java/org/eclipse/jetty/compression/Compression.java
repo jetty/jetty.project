@@ -14,12 +14,15 @@
 package org.eclipse.jetty.compression;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Set;
+import java.util.List;
 
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Container;
@@ -30,13 +33,37 @@ public abstract class Compression extends ContainerLifeCycle
     private final String encodingName;
     private final String etagSuffix;
     private final String etagSuffixQuote;
+    private ByteBufferPool byteBufferPool;
     private Container container;
+    private int bufferSize = 2048;
 
     public Compression(String encoding)
     {
         encodingName = encoding;
         etagSuffix = StringUtil.isEmpty(EtagUtils.ETAG_SEPARATOR) ? "" : (EtagUtils.ETAG_SEPARATOR + encodingName);
         etagSuffixQuote = etagSuffix + "\"";
+    }
+
+    public void setByteBufferPool(ByteBufferPool byteBufferPool)
+    {
+        this.byteBufferPool = byteBufferPool;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return this.byteBufferPool;
+    }
+
+    public void setBufferSize(int size)
+    {
+        if (size <= 0)
+            throw new IllegalArgumentException("Invalid buffer size: " + size);
+        this.bufferSize = size;
+    }
+
+    public int getBufferSize()
+    {
+        return bufferSize;
     }
 
     /**
@@ -158,9 +185,10 @@ public abstract class Compression extends ContainerLifeCycle
      *     Not an exhaustive list, just the most commonly seen extensions.
      * </p>
      *
-     * @return the set of common extension names (all lowercase) for this compression implementation.
+     * @return the list of common extension names (all lowercase) for this compression implementation.
+     *  ordered by most common to least common.
      */
-    public abstract Set<String> getFileExtensionNames();
+    public abstract List<String> getFileExtensionNames();
 
     /**
      * @return the name of the compression implementation.
@@ -181,12 +209,16 @@ public abstract class Compression extends ContainerLifeCycle
      */
     public abstract Decoder newDecoder();
 
+    public abstract OutputStream newDecoderOutputStream(OutputStream out) throws IOException;
+
     /**
      * Get a new Encoder (possibly pooled) for this compression implementation.
      *
      * @return a new Encoder
      */
     public abstract Encoder newEncoder();
+
+    public abstract InputStream newEncoderInputStream(InputStream in) throws IOException;
 
     /**
      * Strip compression suffixes off etags
@@ -209,8 +241,23 @@ public abstract class Compression extends ContainerLifeCycle
         }
     }
 
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+
+        if (byteBufferPool == null)
+        {
+            byteBufferPool = ByteBufferPool.NON_POOLING;
+        }
+    }
+
     /**
-     * A Decoder for decompression
+     * A Decoder for decompression.
+     *
+     * <p>
+     *     Closing a Decoder frees resources associated with the Decoder.
+     * </p>
      */
     public interface Decoder extends AutoCloseable
     {
@@ -221,21 +268,37 @@ public abstract class Compression extends ContainerLifeCycle
          *     The input buffer might not be fully read (or even read at all) if
          *     there are pending output buffers from a previous {@code .decode(RetainableByteBuffer)} operation.
          *     It is the responsibility of the user of this API to give the same input buffer back to
-         *     this method if the buffer has remaining bytes.
+         *     this method if the input buffer has remaining bytes.
+         * </p>
+         *
+         * <p>
+         *     If the input buffer is fully read, and the output buffer is empty, then
+         *     there are no decoded bytes pending. (the internal implementation could
+         *     either be totally finished, or there are insufficient input bytes to
+         *     complete the next decoding step)
          * </p>
          *
          * @param input the input buffer to read from.
-         * @return the output buffer. never null, use {@link #isFinished()} to know if the decompression is done.
+         * @return the output buffer. never null.
          * @throws IOException if unable to decode chunk.
          */
         RetainableByteBuffer decode(ByteBuffer input) throws IOException;
 
         /**
-         * The decoder has finished.
+         * Declare the input finished, completing the decoding.
          *
-         * @return true if decoder is finished (usually means the decoder reached the end of the compressed content)
+         * @throws IOException if unable to complete the decoding (when this happens,
+         *    it is often an EOF situation, where the internal decoding cannot complete
+         *    due to missing compressed bytes)
          */
-        boolean isFinished();
+        public void finishInput() throws IOException;
+
+        /**
+         * Test to know if there are internal buffers still available to be read via the {@link #decode(ByteBuffer)} method.
+         *
+         * @throws IllegalStateException if {@link #finishInput()} hasn't been called yet.
+         */
+        boolean isOutputComplete();
     }
 
     /**

@@ -42,6 +42,7 @@ public class BufferQueue implements Closeable
 
     public void add(RetainableByteBuffer buffer)
     {
+        buffer.retain();
         bufferQueue.add(buffer);
     }
 
@@ -58,7 +59,7 @@ public class BufferQueue implements Closeable
         bufferQueue.forEach(RetainableByteBuffer::release);
     }
 
-    public ByteBuffer getBuffer()
+    public RetainableByteBuffer getRetainableBuffer()
     {
         if (activeBuffer != null && !activeBuffer.hasRemaining())
         {
@@ -70,8 +71,16 @@ public class BufferQueue implements Closeable
             activeBuffer = bufferQueue.poll();
 
         if (activeBuffer != null)
-            return activeBuffer.getByteBuffer();
+            return activeBuffer;
         return null;
+    }
+
+    public ByteBuffer getBuffer()
+    {
+        RetainableByteBuffer buffer = getRetainableBuffer();
+        if (buffer == null)
+            return null;
+        return buffer.getByteBuffer();
     }
 
     public boolean hasRemaining()

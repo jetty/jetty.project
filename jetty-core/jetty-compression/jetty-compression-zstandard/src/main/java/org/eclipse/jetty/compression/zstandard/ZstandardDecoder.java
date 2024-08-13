@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.github.luben.zstd.ZstdDecompressCtx;
+import com.github.luben.zstd.ZstdException;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ public class ZstandardDecoder implements Compression.Decoder
     private final ZstandardCompression compression;
     private final ZstdDecompressCtx decompressCtx;
     private boolean finished = false;
+    private boolean inputFinished = false;
 
     public ZstandardDecoder(ZstandardCompression compression)
     {
@@ -43,20 +45,42 @@ public class ZstandardDecoder implements Compression.Decoder
     public RetainableByteBuffer decode(ByteBuffer input) throws IOException
     {
         assert input.isDirect(); // zstd-jni requires input be a direct buffer
+
+        if (inputFinished && input.hasRemaining())
+            throw new IllegalStateException("finishInput already called, cannot read input buffer");
+
         RetainableByteBuffer outputBuffer = compression.acquireByteBuffer();
         outputBuffer.getByteBuffer().clear();
-        boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(outputBuffer.getByteBuffer(), input);
-        if (fullyFlushed)
+        try
         {
-            LOG.debug("fullyFlushed = TRUE");
-            finished = true;
+            boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(outputBuffer.getByteBuffer(), input);
+            if (fullyFlushed)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("fullyFlushed = TRUE");
+                finished = true;
+            }
+            outputBuffer.getByteBuffer().flip();
+            return outputBuffer;
         }
-        outputBuffer.getByteBuffer().flip();
-        return outputBuffer;
+        catch (ZstdException e)
+        {
+            // consume remaining input (it is bad)
+            input.position(input.limit());
+            // release output buffer (we will not return it)
+            outputBuffer.release();
+            throw new IOException("Decoder failure", e);
+        }
     }
 
     @Override
-    public boolean isFinished()
+    public void finishInput() throws IOException
+    {
+        inputFinished = true;
+    }
+
+    @Override
+    public boolean isOutputComplete()
     {
         return finished;
     }

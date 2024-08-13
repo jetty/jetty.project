@@ -38,11 +38,15 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -134,16 +138,16 @@ public class ZstandardDecoderTest extends AbstractZstdTest
             while (bytes.hasRemaining())
             {
                 RetainableByteBuffer decoded = decoder.decode(bytes);
-                actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                actual.append(UTF_8.decode(decoded.getByteBuffer()));
                 decoded.release();
-                if (decoder.isFinished())
-                    break;
             }
+            decoder.finishInput();
+            assertTrue(decoder.isOutputComplete(), "Output has been completed");
 
             assertEquals(data1, actual.toString());
-
-            assertTrue(bytes.hasRemaining());
-            assertEquals(data2, UTF_8.decode(bytes).toString());
+            // zstd-jni consumes the entire input buffer always.
+            // even if there is extra content after the end of the zstd data stream.
+            assertThat(actual.toString(), not(containsString(data2)));
         }
     }
 
@@ -157,7 +161,8 @@ public class ZstandardDecoderTest extends AbstractZstdTest
             RetainableByteBuffer buf = decoder.decode(emptyDirect);
             assertThat(buf, is(notNullValue()));
             assertThat(buf.getByteBuffer().hasRemaining(), is(false));
-            assertThat("Decoder hasn't reached the end of the compressed content", decoder.isFinished(), is(false));
+            IOException ioException = assertThrows(IOException.class, () -> decoder.finishInput());
+            assertThat(ioException.getMessage(), startsWith("Decoder failure"));
             buf.release();
         }
     }
@@ -185,7 +190,7 @@ public class ZstandardDecoderTest extends AbstractZstdTest
                 ByteBuffer readBuffer = readRetainableBuffer.getByteBuffer();
 
                 boolean readDone = false;
-                while (!readDone && !decoder.isFinished())
+                while (!readDone)
                 {
                     try
                     {
@@ -197,6 +202,7 @@ public class ZstandardDecoderTest extends AbstractZstdTest
                             if (len == -1)
                             {
                                 readDone = true;
+                                decoder.finishInput();
                             }
                             if (len > 0)
                             {
@@ -205,7 +211,7 @@ public class ZstandardDecoderTest extends AbstractZstdTest
                                 {
                                     RetainableByteBuffer decoded = decoder.decode(readBuffer);
                                     if (decoded.hasRemaining())
-                                        result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                                        result.append(UTF_8.decode(decoded.getByteBuffer()));
                                     decoded.release();
                                 }
                             }
@@ -213,11 +219,11 @@ public class ZstandardDecoderTest extends AbstractZstdTest
                         else
                         {
                             // decode remaining bytes
-                            while (!decoder.isFinished())
+                            while (!decoder.isOutputComplete())
                             {
                                 RetainableByteBuffer decoded = decoder.decode(EMPTY_DIRECT_BUFFER);
                                 if (decoded.hasRemaining())
-                                    result.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+                                    result.append(UTF_8.decode(decoded.getByteBuffer()));
                                 decoded.release();
                             }
                         }
@@ -310,8 +316,9 @@ public class ZstandardDecoderTest extends AbstractZstdTest
             RetainableByteBuffer output = decoder.decode(compressed);
             assertThat(output, notNullValue());
             assertThat(output.getByteBuffer().remaining(), is(0));
-            assertThat(decoder.isFinished(), is(true));
             output.release();
+            decoder.finishInput();
+            assertTrue(decoder.isOutputComplete(), "Output has been completed");
         }
     }
 
@@ -339,8 +346,9 @@ public class ZstandardDecoderTest extends AbstractZstdTest
             RetainableByteBuffer output = decoder.decode(compressed);
             assertThat(output, notNullValue());
             assertThat(output.getByteBuffer().remaining(), is(0));
-            assertThat(decoder.isFinished(), is(true));
             output.release();
+            decoder.finishInput();
+            assertTrue(decoder.isOutputComplete(), "Output has been completed");
         }
     }
 
@@ -355,7 +363,7 @@ public class ZstandardDecoderTest extends AbstractZstdTest
         {
             ByteBuffer compressed = asDirect(compressedBytes);
             RetainableByteBuffer decoded = decoder.decode(compressed);
-            assertEquals(data, BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            assertEquals(data, UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
         }
     }
@@ -384,15 +392,16 @@ public class ZstandardDecoderTest extends AbstractZstdTest
 
             RetainableByteBuffer decoded = decoder.decode(slice1);
             assertNotNull(decoded);
-            assertThat(decoder.isFinished(), is(false));
-            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actual.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
 
             decoded = decoder.decode(slice2);
             assertNotNull(decoded);
-            assertThat(decoder.isFinished(), is(true));
-            actual.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actual.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
+
+            decoder.finishInput();
+            assertTrue(decoder.isOutputComplete(), "Output has been completed");
 
             assertEquals(data, actual.toString());
         }
@@ -433,7 +442,7 @@ public class ZstandardDecoderTest extends AbstractZstdTest
                 assertThat(output, notNullValue());
                 if (output.hasRemaining())
                 {
-                    actualContent.append(BufferUtil.toString(output.getByteBuffer(), UTF_8));
+                    actualContent.append(UTF_8.decode(output.getByteBuffer()));
                 }
                 output.release();
             }
@@ -462,11 +471,11 @@ public class ZstandardDecoderTest extends AbstractZstdTest
         {
             StringBuilder actualContent = new StringBuilder();
             RetainableByteBuffer decoded = decoder.decode(slice1);
-            actualContent.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actualContent.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
 
             decoded = decoder.decode(slice2);
-            actualContent.append(BufferUtil.toString(decoded.getByteBuffer(), UTF_8));
+            actualContent.append(UTF_8.decode(decoded.getByteBuffer()));
             decoded.release();
 
             assertEquals(data, actualContent.toString());

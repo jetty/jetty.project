@@ -13,17 +13,21 @@
 
 package org.eclipse.jetty.compression.brotli;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteOrder;
-import java.util.Set;
+import java.util.List;
 
 import com.aayushatharva.brotli4j.Brotli4jLoader;
+import com.aayushatharva.brotli4j.decoder.BrotliInputStream;
+import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +40,7 @@ import org.slf4j.LoggerFactory;
 public class BrotliCompression extends Compression
 {
     private static final Logger LOG = LoggerFactory.getLogger(BrotliCompression.class);
+    public static final List<String> EXTENSIONS = List.of("br");
 
     static
     {
@@ -48,8 +53,6 @@ public class BrotliCompression extends Compression
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
     private static final int DEFAULT_MIN_BROTLI_SIZE = 48;
 
-    private ByteBufferPool byteBufferPool;
-    private int bufferSize = 2048;
     private int minCompressSize = DEFAULT_MIN_BROTLI_SIZE;
 
     public BrotliCompression()
@@ -73,26 +76,6 @@ public class BrotliCompression extends Compression
     public void setMinCompressSize(int minCompressSize)
     {
         this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_BROTLI_SIZE);
-    }
-
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
-    {
-        this.byteBufferPool = byteBufferPool;
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return byteBufferPool;
-    }
-
-    public int getBufferSize()
-    {
-        return bufferSize;
-    }
-
-    public void setBufferSize(int bufferSize)
-    {
-        this.bufferSize = bufferSize;
     }
 
     @Override
@@ -123,9 +106,9 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public Set<String> getFileExtensionNames()
+    public List<String> getFileExtensionNames()
     {
-        return Set.of("br");
+        return EXTENSIONS;
     }
 
     @Override
@@ -154,7 +137,7 @@ public class BrotliCompression extends Compression
             return RetainableByteBuffer.EMPTY;
 
         // Can Brotli4J use direct byte buffers?
-        RetainableByteBuffer buffer = this.byteBufferPool.acquire(length, false);
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(length, false);
         buffer.getByteBuffer().order(getByteOrder());
         return buffer;
     }
@@ -173,25 +156,20 @@ public class BrotliCompression extends Compression
     }
 
     @Override
+    public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
+    {
+        return new BrotliOutputStream(out);
+    }
+
+    @Override
     public Encoder newEncoder()
     {
         return new BrotliEncoder(this);
     }
 
     @Override
-    protected void doStart() throws Exception
+    public InputStream newEncoderInputStream(InputStream in) throws IOException
     {
-        super.doStart();
-
-        if (byteBufferPool == null)
-        {
-            byteBufferPool = ByteBufferPool.NON_POOLING;
-        }
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
+        return new BrotliInputStream(in);
     }
 }

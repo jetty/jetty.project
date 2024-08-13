@@ -32,6 +32,8 @@ public class BrotliDecoder implements Compression.Decoder
 
     private final int bufferSize;
     private DecoderJNI.Wrapper decoder;
+    private boolean finishedInput = false;
+    private long bytesRead = 0;
 
     public BrotliDecoder(BrotliCompression brotliCompression)
     {
@@ -56,19 +58,19 @@ public class BrotliDecoder implements Compression.Decoder
      * <p>Decompresses compressed data from a buffer.</p>
      *
      * <p>
-     *     The {@link RetainableByteBuffer} returned by this method
-     *     <em>must</em> be released via {@link RetainableByteBuffer#release()}.
+     * The {@link RetainableByteBuffer} returned by this method
+     * <em>must</em> be released via {@link RetainableByteBuffer#release()}.
      * </p>
      *
      * <p>
-     *     This method may fully consume the input buffer, but return
-     *     only a chunk of the decompressed bytes, to allow applications to
-     *     consume the decompressed buffer before performing further decompression,
-     *     applying backpressure. In this case, this method should be
-     *     invoked again with the same input buffer (even if
-     *     it's already fully consumed) and that will produce another
-     *     buffer of decompressed bytes. Termination happens when the input
-     *     buffer is fully consumed, and the returned buffer is empty.
+     * This method may fully consume the input buffer, but return
+     * only a chunk of the decompressed bytes, to allow applications to
+     * consume the decompressed buffer before performing further decompression,
+     * applying backpressure. In this case, this method should be
+     * invoked again with the same input buffer (even if
+     * it's already fully consumed) and that will produce another
+     * buffer of decompressed bytes. Termination happens when the input
+     * buffer is fully consumed, and the returned buffer is empty.
      * </p>
      *
      * @param compressed the buffer containing compressed data.
@@ -77,6 +79,9 @@ public class BrotliDecoder implements Compression.Decoder
      */
     public RetainableByteBuffer decode(ByteBuffer compressed) throws IOException
     {
+        if (finishedInput && compressed.hasRemaining())
+            throw new IllegalStateException("finishInput already called, cannot read input buffer");
+
         RetainableByteBuffer output = null;
         while (output == null)
         {
@@ -96,6 +101,7 @@ public class BrotliDecoder implements Compression.Decoder
                     ByteBuffer input = decoder.getInputBuffer();
                     BufferUtil.clearToFill(input);
                     int len = BufferUtil.put(compressed, input);
+                    bytesRead += len;
                     decoder.push(len);
 
                     if (len == 0)
@@ -120,13 +126,29 @@ public class BrotliDecoder implements Compression.Decoder
     }
 
     @Override
-    public boolean isFinished()
+    public void finishInput() throws IOException
+    {
+        if (finishedInput)
+            return;
+
+        finishedInput = true;
+
+        if (bytesRead > 0)
+        {
+            DecoderJNI.Status status = decoder.getStatus();
+            if (status != DecoderJNI.Status.OK && status != DecoderJNI.Status.DONE)
+                throw new IOException(String.format("Decoder failure [%s]", status.name()));
+        }
+    }
+
+    @Override
+    public boolean isOutputComplete()
     {
         return switch (decoder.getStatus())
         {
-            case DONE -> true;
-            case ERROR -> true;
-            default -> false;
+            case ERROR, DONE -> true;
+            case NEEDS_MORE_OUTPUT -> false;
+            default -> decoder.hasOutput();
         };
     }
 }

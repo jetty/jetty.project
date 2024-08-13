@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.compression.gzip;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteOrder;
-import java.util.Set;
+import java.util.List;
 import java.util.zip.Deflater;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -23,7 +28,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -41,9 +45,8 @@ public class GzipCompression extends Compression
     public static final CompressedContentFormat GZIP = new CompressedContentFormat(ENCODING_NAME, ".gz");
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
+    public static final List<String> EXTENSIONS = List.of("gz", "gzip");
 
-    private ByteBufferPool byteBufferPool;
-    private int bufferSize = 2048;
     private int minCompressSize = DEFAULT_MIN_GZIP_SIZE;
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
@@ -52,11 +55,6 @@ public class GzipCompression extends Compression
     public GzipCompression()
     {
         super(ENCODING_NAME);
-    }
-
-    public int getBufferSize()
-    {
-        return bufferSize;
     }
 
     /**
@@ -83,11 +81,6 @@ public class GzipCompression extends Compression
         syncFlush = syncFlush;
     }
 
-    public ByteBufferPool getByteBufferPool()
-    {
-        return byteBufferPool;
-    }
-
     public int getMinCompressSize()
     {
         return minCompressSize;
@@ -96,16 +89,6 @@ public class GzipCompression extends Compression
     public void setMinCompressSize(int minCompressSize)
     {
         this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_GZIP_SIZE);
-    }
-
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
-    {
-        this.byteBufferPool = byteBufferPool;
-    }
-
-    public void setBufferSize(int bufferSize)
-    {
-        this.bufferSize = bufferSize;
     }
 
     @Override
@@ -127,7 +110,7 @@ public class GzipCompression extends Compression
         if (length == 0)
             return RetainableByteBuffer.EMPTY;
 
-        RetainableByteBuffer.Mutable buffer = this.byteBufferPool.acquire(length, false);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, false);
         buffer.getByteBuffer().order(getByteOrder());
         return buffer;
     }
@@ -160,9 +143,9 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public Set<String> getFileExtensionNames()
+    public List<String> getFileExtensionNames()
     {
-        return Set.of("gz", "gzip");
+        return EXTENSIONS;
     }
 
     @Override
@@ -193,20 +176,28 @@ public class GzipCompression extends Compression
         return new GzipDecoder(this);
     }
 
+    @Override
+    public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
+    {
+        return new GZIPOutputStream(out);
+    }
+
+    @Override
     public Encoder newEncoder()
     {
         return new GzipEncoder(this);
     }
 
     @Override
+    public InputStream newEncoderInputStream(InputStream in) throws IOException
+    {
+        return new GZIPInputStream(in);
+    }
+
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
-
-        if (byteBufferPool == null)
-        {
-            byteBufferPool = ByteBufferPool.NON_POOLING;
-        }
 
         if (deflaterPool == null)
         {
