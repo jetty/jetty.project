@@ -43,6 +43,8 @@ import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
@@ -122,7 +124,8 @@ public class TransportScenario
             case H2C:
             case H2:
             case FCGI:
-                return new ServerConnector(server, 1, 1, provideServerConnectionFactory(transport));
+                ByteBufferPool bufferPool = new ArrayByteBufferPool.Tracking();
+                return new ServerConnector(server, null, null, bufferPool, 1, 1, provideServerConnectionFactory(transport));
             case H3:
                 HTTP3ServerConnector http3ServerConnector = new HTTP3ServerConnector(server, sslContextFactory, provideServerConnectionFactory(transport));
                 http3ServerConnector.getQuicConfiguration().setPemWorkDirectory(Path.of(System.getProperty("java.io.tmpdir")));
