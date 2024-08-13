@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.12-SNAPSHOT</version>
+  <version>12.0.13-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -164,10 +164,6 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctor.maven.plugin.version>3.0.0</asciidoctor.maven.plugin.version>
-    <asciidoctor.skip>false</asciidoctor.skip>
-    <asciidoctorj-diagram.version>2.3.1</asciidoctorj-diagram.version>
-    <asciidoctorj.version>3.0.0-alpha.2</asciidoctorj.version>
     <asm.version>9.7</asm.version>
     <awaitility.version>4.2.1</awaitility.version>
     <bndlib.version>7.0.0</bndlib.version>
@@ -197,7 +193,7 @@
     <gson.version>2.11.0</gson.version>
     <guava.version>33.2.1-jre</guava.version>
     <guice.version>7.0.0</guice.version>
-    <h2spec.maven.plugin.version>1.0.12</h2spec.maven.plugin.version>
+    <h2spec.maven.plugin.version>1.0.13</h2spec.maven.plugin.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hazelcast.version>5.4.0</hazelcast.version>
     <hibernate.search.version>7.1.1.Final</hibernate.search.version>
@@ -604,16 +600,6 @@
         <groupId>org.apache.maven.resolver</groupId>
         <artifactId>maven-resolver-supplier</artifactId>
         <version>${maven.resolver.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>${asciidoctor.maven.plugin.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctorj</artifactId>
-        <version>${asciidoctorj.version}</version>
       </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
@@ -1462,6 +1448,7 @@
             <timeoutInSeconds>300</timeoutInSeconds>
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
+            <scope>test</scope>
             <settingsFile>${settingsPath}</settingsFile>
             <skipInvocation>${skipTests}</skipInvocation>
             <streamLogsOnFailures>true</streamLogsOnFailures>
@@ -1635,49 +1622,6 @@
           <groupId>org.apache.servicemix.tooling</groupId>
           <artifactId>depends-maven-plugin</artifactId>
           <version>${depends.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.asciidoctor</groupId>
-          <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>${asciidoctor.maven.plugin.version}</version>
-          <configuration>
-            <backend>html5</backend>
-            <requires>
-              <require>asciidoctor-diagram</require>
-            </requires>
-            <attributes>
-              <JDURL>https://eclipse.dev/jetty/javadoc/jetty-12</JDURL>
-              <SRCDIR>${basedir}/..</SRCDIR>
-              <GITBROWSEURL>https://github.com/jetty/jetty.project/tree/jetty-12.0.x</GITBROWSEURL>
-              <GITDOCURL>https://github.com/jetty/jetty.project/tree/jetty-12.0.x/documentation/jetty-documentation/src/main/asciidoc</GITDOCURL>
-              <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
-              <VERSION>${project.version}</VERSION>
-              <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
-              <toc>left</toc>
-              <icons>font</icons>
-            </attributes>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.asciidoctor</groupId>
-              <artifactId>asciidoctorj-diagram</artifactId>
-              <version>${asciidoctorj-diagram.version}</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <id>index</id>
-              <goals>
-                <goal>process-asciidoc</goal>
-              </goals>
-              <phase>generate-resources</phase>
-              <configuration>
-                <sourceDirectory>src/main/asciidoc</sourceDirectory>
-                <sourceDocumentName>index.adoc</sourceDocumentName>
-                <outputDirectory>${project.build.directory}/html</outputDirectory>
-              </configuration>
-            </execution>
-          </executions>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -2266,18 +2210,6 @@
     <profile>
       <id>eclipse-release</id>
       <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.asciidoctor</groupId>
-              <artifactId>asciidoctor-maven-plugin</artifactId>
-              <configuration>
-                <!-- do not skip documentation generation during release -->
-                <skip>false</skip>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -2709,7 +2641,6 @@
     <profile>
       <id>fast</id>
       <properties>
-        <asciidoctor.skip>true</asciidoctor.skip>
         <checkstyle.skip>true</checkstyle.skip>
         <enforcer.skip>true</enforcer.skip>
         <license.skip>true</license.skip>

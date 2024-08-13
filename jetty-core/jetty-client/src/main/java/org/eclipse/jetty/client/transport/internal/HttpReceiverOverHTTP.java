@@ -79,7 +79,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         }
         else
         {
-            responseContentAvailable();
+            HttpExchange exchange = getHttpExchange();
+            if (exchange != null)
+                responseContentAvailable(exchange);
         }
     }
 
