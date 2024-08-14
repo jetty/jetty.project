@@ -101,7 +101,6 @@ public class SerializedInvoker
         return null;
     }
 
-
     /**
      * Arrange for tasks to be invoked, mutually excluded from other tasks.
      * @param tasks The tasks to invoke
@@ -280,7 +279,6 @@ public class SerializedInvoker
             }
             return task.toString();
         }
-
 
         @Override
         public void run()
