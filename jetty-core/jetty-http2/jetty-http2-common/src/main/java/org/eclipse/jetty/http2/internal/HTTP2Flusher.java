@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
@@ -106,6 +108,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
+            if (closed instanceof HpackException.SessionException)
+                closed = null;
             if (closed == null)
             {
                 entries.offer(entry);
@@ -163,7 +167,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
-                throw terminated;
+            {
+                 if (terminated instanceof HpackException.SessionException)
+                     terminated = new ClosedChannelException().initCause(terminated);
+                 else
+                     throw terminated;
+            }
 
             WindowEntry windowEntry;
             while ((windowEntry = windows.poll()) != null)
@@ -247,6 +256,15 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                         LOG.debug("Failure generating {}", entry, failure);
                     entry.failed(failure);
                     pending.remove();
+                }
+                catch (HpackException.SessionException failure)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failure generating {}", entry, failure);
+                    onSessionFailure(failure);
+                    // The method above will try to send
+                    // a GOAWAY, so we will iterate again.
+                    return Action.IDLE;
                 }
                 catch (Throwable failure)
                 {
@@ -339,7 +357,23 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     protected void onCompleteFailure(Throwable x)
     {
         accumulator.release();
+        Throwable closed = fail(x);
+        // If the failure came from within the
+        // flusher, we need to close the connection.
+        if (closed == null)
+            session.onWriteFailure(x);
+    }
 
+    private void onSessionFailure(Throwable x)
+    {
+        accumulator.release();
+        Throwable closed = fail(x);
+        if (closed == null)
+            session.close(ErrorCode.COMPRESSION_ERROR.code, null, NOOP);
+    }
+
+    private Throwable fail(Throwable x)
+    {
         Throwable closed;
         Set<HTTP2Session.Entry> allEntries;
         try (AutoLock ignored = lock.lock())
@@ -361,11 +395,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         allEntries.addAll(pendingEntries);
         pendingEntries.clear();
         allEntries.forEach(entry -> entry.failed(x));
-
-        // If the failure came from within the
-        // flusher, we need to close the connection.
-        if (closed == null)
-            session.onWriteFailure(x);
+        return closed;
     }
 
     public void terminate(Throwable cause)
