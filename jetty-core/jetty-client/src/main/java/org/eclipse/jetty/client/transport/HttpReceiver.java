@@ -317,14 +317,12 @@ public abstract class HttpReceiver
      * This method takes care of ensuring the {@link Content.Source} passed to
      * {@link Response.ContentSourceListener#onContentSource(Response, Content.Source)}
      * calls the demand callback.
-     * The call to the demand callback is serialized with other events.
+     * @param exchange the HTTP exchange
+     * @param invoke when true, the call to the demand callback is serialized with other events.
      */
-    protected void responseContentAvailable(HttpExchange exchange)
+    protected void responseContentAvailable(HttpExchange exchange, boolean invoke)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Invoking responseContentAvailable on {}", this);
-
-        invoker.run(() ->
+        Runnable runnable = () ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseContentAvailable on {}", this);
@@ -333,7 +331,22 @@ public abstract class HttpReceiver
                 return;
 
             contentSource.onDataAvailable();
-        });
+        };
+
+        if (invoke)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Invoking responseContentAvailable on {}", this);
+            invoker.run(runnable);
+        }
+        else
+        {
+            if (!invoker.isCurrentThreadInvoking())
+                throw new IllegalStateException();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Calling responseContentAvailable on {}", this);
+            runnable.run();
+        }
     }
 
     /**
@@ -727,6 +740,8 @@ public abstract class HttpReceiver
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onDataAvailable on {}", this);
+            if (!invoker.isCurrentThreadInvoking())
+                throw new IllegalStateException();
             // The onDataAvailable() method is only ever called
             // by the invoker so avoid using the invoker again.
             invokeDemandCallback(false);
