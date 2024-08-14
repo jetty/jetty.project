@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>11.0.23</version>
+    <version>11.0.24-SNAPSHOT</version>
   </parent>
   <artifactId>infinispan-remote</artifactId>
   <packaging>pom</packaging>

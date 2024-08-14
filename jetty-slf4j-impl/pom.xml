@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>11.0.23</version>
+    <version>11.0.24-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-slf4j-impl</artifactId>
   <name>Jetty :: Slf4j Implementation</name>

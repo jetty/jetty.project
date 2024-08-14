@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
-    <version>11.0.23</version>
+    <version>11.0.24-SNAPSHOT</version>
   </parent>
   <artifactId>websocket-jakarta-common</artifactId>
   <name>Jetty :: Websocket :: jakarta.websocket :: Common</name>
