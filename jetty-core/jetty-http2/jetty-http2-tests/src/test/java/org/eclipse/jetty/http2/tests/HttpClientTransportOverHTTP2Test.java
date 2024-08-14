@@ -106,27 +106,26 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     public void testPropertiesAreForwarded() throws Exception
     {
         HTTP2Client http2Client = new HTTP2Client();
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
-        Executor executor = new QueuedThreadPool();
-        httpClient.setExecutor(executor);
-        httpClient.setConnectTimeout(13);
-        httpClient.setIdleTimeout(17);
-        httpClient.setUseInputDirectByteBuffers(false);
-        httpClient.setUseOutputDirectByteBuffers(false);
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)))
+        {
+            Executor executor = new QueuedThreadPool();
+            httpClient.setExecutor(executor);
+            httpClient.setConnectTimeout(13);
+            httpClient.setIdleTimeout(17);
+            httpClient.setUseInputDirectByteBuffers(false);
+            httpClient.setUseOutputDirectByteBuffers(false);
 
-        httpClient.start();
+            httpClient.start();
 
-        assertTrue(http2Client.isStarted());
-        assertSame(httpClient.getExecutor(), http2Client.getExecutor());
-        assertSame(httpClient.getScheduler(), http2Client.getScheduler());
-        assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
-        assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
-        assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
-        assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
-        assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
-
-        httpClient.stop();
-
+            assertTrue(http2Client.isStarted());
+            assertSame(httpClient.getExecutor(), http2Client.getExecutor());
+            assertSame(httpClient.getScheduler(), http2Client.getScheduler());
+            assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
+            assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
+            assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
+            assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
+            assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
+        }
         assertTrue(http2Client.isStopped());
     }
 
@@ -830,16 +829,16 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     {
         ClientConnector clientConnector = new ClientConnector();
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        clientConnector.setSslContextFactory(sslContextFactory);
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
-        Executor executor = new QueuedThreadPool();
-        clientConnector.setExecutor(executor);
-        httpClient.start();
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)))
+        {
+            Executor executor = new QueuedThreadPool();
+            clientConnector.setExecutor(executor);
+            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+            clientConnector.setSslContextFactory(sslContextFactory);
+            httpClient.start();
 
-        ContentResponse response = httpClient.GET("https://webtide.com/");
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-
-        httpClient.stop();
+            ContentResponse response = httpClient.GET("https://webtide.com/");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
     }
 }
