@@ -206,32 +206,31 @@ public class SerializedInvoker
         @Override
         public void run()
         {
-            _invokerThread = Thread.currentThread();
-            try
+            Link link = this;
+            while (link != null)
             {
-                Link link = this;
-                while (link != null)
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
+                _invokerThread = Thread.currentThread();
+                try
+                {
+                    link._task.run();
+                }
+                catch (Throwable t)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
-                    try
-                    {
-                        link._task.run();
-                    }
-                    catch (Throwable t)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
-                        onError(link._task, t);
-                    }
-                    link = link.next();
-                    if (link == null && LOG.isDebugEnabled())
-                        LOG.debug("Next link is null, execution is over in {}", SerializedInvoker.this);
+                        LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
+                    onError(link._task, t);
                 }
-            }
-            finally
-            {
-                _invokerThread = null;
+                finally
+                {
+                    // _invokerThread must be nulled before calling link.next() as
+                    // once the latter has executed, another thread can enter Link.run().
+                    _invokerThread = null;
+                }
+                link = link.next();
+                if (link == null && LOG.isDebugEnabled())
+                    LOG.debug("Next link is null, execution is over in {}", SerializedInvoker.this);
             }
         }
 
