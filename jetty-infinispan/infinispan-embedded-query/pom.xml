@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>10.0.23</version>
+    <version>10.0.24-SNAPSHOT</version>
   </parent>
   <artifactId>infinispan-embedded-query</artifactId>
   <name>Jetty :: Infinispan Session Manager Embedded with Querying</name>

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-jpms</artifactId>
-    <version>10.0.23</version>
+    <version>10.0.24-SNAPSHOT</version>
   </parent>
   <artifactId>test-jpms-websocket-core</artifactId>
   <packaging>jar</packaging>
