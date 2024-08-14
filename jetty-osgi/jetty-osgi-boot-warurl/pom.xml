@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>11.0.23-SNAPSHOT</version>
+    <version>11.0.23</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-osgi-boot-warurl</artifactId>

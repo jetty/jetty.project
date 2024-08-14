@@ -1,4 +1,6 @@
-jetty-11.0.23-SNAPSHOT
+jetty-11.0.23 - 13 August 2024
+ + 12041 backport tracking retainable pool from Jetty 12
+ + 12156 Improvements to HttpConnection when reading 0 bytes
 
 jetty-11.0.22 - 27 June 2024
  + 11917 Update XML configure.dtd locations to new jetty.org website

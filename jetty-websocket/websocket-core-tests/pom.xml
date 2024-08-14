@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
-    <version>11.0.23-SNAPSHOT</version>
+    <version>11.0.23</version>
   </parent>
   <artifactId>websocket-core-tests</artifactId>
   <name>Jetty :: Websocket :: Core :: Tests</name>

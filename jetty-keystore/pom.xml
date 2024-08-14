@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>11.0.23-SNAPSHOT</version>
+    <version>11.0.23</version>
   </parent>
   <artifactId>jetty-keystore</artifactId>
   <packaging>jar</packaging>

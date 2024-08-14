@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.http2</groupId>
     <artifactId>http2-parent</artifactId>
-    <version>11.0.23-SNAPSHOT</version>
+    <version>11.0.23</version>
   </parent>
   <artifactId>http2-client</artifactId>
   <name>Jetty :: HTTP2 :: Client</name>

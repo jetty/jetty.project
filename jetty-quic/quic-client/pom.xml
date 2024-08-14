@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
     <artifactId>quic-parent</artifactId>
-    <version>11.0.23-SNAPSHOT</version>
+    <version>11.0.23</version>
   </parent>
   <artifactId>quic-client</artifactId>
   <name>Jetty :: QUIC :: Client</name>

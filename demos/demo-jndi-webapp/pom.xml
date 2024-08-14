@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>11.0.23-SNAPSHOT</version>
+    <version>11.0.23</version>
   </parent>
   <artifactId>demo-jndi-webapp</artifactId>
   <packaging>war</packaging>
