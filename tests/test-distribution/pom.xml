@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>10.0.23-SNAPSHOT</version>
+    <version>10.0.23</version>
   </parent>
   <artifactId>test-distribution</artifactId>
   <packaging>jar</packaging>

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.23-SNAPSHOT</version>
+    <version>10.0.23</version>
   </parent>
   <artifactId>jetty-hazelcast</artifactId>
   <name>Jetty :: Hazelcast Session Manager</name>

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
     <artifactId>quic-quiche</artifactId>
-    <version>10.0.23-SNAPSHOT</version>
+    <version>10.0.23</version>
   </parent>
   <artifactId>quic-quiche-common</artifactId>
   <name>Jetty :: QUIC :: Quiche :: Common</name>
