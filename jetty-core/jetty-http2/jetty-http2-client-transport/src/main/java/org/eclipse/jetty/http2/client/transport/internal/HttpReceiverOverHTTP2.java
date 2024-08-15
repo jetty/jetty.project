@@ -211,7 +211,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return null;
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseContentAvailable(exchange));
+        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseContentAvailable(exchange, true));
     }
 
     @Override

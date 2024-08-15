@@ -317,21 +317,10 @@ public abstract class HttpReceiver
      * This method takes care of ensuring the {@link Content.Source} passed to
      * {@link Response.ContentSourceListener#onContentSource(Response, Content.Source)}
      * calls the demand callback.
-     * The call to the demand callback is serialized with other events.
+     * @param exchange the HTTP exchange
      */
     protected void responseContentAvailable(HttpExchange exchange)
     {
-        Runnable runnable = () ->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Executing responseContentAvailable on {}", this);
-
-            if (exchange.isResponseCompleteOrTerminated())
-                return;
-
-            contentSource.onDataAvailable();
-        };
-
         // Given:
         // - This method must always call onDataAvailable() as the ContentSource is the only source of truth knowing if there is a
         //   pending demand or not, and that must always be done by the invoker.
@@ -345,6 +334,17 @@ public abstract class HttpReceiver
         // There are then two processDemand() invocations enqueued, and since they call HttpReceiver.read(true) when no content is readily available,
         // they can both try to register fill interest and eventually throw a ReadPendingException.
         // So onDataAvailable() must always be executed from the invoker but also immediately.
+
+        Runnable runnable = () ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Executing responseContentAvailable on {}", this);
+
+            if (exchange.isResponseCompleteOrTerminated())
+                return;
+
+            contentSource.onDataAvailable();
+        };
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} responseContentAvailable on {}", invoker.isCurrentThreadInvoking() ? "Invoking" : "Calling", this);
@@ -746,6 +746,8 @@ public abstract class HttpReceiver
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onDataAvailable on {}", this);
+            if (!invoker.isCurrentThreadInvoking())
+                throw new IllegalStateException();
             // The onDataAvailable() method is only ever called
             // by the invoker so avoid using the invoker again.
             invokeDemandCallback(false);

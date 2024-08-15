@@ -42,7 +42,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         {
             HttpExchange exchange = getHttpExchange();
             if (exchange != null)
-                responseContentAvailable(exchange);
+                responseContentAvailable(exchange, true);
         }
     }
 
@@ -117,7 +117,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         // Retain the chunk because it is stored for later reads.
         chunk.retain();
         this.chunk = chunk;
-        responseContentAvailable(exchange);
+        responseContentAvailable(exchange, false);
     }
 
     void end(HttpExchange exchange)
