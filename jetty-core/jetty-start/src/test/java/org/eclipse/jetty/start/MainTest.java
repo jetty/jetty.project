@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -98,7 +97,7 @@ public class MainTest
     public void testUnknownDistroCommand() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        Path testJettyHome = MavenPaths.targetTestDir("dist-home");
+        Path testJettyHome = MavenPaths.findTestResourceDir("dist-home");
         Path testJettyBase = MavenPaths.targetTestDir("base-example-unknown");
         FS.ensureDirectoryExists(testJettyBase);
         Path zedIni = testJettyBase.resolve("start.d/zed.ini");
@@ -158,7 +157,7 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        Path homePath = MavenTestingUtils.getTestResourcePathDir("dist-home").toRealPath();
+        Path homePath = MavenPaths.findTestResourceDir("dist-home");
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
 
