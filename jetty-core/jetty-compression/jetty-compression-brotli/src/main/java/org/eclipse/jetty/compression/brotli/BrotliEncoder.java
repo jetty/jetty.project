@@ -23,7 +23,6 @@ import com.aayushatharva.brotli4j.encoder.Encoder;
 import com.aayushatharva.brotli4j.encoder.PreparedDictionary;
 import org.eclipse.jetty.compression.BufferQueue;
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -43,7 +42,7 @@ public class BrotliEncoder implements Compression.Encoder
     {
         try
         {
-            this.captureChannel = new CaptureByteChannel(brotliCompression.getByteBufferPool());
+            this.captureChannel = new CaptureByteChannel();
             Encoder.Parameters params = brotliCompression.getEncoderParams();
             this.encoder = new BrotliEncoderChannel(captureChannel, params);
         }
@@ -134,13 +133,8 @@ public class BrotliEncoder implements Compression.Encoder
 
     private static class CaptureByteChannel implements WritableByteChannel
     {
-        private final BufferQueue bufferQueue;
+        private final BufferQueue bufferQueue = new BufferQueue();
         private boolean closed = false;
-
-        public CaptureByteChannel(ByteBufferPool byteBufferPool)
-        {
-            this.bufferQueue = new BufferQueue(byteBufferPool);
-        }
 
         public boolean hasOutput()
         {
@@ -179,7 +173,7 @@ public class BrotliEncoder implements Compression.Encoder
                 LOG.debug("captured.write({})", BufferUtil.toDetailString(src));
 
             int len = src.remaining();
-            bufferQueue.add(src);
+            bufferQueue.addCopyOf(src);
             return len;
         }
     }

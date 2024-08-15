@@ -53,7 +53,7 @@ class GzipDecoder implements Compression.Decoder, Destroyable
     public GzipDecoder(GzipCompression gzipCompression)
     {
         this.compression = Objects.requireNonNull(gzipCompression);
-        this.outputBuffers = new BufferQueue(compression.getByteBufferPool());
+        this.outputBuffers = new BufferQueue();
         this.inflaterEntry = gzipCompression.getInflaterPool().acquire();
         this.inflater = inflaterEntry.get();
         this.inflater.reset();
@@ -93,6 +93,7 @@ class GzipDecoder implements Compression.Decoder, Destroyable
             decodeChunks(compressed);
 
         RetainableByteBuffer uncompressed = outputBuffers.getRetainableBuffer();
+        LOG.debug("decode({}) - uncompressed:{}", compressed, uncompressed);
         if (uncompressed == null)
             return compression.acquireByteBuffer(0);
 
@@ -181,7 +182,7 @@ class GzipDecoder implements Compression.Decoder, Destroyable
 
                     case DATA:
                     {
-                        while (true)
+//                        while (true)
                         {
                             try
                             {
@@ -190,9 +191,9 @@ class GzipDecoder implements Compression.Decoder, Destroyable
                                 int pos = BufferUtil.flipToFill(decoded);
                                 inflater.inflate(decoded);
                                 BufferUtil.flipToFlush(decoded, pos);
-                                if (decoded.hasRemaining())
+                                if (buffer.hasRemaining())
                                 {
-                                    outputBuffers.add(buffer);
+                                    outputBuffers.addCopyOf(buffer);
                                 }
                                 else
                                 {

@@ -46,7 +46,7 @@ public class ZstandardEncoder implements Compression.Encoder
         this.compression = compression;
         this.compressCtx = new ZstdCompressCtx();
         this.compressCtx.setLevel(compression.getCompressionLevel());
-        this.outputQueue = new BufferQueue(compression.getByteBufferPool());
+        this.outputQueue = new BufferQueue();
     }
 
     @Override
@@ -70,7 +70,7 @@ public class ZstandardEncoder implements Compression.Encoder
             compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), content, EndDirective.CONTINUE);
             outputBuf.getByteBuffer().flip();
             if (outputBuf.getByteBuffer().hasRemaining())
-                outputQueue.add(outputBuf);
+                outputQueue.addCopyOf(outputBuf);
             else
                 outputBuf.release();
         }
@@ -90,7 +90,7 @@ public class ZstandardEncoder implements Compression.Encoder
         this.compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), EMPTY_DIRECT_BUFFER, EndDirective.END);
         outputBuf.getByteBuffer().flip();
         if (outputBuf.getByteBuffer().hasRemaining())
-            outputQueue.add(outputBuf);
+            outputQueue.addCopyOf(outputBuf);
         else
             outputBuf.release();
 
@@ -106,7 +106,7 @@ public class ZstandardEncoder implements Compression.Encoder
             outputBuf.getByteBuffer().flip();
             if (outputBuf.getByteBuffer().hasRemaining())
             {
-                outputQueue.add(outputBuf);
+                outputQueue.addCopyOf(outputBuf);
             }
             else
             {

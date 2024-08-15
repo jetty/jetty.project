@@ -18,8 +18,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,47 +32,49 @@ public class BufferQueue implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(BufferQueue.class);
     private final Queue<RetainableByteBuffer> bufferQueue = new ArrayDeque<>();
-    private final ByteBufferPool byteBufferPool;
     private RetainableByteBuffer activeBuffer;
 
-    public BufferQueue(ByteBufferPool byteBufferPool)
+    /**
+     * Add a {@link RetainableByteBuffer} to the queue.
+     *
+     * <p>
+     *     Note: The {@code BufferQueue} implementation is responsible
+     *     for managing this buffer, including calling {@link RetainableByteBuffer#release()}
+     * </p>
+     *
+     * @param buffer the buffer to add. (must have remaining bytes, this queue is not meant to hold empty buffers)
+     */
+    public void addCopyOf(RetainableByteBuffer buffer)
     {
-        this.byteBufferPool = byteBufferPool;
-    }
+        assert buffer.hasRemaining();
 
-    public void add(RetainableByteBuffer buffer)
-    {
-        buffer.retain();
         bufferQueue.add(buffer);
     }
 
-    public void add(ByteBuffer buffer)
+    /**
+     * Add a {@link ByteBuffer} to the queue, the contents of this buffer
+     * will be copied to a new {@link RetainableByteBuffer} for the queue to manage.
+     *
+     * <p>
+     *     Note: The {@code BufferQueue} implementation is responsible
+     *     for managing this buffer, including any call to {@link RetainableByteBuffer#release()}
+     *     (if need be)
+     * </p>
+     *
+     * @param buffer the buffer to add. (must have remaining bytes, this queue is not meant to hold empty buffers)
+     */
+    public void addCopyOf(ByteBuffer buffer)
     {
-        add(copyOf(buffer));
+        assert buffer.hasRemaining();
+
+        bufferQueue.add(copyOf(buffer));
     }
 
     @Override
     public void close()
     {
-        if (activeBuffer != null)
-            activeBuffer.release();
+        releaseActiveBuffer();
         bufferQueue.forEach(RetainableByteBuffer::release);
-    }
-
-    public RetainableByteBuffer getRetainableBuffer()
-    {
-        if (activeBuffer != null && !activeBuffer.hasRemaining())
-        {
-            activeBuffer.release();
-            activeBuffer = null;
-        }
-
-        if (activeBuffer == null)
-            activeBuffer = bufferQueue.poll();
-
-        if (activeBuffer != null)
-            return activeBuffer;
-        return null;
     }
 
     public ByteBuffer getBuffer()
@@ -83,22 +85,61 @@ public class BufferQueue implements Closeable
         return buffer.getByteBuffer();
     }
 
+    /**
+     * Get the current active Retainable Buffer.
+     * <p>
+     *     Note: The {@code BufferQueue} implementation is responsible
+     *     for managing this buffer, including calling {@link RetainableByteBuffer#release()}
+     * </p>
+     * @return the active buffer
+     */
+    public RetainableByteBuffer getRetainableBuffer()
+    {
+        if (activeBuffer != null)
+        {
+            if (activeBuffer.hasRemaining())
+                return activeBuffer;
+            else
+                releaseActiveBuffer();
+        }
+
+        activeBuffer = bufferQueue.poll();
+
+        if (activeBuffer != null)
+            return activeBuffer;
+        return null;
+    }
+
     public boolean hasRemaining()
     {
-        if (activeBuffer != null && activeBuffer.hasRemaining())
-            return true;
-
-        return !bufferQueue.isEmpty();
+        if (activeBuffer != null)
+        {
+            if (activeBuffer.hasRemaining())
+                return true;
+        }
+        RetainableByteBuffer buffer = bufferQueue.peek();
+        if (buffer != null)
+            return buffer.hasRemaining();
+        return false;
     }
 
     private RetainableByteBuffer copyOf(ByteBuffer buf)
     {
         if (buf == null)
             return null;
-        RetainableByteBuffer.Mutable copy = byteBufferPool.acquire(buf.remaining(), buf.isDirect());
-        copy.getByteBuffer().clear();
-        copy.getByteBuffer().put(buf);
-        copy.getByteBuffer().flip();
-        return copy;
+        ByteBuffer copy = BufferUtil.allocate(buf.remaining(), buf.isDirect());
+        copy.clear();
+        copy.put(buf);
+        copy.flip();
+        return RetainableByteBuffer.wrap(copy);
+    }
+
+    private void releaseActiveBuffer()
+    {
+        if (activeBuffer == null)
+            return;
+        if (activeBuffer.getRetained() > 0)
+            activeBuffer.release();
+        activeBuffer = null;
     }
 }

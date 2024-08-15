@@ -21,7 +21,10 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -43,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractCompressionTest
 {
@@ -73,6 +77,8 @@ public abstract class AbstractCompressionTest
 
     private final AtomicInteger poolCounter = new AtomicInteger();
     protected Compression compression;
+    protected Set<RetainableByteBuffer> activebuffers = new TreeSet<>(
+        Comparator.comparing((buf) -> buf.getByteBuffer().hashCode()));
 
     protected void startCompression(Class<Compression> compressionClass) throws Exception
     {
@@ -94,12 +100,11 @@ public abstract class AbstractCompressionTest
                 poolCounter.incrementAndGet();
                 RetainableByteBuffer.Mutable buf = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
                 {
-
                     @Override
                     public void retain()
                     {
                         if (logger.isDebugEnabled())
-                            logger.debug("retain() - buf={}", this, new RuntimeException("retain()"));
+                            logger.debug("retain() - buf={} {}", this, relevantStack());
                         super.retain();
                     }
 
@@ -108,14 +113,18 @@ public abstract class AbstractCompressionTest
                     {
                         boolean released = super.release();
                         if (logger.isDebugEnabled())
-                            logger.debug("release() - released={}, buf={}", released, this, new RuntimeException("release()"));
+                            logger.debug("release() - released={}, buf={} {}", released, this, relevantStack());
                         if (released)
+                        {
+                            activebuffers.remove(this);
                             poolCounter.decrementAndGet();
+                        }
                         return released;
                     }
                 };
                 if (logger.isDebugEnabled())
-                    logger.debug("acquire() - buf={}", buf, new RuntimeException("acquire()"));
+                    logger.debug("acquire() - buf={} {}", buf, relevantStack());
+                activebuffers.add(buf);
                 return buf;
             }
         };
@@ -123,10 +132,40 @@ public abstract class AbstractCompressionTest
         compression.start();
     }
 
+    private String relevantStack()
+    {
+        StackTraceElement[] elems = Thread.currentThread().getStackTrace();
+        StringBuilder ret = new StringBuilder();
+        for (StackTraceElement elem: elems)
+        {
+            if (elem.getClassName().startsWith("org.eclipse.jetty.") && !elem.getMethodName().equals("relevantStack"))
+            {
+                ret.append("\n    ");
+                ret.append(elem.getClassName());
+                ret.append(".").append(elem.getMethodName());
+                ret.append("(").append(elem.getFileName());
+                ret.append(":").append(elem.getLineNumber());
+                ret.append(")");
+            }
+        }
+        return ret.toString();
+    }
+
     @AfterEach
     public void stopCompression()
     {
         LifeCycle.stop(compression);
+        assertTrue(activebuffers.isEmpty(), () ->
+        {
+            StringBuilder msg = new StringBuilder();
+            msg.append("Unreleased Buffers: ");
+            activebuffers.forEach((buf) ->
+            {
+                msg.append("\n LEAKED: ");
+                msg.append(buf.toString());
+            });
+            return msg.toString();
+        });
         assertThat(poolCounter.get(), is(0));
     }
 

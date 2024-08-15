@@ -29,6 +29,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,6 +46,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class CompressionDecoderTest extends AbstractCompressionTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(CompressionDecoderTest.class);
+
     @ParameterizedTest
     @MethodSource("compressions")
     public void testBigBlock(Class<Compression> compressionClass) throws Exception
@@ -231,6 +235,7 @@ public class CompressionDecoderTest extends AbstractCompressionTest
         }
 
         String expected = Files.readString(uncompressedPath);
+        assertEquals(expected.length(), result.toString().length(), "Length");
         assertEquals(expected, result.toString());
     }
 
@@ -517,6 +522,7 @@ public class CompressionDecoderTest extends AbstractCompressionTest
             while (bytes.hasRemaining())
             {
                 RetainableByteBuffer part = decoder.decode(bytes);
+                LOG.debug("decoder.decode({}) - part:{}", bytes, part);
                 result.append(UTF_8.decode(part.getByteBuffer()));
                 part.release();
             }
