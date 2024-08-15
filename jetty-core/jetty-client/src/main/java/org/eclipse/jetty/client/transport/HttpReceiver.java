@@ -321,10 +321,7 @@ public abstract class HttpReceiver
      */
     protected void responseContentAvailable(HttpExchange exchange)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Invoking responseContentAvailable on {}", this);
-
-        invoker.run(() ->
+        Runnable runnable = () ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Executing responseContentAvailable on {}", this);
@@ -333,7 +330,29 @@ public abstract class HttpReceiver
                 return;
 
             contentSource.onDataAvailable();
-        });
+        };
+
+        // Given:
+        // - This method must always call onDataAvailable() as the ContentSource is the only source of truth knowing if there is a
+        //   pending demand or not, and that must always be done by the invoker.
+        // - This method is called sometimes from the context of the invoker (e.g.: read() from within a demand callback) and
+        //   sometimes not (e.g.: read() from a naked thread).
+        // Then:
+        // If the consuming loop is a read-demand one (i.e.: demand is used to loop) then read() enqueues a onDataAvailable() invocation
+        // then demand() enqueues a processDemand() invocation before control is returned to the invoker.
+        // onDataAvailable() runs the demand callback that enqueues another onDataAvailable() invocation because of read() then another
+        // processDemand() invocation because of demand().
+        // There are then two processDemand() invocations enqueued, and since they call HttpReceiver.read(true) when no content is readily available,
+        // they can both try to register fill interest and eventually throw a ReadPendingException.
+        // So onDataAvailable() must always be executed from the invoker but also immediately.
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} responseContentAvailable on {}", invoker.isCurrentThreadInvoking() ? "Invoking" : "Calling", this);
+
+        if (invoker.isCurrentThreadInvoking())
+            runnable.run();
+        else
+            invoker.run(runnable);
     }
 
     /**
