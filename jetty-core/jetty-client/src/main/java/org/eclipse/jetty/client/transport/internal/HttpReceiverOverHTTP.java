@@ -81,7 +81,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             HttpExchange exchange = getHttpExchange();
             if (exchange != null)
-                responseContentAvailable(exchange, true);
+                responseContentAvailable(exchange);
         }
     }
 
@@ -458,7 +458,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         if (LOG.isDebugEnabled())
             LOG.debug("Setting action to responseContentAvailable on {}", this);
-        if (getAndSetAction(() -> responseContentAvailable(exchange, false)) != null)
+        if (getAndSetAction(() -> responseContentAvailable(exchange)) != null)
             throw new IllegalStateException();
         if (getHttpConnection().isFillInterested())
             throw new IllegalStateException();
