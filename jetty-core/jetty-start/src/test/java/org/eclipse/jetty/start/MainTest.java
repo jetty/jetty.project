@@ -14,7 +14,6 @@
 package org.eclipse.jetty.start;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -67,7 +66,7 @@ public class MainTest
     public void testListConfig() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
+        Path testJettyHome = MavenPaths.findTestResourceDir("dist-home");
         cmdLineArgs.add("user.dir=" + testJettyHome);
         cmdLineArgs.add("-Duser.dir=foo"); // used to test "source" display on "Java Environment"
         cmdLineArgs.add("jetty.home=" + testJettyHome);
@@ -99,8 +98,8 @@ public class MainTest
     public void testUnknownDistroCommand() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
-        Path testJettyBase = MavenTestingUtils.getTargetTestingPath("base-example-unknown");
+        Path testJettyHome = MavenPaths.targetTestDir("dist-home");
+        Path testJettyBase = MavenPaths.targetTestDir("base-example-unknown");
         FS.ensureDirectoryExists(testJettyBase);
         Path zedIni = testJettyBase.resolve("start.d/zed.ini");
         FS.ensureDirectoryExists(zedIni.getParent());
