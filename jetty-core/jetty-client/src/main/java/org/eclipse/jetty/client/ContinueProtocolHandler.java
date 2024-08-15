@@ -39,10 +39,14 @@ public class ContinueProtocolHandler implements ProtocolHandler
     @Override
     public boolean accept(Request request, Response response)
     {
-        boolean is100 = response.getStatus() == HttpStatus.CONTINUE_100;
-        boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
         boolean handled100 = request.getAttributes().containsKey(ATTRIBUTE);
-        return (is100 || expect100) && !handled100;
+        if (handled100)
+            return false;
+        boolean is100 = response.getStatus() == HttpStatus.CONTINUE_100;
+        if (is100)
+            return true;
+        // Also handle non-100 responses, because we need to complete the request to complete the whole exchange.
+        return request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
     }
 
     @Override

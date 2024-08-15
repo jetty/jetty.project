@@ -1117,8 +1117,6 @@ public class HttpChannelState implements HttpChannel, Components
      */
     public static class ChannelResponse implements Response, Callback
     {
-        private static final CompletableFuture<Void> UNEXPECTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
-        private static final CompletableFuture<Void> COMMITTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("Committed"));
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
         protected int _status;
@@ -1408,12 +1406,14 @@ public class HttpChannelState implements HttpChannel, Components
                 if (status == HttpStatus.CONTINUE_100)
                 {
                     if (!httpChannelState._expects100Continue)
-                        return UNEXPECTED_100_CONTINUE;
+                        return CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
+                    if (_request.getLength() == 0)
+                        return CompletableFuture.completedFuture(null);
                     httpChannelState._expects100Continue = false;
                 }
 
                 if (_httpFields.isCommitted())
-                    return status == HttpStatus.CONTINUE_100 ? COMMITTED_100_CONTINUE : CompletableFuture.failedFuture(new IllegalStateException("Committed"));
+                    return CompletableFuture.failedFuture(new IllegalStateException("Committed"));
                 if (_writeCallback != null)
                     return CompletableFuture.failedFuture(new WritePendingException());
 
