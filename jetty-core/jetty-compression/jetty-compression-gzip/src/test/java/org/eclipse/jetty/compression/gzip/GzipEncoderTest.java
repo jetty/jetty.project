@@ -22,6 +22,7 @@ import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -34,6 +35,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 
+@Disabled("Individual tests to be moved to jetty-compression-tests")
 public class GzipEncoderTest extends AbstractGzipTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(GzipEncoderTest.class);
@@ -97,8 +99,8 @@ public class GzipEncoderTest extends AbstractGzipTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "precompressed/test_quotes.txt",
-        "precompressed/text-long.txt",
+        "texts/test_quotes.txt",
+        "texts/text-long.txt",
     })
     public void testEncodeTextMultipleSmallBuffers(String resourceName) throws Exception
     {

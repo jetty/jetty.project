@@ -36,6 +36,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,6 +49,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 
+@Disabled("Individual tests to be moved to jetty-compression-tests")
 @ExtendWith(WorkDirExtension.class)
 public class BrotliEncoderTest extends AbstractBrotliTest
 {
@@ -58,7 +60,7 @@ public class BrotliEncoderTest extends AbstractBrotliTest
     public void testBrotliEncoderChannel() throws IOException
     {
         Brotli4jLoader.ensureAvailability();
-        Path textFile = MavenPaths.findTestResourceFile("precompressed/test_quotes.txt");
+        Path textFile = MavenPaths.findTestResourceFile("texts/test_quotes.txt");
 
         Encoder.Parameters encoderParams = new Encoder.Parameters();
         encoderParams.setQuality(5);
@@ -94,7 +96,7 @@ public class BrotliEncoderTest extends AbstractBrotliTest
     public void testBrotliOutputStream() throws IOException
     {
         Brotli4jLoader.ensureAvailability();
-        Path textFile = MavenPaths.findTestResourceFile("precompressed/test_quotes.txt");
+        Path textFile = MavenPaths.findTestResourceFile("texts/test_quotes.txt");
 
         Encoder.Parameters encoderParams = new Encoder.Parameters();
         encoderParams.setQuality(5);
@@ -170,9 +172,9 @@ public class BrotliEncoderTest extends AbstractBrotliTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "precompressed/test_quotes.txt",
-        "precompressed/text-long.txt",
-        "precompressed/logo.svg",
+        "texts/test_quotes.txt",
+        "texts/text-long.txt",
+        "texts/logo.svg",
     })
     public void testEncodeTextMultipleSmallBuffers(String resourceName) throws Exception
     {

@@ -17,23 +17,22 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractGzipTest
 {
@@ -43,15 +42,16 @@ public abstract class AbstractGzipTest
     // Unsigned Integer Max == 2^32
     protected static final long UINT_MAX = 0xFFFFFFFFL;
 
-    private final AtomicInteger poolCounter = new AtomicInteger();
-
-    @AfterEach
-    public void after()
-    {
-        assertThat(poolCounter.get(), is(0));
-    }
-
+    protected ArrayByteBufferPool.Tracking pool;
+    protected ByteBufferPool.Sized sizedPool;
     protected GzipCompression gzip;
+
+    @BeforeEach
+    public void initPool()
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
+    }
 
     protected void startGzip() throws Exception
     {
@@ -64,47 +64,20 @@ public abstract class AbstractGzipTest
         if (bufferSize > 0)
             gzip.setBufferSize(bufferSize);
 
-        ByteBufferPool pool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
-        {
-            @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
-            {
-                poolCounter.incrementAndGet();
-                RetainableByteBuffer.Mutable buf = new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
-                {
-                    @Override
-                    public void retain()
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("retain() - buf={}", this, new RuntimeException("retain()"));
-                        super.retain();
-                    }
-
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("release() - released={}, buf={}", released, this, new RuntimeException("release()"));
-                        if (released)
-                            poolCounter.decrementAndGet();
-                        return released;
-                    }
-                };
-                if (LOG.isDebugEnabled())
-                    LOG.debug("acquire() - buf={}", buf, new RuntimeException("acquire()"));
-                return buf;
-            }
-        };
         gzip.setByteBufferPool(pool);
         gzip.start();
     }
 
     @AfterEach
-    public void stopGzip()
+    public void tearDown()
     {
         LifeCycle.stop(gzip);
-        assertThat(poolCounter.get(), is(0));
+        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
+    }
+
+    public static List<String> textResources()
+    {
+        return List.of("texts/logo.svg", "texts/long.txt", "texts/quotes.txt");
     }
 
     /**

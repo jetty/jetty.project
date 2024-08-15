@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Disabled("Individual tests to be moved to jetty-compression-tests")
 public class ZstandardDecoderTest extends AbstractZstdTest
 {
     @Test
@@ -480,16 +481,6 @@ public class ZstandardDecoderTest extends AbstractZstdTest
 
             assertEquals(data, actualContent.toString());
         }
-    }
-
-    @Test
-    public void testStripSuffixes()
-    {
-        ZstandardCompression zstd = new ZstandardCompression();
-        assertThat(zstd.stripSuffixes("12345"), is("12345"));
-        assertThat(zstd.stripSuffixes("12345, 666" + zstd.getEtagSuffix()), is("12345, 666"));
-        assertThat(zstd.stripSuffixes("12345, 666" + zstd.getEtagSuffix() + ",W/\"9999" + zstd.getEtagSuffix() + "\""),
-            is("12345, 666,W/\"9999\""));
     }
 
     public static class ZstandardDecoderOutputStream extends OutputStream

@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -50,6 +51,7 @@ public class GzipCompression extends Compression
     private int minCompressSize = DEFAULT_MIN_GZIP_SIZE;
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
+    private int compressionLevel = Deflater.BEST_SPEED;
     private boolean syncFlush;
 
     public GzipCompression()
@@ -79,6 +81,16 @@ public class GzipCompression extends Compression
     public void setSyncFlush(boolean syncFlush)
     {
         syncFlush = syncFlush;
+    }
+
+    public int getCompressionLevel()
+    {
+        return compressionLevel;
+    }
+
+    public void setCompressionLevel(int compressionLevel)
+    {
+        this.compressionLevel = compressionLevel;
     }
 
     public int getMinCompressSize()
@@ -183,6 +195,12 @@ public class GzipCompression extends Compression
     }
 
     @Override
+    public Content.Source newDecoderSource(Content.Source source)
+    {
+        return new GzipDecoderSource(this, source);
+    }
+
+    @Override
     public Encoder newEncoder()
     {
         return new GzipEncoder(this);
@@ -192,6 +210,12 @@ public class GzipCompression extends Compression
     public InputStream newEncoderInputStream(InputStream in) throws IOException
     {
         return new GZIPInputStream(in);
+    }
+
+    @Override
+    public Content.Sink newEncoderSink(Content.Sink sink)
+    {
+        return new GzipEncoderSink(this, sink);
     }
 
     @Override

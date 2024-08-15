@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Disabled("Individual tests to be moved to jetty-compression-tests")
 public class BrotliDecoderTest extends AbstractBrotliTest
 {
     @Test
@@ -479,16 +480,6 @@ public class BrotliDecoderTest extends AbstractBrotliTest
 
             assertEquals(data, actualContent.toString());
         }
-    }
-
-    @Test
-    public void testStripSuffixes()
-    {
-        BrotliCompression brotli = new BrotliCompression();
-        assertThat(brotli.stripSuffixes("12345"), is("12345"));
-        assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix()), is("12345, 666"));
-        assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix() + ",W/\"9999" + brotli.getEtagSuffix() + "\""),
-            is("12345, 666,W/\"9999\""));
     }
 
     public static class BrotliDecoderOutputStream extends OutputStream

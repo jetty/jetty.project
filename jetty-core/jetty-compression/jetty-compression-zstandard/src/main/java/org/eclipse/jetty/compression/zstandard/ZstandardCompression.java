@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,6 +174,12 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
+    public Content.Source newDecoderSource(Content.Source source)
+    {
+        return new ZstandardDecoderSource(this, source);
+    }
+
+    @Override
     public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
     {
         return new ZstdOutputStreamNoFinalizer(out);
@@ -188,5 +195,11 @@ public class ZstandardCompression extends Compression
     public InputStream newEncoderInputStream(InputStream in) throws IOException
     {
         return new ZstdInputStreamNoFinalizer(in);
+    }
+
+    @Override
+    public Content.Sink newEncoderSink(Content.Sink sink)
+    {
+        return new ZstandardEncoderSink(this, sink);
     }
 }

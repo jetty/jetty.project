@@ -1,0 +1,31 @@
+package org.eclipse.jetty.compression.brotli;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class BrotliDecoderSourceTest extends AbstractBrotliTest
+{
+    @ParameterizedTest
+    @MethodSource("textResources")
+    public void testDecodeText(String textResourceName) throws Exception
+    {
+        startBrotli();
+        String compressedName = String.format("%s.%s", textResourceName, brotli.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+        Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
+
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source decoderSource = brotli.newDecoderSource(fileSource);
+
+        String result = Content.Source.asString(decoderSource);
+        String expected = Files.readString(uncompressed);
+        assertEquals(expected, result);
+    }
+}

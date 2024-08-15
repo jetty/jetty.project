@@ -17,21 +17,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 
 import com.aayushatharva.brotli4j.decoder.BrotliInputStream;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractBrotliTest
 {
@@ -40,15 +39,16 @@ public abstract class AbstractBrotliTest
     // Unsigned Integer Max == 2^32
     protected static final long UINT_MAX = 0xFFFFFFFFL;
 
-    private final AtomicInteger poolCounter = new AtomicInteger();
-
-    @AfterEach
-    public void after()
-    {
-        assertThat(poolCounter.get(), is(0));
-    }
-
+    protected ArrayByteBufferPool.Tracking pool;
+    protected ByteBufferPool.Sized sizedPool;
     protected BrotliCompression brotli;
+
+    @BeforeEach
+    public void initPool()
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
+    }
 
     protected void startBrotli() throws Exception
     {
@@ -61,34 +61,20 @@ public abstract class AbstractBrotliTest
         if (bufferSize > 0)
             brotli.setBufferSize(bufferSize);
 
-        ByteBufferPool pool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
-        {
-            @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
-            {
-                poolCounter.incrementAndGet();
-                return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                            poolCounter.decrementAndGet();
-                        return released;
-                    }
-                };
-            }
-        };
         brotli.setByteBufferPool(pool);
         brotli.start();
     }
 
     @AfterEach
-    public void stopBrotli()
+    public void tearDown()
     {
         LifeCycle.stop(brotli);
-        assertThat("ByteBufferPool counter", poolCounter.get(), is(0));
+        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
+    }
+
+    public static List<String> textResources()
+    {
+        return List.of("texts/logo.svg", "texts/long.txt", "texts/quotes.txt");
     }
 
     /**

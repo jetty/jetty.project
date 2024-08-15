@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Container;
@@ -209,6 +210,8 @@ public abstract class Compression extends ContainerLifeCycle
      */
     public abstract Decoder newDecoder();
 
+    public abstract Content.Source newDecoderSource(Content.Source source);
+
     public abstract OutputStream newDecoderOutputStream(OutputStream out) throws IOException;
 
     /**
@@ -217,6 +220,8 @@ public abstract class Compression extends ContainerLifeCycle
      * @return a new Encoder
      */
     public abstract Encoder newEncoder();
+
+    public abstract Content.Sink newEncoderSink(Content.Sink sink);
 
     public abstract InputStream newEncoderInputStream(InputStream in) throws IOException;
 

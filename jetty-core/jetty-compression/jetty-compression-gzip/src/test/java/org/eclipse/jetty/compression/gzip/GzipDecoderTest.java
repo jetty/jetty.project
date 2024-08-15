@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Disabled("Individual tests to be moved to jetty-compression-tests")
 public class GzipDecoderTest extends AbstractGzipTest
 {
     @Test

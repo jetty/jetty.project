@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,6 +163,12 @@ public class BrotliCompression extends Compression
     }
 
     @Override
+    public Content.Source newDecoderSource(Content.Source source)
+    {
+        return new BrotliDecoderSource(this, source);
+    }
+
+    @Override
     public Encoder newEncoder()
     {
         return new BrotliEncoder(this);
@@ -171,5 +178,11 @@ public class BrotliCompression extends Compression
     public InputStream newEncoderInputStream(InputStream in) throws IOException
     {
         return new BrotliInputStream(in);
+    }
+
+    @Override
+    public Content.Sink newEncoderSink(Content.Sink sink)
+    {
+        return new BrotliEncoderSink(this, sink);
     }
 }
