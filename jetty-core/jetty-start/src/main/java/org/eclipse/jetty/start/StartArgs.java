@@ -687,8 +687,9 @@ public class StartArgs
 
                 // TODO module path
 
-                for (Prop property : environment.getProperties())
-                    cmd.addArg(property.key, property.value);
+                Props props = environment.getProperties();
+                for (Prop property : props)
+                    cmd.addArg(property.key, props.expand(property.value));
 
                 for (Path xmlFile : environment.getXmlFiles())
                     cmd.addArg(xmlFile.toAbsolutePath().toString());
