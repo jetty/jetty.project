@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import jakarta.servlet.ServletContext;
@@ -24,20 +23,17 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -93,7 +89,7 @@ public class TempDirTest
         WebAppContext webAppContext = new WebAppContext();
         _server.setHandler(webAppContext);
         Path tmpDir = jettyBase.resolve("foo_did_not_exist");
-        assertFalse(Files.exists(tmpDir));
+        assertThat(tmpDir.toFile(), not(anExistingDirectory()));
 
         switch (type)
         {
@@ -128,7 +124,7 @@ public class TempDirTest
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         webInfConfiguration.resolveTempDirectory(webAppContext);
         File tempDirectory = webAppContext.getTempDirectory();
-        assertTrue(tempDirectory.exists());
+        assertThat(tempDirectory, anExistingDirectory());
         assertThat(tempDirectory.getParentFile().toPath(), is(tmpDir));
         assertThat(webAppContext.getAttribute(ServletContext.TEMPDIR), is(webAppContext.getTempDirectory()));
     }
@@ -169,7 +165,7 @@ public class TempDirTest
         assertThat(webAppContext.getAttribute(ServletContext.TEMPDIR), is(webAppContext.getTempDirectory()));
         _server.stop();
         assertNull(webAppContext.getTempDirectory());
-        assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
+        assertThat(tempDirectory, not(anExistingDirectory()));
     }
 
     @Test
