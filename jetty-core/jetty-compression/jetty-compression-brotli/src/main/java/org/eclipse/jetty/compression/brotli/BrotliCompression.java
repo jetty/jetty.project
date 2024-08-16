@@ -23,6 +23,8 @@ import com.aayushatharva.brotli4j.Brotli4jLoader;
 import com.aayushatharva.brotli4j.decoder.BrotliInputStream;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -163,7 +165,7 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public Content.Source newDecoderSource(Content.Source source)
+    public DecoderSource newDecoderSource(Content.Source source)
     {
         return new BrotliDecoderSource(this, source);
     }
@@ -181,7 +183,7 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public Content.Sink newEncoderSink(Content.Sink sink)
+    public EncoderSink newEncoderSink(Content.Sink sink)
     {
         return new BrotliEncoderSink(this, sink);
     }

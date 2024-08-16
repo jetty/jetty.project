@@ -22,6 +22,8 @@ import java.util.List;
 import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -174,7 +176,7 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public Content.Source newDecoderSource(Content.Source source)
+    public DecoderSource newDecoderSource(Content.Source source)
     {
         return new ZstandardDecoderSource(this, source);
     }
@@ -198,7 +200,7 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public Content.Sink newEncoderSink(Content.Sink sink)
+    public EncoderSink newEncoderSink(Content.Sink sink)
     {
         return new ZstandardEncoderSink(this, sink);
     }

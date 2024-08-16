@@ -23,6 +23,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -195,7 +197,7 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public Content.Source newDecoderSource(Content.Source source)
+    public DecoderSource newDecoderSource(Content.Source source)
     {
         return new GzipDecoderSource(this, source);
     }
@@ -213,7 +215,7 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public Content.Sink newEncoderSink(Content.Sink sink)
+    public EncoderSink newEncoderSink(Content.Sink sink)
     {
         return new GzipEncoderSink(this, sink);
     }

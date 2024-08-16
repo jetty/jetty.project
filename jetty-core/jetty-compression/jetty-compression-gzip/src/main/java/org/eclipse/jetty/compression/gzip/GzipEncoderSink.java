@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
@@ -24,12 +25,10 @@ import org.eclipse.jetty.util.compression.CompressionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GzipEncoderSink implements Content.Sink
+public class GzipEncoderSink extends EncoderSink
 {
     private static final Logger LOG = LoggerFactory.getLogger(GzipEncoderSink.class);
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
-    private final GzipCompression compression;
-    private final Content.Sink sink;
 
     /**
      * Per RFC-1952 (Section 2.3.1) this is the "Unknown" OS value as a byte.
@@ -60,15 +59,16 @@ public class GzipEncoderSink implements Content.Sink
      */
     private static final int GZIP_TRAILER_SIZE = 8;
 
+    private final GzipCompression compression;
+    private final CompressionPool<Deflater>.Entry deflaterEntry;
     private final CRC32 crc = new CRC32();
     private final int flushMode;
-    private CompressionPool<Deflater>.Entry deflaterEntry;
     private boolean headersWritten = false;
 
     public GzipEncoderSink(GzipCompression compression, Content.Sink sink)
     {
+        super(sink);
         this.compression = compression;
-        this.sink = sink;
         this.deflaterEntry = compression.getDeflaterPool().acquire();
         this.deflaterEntry.get().setLevel(compression.getCompressionLevel());
         this.flushMode = Deflater.NO_FLUSH;
@@ -90,7 +90,7 @@ public class GzipEncoderSink implements Content.Sink
         if (!headersWritten)
         {
             // Add GZIP Header
-            sink.write(false, ByteBuffer.wrap(GZIP_HEADER), Callback.NOOP);
+            offerWrite(false, ByteBuffer.wrap(GZIP_HEADER), Callback.NOOP);
             headersWritten = true;
         }
 
@@ -119,7 +119,7 @@ public class GzipEncoderSink implements Content.Sink
                     callbackHandled = true;
                     writeCallback = Callback.combine(callback, writeCallback);
                 }
-                sink.write(false, outputBuffer.getByteBuffer(), writeCallback);
+                offerWrite(false, outputBuffer.getByteBuffer(), writeCallback);
                 outputBuffer = null;
             }
         }
@@ -141,7 +141,7 @@ public class GzipEncoderSink implements Content.Sink
                 {
                     outputBuffer.getByteBuffer().flip();
                     Callback writeCallback = new ReleaseBuffer(outputBuffer);
-                    sink.write(false, outputBuffer.getByteBuffer(), writeCallback);
+                    offerWrite(false, outputBuffer.getByteBuffer(), writeCallback);
                     outputBuffer = null;
                 }
             }
@@ -154,7 +154,7 @@ public class GzipEncoderSink implements Content.Sink
             addTrailer(deflater, outputBuffer.getByteBuffer());
             outputBuffer.getByteBuffer().flip();
             Callback writeCallback = Callback.combine(callback, new ReleaseBuffer(outputBuffer));
-            sink.write(true, outputBuffer.getByteBuffer(), writeCallback);
+            offerWrite(true, outputBuffer.getByteBuffer(), writeCallback);
             outputBuffer = null;
         }
 

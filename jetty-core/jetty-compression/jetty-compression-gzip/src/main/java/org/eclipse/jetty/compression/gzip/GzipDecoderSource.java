@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.compression.gzip;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
+import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GzipDecoderSource implements Content.Source
+public class GzipDecoderSource extends DecoderSource
 {
     private static final Logger LOG = LoggerFactory.getLogger(GzipDecoder.class);
 
@@ -40,79 +39,33 @@ public class GzipDecoderSource implements Content.Source
     private static final long UINT_MAX = 0xFFFFFFFFL;
     private static final ByteBuffer EMPTY_BUFFER = BufferUtil.EMPTY_BUFFER;
     private final GzipCompression compression;
-    private final Content.Source source;
     private InflaterPool.Entry inflaterEntry;
     private Inflater inflater;
     private State state;
     private int size;
     private long value;
     private byte flags;
-    private Content.Chunk activeChunk;
-    private Throwable failed;
 
     public GzipDecoderSource(GzipCompression compression, Content.Source source)
     {
+        super(source);
         this.compression = compression;
-        this.source = source;
         this.inflaterEntry = compression.getInflaterPool().acquire();
         this.inflater = inflaterEntry.get();
         this.inflater.reset();
         this.state = State.INITIAL;
-        // TODO: need place for inflaterEntry.release()
-    }
-
-    private Content.Chunk readChunk()
-    {
-        if (activeChunk != null)
-        {
-            if (activeChunk.hasRemaining())
-                return activeChunk;
-            else
-            {
-                activeChunk.release();
-                activeChunk = null;
-            }
-        }
-
-        activeChunk = source.read();
-        return activeChunk;
-    }
-
-    private void freeActiveChunk()
-    {
-        activeChunk.release();
-        activeChunk = null;
     }
 
     @Override
-    public Content.Chunk read()
+    protected void release()
     {
-        if (failed != null)
-            return Content.Chunk.from(failed, true);
-
-        Content.Chunk readChunk = readChunk();
-        boolean last = readChunk.isLast();
-        ByteBuffer compressed = readChunk.getByteBuffer();
-
-        try
-        {
-            Content.Chunk output = parse(compressed, last);
-            return output;
-        }
-        catch (IOException e)
-        {
-            fail(e);
-            return Content.Chunk.from(failed, true);
-        }
-        finally
-        {
-            if (!readChunk.hasRemaining())
-                freeActiveChunk();
-        }
+        inflaterEntry.release();
     }
 
-    private Content.Chunk parse(ByteBuffer compressed, boolean last) throws IOException
+    @Override
+    protected Content.Chunk nextChunk(Content.Chunk readChunk)
     {
+        ByteBuffer compressed = readChunk.getByteBuffer();
         // parse
         try
         {
@@ -155,47 +108,44 @@ public class GzipDecoderSource implements Content.Source
 
                     case DATA:
                     {
-//                        while (true)
+                        try
                         {
-                            try
+                            RetainableByteBuffer buffer = compression.acquireByteBuffer();
+                            ByteBuffer decoded = buffer.getByteBuffer();
+                            int pos = BufferUtil.flipToFill(decoded);
+                            inflater.inflate(decoded);
+                            BufferUtil.flipToFlush(decoded, pos);
+                            if (buffer.hasRemaining())
                             {
-                                RetainableByteBuffer buffer = compression.acquireByteBuffer();
-                                ByteBuffer decoded = buffer.getByteBuffer();
-                                int pos = BufferUtil.flipToFill(decoded);
-                                inflater.inflate(decoded);
-                                BufferUtil.flipToFlush(decoded, pos);
-                                if (buffer.hasRemaining())
-                                {
-                                    return Content.Chunk.from(decoded, false, buffer::release);
-                                }
-                                else
-                                {
-                                    buffer.release();
-                                }
+                                return Content.Chunk.asChunk(decoded, false, buffer);
                             }
-                            catch (DataFormatException x)
+                            else
                             {
-                                throw new ZipException(x.getMessage());
-                            }
-
-                            if (inflater.needsInput())
-                            {
-                                if (!compressed.hasRemaining())
-                                {
-                                    return Content.Chunk.EMPTY;
-                                }
-                                inflater.setInput(compressed);
-                            }
-                            else if (inflater.finished())
-                            {
-                                state = State.CRC;
-                                size = 0;
-                                value = 0;
-                                break;
+                                buffer.release();
                             }
                         }
-                        continue;
+                        catch (DataFormatException x)
+                        {
+                            throw new ZipException(x.getMessage());
+                        }
+
+                        if (inflater.needsInput())
+                        {
+                            if (!compressed.hasRemaining())
+                            {
+                                return Content.Chunk.EMPTY;
+                            }
+                            inflater.setInput(compressed);
+                        }
+                        else if (inflater.finished())
+                        {
+                            state = State.CRC;
+                            size = 0;
+                            value = 0;
+                            break;
+                        }
                     }
+                    continue;
 
                     default:
                         break;
@@ -204,14 +154,13 @@ public class GzipDecoderSource implements Content.Source
                 byte currByte = compressed.get();
                 switch (state)
                 {
-                    case ERROR, FINISHED:
+                    case ERROR, FINISHED ->
                     {
                         // skip rest of content (nothing else possible to read safely)
                         compressed.position(compressed.limit());
                         return Content.Chunk.EOF;
                     }
-
-                    case ID:
+                    case ID ->
                     {
                         value += (currByte & 0xFF) << 8 * size;
                         ++size;
@@ -223,20 +172,19 @@ public class GzipDecoderSource implements Content.Source
                                     LOG.debug("Skipping rest of input, no gzip magic number detected");
                                 state = State.INITIAL;
                                 compressed.position(compressed.limit());
+                                // TODO: need to consumeAll super source?
                                 return Content.Chunk.EOF;
                             }
                             state = State.CM;
                         }
-                        break;
                     }
-                    case CM:
+                    case CM ->
                     {
                         if ((currByte & 0xFF) != 0x08)
                             throw new ZipException("Invalid gzip compression method");
                         state = State.FLG;
-                        break;
                     }
-                    case FLG:
+                    case FLG ->
                     {
                         flags = currByte;
                         state = State.MTIME;
@@ -244,35 +192,31 @@ public class GzipDecoderSource implements Content.Source
                         value = 0;
                         break;
                     }
-                    case MTIME:
+                    case MTIME ->
                     {
                         // Skip the 4 MTIME bytes
                         ++size;
                         if (size == 4)
                             state = State.XFL;
-                        break;
                     }
-                    case XFL:
+                    case XFL ->
                     {
                         // Skip XFL
                         state = State.OS;
-                        break;
                     }
-                    case OS:
+                    case OS ->
                     {
                         // Skip OS
                         state = State.FLAGS;
-                        break;
                     }
-                    case EXTRA_LENGTH:
+                    case EXTRA_LENGTH ->
                     {
                         value += (currByte & 0xFF) << 8 * size;
                         ++size;
                         if (size == 2)
                             state = State.EXTRA;
-                        break;
                     }
-                    case EXTRA:
+                    case EXTRA ->
                     {
                         // Skip EXTRA bytes
                         --value;
@@ -282,9 +226,8 @@ public class GzipDecoderSource implements Content.Source
                             flags &= ~0x04;
                             state = State.FLAGS;
                         }
-                        break;
                     }
-                    case NAME:
+                    case NAME ->
                     {
                         // Skip NAME bytes
                         if (currByte == 0)
@@ -293,9 +236,8 @@ public class GzipDecoderSource implements Content.Source
                             flags &= ~0x08;
                             state = State.FLAGS;
                         }
-                        break;
                     }
-                    case COMMENT:
+                    case COMMENT ->
                     {
                         // Skip COMMENT bytes
                         if (currByte == 0)
@@ -304,9 +246,8 @@ public class GzipDecoderSource implements Content.Source
                             flags &= ~0x10;
                             state = State.FLAGS;
                         }
-                        break;
                     }
-                    case HCRC:
+                    case HCRC ->
                     {
                         // Skip HCRC
                         ++size;
@@ -316,9 +257,8 @@ public class GzipDecoderSource implements Content.Source
                             flags &= ~0x02;
                             state = State.FLAGS;
                         }
-                        break;
                     }
-                    case CRC:
+                    case CRC ->
                     {
                         value += (currByte & 0xFF) << 8 * size;
                         ++size;
@@ -329,9 +269,8 @@ public class GzipDecoderSource implements Content.Source
                             size = 0;
                             value = 0;
                         }
-                        break;
                     }
-                    case ISIZE:
+                    case ISIZE ->
                     {
                         value = value | ((currByte & 0xFFL) << (8 * size));
                         ++size;
@@ -345,10 +284,9 @@ public class GzipDecoderSource implements Content.Source
                             value = 0;
                             return Content.Chunk.EOF;
                         }
-                        break;
                     }
-                    default:
-                        throw new ZipException();
+                    default ->
+                        throw new ZipException("Unknown state: " + state);
                 }
             }
         }
@@ -357,19 +295,6 @@ public class GzipDecoderSource implements Content.Source
             state = State.ERROR;
             return Content.Chunk.from(x, true);
         }
-        return last ? Content.Chunk.EOF : Content.Chunk.EMPTY;
-    }
-
-    @Override
-    public void demand(Runnable demandCallback)
-    {
-        demandCallback.run();
-    }
-
-    @Override
-    public void fail(Throwable failure)
-    {
-        failed = ExceptionUtil.combine(failed, failure);
-        source.fail(failure);
+        return readChunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
     }
 }

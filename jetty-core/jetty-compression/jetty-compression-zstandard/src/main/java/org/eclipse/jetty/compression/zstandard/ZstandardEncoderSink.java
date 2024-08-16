@@ -18,21 +18,24 @@ import java.nio.ByteBuffer;
 import com.github.luben.zstd.EndDirective;
 import com.github.luben.zstd.ZstdCompressCtx;
 import com.github.luben.zstd.ZstdException;
+import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 
-public class ZstandardEncoderSink implements Content.Sink
+public class ZstandardEncoderSink extends EncoderSink
 {
+    /**
+     * zstd-jni MUST have direct buffers.
+     */
     private static final ByteBuffer EMPTY_DIRECT_BUFFER = ByteBuffer.allocateDirect(0);
     private final ZstandardCompression compression;
-    private final Content.Sink sink;
     private final ZstdCompressCtx compressCtx;
 
     public ZstandardEncoderSink(ZstandardCompression compression, Content.Sink sink)
     {
+        super(sink);
         this.compression = compression;
-        this.sink = sink;
         this.compressCtx = new ZstdCompressCtx();
         this.compressCtx.setLevel(compression.getCompressionLevel());
     }
@@ -41,7 +44,13 @@ public class ZstandardEncoderSink implements Content.Sink
     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
         // Requirement of zstd-jni
-        assert byteBuffer.isDirect();
+        if (!byteBuffer.isDirect())
+        {
+            // TODO: how to tell this.sink that writes have failed?
+            callback.failed(new IllegalArgumentException("ByteBuffer must be direct for zstd-jni"));
+            return;
+        }
+        // TODO: perhaps, if not-direct, grab direct from pool and copy buffer in?
 
         RetainableByteBuffer outputBuf = null;
         boolean callbackHandled = false;
@@ -58,13 +67,13 @@ public class ZstandardEncoderSink implements Content.Sink
                 outputBuf.getByteBuffer().flip();
                 if (outputBuf.getByteBuffer().hasRemaining())
                 {
-                    Callback writeCallback = new ReleaseBuffer(outputBuf);
+                    Callback writeCallback = Callback.from(outputBuf::release);
                     if (!last && flushed && !byteBuffer.hasRemaining())
                     {
                         callbackHandled = true;
                         writeCallback = Callback.from(callback, writeCallback);
                     }
-                    sink.write(false, outputBuf.getByteBuffer(), writeCallback);
+                    offerWrite(false, outputBuf.getByteBuffer(), writeCallback);
                     outputBuf = null;
                 }
             }
@@ -79,7 +88,7 @@ public class ZstandardEncoderSink implements Content.Sink
                 outputBuf.getByteBuffer().flip();
                 if (outputBuf.getByteBuffer().hasRemaining())
                 {
-                    sink.write(false, outputBuf.getByteBuffer(), new ReleaseBuffer(outputBuf));
+                    offerWrite(false, outputBuf.getByteBuffer(), Callback.from(outputBuf::release));
                     outputBuf = null;
                 }
 
@@ -95,13 +104,13 @@ public class ZstandardEncoderSink implements Content.Sink
                     outputBuf.getByteBuffer().flip();
                     if (actualLast || outputBuf.getByteBuffer().hasRemaining())
                     {
-                        Callback writeCallback = new ReleaseBuffer(outputBuf);
+                        Callback writeCallback = Callback.from(outputBuf::release);
                         if (actualLast)
                         {
                             callbackHandled = true;
                             writeCallback = Callback.from(callback, writeCallback);
                         }
-                        sink.write(actualLast, outputBuf.getByteBuffer(), writeCallback);
+                        offerWrite(actualLast, outputBuf.getByteBuffer(), writeCallback);
                         outputBuf = null;
                     }
                     if (actualLast)
@@ -122,28 +131,6 @@ public class ZstandardEncoderSink implements Content.Sink
         catch (ZstdException e)
         {
             callback.failed(e);
-        }
-    }
-
-    private static class ReleaseBuffer implements Callback
-    {
-        private final RetainableByteBuffer buffer;
-
-        public ReleaseBuffer(RetainableByteBuffer buffer)
-        {
-            this.buffer = buffer;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            buffer.release();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            buffer.release();
         }
     }
 }

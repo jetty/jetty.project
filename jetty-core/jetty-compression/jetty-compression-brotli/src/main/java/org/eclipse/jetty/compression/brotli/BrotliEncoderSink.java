@@ -20,18 +20,18 @@ import java.nio.channels.WritableByteChannel;
 
 import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
 import com.aayushatharva.brotli4j.encoder.Encoder;
+import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BrotliEncoderSink implements Content.Sink
+public class BrotliEncoderSink extends EncoderSink
 {
     private static final Logger LOG = LoggerFactory.getLogger(BrotliEncoderSink.class);
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private final BrotliCompression compression;
-    private final Content.Sink sink;
     private final SinkChannel writeChannel;
     // TODO: change to com.aayushatharva.brotli4j.encoder.EncoderJNI.Wrapper once new release is available for
     // https://github.com/hyperxpro/Brotli4j/issues/144
@@ -39,17 +39,23 @@ public class BrotliEncoderSink implements Content.Sink
 
     public BrotliEncoderSink(BrotliCompression compression, Content.Sink sink)
     {
+        super(sink);
         this.compression = compression;
-        this.sink = sink;
         this.writeChannel = new SinkChannel();
         try
         {
             Encoder.Parameters params = compression.getEncoderParams();
             this.encoder = new BrotliEncoderChannel(writeChannel, params);
+            /* Path of a write looks like:
+            Jetty component
+            BrotliEncoderSink.write
+            Brotli4jChannel.write
+            JettyDecodedChannel.write
+            Content.Sink.write
+             */
         }
         catch (IOException e)
         {
-            // TODO: should this just throw IOException instead?
             throw new RuntimeException(e);
         }
     }
@@ -65,7 +71,7 @@ public class BrotliEncoderSink implements Content.Sink
             if (last)
             {
                 encoder.close();
-                sink.write(true, EMPTY_BUFFER, callback);
+                offerWrite(true, EMPTY_BUFFER, callback);
             }
             else
             {
@@ -106,7 +112,7 @@ public class BrotliEncoderSink implements Content.Sink
                 LOG.debug("captured.write({})", BufferUtil.toDetailString(src));
 
             int len = src.remaining();
-            sink.write(false, src, Callback.NOOP);
+            offerWrite(false, src, Callback.NOOP);
             return len;
         }
     }

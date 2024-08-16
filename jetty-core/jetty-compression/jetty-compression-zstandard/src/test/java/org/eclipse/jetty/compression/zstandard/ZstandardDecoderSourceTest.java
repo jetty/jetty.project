@@ -21,6 +21,7 @@ public class ZstandardDecoderSourceTest extends AbstractZstdTest
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 
+        // TODO: sizedPool config of size 1?
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
         Content.Source decoderSource = zstd.newDecoderSource(fileSource);
 

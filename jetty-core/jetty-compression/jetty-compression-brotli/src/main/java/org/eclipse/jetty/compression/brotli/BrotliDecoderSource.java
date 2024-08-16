@@ -17,87 +17,42 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.aayushatharva.brotli4j.decoder.DecoderJNI;
+import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ExceptionUtil;
 
-public class BrotliDecoderSource implements Content.Source
+public class BrotliDecoderSource extends DecoderSource
 {
     private static final ByteBuffer EMPTY_BUFFER = BufferUtil.EMPTY_BUFFER;
     private final BrotliCompression compression;
-    private final Content.Source source;
     private final DecoderJNI.Wrapper decoder;
-    private Content.Chunk activeChunk;
-    private long bytesRead; // TODO: Get rid of?
-    private Throwable failed;
 
     public BrotliDecoderSource(BrotliCompression compression, Content.Source source)
     {
+        super(source);
         this.compression = compression;
-        this.source = source;
         try
         {
             this.decoder = new DecoderJNI.Wrapper(compression.getBufferSize());
         }
         catch (IOException e)
         {
-            // TODO: should this just throw IOException instead?
             throw new RuntimeException("Unable to initialize Brotli Decoder", e);
         }
     }
 
-    private Content.Chunk readChunk()
+    @Override
+    protected void release()
     {
-        if (activeChunk != null)
-        {
-            if (activeChunk.hasRemaining())
-                return activeChunk;
-            else
-            {
-                activeChunk.release();
-                activeChunk = null;
-            }
-        }
-
-        activeChunk = source.read();
-        return activeChunk;
-    }
-
-    private void freeActiveChunk()
-    {
-        activeChunk.release();
-        activeChunk = null;
+        decoder.destroy();
     }
 
     @Override
-    public Content.Chunk read()
+    protected Content.Chunk nextChunk(Content.Chunk readChunk) throws IOException
     {
-        if (failed != null)
-            return Content.Chunk.from(failed, true);
-
-        Content.Chunk readChunk = readChunk();
-        boolean last = readChunk.isLast();
         ByteBuffer compressed = readChunk.getByteBuffer();
+        boolean last = readChunk.isLast();
 
-        try
-        {
-            Content.Chunk output = parse(compressed, last);
-            return output;
-        }
-        catch (IOException e)
-        {
-            fail(e);
-            return Content.Chunk.from(failed, true);
-        }
-        finally
-        {
-            if (!readChunk.hasRemaining())
-                freeActiveChunk();
-        }
-    }
-
-    private Content.Chunk parse(ByteBuffer compressed, boolean last) throws IOException
-    {
         while (true)
         {
             switch (decoder.getStatus())
@@ -115,7 +70,6 @@ public class BrotliDecoderSource implements Content.Source
                     ByteBuffer input = decoder.getInputBuffer();
                     BufferUtil.clearToFill(input);
                     int len = BufferUtil.put(compressed, input);
-                    bytesRead += len;
                     decoder.push(len);
 
                     if (len == 0)
@@ -136,18 +90,5 @@ public class BrotliDecoderSource implements Content.Source
                 }
             }
         }
-    }
-
-    @Override
-    public void demand(Runnable demandCallback)
-    {
-        demandCallback.run();
-    }
-
-    @Override
-    public void fail(Throwable failure)
-    {
-        failed = ExceptionUtil.combine(failed, failure);
-        source.fail(failure);
     }
 }

@@ -210,7 +210,7 @@ public abstract class Compression extends ContainerLifeCycle
      */
     public abstract Decoder newDecoder();
 
-    public abstract Content.Source newDecoderSource(Content.Source source);
+    public abstract DecoderSource newDecoderSource(Content.Source source);
 
     public abstract OutputStream newDecoderOutputStream(OutputStream out) throws IOException;
 
@@ -221,7 +221,7 @@ public abstract class Compression extends ContainerLifeCycle
      */
     public abstract Encoder newEncoder();
 
-    public abstract Content.Sink newEncoderSink(Content.Sink sink);
+    public abstract EncoderSink newEncoderSink(Content.Sink sink);
 
     public abstract InputStream newEncoderInputStream(InputStream in) throws IOException;
 
