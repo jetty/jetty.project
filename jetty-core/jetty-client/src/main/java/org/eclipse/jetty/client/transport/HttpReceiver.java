@@ -350,7 +350,7 @@ public abstract class HttpReceiver
             LOG.debug("{} responseContentAvailable on {}", invoker.isCurrentThreadInvoking() ? "Invoking" : "Calling", this);
 
         if (invoker.isCurrentThreadInvoking())
-            return;
+            runnable.run();
         else
             invoker.run(runnable);
     }
