@@ -78,7 +78,7 @@ public abstract class Compression extends ContainerLifeCycle
 
     /**
      * Acquire a {@link RetainableByteBuffer} that is managed by this {@link Compression} implementation
-     * which is suitable for compressed output from an {@link Encoder} or compressed input from a {@link Decoder}.
+     * which is suitable for compressed output from an {@link EncoderSink} or compressed input from a {@link DecoderSource}.
      *
      * <p>
      *     It is recommended to use this method so that any compression specific details can be
@@ -95,7 +95,7 @@ public abstract class Compression extends ContainerLifeCycle
 
     /**
      * Acquire a {@link RetainableByteBuffer} that is managed by this {@link Compression} implementation
-     * which is suitable for compressed output from an {@link Encoder} or compressed input from a {@link Decoder}.
+     * which is suitable for compressed output from an {@link EncoderSink} or compressed input from a {@link DecoderSource}.
      *
      * <p>
      *     It is recommended to use this method so that any compression specific details can be
