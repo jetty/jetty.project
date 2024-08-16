@@ -329,10 +329,9 @@ public class ContentDocs
             // Read a chunk.
             chunk = source.read();
 
-            // If no chunk,
+            // If no chunk, schedule a demand callback when there are more chunks.
             if (chunk == null)
             {
-                // schedule a demand callback when there are more chunks.
                 source.demand(this::succeeded);
                 return Action.SCHEDULED;
             }
@@ -342,7 +341,7 @@ public class ContentDocs
             if (Content.Chunk.isFailure(chunk))
                 throw chunk.getFailure();
 
-            // Copy the chunk by scheduling an async write
+            // Copy the chunk by scheduling an asynchronous write.
             sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
             return Action.SCHEDULED;
         }
@@ -366,16 +365,16 @@ public class ContentDocs
         protected void onFailure(Throwable cause)
         {
             // The copy is failed, fail the callback.
-            // This may occur before a {@code write} has completed (due to abort or close),
-            // so we cannot release the chunk here.
+            // This method is invoked before a write() has completed, so
+            // the chunk is not released here, but in onCompleteFailure().
             callback.failed(cause);
         }
 
         @Override
         protected void onCompleteFailure(Throwable failure)
         {
-            // In case of a failure, we wait until here, when the {@code write}
-            // has completed before releasing any chunk.
+            // In case of a failure, this method is invoked when the write()
+            // is completed, and it is now possible to release the chunk.
             chunk = Content.Chunk.releaseAndNext(chunk);
         }
 

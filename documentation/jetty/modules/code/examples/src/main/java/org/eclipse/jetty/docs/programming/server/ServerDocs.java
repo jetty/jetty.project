@@ -176,7 +176,7 @@ public class ServerDocs
         @Override
         public void onFillable()
         {
-            // Called from the fill interest in onOpen() to start iteration
+            // Called from fillInterested() in onOpen() to start iteration.
             callback.iterate();
         }
 
@@ -207,8 +207,8 @@ public class ServerDocs
                             // the application completed the request processing.
                             return Action.SCHEDULED;
                         }
-                        // Did not receive enough JSON bytes to complete the parser,
-                        // loop around to try to read more.
+                        // Did not receive enough JSON bytes to complete the
+                        // JSON parsing, loop around to try to read more bytes.
                     }
                     else if (filled == 0)
                     {

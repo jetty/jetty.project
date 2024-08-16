@@ -165,10 +165,11 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * {@link #release() Release} the buffer in a way that ensures it will not be recycled in a buffer pool.
-     * This method should be used in cases where it is unclear if operations on the buffer have completed (e.g. when
-     * a write operation has aborted or timed out).
-     * @return True if the buffer was released.
+     * {@link #release() Releases} the buffer in a way that ensures it will not be recycled in a buffer pool.
+     * This method should be used in cases where it is unclear if operations on the buffer have completed
+     * (for example, when a write operation has been aborted asynchronously or timed out, but the write
+     * operation may still be pending).
+     * @return whether if the buffer was released.
      * @see ByteBufferPool#releaseAndRemove(RetainableByteBuffer)
      */
     default boolean releaseAndRemove()

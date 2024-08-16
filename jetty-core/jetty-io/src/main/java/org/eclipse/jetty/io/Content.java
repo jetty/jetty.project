@@ -1084,11 +1084,11 @@ public class Content
          * Convenience method to release a chunk and return {@link #next(Chunk)}.
          * Equivalent to:
          * <pre>{@code
-         *   if (chunk != null)
-         *   {
+         * if (chunk != null)
+         * {
          *     chunk.release();
          *     chunk = Chunk.next(chunk);
-         *   }
+         * }
          * }</pre>
          * @param chunk The chunk to release or {@code null}
          * @return The {@link #next(Chunk)} chunk;
