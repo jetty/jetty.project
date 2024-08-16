@@ -334,6 +334,11 @@ public abstract class HttpReceiver
         // There are then two processDemand() invocations enqueued, and since they call HttpReceiver.read(true) when no content is readily available,
         // they can both try to register fill interest and eventually throw a ReadPendingException.
         // So onDataAvailable() must always be executed from the invoker but also immediately.
+        // The root cause is that for H1/FCGI the parser calls this method not knowing if it is reacting to a read() or a demand().
+        // Make sure these 3 tests pass when modifying this method:
+        // - ForwardProxyWithDynamicTransportTest.testProxyConcurrentLoad()
+        // - ConnectionPoolTest.testConnectionPoolFactory()
+        // - HttpClientTest.testContentSourceListenerDemandInSpawnedThread()
 
         Runnable runnable = () ->
         {
@@ -350,7 +355,7 @@ public abstract class HttpReceiver
             LOG.debug("{} responseContentAvailable on {}", invoker.isCurrentThreadInvoking() ? "Invoking" : "Calling", this);
 
         if (invoker.isCurrentThreadInvoking())
-            runnable.run();
+            runnable.run(); // This is needed by H2, but it could be just return for h1/fcgi. ForwardProxyWithDynamicTransportTest.testProxyConcurrentLoad fails when we do not run the runnable here.
         else
             invoker.run(runnable);
     }
