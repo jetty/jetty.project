@@ -16,11 +16,10 @@ package org.eclipse.jetty.compression.server;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.compression.Compression;
-import org.eclipse.jetty.compression.CompressionDecoderTransformer;
+import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.component.Destroyable;
@@ -34,8 +33,7 @@ public class DynamicDecompressionRequest extends Request.Wrapper implements Dest
 
     private Compression compression;
     private HttpFields fields;
-    private Compression.Decoder decoder;
-    private CompressionDecoderTransformer decoderTransformer;
+    private DecoderSource decoderSource;
 
     public DynamicDecompressionRequest(
         Compression compression,
@@ -49,8 +47,7 @@ public class DynamicDecompressionRequest extends Request.Wrapper implements Dest
         int inflateBufferSize = config.getInflateBufferSize();
         if (inflateBufferSize > 0)
         {
-            decoder = compression.newDecoder();
-            decoderTransformer = new CompressionDecoderTransformer(getWrapped(), decoder);
+            decoderSource = compression.newDecoderSource(this);
         }
     }
 
@@ -120,25 +117,25 @@ public class DynamicDecompressionRequest extends Request.Wrapper implements Dest
     @Override
     public Content.Chunk read()
     {
-        if (decoderTransformer != null)
-            return decoderTransformer.read();
+        if (decoderSource != null)
+            return decoderSource.read();
         return super.read();
     }
 
     @Override
     public void demand(Runnable demandCallback)
     {
-        if (decoderTransformer != null)
-            decoderTransformer.demand(demandCallback);
+        if (decoderSource != null)
+            decoderSource.demand(demandCallback);
         else
             super.demand(demandCallback);
     }
 
     public void destroy()
     {
-        if (decoder != null)
+        if (decoderSource != null)
         {
-            if (decoder instanceof Destroyable destroyable)
+            if (decoderSource instanceof Destroyable destroyable)
                 destroyable.destroy();
         }
     }

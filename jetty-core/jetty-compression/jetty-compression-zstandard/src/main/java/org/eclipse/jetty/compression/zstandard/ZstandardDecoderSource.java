@@ -36,6 +36,10 @@ public class ZstandardDecoderSource extends DecoderSource
     protected Content.Chunk nextChunk(Content.Chunk readChunk)
     {
         ByteBuffer input = readChunk.getByteBuffer();
+        if (!readChunk.hasRemaining())
+            return readChunk;
+        if (!input.isDirect())
+            throw new IllegalArgumentException("Read Chunk is not a Direct ByteBuffer");
         RetainableByteBuffer dst = compression.acquireByteBuffer();
         boolean last = readChunk.isLast();
         dst.getByteBuffer().clear();

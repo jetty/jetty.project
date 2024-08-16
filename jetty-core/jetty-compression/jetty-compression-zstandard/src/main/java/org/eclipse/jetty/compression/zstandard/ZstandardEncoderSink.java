@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import com.github.luben.zstd.EndDirective;
 import com.github.luben.zstd.ZstdCompressCtx;
 import com.github.luben.zstd.ZstdException;
+import com.github.luben.zstd.ZstdFrameProgression;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -43,6 +44,18 @@ public class ZstandardEncoderSink extends EncoderSink
     @Override
     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
+        if (!byteBuffer.hasRemaining())
+        {
+            // skip if progress not yet started.
+            // this allows for empty body contents to not cause errors.
+            ZstdFrameProgression frameProgression = compressCtx.getFrameProgression();
+            if (frameProgression.getConsumed() <= 0)
+            {
+                callback.succeeded();
+                return;
+            }
+        }
+
         // Requirement of zstd-jni
         if (!byteBuffer.isDirect())
         {

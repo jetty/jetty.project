@@ -52,7 +52,7 @@ public abstract class AbstractCompressionTest
     public static Stream<Arguments> textInputs()
     {
         List<Arguments> cases = new ArrayList<>();
-        List<String> texts = List.of("texts/test-quotes.txt", "texts/test-long.txt", "texts/logo.svg");
+        List<String> texts = List.of("texts/quotes.txt", "texts/long.txt", "texts/logo.svg");
 
         for (Class<? extends Compression> compressionClass: compressions())
         {

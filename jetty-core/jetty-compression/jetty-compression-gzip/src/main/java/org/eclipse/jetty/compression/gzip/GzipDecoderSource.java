@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class GzipDecoderSource extends DecoderSource
 {
-    private static final Logger LOG = LoggerFactory.getLogger(GzipDecoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GzipDecoderSource.class);
 
     private enum State
     {

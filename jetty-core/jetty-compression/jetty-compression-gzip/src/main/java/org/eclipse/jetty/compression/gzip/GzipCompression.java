@@ -185,12 +185,6 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public Decoder newDecoder()
-    {
-        return new GzipDecoder(this);
-    }
-
-    @Override
     public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
     {
         return new GZIPOutputStream(out);
@@ -200,12 +194,6 @@ public class GzipCompression extends Compression
     public DecoderSource newDecoderSource(Content.Source source)
     {
         return new GzipDecoderSource(this, source);
-    }
-
-    @Override
-    public Encoder newEncoder()
-    {
-        return new GzipEncoder(this);
     }
 
     @Override

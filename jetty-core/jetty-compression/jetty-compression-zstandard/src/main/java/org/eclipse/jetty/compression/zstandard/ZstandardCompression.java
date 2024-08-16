@@ -170,12 +170,6 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public Compression.Decoder newDecoder()
-    {
-        return new ZstandardDecoder(this);
-    }
-
-    @Override
     public DecoderSource newDecoderSource(Content.Source source)
     {
         return new ZstandardDecoderSource(this, source);
@@ -185,12 +179,6 @@ public class ZstandardCompression extends Compression
     public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
     {
         return new ZstdOutputStreamNoFinalizer(out);
-    }
-
-    @Override
-    public Compression.Encoder newEncoder()
-    {
-        return new ZstandardEncoder(this);
     }
 
     @Override

@@ -51,6 +51,9 @@ public class BrotliDecoderSource extends DecoderSource
     protected Content.Chunk nextChunk(Content.Chunk readChunk) throws IOException
     {
         ByteBuffer compressed = readChunk.getByteBuffer();
+        if (readChunk.isLast() && !readChunk.hasRemaining())
+            return Content.Chunk.EOF;
+
         boolean last = readChunk.isLast();
 
         while (true)
@@ -86,7 +89,7 @@ public class BrotliDecoderSource extends DecoderSource
                 }
                 default ->
                 {
-                    throw new IOException("Corrupted input buffer");
+                    throw new IOException("Decoder failure: Corrupted input buffer");
                 }
             }
         }

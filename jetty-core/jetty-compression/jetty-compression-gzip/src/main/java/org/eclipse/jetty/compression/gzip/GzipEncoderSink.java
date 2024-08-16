@@ -113,7 +113,7 @@ public class GzipEncoderSink extends EncoderSink
             outputBuffer.getByteBuffer().flip();
             if (outputBuffer.hasRemaining())
             {
-                Callback writeCallback = new ReleaseBuffer(outputBuffer);
+                Callback writeCallback = Callback.from(outputBuffer::release);
                 if (!last && !byteBuffer.hasRemaining())
                 {
                     callbackHandled = true;
@@ -140,7 +140,7 @@ public class GzipEncoderSink extends EncoderSink
                 if (len > 0)
                 {
                     outputBuffer.getByteBuffer().flip();
-                    Callback writeCallback = new ReleaseBuffer(outputBuffer);
+                    Callback writeCallback = Callback.from(outputBuffer::release);
                     offerWrite(false, outputBuffer.getByteBuffer(), writeCallback);
                     outputBuffer = null;
                 }
@@ -153,7 +153,7 @@ public class GzipEncoderSink extends EncoderSink
             outputBuffer.getByteBuffer().clear();
             addTrailer(deflater, outputBuffer.getByteBuffer());
             outputBuffer.getByteBuffer().flip();
-            Callback writeCallback = Callback.combine(callback, new ReleaseBuffer(outputBuffer));
+            Callback writeCallback = Callback.combine(callback, Callback.from(outputBuffer::release));
             offerWrite(true, outputBuffer.getByteBuffer(), writeCallback);
             outputBuffer = null;
         }

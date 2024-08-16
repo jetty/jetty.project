@@ -16,7 +16,6 @@ package org.eclipse.jetty.compression;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.http.EtagUtils;
@@ -204,25 +203,37 @@ public abstract class Compression extends ContainerLifeCycle
     public abstract HttpField getXContentEncodingField();
 
     /**
-     * Get a new Decoder (possibly pooled) for this compression implementation.
+     * Create a new {@link DecoderSource} for this compression implementation
      *
-     * @return a new Decoder
+     * @param source the source to write the decoded bytes to
+     * @return a new {@link DecoderSource}
      */
-    public abstract Decoder newDecoder();
-
     public abstract DecoderSource newDecoderSource(Content.Source source);
 
+    /**
+     * Create a new {@link OutputStream} to decode with this compression implementation.
+     *
+     * @param out the outputstream to write the decoded bytes to
+     * @return the {@link OutputStream} implementation for this compression.
+     * @throws IOException if unable to create OutputStream
+     */
     public abstract OutputStream newDecoderOutputStream(OutputStream out) throws IOException;
 
     /**
-     * Get a new Encoder (possibly pooled) for this compression implementation.
+     * Create a new {@link EncoderSink} for this compression implementation
      *
-     * @return a new Encoder
+     * @param sink the sink to write the encoded bytes to
+     * @return a new {@link EncoderSink}
      */
-    public abstract Encoder newEncoder();
-
     public abstract EncoderSink newEncoderSink(Content.Sink sink);
 
+    /**
+     * Create a new {@link InputStream} to encode with this compression implementation.
+     *
+     * @param in the inputstream to write the encoded bytes to
+     * @return the {@link InputStream} implementation for this compression.
+     * @throws IOException if unable to create InputStream
+     */
     public abstract InputStream newEncoderInputStream(InputStream in) throws IOException;
 
     /**
@@ -255,121 +266,5 @@ public abstract class Compression extends ContainerLifeCycle
         {
             byteBufferPool = ByteBufferPool.NON_POOLING;
         }
-    }
-
-    /**
-     * A Decoder for decompression.
-     *
-     * <p>
-     *     Closing a Decoder frees resources associated with the Decoder.
-     * </p>
-     */
-    public interface Decoder extends AutoCloseable
-    {
-        /**
-         * Decode the input buffer, returning the next decoded buffer.
-         *
-         * <p>
-         *     The input buffer might not be fully read (or even read at all) if
-         *     there are pending output buffers from a previous {@code .decode(RetainableByteBuffer)} operation.
-         *     It is the responsibility of the user of this API to give the same input buffer back to
-         *     this method if the input buffer has remaining bytes.
-         * </p>
-         *
-         * <p>
-         *     If the input buffer is fully read, and the output buffer is empty, then
-         *     there are no decoded bytes pending. (the internal implementation could
-         *     either be totally finished, or there are insufficient input bytes to
-         *     complete the next decoding step)
-         * </p>
-         *
-         * @param input the input buffer to read from.
-         * @return the output buffer. never null.
-         * @throws IOException if unable to decode chunk.
-         */
-        RetainableByteBuffer decode(ByteBuffer input) throws IOException;
-
-        /**
-         * Declare the input finished, completing the decoding.
-         *
-         * @throws IOException if unable to complete the decoding (when this happens,
-         *    it is often an EOF situation, where the internal decoding cannot complete
-         *    due to missing compressed bytes)
-         */
-        public void finishInput() throws IOException;
-
-        /**
-         * Test to know if there are internal buffers still available to be read via the {@link #decode(ByteBuffer)} method.
-         *
-         * @throws IllegalStateException if {@link #finishInput()} hasn't been called yet.
-         */
-        boolean isOutputComplete();
-    }
-
-    /**
-     * A Encoder for compression.
-     */
-    public interface Encoder extends AutoCloseable
-    {
-        /**
-         * Write the encoder trailer to the provided output buffer.
-         *
-         * @param outputBuffer the buffer to write trailer to
-         */
-        default void addTrailer(ByteBuffer outputBuffer)
-        {
-            // no trailers
-        }
-
-        /**
-         * Encode what exists in the input buffer to the provided output buffer.
-         *
-         * @param outputBuffer the output buffer to write to
-         * @return the size in bytes put into the output buffer
-         *
-         * @throws IOException if unable to encode the input buffer
-         */
-        int encode(ByteBuffer outputBuffer) throws IOException;
-
-        /**
-         * Indicate that we are finished providing input.
-         * Encoder will not accept more input after this.
-         */
-        void finishInput();
-
-        /**
-         * Get the size of the encoder trailer for this encoder.
-         *
-         * <p>
-         *     Useful for ByteBuffer size calculations.
-         * </p>
-         *
-         * @return the size of the trailer (0 for no trailer)
-         */
-        default int getTrailerSize()
-        {
-            return 0;
-        }
-
-        /**
-         * Test if output is finished.
-         *
-         * @return true if output is finished.
-         */
-        boolean isOutputFinished();
-
-        /**
-         * Test if input is needed.
-         *
-         * @return true if input is needed.
-         */
-        boolean needsInput();
-
-        /**
-         * Provide input buffer to encoder
-         *
-         * @param content the input buffer
-         */
-        void addInput(ByteBuffer content);
     }
 }

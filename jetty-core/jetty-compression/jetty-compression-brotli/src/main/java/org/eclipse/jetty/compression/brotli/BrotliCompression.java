@@ -153,12 +153,6 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public Decoder newDecoder()
-    {
-        return new BrotliDecoder(this);
-    }
-
-    @Override
     public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
     {
         return new BrotliOutputStream(out);
@@ -168,12 +162,6 @@ public class BrotliCompression extends Compression
     public DecoderSource newDecoderSource(Content.Source source)
     {
         return new BrotliDecoderSource(this, source);
-    }
-
-    @Override
-    public Encoder newEncoder()
-    {
-        return new BrotliEncoder(this);
     }
 
     @Override

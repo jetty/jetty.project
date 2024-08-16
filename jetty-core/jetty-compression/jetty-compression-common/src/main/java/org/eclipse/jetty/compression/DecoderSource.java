@@ -20,7 +20,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 
 public abstract class DecoderSource implements Content.Source
 {
-    protected final Content.Source source;
+    private final Content.Source source;
     private Content.Chunk activeChunk;
     private Throwable failed;
     private boolean terminated = false;
@@ -30,27 +30,20 @@ public abstract class DecoderSource implements Content.Source
         this.source = source;
     }
 
-    private Content.Chunk readChunk()
+    @Override
+    public void demand(Runnable demandCallback)
     {
-        if (activeChunk != null)
-        {
-            if (activeChunk.hasRemaining())
-                return activeChunk;
-            else
-            {
-                activeChunk.release();
-                activeChunk = null;
-            }
-        }
-
-        activeChunk = source.read();
-        return activeChunk;
+        if (activeChunk != null && activeChunk.hasRemaining())
+            demandCallback.run();
+        else
+            source.demand(demandCallback);
     }
 
-    private void freeActiveChunk()
+    @Override
+    public void fail(Throwable failure)
     {
-        activeChunk.release();
-        activeChunk = null;
+        failed = ExceptionUtil.combine(failed, failure);
+        source.fail(failure);
     }
 
     @Override
@@ -97,16 +90,6 @@ public abstract class DecoderSource implements Content.Source
      */
     protected abstract Content.Chunk nextChunk(Content.Chunk readChunk) throws IOException;
 
-    private void terminate()
-    {
-        if (!terminated)
-        {
-            terminated = true;
-            freeActiveChunk();
-            release();
-        }
-    }
-
     /**
      * Place to cleanup and release any resources
      * being held by this DecoderSource.
@@ -115,19 +98,37 @@ public abstract class DecoderSource implements Content.Source
     {
     }
 
-    @Override
-    public void demand(Runnable demandCallback)
+    private void freeActiveChunk()
     {
-        if (activeChunk != null && activeChunk.hasRemaining())
-            demandCallback.run();
-        else
-            source.demand(demandCallback);
+        if (activeChunk != null)
+            activeChunk.release();
+        activeChunk = null;
     }
 
-    @Override
-    public void fail(Throwable failure)
+    private Content.Chunk readChunk()
     {
-        failed = ExceptionUtil.combine(failed, failure);
-        source.fail(failure);
+        if (activeChunk != null)
+        {
+            if (activeChunk.hasRemaining())
+                return activeChunk;
+            else
+            {
+                activeChunk.release();
+                activeChunk = null;
+            }
+        }
+
+        activeChunk = source.read();
+        return activeChunk;
+    }
+
+    private void terminate()
+    {
+        if (!terminated)
+        {
+            terminated = true;
+            freeActiveChunk();
+            release();
+        }
     }
 }
