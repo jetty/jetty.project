@@ -132,17 +132,12 @@ public class ConscryptHTTP2ServerTest
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(newClientSslContextFactory());
         HTTP2Client h2Client = new HTTP2Client(clientConnector);
-        HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client));
-        client.start();
-        try
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client)))
         {
+            client.start();
             int port = ((ServerConnector)server.getConnectors()[0]).getLocalPort();
             ContentResponse contentResponse = client.GET("https://localhost:" + port);
             assertEquals(200, contentResponse.getStatus());
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }

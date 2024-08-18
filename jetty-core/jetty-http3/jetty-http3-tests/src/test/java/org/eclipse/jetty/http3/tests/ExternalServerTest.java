@@ -54,18 +54,12 @@ public class ExternalServerTest
         SslContextFactory.Client sslClient = new SslContextFactory.Client();
         ClientQuicConfiguration quicConfig = new ClientQuicConfiguration(sslClient, null);
         HTTP3Client client = new HTTP3Client(quicConfig);
-        HttpClientTransportOverHTTP3 transport = new HttpClientTransportOverHTTP3(client);
-        HttpClient httpClient = new HttpClient(transport);
-        httpClient.start();
-        try
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client)))
         {
+            httpClient.start();
             URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
             ContentResponse response = httpClient.newRequest(uri).send();
             assertThat(response.getContentAsString(), containsString("<artifactId>maven-parent</artifactId>"));
-        }
-        finally
-        {
-            httpClient.stop();
         }
     }
 
@@ -75,10 +69,9 @@ public class ExternalServerTest
     {
         SslContextFactory.Client sslClient = new SslContextFactory.Client();
         ClientQuicConfiguration quicConfig = new ClientQuicConfiguration(sslClient, null);
-        HTTP3Client client = new HTTP3Client(quicConfig);
-        client.start();
-        try
+        try (HTTP3Client client = new HTTP3Client(quicConfig))
         {
+            client.start();
             // Well-known HTTP/3 servers to try.
 //            HostPort hostPort = new HostPort("maven-central-eu.storage-download.googleapis.com:443");
             HostPort hostPort = new HostPort("google.com:443");
@@ -136,10 +129,6 @@ public class ExternalServerTest
             });
 
             assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }

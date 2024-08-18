@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -2696,7 +2697,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public Resource getResourceForTempDirName()
         {
+           return ContextHandler.this.getNestedResourceForTempDirName();
+        }
+
+        private Resource getSuperResourceForTempDirName()
+        {
            return super.getResourceForTempDirName();
+        }
+
+        public void setTempDirectory(File dir)
+        {
+            super.setTempDirectory(dir);
+            setAttribute(ServletContext.TEMPDIR, super.getTempDirectory());
         }
 
         @Override
@@ -2859,5 +2871,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 return true;
             }
         }
+    }
+
+    public Resource getNestedResourceForTempDirName()
+    {
+        return getCoreContextHandler().getSuperResourceForTempDirName();
     }
 }
