@@ -1892,4 +1892,54 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testHTTP2ClientInCoreWebAppProvidedByServer() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,http2-client-transport,core-deploy"))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=DEBUG
+                """;
+            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
+
+            String name = "test-webapp";
+            Path webapps = distribution.getJettyBase().resolve("webapps");
+            Path webAppDirLib = webapps.resolve(name + ".d").resolve("lib");
+            Path webAppJar = distribution.resolveArtifact("org.eclipse.jetty:jetty-test-http2-client-transport-provided-webapp:jar:" + jettyVersion);
+            Files.copy(webAppJar, Files.createDirectories(webAppDirLib).resolve("webapp.jar"));
+            Files.writeString(webapps.resolve(name + ".xml"), """
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+                <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+                  <Set name="contextPath">/test</Set>
+                  <Set name="handler">
+                    <New class="org.eclipse.jetty.test.http2.client.transport.provided.HTTP2ClientTransportProvidedHandler" />
+                  </Set>
+                </Configure>
+                """);
+
+            int port = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                URI serverUri = URI.create("http://localhost:" + port + "/test/");
+                ContentResponse response = client.newRequest(serverUri)
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+        }
+    }
 }
