@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Random;
@@ -45,11 +46,13 @@ import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Tag;
@@ -853,6 +856,64 @@ public class HttpClientContinueTest extends AbstractTest
 
                 assertTrue(latch.await(5, TimeUnit.SECONDS));
             }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testExpect100ContinueWithContentLengthZeroExpectIsRemoved(Transport transport) throws Exception
+    {
+        start(transport, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals(0, request.getContentLengthLong());
+                // The Expect header must have been removed by the client.
+                assertNull(request.getHeader(HttpHeader.EXPECT.asString()));
+            }
+        });
+
+        ContentResponse response = client.newRequest(newURI(transport))
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+            .body(new StringRequestContent(""))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testExpect100ContinueWithContentLengthZero() throws Exception
+    {
+        startServer(Transport.HTTP, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                assertEquals(0, request.getContentLengthLong());
+                assertNotNull(request.getHeader(HttpHeader.EXPECT.asString()));
+
+                // Trigger the 100-Continue logic.
+                // The 100 continue will not be sent, since there is no request content.
+                ServletInputStream input = request.getInputStream();
+                assertEquals(-1, input.read());
+            }
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", ((NetworkConnector)connector).getLocalPort())))
+        {
+            String request = """
+                GET / HTTP/1.1
+                Host: localhost
+                Expect: 100-Continue
+                Content-Length: 0
+                
+                """;
+            client.write(StandardCharsets.UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
 

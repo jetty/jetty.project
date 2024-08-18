@@ -259,9 +259,8 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
             HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
             if (contentFactory == null)
             {
-                ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
-                ByteBufferPool.Sized sizedBufferPool = new ByteBufferPool.Sized(bufferPool, getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
-                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes, sizedBufferPool)
+                ByteBufferPool.Sized bufferPool = new ByteBufferPool.Sized(getByteBufferPool(_contextHandler), getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
+                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes, bufferPool)
                 {
                     @Override
                     protected Resource resolve(String pathInContext)
@@ -271,7 +270,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 };
                 if (_useFileMappedBuffer)
                     contentFactory = new FileMappingHttpContentFactory(contentFactory);
-                contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css", sizedBufferPool);
+                contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css", bufferPool);
                 contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
 
                 int maxCacheSize = getInitInt("maxCacheSize", -2);

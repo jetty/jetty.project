@@ -43,7 +43,7 @@ public class HTTP2Docs
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {jetty-version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
