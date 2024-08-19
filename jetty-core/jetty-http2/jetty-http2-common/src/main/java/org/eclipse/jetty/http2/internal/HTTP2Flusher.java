@@ -30,6 +30,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -94,10 +95,9 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 entries.offerFirst(entry);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Prepended {}, entries={}", entry, entries.size());
+                return true;
             }
         }
-        if (closed == null)
-            return true;
         closed(entry, closed);
         return false;
     }
@@ -108,17 +108,17 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
-            if (closed instanceof HpackException.SessionException)
+            // If it was not possible to HPACK encode, then allow to send a GOAWAY.
+            if (closed instanceof HpackException.SessionException && entry.frame().getType() == FrameType.GO_AWAY)
                 closed = null;
             if (closed == null)
             {
                 entries.offer(entry);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Appended {}, entries={}, {}", entry, entries.size(), this);
+                return true;
             }
         }
-        if (closed == null)
-            return true;
         closed(entry, closed);
         return false;
     }
@@ -134,10 +134,9 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 list.forEach(entries::offer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Appended {}, entries={} {}", list, entries.size(), this);
+                return true;
             }
         }
-        if (closed == null)
-            return true;
         list.forEach(entry -> closed(entry, closed));
         return false;
     }
@@ -168,9 +167,18 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         {
             if (terminated != null)
             {
-                 if (terminated instanceof HpackException.SessionException)
-                     terminated = new ClosedChannelException().initCause(terminated);
-                 else
+                boolean rethrow = true;
+                if (terminated instanceof HpackException.SessionException)
+                 {
+                     HTTP2Session.Entry entry = entries.peek();
+                     if (entry != null && entry.frame().getType() == FrameType.GO_AWAY)
+                     {
+                         // Allow a SessionException to be processed once to send a GOAWAY.
+                         terminated = new ClosedChannelException().initCause(terminated);
+                         rethrow = false;
+                     }
+                 }
+                 if (rethrow)
                      throw terminated;
             }
 
