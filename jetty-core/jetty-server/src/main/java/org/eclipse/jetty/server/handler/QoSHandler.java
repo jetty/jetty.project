@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -397,15 +399,31 @@ public class QoSHandler extends ConditionalHandler.Abstract
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} resuming {}", this, entry.request);
                 // Always dispatch to avoid StackOverflowError.
-                getServer().getThreadPool().execute(entry);
+                execute(entry, entry.useVirtualThreads);
                 return true;
             }
         }
         return false;
     }
 
+    private void execute(Runnable task, boolean useVirtualThreads)
+    {
+        ThreadPool executor = getServer().getThreadPool();
+        if (useVirtualThreads)
+        {
+            Executor virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(executor);
+            if (virtualExecutor != null)
+            {
+                virtualExecutor.execute(task);
+                return;
+            }
+        }
+        executor.execute(task);
+    }
+
     private class Entry implements CyclicTimeouts.Expirable, Runnable
     {
+        private final boolean useVirtualThreads;
         private final Request request;
         private final Response response;
         private final Callback callback;
@@ -414,6 +432,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
 
         private Entry(Request request, Response response, Callback callback, int priority)
         {
+            this.useVirtualThreads = VirtualThreads.isVirtualThread();
             this.request = request;
             this.response = response;
             this.callback = callback;
@@ -458,7 +477,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             }
 
             if (removed)
-                failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
+                execute(() -> failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException()), useVirtualThreads);
         }
 
         @Override

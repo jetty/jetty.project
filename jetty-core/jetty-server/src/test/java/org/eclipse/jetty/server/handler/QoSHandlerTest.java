@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +31,15 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -50,7 +58,8 @@ public class QoSHandlerTest
 
     private void start(QoSHandler qosHandler) throws Exception
     {
-        server = new Server();
+        if (server == null)
+            server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
         server.setHandler(qosHandler);
@@ -482,5 +491,71 @@ public class QoSHandlerTest
                 fail(x);
             }
         });
+    }
+
+    @Test
+    @DisabledForJreRange(max = JRE.JAVA_20)
+    public void testRequestInVirtualThreadIsResumedInVirtualThread() throws Exception
+    {
+        QoSHandler qosHandler = new QoSHandler();
+        qosHandler.setMaxRequestCount(1);
+        List<Callback> callbacks = new ArrayList<>();
+        qosHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(VirtualThreads.isVirtualThread() ? HttpStatus.OK_200 : HttpStatus.NOT_ACCEPTABLE_406);
+                // Save the callback but do not succeed it yet.
+                callbacks.add(callback);
+                return true;
+            }
+        });
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("st");
+        serverThreads.setVirtualThreadsExecutor(VirtualThreads.getNamedVirtualThreadsExecutor("vst"));
+        server = new Server(serverThreads);
+        ServerConnector networkConnector = new ServerConnector(server, 1, 1);
+        server.addConnector(networkConnector);
+        start(qosHandler);
+
+        // Send the first request that will not be completed yet.
+        try (SocketChannel client1 = SocketChannel.open(new InetSocketAddress("localhost", networkConnector.getLocalPort())))
+        {
+            client1.write(StandardCharsets.UTF_8.encode("""
+                GET /first HTTP/1.1
+                Host: localhost
+                
+                """));
+            // Wait that the request arrives at the server.
+            await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
+
+            // Send the second request, it should be suspended by QoSHandler.
+            try (SocketChannel client2 = SocketChannel.open(new InetSocketAddress("localhost", networkConnector.getLocalPort())))
+            {
+                client2.write(StandardCharsets.UTF_8.encode("""
+                    GET /second HTTP/1.1
+                    Host: localhost
+                    
+                    """));
+                // Wait for the second request to be suspended.
+                await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1L));
+
+                // Finish the first request, so that the second can be resumed.
+                callbacks.remove(0).succeeded();
+                client1.socket().setSoTimeout(5000);
+                HttpTester.Response response1 = HttpTester.parseResponse(client1);
+                assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+                // Wait for the second request to arrive to the server.
+                await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
+
+                // Finish the second request.
+                callbacks.remove(0).succeeded();
+                client2.socket().setSoTimeout(5000);
+                HttpTester.Response response2 = HttpTester.parseResponse(client2);
+                assertEquals(HttpStatus.OK_200, response2.getStatus());
+            }
+        }
     }
 }
