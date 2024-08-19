@@ -90,10 +90,8 @@ public class ServletUpgradeTest
 
         String request = "POST /TestServlet HTTP/1.1" + CRLF +
             "Host: localhost:" + port + CRLF +
-            "Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2" + CRLF +
             "Upgrade: YES" + CRLF +
             "Connection: Upgrade" + CRLF +
-            "Content-type: application/x-www-form-urlencoded" + CRLF +
             CRLF;
 
         output.write(request.getBytes());
