@@ -6,11 +6,6 @@ Adds the Jetty HTTP client dependencies to the server classpath.
 [tags]
 client
 
-[files]
-maven://org.eclipse.jetty/jetty-alpn-client/${jetty.version}/jar|lib/jetty-alpn-client-${jetty.version}.jar
-maven://org.eclipse.jetty/jetty-alpn-java-client/${jetty.version}/jar|lib/jetty-alpn-java-client-${jetty.version}.jar
-maven://org.eclipse.jetty/jetty-client/${jetty.version}/jar|lib/jetty-client-${jetty.version}.jar
-
 [lib]
 lib/jetty-alpn-client-${jetty.version}.jar
 lib/jetty-alpn-java-client-${jetty.version}.jar
