@@ -16,7 +16,7 @@ etc/jetty-threadpool-all-virtual.xml
 ## Virtual threads name prefix.
 #jetty.threadPool.namePrefix=vtp<hashCode>
 
-## Maximum number of concurrent virtual threads.
+## Maximum number of current virtual threads.
 #jetty.threadPool.maxThreads=200
 
 ## Whether to track virtual threads so they appear
