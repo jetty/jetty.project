@@ -162,11 +162,17 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         return delegate.send(exchange);
     }
 
+    /**
+     * @return whether to initialize the connection with an {@code OPTIONS * HTTP/1.1} request.
+     */
     public boolean isInitialize()
     {
         return initialize;
     }
 
+    /**
+     * @param initialize whether to initialize the connection with an {@code OPTIONS * HTTP/1.1} request.
+     */
     public void setInitialize(boolean initialize)
     {
         this.initialize = initialize;
