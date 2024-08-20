@@ -20,7 +20,6 @@ import java.nio.ByteOrder;
 import java.util.List;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.DecoderSource;
@@ -187,7 +186,10 @@ public class GzipCompression extends Compression
     @Override
     public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
     {
-        return new GZIPOutputStream(out);
+        ConfiguredGzipOutputStream gzipOutputStream = new ConfiguredGzipOutputStream(out);
+        gzipOutputStream.setLevel(getCompressionLevel());
+        // TODO: other configurations
+        return gzipOutputStream;
     }
 
     @Override

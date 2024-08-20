@@ -17,10 +17,12 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -30,6 +32,7 @@ public class BrotliEncoderSinkTest extends AbstractBrotliTest
 {
     @ParameterizedTest
     @MethodSource("textResources")
+    @Timeout(value = 2, unit = TimeUnit.SECONDS)
     public void testEncodeText(String textResourceName) throws Exception
     {
         startBrotli();

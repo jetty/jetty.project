@@ -15,11 +15,10 @@ package org.eclipse.jetty.compression.brotli;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.atomic.AtomicReference;
 
-import com.aayushatharva.brotli4j.encoder.BrotliEncoderChannel;
 import com.aayushatharva.brotli4j.encoder.Encoder;
+import com.aayushatharva.brotli4j.encoder.EncoderJNI;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
@@ -31,28 +30,45 @@ public class BrotliEncoderSink extends EncoderSink
 {
     private static final Logger LOG = LoggerFactory.getLogger(BrotliEncoderSink.class);
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+
+    enum State
+    {
+        /**
+         * Taking the input and encoding.
+         */
+        PROCESSING,
+        /**
+         * Done taking input, flushing whats left in encoder.
+         */
+        FLUSHING,
+        /**
+         * Done flushing, performing finish operation.
+         */
+        FINISHING,
+        /**
+         * Finish operation completed.
+         */
+        FINISHED;
+    }
+
     private final BrotliCompression compression;
-    private final SinkChannel writeChannel;
-    // TODO: change to com.aayushatharva.brotli4j.encoder.EncoderJNI.Wrapper once new release is available for
-    // https://github.com/hyperxpro/Brotli4j/issues/144
-    private final BrotliEncoderChannel encoder;
+    private final int bufferSize;
+    private final EncoderJNI.Wrapper encoder;
+    private final ByteBuffer inputBuffer;
+    private final AtomicReference<State> state = new AtomicReference<State>(State.PROCESSING);
 
     public BrotliEncoderSink(BrotliCompression compression, Content.Sink sink)
     {
         super(sink);
         this.compression = compression;
-        this.writeChannel = new SinkChannel();
         try
         {
-            Encoder.Parameters params = compression.getEncoderParams();
-            this.encoder = new BrotliEncoderChannel(writeChannel, params);
-            /* Path of a write looks like:
-            Jetty component
-            BrotliEncoderSink.write
-            Brotli4jChannel.write
-            JettyDecodedChannel.write
-            Content.Sink.write
-             */
+            this.bufferSize = compression.getBufferSize();
+            int quality = -1;
+            int lgwin = -1;
+            Encoder.Mode mode = Encoder.Mode.GENERIC;
+            this.encoder = new EncoderJNI.Wrapper(bufferSize, quality, lgwin, mode);
+            this.inputBuffer = encoder.getInputBuffer();
         }
         catch (IOException e)
         {
@@ -61,59 +77,113 @@ public class BrotliEncoderSink extends EncoderSink
     }
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    protected void release()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("write({}, {}, {})", last, byteBuffer, callback);
+        this.encoder.destroy();
+    }
+
+    private State getState()
+    {
+        return state.get();
+    }
+
+    @Override
+    protected WriteRecord encode(boolean last, ByteBuffer content)
+    {
+        if (encoder.isFinished())
+            return null;
+
+        while (true)
+        {
+            switch (state.get())
+            {
+                case PROCESSING ->
+                {
+                    try
+                    {
+                        while (content.hasRemaining())
+                        {
+                            // only encode if inputBuffer is full.
+                            if (!inputBuffer.hasRemaining())
+                            {
+                                ByteBuffer output = encode(EncoderJNI.Operation.PROCESS);
+                                if (output != null)
+                                    return new WriteRecord(false, output, Callback.NOOP);
+                            }
+
+                            // the only place the input buffer gets set.
+                            int len = BufferUtil.put(content, inputBuffer);
+                            // do not flip input buffer, that's not what Brotli4j expects/wants.
+                        }
+                        // content is fully consumed.
+                        if (!last)
+                            return null;
+                    }
+                    finally
+                    {
+                        if (last)
+                            state.compareAndSet(State.PROCESSING, State.FLUSHING);
+                    }
+                }
+                case FLUSHING ->
+                {
+                    inputBuffer.limit(inputBuffer.position());
+                    ByteBuffer output = encode(EncoderJNI.Operation.FLUSH);
+                    state.compareAndSet(State.FLUSHING, State.FINISHING);
+                    if (output != null)
+                        return new WriteRecord(false, output, Callback.NOOP);
+                }
+                case FINISHING ->
+                {
+                    inputBuffer.limit(inputBuffer.position());
+                    ByteBuffer output = encode(EncoderJNI.Operation.FINISH);
+                    state.compareAndSet(State.FINISHING, State.FINISHED);
+                    return new WriteRecord(true, output != null ? output : EMPTY_BUFFER, Callback.NOOP);
+                }
+                case FINISHED ->
+                {
+                    return null;
+                }
+            }
+        }
+    }
+
+    protected ByteBuffer encode(EncoderJNI.Operation op)
+    {
         try
         {
-            encoder.write(byteBuffer);
-            if (last)
+            boolean inputPushed = false;
+            ByteBuffer output = null;
+            while (true)
             {
-                encoder.close();
-                offerWrite(true, EMPTY_BUFFER, callback);
-            }
-            else
-            {
-                callback.succeeded();
+                if (!encoder.isSuccess())
+                {
+                    throw new IOException("Brotli Encoder failure");
+                }
+                // process previous output before new input
+                else if (encoder.hasMoreOutput())
+                {
+                    output = encoder.pull();
+                }
+                else if (encoder.hasRemainingInput())
+                {
+                    encoder.push(op, 0);
+                }
+                else if (!inputPushed)
+                {
+                    encoder.push(op, inputBuffer.limit());
+                    inputPushed = true;
+                }
+                else
+                {
+                    inputBuffer.clear();
+                    return output;
+                }
             }
         }
         catch (IOException e)
         {
-            callback.failed(e);
-        }
-    }
-
-    private class SinkChannel implements WritableByteChannel
-    {
-        private boolean closed = false;
-        private boolean last = false;
-
-        @Override
-        public boolean isOpen()
-        {
-            return !closed;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            last = true;
-            closed = true;
-        }
-
-        @Override
-        public int write(ByteBuffer src) throws IOException
-        {
-            if (!isOpen())
-                throw new ClosedChannelException();
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("captured.write({})", BufferUtil.toDetailString(src));
-
-            int len = src.remaining();
-            offerWrite(false, src, Callback.NOOP);
-            return len;
+            throw new RuntimeException(e);
         }
     }
 }

@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.compression.brotli;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+
+import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
+import org.eclipse.jetty.toolchain.test.Hex;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,5 +33,20 @@ public class BrotliCompressionTest extends AbstractBrotliTest
         assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix()), is("12345, 666"));
         assertThat(brotli.stripSuffixes("12345, 666" + brotli.getEtagSuffix() + ",W/\"9999" + brotli.getEtagSuffix() + "\""),
             is("12345, 666,W/\"9999\""));
+    }
+
+    @Test
+    public void testEncodeBehavior() throws Exception
+    {
+        startBrotli();
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             BrotliOutputStream encodingStream = new BrotliOutputStream(baos))
+        {
+            encodingStream.write("Hello".getBytes(StandardCharsets.UTF_8));
+            encodingStream.write("World".getBytes(StandardCharsets.UTF_8));
+            encodingStream.flush();
+            encodingStream.close();
+            System.out.println("Hex: " + Hex.asHex(baos.toByteArray()));
+        }
     }
 }

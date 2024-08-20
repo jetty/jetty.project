@@ -102,4 +102,5 @@ public class GzipCompressionTest extends AbstractGzipTest
             assertEquals(data1 + data2, decoded);
         }
     }
+
 }

@@ -14,99 +14,157 @@
 package org.eclipse.jetty.compression;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.WritePendingException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class EncoderSink implements Content.Sink
 {
     private final Content.Sink sink;
-    private final Flusher flusher;
+
+    public record WriteRecord(boolean last, ByteBuffer output, Callback callback) {}
 
     protected EncoderSink(Content.Sink sink)
     {
         this.sink = sink;
-        this.flusher = new Flusher(this.sink);
+    }
+
+    protected void release()
+    {
     }
 
     /**
-     * Offer a write operation to the underlying {@link Content.Sink} delegate.
+     * Figure out if the encoding can be done with the provided content.
      *
-     * @param last if last write
-     * @param byteBuffer the byteBuffer to write
-     * @param callback the callback to use on completion of write
+     * @param last the last write.
+     * @param content the content of the write event.
+     * @return true if the {@link #encode(boolean, ByteBuffer)} should proceed.
      */
-    protected void offerWrite(boolean last, ByteBuffer byteBuffer, Callback callback)
+    protected boolean canEncode(boolean last, ByteBuffer content)
     {
-        this.flusher.offer(last, byteBuffer, callback);
+        return true;
     }
 
-    private static class Flusher extends IteratingCallback
+    @Override
+    public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        private static final ByteBuffer COMPLETE_CALLBACK = BufferUtil.allocate(0);
-
-        private final Content.Sink sink;
-        private boolean last;
-        private ByteBuffer buffer;
-        private Callback callback;
-        private boolean lastWritten;
-
-        Flusher(Content.Sink sink)
+        try
         {
-            this.sink = sink;
-        }
-
-        void offer(Callback callback)
-        {
-            offer(false, COMPLETE_CALLBACK, callback);
-        }
-
-        void offer(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            if (this.callback != null)
-                throw new WritePendingException();
-            this.last = last;
-            buffer = byteBuffer;
-            this.callback = callback;
-            iterate();
-        }
-
-        @Override
-        protected Action process()
-        {
-            if (lastWritten)
-                return Action.SUCCEEDED;
-            if (callback == null)
-                return Action.IDLE;
-            if (buffer != COMPLETE_CALLBACK)
+            if (!canEncode(last, content))
             {
-                lastWritten = last;
-                sink.write(last, buffer, this);
+                callback.succeeded();
+                return;
             }
-            else
-            {
-                succeeded();
-            }
-            return Action.SCHEDULED;
+        }
+        catch (Throwable t)
+        {
+            // TODO: do we need to tell the delegate that we failed?
+            callback.failed(t);
+            return;
         }
 
-        @Override
-        protected void onSuccess()
-        {
-            buffer = null;
-            Callback callback = this.callback;
-            this.callback = null;
+        if (content != null || last)
+            new EncodeBufferCallback(last, content, callback).iterate();
+        else
             callback.succeeded();
+    }
+
+    protected abstract WriteRecord encode(boolean last, ByteBuffer content);
+
+    private class EncodeBufferCallback extends IteratingNestedCallback
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(EncodeBufferCallback.class);
+
+        private enum State
+        {
+            // Intial state, nothing has been attempted yet
+            INITIAL,
+            // We have started compressing
+            COMPRESSING,
+            // The last content is being encoded and is being flushed
+            FINISHING,
+            // The final content has been send (final state)
+            FINISHED
+        }
+
+        private final AtomicReference<State> state = new AtomicReference<>(State.INITIAL);
+        private final ByteBuffer content;
+        private final boolean last;
+
+        public EncodeBufferCallback(boolean last, ByteBuffer content, Callback callback)
+        {
+            super(callback);
+            this.content = content;
+            this.last = last;
+        }
+
+        protected void finished()
+        {
+            state.set(State.FINISHED);
+            release();
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onCompleteFailure(Throwable x)
         {
-            buffer = null;
-            callback.failed(cause);
+            release();
+            super.onCompleteFailure(x);
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            super.onCompleteSuccess();
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            if (state.get() == State.FINISHED)
+                return Action.SUCCEEDED;
+
+            // Attempt to encode the next write event
+            WriteRecord writeRecord = encode(last, content);
+            if (writeRecord != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("process() - write() {}", writeRecord);
+                state.compareAndSet(State.INITIAL, State.COMPRESSING);
+                write(writeRecord);
+                return Action.SCHEDULED;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("process() - hasRemaining={}", content.hasRemaining());
+            return content.hasRemaining() ? Action.SCHEDULED : Action.SUCCEEDED;
+        }
+
+        private void write(WriteRecord writeRecord)
+        {
+            Callback callback = this;
+            if (writeRecord.last)
+            {
+                state.set(State.FINISHING);
+                callback = Callback.combine(Callback.from(this::finished), callback);
+            }
+            if (writeRecord.callback != null)
+                callback = Callback.combine(callback, writeRecord.callback);
+            sink.write(writeRecord.last, writeRecord.output, callback);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[content=%s last=%b]",
+                super.toString(),
+                BufferUtil.toDetailString(content),
+                last
+            );
         }
     }
 }

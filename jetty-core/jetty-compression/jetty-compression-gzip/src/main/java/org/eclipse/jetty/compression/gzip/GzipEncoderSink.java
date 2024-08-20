@@ -14,12 +14,15 @@
 package org.eclipse.jetty.compression.gzip;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.slf4j.Logger;
@@ -59,108 +62,203 @@ public class GzipEncoderSink extends EncoderSink
      */
     private static final int GZIP_TRAILER_SIZE = 8;
 
+    enum State
+    {
+        /**
+         * Need to write Headers
+         */
+        HEADERS,
+        /**
+         * Processing Body / Data.
+         */
+        BODY,
+        /**
+         * Input is complete, flushing the Gzip internals.
+         */
+        FLUSHING,
+        /**
+         * Processing Trailers
+         */
+        TRAILERS,
+        /**
+         * Processing is finished.
+         */
+        FINISHED
+    }
+
     private final GzipCompression compression;
     private final CompressionPool<Deflater>.Entry deflaterEntry;
+    private final Deflater deflater;
+    private final RetainableByteBuffer inputBuffer;
+    private final ByteBuffer input;
     private final CRC32 crc = new CRC32();
-    private final int flushMode;
-    private boolean headersWritten = false;
+    private final AtomicReference<State> state = new AtomicReference<State>(State.HEADERS);
 
     public GzipEncoderSink(GzipCompression compression, Content.Sink sink)
     {
         super(sink);
         this.compression = compression;
         this.deflaterEntry = compression.getDeflaterPool().acquire();
-        this.deflaterEntry.get().setLevel(compression.getCompressionLevel());
-        this.flushMode = Deflater.NO_FLUSH;
+        this.deflater = deflaterEntry.get();
+        this.inputBuffer = compression.acquireByteBuffer();
+        this.input = this.inputBuffer.getByteBuffer();
+        this.input.position(this.input.limit()); // set to totally consume at first
+        this.deflater.reset();
+        this.deflater.setInput(input);
+        this.deflater.setLevel(compression.getCompressionLevel());
         this.crc.reset();
-        // TODO: need place for deflaterEntry.release()
-    }
-
-    private void addTrailer(Deflater deflater, ByteBuffer outputBuffer)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("addTrailer: crc={}, bytesRead={}, bytesWritten={}", crc.getValue(), deflater.getBytesRead(), deflater.getBytesWritten());
-        outputBuffer.putInt((int)crc.getValue()); // CRC-32 of uncompressed data
-        outputBuffer.putInt((int)deflater.getBytesRead()); // // Number of uncompressed bytes
     }
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    protected void release()
     {
-        if (!headersWritten)
+        inputBuffer.release();
+        deflaterEntry.release();
+    }
+
+    @Override
+    protected WriteRecord encode(boolean last, ByteBuffer content)
+    {
+        RetainableByteBuffer output = null;
+        try
         {
-            // Add GZIP Header
-            offerWrite(false, ByteBuffer.wrap(GZIP_HEADER), Callback.NOOP);
-            headersWritten = true;
-        }
-
-        boolean callbackHandled = false;
-        RetainableByteBuffer outputBuffer = null;
-        Deflater deflater = deflaterEntry.get();
-        while (byteBuffer.hasRemaining())
-        {
-            if (deflater.needsInput())
+            while (true)
             {
-                crc.update(byteBuffer.slice());
-                deflater.setInput(byteBuffer);
-            }
-
-            if (outputBuffer == null)
-                outputBuffer = compression.acquireByteBuffer();
-
-            outputBuffer.getByteBuffer().clear();
-            deflater.deflate(outputBuffer.getByteBuffer(), flushMode);
-            outputBuffer.getByteBuffer().flip();
-            if (outputBuffer.hasRemaining())
-            {
-                Callback writeCallback = Callback.from(outputBuffer::release);
-                if (!last && !byteBuffer.hasRemaining())
+                switch (state.get())
                 {
-                    callbackHandled = true;
-                    writeCallback = Callback.combine(callback, writeCallback);
+                    case HEADERS ->
+                    {
+                        state.compareAndSet(State.HEADERS, State.BODY);
+                        return new WriteRecord(false, ByteBuffer.wrap(GZIP_HEADER), Callback.NOOP);
+                    }
+                    case BODY ->
+                    {
+                        // Processing input
+                        if (content.hasRemaining())
+                        {
+                            if (output == null)
+                                output = compression.acquireByteBuffer();
+                            if (encode(content, output.getByteBuffer()))
+                            {
+                                if (output.hasRemaining())
+                                {
+                                    WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(output::release));
+                                    output = null;
+                                    return writeRecord;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // no remaining content, exit
+                            return null;
+                        }
+                        if (last)
+                        {
+                            state.compareAndSet(State.BODY, State.FLUSHING);
+                            // Reset input, so that Gzip stops looking at ByteBuffer (that might be reused)
+                            // deflater.setInput(EMPTY_BUFFER);
+                            deflater.finish();
+                        }
+                    }
+                    case FLUSHING ->
+                    {
+                        if (output == null)
+                            output = compression.acquireByteBuffer();
+                        if (!flush(output.getByteBuffer()))
+                            state.compareAndSet(State.FLUSHING, State.TRAILERS);
+                        if (output.hasRemaining())
+                        {
+                            WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(output::release));
+                            output = null;
+                            return writeRecord;
+                        }
+                    }
+                    case TRAILERS ->
+                    {
+                        if (output == null)
+                            output = compression.acquireByteBuffer();
+                        trailers(output.getByteBuffer());
+                        state.compareAndSet(State.TRAILERS, State.FINISHED);
+                        WriteRecord writeRecord = new WriteRecord(true, output.getByteBuffer(), Callback.from(output::release));
+                        output = null;
+                        return writeRecord;
+                    }
+                    case FINISHED ->
+                    {
+                        return null;
+                    }
                 }
-                offerWrite(false, outputBuffer.getByteBuffer(), writeCallback);
-                outputBuffer = null;
             }
         }
-        // Reset input, so that Gzip stops looking at ByteBuffer (that might be reused)
-        deflater.setInput(EMPTY_BUFFER);
-
-        if (last)
+        finally
         {
-            // declare input finished
-            deflater.finish();
-            while (!deflater.finished())
-            {
-                if (outputBuffer == null)
-                    outputBuffer = compression.acquireByteBuffer();
-
-                outputBuffer.getByteBuffer().clear();
-                int len = deflater.deflate(outputBuffer.getByteBuffer(), Deflater.FULL_FLUSH);
-                if (len > 0)
-                {
-                    outputBuffer.getByteBuffer().flip();
-                    Callback writeCallback = Callback.from(outputBuffer::release);
-                    offerWrite(false, outputBuffer.getByteBuffer(), writeCallback);
-                    outputBuffer = null;
-                }
-            }
-
-            // need to write trailers
-            if (outputBuffer == null)
-                outputBuffer = compression.acquireByteBuffer();
-            callbackHandled = true;
-            outputBuffer.getByteBuffer().clear();
-            addTrailer(deflater, outputBuffer.getByteBuffer());
-            outputBuffer.getByteBuffer().flip();
-            Callback writeCallback = Callback.combine(callback, Callback.from(outputBuffer::release));
-            offerWrite(true, outputBuffer.getByteBuffer(), writeCallback);
-            outputBuffer = null;
+            if (output != null)
+                output.release();
         }
+    }
 
-        if (outputBuffer != null)
-            outputBuffer.release();
-        if (!callbackHandled)
-            callback.succeeded();
+    /**
+     * Encode the content, put output into output buffer.
+     *
+     * @param content the input (uncompressed) content.
+     * @param output the output (compressed).
+     * @return true if output was produced, false otherwise
+     */
+    private boolean encode(ByteBuffer content, ByteBuffer output)
+    {
+        if (content.hasRemaining())
+            addInput(content);
+
+        // deflate on full input buffer
+        BufferUtil.clearToFill(output);
+        int len = deflater.deflate(output);
+        BufferUtil.flipToFlush(output, 0);
+        return (len > 0);
+    }
+
+    protected void addInput(ByteBuffer content)
+    {
+        int pos = BufferUtil.flipToFill(input);
+        int space = Math.min(input.remaining(), content.remaining());
+        ByteBuffer slice = content.slice();
+        slice.limit(space);
+        // Update CRC based on what can be consumed right now.
+        // Any leftover content will be consumed on a later call.
+        crc.update(slice.slice());
+        input.put(slice);
+        BufferUtil.flipToFlush(input, pos);
+        // consume the bytes on content
+        content.position(content.position() + space);
+    }
+
+    /**
+     * Flush the Gzip internals.
+     *
+     * @param output the output buffer to write to.
+     * @return true if flush produced output, false to indicate no output produced.
+     */
+    private boolean flush(ByteBuffer output)
+    {
+        BufferUtil.flipToFill(output);
+        int pos = output.position();
+        int len = deflater.deflate(output, Deflater.FULL_FLUSH);
+        BufferUtil.flipToFlush(output, pos);
+        return output.hasRemaining();
+    }
+
+    private void trailers(ByteBuffer output)
+    {
+        // GZIP Trailers requires LITTLE_ENDIAN ByteBuffer.order
+        assert output.order() == ByteOrder.LITTLE_ENDIAN;
+
+        // need to write trailers
+        output.clear();
+        output.putInt((int)crc.getValue()); // CRC-32 of uncompressed data
+        // Per javadoc, the .getBytesRead() is preferred as it is a return value of `long`.
+        // The gzip trailer is fixed at a value of `int`, so we use the non-preferred .getTotalIn()
+        // instead.  Also, if a gzip compressed is larger than Integer.MAX_VALUE then this trailer is broken anyway.
+        output.putInt((int)deflater.getTotalIn()); // // Number of uncompressed bytes
+        output.flip();
     }
 }
