@@ -93,6 +93,12 @@ public class GzipEncoderSink extends EncoderSink
     private final ByteBuffer input;
     private final CRC32 crc = new CRC32();
     private final AtomicReference<State> state = new AtomicReference<State>(State.HEADERS);
+    /**
+     * Number of input bytes provided to the deflater.
+     * This is different then {@link Deflater#getTotalIn()} as that only shows
+     * the number of input bytes that have been read.
+     */
+    private long inputBytesProvided = 0;
 
     public GzipEncoderSink(GzipCompression compression, Content.Sink sink)
     {
@@ -148,9 +154,9 @@ public class GzipEncoderSink extends EncoderSink
                                 }
                             }
                         }
-                        else
+                        else if (inputBytesProvided > 0)
                         {
-                            // no remaining content, exit
+                            // no remaining content (and input has been provided)
                             return null;
                         }
                         if (last)
@@ -163,6 +169,7 @@ public class GzipEncoderSink extends EncoderSink
                     }
                     case FLUSHING ->
                     {
+                        // flush anything left out of the deflater
                         if (output == null)
                             output = compression.acquireByteBuffer();
                         if (!flush(output.getByteBuffer()))
@@ -210,7 +217,6 @@ public class GzipEncoderSink extends EncoderSink
         if (content.hasRemaining())
             addInput(content);
 
-        // deflate on full input buffer
         BufferUtil.clearToFill(output);
         int len = deflater.deflate(output);
         BufferUtil.flipToFlush(output, 0);
@@ -223,6 +229,7 @@ public class GzipEncoderSink extends EncoderSink
         int space = Math.min(input.remaining(), content.remaining());
         ByteBuffer slice = content.slice();
         slice.limit(space);
+        inputBytesProvided += slice.remaining();
         // Update CRC based on what can be consumed right now.
         // Any leftover content will be consumed on a later call.
         crc.update(slice.slice());
@@ -240,11 +247,19 @@ public class GzipEncoderSink extends EncoderSink
      */
     private boolean flush(ByteBuffer output)
     {
-        BufferUtil.flipToFill(output);
         int pos = output.position();
-        int len = deflater.deflate(output, Deflater.FULL_FLUSH);
+        BufferUtil.flipToFill(output);
+        while (!deflater.finished())
+        {
+            int len = deflater.deflate(output, Deflater.FULL_FLUSH);
+            if (len > 0)
+            {
+                BufferUtil.flipToFlush(output, pos);
+                return true;
+            }
+        }
         BufferUtil.flipToFlush(output, pos);
-        return output.hasRemaining();
+        return false;
     }
 
     private void trailers(ByteBuffer output)
