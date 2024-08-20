@@ -36,7 +36,7 @@ public class ArchitectureDocs
     {
         // tag::virtualVirtual[]
         VirtualThreadPool threadPool = new VirtualThreadPool();
-        // Limit the max number of concurrent virtual threads.
+        // Limit the max number of current virtual threads.
         threadPool.setMaxThreads(200);
 
         Server server = new Server(threadPool);

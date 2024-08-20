@@ -722,18 +722,18 @@ The module properties to configure the thread pool are:
 include::{jetty-home}/modules/threadpool-all-virtual.mod[tags=documentation]
 ----
 
-The property `jetty.threadpool.maxThreads` limits, using a `Semaphore`, the number of concurrent virtual threads in use.
+The property `jetty.threadpool.maxThreads` limits, using a `Semaphore`, the number of current virtual threads in use.
 
-Limiting the number of concurrent virtual threads helps to limit resource usage in applications, especially in case of load spikes.
+Limiting the number of current virtual threads helps to limit resource usage in applications, especially in case of load spikes.
 When an unlimited number of virtual threads is allowed, the server might be brought down due to resource (typically memory) exhaustion.
 
 [CAUTION]
 ====
 Even when using virtual threads, Jetty uses non-blocking I/O, and dedicates a thread to each `java.nio.channels.Selector` to perform the `Selector.select()` operation.
 
-Currently (up to Java 22), calling `Selector.select()` from a virtual thread pins the carrier.
+Currently (up to Java 22), calling `Selector.select()` from a virtual thread pins the carrier thread.
 
-When using the `threadpool-all-virtual` Jetty module, if you have `N` selectors, then `N` carrier threads will be pinned by the virtual threads calling `Selector.select()`, possibly making your system less efficient, and at worst locking up the entire system if there are no carriers available to run virtual threads.
+When using the `threadpool-all-virtual` Jetty module, if you have `N` selectors, then `N` carrier threads will be pinned by the virtual threads calling `Selector.select()`, possibly making your system less efficient, and at worst locking up the entire system if there are no carrier threads available to run virtual threads.
 ====
 
 [[threadpool-virtual]]
