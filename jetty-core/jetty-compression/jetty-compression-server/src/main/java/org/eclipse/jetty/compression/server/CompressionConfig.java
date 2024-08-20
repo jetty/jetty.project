@@ -55,8 +55,12 @@ public class CompressionConfig extends AbstractLifeCycle
     private final IncludeExclude<String> mimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
     private int compressSizeMinimum = DEFAULT_MIN_COMPRESS_SIZE;
     private int decompressBufferSize = -1;
-    private boolean syncFlush = false;
+    private boolean syncFlush = false; // TODO: move to gzip specific config
     private HttpField vary = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
+
+    // TODO: preference order of compressions.
+    // TODO: compression specific config (eg: compression level, strategy, etc)
+    // TODO: dictionary support
 
     /**
      * Adds excluded Path Specs for request filtering on request inflation.
