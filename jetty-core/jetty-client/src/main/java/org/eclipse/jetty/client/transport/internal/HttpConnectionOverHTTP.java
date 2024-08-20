@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
@@ -114,6 +115,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     public SocketAddress getRemoteSocketAddress()
     {
         return delegate.getRemoteSocketAddress();
+    }
+
+    @Override
+    public SSLSession getSSLSession()
+    {
+        return delegate.getSSLSession();
     }
 
     @Override
@@ -348,6 +355,13 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         public SocketAddress getRemoteSocketAddress()
         {
             return getEndPoint().getRemoteSocketAddress();
+        }
+
+        @Override
+        public SSLSession getSSLSession()
+        {
+            EndPoint.SslSessionData sslSessionData = getEndPoint().getSslSessionData();
+            return sslSessionData == null ? null : sslSessionData.sslSession();
         }
 
         @Override

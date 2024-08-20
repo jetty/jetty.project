@@ -30,9 +30,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -1024,8 +1026,18 @@ public class HttpClientTest extends AbstractTest
         ContentResponse response = client.newRequest(newURI(transport))
             .onRequestBegin(r ->
             {
-                if (r.getConnection() == null)
+                Connection connection = r.getConnection();
+                if (connection == null)
                     r.abort(new IllegalStateException());
+            })
+            .onRequestHeaders(r ->
+            {
+                if (transport.isSecure() && transport != Transport.H3)
+                {
+                    SSLSession sslSession = r.getConnection().getSSLSession();
+                    if (sslSession == null)
+                        r.abort(new IllegalStateException());
+                }
             })
             .send();
 

@@ -235,7 +235,12 @@ A second request with the same origin sent _after_ the first request/response cy
 A second request with the same origin sent _concurrently_ with the first request will likely cause the opening of a second connection, depending on the connection pool implementation.
 The configuration parameter `HttpClient.maxConnectionsPerDestination` (see also the <<configuration,configuration section>>) controls the max number of connections that can be opened for a destination.
 
-NOTE: If opening connections to a given origin takes a long time, then requests for that origin will queue up in the corresponding destination until the connections are established.
+[NOTE]
+====
+If opening connections to a given origin takes a long time, then requests for that origin will queue up in the corresponding destination until the connections are established.
+
+To save the time spent opening connections, you can xref:connection-pool-precreate-connections[pre-create connections].
+====
 
 Each connection can handle a limited number of concurrent requests.
 For HTTP/1.1, this number is always `1`: there can only be one outstanding request for each connection.
@@ -527,6 +532,28 @@ This is a fancy example of how to mix HTTP versions and low-level transports:
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=mixedTransports]
 ----
+
+[[connection-information]]
+=== Request Connection Information
+
+In order to send a request, it is necessary to obtain a connection, as explained in the xref:request-processing[request processing section].
+
+The HTTP/1.1 protocol may send only one request at a time on a single connection, while multiplexed protocols such as HTTP/2 may send many requests at a time on a single connection.
+
+You can access the connection information, for example the local and remote `SocketAddress`, or the `SSLSession` if the connection is secured using TLS, in the following way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=connectionInformation]
+----
+
+[NOTE]
+====
+The connection information is only available when the request is associated with a connection.
+
+This means that the connection is not available in the _request queued_ event, but only starting from the _request begin_ event.
+For more information about request events, see xref:non-blocking[this section].
+====
 
 [[configuration]]
 == HttpClient Configuration

@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.Authentication;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
@@ -1179,5 +1182,30 @@ public class HTTPClientDocs
             .body(new BytesRequestContent(validatedResponse.getContent()))
             .send();
         // end::mixedTransports[]
+    }
+
+    public void connectionInformation() throws Exception
+    {
+        // tag::connectionInformation[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        ContentResponse response = httpClient.newRequest("http://domain.com/path")
+            // The connection information is only available starting from the request begin event.
+            .onRequestBegin(request ->
+            {
+                Connection connection = request.getConnection();
+
+                // Obtain the address of the server.
+                SocketAddress remoteAddress = connection.getRemoteSocketAddress();
+                System.getLogger("connection").log(INFO, "Server address: %s", remoteAddress);
+
+                // Obtain the SSLSession.
+                SSLSession sslSession = connection.getSSLSession();
+                if (sslSession != null)
+                    System.getLogger("connection").log(INFO, "SSLSession: %s", sslSession);
+            })
+            .send();
+        // end::connectionInformation[]
     }
 }

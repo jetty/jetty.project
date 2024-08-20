@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
@@ -99,6 +100,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     public SocketAddress getRemoteSocketAddress()
     {
         return delegate.getRemoteSocketAddress();
+    }
+
+    @Override
+    public SSLSession getSSLSession()
+    {
+        return delegate.getSSLSession();
     }
 
     protected Flusher getFlusher()
@@ -357,6 +364,13 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public SocketAddress getRemoteSocketAddress()
         {
             return getEndPoint().getRemoteSocketAddress();
+        }
+
+        @Override
+        public SSLSession getSSLSession()
+        {
+            EndPoint.SslSessionData sslSessionData = getEndPoint().getSslSessionData();
+            return sslSessionData == null ? null : sslSessionData.sslSession();
         }
 
         @Override

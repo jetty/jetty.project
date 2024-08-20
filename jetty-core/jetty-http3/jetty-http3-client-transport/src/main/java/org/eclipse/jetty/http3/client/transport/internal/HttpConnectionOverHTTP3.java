@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
@@ -62,6 +63,14 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     public SocketAddress getRemoteSocketAddress()
     {
         return session.getRemoteSocketAddress();
+    }
+
+    @Override
+    public SSLSession getSSLSession()
+    {
+        // No SSLSession in QUIC as SSLSession is TLS specific,
+        // and QUIC does not use TLS to secure the communication.
+        return null;
     }
 
     @Override
