@@ -78,33 +78,52 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
         return connection;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
+    /**
+     * @return the max size in bytes for the HTTP header field cache
+     */
+    @ManagedAttribute("The maximum allowed size in bytes for the HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return headerCacheSize;
     }
 
+    /**
+     * @param headerCacheSize the max size in bytes for the HTTP header field cache
+     */
     public void setHeaderCacheSize(int headerCacheSize)
     {
         this.headerCacheSize = headerCacheSize;
     }
 
-    @ManagedAttribute("Whether the header field cache is case sensitive")
+    /**
+     * @return whether the HTTP header field cache is case-sensitive
+     */
+    @ManagedAttribute("Whether the HTTP header field cache is case-sensitive")
     public boolean isHeaderCacheCaseSensitive()
     {
         return headerCacheCaseSensitive;
     }
 
+    /**
+     * @param headerCacheCaseSensitive whether the HTTP header field cache is case-sensitive
+     */
     public void setHeaderCacheCaseSensitive(boolean headerCacheCaseSensitive)
     {
         this.headerCacheCaseSensitive = headerCacheCaseSensitive;
     }
 
+    /**
+     * @return whether newly created connections should be initialized with an {@code OPTIONS * HTTP/1.1} request
+     */
+    @ManagedAttribute("Whether newly created connections should be initialized with an OPTIONS * HTTP/1.1 request")
     public boolean isInitializeConnections()
     {
         return factory.isInitializeConnections();
     }
 
+    /**
+     * @param initialize whether newly created connections should be initialized with an {@code OPTIONS * HTTP/1.1} request
+     */
     public void setInitializeConnections(boolean initialize)
     {
         factory.setInitializeConnections(initialize);
