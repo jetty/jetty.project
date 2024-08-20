@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -240,6 +241,7 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
      */
     @ParameterizedTest
     @MethodSource("compressions")
+    @Disabled("Not supported in current Compression libs")
     public void testTwoSmallBlocks(Class<Compression> compressionClass) throws Exception
     {
         startCompression(compressionClass);
