@@ -36,9 +36,9 @@ import org.slf4j.LoggerFactory;
 
 public class DynamicCompressionHandler extends Handler.Wrapper
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DynamicCompressionHandler.class);
-
     public static final String HANDLER_ETAGS = DynamicCompressionHandler.class.getPackageName() + ".ETag";
+
+    private static final Logger LOG = LoggerFactory.getLogger(DynamicCompressionHandler.class);
     private final Map<String, Compression> supportedEncodings = new HashMap<>();
     private final PathMappings<CompressionConfig> pathConfigs = new PathMappings<CompressionConfig>();
 

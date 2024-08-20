@@ -41,8 +41,9 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
         this.callback = callback;
         this.config = config;
         this.compression = compression;
-        this.encoderSink = compression.newEncoderSink(this);
+        this.encoderSink = compression.newEncoderSink(wrapped);
         syncFlush = config.isSyncFlush();
+        getHeaders().put(compression.getContentEncodingField());
     }
 
     @Override
