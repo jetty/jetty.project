@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -45,7 +46,6 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -100,7 +100,6 @@ public class BlockedWritesWithSmallThreadPoolTest
     }
 
     @Test
-    @Tag("flaky")
     public void testServerThreadsBlockedInWrites() throws Exception
     {
         int contentLength = 16 * 1024 * 1024;
@@ -108,11 +107,12 @@ public class BlockedWritesWithSmallThreadPoolTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 serverEndPointRef.compareAndSet(null, (AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
-                // Write a large content to cause TCP congestion.
-                response.write(true, ByteBuffer.wrap(new byte[contentLength]), callback);
+                // Blocking write a large content to cause TCP congestion.
+                Content.Sink.write(response, true, ByteBuffer.wrap(new byte[contentLength]));
+                callback.succeeded();
                 return true;
             }
         });
@@ -138,21 +138,20 @@ public class BlockedWritesWithSmallThreadPoolTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
                 try
                 {
                     // Block here to stop reading from the network
                     // to cause the server to TCP congest.
                     clientBlockLatch.await(5, SECONDS);
+                    Stream.Data data = stream.readData();
                     data.release();
                     if (data.frame().isEndStream())
                         clientDataLatch.countDown();
                     else
                         stream.demand();
                 }
-                catch (InterruptedException x)
+                catch (InterruptedException ignored)
                 {
-                    data.release();
                 }
             }
         });

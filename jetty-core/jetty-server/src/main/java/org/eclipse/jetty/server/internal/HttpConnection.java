@@ -1610,12 +1610,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             getEndPoint().close(failure);
         }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return HttpStream.super.getInvocationType();
-        }
     }
 
     private class TunnelSupportOverHTTP1 implements TunnelSupport
