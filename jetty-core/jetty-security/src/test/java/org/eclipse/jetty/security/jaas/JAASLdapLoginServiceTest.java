@@ -396,5 +396,4 @@ public class JAASLdapLoginServiceTest extends AbstractLdapTestUnit
             return null;
         }
     }
-
 }

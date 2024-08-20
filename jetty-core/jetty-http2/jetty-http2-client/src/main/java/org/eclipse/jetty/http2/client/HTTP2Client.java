@@ -100,7 +100,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  *} </pre>
  */
 @ManagedObject
-public class HTTP2Client extends ContainerLifeCycle
+public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
 {
     private final ClientConnector connector;
     private int inputBufferSize = IO.DEFAULT_BUFFER_SIZE;
@@ -492,5 +492,11 @@ public class HTTP2Client extends ContainerLifeCycle
             factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), factory);
         }
         return factory;
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        stop();
     }
 }
