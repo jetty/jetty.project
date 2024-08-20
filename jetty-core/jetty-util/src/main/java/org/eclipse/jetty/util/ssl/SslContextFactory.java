@@ -86,7 +86,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
-import org.eclipse.jetty.util.security.Password;
+import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,9 +157,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     private Resource _trustStoreResource;
     private String _trustStoreProvider;
     private String _trustStoreType;
-    private Password _keyStorePassword;
-    private Password _keyManagerPassword;
-    private Password _trustStorePassword;
+    private Credential _keyStorePassword;
+    private Credential _keyManagerPassword;
+    private Credential _trustStorePassword;
     private String _sslProvider;
     private String _sslProtocol = "TLS";
     private String _secureRandomAlgorithm;
@@ -1148,7 +1148,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     {
         String type = Objects.toString(getTrustStoreType(), getKeyStoreType());
         String provider = Objects.toString(getTrustStoreProvider(), getKeyStoreProvider());
-        Password passwd = _trustStorePassword;
+        Credential passwd = _trustStorePassword;
         if (resource == null || resource.equals(_keyStoreResource))
         {
             resource = _keyStoreResource;
@@ -1614,23 +1614,23 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      * Returns the password object for the given realm.
      *
      * @param realm the realm
-     * @return the Password object
+     * @return the Credential object
      */
-    protected Password getPassword(String realm)
+    protected Credential getPassword(String realm)
     {
         String password = System.getProperty(realm);
         return password == null ? null : newPassword(password);
     }
 
     /**
-     * Creates a new Password object.
+     * Creates a new Credential object.
      *
      * @param password the password string
-     * @return the new Password object
+     * @return the new Credential object
      */
-    public Password newPassword(String password)
+    public Credential newPassword(String password)
     {
-        return new Password(password);
+        return Credential.getCredential(password);
     }
 
     public SSLServerSocket newSslServerSocket(String host, int port, int backlog) throws IOException
