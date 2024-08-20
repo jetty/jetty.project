@@ -2466,7 +2466,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private ManagedSession _managedSession;
         private List<ManagedSession> _managedSessions;
 
-        AbstractSessionManager.RequestedSession _requestedSession;
+        AbstractSessionManager.RequestedSession _requestedSession = AbstractSessionManager.RequestedSession.NO_REQUESTED_SESSION;
 
         protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
                                      ScopedContext context,
@@ -2566,7 +2566,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
          */
         public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
         {
-            _requestedSession = requestedSession;
+            _requestedSession = requestedSession == null ? AbstractSessionManager.RequestedSession.NO_REQUESTED_SESSION : requestedSession;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (AbstractSessionManager.RequestedSession.class.getName().equals(name))
+                return _requestedSession;
+            return super.getAttribute(name);
         }
 
         /**
@@ -2653,7 +2661,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             if (_sessionManager == null)
                 throw new IllegalStateException("No SessionManager");
 
-            _sessionManager.newSession(this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
+            _sessionManager.newSession(this, _requestedSession.sessionId(), this::setManagedSession);
 
             if (_managedSession == null)
                 throw new IllegalStateException("Create session failed");
