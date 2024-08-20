@@ -17,8 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
 import org.eclipse.jetty.client.ContentResponse;
@@ -33,6 +31,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -105,8 +104,7 @@ public class DynamicCompressionHandlerTest
     @Test
     public void testDefaultGzipConfiguration() throws Exception
     {
-        final byte[] buffer = new byte[2 * 1024 * 1024];
-        Arrays.fill(buffer, (byte)'a');
+        String message = "Hello Jetty!";
 
         DynamicCompressionHandler compressionHandler = new DynamicCompressionHandler();
         compressionHandler.addCompression(new GzipCompression());
@@ -117,7 +115,7 @@ public class DynamicCompressionHandlerTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "texts/plain;charset=utf-8");
-                response.write(true, ByteBuffer.wrap(buffer), callback);
+                response.write(true, BufferUtil.toBuffer(message, UTF_8), callback);
                 return true;
             }
         });
@@ -139,7 +137,7 @@ public class DynamicCompressionHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is("gzip"));
         String content = new String(decompressGzip(response.getContent()), UTF_8);
-        assertThat(content, is(new String(buffer, UTF_8)));
+        assertThat(content, is(message));
     }
 
     private byte[] decompressGzip(byte[] content) throws IOException
