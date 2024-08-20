@@ -51,7 +51,7 @@ public class ZstandardEncoderSink extends EncoderSink
         super(sink);
         this.compression = compression;
         this.compressCtx = new ZstdCompressCtx();
-        this.compressCtx.setLevel(compression.getCompressionLevel());
+        compression.getEncoderConfigurator().accept(this.compressCtx);
     }
 
     @Override

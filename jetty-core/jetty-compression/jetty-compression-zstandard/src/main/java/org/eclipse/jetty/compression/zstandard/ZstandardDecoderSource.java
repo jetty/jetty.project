@@ -30,6 +30,7 @@ public class ZstandardDecoderSource extends DecoderSource
         super(src);
         this.compression = compression;
         this.decompressCtx = new ZstdDecompressCtx();
+        compression.getDecoderConfigurator().accept(this.decompressCtx);
     }
 
     @Override
