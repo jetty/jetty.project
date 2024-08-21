@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.aayushatharva.brotli4j.encoder.Encoder;
 import com.aayushatharva.brotli4j.encoder.EncoderJNI;
+import com.aayushatharva.brotli4j.encoder.EncoderJNIOp;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
@@ -106,7 +107,7 @@ public class BrotliEncoderSink extends EncoderSink
                             // only encode if inputBuffer is full.
                             if (!inputBuffer.hasRemaining())
                             {
-                                ByteBuffer output = encode(EncoderJNI.Operation.PROCESS);
+                                ByteBuffer output = encode(EncoderJNIOp.PROCESS);
                                 if (output != null)
                                     return new WriteRecord(false, output, Callback.NOOP);
                             }
@@ -128,7 +129,7 @@ public class BrotliEncoderSink extends EncoderSink
                 case FLUSHING ->
                 {
                     inputBuffer.limit(inputBuffer.position());
-                    ByteBuffer output = encode(EncoderJNI.Operation.FLUSH);
+                    ByteBuffer output = encode(EncoderJNIOp.FLUSH);
                     state.compareAndSet(State.FLUSHING, State.FINISHING);
                     if (output != null)
                         return new WriteRecord(false, output, Callback.NOOP);
@@ -136,7 +137,7 @@ public class BrotliEncoderSink extends EncoderSink
                 case FINISHING ->
                 {
                     inputBuffer.limit(inputBuffer.position());
-                    ByteBuffer output = encode(EncoderJNI.Operation.FINISH);
+                    ByteBuffer output = encode(EncoderJNIOp.FINISH);
                     state.compareAndSet(State.FINISHING, State.FINISHED);
                     return new WriteRecord(true, output != null ? output : EMPTY_BUFFER, Callback.NOOP);
                 }
@@ -148,7 +149,7 @@ public class BrotliEncoderSink extends EncoderSink
         }
     }
 
-    protected ByteBuffer encode(EncoderJNI.Operation op)
+    protected ByteBuffer encode(EncoderJNIOp op)
     {
         try
         {
@@ -167,11 +168,11 @@ public class BrotliEncoderSink extends EncoderSink
                 }
                 else if (encoder.hasRemainingInput())
                 {
-                    encoder.push(op, 0);
+                    encoder.push(op.getOp(), 0);
                 }
                 else if (!inputPushed)
                 {
-                    encoder.push(op, inputBuffer.limit());
+                    encoder.push(op.getOp(), inputBuffer.limit());
                     inputPushed = true;
                 }
                 else
