@@ -37,7 +37,8 @@ public interface MethodHolder
     static MethodHolder from(MethodHandle methodHandle)
     {
         String property = System.getProperty(METHOD_HOLDER_BINDING_PROPERTY);
-        return from(methodHandle, Boolean.parseBoolean(property));
+        boolean binding = property == null || Boolean.parseBoolean(property);
+        return from(methodHandle, binding);
     }
 
     static MethodHolder from(MethodHandle methodHandle, boolean binding)
