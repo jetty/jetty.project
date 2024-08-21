@@ -98,8 +98,8 @@ public class MethodHolderBenchmark
     {
         Options opt = new OptionsBuilder()
             .include(MethodHolderBenchmark.class.getSimpleName())
-            .warmupIterations(5)
-            .measurementIterations(10)
+            .warmupIterations(1)
+            .measurementIterations(5)
             .forks(1)
             .threads(1)
             .build();
