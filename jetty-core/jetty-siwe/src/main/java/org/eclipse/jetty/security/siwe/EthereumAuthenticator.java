@@ -101,7 +101,6 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
 
     public EthereumAuthenticator()
     {
-        LOG.warn("Sign-In With Ethereum support is experimental and not suited for production use.");
     }
 
     public void includeDomains(String... domains)
