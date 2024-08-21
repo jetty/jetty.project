@@ -186,15 +186,15 @@ public class DynamicCompressionHandler extends Handler.Wrapper
             decompressionRequest = newDecompressionRequest(request, decompressEncoding, config);
         }
 
-        if (compressEncoding != null && config.getVary() != null)
-        {
-            // The response may vary based on the presence or lack of Accept-Encoding.
-            response.getHeaders().ensureField(config.getVary());
-        }
-
         // Wrap the response and callback IFF we can be deflated and will try to deflate
         if (compressEncoding != null)
         {
+            if (config.getVary() != null)
+            {
+                // The response may vary based on the presence or lack of Accept-Encoding.
+                response.getHeaders().ensureField(config.getVary());
+            }
+
             Response compression = newCompressionResponse(this, request, response, callback, compressEncoding, config);
             compressionResponse = compression;
             if (compression instanceof Callback dynamicCallback)
