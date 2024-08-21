@@ -620,7 +620,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP(1)));
-                ContentResponse response = client.GET("http://localhost:" + port + "/proxy/current/");
+                ContentResponse response = client.GET("http://localhost:" + port + "/proxy/jetty-12/index.html");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), () ->
                 {
                     StringBuilder rawResponse = new StringBuilder();

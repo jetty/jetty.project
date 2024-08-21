@@ -328,32 +328,30 @@ Virtual threads have been introduced as a preview feature in Java 19 and Java 20
 
 The xref:modules/standard.adoc#threadpool-virtual-preview[`threadpool-virtual-preview`] Jetty module provides support for virtual threads in Java 19 and Java 20, and it is mutually exclusive with the `threadpool` Jetty module.
 
-The xref:modules/standard.adoc#threadpool-virtual[`threadpool-virtual`] Jetty module provides support for virtual threads in Java 21 or later, and it is mutually exclusive with the `threadpool` Jetty module.
+When using Java 21, there are two Jetty modules available:
+
+* xref:modules/standard.adoc#threadpool-virtual[`threadpool-virtual`]
+* xref:modules/standard.adoc#threadpool-all-virtual[`threadpool-all-virtual`]
+
+Both are mutually exclusive with the `threadpool` Jetty module.
 
 If you have already enabled the `threadpool` Jetty module, it is sufficient to remove it by removing the `$JETTY_BASE/start.d/threadpool.ini` file.
 
-When using Java 21 or later, you can enable the xref:modules/standard.adoc#threadpool-virtual[`threadpool-virtual`] module:
+The xref:modules/standard.adoc#threadpool-virtual[`threadpool-virtual`] Jetty module provides a mixed thread mode, where platform threads are used to run internal Jetty tasks, but application code is invoked using virtual threads.
+
+The xref:modules/standard.adoc#threadpool-all-virtual[`threadpool-all-virtual`] Jetty module provides a thread mode where all threads are virtual threads, including those used internally by Jetty.
+
+You can enable either module using:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=threadpool-virtual,http
 ----
 
-After the command above, the `$JETTY_BASE` directory looks like this:
+or
 
-[source]
 ----
-$JETTY_BASE
-├── resources
-│   └── jetty-logging.properties
-└── start.d
-    ├── http.ini
-    └── threadpool-virtual.ini
+$ java -jar $JETTY_HOME/start.jar --add-modules=threadpool-all-virtual,http
 ----
 
-Now you can customize the `threadpool-virtual.ini` file to explicitly configure the thread pool and the virtual threads and then start Jetty:
-
-[jetty%nowrap]
-....
-[jetty]
-setupArgs=--add-modules=threadpool-virtual,http
-....
+After the command above, the `$JETTY_BASE/start.d/` directory will contain the corresponding `threadpool-virtual.ini` or `threadpool-all-virtual.ini` file.
+You can now explicitly configure the thread pool module properties inside the `+*.ini+` file and then start Jetty.
