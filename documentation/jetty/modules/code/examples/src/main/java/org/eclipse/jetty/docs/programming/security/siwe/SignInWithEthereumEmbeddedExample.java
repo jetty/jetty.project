@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.siwe.example;
+package org.eclipse.jetty.docs.programming.security.siwe;
 
 import java.io.PrintWriter;
 import java.nio.file.Paths;
@@ -43,8 +43,9 @@ public class SignInWithEthereumEmbeddedExample
         server.addConnector(connector);
 
         String resourcePath = Paths.get(Objects.requireNonNull(SignInWithEthereumEmbeddedExample.class.getClassLoader().getResource("")).toURI())
-            .resolve("../../src/test/resources/")
+            .resolve("../../src/main/resources/")
             .normalize().toString();
+        System.err.println(resourcePath);
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirAllowed(false);
         resourceHandler.setBaseResourceAsString(resourcePath);
@@ -94,6 +95,7 @@ public class SignInWithEthereumEmbeddedExample
 
     public static SecurityHandler createSecurityHandler(Handler handler)
     {
+        // tag::configureSecurityHandler[]
         // This uses jetty-core, but you can configure a ConstraintSecurityHandler for use with EE10.
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         securityHandler.setHandler(handler);
@@ -108,6 +110,7 @@ public class SignInWithEthereumEmbeddedExample
 
         // Or you can configure with parameters on the SecurityHandler.
         securityHandler.setParameter(EthereumAuthenticator.LOGIN_PATH_PARAM, "/login.html");
+        // end::configureSecurityHandler[]
 
         return securityHandler;
     }

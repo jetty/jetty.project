@@ -119,7 +119,7 @@ The nonce endpoint provided by the `EthereumAuthenticator` returns a response wi
 === Configuring Security Handler
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/siwe/SignInWithEthereum.java[tags=configureSecurityHandler]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/security/siwe/SignInWithEthereumEmbeddedExample.java[tags=configureSecurityHandler]
 ----
 
 === Login Page Example
