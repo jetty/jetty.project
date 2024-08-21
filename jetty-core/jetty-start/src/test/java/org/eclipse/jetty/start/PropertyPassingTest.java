@@ -20,19 +20,26 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.IO;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+@ExtendWith(WorkDirExtension.class)
 public class PropertyPassingTest
 {
     private static class ConsoleCapture implements Runnable
@@ -86,10 +93,12 @@ public class PropertyPassingTest
         }
     }
 
+    public WorkDir workDir;
+
     @Test
     public void testAsJvmArg() throws IOException, InterruptedException
     {
-        File bogusXml = MavenTestingUtils.getTestResourceFile("bogus.xml");
+        Path bogusXml = MavenPaths.findTestResourceFile("bogus.xml");
 
         // Setup command line
         List<String> commands = new ArrayList<>();
@@ -100,7 +109,7 @@ public class PropertyPassingTest
         // addDebug(commands);
         commands.add("-Dtest.foo=bar"); // TESTING THIS
         commands.add(getStartJarBin());
-        commands.add(bogusXml.getAbsolutePath());
+        commands.add(bogusXml.toAbsolutePath().toString());
 
         // Run command, collect output
         String output = collectRunOutput(commands);
@@ -112,7 +121,7 @@ public class PropertyPassingTest
     @Test
     public void testAsCommandLineArg() throws IOException, InterruptedException
     {
-        File bogusXml = MavenTestingUtils.getTestResourceFile("bogus.xml");
+        Path bogusXml = MavenPaths.findTestResourceFile("bogus.xml");
 
         // Setup command line
         List<String> commands = new ArrayList<>();
@@ -123,7 +132,7 @@ public class PropertyPassingTest
         // addDebug(commands);
         commands.add(getStartJarBin());
         commands.add("test.foo=bar"); // TESTING THIS
-        commands.add(bogusXml.getAbsolutePath());
+        commands.add(bogusXml.toAbsolutePath().toString());
 
         // Run command, collect output
         String output = collectRunOutput(commands);
@@ -135,7 +144,7 @@ public class PropertyPassingTest
     @Test
     public void testAsDashDCommandLineArg() throws IOException, InterruptedException
     {
-        File bogusXml = MavenTestingUtils.getTestResourceFile("bogus.xml");
+        Path bogusXml = MavenPaths.findTestResourceFile("bogus.xml");
 
         // Setup command line
         List<String> commands = new ArrayList<>();
@@ -146,7 +155,7 @@ public class PropertyPassingTest
         // addDebug(commands);
         commands.add(getStartJarBin());
         commands.add("-Dtest.foo=bar"); // TESTING THIS
-        commands.add(bogusXml.getAbsolutePath());
+        commands.add(bogusXml.toAbsolutePath().toString());
 
         // Run command, collect output
         String output = collectRunOutput(commands);
@@ -155,16 +164,143 @@ public class PropertyPassingTest
         assertThat(output, containsString("test.foo=bar"));
     }
 
+    @Test
+    public void testExpandPropertyArg() throws IOException, InterruptedException
+    {
+        Path bogusXml = MavenPaths.findTestResourceFile("bogus.xml");
+
+        // Setup command line
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
+        commands.add("-Dtest.dir=/opt/dists/jetty");
+        commands.add("-cp");
+        commands.add(getClassPath());
+        // addDebug(commands);
+        commands.add(getStartJarBin());
+        commands.add("test.config=${test.dir}/etc/config.ini"); // TESTING THIS
+        commands.add(bogusXml.toAbsolutePath().toString());
+
+        // Run command, collect output
+        String output = collectRunOutput(commands);
+
+        // Test for values
+        assertThat(output, containsString("test.config=/opt/dists/jetty/etc/config.ini"));
+    }
+
+    @Test
+    public void testExpandPropertyDArg() throws IOException, InterruptedException
+    {
+        Path bogusXml = MavenPaths.findTestResourceFile("bogus.xml");
+
+        // Setup command line
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
+        commands.add("-Dtest.dir=/opt/dists/jetty");
+        commands.add("-cp");
+        commands.add(getClassPath());
+        // addDebug(commands);
+        commands.add(getStartJarBin());
+        commands.add("-Dtest.config=${test.dir}/etc/config.ini"); // TESTING THIS
+        commands.add(bogusXml.toAbsolutePath().toString());
+
+        // Run command, collect output
+        String output = collectRunOutput(commands);
+
+        // Test for values
+        assertThat(output, containsString("test.config=/opt/dists/jetty/etc/config.ini"));
+    }
+
+    @Test
+    public void testExpandPropertyStartIni() throws IOException, InterruptedException
+    {
+        Path bogusXml = MavenPaths.findTestResourceFile("bogus.xml");
+        Path base = workDir.getEmptyPathDir();
+        Path ini = base.resolve("start.d/config.ini");
+        FS.ensureDirectoryExists(ini.getParent());
+        String iniBody = """
+            # Enabling a single module (that does nothing) to let start.jar run
+            --module=empty
+            # TESTING THIS (it should expand the ${jetty.base} portion
+            test.config=${jetty.base}/etc/config.ini
+            """;
+        Files.writeString(ini, iniBody, StandardCharsets.UTF_8);
+
+        // Setup command line
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
+        commands.add("-Djetty.base=" + base);
+        commands.add("-cp");
+        commands.add(getClassPath());
+        // addDebug(commands);
+        commands.add(getStartJarBin());
+        commands.add(bogusXml.toAbsolutePath().toString());
+
+        // Run command, collect output
+        String output = collectRunOutput(commands);
+
+        // Test for values
+        Path expectedPath = base.resolve("etc/config.ini");
+        assertThat(output, containsString("test.config=" + expectedPath));
+    }
+
+    @Test
+    public void testExpandEnvProperty() throws IOException, InterruptedException
+    {
+        Path bogusXml = MavenPaths.findTestResourceFile("bogus.xml");
+        Path base = workDir.getEmptyPathDir();
+        Path module = base.resolve("modules/env-config.mod");
+        FS.ensureDirectoryExists(module.getParent());
+        String moduleBody = """
+            [environment]
+            eex
+            
+            [ini-template]
+            # configuration option
+            # test.config=${jetty.home}/etc/eex-config.ini
+            """;
+        Files.writeString(module, moduleBody, StandardCharsets.UTF_8);
+        Path ini = base.resolve("start.d/config.ini");
+        FS.ensureDirectoryExists(ini.getParent());
+        String iniBody = """
+            # Enabling a single module (that does nothing) to let start.jar run
+            --module=env-config
+            # TESTING THIS (it should expand the ${jetty.base} portion
+            test.config=${jetty.base}/etc/config.ini
+            """;
+        Files.writeString(ini, iniBody, StandardCharsets.UTF_8);
+
+        // Setup command line
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
+        commands.add("-Djetty.base=" + base);
+        commands.add("-cp");
+        commands.add(getClassPath());
+        // addDebug(commands);
+        commands.add(getStartJarBin());
+        commands.add(bogusXml.toAbsolutePath().toString());
+
+        // Run command, collect output
+        String output = collectRunOutput(commands);
+
+        // Test for values
+        Path expectedPath = base.resolve("etc/config.ini");
+        assertThat(output, containsString("test.config=" + expectedPath));
+    }
+
     private String getClassPath()
     {
-        StringBuilder cp = new StringBuilder();
-        String pathSep = System.getProperty("path.separator");
-        cp.append(MavenTestingUtils.getProjectDir("target/classes"));
-        cp.append(pathSep);
-        cp.append(MavenTestingUtils.getProjectDir("target/test-classes"));
-        cp.append(pathSep);
-        cp.append(MavenTestingUtils.getProjectDir("target/jetty-util"));
-        return cp.toString();
+        return String.join(
+            File.pathSeparator,
+            List.of(
+                MavenPaths.projectBase().resolve("target/classes").toString(),
+                MavenPaths.projectBase().resolve("target/test-classes").toString(),
+                MavenPaths.projectBase().resolve("target/jetty-util").toString()
+            )
+        );
     }
 
     protected void addDebug(List<String> commands)
@@ -180,11 +316,10 @@ public class PropertyPassingTest
         {
             cline.append(command).append(" ");
         }
-        System.out.println("Command line: " + cline);
 
         ProcessBuilder builder = new ProcessBuilder(commands);
         // Set PWD
-        builder.directory(MavenTestingUtils.getTestResourceDir("empty.home"));
+        builder.directory(MavenPaths.findTestResourceDir("empty.home").toFile());
         Process pid = builder.start();
 
         ConsoleCapture stdOutPump = new ConsoleCapture("STDOUT", pid.getInputStream()).start();
@@ -193,6 +328,7 @@ public class PropertyPassingTest
         int exitCode = pid.waitFor();
         if (exitCode != 0)
         {
+            System.out.println("Command line: " + cline);
             System.out.printf("STDERR: [" + stdErrPump.getConsoleOutput() + "]%n");
             System.out.printf("STDOUT: [" + stdOutPump.getConsoleOutput() + "]%n");
             assertThat("Exit code", exitCode, is(0));

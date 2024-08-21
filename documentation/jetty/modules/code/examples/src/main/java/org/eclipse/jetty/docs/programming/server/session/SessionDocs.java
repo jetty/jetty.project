@@ -95,7 +95,7 @@ public class SessionDocs
             org.eclipse.jetty.session.SessionHandler sessionHandler = new org.eclipse.jetty.session.SessionHandler();
             sessionHandler.setSessionCookie("SIMPLE");
             sessionHandler.setUsingCookies(true);
-            sessionHandler.setUsingURLs(false);
+            sessionHandler.setUsingUriParameters(false);
             sessionHandler.setSessionPath("/");
             server.setHandler(sessionHandler);
             sessionHandler.setHandler(new Handler.Abstract()
