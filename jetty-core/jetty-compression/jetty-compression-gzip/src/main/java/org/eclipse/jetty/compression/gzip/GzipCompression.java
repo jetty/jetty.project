@@ -18,15 +18,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.util.List;
-import java.util.zip.Deflater;
-import java.util.zip.GZIPInputStream;
 
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.DecoderConfig;
 import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.EncoderConfig;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Content;
@@ -52,56 +51,25 @@ public class GzipCompression extends Compression
     private int minCompressSize = DEFAULT_MIN_GZIP_SIZE;
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
-    private int compressionLevel = Deflater.BEST_SPEED;
-    private boolean syncFlush;
+    private GzipEncoderConfig defaultEncoderConfig = new GzipEncoderConfig();
+    private GzipDecoderConfig defaultDecoderConfig = new GzipDecoderConfig();
 
     public GzipCompression()
     {
         super(ENCODING_NAME);
     }
 
-    /**
-     * Is the {@link Deflater} running {@link Deflater#SYNC_FLUSH} or not.
-     *
-     * @return True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
-     * @see #setSyncFlush(boolean)
-     */
-    public boolean isSyncFlush()
+    @Override
+    public DecoderConfig getDefaultDecoderConfig()
     {
-        return syncFlush;
+        return this.defaultDecoderConfig;
     }
 
-    /**
-     * Set the {@link Deflater} flush mode to use.  {@link Deflater#SYNC_FLUSH}
-     * should be used if the application wishes to stream the data, but this may
-     * hurt compression performance.
-     *
-     * @param syncFlush True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
-     * @see #isSyncFlush()
-     */
-    public void setSyncFlush(boolean syncFlush)
+    @Override
+    public void setDefaultDecoderConfig(DecoderConfig config)
     {
-        syncFlush = syncFlush;
-    }
-
-    public int getCompressionLevel()
-    {
-        return compressionLevel;
-    }
-
-    public void setCompressionLevel(int compressionLevel)
-    {
-        this.compressionLevel = compressionLevel;
-    }
-
-    public int getMinCompressSize()
-    {
-        return minCompressSize;
-    }
-
-    public void setMinCompressSize(int minCompressSize)
-    {
-        this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_GZIP_SIZE);
+        GzipDecoderConfig gzipDecoderConfig = GzipDecoderConfig.class.cast(config);
+        this.defaultDecoderConfig = gzipDecoderConfig;
     }
 
     @Override
@@ -135,27 +103,6 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public boolean acceptsCompression(HttpFields headers, long contentLength)
-    {
-        if (contentLength >= 0 && contentLength < minCompressSize)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded minCompressSize {}", this, headers);
-            return false;
-        }
-
-        // check the accept encoding header
-        if (!headers.contains(HttpHeader.ACCEPT_ENCODING, getEncodingName()))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded not {} acceptable {}", this, getEncodingName(), headers);
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
     public List<String> getFileExtensionNames()
     {
         return EXTENSIONS;
@@ -184,30 +131,56 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
+    public EncoderConfig getDefaultEncoderConfig()
     {
-        ConfiguredGzipOutputStream gzipOutputStream = new ConfiguredGzipOutputStream(out);
-        gzipOutputStream.setLevel(getCompressionLevel());
-        // TODO: other configurations
-        return gzipOutputStream;
+        return this.defaultEncoderConfig;
     }
 
     @Override
-    public DecoderSource newDecoderSource(Content.Source source)
+    public void setDefaultEncoderConfig(EncoderConfig config)
     {
-        return new GzipDecoderSource(this, source);
+        GzipEncoderConfig gzipEncoderConfig = GzipEncoderConfig.class.cast(config);
+        this.defaultEncoderConfig = gzipEncoderConfig;
     }
 
     @Override
-    public InputStream newEncoderInputStream(InputStream in) throws IOException
+    public int getMinCompressSize()
     {
-        return new GZIPInputStream(in);
+        return minCompressSize;
     }
 
     @Override
-    public EncoderSink newEncoderSink(Content.Sink sink)
+    public void setMinCompressSize(int minCompressSize)
     {
-        return new GzipEncoderSink(this, sink);
+        this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_GZIP_SIZE);
+    }
+
+    @Override
+    public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
+    {
+        GzipDecoderConfig gzipDecoderConfig = GzipDecoderConfig.class.cast(config);
+        return new ConfiguredGzipInputStream(in, gzipDecoderConfig);
+    }
+
+    @Override
+    public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
+    {
+        GzipDecoderConfig gzipDecoderConfig = GzipDecoderConfig.class.cast(config);
+        return new GzipDecoderSource(this, source, gzipDecoderConfig);
+    }
+
+    @Override
+    public OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException
+    {
+        GzipEncoderConfig gzipEncoderConfig = GzipEncoderConfig.class.cast(config);
+        return new ConfiguredGzipOutputStream(out, gzipEncoderConfig);
+    }
+
+    @Override
+    public EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config)
+    {
+        GzipEncoderConfig gzipEncoderConfig = GzipEncoderConfig.class.cast(config);
+        return new GzipEncoderSink(this, sink, gzipEncoderConfig);
     }
 
     @Override

@@ -44,14 +44,20 @@ public class ZstandardEncoderSink extends EncoderSink
 
     private final ZstandardCompression compression;
     private final ZstdCompressCtx compressCtx;
-    private final AtomicReference<State> state = new AtomicReference<State>(State.CONTINUE);
+    private final int bufferSize;
+    private final AtomicReference<State> state = new AtomicReference<>(State.CONTINUE);
 
-    public ZstandardEncoderSink(ZstandardCompression compression, Content.Sink sink)
+    public ZstandardEncoderSink(ZstandardCompression compression, Content.Sink sink, ZstandardEncoderConfig config)
     {
         super(sink);
         this.compression = compression;
+        this.bufferSize = config.getBufferSize();
         this.compressCtx = new ZstdCompressCtx();
-        compression.getEncoderConfigurator().accept(this.compressCtx);
+        this.compressCtx.setLevel(config.getCompressionLevel());
+        if (config.getStrategy() >= 0)
+            this.compressCtx.setStrategy(config.getStrategy());
+        this.compressCtx.setMagicless(config.isMagicless());
+        this.compressCtx.setChecksum(config.isChecksum());
     }
 
     @Override
@@ -107,7 +113,7 @@ public class ZstandardEncoderSink extends EncoderSink
 
     private WriteRecord continueOp(boolean last, ByteBuffer content)
     {
-        RetainableByteBuffer outputBuf = compression.acquireByteBuffer();
+        RetainableByteBuffer outputBuf = compression.acquireByteBuffer(bufferSize);
 
         // process content (input) buffer using zstd-jni CONTINUE directive
         while (content.hasRemaining())
@@ -134,7 +140,7 @@ public class ZstandardEncoderSink extends EncoderSink
 
 
         state.compareAndSet(State.END, State.FLUSH);
-        RetainableByteBuffer outputBuf = compression.acquireByteBuffer();
+        RetainableByteBuffer outputBuf = compression.acquireByteBuffer(bufferSize);
         // use zstd-jni END directive once.
         outputBuf.getByteBuffer().clear();
         // only run END compress once
@@ -154,7 +160,7 @@ public class ZstandardEncoderSink extends EncoderSink
         if (!last)
             throw new IllegalStateException("Directive.END not possible on non-last encode");
 
-        RetainableByteBuffer outputBuf = compression.acquireByteBuffer();
+        RetainableByteBuffer outputBuf = compression.acquireByteBuffer(bufferSize);
         // use zstd-jni FLUSH directive to flush remaining compressed bytes out
         // of the internal zstd buffers.
         outputBuf.getByteBuffer().clear();

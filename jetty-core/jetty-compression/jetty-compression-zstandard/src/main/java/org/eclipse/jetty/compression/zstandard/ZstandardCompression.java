@@ -18,18 +18,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Objects;
 
-import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdCompressCtx;
-import com.github.luben.zstd.ZstdDecompressCtx;
 import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.DecoderConfig;
 import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.EncoderConfig;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -57,103 +55,27 @@ public class ZstandardCompression extends Compression
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
     private static final int DEFAULT_MIN_ZSTD_SIZE = 48;
-    public static final List<String> EXTENSIONS = List.of("zst");
-
-    private Consumer<ZstdCompressCtx> encoderConfigurator = new DefaultEncoderConfigurator();
-    private Consumer<ZstdDecompressCtx> decoderConfigurator = new DefaultDecoderConfigurator();
+    private static final List<String> EXTENSIONS = List.of("zst");
     private int minCompressSize = DEFAULT_MIN_ZSTD_SIZE;
-    private int compressionLevel = Zstd.defaultCompressionLevel();
-    private boolean useMagiclessFrames = false;
+    private ZstandardEncoderConfig defaultEncoderConfig = new ZstandardEncoderConfig();
+    private ZstandardDecoderConfig defaultDecoderConfig = new ZstandardDecoderConfig();
 
     public ZstandardCompression()
     {
         super(ENCODING_NAME);
     }
 
-    public int getCompressionLevel()
+    @Override
+    public DecoderConfig getDefaultDecoderConfig()
     {
-        return compressionLevel;
-    }
-
-    public Consumer<ZstdCompressCtx> getEncoderConfigurator()
-    {
-        return encoderConfigurator;
-    }
-
-    public void setEncoderConfigurator(Consumer<ZstdCompressCtx> encoderConfigurator)
-    {
-        this.encoderConfigurator = encoderConfigurator != null ? encoderConfigurator : new DefaultEncoderConfigurator();
-    }
-
-    public Consumer<ZstdDecompressCtx> getDecoderConfigurator()
-    {
-        return decoderConfigurator;
-    }
-
-    public void setDecoderConfigurator(Consumer<ZstdDecompressCtx> decoderConfigurator)
-    {
-        this.decoderConfigurator = decoderConfigurator != null ? decoderConfigurator : new DefaultDecoderConfigurator();
-    }
-
-    /**
-     * Set the compression level.
-     *
-     * <p>
-     * Valid values are {@code 1} to {@code 19}, default {@code 3}
-     * </p>
-     *
-     * @param level the compression level
-     */
-    public void setCompressionLevel(int level)
-    {
-        if ((level < 1) || (level > 19))
-            throw new IllegalArgumentException("Invalid compression level: " + level + " (must be in range 1 to 19)");
-        this.compressionLevel = level;
-    }
-
-    /**
-     * Enable or disable magicless zstd frames
-     * @param flag true to enable, false otherwise
-     */
-    public void setUseMagiclessFrames(boolean flag)
-    {
-        this.useMagiclessFrames = flag;
-    }
-
-    public boolean isUseMagiclessFrames()
-    {
-        return useMagiclessFrames;
-    }
-
-    public int getMinCompressSize()
-    {
-        return minCompressSize;
-    }
-
-    public void setMinCompressSize(int minCompressSize)
-    {
-        this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_ZSTD_SIZE);
+        return this.defaultDecoderConfig;
     }
 
     @Override
-    public boolean acceptsCompression(HttpFields headers, long contentLength)
+    public void setDefaultDecoderConfig(DecoderConfig config)
     {
-        if (contentLength >= 0 && contentLength < minCompressSize)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded minCompressSize {}", this, headers);
-            return false;
-        }
-
-        // check the accept encoding header
-        if (!headers.contains(HttpHeader.ACCEPT_ENCODING, getEncodingName()))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded not {} acceptable {}", this, getEncodingName(), headers);
-            return false;
-        }
-
-        return true;
+        ZstandardDecoderConfig zstandardDecoderConfig = ZstandardDecoderConfig.class.cast(config);
+        this.defaultDecoderConfig = Objects.requireNonNull(zstandardDecoderConfig);
     }
 
     @Override
@@ -212,47 +134,60 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public DecoderSource newDecoderSource(Content.Source source)
+    public EncoderConfig getDefaultEncoderConfig()
     {
-        return new ZstandardDecoderSource(this, source);
+        return this.defaultEncoderConfig;
     }
 
     @Override
-    public OutputStream newDecoderOutputStream(OutputStream out) throws IOException
+    public void setDefaultEncoderConfig(EncoderConfig config)
     {
-        return new ZstdOutputStreamNoFinalizer(out);
+        ZstandardEncoderConfig zstandardEncoderConfig = ZstandardEncoderConfig.class.cast(config);
+        this.defaultEncoderConfig = Objects.requireNonNull(zstandardEncoderConfig);
     }
 
     @Override
-    public InputStream newEncoderInputStream(InputStream in) throws IOException
+    public int getMinCompressSize()
     {
-        return new ZstdInputStreamNoFinalizer(in);
+        return minCompressSize;
     }
 
     @Override
-    public EncoderSink newEncoderSink(Content.Sink sink)
+    public void setMinCompressSize(int minCompressSize)
     {
-        return new ZstandardEncoderSink(this, sink);
+        this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_ZSTD_SIZE);
     }
 
-    private class DefaultEncoderConfigurator implements Consumer<ZstdCompressCtx>
+    @Override
+    public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
     {
-        @Override
-        public void accept(ZstdCompressCtx ctx)
-        {
-            ctx.setLevel(getCompressionLevel());
-            ctx.setMagicless(isUseMagiclessFrames());
-        }
+        ZstandardDecoderConfig zstandardDecoderConfig = ZstandardDecoderConfig.class.cast(config);
+        ZstdInputStreamNoFinalizer inputStream = new ZstdInputStreamNoFinalizer(in);
+        config.setBufferSize(zstandardDecoderConfig.getBufferSize());
+        return inputStream;
     }
 
-    private class DefaultDecoderConfigurator implements Consumer<ZstdDecompressCtx>
+    @Override
+    public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
     {
-        @Override
-        public void accept(ZstdDecompressCtx ctx)
-        {
-            // nothing done here right now.
-            // could set the magicless if an advanced user wanted to use it.
-            ctx.setMagicless(isUseMagiclessFrames());
-        }
+        ZstandardDecoderConfig zstandardDecoderConfig = ZstandardDecoderConfig.class.cast(config);
+        return new ZstandardDecoderSource(this, source, zstandardDecoderConfig);
+    }
+
+    @Override
+    public OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException
+    {
+        ZstandardEncoderConfig zstandardEncoderConfig = ZstandardEncoderConfig.class.cast(config);
+        ZstdOutputStreamNoFinalizer outputStream = new ZstdOutputStreamNoFinalizer(out, zstandardEncoderConfig.getCompressionLevel());
+        if (zstandardEncoderConfig.getStrategy() >= 0)
+            outputStream.setStrategy(zstandardEncoderConfig.getStrategy());
+        return outputStream;
+    }
+
+    @Override
+    public EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config)
+    {
+        ZstandardEncoderConfig zstandardEncoderConfig = ZstandardEncoderConfig.class.cast(config);
+        return new ZstandardEncoderSink(this, sink, zstandardEncoderConfig);
     }
 }

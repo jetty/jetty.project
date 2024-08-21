@@ -1,3 +1,16 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
 package org.eclipse.jetty.compression.gzip;
 
 import java.io.ByteArrayOutputStream;
@@ -19,10 +32,11 @@ public class ConfiguredGzipOutputStreamTest extends AbstractGzipTest
         Deflater deflater = new Deflater();
         deflater.setLevel(9);
 
+        GzipEncoderConfig config = new GzipEncoderConfig();
+        config.setCompressionLevel(Deflater.BEST_COMPRESSION);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ConfiguredGzipOutputStream gzipOutputStream = new ConfiguredGzipOutputStream(baos))
+             ConfiguredGzipOutputStream gzipOutputStream = new ConfiguredGzipOutputStream(baos, config))
         {
-            gzipOutputStream.setLevel(Deflater.BEST_COMPRESSION);
             List<String> entries = List.of("Hello", " World", "!");
             for (String entry : entries)
             {

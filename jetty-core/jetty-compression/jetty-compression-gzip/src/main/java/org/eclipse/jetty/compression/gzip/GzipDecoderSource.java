@@ -39,6 +39,7 @@ public class GzipDecoderSource extends DecoderSource
     private static final long UINT_MAX = 0xFFFFFFFFL;
     private static final ByteBuffer EMPTY_BUFFER = BufferUtil.EMPTY_BUFFER;
     private final GzipCompression compression;
+    private final int bufferSize;
     private InflaterPool.Entry inflaterEntry;
     private Inflater inflater;
     private State state;
@@ -46,13 +47,14 @@ public class GzipDecoderSource extends DecoderSource
     private long value;
     private byte flags;
 
-    public GzipDecoderSource(GzipCompression compression, Content.Source source)
+    public GzipDecoderSource(GzipCompression compression, Content.Source source, GzipDecoderConfig config)
     {
         super(source);
         this.compression = compression;
         this.inflaterEntry = compression.getInflaterPool().acquire();
         this.inflater = inflaterEntry.get();
         this.inflater.reset();
+        this.bufferSize = config.getBufferSize();
         this.state = State.INITIAL;
     }
 
@@ -110,7 +112,7 @@ public class GzipDecoderSource extends DecoderSource
                     {
                         try
                         {
-                            RetainableByteBuffer buffer = compression.acquireByteBuffer();
+                            RetainableByteBuffer buffer = compression.acquireByteBuffer(bufferSize);
                             ByteBuffer decoded = buffer.getByteBuffer();
                             int pos = BufferUtil.flipToFill(decoded);
                             inflater.inflate(decoded);

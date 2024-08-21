@@ -27,7 +27,7 @@ public class BrotliDecoderSource extends DecoderSource
     private final BrotliCompression compression;
     private final DecoderJNI.Wrapper decoder;
 
-    public BrotliDecoderSource(BrotliCompression compression, Content.Source source)
+    public BrotliDecoderSource(BrotliCompression compression, Content.Source source, BrotliDecoderConfig config)
     {
         super(source);
         this.compression = compression;

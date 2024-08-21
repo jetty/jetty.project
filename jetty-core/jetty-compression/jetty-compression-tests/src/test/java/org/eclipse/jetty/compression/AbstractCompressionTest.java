@@ -134,7 +134,7 @@ public abstract class AbstractCompressionTest
         Assertions.assertNotNull(compression, "Compression implementation not started yet");
 
         try (ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-             OutputStream output = compression.newDecoderOutputStream(bytesOut))
+             OutputStream output = compression.newEncoderOutputStream(bytesOut))
         {
             if (data != null)
                 output.write(data.getBytes(UTF_8));
@@ -156,7 +156,7 @@ public abstract class AbstractCompressionTest
         Assertions.assertNotNull(compressedBytes, "compressedBytes");
 
         try (ByteArrayInputStream input = new ByteArrayInputStream(compressedBytes);
-             InputStream compressionInput = compression.newEncoderInputStream(input);
+             InputStream compressionInput = compression.newDecoderInputStream(input);
              ByteArrayOutputStream output = new ByteArrayOutputStream())
         {
             IO.copy(compressionInput, output);

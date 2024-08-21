@@ -16,11 +16,11 @@ package org.eclipse.jetty.compression.brotli;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import com.aayushatharva.brotli4j.decoder.BrotliInputStream;
-import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -86,8 +86,9 @@ public abstract class AbstractBrotliTest
      */
     public byte[] compress(String data) throws IOException
     {
+        BrotliEncoderConfig brotliEncoderConfig = new BrotliEncoderConfig();
         try (ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-             BrotliOutputStream output = new BrotliOutputStream(bytesOut, brotli.getEncoderParams()))
+             OutputStream output = brotli.newEncoderOutputStream(bytesOut))
         {
             if (data != null)
                 output.write(data.getBytes(UTF_8));
@@ -107,10 +108,10 @@ public abstract class AbstractBrotliTest
     {
         try (
             ByteArrayInputStream input = new ByteArrayInputStream(compressedBytes);
-            BrotliInputStream brotliInput = new BrotliInputStream(input);
+            InputStream decoderInput = brotli.newDecoderInputStream(input);
             ByteArrayOutputStream output = new ByteArrayOutputStream())
         {
-            IO.copy(brotliInput, output);
+            IO.copy(decoderInput, output);
             return output.toByteArray();
         }
     }

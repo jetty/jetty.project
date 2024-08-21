@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.Deflater;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -43,7 +44,7 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
     public void testEncodeText(String textResourceName) throws Exception
     {
         startGzip();
-        gzip.setCompressionLevel(9);
+        gzip.getDefaultEncoderConfig().setCompressionLevel(Deflater.BEST_COMPRESSION);
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
         byte[] compressed = null;
 
@@ -80,7 +81,7 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
     public void testHelloWorldSingleBuffer() throws Exception
     {
         startGzip();
-        gzip.setCompressionLevel(9);
+        gzip.getDefaultEncoderConfig().setCompressionLevel(Deflater.BEST_COMPRESSION);
 
         byte[] compressed = null;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
@@ -113,7 +114,7 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
     public void testHelloWorldSplit() throws Exception
     {
         startGzip();
-        gzip.setCompressionLevel(9);
+        gzip.getDefaultEncoderConfig().setCompressionLevel(Deflater.BEST_COMPRESSION);
 
         byte[] compressed = null;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream())

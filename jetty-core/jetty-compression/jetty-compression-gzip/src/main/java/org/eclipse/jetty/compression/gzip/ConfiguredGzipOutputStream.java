@@ -24,25 +24,11 @@ import java.util.zip.GZIPOutputStream;
  */
 public class ConfiguredGzipOutputStream extends GZIPOutputStream
 {
-    public ConfiguredGzipOutputStream(OutputStream outputStream) throws IOException
+    public ConfiguredGzipOutputStream(OutputStream outputStream, GzipEncoderConfig config) throws IOException
     {
-        super(outputStream);
-    }
-
-    /**
-     * @see java.util.zip.Deflater#setLevel(int)
-     */
-    public void setLevel(int level)
-    {
-        def.setLevel(level);
-    }
-
-    /**
-     * @see java.util.zip.Deflater#setStrategy(int)
-     */
-    public void setStrategy(int strategy)
-    {
-        def.setStrategy(strategy);
+        super(outputStream, config.getBufferSize(), config.isSyncFlush());
+        def.setStrategy(config.getStrategy());
+        def.setLevel(config.getCompressionLevel());
     }
 
     /**

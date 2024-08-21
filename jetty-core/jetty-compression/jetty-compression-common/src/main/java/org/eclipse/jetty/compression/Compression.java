@@ -21,15 +21,19 @@ import java.util.List;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Compression extends ContainerLifeCycle
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Compression.class);
     private final String encodingName;
     private final String etagSuffix;
     private final String etagSuffixQuote;
@@ -44,28 +48,6 @@ public abstract class Compression extends ContainerLifeCycle
         etagSuffixQuote = etagSuffix + "\"";
     }
 
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
-    {
-        this.byteBufferPool = byteBufferPool;
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return this.byteBufferPool;
-    }
-
-    public void setBufferSize(int size)
-    {
-        if (size <= 0)
-            throw new IllegalArgumentException("Invalid buffer size: " + size);
-        this.bufferSize = size;
-    }
-
-    public int getBufferSize()
-    {
-        return bufferSize;
-    }
-
     /**
      * Test if the {@code Accept-Encoding} request header and {@code Content-Length} response
      * header are suitable to allow compression for the response compression implementation.
@@ -74,7 +56,25 @@ public abstract class Compression extends ContainerLifeCycle
      * @param contentLength the content length
      * @return true if compression is allowed
      */
-    public abstract boolean acceptsCompression(HttpFields headers, long contentLength);
+    public boolean acceptsCompression(HttpFields headers, long contentLength)
+    {
+        if (contentLength >= 0 && contentLength < getMinCompressSize())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} excluded minCompressSize {}", this, headers);
+            return false;
+        }
+
+        // check the accept encoding header
+        if (!headers.contains(HttpHeader.ACCEPT_ENCODING, getEncodingName()))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} excluded not {} acceptable {}", this, getEncodingName(), headers);
+            return false;
+        }
+
+        return true;
+    }
 
     /**
      * Acquire a {@link RetainableByteBuffer} that is managed by this {@link Compression} implementation
@@ -122,6 +122,28 @@ public abstract class Compression extends ContainerLifeCycle
         return etag + etagSuffix;
     }
 
+    public int getBufferSize()
+    {
+        return bufferSize;
+    }
+
+    public void setBufferSize(int size)
+    {
+        if (size <= 0)
+            throw new IllegalArgumentException("Invalid buffer size: " + size);
+        this.bufferSize = size;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return this.byteBufferPool;
+    }
+
+    public void setByteBufferPool(ByteBufferPool byteBufferPool)
+    {
+        this.byteBufferPool = byteBufferPool;
+    }
+
     /**
      * Get the container being used for common components.
      *
@@ -155,6 +177,14 @@ public abstract class Compression extends ContainerLifeCycle
      * @return the HttpField for {@code Content-Encoding}.
      */
     public abstract HttpField getContentEncodingField();
+
+    public abstract DecoderConfig getDefaultDecoderConfig();
+
+    public abstract void setDefaultDecoderConfig(DecoderConfig decoderConfig);
+
+    public abstract EncoderConfig getDefaultEncoderConfig();
+
+    public abstract void setDefaultEncoderConfig(EncoderConfig encoderConfig);
 
     /**
      * The name of the encoding if seen in the HTTP protocol in fields like {@code Content-Encoding}
@@ -190,6 +220,10 @@ public abstract class Compression extends ContainerLifeCycle
      */
     public abstract List<String> getFileExtensionNames();
 
+    public abstract int getMinCompressSize();
+
+    public abstract void setMinCompressSize(int minCompressSize);
+
     /**
      * @return the name of the compression implementation.
      */
@@ -203,21 +237,68 @@ public abstract class Compression extends ContainerLifeCycle
     public abstract HttpField getXContentEncodingField();
 
     /**
+     * Create a new {@link InputStream} to decode (decompress) with this compression implementation.
+     *
+     * @param in the input stream to write the decoded (decompressed) bytes to
+     * @return the {@link InputStream} implementation for this compression.
+     * @throws IOException if unable to create InputStream
+     */
+    public InputStream newDecoderInputStream(InputStream in) throws IOException
+    {
+        return newDecoderInputStream(in, getDefaultDecoderConfig());
+    }
+
+    /**
+     * Create a new {@link InputStream} to decode (decompress) with this compression implementation.
+     *
+     * @param in the input stream to write the decoded (decompressed) bytes to
+     * @param config the {@link DecoderConfig} for this input stream.
+     * @return the {@link InputStream} implementation for this compression.
+     * @throws IOException if unable to create InputStream
+     */
+    public abstract InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException;
+
+    /**
      * Create a new {@link DecoderSource} for this compression implementation
      *
      * @param source the source to write the decoded bytes to
      * @return a new {@link DecoderSource}
      */
-    public abstract DecoderSource newDecoderSource(Content.Source source);
+    public DecoderSource newDecoderSource(Content.Source source)
+    {
+        return newDecoderSource(source, getDefaultDecoderConfig());
+    }
 
     /**
-     * Create a new {@link OutputStream} to decode with this compression implementation.
+     * Create a new {@link DecoderSource} for this compression implementation
      *
-     * @param out the outputstream to write the decoded bytes to
+     * @param source the source to write the decoded bytes to
+     * @param config the {@link DecoderConfig} for this source.
+     * @return a new {@link DecoderSource}
+     */
+    public abstract DecoderSource newDecoderSource(Content.Source source, DecoderConfig config);
+
+    /**
+     * Create a new {@link OutputStream} to encode (compress) with this compression implementation.
+     *
+     * @param out the output stream to write the encoded (compressed) bytes to
      * @return the {@link OutputStream} implementation for this compression.
      * @throws IOException if unable to create OutputStream
      */
-    public abstract OutputStream newDecoderOutputStream(OutputStream out) throws IOException;
+    public OutputStream newEncoderOutputStream(OutputStream out) throws IOException
+    {
+        return newEncoderOutputStream(out, getDefaultEncoderConfig());
+    }
+
+    /**
+     * Create a new {@link OutputStream} to encode (compress) with this compression implementation.
+     *
+     * @param out the output stream to write the encoded (compressed) bytes to
+     * @param config the {@link EncoderConfig} for this output stream.
+     * @return the {@link OutputStream} implementation for this compression.
+     * @throws IOException if unable to create OutputStream
+     */
+    public abstract OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException;
 
     /**
      * Create a new {@link EncoderSink} for this compression implementation
@@ -225,16 +306,19 @@ public abstract class Compression extends ContainerLifeCycle
      * @param sink the sink to write the encoded bytes to
      * @return a new {@link EncoderSink}
      */
-    public abstract EncoderSink newEncoderSink(Content.Sink sink);
+    public EncoderSink newEncoderSink(Content.Sink sink)
+    {
+        return newEncoderSink(sink, getDefaultEncoderConfig());
+    }
 
     /**
-     * Create a new {@link InputStream} to encode with this compression implementation.
+     * Create a new {@link EncoderSink} for this compression implementation
      *
-     * @param in the inputstream to write the encoded bytes to
-     * @return the {@link InputStream} implementation for this compression.
-     * @throws IOException if unable to create InputStream
+     * @param sink the sink to write the encoded bytes to
+     * @param config the {@link EncoderConfig} for this sink.
+     * @return a new {@link EncoderSink}
      */
-    public abstract InputStream newEncoderInputStream(InputStream in) throws IOException;
+    public abstract EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config);
 
     /**
      * Strip compression suffixes off etags

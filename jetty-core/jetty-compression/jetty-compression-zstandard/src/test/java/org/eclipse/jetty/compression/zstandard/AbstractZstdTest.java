@@ -16,12 +16,12 @@ package org.eclipse.jetty.compression.zstandard;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import com.github.luben.zstd.ZstdInputStream;
-import com.github.luben.zstd.ZstdOutputStream;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -119,9 +119,8 @@ public abstract class AbstractZstdTest
      */
     public byte[] compress(String data) throws IOException
     {
-        // return Zstd.compress(data.getBytes(UTF_8));
         try (ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-             ZstdOutputStream output = new ZstdOutputStream(bytesOut, zstd.getCompressionLevel()))
+             OutputStream output = zstd.newEncoderOutputStream(bytesOut))
         {
             if (data != null)
                 output.write(data.getBytes(UTF_8));
@@ -141,10 +140,10 @@ public abstract class AbstractZstdTest
     {
         try (
             ByteArrayInputStream input = new ByteArrayInputStream(compressedBytes);
-            ZstdInputStream brotliInput = new ZstdInputStream(input);
+            InputStream decoderInput = zstd.newDecoderInputStream(input);
             ByteArrayOutputStream output = new ByteArrayOutputStream())
         {
-            IO.copy(brotliInput, output);
+            IO.copy(decoderInput, output);
             return output.toByteArray();
         }
     }

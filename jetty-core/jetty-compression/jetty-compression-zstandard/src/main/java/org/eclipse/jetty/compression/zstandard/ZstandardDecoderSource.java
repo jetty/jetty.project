@@ -24,13 +24,15 @@ public class ZstandardDecoderSource extends DecoderSource
 {
     private final ZstandardCompression compression;
     private final ZstdDecompressCtx decompressCtx;
+    private final int bufferSize;
 
-    public ZstandardDecoderSource(ZstandardCompression compression, Content.Source src)
+    public ZstandardDecoderSource(ZstandardCompression compression, Content.Source src, ZstandardDecoderConfig config)
     {
         super(src);
         this.compression = compression;
         this.decompressCtx = new ZstdDecompressCtx();
-        compression.getDecoderConfigurator().accept(this.decompressCtx);
+        this.decompressCtx.setMagicless(config.isMagicless());
+        this.bufferSize = config.getBufferSize();
     }
 
     @Override

@@ -91,6 +91,7 @@ public class GzipEncoderSink extends EncoderSink
     private final Deflater deflater;
     private final RetainableByteBuffer inputBuffer;
     private final ByteBuffer input;
+    private final int bufferSize;
     private final CRC32 crc = new CRC32();
     private final AtomicReference<State> state = new AtomicReference<State>(State.HEADERS);
     /**
@@ -100,18 +101,20 @@ public class GzipEncoderSink extends EncoderSink
      */
     private long inputBytesProvided = 0;
 
-    public GzipEncoderSink(GzipCompression compression, Content.Sink sink)
+    public GzipEncoderSink(GzipCompression compression, Content.Sink sink, GzipEncoderConfig config)
     {
         super(sink);
         this.compression = compression;
         this.deflaterEntry = compression.getDeflaterPool().acquire();
         this.deflater = deflaterEntry.get();
-        this.inputBuffer = compression.acquireByteBuffer();
+        this.bufferSize = config.getBufferSize();
+        this.inputBuffer = compression.acquireByteBuffer(bufferSize);
         this.input = this.inputBuffer.getByteBuffer();
         this.input.position(this.input.limit()); // set to totally consume at first
         this.deflater.reset();
         this.deflater.setInput(input);
-        this.deflater.setLevel(compression.getCompressionLevel());
+        this.deflater.setStrategy(config.getStrategy());
+        this.deflater.setLevel(config.getCompressionLevel());
         this.crc.reset();
     }
 
@@ -143,7 +146,7 @@ public class GzipEncoderSink extends EncoderSink
                         if (content.hasRemaining())
                         {
                             if (output == null)
-                                output = compression.acquireByteBuffer();
+                                output = compression.acquireByteBuffer(bufferSize);
                             if (encode(content, output.getByteBuffer()))
                             {
                                 if (output.hasRemaining())
@@ -171,7 +174,7 @@ public class GzipEncoderSink extends EncoderSink
                     {
                         // flush anything left out of the deflater
                         if (output == null)
-                            output = compression.acquireByteBuffer();
+                            output = compression.acquireByteBuffer(bufferSize);
                         if (!flush(output.getByteBuffer()))
                             state.compareAndSet(State.FLUSHING, State.TRAILERS);
                         if (output.hasRemaining())
@@ -184,7 +187,7 @@ public class GzipEncoderSink extends EncoderSink
                     case TRAILERS ->
                     {
                         if (output == null)
-                            output = compression.acquireByteBuffer();
+                            output = compression.acquireByteBuffer(16);
                         trailers(output.getByteBuffer());
                         state.compareAndSet(State.TRAILERS, State.FINISHED);
                         WriteRecord writeRecord = new WriteRecord(true, output.getByteBuffer(), Callback.from(output::release));
