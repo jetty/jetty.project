@@ -292,6 +292,12 @@ public class AbstractTest
 
     protected void startClient(Transport transport) throws Exception
     {
+        prepareClient(transport);
+        client.start();
+    }
+
+    protected void prepareClient(Transport transport) throws Exception
+    {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client = new HttpClient(newHttpClientTransport(transport));
@@ -299,7 +305,6 @@ public class AbstractTest
         client.setByteBufferPool(clientBufferPool);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
-        client.start();
     }
 
     public AbstractConnector newConnector(Transport transport, Server server)

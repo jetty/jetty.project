@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee11.webapp;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import jakarta.servlet.ServletContext;
@@ -33,6 +32,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -85,7 +85,7 @@ public class TempDirTest
         WebAppContext webAppContext = new WebAppContext();
         server.setHandler(webAppContext);
         Path tmpDir = path.resolve("foo_did_not_exist");
-        assertThat(Files.exists(tmpDir), is(false));
+        assertThat(tmpDir.toFile(), not(anExistingDirectory()));
 
         switch (type)
         {
@@ -119,7 +119,7 @@ public class TempDirTest
         WebInfConfiguration webInfConfiguration = new WebInfConfiguration();
         webInfConfiguration.resolveTempDirectory(webAppContext);
         File tempDirectory = webAppContext.getTempDirectory();
-        assertThat(tempDirectory.exists(), is(true));
+        assertThat(tempDirectory, is(anExistingDirectory()));
         assertThat(tempDirectory.getParentFile().toPath(), PathMatchers.isSame(tmpDir));
     }
 
@@ -200,7 +200,7 @@ public class TempDirTest
         _server.start();
         File tempDirectory = webAppContext.getTempDirectory();
         _server.stop();
-        assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
+        assertThat(tempDirectory, not(anExistingDirectory()));
         assertNull(webAppContext.getTempDirectory());
     }
 
