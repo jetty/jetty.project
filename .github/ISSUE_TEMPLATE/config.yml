@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Jetty Security Reports
-    url: https://eclipse.dev/jetty/security_reports.php
+    url: https://jetty.org/security.html
     about: Please raise security issues here.
