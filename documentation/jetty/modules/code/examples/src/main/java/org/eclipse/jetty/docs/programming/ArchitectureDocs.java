@@ -17,17 +17,29 @@ import java.util.concurrent.Executors;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 
 @SuppressWarnings("unused")
 public class ArchitectureDocs
 {
-    public void configureVirtualThreads()
+    public void queuedVirtualThreads()
     {
-        // tag::virtual[]
+        // tag::queuedVirtual[]
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
         Server server = new Server(threadPool);
-        // end::virtual[]
+        // end::queuedVirtual[]
+    }
+
+    public void virtualVirtualThreads()
+    {
+        // tag::virtualVirtual[]
+        VirtualThreadPool threadPool = new VirtualThreadPool();
+        // Limit the max number of current virtual threads.
+        threadPool.setMaxThreads(200);
+
+        Server server = new Server(threadPool);
+        // end::virtualVirtual[]
     }
 }
