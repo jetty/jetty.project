@@ -24,7 +24,7 @@ import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.quic.server.ServerQuicConnection;
-import org.eclipse.jetty.server.internal.HttpConnection;
+import org.eclipse.jetty.server.HttpConnection;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 

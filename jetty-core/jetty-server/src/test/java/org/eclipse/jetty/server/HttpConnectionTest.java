@@ -46,7 +46,6 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
-import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;

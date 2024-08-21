@@ -298,7 +298,7 @@ public class DelayedHandlerTest
                 ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
-                assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
+                assertThat(stack, containsString("org.eclipse.jetty.server.HttpConnection.onFillable"));
                 assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.handle"));
 
                 // Check the content is available
@@ -469,7 +469,7 @@ public class DelayedHandlerTest
                 ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
-                assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
+                assertThat(stack, containsString("org.eclipse.jetty.server.HttpConnection.onFillable"));
                 assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.handle"));
 
                 Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);

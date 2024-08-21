@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.internal;
+package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -53,16 +53,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.server.AbstractMetaDataConnection;
-import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.TunnelSupport;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
