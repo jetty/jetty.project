@@ -242,6 +242,10 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         if ("war".equalsIgnoreCase(artifact.getType()))
             return false;
 
+        //The dependency cannot be a pom
+        if ("pom".equalsIgnoreCase(artifact.getType()))
+            return false;
+
         //The dependency cannot be scope provided (those should be added to the plugin classpath)
         if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
             return false;

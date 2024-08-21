@@ -83,7 +83,7 @@ import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
@@ -492,7 +492,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         return requestedSession == null ? null : requestedSession.sessionId();
     }
 
@@ -551,7 +551,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         HttpSession session = getSession(false);
         SessionManager manager = getServletRequestInfo().getSessionManager();
         return requestedSession != null &&
@@ -565,15 +565,15 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.sessionIdFromCookie();
+        RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_COOKIE);
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
+        RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     @Override
