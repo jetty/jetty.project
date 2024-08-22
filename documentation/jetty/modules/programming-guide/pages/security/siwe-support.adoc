@@ -26,7 +26,7 @@ Typically, you would rely on a browser extension such as MetaMask to provide a u
 
 === Support
 
-Currently Jetty only provides support SIWE in Jetty 12.0+ and only for `jetty-core`, and `ee10`+ environments. It is enabled by adding the `EtheremAuthenticator` to the `SecurityHandler` of your web application.
+Currently Jetty only provides support SIWE in Jetty 12.1+ and only for `jetty-core`, and `ee10`+ environments. It is enabled by adding the `EtheremAuthenticator` to the `SecurityHandler` of your web application.
 
 == Usage
 
