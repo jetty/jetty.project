@@ -446,11 +446,14 @@ public class QoSHandlerTest
                         GET /%d HTTP/1.1
                         Host: localhost
 
-                        """.formatted(i))) {
+                        """.formatted(i)))
+                    {
                         String text = endPoint.getResponse(false, parallelism * delay * 5, TimeUnit.MILLISECONDS);
                         HttpTester.Response response = HttpTester.parseResponse(text);
                         statusCodes.add(response.getStatus());
-                    } catch (Exception x) {
+                    }
+                    catch (Exception x)
+                    {
                         fail(x);
                     }
                 }));
