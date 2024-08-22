@@ -103,6 +103,7 @@ public class ContextScopeListenerTest
                 {
                     throw new RuntimeException(e);
                 }
+                Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> _history.size() == 5);
             }
         }), "/");
 
