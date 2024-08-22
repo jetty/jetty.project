@@ -236,9 +236,8 @@ public class DelayedHandler extends Handler.Wrapper
 
             CompletableFuture<MultiPartFormData.Parts> futureMultiPart = MultiPartFormData.from(request, request, _contentType, _config);
 
-            // if we are done already, then we are still in the scope of the original process call and can
-            // process directly, otherwise we must execute a call to process as we are within a serialized
-            // demand callback.
+            // if we are done already, then we can call process in this thread, otherwise
+            // we must call executeProcess when the multipart is complete, since it will be called from a serialized callback.
             futureMultiPart.whenComplete(futureMultiPart.isDone() ? this::process : this::executeProcess);
         }
 
