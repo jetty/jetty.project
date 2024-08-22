@@ -13,7 +13,16 @@ etc/jetty-threadpool-all-virtual.xml
 
 [ini-template]
 # tag::documentation[]
-## Platform threads name prefix.
+## Virtual threads name prefix.
 #jetty.threadPool.namePrefix=vtp<hashCode>
 
+## Maximum number of current virtual threads.
+#jetty.threadPool.maxThreads=200
+
+## Whether to track virtual threads so they appear
+## in the dump even if they are unmounted.
+#jetty.threadPool.tracking=false
+
+## Whether to output virtual thread's stack traces in the dump.
+#jetty.threadPool.detailedDump=false
 # end::documentation[]
