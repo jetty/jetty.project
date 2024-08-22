@@ -221,7 +221,7 @@
     <jetty.test.version>6.2</jetty.test.version>
     <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
-    <jetty.url>https://eclipse.dev/jetty/</jetty.url>
+    <jetty.url>https://jetty.org/</jetty.url>
     <jetty.xhtml.schemas-version>1.4</jetty.xhtml.schemas-version>
     <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
     <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
