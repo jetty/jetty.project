@@ -411,7 +411,7 @@ public class QoSHandlerTest
     @Test
     public void testMaxSuspendedRequests() throws Exception
     {
-        int delay = 100;
+        int delay = 500;
         QoSHandler qosHandler = new QoSHandler();
         qosHandler.setMaxRequestCount(2);
         qosHandler.setMaxSuspendedRequestCount(2);
