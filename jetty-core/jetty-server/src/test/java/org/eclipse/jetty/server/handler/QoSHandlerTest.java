@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -405,6 +406,59 @@ public class QoSHandlerTest
         text = anotherEndPoint.getResponse(false, 5, TimeUnit.SECONDS);
         response = HttpTester.parseResponse(text);
         assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testMaxSuspendedRequests() throws Exception
+    {
+        int delay = 100;
+        QoSHandler qosHandler = new QoSHandler();
+        qosHandler.setMaxRequestCount(2);
+        qosHandler.setMaxSuspendedRequestCount(2);
+        qosHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                try
+                {
+                    Thread.sleep(delay);
+                    callback.succeeded();
+                }
+                catch (Throwable x) {
+                    callback.failed(x);
+                }
+                return true;
+            }
+        });
+        start(qosHandler);
+
+        int parallelism = 8;
+        Vector<Integer> statusCodes = new Vector<>(); // due to synchronized List
+        IntStream.range(0, parallelism).parallel().forEach(i ->
+        {
+            try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
+                GET /%d HTTP/1.1
+                Host: localhost
+                
+                """.formatted(i))) {
+                String text = endPoint.getResponse(false, parallelism * delay * 5, TimeUnit.MILLISECONDS);
+                HttpTester.Response response = HttpTester.parseResponse(text);
+                statusCodes.add(response.getStatus());
+            }
+            catch (Exception x)
+            {
+                fail(x);
+            }
+        });
+
+        await().atMost(5, TimeUnit.SECONDS).until(statusCodes::size, is(8));
+        // expectation is that
+        // 2 requests will be handled straight away
+        // 2 will be suspended and eventually handled
+        // 4 will hit the max suspended request limit
+        assertEquals(4, statusCodes.stream().filter(sc -> sc == HttpStatus.OK_200).count());
+        assertEquals(4, statusCodes.stream().filter(sc -> sc == HttpStatus.SERVICE_UNAVAILABLE_503).count());
     }
 
 }
