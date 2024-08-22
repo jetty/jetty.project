@@ -1133,6 +1133,8 @@ public class HttpConnectionTest
     @Test
     public void testDelayedDispatch() throws Exception
     {
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
+        _server.start();
         try (LocalConnector.LocalEndPoint connection = _connector.connect())
         {
             CounterStatistic dumpCounter = _server.getBean(DumpHandler.class).getHandledCounter();
