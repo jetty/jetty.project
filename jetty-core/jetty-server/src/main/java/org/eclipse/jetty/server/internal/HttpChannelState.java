@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
@@ -63,6 +64,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -231,7 +233,18 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public ThreadPool getThreadPool()
     {
-        return getServer().getThreadPool();
+        Executor executor = getExecutor();
+        if (executor instanceof ThreadPool threadPool)
+            return threadPool;
+        return new ThreadPoolWrapper(executor);
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        Executor executor = getServer().getThreadPool();
+        Executor virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(executor);
+        return virtualExecutor != null ? virtualExecutor : executor;
     }
 
     @Override
@@ -1946,6 +1959,45 @@ public class HttpChannelState implements HttpChannel, Components
         {
             ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
             throw t;
+        }
+    }
+
+    private static class ThreadPoolWrapper implements ThreadPool
+    {
+        private final Executor _executor;
+
+        private ThreadPoolWrapper(Executor executor)
+        {
+            _executor = executor;
+        }
+
+        @Override
+        public void execute(Runnable command)
+        {
+            _executor.execute(command);
+        }
+
+        @Override
+        public void join()
+        {
+        }
+
+        @Override
+        public int getThreads()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getIdleThreads()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean isLowOnThreads()
+        {
+            return false;
         }
     }
 }
