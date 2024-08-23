@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
@@ -118,9 +117,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     }
 
     @Override
-    public SSLSession getSSLSession()
+    public EndPoint.SslSessionData getSslSessionData()
     {
-        return delegate.getSSLSession();
+        return delegate.getSslSessionData();
     }
 
     @Override
@@ -358,10 +357,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         }
 
         @Override
-        public SSLSession getSSLSession()
+        public EndPoint.SslSessionData getSslSessionData()
         {
-            EndPoint.SslSessionData sslSessionData = getEndPoint().getSslSessionData();
-            return sslSessionData == null ? null : sslSessionData.sslSession();
+            return getEndPoint().getSslSessionData();
         }
 
         @Override

@@ -30,7 +30,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
-import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
@@ -1032,10 +1032,10 @@ public class HttpClientTest extends AbstractTest
             })
             .onRequestHeaders(r ->
             {
-                if (transport.isSecure() && transport != Transport.H3)
+                if (transport.isSecure())
                 {
-                    SSLSession sslSession = r.getConnection().getSSLSession();
-                    if (sslSession == null)
+                    EndPoint.SslSessionData sslSessionData = r.getConnection().getSslSessionData();
+                    if (sslSessionData == null)
                         r.abort(new IllegalStateException());
                 }
             })

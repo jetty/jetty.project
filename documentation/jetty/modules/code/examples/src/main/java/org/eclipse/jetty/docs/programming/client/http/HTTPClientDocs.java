@@ -1201,7 +1201,7 @@ public class HTTPClientDocs
                 System.getLogger("connection").log(INFO, "Server address: %s", remoteAddress);
 
                 // Obtain the SSLSession.
-                SSLSession sslSession = connection.getSSLSession();
+                SSLSession sslSession = connection.getSslSessionData().sslSession();
                 if (sslSession != null)
                     System.getLogger("connection").log(INFO, "SSLSession: %s", sslSession);
             })

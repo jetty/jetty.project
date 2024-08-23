@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
@@ -31,6 +30,8 @@ import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.common.QuicSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,11 +67,10 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     }
 
     @Override
-    public SSLSession getSSLSession()
+    public EndPoint.SslSessionData getSslSessionData()
     {
-        // No SSLSession in QUIC as SSLSession is TLS specific,
-        // and QUIC does not use TLS to secure the communication.
-        return null;
+        QuicSession quicSession = getSession().getProtocolSession().getQuicSession();
+        return EndPoint.SslSessionData.from(null, null, null, quicSession.getPeerCertificates());
     }
 
     @Override

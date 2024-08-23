@@ -20,7 +20,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.internal.TunnelRequest;
 import org.eclipse.jetty.client.transport.HttpConversation;
@@ -348,9 +347,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         }
 
         @Override
-        public SSLSession getSSLSession()
+        public EndPoint.SslSessionData getSslSessionData()
         {
-            return connection.getSSLSession();
+            return connection.getSslSessionData();
         }
 
         @Override

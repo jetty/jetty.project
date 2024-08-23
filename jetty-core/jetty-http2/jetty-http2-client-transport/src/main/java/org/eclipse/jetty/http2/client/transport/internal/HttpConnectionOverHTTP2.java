@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
@@ -88,10 +87,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     }
 
     @Override
-    public SSLSession getSSLSession()
+    public EndPoint.SslSessionData getSslSessionData()
     {
-        EndPoint.SslSessionData sslSessionData = connection.getEndPoint().getSslSessionData();
-        return sslSessionData == null ? null : sslSessionData.sslSession();
+        return connection.getEndPoint().getSslSessionData();
     }
 
     public boolean isRecycleHttpChannels()
