@@ -16,9 +16,8 @@ package org.eclipse.jetty.server.handler;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.http.HttpStatus;
@@ -412,10 +411,11 @@ public class QoSHandlerTest
     @Test
     public void testMaxSuspendedRequests() throws Exception
     {
-        int delay = 500;
+        int delay = 1000;
         QoSHandler qosHandler = new QoSHandler();
         qosHandler.setMaxRequestCount(2);
         qosHandler.setMaxSuspendedRequestCount(2);
+        AtomicInteger handling = new AtomicInteger();
         qosHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -423,6 +423,7 @@ public class QoSHandlerTest
             {
                 try
                 {
+                    handling.incrementAndGet();
                     Thread.sleep(delay);
                     callback.succeeded();
                 }
@@ -435,40 +436,51 @@ public class QoSHandlerTest
         });
         start(qosHandler);
 
-        int parallelism = 8;
-        Vector<Integer> statusCodes = new Vector<>(); // due to synchronized List
-        ForkJoinPool fjp = new ForkJoinPool(parallelism);
-        try
+        List<LocalConnector.LocalEndPoint> endPoints = new ArrayList<>();
+        // Send 2 requests that should pass through QoSHandler.
+        for (int i = 0; i < 2; i++)
         {
-            fjp.submit(() -> IntStream.range(0, parallelism).parallel().forEach(i ->
-                {
-                    try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
-                        GET /%d HTTP/1.1
-                        Host: localhost
-
-                        """.formatted(i)))
-                    {
-                        String text = endPoint.getResponse(false, parallelism * delay * 5, TimeUnit.MILLISECONDS);
-                        HttpTester.Response response = HttpTester.parseResponse(text);
-                        statusCodes.add(response.getStatus());
-                    }
-                    catch (Exception x)
-                    {
-                        fail(x);
-                    }
-                }));
-            await().atMost(5, TimeUnit.SECONDS).until(statusCodes::size, is(8));
-            // expectation is that
-            // 2 requests will be handled straight away
-            // 2 will be suspended and eventually handled
-            // 4 will hit the max suspended request limit
-            assertEquals(4, statusCodes.stream().filter(sc -> sc == HttpStatus.OK_200).count());
-            assertEquals(4, statusCodes.stream().filter(sc -> sc == HttpStatus.SERVICE_UNAVAILABLE_503).count());
+            LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
+                GET /pass/%d HTTP/1.1
+                Host: localhost
+                
+                """.formatted(i));
+            endPoints.add(endPoint);
         }
-        finally
+        await().atMost(5, TimeUnit.SECONDS).until(handling::get, is(2));
+        // Send 2 requests that should be suspended by QoSHandler.
+        for (int i = 0; i < 2; i++)
         {
-            fjp.shutdown();
+            LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
+                GET /suspend/%d HTTP/1.1
+                Host: localhost
+                
+                """.formatted(i));
+            endPoints.add(endPoint);
         }
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(2));
+        // Send 2 requests that should be failed immediately by QoSHandler.
+        for (int i = 0; i < 2; i++)
+        {
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+                GET /rejected/%d HTTP/1.1
+                Host: localhost
+                
+                """.formatted(i)));
+            assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
+        }
+        // Wait for the other requests to finish normally.
+        endPoints.forEach(endPoint ->
+        {
+            try
+            {
+                HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 2 * delay, TimeUnit.MILLISECONDS));
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+            catch (Exception x)
+            {
+                fail(x);
+            }
+        });
     }
-
 }

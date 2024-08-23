@@ -51,9 +51,10 @@ import org.slf4j.LoggerFactory;
  * to the number configured via {@link #setMaxRequestCount(int)}.
  * If more requests are received, they are suspended (that is, not
  * forwarded to the child {@code Handler}) and stored in a priority
- * queue.
- * Maximum number of suspended request can be set {@link #setMaxSuspendedRequestCount(int)} to avoid
- * out of memory error. When this limit is reached, the request will fail fast
+ * queue.</p>
+ * <p>The maximum number of suspended request can be set with
+ * {@link #setMaxSuspendedRequestCount(int)} to avoid out of memory errors.
+ * When this limit is reached, the request will fail fast
  * with status code {@code 503} (not available).</p>
  * <p>Priorities are determined via {@link #getPriority(Request)},
  * that should return values between {@code 0} (the lowest priority)
@@ -85,7 +86,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     private final Set<Integer> priorities = new ConcurrentSkipListSet<>(Comparator.reverseOrder());
     private CyclicTimeouts<Entry> timeouts;
     private int maxRequests;
-    private int maxSuspendedRequests = Integer.MAX_VALUE;
+    private int maxSuspendedRequests = 1024;
     private Duration maxSuspend = Duration.ZERO;
 
     public QoSHandler()
@@ -134,8 +135,11 @@ public class QoSHandler extends ConditionalHandler.Abstract
 
     /**
      * <p>Sets the max number of suspended requests.</p>
-     * <p>Once the max suspended request limit is reached, the request is failed with a HTTP
-     * status of {@code 503 Service unavailable}.</p>
+     * <p>Once the max suspended request limit is reached,
+     * the request is failed with a HTTP status of
+     * {@code 503 Service unavailable}.</p>
+     * <p>A negative value indicate an unlimited number
+     * of suspended requests.</p>
      *
      * @param maxSuspendedRequests the max number of suspended requests
      */
@@ -171,7 +175,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     @ManagedAttribute("The number of suspended requests")
-    public long getSuspendedRequestCount()
+    public int getSuspendedRequestCount()
     {
         int permits = state.get();
         return Math.max(0, -permits);
@@ -231,10 +235,11 @@ public class QoSHandler extends ConditionalHandler.Abstract
             int permits = state.decrementAndGet();
             if (permits < 0)
             {
-                if (Math.abs(permits) > getMaxSuspendedRequestCount())
+                int maxSuspended = getMaxSuspendedRequestCount();
+                if (maxSuspended >= 0 && Math.abs(permits) > maxSuspended)
                 {
-                    // Reached the limit of number of suspended requests,
-                    // complete request with 503, service unavailable
+                    // Reached the limit of suspended requests,
+                    // complete the request with 503 unavailable.
                     state.incrementAndGet();
                     tooManyRequests = true;
                 }
@@ -278,8 +283,10 @@ public class QoSHandler extends ConditionalHandler.Abstract
         return nextHandler(request, response, callback);
     }
 
-    private static void notAvailable(Response response, Callback callback)
+    private void notAvailable(Response response, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} rejecting {}", this, response.getRequest());
         response.setStatus(HttpStatus.SERVICE_UNAVAILABLE_503);
         if (response.isCommitted())
             callback.failed(new IllegalStateException("Response already committed"));
