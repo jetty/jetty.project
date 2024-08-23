@@ -952,7 +952,7 @@ public class ServletApiRequest implements HttpServletRequest
         }
 
         HttpConnection httpConnection = (HttpConnection)_servletContextRequest.getConnectionMetaData().getConnection();
-        httpConnection.getParser().servletUpgrade();
+        httpConnection.getParser().upgrade();
         AsyncContext asyncContext = forceStartAsync(); // force the servlet in async mode
 
         outputStream.flush(); // commit the 101 response

@@ -2016,11 +2016,17 @@ public class HttpParser
         _headerComplete = false;
     }
 
-    public void servletUpgrade()
+    public void upgrade()
     {
         setState(State.EOF_CONTENT);
         _endOfContent = EndOfContent.EOF_CONTENT;
         _contentLength = -1;
+    }
+
+    @Deprecated
+    public void servletUpgrade()
+    {
+        upgrade();
     }
 
     protected void setState(State state)
