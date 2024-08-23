@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
