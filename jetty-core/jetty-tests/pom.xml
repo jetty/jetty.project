@@ -14,6 +14,7 @@
   <modules>
     <module>jetty-test-client-transports</module>
     <module>jetty-test-jmx</module>
+    <module>jetty-test-http2-client-transport-provided-webapp</module>
   </modules>
 
   <properties>
