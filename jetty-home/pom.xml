@@ -45,6 +45,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-ethereum</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-hazelcast</artifactId>
       <optional>true</optional>
     </dependency>
@@ -103,10 +107,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-security</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-siwe</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

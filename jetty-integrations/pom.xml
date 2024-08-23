@@ -12,6 +12,7 @@
   <name>Integrations</name>
 
   <modules>
+    <module>jetty-ethereum</module>
     <module>jetty-gcloud</module>
     <module>jetty-hazelcast</module>
     <module>jetty-infinispan</module>

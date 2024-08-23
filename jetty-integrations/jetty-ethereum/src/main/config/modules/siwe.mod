@@ -10,7 +10,7 @@ security
 maven://org.bouncycastle/bcprov-jdk15to18/${bouncycastle.version}|lib/bouncycastle/bcprov-jdk15to18-${bouncycastle.version}.jar
 
 [lib]
-lib/jetty-siwe-${jetty.version}.jar
+lib/jetty-ethereum-${jetty.version}.jar
 lib/bouncycastle/bcprov-jdk15to18-${bouncycastle.version}.jar
 
 [ini]

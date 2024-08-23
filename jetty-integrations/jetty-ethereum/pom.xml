@@ -7,7 +7,7 @@
     <artifactId>jetty-core</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-siwe</artifactId>
+  <artifactId>jetty-ethereum</artifactId>
   <name>Core :: Sign-In with Ethereum</name>
   <description>Jetty Sign-In with Ethereum</description>
 
