@@ -59,7 +59,7 @@ public class SiweTests extends AbstractJettyHomeTest
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=http,ee10-webapp,ee10-deploy,ee10-annotations,siwe"
+            "--add-to-start=http,ee10-webapp,ee10-deploy,ee10-annotations,ethereum"
         };
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
