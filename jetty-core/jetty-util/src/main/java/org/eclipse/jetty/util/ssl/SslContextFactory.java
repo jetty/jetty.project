@@ -87,6 +87,7 @@ import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.util.security.Password;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,9 +158,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     private Resource _trustStoreResource;
     private String _trustStoreProvider;
     private String _trustStoreType;
-    private Credential _keyStorePassword;
-    private Credential _keyManagerPassword;
-    private Credential _trustStorePassword;
+    private Credential _keyStoreCredential;
+    private Credential _keyManagerCredential;
+    private Credential _trustStoreCredential;
     private String _sslProvider;
     private String _sslProtocol = "TLS";
     private String _secureRandomAlgorithm;
@@ -811,46 +812,42 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
 
     public String getKeyStorePassword()
     {
-        return _keyStorePassword == null ? null : _keyStorePassword.toString();
+        return _keyStoreCredential == null ? null : _keyStoreCredential.toString();
     }
 
     /**
-     * @param password The password for the key store.  If null is passed and
-     * a keystore is set, then
-     * the {@link #getPassword(String)} is used to
-     * obtain a password either from the {@value #PASSWORD_PROPERTY}
-     * system property.
+     * @param password The password for the key store. If null is passed then
+     * {@link #getCredential(String)} is used to obtain a password from
+     * the {@value #PASSWORD_PROPERTY} system property.
      */
     public void setKeyStorePassword(String password)
     {
-        _keyStorePassword = password == null ? getPassword(PASSWORD_PROPERTY) : newPassword(password);
+        _keyStoreCredential = password == null ? getCredential(PASSWORD_PROPERTY) : newCredential(password);
     }
 
     public String getKeyManagerPassword()
     {
-        return _keyManagerPassword == null ? null : _keyManagerPassword.toString();
+        return _keyManagerCredential == null ? null : _keyManagerCredential.toString();
     }
 
     /**
      * @param password The password (if any) for the specific key within the key store.
-     * If null is passed and the {@value #KEYPASSWORD_PROPERTY} system property is set,
-     * then the {@link #getPassword(String)} is used to
+     * If null is passed then {@link #getCredential(String)} is used to
      * obtain a password from the {@value #KEYPASSWORD_PROPERTY} system property.
      */
     public void setKeyManagerPassword(String password)
     {
-        _keyManagerPassword = password == null ? getPassword(KEYPASSWORD_PROPERTY) : newPassword(password);
+        _keyManagerCredential = password == null ? getCredential(KEYPASSWORD_PROPERTY) : newCredential(password);
     }
 
     /**
      * @param password The password for the truststore. If null is passed then
-     * the {@link #getPassword(String)} is used to
-     * obtain a password from the {@value #PASSWORD_PROPERTY}
+     * {@link #getCredential(String)} is used to obtain a password from the {@value #PASSWORD_PROPERTY}
      * system property.
      */
     public void setTrustStorePassword(String password)
     {
-        _trustStorePassword = password == null ? getPassword(PASSWORD_PROPERTY) : newPassword(password);
+        _trustStoreCredential = password == null ? getCredential(PASSWORD_PROPERTY) : newCredential(password);
     }
 
     /**
@@ -1133,7 +1130,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      */
     protected KeyStore loadKeyStore(Resource resource) throws Exception
     {
-        String storePassword = Objects.toString(_keyStorePassword, null);
+        String storePassword = Objects.toString(_keyStoreCredential, null);
         return CertificateUtils.getKeyStore(resource, getKeyStoreType(), getKeyStoreProvider(), storePassword);
     }
 
@@ -1148,12 +1145,12 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     {
         String type = Objects.toString(getTrustStoreType(), getKeyStoreType());
         String provider = Objects.toString(getTrustStoreProvider(), getKeyStoreProvider());
-        Credential passwd = _trustStorePassword;
+        Credential passwd = _trustStoreCredential;
         if (resource == null || resource.equals(_keyStoreResource))
         {
             resource = _keyStoreResource;
             if (passwd == null)
-                passwd = _keyStorePassword;
+                passwd = _keyStoreCredential;
         }
         return CertificateUtils.getKeyStore(resource, type, provider, Objects.toString(passwd, null));
     }
@@ -1180,7 +1177,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         if (keyStore != null)
         {
             KeyManagerFactory keyManagerFactory = getKeyManagerFactoryInstance();
-            keyManagerFactory.init(keyStore, _keyManagerPassword == null ? (_keyStorePassword == null ? null : _keyStorePassword.toString().toCharArray()) : _keyManagerPassword.toString().toCharArray());
+            keyManagerFactory.init(keyStore, _keyManagerCredential == null ? (_keyStoreCredential == null ? null : _keyStoreCredential.toString().toCharArray()) : _keyManagerCredential.toString().toCharArray());
             managers = keyManagerFactory.getKeyManagers();
 
             if (managers != null)
@@ -1614,12 +1611,39 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      * Returns the password object for the given realm.
      *
      * @param realm the realm
-     * @return the Credential object
+     * @return the Password object
+     * @deprecated use {#link getCredential} instead.
      */
-    protected Credential getPassword(String realm)
+    @Deprecated(since = "12.0.13", forRemoval = true)
+    protected Password getPassword(String realm)
     {
         String password = System.getProperty(realm);
         return password == null ? null : newPassword(password);
+    }
+
+    /**
+     * Creates a new Password object.
+     *
+     * @param password the password string
+     * @return the new Password object
+     * @deprecated use {#link newCredential} instead.
+     */
+    @Deprecated(since = "12.0.13", forRemoval = true)
+    public Password newPassword(String password)
+    {
+        return new Password(password);
+    }
+
+    /**
+     * Returns the credential object for the given realm.
+     *
+     * @param realm the realm
+     * @return the Credential object
+     */
+    protected Credential getCredential(String realm)
+    {
+        String password = System.getProperty(realm);
+        return password == null ? null : newCredential(password);
     }
 
     /**
@@ -1628,7 +1652,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      * @param password the password string
      * @return the new Credential object
      */
-    public Credential newPassword(String password)
+    public Credential newCredential(String password)
     {
         return Credential.getCredential(password);
     }
