@@ -2413,6 +2413,7 @@
                 <goals>
                   <goal>license-check</goal>
                 </goals>
+                <phase>verify</phase>
                 <configuration>
                   <failWhenReviewNeeded>true</failWhenReviewNeeded>
                 </configuration>
