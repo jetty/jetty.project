@@ -115,7 +115,7 @@ public class QoSHandlerTest
         endPoints.add(endPoint);
 
         assertEquals(maxRequests, callbacks.size());
-        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1L));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1));
 
         // Finish and verify the waiting requests.
         List<Callback> copy = List.copyOf(callbacks);
@@ -130,7 +130,7 @@ public class QoSHandlerTest
         }
 
         // The suspended request should have been resumed.
-        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(0L));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(0));
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Finish the resumed request that is now waiting.
@@ -175,11 +175,11 @@ public class QoSHandlerTest
             Host: localhost
 
             """);
-        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1L));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1));
 
         // Do not succeed the callback of the first request.
         // Wait for the second request to time out.
-        await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(qosHandler::getSuspendedRequestCount, is(0L));
+        await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(qosHandler::getSuspendedRequestCount, is(0));
 
         String text = endPoint1.getResponse(false, 5, TimeUnit.SECONDS);
         HttpTester.Response response = HttpTester.parseResponse(text);
