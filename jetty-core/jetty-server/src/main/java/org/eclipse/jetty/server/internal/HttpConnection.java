@@ -878,15 +878,19 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
         }
 
-        private Callback release()
+        private Callback resetCallback()
         {
             Callback complete = _callback;
             _callback = null;
             _info = null;
             _content = null;
+            return complete;
+        }
+
+        private void release()
+        {
             releaseHeader();
             releaseChunk();
-            return complete;
         }
 
         private void releaseHeader()
@@ -906,13 +910,22 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         protected void onCompleteSuccess()
         {
-            release().succeeded();
+            Callback callback = resetCallback();
+            release();
+            callback.succeeded();
         }
 
         @Override
-        public void onCompleteFailure(final Throwable x)
+        public void onFailure(final Throwable x)
         {
-            failedCallback(release(), x);
+            Callback callback = resetCallback();
+            failedCallback(callback, x);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            release();
         }
 
         @Override

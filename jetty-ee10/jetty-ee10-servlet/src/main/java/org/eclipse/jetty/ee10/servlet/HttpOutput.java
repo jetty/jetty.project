@@ -132,7 +132,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private State _state = State.OPEN;
     private boolean _softClose = false;
     private long _written;
-    private long _flushed;
     private long _firstByteNanoTime = -1;
     private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
@@ -222,7 +221,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                lockedReleaseBuffer(failure != null);
+                if (failure == null)
+                    lockedReleaseBuffer();
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -444,7 +444,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock ignored = _channelState.lock())
         {
             _state = State.CLOSED;
-            lockedReleaseBuffer(failure != null);
+            lockedReleaseBuffer();
         }
     }
 
@@ -598,18 +598,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _aggregate;
     }
 
-    private void lockedReleaseBuffer(boolean failure)
+    private void lockedReleaseBuffer()
     {
         assert _channelState.isLockHeldByCurrentThread();
-
         if (_aggregate != null)
         {
-            if (failure && _pool != null)
-                _pool.removeAndRelease(_aggregate);
-            else
-                _aggregate.release();
+            _aggregate.release();
             _aggregate = null;
-            _pool = null;
         }
     }
 
@@ -1251,7 +1246,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         try (AutoLock ignored = _channelState.lock())
         {
-            lockedReleaseBuffer(_state != State.CLOSED);
+            lockedReleaseBuffer();
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
             _softClose = true; // Stay closed until next request
@@ -1264,7 +1259,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _writeListener = null;
             _onError = null;
             _firstByteNanoTime = -1;
-            _flushed = 0;
             _closedCallback = null;
         }
     }
@@ -1404,9 +1398,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void onCompleteFailure(Throwable e)
+        protected void onFailure(Throwable e)
         {
             onWriteComplete(_last, e);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            try (AutoLock ignored = _channelState.lock())
+            {
+                lockedReleaseBuffer();
+            }
         }
     }
 
@@ -1440,11 +1443,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void onCompleteFailure(Throwable e)
+        protected void onFailure(Throwable e)
         {
             try
             {
-                super.onCompleteFailure(e);
+                super.onFailure(e);
             }
             catch (Throwable t)
             {
@@ -1467,7 +1470,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             if (_aggregate != null && _aggregate.hasRemaining())
             {
@@ -1518,7 +1521,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             // flush any content from the aggregate
             if (_aggregate != null && _aggregate.hasRemaining())
@@ -1641,15 +1644,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _buffer.release();
             IO.close(_in);
-            super.onCompleteSuccess();
+        }
+
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            IO.close(_in);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
-            IO.close(_in);
-            super.onCompleteFailure(x);
         }
     }
 
@@ -1714,15 +1720,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _buffer.release();
             IO.close(_in);
-            super.onCompleteSuccess();
+        }
+
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            IO.close(_in);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
-            IO.close(_in);
-            super.onCompleteFailure(x);
         }
     }
 

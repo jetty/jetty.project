@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.Frame;
@@ -58,6 +59,7 @@ import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 /**
@@ -165,16 +167,16 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        final MethodHandle openHandle = InvokerUtils.bindTo(metadata.getOpenHandle(), endpointInstance);
-        final MethodHandle closeHandle = InvokerUtils.bindTo(metadata.getCloseHandle(), endpointInstance);
-        final MethodHandle errorHandle = InvokerUtils.bindTo(metadata.getErrorHandle(), endpointInstance);
-        final MethodHandle textHandle = InvokerUtils.bindTo(metadata.getTextHandle(), endpointInstance);
-        final MethodHandle binaryHandle = InvokerUtils.bindTo(metadata.getBinaryHandle(), endpointInstance);
+        final MethodHolder openHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getOpenHandle()), endpointInstance);
+        final MethodHolder closeHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getCloseHandle()), endpointInstance);
+        final MethodHolder errorHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getErrorHandle()), endpointInstance);
+        final MethodHolder textHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getTextHandle()), endpointInstance);
+        final MethodHolder binaryHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getBinaryHandle()), endpointInstance);
         final Class<? extends MessageSink> textSinkClass = metadata.getTextSink();
         final Class<? extends MessageSink> binarySinkClass = metadata.getBinarySink();
-        final MethodHandle frameHandle = InvokerUtils.bindTo(metadata.getFrameHandle(), endpointInstance);
-        final MethodHandle pingHandle = InvokerUtils.bindTo(metadata.getPingHandle(), endpointInstance);
-        final MethodHandle pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
+        final MethodHolder frameHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getFrameHandle()), endpointInstance);
+        final MethodHolder pingHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getPingHandle()), endpointInstance);
+        final MethodHolder pongHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getPongHandle()), endpointInstance);
         BatchMode batchMode = metadata.getBatchMode();
 
         // Decorate the endpointInstance while we are still upgrading for access to things like HttpSession.
@@ -191,7 +193,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             metadata);
     }
 
-    public static MessageSink createMessageSink(MethodHandle msgHandle, Class<? extends MessageSink> sinkClass, WebSocketSession session)
+    public static MessageSink createMessageSink(MethodHolder msgHandle, Class<? extends MessageSink> sinkClass, Executor executor, WebSocketSession session)
     {
         if (msgHandle == null)
             return null;
@@ -202,7 +204,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
             MethodHandle ctorHandle = lookup.findConstructor(sinkClass,
-                MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, boolean.class));
+                MethodType.methodType(void.class, CoreSession.class, MethodHolder.class, boolean.class));
             return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgHandle, true);
         }
         catch (NoSuchMethodException e)

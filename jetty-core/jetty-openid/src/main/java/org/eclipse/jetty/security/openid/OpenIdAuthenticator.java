@@ -444,14 +444,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 return AuthenticationState.SEND_FAILURE;
             }
 
-            // TODO: No session API to work this out?
-            /*
-            if (request.isRequestedSessionIdFromURL())
+            String sessionIdFrom = (String)request.getAttribute("org.eclipse.jetty.session.RequestedSession.sessionIdFrom");
+            if (sessionIdFrom != null && !sessionIdFrom.startsWith("cookie"))
             {
-                sendError(req, res, cb, "Session ID must be a cookie to support OpenID authentication");
-                return Authentication.SEND_FAILURE;
+                sendError(request, response, cb, "Session ID must be a cookie to support OpenID authentication");
+                return AuthenticationState.SEND_FAILURE;
             }
-             */
 
             // Handle a request for authentication.
             if (isJSecurityCheck(uri))

@@ -385,6 +385,10 @@ public class ContextProvider extends ScanningAppProvider
             // Handle a context XML file
             if (FileID.isXml(path))
             {
+                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
+                if (coreContextClassLoader != null)
+                    Thread.currentThread().setContextClassLoader(coreContextClassLoader);
+
                 context = applyXml(context, path, env, properties);
 
                 // Look for the contextHandler itself
@@ -401,13 +405,11 @@ public class ContextProvider extends ScanningAppProvider
                     throw new IllegalStateException("Unknown context type of " + context);
 
                 // Set the classloader if we have a coreContextClassLoader
-                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
                 if (coreContextClassLoader != null)
                     contextHandler.setClassLoader(coreContextClassLoader);
 
                 return contextHandler;
             }
-
             // Otherwise it must be a directory or an archive
             else if (!Files.isDirectory(path) && !FileID.isWebArchive(path))
             {

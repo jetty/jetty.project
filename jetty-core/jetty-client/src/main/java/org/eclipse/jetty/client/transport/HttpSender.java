@@ -528,7 +528,7 @@ public abstract class HttpSender
                     action.run();
 
                 // Read the request content.
-                chunk = content.read();
+                chunk = content != null ? content.read() : Content.Chunk.EOF;
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Content {} for {}", chunk, request);
@@ -539,6 +539,7 @@ public abstract class HttpSender
                 {
                     // No content after the headers, demand.
                     demanded = true;
+                    assert content != null;
                     content.demand(this::succeeded);
                     return Action.SCHEDULED;
                 }
@@ -616,20 +617,22 @@ public abstract class HttpSender
         }
 
         @Override
-        protected void onCompleteFailure(Throwable x)
+        protected void onFailure(Throwable x)
         {
-            if (chunk != null)
-            {
-                chunk.release();
-                chunk = Content.Chunk.next(chunk);
-            }
-
             failRequest(x);
             internalAbort(exchange, x);
 
             Promise<Boolean> promise = abort;
             if (promise != null)
                 promise.succeeded(true);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            if (chunk != null)
+                chunk.release();
+            chunk = Content.Chunk.next(chunk);
         }
 
         @Override

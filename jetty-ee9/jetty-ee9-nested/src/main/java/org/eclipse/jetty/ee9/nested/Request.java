@@ -85,7 +85,7 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
@@ -1245,7 +1245,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
+        RequestedSession requestedSession = _coreRequest.getRequestedSession();
         return requestedSession == null ? null : requestedSession.sessionId();
     }
 
@@ -1522,8 +1522,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.sessionIdFromCookie();
+        return _coreRequest.getRequestedSession().isSessionIdFrom(RequestedSession.ID_FROM_COOKIE);
     }
 
     @Override
@@ -1536,14 +1535,13 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
+        return _coreRequest.getRequestedSession().isSessionIdFrom(RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
+        RequestedSession requestedSession = _coreRequest.getRequestedSession();
         SessionManager sessionManager = _coreRequest.getSessionManager();
         ManagedSession managedSession = _coreRequest.getManagedSession();
         return requestedSession != null &&

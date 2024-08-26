@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -982,24 +983,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
     /**
-     * @deprecated use {@link #isUsingUriParameters()} instead, will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.1", forRemoval = true)
-    public boolean isUsingURLs()
-    {
-        return isUsingUriParameters();
-    }
-
-    /**
-     * @deprecated use {@link #setUsingUriParameters(boolean)} instead, will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.1", forRemoval = true)
-    public void setUsingURLs(boolean usingURLs)
-    {
-        setUsingUriParameters(usingURLs);
-    }
-
-    /**
      * Create a new Session, using the requested session id if possible.
      * @param request the inbound request
      * @param requestedSessionId the session id used by the request
@@ -1229,7 +1212,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         {
             //Cookie[] cookies = request.getCookies();
             List<HttpCookie> cookies = Request.getCookies(request);
-            if (cookies != null && cookies.size() > 0)
+            if (!cookies.isEmpty())
             {
                 final String sessionCookie = getSessionCookie();
                 for (HttpCookie cookie : cookies)
@@ -1279,7 +1262,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
 
         if (ids == null)
-            return NO_REQUESTED_SESSION;
+            return RequestedSession.NO_REQUESTED_SESSION;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Got Session IDs {} from cookies {}", ids, cookieIds);
@@ -1319,8 +1302,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             {
                 //we already have a valid session and now have a duplicate ID for it
                 if (LOG.isDebugEnabled())
-                    LOG.debug(duplicateSession(
-                        requestedSessionId, true, requestedSessionIdFromCookie,
+                    LOG.debug(duplicateSession(requestedSessionId, requestedSessionIdFromCookie,
                         id, false, i < cookieIds));
             }
             else
@@ -1350,26 +1332,27 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     }
 
                     throw new BadMessageException(duplicateSession(
-                        requestedSessionId, true, requestedSessionIdFromCookie,
+                        requestedSessionId, requestedSessionIdFromCookie,
                         id, true, i < cookieIds));
                 }
                 else if (LOG.isDebugEnabled())
                 {
                     LOG.debug(duplicateSession(
-                        requestedSessionId, true, requestedSessionIdFromCookie,
+                        requestedSessionId, requestedSessionIdFromCookie,
                         id, false, i < cookieIds));
                 }
             }
         }
 
-        return new RequestedSession((session != null && session.isValid()) ? session : null, requestedSessionId, requestedSessionIdFromCookie);
+        return new RequestedSession((session != null && session.isValid()) ? session : null, requestedSessionId,
+            requestedSessionIdFromCookie ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
-    private static String duplicateSession(String id0, boolean valid0, boolean cookie0, String id1, boolean valid1, boolean cookie1)
+    private static String duplicateSession(String id0, boolean fromCookie0, String id1, boolean valid1, boolean fromCookie1)
     {
         return "Duplicate sessions: %s[%s,%s] & %s[%s,%s]".formatted(
-            id0, valid0 ? "valid" : "unknown", cookie0 ? "cookie" : "param",
-            id1, valid1 ? "valid" : "unknown", cookie1 ? "cookie" : "param");
+            id0, "valid", fromCookie0 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_URI_PARAMETER,
+            id1, valid1 ? "valid" : "unknown", fromCookie1 ? RequestedSession.ID_FROM_COOKIE : RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     /**
@@ -1379,12 +1362,89 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         _sessionCache.shutdown();
     }
-    
-    public record RequestedSession(ManagedSession session, String sessionId, boolean sessionIdFromCookie)
-    {
-    }
 
-    private static final  RequestedSession NO_REQUESTED_SESSION = new RequestedSession(null, null, false);
+    /**
+     * Details of the requested session.
+     * Session implementations should make an instance of this record available as a hidden (not in name set) request
+     * attribute for the name "org.eclipse.jetty.session.AbstractSessionManager$RequestedSession"
+     * @param session The {@link Session} associated with the ID, which may have been invalidated or changed ID since the
+     *                request was received; or {@code null} if no session existed matching the requested ID.
+     * @param sessionId The requested session ID.
+     * @param sessionIdFrom A {@link String} representing the source of the session ID.  Common values include:
+     *                      {@link #ID_FROM_COOKIE} or {@link #ID_FROM_URI_PARAMETER} if there is no ID.
+     */
+    public record RequestedSession(ManagedSession session, String sessionId, String sessionIdFrom)
+    {
+        public static final RequestedSession NO_REQUESTED_SESSION = new RequestedSession(null, null, null);
+        public static final String ATTRIBUTE = "org.eclipse.jetty.session.RequestedSession";
+        public static final String ID_FROM_COOKIE = "cookie";
+        public static final String ID_FROM_URI_PARAMETER = "uri";
+
+        /**
+         * Get the {@code RequestedSession} by attribute
+         * @param request The attributes to query
+         * @return The found {@code RequestedSession} or {@link #NO_REQUESTED_SESSION} if none found. Never {@code null}.
+         */
+        public static RequestedSession byAttribute(Attributes request)
+        {
+            RequestedSession requestedSession = (RequestedSession)request.getAttribute(ATTRIBUTE);
+            return requestedSession == null ? NO_REQUESTED_SESSION : requestedSession;
+        }
+
+        /**
+         * @param name An attribute name
+         * @return {@code true} if the attribute name is applicable to a requested session.
+         * @see #getAttribute(String)
+         */
+        public static boolean isApplicableAttribute(String name)
+        {
+            return name != null && name.startsWith(ATTRIBUTE);
+        }
+
+        /**
+         * Get attributes asssociated with this requested session:
+         * <ul>
+         *     <li>`org.eclipse.jetty.session.RequestedSession` this instance.</li>
+         *     <li>`org.eclipse.jetty.session.RequestedSession.session` the {@link #session()}.</li>
+         *     <li>`org.eclipse.jetty.session.RequestedSession.sessionId` the {@link #sessionId()}.</li>
+         *     <li>`org.eclipse.jetty.session.RequestedSession.sessionIdFrom` the {@link #sessionIdFrom()}.</li>
+         * </ul>
+         * @param name An attributed name
+         * @return the attribute value or {@code null}
+         */
+        public Object getAttribute(String name)
+        {
+            if (name == null || name.length() < ATTRIBUTE.length())
+                return null;
+
+            if (ATTRIBUTE.equals(name))
+                return this;
+
+            if (name.startsWith(ATTRIBUTE) && name.charAt(ATTRIBUTE.length()) == '.')
+            {
+                return switch (name.substring(ATTRIBUTE.length() + 1))
+                {
+                    case "session" -> session();
+                    case "sessionId" -> sessionId();
+                    case "sessionIdFrom" -> sessionIdFrom();
+                    default -> null;
+                };
+            }
+
+            return null;
+        }
+
+        /**
+         * Test if this {@code RequestedSession} ID is from a particular session source
+         * @param source A {@link String} representing the source of the session ID.  Common values include:
+         *               {@link #ID_FROM_COOKIE} or {@link #ID_FROM_URI_PARAMETER} if there is no ID.
+         * @return {@code True} iff this {@code RequestedSession} ID is from the source.
+         */
+        public boolean isSessionIdFrom(String source)
+        {
+            return source != null && source.equals(sessionIdFrom);
+        }
+    }
 
     /**
      * A session cookie is marked as secure IFF any of the following conditions are true:

@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 /**
  * <p>A {@link MessageSink} implementation that delivers BINARY frames
@@ -31,12 +30,12 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
      * Creates a new {@link PartialByteArrayMessageSink}.
      *
      * @param session the WebSocket session
-     * @param methodHandle the application function to invoke when a new frame has arrived
+     * @param methodHolder the application function to invoke when a new frame has arrived
      * @param autoDemand whether this {@link MessageSink} manages demand automatically
      */
-    public PartialByteArrayMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public PartialByteArrayMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHandle, autoDemand);
+        super(session, methodHolder, autoDemand);
     }
 
     @Override
@@ -47,7 +46,7 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
             if (frame.hasPayload() || frame.isFin())
             {
                 byte[] buffer = BufferUtil.toArray(frame.getPayload());
-                getMethodHandle().invoke(buffer, frame.isFin());
+                getMethodHolder().invoke(buffer, frame.isFin());
                 callback.succeeded();
                 autoDemand();
             }
