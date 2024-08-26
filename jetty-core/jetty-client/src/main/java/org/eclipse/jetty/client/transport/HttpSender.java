@@ -481,17 +481,21 @@ public abstract class HttpSender
         @Override
         public boolean reset()
         {
-            exchange = null;
-            proceedAction = null;
-            expect100 = false;
-            chunk = null;
-            contentBuffer = null;
-            committed = false;
-            success = false;
-            complete = false;
-            abort = null;
-            demanded = false;
-            return super.reset();
+            if (super.reset())
+            {
+                exchange = null;
+                proceedAction = null;
+                expect100 = false;
+                chunk = null;
+                contentBuffer = null;
+                committed = false;
+                success = false;
+                complete = false;
+                abort = null;
+                demanded = false;
+                return true;
+            }
+            return false;
         }
 
         @Override
