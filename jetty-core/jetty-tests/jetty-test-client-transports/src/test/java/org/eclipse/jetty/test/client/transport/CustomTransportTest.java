@@ -335,7 +335,7 @@ public class CustomTransportTest
             }
 
             @Override
-            protected void onCompleteFailure(Throwable cause)
+            protected void onFailure(Throwable cause)
             {
                 // There was a write error, close the Gateway Channel.
                 channel.close(cause);
@@ -378,7 +378,7 @@ public class CustomTransportTest
             }
 
             @Override
-            protected void onCompleteFailure(Throwable cause)
+            protected void onFailure(Throwable cause)
             {
                 // There was a write error, close the Gateway Channel.
                 channel.close(cause);

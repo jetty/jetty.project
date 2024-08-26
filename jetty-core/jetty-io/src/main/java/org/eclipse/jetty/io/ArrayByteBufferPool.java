@@ -224,7 +224,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     }
 
     @Override
-    public boolean removeAndRelease(RetainableByteBuffer buffer)
+    public boolean releaseAndRemove(RetainableByteBuffer buffer)
     {
         RetainableByteBuffer actual = buffer;
         while (actual instanceof RetainableByteBuffer.Wrapper wrapper)
@@ -244,7 +244,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return buffer.release();
         }
 
-        return ByteBufferPool.super.removeAndRelease(buffer);
+        return ByteBufferPool.super.releaseAndRemove(buffer);
     }
 
     private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
