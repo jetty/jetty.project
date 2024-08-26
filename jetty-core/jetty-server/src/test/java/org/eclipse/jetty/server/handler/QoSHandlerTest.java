@@ -539,7 +539,7 @@ public class QoSHandlerTest
                     
                     """));
                 // Wait for the second request to be suspended.
-                await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1L));
+                await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1));
 
                 // Finish the first request, so that the second can be resumed.
                 callbacks.remove(0).succeeded();
