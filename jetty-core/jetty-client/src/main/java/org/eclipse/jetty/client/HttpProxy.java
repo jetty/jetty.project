@@ -347,6 +347,12 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         }
 
         @Override
+        public EndPoint.SslSessionData getSslSessionData()
+        {
+            return connection.getSslSessionData();
+        }
+
+        @Override
         public void send(Request request, Response.CompleteListener listener)
         {
             if (connection.isClosed())

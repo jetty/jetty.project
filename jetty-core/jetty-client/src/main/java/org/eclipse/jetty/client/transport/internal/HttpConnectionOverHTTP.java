@@ -117,6 +117,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     }
 
     @Override
+    public EndPoint.SslSessionData getSslSessionData()
+    {
+        return delegate.getSslSessionData();
+    }
+
+    @Override
     public long getBytesIn()
     {
         return bytesIn.longValue();
@@ -348,6 +354,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         public SocketAddress getRemoteSocketAddress()
         {
             return getEndPoint().getRemoteSocketAddress();
+        }
+
+        @Override
+        public EndPoint.SslSessionData getSslSessionData()
+        {
+            return getEndPoint().getSslSessionData();
         }
 
         @Override

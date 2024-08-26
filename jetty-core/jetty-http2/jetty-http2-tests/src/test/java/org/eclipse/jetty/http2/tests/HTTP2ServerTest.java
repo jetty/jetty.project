@@ -428,11 +428,20 @@ public class HTTP2ServerTest extends AbstractServerTest
                 }
                 output.flush();
 
+                AtomicBoolean goAway = new AtomicBoolean();
                 Parser parser = new Parser(bufferPool, 8192);
-                parser.init(new Parser.Listener() {});
+                parser.init(new Parser.Listener()
+                {
+                    @Override
+                    public void onGoAway(GoAwayFrame frame)
+                    {
+                        goAway.set(true);
+                    }
+                });
                 boolean closed = parseResponse(client, parser);
 
-                assertTrue(closed);
+                assertFalse(closed);
+                assertTrue(goAway.get());
             }
         }
     }
