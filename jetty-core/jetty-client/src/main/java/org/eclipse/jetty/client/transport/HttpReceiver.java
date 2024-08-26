@@ -342,6 +342,7 @@ public abstract class HttpReceiver
      * This method directly invokes the demand callback, assuming the caller
      * is already serialized with other events.
      */
+    // TODO: remove this after FCGI fix.
     protected void responseContentAvailable()
     {
         contentSource.onDataAvailable();
@@ -719,6 +720,9 @@ public abstract class HttpReceiver
             }
 
             current = HttpReceiver.this.read(false);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Read {} from {}", current, this);
 
             try (AutoLock ignored = lock.lock())
             {
