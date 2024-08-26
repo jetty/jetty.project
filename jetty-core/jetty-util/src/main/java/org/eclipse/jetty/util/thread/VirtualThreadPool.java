@@ -46,7 +46,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     private Thread _keepAlive;
     private Executor _virtualExecutor;
     private boolean _externalExecutor;
-    private Semaphore _semaphore;
+    private volatile Semaphore _semaphore;
 
     public VirtualThreadPool()
     {
@@ -255,7 +255,8 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     public void execute(Runnable task)
     {
         Runnable job = task;
-        if (_semaphore != null)
+        Semaphore semaphore = _semaphore;
+        if (semaphore != null)
         {
             job = () ->
             {
@@ -265,7 +266,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
                     // as it is unknown whether it is a virtual thread.
                     // But this is a virtual thread, so acquiring a permit here
                     // blocks the virtual thread, but does not pin the carrier.
-                    _semaphore.acquire();
+                    semaphore.acquire();
                     task.run();
                 }
                 catch (InterruptedException x)
@@ -276,7 +277,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
                 }
                 finally
                 {
-                    _semaphore.release();
+                    semaphore.release();
                 }
             };
         }

@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.transport;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,19 +91,6 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     }
 
     /**
-     * <p>Creates a dynamic transport that speaks the given protocols, in order of preference
-     * (first the most preferred).</p>
-     *
-     * @param infos the protocols this dynamic transport speaks
-     * @deprecated use {@link #HttpClientTransportDynamic(ClientConnector, ClientConnectionFactory.Info...)}
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public HttpClientTransportDynamic(ClientConnectionFactory.Info... infos)
-    {
-        this(findClientConnector(infos), infos);
-    }
-
-    /**
      * <p>Creates a dynamic transport with the given {@link ClientConnector} and the given protocols,
      * in order of preference (first the most preferred).</p>
      *
@@ -119,14 +105,6 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         setConnectionPoolFactory(destination ->
             new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1)
         );
-    }
-
-    private static ClientConnector findClientConnector(ClientConnectionFactory.Info[] infos)
-    {
-        return Arrays.stream(infos)
-            .flatMap(info -> info.getContainedBeans(ClientConnector.class).stream())
-            .findFirst()
-            .orElseGet(ClientConnector::new);
     }
 
     @Override
@@ -216,11 +194,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         Transport transport = request.getTransport();
         if (transport == null)
         {
-            // Ask the ClientConnector for backwards compatibility
-            // until ClientConnector.Configurator is removed.
-            transport = getClientConnector().newTransport();
-            if (transport == null)
-                transport = matchingInfos.get(0).newTransport();
+            transport = matchingInfos.get(0).newTransport();
             request.transport(transport);
         }
 

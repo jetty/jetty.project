@@ -13,12 +13,34 @@
 
 = Eclipse Jetty {page-version}
 
-This section of the site contains the documentation for {page-component-title} {page-version}.
+This is the main documentation page for the Eclipse Jetty Project.
+
+Jetty provides a highly scalable and memory-efficient web server and Servlet container, supporting web protocols such as HTTP/1.1, HTTP/2, HTTP/3 and WebSocket.
+Furthermore, Jetty offers integrations with many other technologies, such as OSGi, JMX, JNDI, JAAS, CDI, etc. and with the relevant Jakarta EE technologies.
+
+Jetty is open source and are freely available for commercial use and distribution under either the link:https://www.eclipse.org/legal/epl-2.0/[Eclipse Public License v2] or the link:https://www.apache.org/licenses/LICENSE-2.0[Apache License v2].
+
+Jetty can either be used as a standalone server to deploy web applications, or as a library that can be used in your code as a dependency.
+
+.Jetty Versions and Compatibilities
+[cols="1a,1a,1a,1a", options="header"]
+|===
+| Jetty Version | Required Java Version | Jakarta EE Version | Status
+| Jetty 12.1.x | Java 17 | Jakarta EE11, EE10, EE9, EE8 | Development
+
+| Jetty 12.0.x | Java 17 | Jakarta EE10, EE9, EE8 | Stable
+
+| Jetty 11.0.x | Java 11 | Jakarta EE9 | EOL (see link:https://github.com/jetty/jetty.project/issues/10485[#10485])
+
+| Jetty 10.0.x | Java 11 | Jakarta EE8 | EOL (see link:https://github.com/jetty/jetty.project/issues/10485[#10485])
+
+| Jetty 9.4.x | Java 8 | Jakarta EE7 | EOL (see link:https://github.com/jetty/jetty.project/issues/7958[#7958])
+|===
 
 == xref:operations-guide:index.adoc[]
 
-The Eclipse Jetty Operations Guide targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
+The Operations Guide targets sysops, devops, and developers who want to install Jetty as a standalone server to deploy web applications.
 
 == xref:programming-guide:index.adoc[]
 
-The Eclipse Jetty Programming Guide targets developers who want to use the Eclipse Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.
+The Programming Guide targets developers who want to use the Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.

@@ -18,18 +18,14 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketOption;
-import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
-import java.net.UnixDomainSocketAddress;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.IO;
@@ -79,20 +75,6 @@ public class ClientConnector extends ContainerLifeCycle
     public static final String APPLICATION_PROTOCOLS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".applicationProtocols";
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
-    /**
-     * <p>Creates a ClientConnector configured to connect via Unix-Domain sockets to the given Unix-Domain path</p>
-     *
-     * @param path the Unix-Domain path to connect to
-     * @return a ClientConnector that connects to the given Unix-Domain path
-     * @deprecated replaced by {@link Transport.TCPUnix}
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public static ClientConnector forUnixDomain(Path path)
-    {
-        return new ClientConnector(Configurator.forUnixDomain(path));
-    }
-
-    private final Configurator configurator;
     private Executor executor;
     private Scheduler scheduler;
     private ByteBufferPool byteBufferPool;
@@ -109,36 +91,6 @@ public class ClientConnector extends ContainerLifeCycle
     private int receiveBufferSize = -1;
     private int sendBufferSize = -1;
 
-    public ClientConnector()
-    {
-        this(new Configurator());
-    }
-
-    /**
-     * @param configurator the {@link Configurator}
-     * @deprecated replaced by {@link Transport}
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public ClientConnector(Configurator configurator)
-    {
-        this.configurator = Objects.requireNonNull(configurator);
-        installBean(configurator);
-        configurator.addBean(this, false);
-    }
-
-    /**
-     * @param address the SocketAddress to connect to
-     * @return whether the connection to the given SocketAddress is intrinsically secure
-     * @see Configurator#isIntrinsicallySecure(ClientConnector, SocketAddress)
-     *
-     * @deprecated replaced by {@link Transport#isIntrinsicallySecure()}
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public boolean isIntrinsicallySecure(SocketAddress address)
-    {
-        return configurator.isIntrinsicallySecure(this, address);
-    }
-
     public SelectorManager getSelectorManager()
     {
         return selectorManager;
@@ -147,21 +99,6 @@ public class ClientConnector extends ContainerLifeCycle
     public Executor getExecutor()
     {
         return executor;
-    }
-
-    /**
-     * <p>Returns the default {@link Transport} for this connector.</p>
-     * <p>This method only exists for backwards compatibility, when
-     * {@link Configurator} was used, and should be removed when
-     * {@link Configurator} is removed.</p>
-     *
-     * @return the default {@link Transport} for this connector
-     * @deprecated use {@link Transport} instead
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public Transport newTransport()
-    {
-        return configurator.newTransport();
     }
 
     public void setExecutor(Executor executor)
@@ -630,127 +567,6 @@ public class ClientConnector extends ContainerLifeCycle
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
             connectFailed(failure, context);
-        }
-    }
-
-    /**
-     * <p>Configures a {@link ClientConnector}.</p>
-     *
-     * @deprecated replaced by {@link Transport}
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public static class Configurator extends ContainerLifeCycle
-    {
-        /**
-         * @return the default {@link Transport} for this configurator
-         */
-        public Transport newTransport()
-        {
-            return null;
-        }
-
-        /**
-         * <p>Returns whether the connection to a given {@link SocketAddress} is intrinsically secure.</p>
-         * <p>A protocol such as HTTP/1.1 can be transported by TCP; however, TCP is not secure because
-         * it does not offer any encryption.</p>
-         * <p>Encryption is provided by using TLS to wrap the HTTP/1.1 bytes, and then transporting the
-         * TLS bytes over TCP.</p>
-         * <p>On the other hand, protocols such as QUIC are intrinsically secure, and therefore it is
-         * not necessary to wrap the HTTP/1.1 bytes with TLS: the HTTP/1.1 bytes are transported over
-         * QUIC in an intrinsically secure way.</p>
-         *
-         * @param clientConnector the ClientConnector
-         * @param address the SocketAddress to connect to
-         * @return whether the connection to the given SocketAddress is intrinsically secure
-         */
-        public boolean isIntrinsicallySecure(ClientConnector clientConnector, SocketAddress address)
-        {
-            return false;
-        }
-
-        /**
-         * <p>Creates a new {@link SocketChannel} to connect to a {@link SocketAddress}
-         * derived from the input socket address.</p>
-         * <p>The input socket address represents the destination socket address to
-         * connect to, as it is typically specified by a URI authority, for example
-         * {@code localhost:8080} if the URI is {@code http://localhost:8080/path}.</p>
-         * <p>However, the returned socket address may be different as the implementation
-         * may use a Unix-Domain socket address to physically connect to the virtual
-         * destination socket address given as input.</p>
-         * <p>The return type is a pair/record holding the socket channel and the
-         * socket address, with the socket channel not yet connected.
-         * The implementation of this methods must not call
-         * {@link SocketChannel#connect(SocketAddress)}, as this is done later,
-         * after configuring the socket, by the {@link ClientConnector} implementation.</p>
-         *
-         * @param clientConnector the client connector requesting channel with associated address
-         * @param address the destination socket address, typically specified in a URI
-         * @param context the context to create the new socket channel
-         * @return a new {@link SocketChannel} with an associated {@link SocketAddress} to connect to
-         * @throws IOException if the socket channel or the socket address cannot be created
-         */
-        public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
-        {
-            return new ChannelWithAddress(SocketChannel.open(), address);
-        }
-
-        public EndPoint newEndPoint(ClientConnector clientConnector, SocketAddress address, SelectableChannel selectable, ManagedSelector selector, SelectionKey selectionKey)
-        {
-            return new SocketChannelEndPoint((SocketChannel)selectable, selector, selectionKey, clientConnector.getScheduler());
-        }
-
-        public Connection newConnection(ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context) throws IOException
-        {
-            ClientConnectionFactory factory = (ClientConnectionFactory)context.get(CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
-            return factory.newConnection(endPoint, context);
-        }
-
-        /**
-         * <p>A pair/record holding a {@link SelectableChannel} and a {@link SocketAddress} to connect to.</p>
-         *
-         * @deprecated replaced by {@link Transport}
-         */
-        @Deprecated(since = "12.0.7", forRemoval = true)
-        public static class ChannelWithAddress
-        {
-            private final SelectableChannel channel;
-            private final SocketAddress address;
-
-            public ChannelWithAddress(SelectableChannel channel, SocketAddress address)
-            {
-                this.channel = channel;
-                this.address = address;
-            }
-
-            public SelectableChannel getSelectableChannel()
-            {
-                return channel;
-            }
-
-            public SocketAddress getSocketAddress()
-            {
-                return address;
-            }
-        }
-
-        private static Configurator forUnixDomain(Path path)
-        {
-            return new Configurator()
-            {
-                @Override
-                public Transport newTransport()
-                {
-                    return new Transport.TCPUnix(path);
-                }
-
-                @Override
-                public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
-                {
-                    SocketChannel socketChannel = SocketChannel.open(StandardProtocolFamily.UNIX);
-                    UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of(path);
-                    return new ChannelWithAddress(socketChannel, socketAddress);
-                }
-            };
         }
     }
 }

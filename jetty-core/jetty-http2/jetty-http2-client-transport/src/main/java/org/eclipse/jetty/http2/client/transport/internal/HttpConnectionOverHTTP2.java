@@ -44,6 +44,7 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
@@ -83,6 +84,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public SocketAddress getRemoteSocketAddress()
     {
         return session.getRemoteSocketAddress();
+    }
+
+    @Override
+    public EndPoint.SslSessionData getSslSessionData()
+    {
+        return connection.getEndPoint().getSslSessionData();
     }
 
     public boolean isRecycleHttpChannels()

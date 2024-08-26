@@ -1636,7 +1636,6 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public InvocationType getInvocationType()
         {
-            // TODO review this as it is probably not correct
             return _request.getHttpStream().getInvocationType();
         }
     }

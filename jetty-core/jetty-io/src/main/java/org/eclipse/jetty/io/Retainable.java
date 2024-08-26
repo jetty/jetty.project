@@ -247,4 +247,30 @@ public interface Retainable
             return String.format("%s@%x[r=%d]", getClass().getSimpleName(), hashCode(), get());
         }
     }
+
+    /**
+     * Convenience method that replaces code like:
+     * <pre>{@code
+     *   if (buffer != null)
+     *   {
+     *       buffer.release();
+     *       buffer = null;
+     *   }
+     * }
+     * </pre>
+     * with:
+     * <pre>{@code
+     *   buffer = Retainable.release(buffer);
+     * }
+     * </pre>
+     * @param retainable The retainable to release, if not {@code null}.
+     * @param <R> The type of the retainable
+     * @return always returns {@code null}
+     */
+    static <R extends Retainable> R release(R retainable)
+    {
+        if (retainable != null)
+            retainable.release();
+        return null;
+    }
 }

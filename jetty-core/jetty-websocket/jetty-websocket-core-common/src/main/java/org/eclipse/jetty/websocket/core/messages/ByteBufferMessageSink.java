@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
@@ -23,8 +21,8 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 /**
  * <p>A {@link MessageSink} implementation that accumulates BINARY frames
@@ -39,24 +37,12 @@ public class ByteBufferMessageSink extends AbstractMessageSink
      * Creates a new {@link ByteBufferMessageSink}.
      *
      * @param session the WebSocket session
-     * @param methodHandle the application function to invoke when a new message has been assembled
+     * @param methodHolder the application function to invoke when a new message has been assembled
      * @param autoDemand whether this {@link MessageSink} manages demand automatically
      */
-    public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public ByteBufferMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        this(session, methodHandle, autoDemand, true);
-    }
-
-    protected ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand, boolean validateSignature)
-    {
-        super(session, methodHandle, autoDemand);
-
-        if (validateSignature)
-        {
-            MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
-            if (methodHandle.type() != onMessageType)
-                throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
+        super(session, methodHolder, autoDemand);
     }
 
     @Override
@@ -76,7 +62,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             // created or used, then we don't need to aggregate.
             if (frame.isFin() && (accumulator == null || accumulator.getLength() == 0))
             {
-                invoke(getMethodHandle(), frame.getPayload(), callback);
+                invoke(getMethodHolder(), frame.getPayload(), callback);
                 autoDemand();
                 return;
             }
@@ -99,7 +85,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 accumulator.writeTo(byteBuffer);
                 callback = Callback.from(buffer::release);
-                invoke(getMethodHandle(), byteBuffer, callback);
+                invoke(getMethodHolder(), byteBuffer, callback);
                 autoDemand();
             }
             else
@@ -122,9 +108,9 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             accumulator.fail(failure);
     }
 
-    protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, Callback callback) throws Throwable
+    protected void invoke(MethodHolder methodHolder, ByteBuffer byteBuffer, Callback callback) throws Throwable
     {
-        methodHandle.invoke(byteBuffer);
+        methodHolder.invoke(byteBuffer);
         callback.succeeded();
     }
 }

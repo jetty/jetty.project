@@ -12,7 +12,6 @@
   <description>Test keystore with self-signed SSL Certificate.</description>
 
   <properties>
-    <bouncycastle.version>1.77</bouncycastle.version>
     <bundle-symbolic-name>${project.groupId}.keystore</bundle-symbolic-name>
   </properties>
 
@@ -20,17 +19,14 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15to18</artifactId>
-      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15to18</artifactId>
-      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcutil-jdk15to18</artifactId>
-      <version>${bouncycastle.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

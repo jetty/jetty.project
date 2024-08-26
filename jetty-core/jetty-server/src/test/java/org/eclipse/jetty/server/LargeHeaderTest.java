@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -202,31 +204,39 @@ public class LargeHeaderTest
 
                     // String rawResponse = readResponse(client, count, input);
                     String rawResponse = IO.toString(input, UTF_8);
-                    if (rawResponse.isEmpty())
+                    if (StringUtil.isBlank(rawResponse))
                     {
                         LOG.warn("X-Count: {} - Empty Raw Response", count);
                         countEmpty.incrementAndGet();
                         return null;
                     }
 
-                    HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-                    if (response == null)
+                    try
                     {
-                        LOG.warn("X-Count: {} - Null HttpTester.Response", count);
-                        countEmpty.incrementAndGet();
+                        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+                        if (response == null)
+                        {
+                            LOG.warn("X-Count: {} - Null HttpTester.Response", count);
+                            countEmpty.incrementAndGet();
+                        }
+                        else if (response.getStatus() == 500)
+                        {
+                            // expected result
+                            count500.incrementAndGet();
+                            long contentLength = response.getLongField(HttpHeader.CONTENT_LENGTH);
+                            String responseBody = response.getContent();
+                            assertThat((long)responseBody.length(), is(contentLength));
+                        }
+                        else
+                        {
+                            LOG.warn("X-Count: {} - Unexpected Status Code: {}", count, response.getStatus());
+                            countOther.incrementAndGet();
+                        }
                     }
-                    else if (response.getStatus() == 500)
+                    catch (BadMessageException bme)
                     {
-                        // expected result
-                        count500.incrementAndGet();
-                        long contentLength = response.getLongField(HttpHeader.CONTENT_LENGTH);
-                        String responseBody = response.getContent();
-                        assertThat((long)responseBody.length(), is(contentLength));
-                    }
-                    else
-                    {
-                        LOG.warn("X-Count: {} - Unexpected Status Code: {}", count, response.getStatus());
-                        countOther.incrementAndGet();
+                        System.err.printf("%n---[Response:%d]----%n%s%n----%n", rawResponse.length(), rawResponse);
+                        LOG.warn("Failed Response Parse", bme);
                     }
                 }
                 catch (Throwable t)

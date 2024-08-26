@@ -1081,6 +1081,27 @@ public class Content
         }
 
         /**
+         * Convenience method to release a chunk and return {@link #next(Chunk)}.
+         * Equivalent to:
+         * <pre>{@code
+         * if (chunk != null)
+         * {
+         *     chunk.release();
+         *     chunk = Chunk.next(chunk);
+         * }
+         * }</pre>
+         * @param chunk The chunk to release or {@code null}
+         * @return The {@link #next(Chunk)} chunk;
+         */
+        static Chunk releaseAndNext(Chunk chunk)
+        {
+            if (chunk == null)
+                return null;
+            chunk.release();
+            return next(chunk);
+        }
+
+        /**
          * @param chunk The chunk to test for an {@link Chunk#getFailure() failure}.
          * @return True if the chunk is non-null and {@link Chunk#getFailure() chunk.getError()} returns non-null.
          */
