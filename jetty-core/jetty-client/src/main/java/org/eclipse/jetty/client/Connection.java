@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.Closeable;
 import java.net.SocketAddress;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 
 /**
@@ -60,6 +61,15 @@ public interface Connection extends Closeable
      * @return the remote socket address associated with the connection
      */
     default SocketAddress getRemoteSocketAddress()
+    {
+        return null;
+    }
+
+    /**
+     * @return the {@link EndPoint.SslSessionData} associated with
+     * the connection, or {@code null} if the connection is not secure.
+     */
+    default EndPoint.SslSessionData getSslSessionData()
     {
         return null;
     }
