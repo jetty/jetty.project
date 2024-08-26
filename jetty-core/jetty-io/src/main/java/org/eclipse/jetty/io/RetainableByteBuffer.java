@@ -1470,7 +1470,6 @@ public interface RetainableByteBuffer extends Retainable
 
         private DynamicCapacity(List<RetainableByteBuffer> buffers, ByteBufferPool.Sized pool, long maxSize, int minRetainSize)
         {
-            super(new ReferenceCounter()); // Make sure the wrapped retainable is a ReferenceCounter.
             _pool = pool == null ? ByteBufferPool.SIZED_NON_POOLING : pool;
             _maxSize = maxSize < 0 ? Long.MAX_VALUE : maxSize;
             _buffers = buffers == null ? new ArrayList<>() : buffers;
@@ -1483,8 +1482,7 @@ public interface RetainableByteBuffer extends Retainable
 
         private void checkNotReleased()
         {
-            ReferenceCounter counter = (ReferenceCounter)getWrapped();
-            if (counter.get() == 0)
+            if (getRetained() <= 0)
                 throw new IllegalStateException("Already released");
         }
 
