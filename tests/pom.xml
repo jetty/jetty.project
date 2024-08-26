@@ -15,6 +15,7 @@
     <module>jetty-jmh</module>
     <module>jetty-test-multipart</module>
     <module>jetty-test-session-common</module>
+    <module>jetty-test-util</module>
     <module>test-cross-context-dispatch</module>
     <module>test-distribution</module>
     <module>test-integration</module>

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.tests.distribution.openid;
+package org.eclipse.jetty.tests;
 
 import java.util.Base64;
 
