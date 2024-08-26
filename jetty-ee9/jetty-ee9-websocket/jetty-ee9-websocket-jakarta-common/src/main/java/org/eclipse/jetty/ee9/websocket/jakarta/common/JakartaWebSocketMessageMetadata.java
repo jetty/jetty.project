@@ -13,15 +13,15 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
-import java.lang.invoke.MethodHandle;
 import java.util.List;
 
 import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 public class JakartaWebSocketMessageMetadata
 {
-    private MethodHandle methodHandle;
+    private MethodHolder methodHolder;
     private Class<? extends MessageSink> sinkClass;
     private List<RegisteredDecoder> registeredDecoders;
 
@@ -34,7 +34,7 @@ public class JakartaWebSocketMessageMetadata
             return null;
 
         JakartaWebSocketMessageMetadata copy = new JakartaWebSocketMessageMetadata();
-        copy.methodHandle = metadata.methodHandle;
+        copy.methodHolder = metadata.methodHolder;
         copy.sinkClass = metadata.sinkClass;
         copy.registeredDecoders = metadata.registeredDecoders;
         copy.maxMessageSize = metadata.maxMessageSize;
@@ -58,14 +58,14 @@ public class JakartaWebSocketMessageMetadata
         this.maxMessageSizeSet = true;
     }
 
-    public MethodHandle getMethodHandle()
+    public MethodHolder getMethodHolder()
     {
-        return methodHandle;
+        return methodHolder;
     }
 
-    public void setMethodHandle(MethodHandle methodHandle)
+    public void setMethodHolder(MethodHolder methodHolder)
     {
-        this.methodHandle = methodHandle;
+        this.methodHolder = methodHolder;
     }
 
     public Class<? extends MessageSink> getSinkClass()
