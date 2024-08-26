@@ -22,7 +22,6 @@ import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -37,7 +36,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     public static final Origin.Protocol HTTP11 = new Origin.Protocol(List.of("http/1.1"), false);
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportOverHTTP.class);
 
-    private final ClientConnectionFactory factory = new HttpClientConnectionFactory();
+    private final HttpClientConnectionFactory factory = new HttpClientConnectionFactory();
     private int headerCacheSize = 1024;
     private boolean headerCacheCaseSensitive;
 
@@ -79,25 +78,54 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
         return connection;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
+    /**
+     * @return the max size in bytes for the HTTP header field cache
+     */
+    @ManagedAttribute("The maximum allowed size in bytes for the HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return headerCacheSize;
     }
 
+    /**
+     * @param headerCacheSize the max size in bytes for the HTTP header field cache
+     */
     public void setHeaderCacheSize(int headerCacheSize)
     {
         this.headerCacheSize = headerCacheSize;
     }
 
-    @ManagedAttribute("Whether the header field cache is case sensitive")
+    /**
+     * @return whether the HTTP header field cache is case-sensitive
+     */
+    @ManagedAttribute("Whether the HTTP header field cache is case-sensitive")
     public boolean isHeaderCacheCaseSensitive()
     {
         return headerCacheCaseSensitive;
     }
 
+    /**
+     * @param headerCacheCaseSensitive whether the HTTP header field cache is case-sensitive
+     */
     public void setHeaderCacheCaseSensitive(boolean headerCacheCaseSensitive)
     {
         this.headerCacheCaseSensitive = headerCacheCaseSensitive;
+    }
+
+    /**
+     * @return whether newly created connections should be initialized with an {@code OPTIONS * HTTP/1.1} request
+     */
+    @ManagedAttribute("Whether newly created connections should be initialized with an OPTIONS * HTTP/1.1 request")
+    public boolean isInitializeConnections()
+    {
+        return factory.isInitializeConnections();
+    }
+
+    /**
+     * @param initialize whether newly created connections should be initialized with an {@code OPTIONS * HTTP/1.1} request
+     */
+    public void setInitializeConnections(boolean initialize)
+    {
+        factory.setInitializeConnections(initialize);
     }
 }
