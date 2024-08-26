@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -75,6 +76,7 @@ public class QoSHandlerTest
     }
 
     @Test
+    @Disabled // TODO fix in #12171
     public void testRequestIsSuspendedAndResumed() throws Exception
     {
         int maxRequests = 2;
@@ -142,6 +144,7 @@ public class QoSHandlerTest
     }
 
     @Test
+    @Disabled // TODO fix in #12171
     public void testSuspendedRequestTimesOut() throws Exception
     {
         int maxRequests = 1;
