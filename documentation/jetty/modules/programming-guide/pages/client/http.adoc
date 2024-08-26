@@ -540,7 +540,7 @@ In order to send a request, it is necessary to obtain a connection, as explained
 
 The HTTP/1.1 protocol may send only one request at a time on a single connection, while multiplexed protocols such as HTTP/2 may send many requests at a time on a single connection.
 
-You can access the connection information, for example the local and remote `SocketAddress`, or the `SSLSession` if the connection is secured using TLS, in the following way:
+You can access the connection information, for example the local and remote `SocketAddress`, or the `SslSessionData` if the connection is secured, in the following way:
 
 [,java,indent=0]
 ----

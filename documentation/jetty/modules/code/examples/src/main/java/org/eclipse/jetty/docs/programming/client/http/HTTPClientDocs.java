@@ -27,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.Authentication;
@@ -75,6 +74,7 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
@@ -1200,10 +1200,10 @@ public class HTTPClientDocs
                 SocketAddress remoteAddress = connection.getRemoteSocketAddress();
                 System.getLogger("connection").log(INFO, "Server address: %s", remoteAddress);
 
-                // Obtain the SSLSession.
-                SSLSession sslSession = connection.getSslSessionData().sslSession();
-                if (sslSession != null)
-                    System.getLogger("connection").log(INFO, "SSLSession: %s", sslSession);
+                // Obtain the SslSessionData.
+                EndPoint.SslSessionData sslSessionData = connection.getSslSessionData();
+                if (sslSessionData != null)
+                    System.getLogger("connection").log(INFO, "SslSessionData: %s", sslSessionData);
             })
             .send();
         // end::connectionInformation[]

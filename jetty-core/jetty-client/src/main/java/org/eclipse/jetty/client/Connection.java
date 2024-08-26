@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.io.Closeable;
 import java.net.SocketAddress;
-import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
@@ -67,8 +66,8 @@ public interface Connection extends Closeable
     }
 
     /**
-     * @return the {@link SSLSession} associated with the connection, or {@code null}
-     * if the connection is not secure or the {@link SSLSession} is not available.
+     * @return the {@link EndPoint.SslSessionData} associated with
+     * the connection, or {@code null} if the connection is not secure.
      */
     default EndPoint.SslSessionData getSslSessionData()
     {
