@@ -26,10 +26,12 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -79,7 +81,7 @@ public class ThreadLimitHandler extends HandlerWrapper
     private final boolean _rfc7239;
     private final String _forwardedHeader;
     private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
-    private final ConcurrentMap<String, Remote> _remotes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Remote> _remotes = new ConcurrentHashMap<>();
     private volatile boolean _enabled;
     private int _threadLimit = 10;
 
@@ -165,6 +167,22 @@ public class ThreadLimitHandler extends HandlerWrapper
             }
             else
             {
+                request.getServletContext().addListener(new ServletRequestListener()
+                {
+                    @Override
+                    public void requestInitialized(ServletRequestEvent servletRequestEvent)
+                    {
+                    }
+
+                    @Override
+                    public void requestDestroyed(ServletRequestEvent sre)
+                    {
+                        // Use a compute method to remove the Remote instance as it is necessary for
+                        // the ref counter release and the removal to be atomic.
+                        _remotes.computeIfPresent(remote._ip, (k, v) -> v._referenceCounter.release() ? null : v);
+                    }
+                });
+
                 // Do we already have a future permit from a previous invocation?
                 Closeable permit = (Closeable)baseRequest.getAttribute(PERMIT);
                 try
@@ -256,14 +274,18 @@ public class ThreadLimitHandler extends HandlerWrapper
         if (limit <= 0)
             return null;
 
-        remote = _remotes.get(ip);
-        if (remote == null)
+        // Use a compute method to create or retain the Remote instance as it is necessary for
+        // the ref counter increment or the instance creation to be mutually exclusive.
+        // The map MUST be a CHM as it guarantees the remapping function is only called once.
+        remote = _remotes.compute(ip, (k, v) ->
         {
-            Remote r = new Remote(ip, limit);
-            remote = _remotes.putIfAbsent(ip, r);
-            if (remote == null)
-                remote = r;
-        }
+            if (v != null)
+            {
+                v._referenceCounter.retain();
+                return v;
+            }
+            return new Remote(k, limit);
+        });
 
         baseRequest.setAttribute(REMOTE, remote);
 
@@ -282,7 +304,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         }
 
         // If no remote IP from a header, determine it directly from the channel
-        // Do not use the request methods, as they may have been lied to by the 
+        // Do not use the request methods, as they may have been lied to by the
         // RequestCustomizer!
         InetSocketAddress inetAddr = baseRequest.getHttpChannel().getRemoteAddress();
         if (inetAddr != null && inetAddr.getAddress() != null)
@@ -329,11 +351,17 @@ public class ThreadLimitHandler extends HandlerWrapper
         return (comma >= 0) ? forwardedFor.substring(comma + 1).trim() : forwardedFor;
     }
 
+    int getRemoteCount()
+    {
+        return _remotes.size();
+    }
+
     private final class Remote implements Closeable
     {
         private final String _ip;
         private final int _limit;
         private final Locker _locker = new Locker();
+        private final ReferenceCounter _referenceCounter = new ReferenceCounter();
         private int _permits;
         private Deque<CompletableFuture<Closeable>> _queue = new ArrayDeque<>();
         private final CompletableFuture<Closeable> _permitted = CompletableFuture.completedFuture(this);
@@ -357,7 +385,7 @@ public class ThreadLimitHandler extends HandlerWrapper
                     return _permitted; // TODO is it OK to share/reuse this?
                 }
 
-                // No pass available, so queue a new future 
+                // No pass available, so queue a new future
                 CompletableFuture<Closeable> pass = new CompletableFuture<Closeable>();
                 _queue.addLast(pass);
                 return pass;
@@ -435,6 +463,28 @@ public class ThreadLimitHandler extends HandlerWrapper
                         _for = value;
                 }
             }
+        }
+    }
+
+    private static class ReferenceCounter
+    {
+        private final AtomicInteger references = new AtomicInteger(1);
+
+        public void retain()
+        {
+            if (references.getAndUpdate(c -> c == 0 ? 0 : c + 1) == 0)
+                throw new IllegalStateException("released " + this);
+        }
+
+        public boolean release()
+        {
+            int ref = references.updateAndGet(c ->
+            {
+                if (c == 0)
+                    throw new IllegalStateException("already released " + this);
+                return c - 1;
+            });
+            return ref == 0;
         }
     }
 }
