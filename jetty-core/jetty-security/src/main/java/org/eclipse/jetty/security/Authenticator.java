@@ -42,6 +42,7 @@ public interface Authenticator
     String SPNEGO_AUTH = "SPNEGO";
     String NEGOTIATE_AUTH = "NEGOTIATE";
     String OPENID_AUTH = "OPENID";
+    String SIWE_AUTH = "SIWE";
 
     /**
      * Configure the Authenticator

@@ -124,12 +124,6 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         connect(address, destination.getClientConnectionFactory(), listenerPromise, listenerPromise, context);
     }
 
-    @Override
-    public void connect(InetSocketAddress address, Map<String, Object> context)
-    {
-        connect((SocketAddress)address, context);
-    }
-
     protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);

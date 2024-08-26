@@ -176,6 +176,7 @@ public class ServerDocs
         @Override
         public void onFillable()
         {
+            // Called from fillInterested() in onOpen() to start iteration.
             callback.iterate();
         }
 
@@ -206,11 +207,8 @@ public class ServerDocs
                             // the application completed the request processing.
                             return Action.SCHEDULED;
                         }
-                        else
-                        {
-                            // Did not receive enough JSON bytes,
-                            // loop around to try to read more.
-                        }
+                        // Did not receive enough JSON bytes to complete the
+                        // JSON parsing, loop around to try to read more bytes.
                     }
                     else if (filled == 0)
                     {
@@ -218,12 +216,11 @@ public class ServerDocs
                         // don't keep it around while we are idle.
                         buffer = null;
 
-                        // No more bytes to read, declare
-                        // again interest for fill events.
-                        fillInterested();
+                        // No more bytes to read, declare again interest for fill events.
+                        fillInterested(this);
 
-                        // Signal that the iteration is now IDLE.
-                        return Action.IDLE;
+                        // Signal that the iteration is now SCHEDULED for fill interest callback.
+                        return Action.SCHEDULED;
                     }
                     else
                     {
