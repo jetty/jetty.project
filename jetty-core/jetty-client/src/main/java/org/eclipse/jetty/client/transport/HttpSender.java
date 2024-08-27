@@ -49,7 +49,7 @@ public abstract class HttpSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpSender.class);
 
-    private final ContentSender contentSender = new ContentSender();
+    private ContentSender contentSender = new ContentSender();
     private final AtomicReference<RequestState> requestState = new AtomicReference<>(RequestState.QUEUED);
     private final AtomicReference<Throwable> failure = new AtomicReference<>();
     private final HttpChannel channel;
@@ -310,7 +310,8 @@ public abstract class HttpSender
 
     protected void reset()
     {
-        contentSender.reset();
+        if (!contentSender.reset())
+            contentSender = new ContentSender();
     }
 
     protected void dispose()
