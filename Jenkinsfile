@@ -45,7 +45,6 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk17", "clean install -Perrorprone", "maven3") // javadoc:javadoc
-              mavenBuild( "jdk17", "org.jacoco:jacoco-maven-plugin:report-aggregate -Djacoco.onlyReactorProjects=true", "maven3")
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
@@ -129,7 +128,9 @@ def mavenBuild(jdk, cmdline, mvnName) {
           runLaunchable ("verify")
           runLaunchable ("record build --name jetty-12.0.x")
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
-          sh "mvn $extraArgs -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -V -B -e $cmdline -Pci "
+          if(!cmdline.contains("jacoco.skip=true")) {
+            sh "mvn -Dmaven.build.cache.enabled=false -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e jacoco:report-aggregate -Djacoco.onlyReactorProjects=true"
+          }
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
