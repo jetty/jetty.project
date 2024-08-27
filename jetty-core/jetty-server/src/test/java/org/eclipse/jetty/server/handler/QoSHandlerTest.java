@@ -37,7 +37,6 @@ import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -85,7 +84,6 @@ public class QoSHandlerTest
     }
 
     @Test
-    @Disabled // TODO fix in #12171
     public void testRequestIsSuspendedAndResumed() throws Exception
     {
         int maxRequests = 2;
@@ -153,7 +151,6 @@ public class QoSHandlerTest
     }
 
     @Test
-    @Disabled // TODO fix in #12171
     public void testSuspendedRequestTimesOut() throws Exception
     {
         int maxRequests = 1;
