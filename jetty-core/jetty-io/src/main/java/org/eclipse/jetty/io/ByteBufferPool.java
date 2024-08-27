@@ -64,11 +64,9 @@ public interface ByteBufferPool
      * If the buffer is not in a pool, calling this method is equivalent to calling {@link RetainableByteBuffer#release()}.
      * Calling this method satisfies any contract that requires a call to {@link RetainableByteBuffer#release()}.
      * @return {@code true} if a call to {@link RetainableByteBuffer#release()} would have returned {@code true}.
-     * @see RetainableByteBuffer#release()
-     * @deprecated This API is experimental and may be removed in future releases
+     * @see RetainableByteBuffer#releaseAndRemove()
      */
-    @Deprecated
-    default boolean removeAndRelease(RetainableByteBuffer buffer)
+    default boolean releaseAndRemove(RetainableByteBuffer buffer)
     {
         return buffer != null && buffer.release();
     }
@@ -94,6 +92,12 @@ public interface ByteBufferPool
         public ByteBufferPool getWrapped()
         {
             return wrapped;
+        }
+
+        @Override
+        public boolean releaseAndRemove(RetainableByteBuffer buffer)
+        {
+            return getWrapped().releaseAndRemove(buffer);
         }
 
         @Override

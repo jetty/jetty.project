@@ -519,7 +519,7 @@ public class RawHTTP2ProxyTest
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onFailure(Throwable cause)
         {
             frameInfo.callback.failed(cause);
         }
@@ -673,7 +673,7 @@ public class RawHTTP2ProxyTest
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onFailure(Throwable cause)
         {
             frameInfo.callback.failed(cause);
         }

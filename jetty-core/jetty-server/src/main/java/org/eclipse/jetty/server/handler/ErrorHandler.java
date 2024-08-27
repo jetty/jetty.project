@@ -254,14 +254,14 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, byteBufferPool, buffer));
+            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
 
             return true;
         }
         catch (Throwable x)
         {
             if (buffer != null)
-                byteBufferPool.removeAndRelease(buffer);
+                buffer.releaseAndRemove();
             throw x;
         }
     }
@@ -586,13 +586,11 @@ public class ErrorHandler implements Request.Handler
     private static class WriteErrorCallback implements Callback
     {
         private final AtomicReference<Callback>  _callback;
-        private final ByteBufferPool _pool;
         private final RetainableByteBuffer _buffer;
 
-        public WriteErrorCallback(Callback callback, ByteBufferPool pool, RetainableByteBuffer retainable)
+        public WriteErrorCallback(Callback callback, RetainableByteBuffer retainable)
         {
             _callback = new AtomicReference<>(callback);
-            _pool = pool;
             _buffer = retainable;
         }
 
@@ -600,7 +598,9 @@ public class ErrorHandler implements Request.Handler
         public void succeeded()
         {
             Callback callback = _callback.getAndSet(null);
-            if (callback != null)
+            if (callback == null)
+                _buffer.release();
+            else
                 ExceptionUtil.callAndThen(_buffer::release, callback::succeeded);
         }
 
@@ -608,8 +608,10 @@ public class ErrorHandler implements Request.Handler
         public void failed(Throwable x)
         {
             Callback callback = _callback.getAndSet(null);
-            if (callback != null)
-                ExceptionUtil.callAndThen(x, t -> _pool.removeAndRelease(_buffer), callback::failed);
+            if (callback == null)
+                _buffer.releaseAndRemove();
+            else
+                ExceptionUtil.callAndThen(x, t -> _buffer.releaseAndRemove(), callback::failed);
         }
     }
 }

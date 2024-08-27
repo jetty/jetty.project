@@ -176,7 +176,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param maxLength The maximum total size of the fields
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
      */
-    static CompletableFuture<Fields> from(Content.Source source, Attributes attributes, Charset charset, int maxFields, int maxLength)
+    public static CompletableFuture<Fields> from(Content.Source source, Attributes attributes, Charset charset, int maxFields, int maxLength)
     {
         Object attr = attributes.getAttribute(FormFields.class.getName());
         if (attr instanceof FormFields futureFormFields)

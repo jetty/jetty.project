@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.ee9.websocket.common;
 
-import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,16 +62,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private final Object endpointInstance;
     private final BatchMode batchMode;
     private final AtomicBoolean closeNotified = new AtomicBoolean();
-    private MethodHandle openHandle;
-    private MethodHandle closeHandle;
-    private MethodHandle errorHandle;
-    private MethodHandle textHandle;
+    private MethodHolder openHandle;
+    private MethodHolder closeHandle;
+    private MethodHolder errorHandle;
+    private MethodHolder textHandle;
     private final Class<? extends MessageSink> textSinkClass;
-    private MethodHandle binaryHandle;
+    private MethodHolder binaryHandle;
     private final Class<? extends MessageSink> binarySinkClass;
-    private MethodHandle frameHandle;
-    private MethodHandle pingHandle;
-    private MethodHandle pongHandle;
+    private MethodHolder frameHandle;
+    private MethodHolder pingHandle;
+    private MethodHolder pongHandle;
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
@@ -85,12 +86,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public JettyWebSocketFrameHandler(WebSocketContainer container,
                                       Object endpointInstance,
-                                      MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                      MethodHandle textHandle, MethodHandle binaryHandle,
+                                      MethodHolder openHandle, MethodHolder closeHandle, MethodHolder errorHandle,
+                                      MethodHolder textHandle, MethodHolder binaryHandle,
                                       Class<? extends MessageSink> textSinkClass,
                                       Class<? extends MessageSink> binarySinkClass,
-                                      MethodHandle frameHandle,
-                                      MethodHandle pingHandle, MethodHandle pongHandle,
+                                      MethodHolder frameHandle,
+                                      MethodHolder pingHandle, MethodHolder pongHandle,
                                       BatchMode batchMode,
                                       Configuration.Customizer customizer)
     {
@@ -163,15 +164,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             pingHandle = InvokerUtils.bindTo(pingHandle, session);
             pongHandle = InvokerUtils.bindTo(pongHandle, session);
 
+            Executor executor = coreSession.getWebSocketComponents().getExecutor();
             if (textHandle != null)
-                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, session);
-
+                textSink = JettyWebSocketFrameHandlerFactory.createMessageSink(textHandle, textSinkClass, executor, session);
             if (binaryHandle != null)
-                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, session);
-
+                binarySink = JettyWebSocketFrameHandlerFactory.createMessageSink(binaryHandle, binarySinkClass, executor, session);
             if (openHandle != null)
                 openHandle.invoke();
-
             if (session.isOpen())
                 container.notifySessionListeners((listener) -> listener.onWebSocketSessionOpened(session));
 

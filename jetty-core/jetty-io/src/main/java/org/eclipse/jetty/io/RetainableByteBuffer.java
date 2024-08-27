@@ -165,6 +165,19 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * {@link #release() Releases} the buffer in a way that ensures it will not be recycled in a buffer pool.
+     * This method should be used in cases where it is unclear if operations on the buffer have completed
+     * (for example, when a write operation has been aborted asynchronously or timed out, but the write
+     * operation may still be pending).
+     * @return whether if the buffer was released.
+     * @see ByteBufferPool#releaseAndRemove(RetainableByteBuffer)
+     */
+    default boolean releaseAndRemove()
+    {
+        return release();
+    }
+
+    /**
      * Appends and consumes the contents of this buffer to the passed buffer, limited by the capacity of the target buffer.
      * @param buffer The buffer to append bytes to, whose limit will be updated.
      * @return {@code true} if all bytes in this buffer are able to be appended.
@@ -655,6 +668,12 @@ public interface RetainableByteBuffer extends Retainable
         public RetainableByteBuffer getWrapped()
         {
             return (RetainableByteBuffer)super.getWrapped();
+        }
+
+        @Override
+        public boolean releaseAndRemove()
+        {
+            return getWrapped().releaseAndRemove();
         }
 
         @Override
@@ -1302,6 +1321,12 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public boolean releaseAndRemove()
+        {
+            return _pool.releaseAndRemove(this);
+        }
+
+        @Override
         public RetainableByteBuffer slice(long length)
         {
             int size = remaining();
@@ -1940,6 +1965,22 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public boolean releaseAndRemove()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("release {}", this);
+            if (super.release())
+            {
+                for (RetainableByteBuffer buffer : _buffers)
+                    buffer.releaseAndRemove();
+                _buffers.clear();
+                _aggregate = null;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
         public void clear()
         {
             if (LOG.isDebugEnabled())
@@ -2333,10 +2374,6 @@ public interface RetainableByteBuffer extends Retainable
                         @Override
                         protected Action process()
                         {
-                            // release the last buffer written
-                            if (_buffer != null)
-                                _buffer.release();
-
                             // write next buffer
                             if (_index < _buffers.size())
                             {
@@ -2356,6 +2393,20 @@ public interface RetainableByteBuffer extends Retainable
                             }
                             _buffers.clear();
                             return Action.SUCCEEDED;
+                        }
+
+                        @Override
+                        protected void onSuccess()
+                        {
+                            // release the last buffer written
+                            _buffer = Retainable.release(_buffer);
+                        }
+
+                        @Override
+                        protected void onCompleteFailure(Throwable x)
+                        {
+                            // release the last buffer written
+                            _buffer = Retainable.release(_buffer);
                         }
                     }.iterate();
                 }

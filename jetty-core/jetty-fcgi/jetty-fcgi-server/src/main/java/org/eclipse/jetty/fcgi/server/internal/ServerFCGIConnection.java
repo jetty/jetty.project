@@ -259,8 +259,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         boolean released = inputBuffer.release();
         if (LOG.isDebugEnabled())
             LOG.debug("releaseInputBuffer {} {}", released, this);
-        if (released)
-            inputBuffer = null;
+        inputBuffer = null;
     }
 
     private int fillInputBuffer()
