@@ -13,6 +13,9 @@ experimental
 [depend]
 server
 
+[lib]
+lib/compression/jetty-compression-server-${jetty.version}.jar
+
 [xml]
 etc/jetty-compression-handler.xml
 

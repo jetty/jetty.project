@@ -6,7 +6,7 @@
 <!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Get name="CompressionHandler">
+  <Ref refid="CompressionHandler">
     <Call name="addCompression">
       <Arg>
         <New id="gzipCompression" class="org.eclipse.jetty.compression.gzip.GzipCompression">
@@ -40,7 +40,7 @@
         </New>
       </Arg>
     </Call>
-  </Get>
+  </Ref>
 </Configure>
 
 

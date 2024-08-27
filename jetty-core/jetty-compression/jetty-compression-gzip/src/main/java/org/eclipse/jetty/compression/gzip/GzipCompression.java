@@ -120,14 +120,24 @@ public class GzipCompression extends Compression
         return CONTENT_ENCODING;
     }
 
-    protected InflaterPool getInflaterPool()
+    public InflaterPool getInflaterPool()
     {
         return this.inflaterPool;
     }
 
-    protected DeflaterPool getDeflaterPool()
+    public DeflaterPool getDeflaterPool()
     {
         return this.deflaterPool;
+    }
+
+    public void setDeflaterPool(DeflaterPool deflaterPool)
+    {
+        this.deflaterPool = deflaterPool;
+    }
+
+    public void setInflaterPool(InflaterPool inflaterPool)
+    {
+        this.inflaterPool = inflaterPool;
     }
 
     @Override

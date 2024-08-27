@@ -13,6 +13,7 @@
   <description>Jetty Core Compression :: Brotli Support</description>
 
   <properties>
+    <brotli4j.version>1.17.0</brotli4j.version>
     <bundle-symbolic-name>${project.groupId}.brotli</bundle-symbolic-name>
   </properties>
 
@@ -20,7 +21,7 @@
     <dependency>
       <groupId>com.aayushatharva.brotli4j</groupId>
       <artifactId>brotli4j</artifactId>
-      <version>1.17.0</version>
+      <version>${brotli4j.version}</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -29,7 +30,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.compression</groupId>
-      <artifactId>jetty-compression-common</artifactId>
+      <artifactId>jetty-compression-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

@@ -11,7 +11,11 @@ experimental
 
 [depend]
 server
+compression-api
 compression
+
+[lib]
+lib/compression/jetty-compression-gzip-${jetty.version}.jar
 
 [xml]
 etc/jetty-compression-gzip.xml

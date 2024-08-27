@@ -7,13 +7,13 @@
     <artifactId>jetty-compression</artifactId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-compression-common</artifactId>
+  <artifactId>jetty-compression-api</artifactId>
   <packaging>jar</packaging>
-  <name>Core :: Compression :: Common</name>
-  <description>Jetty Core Compression Common</description>
+  <name>Core :: Compression :: API</name>
+  <description>Jetty Core Compression API</description>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>
   </properties>
 
   <dependencies>

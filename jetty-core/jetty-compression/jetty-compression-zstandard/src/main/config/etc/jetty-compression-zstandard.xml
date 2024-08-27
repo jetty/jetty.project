@@ -2,11 +2,11 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <!-- =============================================================== -->
-<!-- Add Brotli support into the Compression Handler                 -->
+<!-- Add Zstandard support into the Compression Handler              -->
 <!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Get name="CompressionHandler">
+  <Ref refid="CompressionHandler">
     <Call name="addCompression">
       <Arg>
         <New id="zstandardCompression" class="org.eclipse.jetty.compression.zstandard.ZstandardCompression">
@@ -29,7 +29,7 @@
         </New>
       </Arg>
     </Call>
-  </Get>
+  </Ref>
 </Configure>
 
 

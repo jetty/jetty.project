@@ -11,10 +11,20 @@ experimental
 
 [depend]
 server
+compression-api
 compression
+
+[files]
+maven://com.aayushatharva.brotli4j/brotli4j/${brotli4j.version}|lib/compression/brotli4j-${brotli4j.version}.jar
+
+[lib]
+lib/compression/brotli4j-${brotli4j.version}.jar
 
 [xml]
 etc/jetty-compression-brotli.xml
+
+[ini]
+brotli4j.version?=@brotli4j.version@
 
 [ini-template]
 ## Minimum content length after which brotli is enabled

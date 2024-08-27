@@ -11,7 +11,14 @@ experimental
 
 [depend]
 server
+compression-api
 compression
+
+[files]
+maven://com.github.luben/zstd-jni/${zstd-jni.version}|lib/compression/zstd-jni-${zstd-jni.version}.jar
+
+[lib]
+lib/compression/zstd-jni-${zstd-jni.version}.jar
 
 [xml]
 etc/jetty-compression-zstandard.xml
