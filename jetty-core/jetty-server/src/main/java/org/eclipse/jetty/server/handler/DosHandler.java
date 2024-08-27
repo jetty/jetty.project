@@ -170,7 +170,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
         _rateControlFactory = Objects.requireNonNull(rateControlFactory);
         installBean(_rateControlFactory);
         _maxTrackers = maxTrackers <= 0 ? 10_000 : maxTrackers;
-        _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, DelayedEnhanceYourCalmRejectHandler::new);
+        _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, TooManyRequestsRejectHandler::new);
         installBean(_rejectHandler);
     }
 
@@ -196,7 +196,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
         if (id == null)
             return _rejectHandler.handle(request, response, callback);
 
-        // Obtain a tracker
+        // Obtain a tracker, creating a new one if necessary.  Trackers are removed if CyclicTimeouts#onExpired returns true
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
         // If we are not over-limit then handle normally
@@ -415,22 +415,22 @@ public class DosHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * A Handler to reject DOS requests with {@link HttpStatus#ENHANCE_YOUR_CALM_420}.
+     * A Handler to reject DOS requests with {@link HttpStatus#TOO_MANY_REQUESTS_429}.
      */
     public static class EnhanceYourCalmRejectHandler implements Request.Handler
     {
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            Response.writeError(request, response, callback, HttpStatus.ENHANCE_YOUR_CALM_420);
+            Response.writeError(request, response, callback, HttpStatus.TOO_MANY_REQUESTS_429);
             return true;
         }
     }
 
     /**
-     * A Handler to reject DOS requests with {@link HttpStatus#ENHANCE_YOUR_CALM_420}.
+     * A Handler to reject DOS requests with {@link HttpStatus#TOO_MANY_REQUESTS_429}.
      */
-    public static class DelayedEnhanceYourCalmRejectHandler extends Handler.Abstract
+    public static class TooManyRequestsRejectHandler extends Handler.Abstract
     {
         record Exchange(Request request, Response response, Callback callback)
         {}
@@ -441,7 +441,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
         private final long _delayMs;
         private Scheduler _scheduler;
 
-        public DelayedEnhanceYourCalmRejectHandler()
+        public TooManyRequestsRejectHandler()
         {
             this(1000, 1000);
         }
@@ -450,7 +450,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
          * @param delayMs The delay in milliseconds to hold rejected requests before sending a response
          * @param maxDelayQueue The maximum number of delayed requests to hold.
          */
-        public DelayedEnhanceYourCalmRejectHandler(
+        public TooManyRequestsRejectHandler(
             @Name("delayMs") long delayMs,
             @Name("maxDelayQueue") int maxDelayQueue)
         {
@@ -482,7 +482,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 while (_delayQueue.size() >= _maxDelayQueue)
                 {
                     Exchange exchange = _delayQueue.removeFirst();
-                    Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.ENHANCE_YOUR_CALM_420);
+                    Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.TOO_MANY_REQUESTS_429);
                 }
 
                 if (_delayQueue.isEmpty())
@@ -505,7 +505,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
                     if (exchange.request.getBeginNanoTime() <= expired)
                     {
                         iterator.remove();
-                        Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.ENHANCE_YOUR_CALM_420);
+                        Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.TOO_MANY_REQUESTS_429);
                     }
                 }
 

@@ -228,7 +228,7 @@ public class DosHandlerTest
                         String response = connector.getResponse("""
                                 GET / HTTP/1.1\r
                                 Host: local\r
-                                                
+                                
                                 """);
                         assertThat(response, containsString("200 OK"));
                         Thread.sleep(100);
@@ -279,7 +279,7 @@ public class DosHandlerTest
                                 Host: local\r
                                 
                                 """);
-                            if (response.contains(" 420 "))
+                            if (response.contains(" 429 "))
                                 calm.incrementAndGet();
                             Thread.sleep(70);
                         }

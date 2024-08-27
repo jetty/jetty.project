@@ -31,7 +31,7 @@ etc/jetty-dos.xml
 #jetty.dos.maxRequestsPerSecond=100
 
 ## The Handler class to use to reject DOS requests
-#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DosHandler$DelayedEnhanceYourCalmRejectHandler
+#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DosHandler$TooManyRequestsRejectHandler
 
 ## The period to delay dos requests before rejecting them.
 #jetty.dos.delayMs=1000
