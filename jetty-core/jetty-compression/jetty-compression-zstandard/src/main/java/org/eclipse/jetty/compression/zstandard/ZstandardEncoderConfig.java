@@ -94,7 +94,7 @@ public class ZstandardEncoderConfig implements EncoderConfig
     /**
      * Zstandard encoder compression level.
      *
-     * @param level the level to set (in range 1 to 119)
+     * @param level the level to set (in range 1 to 19)
      */
     @Override
     public void setCompressionLevel(int level)

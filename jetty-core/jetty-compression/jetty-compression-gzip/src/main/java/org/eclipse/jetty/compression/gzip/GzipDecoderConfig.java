@@ -14,8 +14,6 @@
 package org.eclipse.jetty.compression.gzip;
 
 import org.eclipse.jetty.compression.DecoderConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class GzipDecoderConfig implements DecoderConfig
 {
@@ -27,7 +25,6 @@ public class GzipDecoderConfig implements DecoderConfig
      * Minimum buffer size to avoid issues with JDK-8133170
      */
     public static final int MIN_BUFFER_SIZE = 32;
-    private static final Logger LOG = LoggerFactory.getLogger(GzipDecoderConfig.class);
 
     private int bufferSize = DEFAULT_BUFFER_SIZE;
 
