@@ -40,4 +40,8 @@ etc/jetty-compression-brotli.xml
 # valid values from 10 to 24
 # jetty.brotli.encoder.lgWindow=22
 
+[license]
+Brotli4j is distributed under Apache License 2.0
+Copyright 2021, Aayush Atharva
+https://github.com/hyperxpro/Brotli4j/blob/main/LICENSE
 
