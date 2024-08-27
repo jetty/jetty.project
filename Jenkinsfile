@@ -45,7 +45,7 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk17", "clean install -Perrorprone", "maven3") // javadoc:javadoc
-              mavenBuild( "jdk17", "org.jacoco:jacoco:report-aggregate -Djacoco.onlyReactorProjects=true", "maven3")
+              mavenBuild( "jdk17", "org.jacoco:jacoco-maven-plugin:report-aggregate -Djacoco.onlyReactorProjects=true", "maven3")
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
