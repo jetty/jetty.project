@@ -22,7 +22,7 @@ import java.util.zip.GZIPInputStream;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
-import org.eclipse.jetty.compression.server.DynamicCompressionHandler;
+import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
@@ -43,7 +43,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class DynamicCompressionHandlerTest
+public class CompressionHandlerTest
 {
     private Server server;
     private HttpClient client;
@@ -76,7 +76,7 @@ public class DynamicCompressionHandlerTest
     @Test
     public void testDefaultConfiguration() throws Exception
     {
-        DynamicCompressionHandler compressionHandler = new DynamicCompressionHandler();
+        CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -106,7 +106,7 @@ public class DynamicCompressionHandlerTest
     {
         String message = "Hello Jetty!";
 
-        DynamicCompressionHandler compressionHandler = new DynamicCompressionHandler();
+        CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.addCompression(new GzipCompression());
         compressionHandler.setHandler(new Handler.Abstract()
         {

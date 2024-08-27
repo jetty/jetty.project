@@ -24,9 +24,9 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.component.Destroyable;
 
-public class DynamicDecompressionRequest extends Request.Wrapper implements Destroyable
+public class DecompressionRequest extends Request.Wrapper implements Destroyable
 {
-    public DynamicDecompressionRequest(Request wrapped)
+    public DecompressionRequest(Request wrapped)
     {
         super(wrapped);
     }
@@ -35,7 +35,7 @@ public class DynamicDecompressionRequest extends Request.Wrapper implements Dest
     private HttpFields fields;
     private DecoderSource decoderSource;
 
-    public DynamicDecompressionRequest(
+    public DecompressionRequest(
         Compression compression,
         Request request,
         CompressionConfig config)
@@ -94,7 +94,7 @@ public class DynamicDecompressionRequest extends Request.Wrapper implements Dest
                     if (!etagsNoSuffix.equals(etags))
                     {
                         i.set(new HttpField(field.getHeader(), etagsNoSuffix));
-                        request.setAttribute(DynamicCompressionHandler.HANDLER_ETAGS, etags);
+                        request.setAttribute(CompressionHandler.HANDLER_ETAGS, etags);
                     }
                 }
                 case CONTENT_LENGTH ->

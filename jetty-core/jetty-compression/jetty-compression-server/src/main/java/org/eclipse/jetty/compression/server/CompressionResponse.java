@@ -24,9 +24,9 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DynamicCompressionResponse extends Response.Wrapper  implements Callback, Invocable
+public class CompressionResponse extends Response.Wrapper  implements Callback, Invocable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DynamicCompressionResponse.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CompressionResponse.class);
 
     private final Callback callback;
     private final CompressionConfig config;
@@ -35,7 +35,7 @@ public class DynamicCompressionResponse extends Response.Wrapper  implements Cal
     private final boolean syncFlush;
     private boolean last;
 
-    public DynamicCompressionResponse(Compression compression, Request request, Response wrapped, Callback callback, CompressionConfig config)
+    public CompressionResponse(Compression compression, Request request, Response wrapped, Callback callback, CompressionConfig config)
     {
         super(request, wrapped);
         this.callback = callback;

@@ -34,11 +34,11 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DynamicCompressionHandler extends Handler.Wrapper
+public class CompressionHandler extends Handler.Wrapper
 {
-    public static final String HANDLER_ETAGS = DynamicCompressionHandler.class.getPackageName() + ".ETag";
+    public static final String HANDLER_ETAGS = CompressionHandler.class.getPackageName() + ".ETag";
 
-    private static final Logger LOG = LoggerFactory.getLogger(DynamicCompressionHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CompressionHandler.class);
     private final Map<String, Compression> supportedEncodings = new HashMap<>();
     private final PathMappings<CompressionConfig> pathConfigs = new PathMappings<CompressionConfig>();
 
@@ -94,7 +94,7 @@ public class DynamicCompressionHandler extends Handler.Wrapper
 
         // TODO: are both request decompression and response compression covered?
         // Are we already being compressed?
-        if (Request.as(request, DynamicDecompressionRequest.class) != null)
+        if (Request.as(request, DecompressionRequest.class) != null)
             return next.handle(request, response, callback);
 
         String pathInContext = Request.getPathInContext(request);
@@ -206,7 +206,7 @@ public class DynamicCompressionHandler extends Handler.Wrapper
             return true;
 
         // If the request was not accepted, destroy any compressRequest wrapper
-        if (request instanceof DynamicDecompressionRequest decompressRequest)
+        if (request instanceof DecompressionRequest decompressRequest)
         {
             decompressRequest.destroy();
         }
@@ -226,13 +226,13 @@ public class DynamicCompressionHandler extends Handler.Wrapper
         return compression;
     }
 
-    private Response newCompressionResponse(DynamicCompressionHandler dynamicCompressionHandler, Request request, Response response, Callback callback, String compressEncoding, CompressionConfig config)
+    private Response newCompressionResponse(CompressionHandler compressionHandler, Request request, Response response, Callback callback, String compressEncoding, CompressionConfig config)
     {
         Compression compression = getCompression(compressEncoding);
         if (compression == null)
             return response;
 
-        return new DynamicCompressionResponse(compression, request, response, callback, config);
+        return new CompressionResponse(compression, request, response, callback, config);
     }
 
     private Request newDecompressionRequest(Request request, String decompressEncoding, CompressionConfig config)
@@ -241,7 +241,7 @@ public class DynamicCompressionHandler extends Handler.Wrapper
         if (compression == null)
             return request;
 
-        return new DynamicDecompressionRequest(compression, request, config);
+        return new DecompressionRequest(compression, request, config);
     }
 
     @Override
