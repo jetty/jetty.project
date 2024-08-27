@@ -48,6 +48,8 @@ public class CompressionHandler extends Handler.Wrapper
             throw new IllegalStateException("Unable to add Compression on running DynamicCompressionHandler");
 
         supportedEncodings.put(compression.getEncodingName(), compression);
+        compression.setContainer(this);
+        addBean(compression);
     }
 
     @Override
@@ -57,14 +59,6 @@ public class CompressionHandler extends Handler.Wrapper
         {
             pathConfigs.put("/", new CompressionConfig());
         }
-
-        supportedEncodings.values().forEach(
-            (codec) ->
-            {
-                codec.setContainer(this);
-                addBean(codec);
-            }
-        );
 
         super.doStart();
     }
@@ -118,7 +112,7 @@ public class CompressionHandler extends Handler.Wrapper
         boolean etagMatches = false;
 
         HttpFields fields = request.getHeaders();
-        for (ListIterator<HttpField> i = fields.listIterator(fields.size()); i.hasPrevious();)
+        for (ListIterator<HttpField> i = fields.listIterator(fields.size()); i.hasPrevious(); )
         {
             HttpField field = i.previous();
             HttpHeader header = field.getHeader();
@@ -138,7 +132,7 @@ public class CompressionHandler extends Handler.Wrapper
                     List<String> values = field.getValueList();
                     if (values != null)
                     {
-                        for (String value: values)
+                        for (String value : values)
                         {
                             String lvalue = StringUtil.asciiToLowerCase(value);
                             // only track encodings that are supported by this handler

@@ -112,6 +112,8 @@ public abstract class EncoderSink implements Content.Sink
         @Override
         protected void onCompleteFailure(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("On Complete Failure", x);
             release();
             super.onCompleteFailure(x);
         }
@@ -139,9 +141,10 @@ public abstract class EncoderSink implements Content.Sink
                 return Action.SCHEDULED;
             }
 
+            boolean hasRemaining = content != null && content.hasRemaining();
             if (LOG.isDebugEnabled())
-                LOG.debug("process() - hasRemaining={}", content.hasRemaining());
-            return content.hasRemaining() ? Action.SCHEDULED : Action.SUCCEEDED;
+                LOG.debug("process() - hasRemaining={}", hasRemaining);
+            return hasRemaining ? Action.SCHEDULED : Action.SUCCEEDED;
         }
 
         private void write(WriteRecord writeRecord)

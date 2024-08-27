@@ -13,15 +13,11 @@
 
 package org.eclipse.jetty.compression;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
-import java.util.zip.GZIPInputStream;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -31,19 +27,19 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class CompressionHandlerTest
+public class CompressionHandlerTest extends AbstractCompressionTest
 {
     private Server server;
     private HttpClient client;
@@ -101,13 +97,19 @@ public class CompressionHandlerTest
         assertThat(response.getContentAsString(), is("Hello World"));
     }
 
-    @Test
-    public void testDefaultGzipConfiguration() throws Exception
+    /**
+     * Testing how CompressionHandler acts with a single compression implementation added.
+     * Using all defaults for both the compression impl, and the CompressionHandler.
+     */
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testDefaultCompressionConfiguration(Class<Compression> compressionClass) throws Exception
     {
+        newCompression(compressionClass);
         String message = "Hello Jetty!";
 
         CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(new GzipCompression());
+        compressionHandler.addCompression(compression);
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -115,7 +117,10 @@ public class CompressionHandlerTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "texts/plain;charset=utf-8");
-                response.write(true, BufferUtil.toBuffer(message, UTF_8), callback);
+                ByteBuffer msg = ByteBuffer.allocateDirect(message.length()*2);
+                msg.put(message.getBytes(UTF_8));
+                msg.flip();
+                response.write(true, msg, callback);
                 return true;
             }
         });
@@ -129,26 +134,15 @@ public class CompressionHandlerTest
             .method(HttpMethod.GET)
             .headers((headers) ->
             {
-                headers.put(HttpHeader.ACCEPT_ENCODING, "gzip");
+                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
             })
             .path("/hello")
             .send();
         dumpResponse(response);
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is("gzip"));
-        String content = new String(decompressGzip(response.getContent()), UTF_8);
+        assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
+        String content = new String(decompress(response.getContent()), UTF_8);
         assertThat(content, is(message));
-    }
-
-    private byte[] decompressGzip(byte[] content) throws IOException
-    {
-        try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-             ByteArrayInputStream byteIn = new ByteArrayInputStream(content);
-             GZIPInputStream gzipIn = new GZIPInputStream(byteIn))
-        {
-            IO.copy(gzipIn, byteOut);
-            return byteOut.toByteArray();
-        }
     }
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)

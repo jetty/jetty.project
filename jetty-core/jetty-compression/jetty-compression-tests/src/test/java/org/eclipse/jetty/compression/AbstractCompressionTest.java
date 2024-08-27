@@ -54,9 +54,9 @@ public abstract class AbstractCompressionTest
         List<Arguments> cases = new ArrayList<>();
         List<String> texts = List.of("texts/quotes.txt", "texts/long.txt", "texts/logo.svg");
 
-        for (Class<? extends Compression> compressionClass: compressions())
+        for (Class<? extends Compression> compressionClass : compressions())
         {
-            for (String text: texts)
+            for (String text : texts)
             {
                 cases.add(Arguments.of(compressionClass, text));
             }
@@ -75,13 +75,17 @@ public abstract class AbstractCompressionTest
 
     protected void startCompression(Class<Compression> compressionClass, int bufferSize) throws Exception
     {
-        compression = compressionClass.getDeclaredConstructor().newInstance();
+        newCompression(compressionClass);
         if (bufferSize > 0)
             compression.setBufferSize(bufferSize);
+        compression.start();
+    }
 
+    protected void newCompression(Class<Compression> compressionClass) throws Exception
+    {
+        compression = compressionClass.getDeclaredConstructor().newInstance();
         pool = new ArrayByteBufferPool.Tracking();
         compression.setByteBufferPool(pool);
-        compression.start();
     }
 
     @AfterEach
@@ -95,9 +99,9 @@ public abstract class AbstractCompressionTest
      * Create a Direct ByteBuffer from a byte array.
      *
      * <p>
-     *     This is a replacement of {@link ByteBuffer#wrap(byte[])} but
-     *     for producing Direct {@link ByteBuffer} implementations that
-     *     some compression libs require (eg: {@code zstd-jni})
+     * This is a replacement of {@link ByteBuffer#wrap(byte[])} but
+     * for producing Direct {@link ByteBuffer} implementations that
+     * some compression libs require (eg: {@code zstd-jni})
      * </p>
      *
      * @param arr the byte array to populate ByteBuffer.
