@@ -54,7 +54,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>jetty-test-util</artifactId>
+      <artifactId>jetty-test-common</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

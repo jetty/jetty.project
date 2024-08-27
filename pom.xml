@@ -1062,7 +1062,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-test-util</artifactId>
+        <artifactId>jetty-test-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
