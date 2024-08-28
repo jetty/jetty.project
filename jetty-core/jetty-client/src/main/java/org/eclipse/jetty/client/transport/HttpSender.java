@@ -376,7 +376,7 @@ public abstract class HttpSender
         if (abort)
         {
             contentSender.abort = promise;
-            contentSender.abort(this.failure.get()); // this is going to call internalAbort()
+            contentSender.abort(this.failure.get());
         }
         else
         {
@@ -386,16 +386,13 @@ public abstract class HttpSender
         }
     }
 
-    private void internalAbort(HttpExchange exchange, Throwable failure)
+    private void internalAbort(Throwable failure)
     {
-        // internalAbort() may be called from externalAbort() (which already called anyToFailure)
-        // so we cannot rely on its return code to figure out if abortRequest() should be called or not.
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
         anyToFailure(failure);
-        // internalAbort() may be called after ContentSender.reset() so exchange might be null.
-        if (exchange != null)
-            abortRequest(exchange);
-        else
-            dispose();
+        abortRequest(exchange);
     }
 
     private boolean updateRequestState(RequestState from, RequestState to)
@@ -632,7 +629,7 @@ public abstract class HttpSender
             }
 
             failRequest(x);
-            internalAbort(exchange, x);
+            internalAbort(x);
 
             Promise<Boolean> promise = abort;
             if (promise != null)
