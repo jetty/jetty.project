@@ -15,7 +15,7 @@
 
 To troubleshoot Jetty when used as a standalone server, there are two main tools: the Jetty Server Dump and enabling DEBUG level logging.
 
-A useful tool for troubleshooting is JMX, so that Jetty -- possibly a production server -- can be accessed from a remote location to obtain the information exported via JMX, and possibly be able to reconfigure Jetty to solve the issue.
+For troubleshooting, it can be helpful to enable JMX, so that Jetty -- possibly a production server -- can be accessed from a remote location to obtain the information exported via JMX, and possibly be able to reconfigure Jetty to solve the issue.
 
 IMPORTANT: Make sure you read about how to secure the access to Jetty when using xref:jmx/index.adoc#remote[remote JMX].
 
@@ -23,7 +23,7 @@ IMPORTANT: Make sure you read about how to secure the access to Jetty when using
 == Server Dump
 
 The Jetty Server Dump is a useful tool for debugging the state of the server.
-See the xref:programming-guide:troubleshooting/component-dump.adoc[Jetty Server Dump] section for detailed information.
+See the xref:programming-guide:troubleshooting/jetty-server-dump.adoc[Jetty Server Dump] section for detailed information.
 
 [[logging]]
 == Enabling DEBUG Logging
@@ -39,7 +39,7 @@ Enabling DEBUG level logging for `org.eclipse.jetty` is very, *very* expensive.
 Your server could be slowed down to almost a halt, especially if it is under heavy load.
 Furthermore, the log file could quickly fill up the entire filesystem (unless configured to roll over), so you want to be really careful using DEBUG logging.
 
-For production servers, consider using the xref:programming-guide:troubleshooting/component-dump.adoc[Jetty Server Dump] first, and enable DEBUG logging only as a last resort.
+For production servers, consider using the xref:programming-guide:troubleshooting/jetty-server-dump.adoc[Jetty Server Dump] first, and enable DEBUG logging only as a last resort.
 ====
 
 However, sometimes issues are such that only DEBUG logging can really tell what's going on in the system, and enabling DEBUG logging is your best chance to figure the issue out.

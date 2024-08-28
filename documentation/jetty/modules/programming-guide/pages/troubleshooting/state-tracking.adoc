@@ -15,7 +15,7 @@
 
 `StateTrackingHandler` (described xref:server/http.adoc#handler-use-state-tracking[here]) is a troubleshooting `Handler` that can be inserted in the `Handler` chain to track usages of `Handler`/`Request`/`Response` asynchronous APIs.
 
-xref:troubleshooting/component-dump.adoc[Dumping the Jetty component tree] will dump the `StateTrackingHandler`, which will dump the state of the current requests.
+xref:troubleshooting/jetty-server-dump.adoc[Dumping the Jetty component tree] will dump the `StateTrackingHandler`, which will dump the state of the current requests.
 
 This will help detecting whether requests are not completed due to callbacks not being completed, or whether callback code is stuck while invoking blocking APIs, etc.
 
