@@ -296,11 +296,9 @@ public class AliasCheckerSymlinkTest
     @MethodSource("combinedResourceTestCases")
     public void testCombinedResource(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
     {
-        System.err.printf("path:%s, status:%s, content:%s%n", path, httpStatus, responseContent);
         setAliasChecker(_context2, aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);
         ContentResponse response = _client.GET(uri);
-        System.err.println(response.getContentAsString());
         assertThat(response.getStatus(), is(httpStatus));
 
         if (responseContent != null)
