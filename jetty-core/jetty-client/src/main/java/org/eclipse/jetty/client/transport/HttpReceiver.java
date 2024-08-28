@@ -67,7 +67,7 @@ public abstract class HttpReceiver
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiver.class);
 
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker = new SerializedInvoker(HttpReceiver.class);
     private final HttpChannel channel;
     private ResponseState responseState = ResponseState.IDLE;
     private NotifiableContentSource contentSource;
