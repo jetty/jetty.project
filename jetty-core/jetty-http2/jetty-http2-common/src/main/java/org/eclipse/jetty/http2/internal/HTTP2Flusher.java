@@ -377,7 +377,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private void onSessionFailure(Throwable x)
     {
-        accumulator.release();
+        accumulator.clear();
         Throwable closed = fail(x);
         if (closed == null)
             session.close(ErrorCode.COMPRESSION_ERROR.code, null, NOOP);
