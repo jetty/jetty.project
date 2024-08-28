@@ -51,6 +51,15 @@ or to make this change persistent across server restarts they can be enabled via
 $ java -jar $JETTY_HOME/start.jar *jetty.server.dumpAfterStart=true*
 ----
 
+[NOTE]
+====
+The format of the Jetty Server Dump output is subject to change at any time, as Jetty developers modify the Jetty code and decide to include more state, or remove state that is no longer relevant.
+
+The Jetty Server Dump is organized in a tree whose structure is similar to the runtime Jetty component tree.
+
+At the end of the dump output there is a legend that explains the type of tree node: whether it is a node that represent a _managed_ component, or an _array_ node (or a _map_ node) that represent some component state, etc.
+====
+
 == Obtaining Dump via JMX
 
 The Jetty Server Dump can be obtained by invoking, via JMX, the `Server.dump()` operation, as shown below using https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
@@ -70,15 +79,6 @@ The result of the invocation may produce a large string, possibly few MiB, that 
 Furthermore, dumping the state of the I/O Jetty components takes a little CPU time off the handling of the actual I/O, possibly slowing it down temporarily.
 
 While the slow-down caused by taking the Jetty Server Dump may be noticeable on highly loaded systems, it is typically a very small price to pay to obtain the information about the Jetty state that may be critical to the resolution of an issue.
-====
-
-[NOTE]
-====
-The format of the Jetty Server Dump output is subject to change at any time, as Jetty developers modify the Jetty code and decide to include more state, or remove state that is no longer relevant.
-
-The Jetty Server Dump is organized in a tree whose structure is similar to the runtime Jetty component tree.
-
-At the end of the dump output there is a legend that explains the type of tree node: whether it is a node that represent a _managed_ component, or an _array_ node (or a _map_ node) that represent some component state, etc.
 ====
 
 [[dump-detailed]]
