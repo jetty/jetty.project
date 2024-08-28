@@ -16,6 +16,7 @@ package org.eclipse.jetty.security.openid;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.tests.JwtEncoder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

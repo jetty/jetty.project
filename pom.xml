@@ -1062,6 +1062,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
+        <artifactId>jetty-test-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.tests</groupId>
         <artifactId>jetty-testers</artifactId>
         <version>${project.version}</version>
       </dependency>

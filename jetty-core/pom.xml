@@ -28,7 +28,6 @@
     <module>jetty-jndi</module>
     <module>jetty-keystore</module>
     <module>jetty-maven</module>
-    <module>jetty-openid</module>
     <module>jetty-osgi</module>
     <module>jetty-plus</module>
     <module>jetty-proxy</module>
