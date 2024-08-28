@@ -731,6 +731,7 @@ public abstract class HttpReceiver
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onDataAvailable on {}", this);
+            invoker.assertCurrentThreadInvoking();
             // The onDataAvailable() method is only ever called
             // by the invoker so avoid using the invoker again.
             invokeDemandCallback(false);
@@ -754,6 +755,8 @@ public abstract class HttpReceiver
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing demand on {}", this);
+
+            invoker.assertCurrentThreadInvoking();
 
             Content.Chunk current;
             try (AutoLock ignored = lock.lock())
@@ -794,9 +797,14 @@ public abstract class HttpReceiver
             try
             {
                 if (invoke)
+                {
                     invoker.run(demandCallback);
+                }
                 else
+                {
+                    invoker.assertCurrentThreadInvoking();
                     demandCallback.run();
+                }
             }
             catch (Throwable x)
             {
