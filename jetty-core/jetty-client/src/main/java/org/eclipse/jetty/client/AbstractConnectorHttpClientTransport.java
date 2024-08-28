@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Map;
@@ -72,11 +71,5 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
         context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, connector);
         destination.getOrigin().getTransport().connect(address, context);
-    }
-
-    @Override
-    public void connect(InetSocketAddress address, Map<String, Object> context)
-    {
-        connect((SocketAddress)address, context);
     }
 }

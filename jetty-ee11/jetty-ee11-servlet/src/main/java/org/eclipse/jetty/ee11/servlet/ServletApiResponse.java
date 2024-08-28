@@ -143,7 +143,7 @@ public class ServletApiResponse implements HttpServletResponse
     {
         switch (sc)
         {
-            case -1 -> getServletChannel().abort(new IOException(msg));
+            case -1 -> getServletChannel().abort(new Request.Handler.AbortException(msg));
             case HttpStatus.PROCESSING_102, HttpStatus.EARLY_HINTS_103 ->
             {
                 if (!isCommitted())

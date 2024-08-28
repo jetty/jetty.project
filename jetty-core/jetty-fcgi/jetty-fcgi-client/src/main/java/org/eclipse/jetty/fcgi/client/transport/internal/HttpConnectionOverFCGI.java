@@ -101,6 +101,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return delegate.getRemoteSocketAddress();
     }
 
+    @Override
+    public EndPoint.SslSessionData getSslSessionData()
+    {
+        return delegate.getSslSessionData();
+    }
+
     protected Flusher getFlusher()
     {
         return flusher;
@@ -357,6 +363,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public SocketAddress getRemoteSocketAddress()
         {
             return getEndPoint().getRemoteSocketAddress();
+        }
+
+        @Override
+        public EndPoint.SslSessionData getSslSessionData()
+        {
+            return getEndPoint().getSslSessionData();
         }
 
         @Override
