@@ -42,16 +42,27 @@ public class SerializedInvoker
     private final String _name;
     private volatile Thread _invokerThread;
 
+    /**
+     * Create a new instance whose name is {@code anonymous}.
+     */
     public SerializedInvoker()
     {
         this("anonymous");
     }
 
-    public SerializedInvoker(Class<?> clazz)
+    /**
+     * Create a new instance whose name is derived from the given class.
+     * @param nameFrom the class to use as a name.
+     */
+    public SerializedInvoker(Class<?> nameFrom)
     {
-        this(clazz.getSimpleName());
+        this(nameFrom.getSimpleName());
     }
 
+    /**
+     * Create a new instance with the given name.
+     * @param name the name.
+     */
     public SerializedInvoker(String name)
     {
         _name = name;
