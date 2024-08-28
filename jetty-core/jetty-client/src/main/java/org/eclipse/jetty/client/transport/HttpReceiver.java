@@ -332,20 +332,8 @@ public abstract class HttpReceiver
             if (exchange.isResponseCompleteOrTerminated())
                 return;
 
-            responseContentAvailable();
+            contentSource.onDataAvailable();
         });
-    }
-
-    /**
-     * Method to be invoked when response content is available to be read.
-     * <p>
-     * This method directly invokes the demand callback, assuming the caller
-     * is already serialized with other events.
-     */
-    // TODO: remove this after FCGI fix.
-    protected void responseContentAvailable()
-    {
-        contentSource.onDataAvailable();
     }
 
     /**

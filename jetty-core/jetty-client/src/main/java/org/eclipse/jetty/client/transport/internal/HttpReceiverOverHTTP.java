@@ -268,6 +268,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     reacquireNetworkBuffer();
 
                 // The networkBuffer may have been reacquired.
+                assert !networkBuffer.hasRemaining();
                 int read = endPoint.fill(networkBuffer.getByteBuffer());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes in {} from {} in {}", read, networkBuffer, endPoint, this);
