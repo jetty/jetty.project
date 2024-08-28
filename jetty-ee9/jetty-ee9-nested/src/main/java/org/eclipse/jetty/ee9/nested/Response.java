@@ -488,7 +488,7 @@ public class Response implements HttpServletResponse
 
         switch (code)
         {
-            case -1 -> _channel.abort(new IOException(message));
+            case -1 -> _channel.abort(new org.eclipse.jetty.server.Request.Handler.AbortException(message));
             case HttpStatus.PROCESSING_102 -> sendProcessing();
             case HttpStatus.EARLY_HINTS_103 -> sendEarlyHint();
             default -> _channel.getState().sendError(code, message);
