@@ -1197,7 +1197,7 @@ public class ServletContextHandler extends ContextHandler
             return true;
         }
 
-        return super.handleByContextHandler(pathInContext, request, response, callback);
+        return false;
     }
 
     @Override
