@@ -602,7 +602,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP(1)));
-                ContentResponse response = client.GET("http://localhost:" + port + "/proxy/current/");
+                ContentResponse response = client.GET("http://localhost:" + port + "/proxy/jetty-12/index.html");
                 assertEquals(HttpStatus.OK_200, response.getStatus(), () ->
                 {
                     StringBuilder rawResponse = new StringBuilder();
@@ -807,7 +807,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             String message = "test-log-line";
             String xml = "" +
                          "<?xml version=\"1.0\"?>" +
-                         "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://eclipse.dev/jetty/configure_10_0.dtd\">" +
+                         "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">" +
                          "<Configure>" +
                          "  <Call name=\"getLogger\" class=\"java.util.logging.Logger\">" +
                          "    <Arg>" + loggerName + "</Arg>" +
@@ -864,7 +864,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path sslPatchXML = jettyBaseEtc.resolve("ssl-patch.xml");
             String xml = """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
                 <Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
                   <Call name="addIfAbsentConnectionFactory">
                     <Arg>
@@ -1306,7 +1306,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path fcgiConnectorXML = jettyBaseEtc.resolve("fcgi-connector.xml");
             Files.writeString(fcgiConnectorXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
                 <Configure id="Server">
                   <Call name="addConnector">
                     <Arg>
@@ -1336,7 +1336,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path phpXML = jettyBase.resolve("webapps").resolve("php.xml");
             Files.writeString(phpXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
                   <Set name="contextPath">/php</Set>
                   <Set name="baseResourceAsPath">
@@ -1358,7 +1358,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path proxyXML = jettyBase.resolve("webapps").resolve("proxy.xml");
             Files.writeString(proxyXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
                   <Set name="contextPath">/proxy</Set>
                   <Set name="handler">
@@ -1420,7 +1420,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path fcgiConnectorXML = jettyBaseEtc.resolve("fcgi-connector.xml");
             Files.writeString(fcgiConnectorXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
                 <Configure id="Server">
                   <Call name="addConnector">
                     <Arg>
@@ -1450,7 +1450,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path phpXML = jettyBase.resolve("webapps").resolve("php.xml");
             Files.writeString(phpXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
                   <Set name="contextPath">/php</Set>
                   <Set name="baseResourceAsPath">
@@ -1472,7 +1472,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path proxyXML = jettyBase.resolve("webapps").resolve("proxy.xml");
             Files.writeString(proxyXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.$ENV.servlet.ServletContextHandler">
                   <Set name="contextPath">/proxy</Set>
                   <Call name="addServlet">
@@ -1663,7 +1663,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             // Create XML for deployable
             String xml = """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
                                 
                 <Configure class="org.eclipse.jetty.%s.webapp.WebAppContext">
                   <Set name="contextPath">/demo</Set>
@@ -1889,6 +1889,56 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("Hello World"));
+            }
+        }
+    }
+
+    @Test
+    public void testHTTP2ClientInCoreWebAppProvidedByServer() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,http2-client-transport,core-deploy"))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=DEBUG
+                """;
+            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
+
+            String name = "test-webapp";
+            Path webapps = distribution.getJettyBase().resolve("webapps");
+            Path webAppDirLib = webapps.resolve(name + ".d").resolve("lib");
+            Path webAppJar = distribution.resolveArtifact("org.eclipse.jetty:jetty-test-http2-client-transport-provided-webapp:jar:" + jettyVersion);
+            Files.copy(webAppJar, Files.createDirectories(webAppDirLib).resolve("webapp.jar"));
+            Files.writeString(webapps.resolve(name + ".xml"), """
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+                <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+                  <Set name="contextPath">/test</Set>
+                  <Set name="handler">
+                    <New class="org.eclipse.jetty.test.http2.client.transport.provided.HTTP2ClientTransportProvidedHandler" />
+                  </Set>
+                </Configure>
+                """);
+
+            int port = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                URI serverUri = URI.create("http://localhost:" + port + "/test/");
+                ContentResponse response = client.newRequest(serverUri)
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
             }
         }
     }

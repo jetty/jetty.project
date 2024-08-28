@@ -816,4 +816,25 @@ public class TypeUtil
         int result = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(value - 1));
         return result > 0 ? result : Integer.MAX_VALUE;
     }
+
+    /**
+     * Test is a method has been declared on the class of an instance
+     * @param object The object to check
+     * @param methodName The method name
+     * @param args The arguments to the method
+     * @return {@code true} iff {@link Class#getDeclaredMethod(String, Class[])} can be called on the
+     *         {@link Class} of the object, without throwing {@link NoSuchMethodException}.
+     */
+    public static boolean isDeclaredMethodOn(Object object, String methodName, Class<?>... args)
+    {
+        try
+        {
+            object.getClass().getDeclaredMethod(methodName, args);
+            return true;
+        }
+        catch (NoSuchMethodException e)
+        {
+            return false;
+        }
+    }
 }

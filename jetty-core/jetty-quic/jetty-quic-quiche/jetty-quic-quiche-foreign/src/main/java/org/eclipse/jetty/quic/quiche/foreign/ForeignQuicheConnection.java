@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.quiche.foreign;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -518,6 +519,7 @@ public class ForeignQuicheConnection extends QuicheConnection
         }
     }
 
+    @Override
     public byte[] getPeerCertificate()
     {
         try (AutoLock ignore = lock.lock())
@@ -532,7 +534,7 @@ public class ForeignQuicheConnection extends QuicheConnection
                 quiche_h.quiche_conn_peer_cert(quicheConn, outSegment, outLenSegment);
 
                 long outLen = outLenSegment.get(NativeHelper.C_LONG, 0L);
-                if (outLen == 0L)
+                if (outLen <= 0L)
                     return null;
                 byte[] out = new byte[(int)outLen];
                 // dereference outSegment pointer
@@ -851,20 +853,21 @@ public class ForeignQuicheConnection extends QuicheConnection
                 throw new IOException("connection was released");
 
             long written;
-            if (buffer.isDirect())
+            try (Arena scope = Arena.ofConfined())
             {
-                // If the ByteBuffer is direct, it can be used without any copy.
-                MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last);
-            }
-            else
-            {
-                // If the ByteBuffer is heap-allocated, it must be copied to native memory.
-                try (Arena scope = Arena.ofConfined())
+                MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
+                if (buffer.isDirect())
                 {
+                    // If the ByteBuffer is direct, it can be used without any copy.
+                    MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
+                    written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last, outErrorCode);
+                }
+                else
+                {
+                    // If the ByteBuffer is heap-allocated, it must be copied to native memory.
                     if (buffer.remaining() == 0)
                     {
-                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, MemorySegment.NULL, 0, last);
+                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, MemorySegment.NULL, 0, last, outErrorCode);
                     }
                     else
                     {
@@ -872,7 +875,7 @@ public class ForeignQuicheConnection extends QuicheConnection
                         int prevPosition = buffer.position();
                         bufferSegment.asByteBuffer().put(buffer);
                         buffer.position(prevPosition);
-                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last);
+                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last, outErrorCode);
                     }
                 }
             }
@@ -902,29 +905,32 @@ public class ForeignQuicheConnection extends QuicheConnection
             long read;
             try (Arena scope = Arena.ofConfined())
             {
+                MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
+                MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                 if (buffer.isDirect())
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
                     MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                    MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
-                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin);
+                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
                 }
                 else
                 {
                     // If the ByteBuffer is heap-allocated, native memory must be copied to it.
                     MemorySegment bufferSegment = scope.allocate(buffer.remaining());
-
-                    MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
-                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin);
-
-                    int prevPosition = buffer.position();
-                    buffer.put(bufferSegment.asByteBuffer().limit((int)read));
-                    buffer.position(prevPosition);
+                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
+                    if (read > 0)
+                    {
+                        int prevPosition = buffer.position();
+                        buffer.put(bufferSegment.asByteBuffer().limit((int)read));
+                        buffer.position(prevPosition);
+                    }
                 }
             }
 
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
+            if (read == quiche_error.QUICHE_ERR_STREAM_RESET)
+                throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             if (read < 0L)
                 throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             buffer.position((int)(buffer.position() + read));

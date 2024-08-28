@@ -79,6 +79,7 @@ public class HttpConfiguration implements Dumpable
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
     private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
+    private UriCompliance _redirectUriCompliance = null; // TODO default to UriCompliance.DEFAULT in 12.1 ?;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
@@ -159,8 +160,10 @@ public class HttpConfiguration implements Dumpable
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
         _uriCompliance = config._uriCompliance;
+        _redirectUriCompliance = config._redirectUriCompliance;
         _serverAuthority = config._serverAuthority;
         _localAddress = config._localAddress;
+        _maxUnconsumedRequestContentReads = config._maxUnconsumedRequestContentReads;
     }
 
     /**
@@ -497,8 +500,9 @@ public class HttpConfiguration implements Dumpable
 
     /**
      * @return the set of HTTP methods of requests that can be decoded as
-     * {@code x-www-form-urlencoded} content.
+     * {@code application/x-www-form-urlencoded} content.
      */
+    @ManagedAttribute("The methods that support application/x-www-form-urlencoded content")
     public Set<String> getFormEncodedMethods()
     {
         return _formEncodedMethods.keySet();
@@ -583,6 +587,7 @@ public class HttpConfiguration implements Dumpable
         _minResponseDataRate = bytesPerSecond;
     }
 
+    @ManagedAttribute("The HTTP compliance mode")
     public HttpCompliance getHttpCompliance()
     {
         return _httpCompliance;
@@ -593,9 +598,15 @@ public class HttpConfiguration implements Dumpable
         _httpCompliance = httpCompliance;
     }
 
+    @ManagedAttribute("The URI compliance mode")
     public UriCompliance getUriCompliance()
     {
         return _uriCompliance;
+    }
+
+    public UriCompliance getRedirectUriCompliance()
+    {
+        return _redirectUriCompliance;
     }
 
     public void setUriCompliance(UriCompliance uriCompliance)
@@ -604,9 +615,18 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * @param uriCompliance The {@link UriCompliance} to apply in {@link Response#toRedirectURI(Request, String)} or {@code null}.
+     */
+    public void setRedirectUriCompliance(UriCompliance uriCompliance)
+    {
+        _redirectUriCompliance = uriCompliance;
+    }
+
+    /**
      * @return The CookieCompliance used for parsing request {@code Cookie} headers.
      * @see #getResponseCookieCompliance()
      */
+    @ManagedAttribute("The HTTP request cookie compliance mode")
     public CookieCompliance getRequestCookieCompliance()
     {
         return _requestCookieCompliance;
@@ -624,6 +644,7 @@ public class HttpConfiguration implements Dumpable
      * @return The CookieCompliance used for generating response {@code Set-Cookie} headers
      * @see #getRequestCookieCompliance()
      */
+    @ManagedAttribute("The HTTP response cookie compliance mode")
     public CookieCompliance getResponseCookieCompliance()
     {
         return _responseCookieCompliance;
@@ -640,6 +661,7 @@ public class HttpConfiguration implements Dumpable
     /**
      * @return the {@link MultiPartCompliance} used for validating multipart form syntax.
      */
+    @ManagedAttribute("The multipart/form-data compliance mode")
     public MultiPartCompliance getMultiPartCompliance()
     {
         return _multiPartCompliance;
@@ -750,7 +772,7 @@ public class HttpConfiguration implements Dumpable
      *
      * @return Returns the connection server authority (name/port) or null
      */
-    @ManagedAttribute("The server authority if none provided by requests")
+    @ManagedAttribute("The server authority override")
     public HostPort getServerAuthority()
     {
         return _serverAuthority;
@@ -818,6 +840,7 @@ public class HttpConfiguration implements Dumpable
             "requestHeaderSize=" + _requestHeaderSize,
             "responseHeaderSize=" + _responseHeaderSize,
             "headerCacheSize=" + _headerCacheSize,
+            "headerCacheCaseSensitive=" + _headerCacheCaseSensitive,
             "secureScheme=" + _secureScheme,
             "securePort=" + _securePort,
             "idleTimeout=" + _idleTimeout,
@@ -827,12 +850,21 @@ public class HttpConfiguration implements Dumpable
             "delayDispatchUntilContent=" + _delayDispatchUntilContent,
             "persistentConnectionsEnabled=" + _persistentConnectionsEnabled,
             "maxErrorDispatches=" + _maxErrorDispatches,
+            "useInputDirectByteBuffers=" + _useInputDirectByteBuffers,
+            "useOutputDirectByteBuffers=" + _useOutputDirectByteBuffers,
             "minRequestDataRate=" + _minRequestDataRate,
             "minResponseDataRate=" + _minResponseDataRate,
+            "httpCompliance=" + _httpCompliance,
+            "uriCompliance=" + _uriCompliance,
+            "redirectUriCompliance=" + _redirectUriCompliance,
             "requestCookieCompliance=" + _requestCookieCompliance,
             "responseCookieCompliance=" + _responseCookieCompliance,
+            "multiPartCompliance=" + _multiPartCompliance,
             "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors,
-            "relativeRedirectAllowed=" + _relativeRedirectAllowed
+            "relativeRedirectAllowed=" + _relativeRedirectAllowed,
+            "serverAuthority=" + _serverAuthority,
+            "localAddress=" + _localAddress,
+            "maxUnconsumedRequestContentReads=" + _maxUnconsumedRequestContentReads
         );
     }
 

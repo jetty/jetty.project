@@ -226,8 +226,6 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H2")
-    @Tag("DisableLeakTracking:client:H2C")
     public void testDownloadWithFailure(Transport transport) throws Exception
     {
         byte[] data = new byte[64 * 1024];

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests</artifactId>
-    <version>12.0.10-SNAPSHOT</version>
+    <version>12.0.13-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-testers</artifactId>
   <packaging>jar</packaging>
@@ -13,19 +13,16 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.testers</bundle-symbolic-name>
-    <maven.model.builder.version>3.9.6</maven.model.builder.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-model-builder</artifactId>
-      <version>${maven.model.builder.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-supplier</artifactId>
-      <version>${maven.resolver.version}</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>

@@ -1,4 +1,72 @@
-jetty-12.0.10-SNAPSHOT
+jetty-12.0.13-SNAPSHOT
+
+jetty-12.0.12 - 25 July 2024
+ + 265 --list-config license enhancement
+ + 10904 jetty.sh reports FAILED too early
+ + 11965 Client: Some HTTP/2 requests are never sent
+ + 11996 mTLS: client cert verification for QUIC/HTTP3
+ + 12000 Cannot use Paths that have spaces with `jetty-ee10-maven-plugin` 
+ + 12018 NPE when passing null value to Request.param
+ + 12019 External property file not being read
+ + 12022 Intermittent NPE in OutputStream.close with GzipHandler
+ + 12044 Temp directory not deleted in jetty-12
+ + 12070 lastAccessedTime and isNew not getting updated
+ + 12086 Serve favicon.ico as image/vnd.microsoft.icon instead of image/x-icon
+
+jetty-12.0.11 - 27 June 2024
+ + 11803 Follow Reactive Stream TCK for ContentSourcePublisher implementation
+ + 11811 getHeaderNames should return header name once also when request has it
+   in different case
+ + 11847 replacement for GlobalWebappConfigBinding
+ + 11873 Server resources are not found if the server is subclassed in a
+   different package
+ + 11892 mtls not working with http/3
+ + 11902 Un-deprecate WebAppClassLoading.addHiddenClasses(Attributes
+   attributes, String... patterns) method
+ + 11909 Start throws ConcurrentModificationException if an `eeX-webapp.ini`
+   exists in `start.d` with a command line like: `java -jar
+   ../jetty-home/start.jar --module=server,http,ee8-webapp,ee8-deploy`
+ + 11911 11 -> 12 Migration guide wrongly suggests Request.getHttpURI as
+   replacement for HttpServletRequest.getRequestURL
+ + 11917 Update XML configure.dtd locations to new jetty.org website
+ + 11925 java.lang.NullPointerException: Cannot invoke
+   "String.startsWith(String)" because "etag" is null
+ + 11932 Review HttpSender.ContentSender (and other ICB) to remove overridden
+   succeeded method
+ + 11944 Jetty Part#delete() implementation throws IOException
+
+jetty-12.0.10 - 30 May 2024
+ + 1470 Replace Timer use with Jetty Scheduler
+ + 9177 Add JVM info and OS info to Dumpable.dump()
+ + 9778 Jetty 12 - Remove WriteFlusher.Listener
+ + 11072 Jetty 12: CompleteCallbackHandler
+ + 11507 org.eclipse.jetty.util.Attributes.getAttribute() should specify return
+   type if no match is found
+ + 11659 HTTP Fields with OWS (Optional WhiteSpace) in value are not properly
+   parsed in Jetty 12
+ + 11736 Issue with Response OutputStream#close() rethrowing same EofException
+   instance
+ + 11745 Issue while adding Module for Persistent HTTP Sessions: Google Cloud
+   DataStore
+ + 11748 Unexpected HTTP Response Status Code: 404 Not Found
+ + 11756 ChunkAccumulator not working with empty chunks
+ + 11760 request.getHttpURI().getScheme() is null on FORWARD dispatched
+   request, causing NPE
+ + 11761 Update documentation for #10077
+ + 11763 Race condition in QoSHandler
+ + 11766 Ensure ReadListener is nulled out when AsyncContext is completed
+ + 11767 Backward compat API WebAppContext.getServerClassMatcher() is not
+   updating the WebAppClassloader
+ + 11776 NPE from `org.eclipse.jetty.ee8.nested.Request.getRequestURL`
+ + 11778 jetty-http-spi does not properly provide SPI for modules
+ + 11791 How to configure Jetty Server v12 ee10 for serving multiple static
+   resources in the same base directory?
+ + 11792 StdErrAppender should detect exception circular references
+ + 11800 client: Allow AsyncContentListener.onContent to throw checked
+   Exceptions
+ + 11811 getHeaderNames should return header name once also when request has it
+   in different case
+ + 11851 jetty-ee8-websocket-javax-server export not honoured
 
 jetty-12.0.9 - 03 May 2024
  + 5944 Introduce alias --files for --download
@@ -291,11 +359,13 @@ jetty-12.0.1 - 29 August 2023
  + 10411 Review deployment of Jetty Context XML files
  + 10416 EE9 Copies HttpFields in response
 
-jetty-9.4.54.v20240208 - 08 February 2024
- + 1256 DoSFilter leaks USER_AUTH entries
- + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
-   (CVE-2024-22201)
- + 11389 Strip default ports on ws/wss scheme uris too
+jetty-11.0.21 - 14 May 2024
+ + 10805 Jetty response with an invalid HTTP2 packet if the client set the
+   hpack table size as 0
+ + 11527 Reduce ByteBuffer churning in HttpOutput
+ + 11634 Socks5Proxy does not support IP addresses with IP segments above 127
+ + 11656 Upgrade jetty-quiche-native to version 0.21.0
+ + 11782 HttpExchange retained by HttpSenderOverHTTP which caused memory leak
 
 jetty-11.0.20 - 29 January 2024
  + 11081 Dropped WebSocket messages due to race condition in WebSocket frame
@@ -306,6 +376,12 @@ jetty-11.0.20 - 29 January 2024
    a `WEB-INF/quickstart-web.xml`
  + 11273 Support BSD expr in startup script
  + 11349 Update quiche to 0.20.0
+
+jetty-9.4.54.v20240208 - 08 February 2024
+ + 1256 DoSFilter leaks USER_AUTH entries
+ + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
+   (CVE-2024-22201)
+ + 11389 Strip default ports on ws/wss scheme uris too
 
 jetty-11.0.19 - 15 December 2023
  + 9900 Improve `Request.getBeginNanoTime()` accuracy
@@ -373,6 +449,8 @@ jetty-10.0.18 - 26 October 2023
  + 10537 HTTP/3: Incomplete Data Transfer When Used with Spring Boot WebFlux
  + 10696 jetty.sh doesn't work with JETTY_USER in Jetty 10.0.17 thru Jetty
    12.0.2
+ + 10669 Provide ability to defer initial deployment of webapps until after
+   Server has started
  + 10705 Creating a `HTTP3ServerConnector` with a `SslContextFactory` that has
    a non-null `SSLContext` makes the server fail to start with an unclear error
    message

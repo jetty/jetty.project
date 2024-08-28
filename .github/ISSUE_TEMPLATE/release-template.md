@@ -1,7 +1,7 @@
 ---
 name: 'Release Process'
 about: 'COMMITTER ONLY: Managing the Jetty release process'
-title: 'Jetty Releases 9.4.x, 10.0.y, 11.0.y'
+title: 'Jetty Releases 9.4.x, 10.0.y, 11.0.y, 12.0.y'
 assignees: ''
 labels: Build
 
@@ -31,10 +31,12 @@ This release process will produce releases:
 - [ ] Verify that branch `jetty-10.0.x` is merged to branch `jetty-11.0.x`.
 - [ ] Assign issue to "build manager", who will stage the releases.
   + [ ] Create and use branches `release/<ver>` to perform version specific release work from.
+  + [ ] Ensure `git fetch --tags` (as we potentially rewrite tag when re staging local tag can be out of sync and this command will fail and so fail the release script)
   + [ ] Ensure `VERSION.txt` additions for each release will be meaningful, descriptive, correct text.
   + [ ] Stage 9.4 release with Java 11.
   + [ ] Stage 10 release with Java 21.
   + [ ] Stage 11 release with Java 21.
+  + [ ] Stage 12 release with Java 22. 
   + [ ] Push release branches `release/<ver>` to to https://github.com/eclipse/jetty.project
   + [ ] Push release tags `jetty-<ver>` to https://github.com/eclipse/jetty.project
   + [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/eclipse/jetty.project/releases). Content is generated with the "changelog tool".
@@ -54,7 +56,7 @@ This release process will produce releases:
 - [ ] Merge release branches back to main branches and delete release branches.
 - [ ] Verify release existence in Maven Central by triggering the Jenkins builds of CometD.
 - [ ] Update Jetty versions on the website ( follow instructions in [jetty-website](https://github.com/eclipse/jetty-website/blob/master/README.md) ).
-  + [ ] Update (or check) [Download](https://eclipse.dev/jetty/download.php) page is updated.
+  + [ ] Update (or check) [Download](https://jetty.org/download.html) page is updated.
   + [ ] Update (or check) documentation page(s) are updated.
 - [ ] Publish GitHub Releases.
 - [ ] Prepare release announcement for mailing lists.

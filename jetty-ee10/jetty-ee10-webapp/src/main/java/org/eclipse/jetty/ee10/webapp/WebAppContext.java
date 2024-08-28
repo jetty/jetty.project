@@ -1491,6 +1491,40 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _metadata;
     }
 
+    @Override
+    protected void makeTempDirectory() throws Exception
+    {
+        super.makeTempDirectory();
+    }
+
+    @Override
+    protected String getCanonicalNameForTmpDir()
+    {
+        return super.getCanonicalNameForTmpDir();
+    }
+
+    /**
+     * If the webapp has no baseresource yet, use
+     * the war to make the temp directory name.
+     *
+     * @return the baseresource if non null, or the war
+     */
+    @Override
+    protected Resource getResourceForTempDirName()
+    {
+        Resource resource = super.getResourceForTempDirName();
+
+        if (resource == null)
+        {
+            if (getWar() == null || getWar().length() == 0)
+                throw new IllegalStateException("No resourceBase or war set for context");
+
+            // Use name of given resource in the temporary dirname
+            resource = newResource(getWar());
+        }
+        return resource;
+    }
+
     /**
      * Add a Server Class pattern to use for all WebAppContexts.
      * @param server The {@link Server} instance to add classes to

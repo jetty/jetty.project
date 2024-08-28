@@ -1496,12 +1496,12 @@ public class LazyListTest
         uris.add(URI.create("http://www.mortbay.org/"));
         uris.add(URI.create("http://jetty.codehaus.org/jetty/"));
         uris.add(URI.create("http://www.intalio.com/jetty/"));
-        uris.add(URI.create("https://eclipse.dev/jetty/"));
+        uris.add(URI.create("https://jetty.org/"));
 
         // Make sure that Generics pass through the 'get' routine safely.
         // We should be able to call this without casting the result to URI
         URI eclipseUri = LazyList.get(uris, 3);
-        assertEquals("https://eclipse.dev/jetty/", eclipseUri.toASCIIString());
+        assertEquals("https://jetty.org/", eclipseUri.toASCIIString());
     }
 
     /**

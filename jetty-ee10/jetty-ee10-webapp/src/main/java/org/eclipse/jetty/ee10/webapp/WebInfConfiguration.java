@@ -39,7 +39,6 @@ public class WebInfConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebInfConfiguration.class);
 
-    public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.webapp.tmpResourceBase";
     public static final String ORIGINAL_RESOURCE_BASE = "org.eclipse.jetty.webapp.originalResourceBase";
 
@@ -89,10 +88,6 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        //if it wasn't explicitly configured by the user, then unset it
-        if (!(context.getAttribute(TEMPDIR_CONFIGURED) instanceof Boolean tmpdirConfigured && tmpdirConfigured))
-            context.setTempDirectory(null);
-
         //reset the base resource back to what it was before we did any unpacking of resources
         Resource originalBaseResource = (Resource)context.removeAttribute(ORIGINAL_RESOURCE_BASE);
         context.setBaseResource(originalBaseResource);
@@ -133,7 +128,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         File tempDirectory = context.getTempDirectory();
         if (tempDirectory != null)
         {
-            context.setAttribute(TEMPDIR_CONFIGURED, Boolean.TRUE); //the tmp dir was set explicitly
             return;
         }
 
@@ -148,37 +142,14 @@ public class WebInfConfiguration extends AbstractConfiguration
             return;
         }
 
-        makeTempDirectory(context.getServer().getContext().getTempDirectory(), context);
+        context.makeTempDirectory();
     }
 
+    @Deprecated (forRemoval = true, since = "12.0.12")
     public void makeTempDirectory(File parent, WebAppContext context)
         throws Exception
     {
-        if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
-            throw new IllegalStateException("Parent for temp dir not configured correctly: " + (parent == null ? "null" : "writeable=" + parent.canWrite()));
-
-        boolean persistent = context.isTempDirectoryPersistent() || "work".equals(parent.toPath().getFileName().toString());
-
-        //Create a name for the webapp
-        String temp = getCanonicalNameForWebAppTmpDir(context);
-        File tmpDir;
-        if (persistent)
-        {
-            //if it is to be persisted, make sure it will be the same name
-            //by not using File.createTempFile, which appends random digits
-            tmpDir = new File(parent, temp);
-        }
-        else
-        {
-            // ensure dir will always be unique by having classlib generate random path name
-            tmpDir = Files.createTempDirectory(parent.toPath(), temp).toFile();
-            tmpDir.deleteOnExit();
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Set temp dir {}", tmpDir);
-        context.setTempDirectory(tmpDir);
-        context.setTempDirectoryPersistent(persistent);
+        context.makeTempDirectory();
     }
 
     public void unpack(WebAppContext context) throws IOException
@@ -395,91 +366,20 @@ public class WebInfConfiguration extends AbstractConfiguration
      *
      * @param context the context to get the canonical name from
      * @return the canonical name for the webapp temp directory
+     * @deprecated this method is no longer used
      */
+    @Deprecated(forRemoval = true, since = "12.0.12")
     public static String getCanonicalNameForWebAppTmpDir(WebAppContext context)
     {
-        StringBuilder canonicalName = new StringBuilder();
-        canonicalName.append("jetty-");
-
-        //get the host and the port from the first connector
-        Server server = context.getServer();
-        if (server != null)
-        {
-            Connector[] connectors = server.getConnectors();
-
-            if (connectors.length > 0)
-            {
-                //Get the host
-                String host = null;
-                int port = 0;
-                if (connectors[0] instanceof NetworkConnector connector)
-                {
-                    host = connector.getHost();
-                    port = connector.getLocalPort();
-                    if (port < 0)
-                        port = connector.getPort();
-                }
-                if (host == null)
-                    host = "0.0.0.0";
-                canonicalName.append(host);
-                canonicalName.append("-");
-                canonicalName.append(port);
-                canonicalName.append("-");
-            }
-        }
-
-        // Resource base
-        try
-        {
-            Resource resource = context.getBaseResource();
-            if (resource == null)
-            {
-                if (context.getWar() == null || context.getWar().length() == 0)
-                    throw new IllegalStateException("No resourceBase or war set for context");
-
-                // Set dir or WAR to resource
-                resource = context.newResource(context.getWar());
-            }
-
-            String resourceBaseName = getResourceBaseName(resource);
-            canonicalName.append(resourceBaseName);
-            canonicalName.append("-");
-        }
-        catch (Exception e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Can't get resource base name", e);
-
-            canonicalName.append("-"); // empty resourceBaseName segment
-        }
-
-        //Context name
-        String contextPath = context.getContextPath();
-        contextPath = contextPath.replace('/', '_');
-        contextPath = contextPath.replace('\\', '_');
-        canonicalName.append(contextPath);
-
-        //Virtual host (if there is one)
-        canonicalName.append("-");
-        List<String> vhosts = context.getVirtualHosts();
-        if (vhosts == null || vhosts.size() <= 0)
-            canonicalName.append("any");
-        else
-            canonicalName.append(vhosts.get(0));
-
-        // sanitize
-        for (int i = 0; i < canonicalName.length(); i++)
-        {
-            char c = canonicalName.charAt(i);
-            if (!Character.isJavaIdentifierPart(c) && "-.".indexOf(c) < 0)
-                canonicalName.setCharAt(i, '.');
-        }
-
-        canonicalName.append("-");
-
-        return StringUtil.sanitizeFileSystemName(canonicalName.toString());
+       return context.getCanonicalNameForTmpDir();
     }
 
+    /**
+     * @param resource the Resource for which to extract a short name
+     * @return extract a short name for the resource
+     * @deprecated this method is no longer needed
+     */
+    @Deprecated(forRemoval = true, since = "12.0.12")
     protected static String getResourceBaseName(Resource resource)
     {
         // Use File System and File interface if present

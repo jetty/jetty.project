@@ -17,7 +17,7 @@ module org.eclipse.jetty.security
     requires transitive org.eclipse.jetty.util;
     requires transitive org.slf4j;
     requires static java.security.jgss;
-    requires static java.sql;
+    requires static transitive java.sql;
 
     exports org.eclipse.jetty.security;
     exports org.eclipse.jetty.security.authentication;

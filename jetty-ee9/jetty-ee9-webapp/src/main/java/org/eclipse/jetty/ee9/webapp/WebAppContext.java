@@ -1162,13 +1162,38 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setTempDirectory(File dir)
     {
         getCoreContextHandler().setTempDirectory(dir);
-        setAttribute(ServletContext.TEMPDIR, getCoreContextHandler().getTempDirectory());
     }
 
     @ManagedAttribute(value = "temporary directory location", readonly = true)
     public File getTempDirectory()
     {
         return getCoreContextHandler().getTempDirectory();
+    }
+
+    protected void makeTempDirectory() throws Exception
+    {
+        getCoreContextHandler().makeTempDirectory();
+    }
+
+    protected String getCanonicalNameForTmpDir()
+    {
+        return getCoreContextHandler().getCanonicalNameForTmpDir();
+    }
+
+    @Override
+    public Resource getNestedResourceForTempDirName()
+    {
+        Resource resource = super.getNestedResourceForTempDirName();
+
+        if (resource == null)
+        {
+            if (getWar() == null || getWar().length() == 0)
+                throw new IllegalStateException("No resourceBase or war set for context");
+
+            // Use name of given resource in the temporary dirname
+            resource = getResourceFactory().newResource(getWar());
+        }
+        return resource;
     }
 
     /**

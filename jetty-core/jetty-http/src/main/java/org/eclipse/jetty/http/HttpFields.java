@@ -38,9 +38,16 @@ import java.util.stream.StreamSupport;
 /**
  * <p>An ordered collection of {@link HttpField}s that represent the HTTP headers
  * or HTTP trailers of an HTTP request or an HTTP response.</p>
+ *
  * <p>{@link HttpFields} is immutable and typically used in server-side HTTP requests
  * and client-side HTTP responses, while {@link HttpFields.Mutable} is mutable and
  * typically used in server-side HTTP responses and client-side HTTP requests.</p>
+ *
+ * <p>Access is always more efficient using {@link HttpHeader} keys rather than {@link String} field names.</p>
+ *
+ * <p>The primary implementations of {@code HttpFields} have been optimized assuming few
+ * lookup operations, thus typically if many {@link HttpField}s need to looked up, it may be
+ * better to use an {@link Iterator} to find multiple fields in a single iteration.</p>
  */
 public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 {
@@ -350,10 +357,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     /**
      * <p>Returns whether this instance contains the given field name.</p>
      * <p>The comparison of field name is case-insensitive via
-     * {@link HttpField#is(String)}.
+     * {@link HttpField#is(String)}. If possible, it is more efficient to use
+     * {@link #contains(HttpHeader)}.
      *
      * @param name the case-insensitive field name to search for
      * @return whether this instance contains the given field name
+     * @see #contains(HttpHeader) 
      */
     default boolean contains(String name)
     {
@@ -412,7 +421,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * <p>Returns the encoded value of the first field with the given field name,
      * or {@code null} if no such field is present.</p>
      * <p>The comparison of field name is case-insensitive via
-     * {@link HttpField#is(String)}.</p>
+     * {@link HttpField#is(String)}. If possible, it is more efficient to use {@link #get(HttpHeader)}.</p>
      * <p>In case of multi-valued fields, the returned value is the encoded
      * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
      *
@@ -420,6 +429,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * @return the raw value of the first field with the given field name,
      * or {@code null} if no such field is present
      * @see HttpField#getValue()
+     * @see #get(HttpHeader) 
      */
     default String get(String name)
     {
@@ -594,12 +604,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * <p>Returns a {@link Set} of the field names.</p>
      * <p>Case-sensitivity of the field names is preserved.</p>
      *
-     * @return a {@link Set} of the field names
+     * @return an immutable {@link Set} of the field names. Changes made to the
+     * {@code HttpFields} after this call are not reflected in the set.
      */
     default Set<String> getFieldNamesCollection()
     {
         Set<HttpHeader> seenByHeader = EnumSet.noneOf(HttpHeader.class);
-        Set<String> seenByName = null;
+        Set<String> buildByName = null;
         List<String> list = new ArrayList<>(size());
 
         for (HttpField f : this)
@@ -607,9 +618,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             HttpHeader header = f.getHeader();
             if (header == null)
             {
-                if (seenByName == null)
-                    seenByName = new TreeSet<>(String::compareToIgnoreCase);
-                if (seenByName.add(f.getName()))
+                if (buildByName == null)
+                    buildByName = new TreeSet<>(String::compareToIgnoreCase);
+                if (buildByName.add(f.getName()))
                     list.add(f.getName());
             }
             else if (seenByHeader.add(header))
@@ -617,6 +628,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 list.add(f.getName());
             }
         }
+
+        Set<String> seenByName = buildByName;
 
         // use the list to retain a rough ordering
         return new AbstractSet<>()
@@ -631,6 +644,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             public int size()
             {
                 return list.size();
+            }
+
+            @Override
+            public boolean contains(Object o)
+            {
+                if (o instanceof String s)
+                    return seenByName != null && seenByName.contains(s) || seenByHeader.contains(HttpHeader.CACHE.get(s));
+                return false;
             }
         };
     }
