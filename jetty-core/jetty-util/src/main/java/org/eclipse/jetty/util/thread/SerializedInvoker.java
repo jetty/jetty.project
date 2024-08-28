@@ -152,8 +152,7 @@ public class SerializedInvoker
         Runnable todo = offer(task);
         if (todo != null)
             todo.run();
-        else
-        if (LOG.isDebugEnabled())
+        else if (LOG.isDebugEnabled())
             LOG.debug("Queued link in {}", this);
     }
 
@@ -167,8 +166,7 @@ public class SerializedInvoker
         Runnable todo = offer(tasks);
         if (todo != null)
             todo.run();
-        else
-        if (LOG.isDebugEnabled())
+        else if (LOG.isDebugEnabled())
             LOG.debug("Queued links in {}", this);
     }
 
@@ -279,14 +277,14 @@ public class SerializedInvoker
         private final String name;
         private final Throwable stack;
 
-        public NamedRunnable(Runnable delegate)
+        private NamedRunnable(Runnable delegate)
         {
             this.delegate = delegate;
             this.stack = new Throwable();
             this.name = deriveTaskName(delegate, stack);
         }
 
-        protected String deriveTaskName(Runnable task, Throwable stack)
+        private String deriveTaskName(Runnable task, Throwable stack)
         {
             StackTraceElement[] stackTrace = stack.getStackTrace();
             for (StackTraceElement stackTraceElement : stackTrace)
