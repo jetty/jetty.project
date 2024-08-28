@@ -1590,18 +1590,18 @@ public class HttpChannelState implements HttpChannel, Components
 
                     httpChannelState._callbackFailure = failure;
 
-                    // Consume any input.
-                    Throwable unconsumed = stream.consumeAvailable();
-                    ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
+                    if (!stream.isCommitted() && !(failure instanceof Request.Handler.AbortException))
+                    {
+                        // Consume any input.
+                        Throwable unconsumed = stream.consumeAvailable();
+                        ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
 
-                    ChannelResponse response = httpChannelState._response;
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
+                        ChannelResponse response = httpChannelState._response;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
 
-                    // There may have been an attempt to write an error response that failed.
-                    // Do not try to write again an error response if already committed.
-                    if (!stream.isCommitted())
                         errorResponse = new ErrorResponse(request);
+                    }
                 }
 
                 if (errorResponse != null)
