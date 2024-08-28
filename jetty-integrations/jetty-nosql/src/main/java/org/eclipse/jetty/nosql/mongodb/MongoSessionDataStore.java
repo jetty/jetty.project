@@ -15,22 +15,29 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
-import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.IndexModel;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bson.types.Binary;
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.session.SessionData;
@@ -155,15 +162,15 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     /**
      * Access to MongoDB
      */
-    private DBCollection _dbSessions;
+    private MongoCollection<Document> _dbSessions;
 
-    public void setDBCollection(DBCollection collection)
+    public void setDBCollection(MongoCollection<Document> collection)
     {
         _dbSessions = collection;
     }
 
     @ManagedAttribute(value = "DBCollection", readonly = true)
-    public DBCollection getDBCollection()
+    public MongoCollection<Document> getDBCollection()
     {
         return _dbSessions;
     }
@@ -171,7 +178,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     @Override
     public SessionData doLoad(String id) throws Exception
     {
-        DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
+        Document sessionDocument = _dbSessions.find(Filters.eq(__ID, id)).first();
 
         try
         {
@@ -191,7 +198,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
             Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTSAVED));
             String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__LASTNODE));
-            byte[] attributes = (byte[])MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__ATTRIBUTES));
+            Binary binary = ((Binary)MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__ATTRIBUTES)));
+            byte[] attributes = binary == null ? null : binary.getData();
 
             Long created = (Long)sessionDocument.get(__CREATED);
             Long accessed = (Long)sessionDocument.get(__ACCESSED);
@@ -202,7 +210,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             NoSqlSessionData data = null;
 
             // get the session for the context
-            DBObject sessionSubDocumentForContext = (DBObject)MongoUtils.getNestedValue(sessionDocument, getContextField());
+            Document sessionSubDocumentForContext = (Document)MongoUtils.getNestedValue(sessionDocument, getContextField());
 
             if (LOG.isDebugEnabled())
                 LOG.debug("attrs {}", sessionSubDocumentForContext);
@@ -239,9 +247,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                 else
                 {
                     //attributes have special serialized format
-                    try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);)
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes))
                     {
-                            deserializeAttributes(data, bais);
+                        deserializeAttributes(data, bais);
                     }
                 }
             }
@@ -269,17 +277,17 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
          * Check if the session exists and if it does remove the context
          * associated with this session
          */
-        BasicDBObject mongoKey = new BasicDBObject(__ID, id);
+        Bson filterId = Filters.eq(__ID, id);
 
-        DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
+        Document sessionDocument = _dbSessions.find(filterId).first();
 
         if (sessionDocument != null)
         {
-            DBObject c = (DBObject)MongoUtils.getNestedValue(sessionDocument, __CONTEXT);
+            Document c = (Document)MongoUtils.getNestedValue(sessionDocument, __CONTEXT);
             if (c == null)
             {
                 //delete whole doc
-                _dbSessions.remove(mongoKey, WriteConcern.SAFE);
+                _dbSessions.deleteOne(filterId);
                 return false;
             }
 
@@ -287,14 +295,14 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             if (contexts.isEmpty())
             {
                 //delete whole doc
-                _dbSessions.remove(mongoKey, WriteConcern.SAFE);
+                _dbSessions.deleteOne(filterId);
                 return false;
             }
 
             if (contexts.size() == 1 && contexts.iterator().next().equals(getCanonicalContextId()))
             {
                 //delete whole doc
-                _dbSessions.remove(new BasicDBObject(__ID, id), WriteConcern.SAFE);
+                _dbSessions.deleteOne(filterId);
                 return true;
             }
 
@@ -303,7 +311,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             BasicDBObject unsets = new BasicDBObject();
             unsets.put(getContextField(), 1);
             remove.put("$unset", unsets);
-            _dbSessions.update(mongoKey, remove, false, false, WriteConcern.SAFE);
+            _dbSessions.updateOne(filterId, remove);
             return true;
         }
         else
@@ -315,12 +323,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     @Override
     public boolean doExists(String id) throws Exception
     {
-        DBObject fields = new BasicDBObject();
-        fields.put(__EXPIRY, 1);
-        fields.put(__VALID, 1);
-        fields.put(getContextSubfield(__VERSION), 1);
-
-        DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id), fields);
+        Bson projection = Projections.fields(Projections.include(__ID, __VALID, __EXPIRY, __VERSION, getContextField()), Projections.excludeId());
+        Bson filterId = Filters.eq(__ID, id);
+        Document sessionDocument = _dbSessions.find(filterId).projection(projection).first();
 
         if (sessionDocument == null)
             return false; //doesn't exist
@@ -332,48 +337,33 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         Long expiry = (Long)sessionDocument.get(__EXPIRY);
 
         //expired?
-        if (expiry.longValue() > 0 && expiry.longValue() < System.currentTimeMillis())
+        if (expiry != null && expiry > 0 && expiry < System.currentTimeMillis())
             return false; //it's expired
 
         //does it exist for this context?
         Object version = MongoUtils.getNestedValue(sessionDocument, getContextSubfield(__VERSION));
-        if (version == null)
-            return false;
-
-        return true;
+        return version != null;
     }
 
     @Override
     public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
-        Set<String> expiredSessions = new HashSet<>();
 
         //firstly ask mongo to verify if these candidate ids have expired - all of
         //these candidates will be for our node
-        BasicDBObject query = new BasicDBObject();
-        query.append(__ID, new BasicDBObject("$in", candidates));
-        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lte", time));
-        
-        DBCursor verifiedExpiredSessions = null;
-        try
-        {
-            verifiedExpiredSessions = _dbSessions.find(query, new BasicDBObject(__ID, 1));
-            for (DBObject session : verifiedExpiredSessions)
-            {
-                String id = (String)session.get(__ID);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} Mongo confirmed expired session {}", _context, id);
-                expiredSessions.add(id);
-            }
-        }
-        finally
-        {
-            if (verifiedExpiredSessions != null)
-                verifiedExpiredSessions.close();
-        }
-        
+        Bson query = Filters.and(
+                Filters.in(__ID, candidates),
+                Filters.gt(__EXPIRY, 0),
+                Filters.lte(__EXPIRY, time));
 
-        //check through sessions that were candidates, but not found as expired. 
+
+        FindIterable<Document> verifiedExpiredSessions = _dbSessions.find(query); // , new BasicDBObject(__ID, 1)
+        Set<String> expiredSessions =
+                StreamSupport.stream(verifiedExpiredSessions.spliterator(), false)
+                        .map(document -> document.getString(__ID))
+                        .collect(Collectors.toSet());
+
+        //check through sessions that were candidates, but not found as expired.
         //they may no longer be persisted, in which case they are treated as expired.
         for (String c:candidates)
         {
@@ -398,37 +388,17 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     {
         // now ask mongo to find sessions for this context, last managed by any
         // node, that expired before timeLimit
-        Set<String> expiredSessions = new HashSet<>();
+        Bson query = Filters.and(
+            Filters.gt(__EXPIRY, 0),
+            Filters.lte(__EXPIRY, timeLimit)
+        );
 
-        BasicDBObject query = new BasicDBObject();
-        BasicDBObject gt = new BasicDBObject(__EXPIRY, new BasicDBObject("$gt", 0));
-        BasicDBObject lt = new BasicDBObject(__EXPIRY, new BasicDBObject("$lte", timeLimit));
-        BasicDBList list = new BasicDBList();
-        list.add(gt);
-        list.add(lt);
-        query.append("$and", list);
+        //TODO we should verify if there is a session for my context, not any context
 
-        DBCursor oldExpiredSessions = null;
-        try
-        {
-            BasicDBObject bo = new BasicDBObject(__ID, 1);
-            bo.append(__EXPIRY, 1);
-
-            oldExpiredSessions = _dbSessions.find(query, bo);
-            for (DBObject session : oldExpiredSessions)
-            {
-                String id = (String)session.get(__ID);
-                
-                //TODO we should verify if there is a session for my context, not any context
-                expiredSessions.add(id);
-            }
-        }
-        finally
-        {
-            if (oldExpiredSessions != null)
-                oldExpiredSessions.close();
-        }
-
+        FindIterable<Document> documents = _dbSessions.find(query);
+        Set<String> expiredSessions = StreamSupport.stream(documents.spliterator(), false)
+                .map(document -> document.getString(__ID))
+                .collect(Collectors.toSet());
         return expiredSessions;
     }
 
@@ -438,9 +408,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         //Delete all session documents where the expiry time (which is always the most
         //up-to-date expiry of all contexts sharing that session id) has already past as
         //at the timeLimit.
-        BasicDBObject query = new BasicDBObject();
-        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lte", timeLimit));
-        _dbSessions.remove(query, WriteConcern.SAFE);
+        Bson query = Filters.and(
+          Filters.gt(__EXPIRY, 0),
+          Filters.lte(__EXPIRY, timeLimit)
+        );
+        _dbSessions.deleteMany(query);
     }
 
     /**
@@ -458,8 +430,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
         // Form query for upsert
-        final BasicDBObject key = new BasicDBObject(__ID, id);
-
+        Bson key = Filters.eq(__ID, id);;
         // Form updates
         BasicDBObject update = new BasicDBObject();
         boolean upsert = false;
@@ -487,12 +458,13 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             version = ((Number)version).longValue() + 1L;
             ((NoSqlSessionData)data).setVersion(version);
-            update.put("$inc", _version1);
+            // what is this?? this field is used no where...
+            //sets.put("$inc", _version1);
             //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc
             BasicDBObject fields = new BasicDBObject();
             fields.append(__MAX_IDLE, true);
             fields.append(__EXPIRY, true);
-            DBObject o = _dbSessions.findOne(new BasicDBObject("id", id), fields);
+            Document o = _dbSessions.find(key).first();
             if (o != null)
             {
                 Long tmpLong = (Long)o.get(__MAX_IDLE);
@@ -516,37 +488,39 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();)
         {
             serializeAttributes(data, baos);
-            sets.put(getContextSubfield(__ATTRIBUTES), baos.toByteArray());
+            Binary binary = new Binary(baos.toByteArray());
+            sets.put(getContextSubfield(__ATTRIBUTES), binary);
         }
 
         // Do the upsert
         if (!sets.isEmpty())
             update.put("$set", sets);
 
-        WriteResult res = _dbSessions.update(key, update, upsert, false, WriteConcern.SAFE);
+        UpdateResult res = _dbSessions.updateOne(key, update, new UpdateOptions().upsert(upsert));
         if (LOG.isDebugEnabled())
             LOG.debug("Save:db.sessions.update( {}, {},{} )", key, update, res);
     }
 
     protected void ensureIndexes() throws MongoException
     {
-        _version1 = new BasicDBObject(getContextSubfield(__VERSION), 1);
-        DBObject idKey = BasicDBObjectBuilder.start().add("id", 1).get();
-        _dbSessions.createIndex(idKey,
-            BasicDBObjectBuilder.start()
-                .add("name", "id_1")
-                .add("ns", _dbSessions.getFullName())
-                .add("sparse", false)
-                .add("unique", true)
-                .get());
-
-        DBObject versionKey = BasicDBObjectBuilder.start().add("id", 1).add("version", 1).get();
-        _dbSessions.createIndex(versionKey, BasicDBObjectBuilder.start()
-            .add("name", "id_1_version_1")
-            .add("ns", _dbSessions.getFullName())
-            .add("sparse", false)
-            .add("unique", true)
-            .get());
+        var indexes =
+                StreamSupport.stream(_dbSessions.listIndexes().spliterator(), false)
+                        .toList();
+        var indexesNames = indexes.stream().map(document -> document.getString("name")).toList();
+        if (!indexesNames.contains("id_1"))
+        {
+            String createResult = _dbSessions.createIndex(Indexes.text("id"),
+                    new IndexOptions().unique(true).name("id_1").sparse(false));
+            LOG.info("create index {}, result: {}", "id_1", createResult);
+        }
+        if (!indexesNames.contains("id_1_version_1"))
+        {
+            // Command failed with error 67 (CannotCreateIndex): 'only one text index per collection allowed, found existing text index "id_1"'
+            String createResult = _dbSessions.createIndex(
+                    Indexes.compoundIndex(Indexes.descending("id"), Indexes.descending("version")),
+                    new IndexOptions().unique(false).name("id_1_version_1").sparse(false));
+            LOG.info("create index {}, result: {}", "id_1_version_1", createResult);
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("Done ensure Mongodb indexes existing");
         //TODO perhaps index on expiry time?
