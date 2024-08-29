@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee11.servlet.util;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 import jakarta.servlet.ReadListener;
@@ -27,12 +26,6 @@ public class ServletInputStreamWrapper extends ServletInputStream
     public ServletInputStreamWrapper(ServletInputStream servletInputStream)
     {
         _servletInputStream = servletInputStream;
-    }
-
-    @Override
-    public int readLine(byte[] b, int off, int len) throws IOException
-    {
-        return _servletInputStream.readLine(b, off, len);
     }
 
     @Override
@@ -53,11 +46,6 @@ public class ServletInputStreamWrapper extends ServletInputStream
         _servletInputStream.setReadListener(readListener);
     }
 
-    public static InputStream nullInputStream()
-    {
-        return InputStream.nullInputStream();
-    }
-
     @Override
     public int read() throws IOException
     {
@@ -74,24 +62,6 @@ public class ServletInputStreamWrapper extends ServletInputStream
     public int read(byte[] b, int off, int len) throws IOException
     {
         return _servletInputStream.read(b, off, len);
-    }
-
-    @Override
-    public byte[] readAllBytes() throws IOException
-    {
-        return _servletInputStream.readAllBytes();
-    }
-
-    @Override
-    public byte[] readNBytes(int len) throws IOException
-    {
-        return _servletInputStream.readNBytes(len);
-    }
-
-    @Override
-    public int readNBytes(byte[] b, int off, int len) throws IOException
-    {
-        return _servletInputStream.readNBytes(b, off, len);
     }
 
     @Override
