@@ -200,7 +200,8 @@ public class ErrorHandler implements Request.Handler
         }
 
         int bufferSize = getBufferSize() <= 0 ? computeBufferSize(request) : getBufferSize();
-        RetainableByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
+        ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
+        RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
 
         try
         {
