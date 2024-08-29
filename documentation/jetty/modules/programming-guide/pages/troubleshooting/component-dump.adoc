@@ -12,7 +12,7 @@
 //
 
 [[dump]]
-= Jetty Server Dump
+= Jetty Component Dump
 
 Jetty is based on components organized as a tree, with the `Server` instance at the root of the tree.
 
@@ -62,7 +62,7 @@ At the end of the dump output there is a legend that explains the type of tree n
 
 == Obtaining Dump via JMX
 
-The Jetty Server Dump can be obtained by invoking, via JMX, the `Server.dump()` operation, as shown below using https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
+The Jetty Component Dump can be obtained by invoking, via JMX, the `Server.dump()` operation, as shown below using https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
 
 image::jmc-server-dump.png[]
 
@@ -72,13 +72,13 @@ In the bottom panel you will see the result of the invocation, that you can copy
 
 [CAUTION]
 ====
-Taking a Jetty Server Dump is a relatively expensive operation, as it dumps the state of all connections (which can be thousands), and the state of all threads.
+Taking a Jetty Component Dump is a relatively expensive operation, as it dumps the state of all connections (which can be thousands), and the state of all threads.
 
 The result of the invocation may produce a large string, possibly few MiB, that may impact the server memory usage.
 
 Furthermore, dumping the state of the I/O Jetty components takes a little CPU time off the handling of the actual I/O, possibly slowing it down temporarily.
 
-While the slow-down caused by taking the Jetty Server Dump may be noticeable on highly loaded systems, it is typically a very small price to pay to obtain the information about the Jetty state that may be critical to the resolution of an issue.
+While the slow-down caused by taking the Jetty Component Dump may be noticeable on highly loaded systems, it is typically a very small price to pay to obtain the information about the Jetty state that may be critical to the resolution of an issue.
 ====
 
 [[dump-detailed]]
@@ -94,7 +94,7 @@ Detailed thread pool information can also be turned on/off on-the-fly via JMX, b
 [[dump-example]]
 == Dump Example
 
-Below you can find a simple example of a Jetty Server Dump, with annotations for the principal components:
+Below you can find a simple example of a Jetty Component Dump, with annotations for the principal components:
 
 [jetty.small%nowrap]
 ....

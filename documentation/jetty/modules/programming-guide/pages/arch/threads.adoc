@@ -271,4 +271,4 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/Architect
 
 Despite the name, `VirtualThreadPool` does not pool virtual threads, but allows you to impose a limit on the maximum number of current virtual threads, in order to limit resource consumption.
 
-Furthermore, you can configure it to track virtual threads so that a xref:troubleshooting/jetty-server-dump.adoc[Jetty component dump] will show all virtual threads, including those that are unmounted.
+Furthermore, you can configure it to track virtual threads so that a xref:troubleshooting/component-dump.adoc[Jetty component dump] will show all virtual threads, including those that are unmounted.

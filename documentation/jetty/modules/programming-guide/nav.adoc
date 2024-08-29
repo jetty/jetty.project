@@ -41,7 +41,7 @@
 ** xref:troubleshooting/logging.adoc[]
 ** xref:troubleshooting/thread-dump.adoc[]
 ** xref:troubleshooting/state-tracking.adoc[]
-** xref:troubleshooting/jetty-server-dump.adoc[]
+** xref:troubleshooting/component-dump.adoc[]
 ** xref:troubleshooting/debugging.adoc[]
 * Migration Guides
 ** xref:migration/94-to-10.adoc[]

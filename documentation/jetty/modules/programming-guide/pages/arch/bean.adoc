@@ -26,7 +26,7 @@ In server application the root of the component tree is a `Server` instance, whi
 
 Having all the Jetty components in a tree is beneficial in a number of use cases.
 It makes possible to register the components in the tree as xref:arch/jmx.adoc[JMX MBeans] so that a JMX console can look at the internal state of the components.
-It also makes possible to xref:troubleshooting/jetty-server-dump.adoc[dump the component tree] (and therefore each component's internal state) to a log file or to the console for xref:troubleshooting/index.adoc[troubleshooting purposes].
+It also makes possible to xref:troubleshooting/component-dump.adoc[dump the component tree] (and therefore each component's internal state) to a log file or to the console for xref:troubleshooting/index.adoc[troubleshooting purposes].
 // TODO: add a section on Dumpable?
 
 [[lifecycle]]
@@ -104,7 +104,7 @@ The component tree should be used for long-lived or medium-lived components such
 
 It is not recommended adding to, and removing from, the component tree short-lived objects such as HTTP requests or TCP connections, for performance reasons.
 
-If you need component tree features such as automatic xref:arch/jmx.adoc[export to JMX] or xref:troubleshooting/jetty-server-dump.adoc[dump capabilities] for short-lived objects, consider having a long-lived container in the component tree instead.
+If you need component tree features such as automatic xref:arch/jmx.adoc[export to JMX] or xref:troubleshooting/component-dump.adoc[dump capabilities] for short-lived objects, consider having a long-lived container in the component tree instead.
 You can make the long-lived container efficient at adding/removing the short-lived components using a data structure that is not part of the component tree, and make the long-lived container handle the JMX and dump features for the short-lived components.
 ====
 
