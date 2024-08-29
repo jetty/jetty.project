@@ -100,7 +100,6 @@ public abstract class HttpSender
             LOG.debug("Request begin {}", request);
         request.notifyBegin();
 
-        contentSender.exchange = exchange;
         contentSender.expect100 = expects100Continue(request);
 
         if (updateRequestState(RequestState.TRANSIENT, RequestState.BEGIN))
@@ -390,7 +389,10 @@ public abstract class HttpSender
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
+        {
+            LOG.info("ISSUE-11841 no exchange in internalAbort - {}", this);
             return;
+        }
         anyToFailure(failure);
         abortRequest(exchange);
     }
@@ -424,10 +426,12 @@ public abstract class HttpSender
     @Override
     public String toString()
     {
-        return String.format("%s@%x(req=%s,failure=%s)",
+        return String.format("%s@%x(req=%s,channel=%s,cs=%s,failure=%s)",
             getClass().getSimpleName(),
             hashCode(),
             requestState,
+            channel,
+            contentSender,
             failure);
     }
 
@@ -469,7 +473,6 @@ public abstract class HttpSender
     private class ContentSender extends IteratingCallback
     {
         // Fields that are set externally.
-        private volatile HttpExchange exchange;
         private volatile Runnable proceedAction;
         private volatile boolean expect100;
         // Fields only used internally.
@@ -484,7 +487,6 @@ public abstract class HttpSender
         @Override
         public boolean reset()
         {
-            exchange = null;
             proceedAction = null;
             expect100 = false;
             chunk = null;
@@ -500,7 +502,12 @@ public abstract class HttpSender
         @Override
         protected Action process() throws Throwable
         {
-            HttpExchange exchange = this.exchange;
+            HttpExchange exchange = getHttpExchange();
+            if (exchange == null)
+            {
+                LOG.info("ISSUE-11841 no exchange in process - {}", HttpSender.this);
+                return Action.IDLE;
+            }
             if (complete)
             {
                 if (success)
@@ -581,6 +588,19 @@ public abstract class HttpSender
             }
             else
             {
+                HttpExchange exchange = getHttpExchange();
+                if (exchange == null)
+                {
+                    LOG.info("ISSUE-11841 no exchange in onSuccess - {}", HttpSender.this);
+                    if (chunk != null)
+                    {
+                        LOG.info("ISSUE-11841 releasing chunk - {}", HttpSender.this);
+                        chunk.release();
+                        chunk = null;
+                    }
+                    return;
+                }
+
                 boolean proceed = true;
                 if (committed)
                 {
@@ -640,6 +660,21 @@ public abstract class HttpSender
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        public String toString()
+        {
+            return super.toString() +
+                " proceedAction=" + proceedAction +
+                " expect100=" + expect100 +
+                " chunk=" + chunk +
+                " contentBuffer=" + BufferUtil.toDetailString(contentBuffer) +
+                " committed=" + committed +
+                " success=" + success +
+                " complete=" + complete +
+                " abort=" + abort +
+                " demanded=" + demanded;
         }
     }
 }
