@@ -1057,12 +1057,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-test-session-common</artifactId>
+        <artifactId>jetty-test-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-test-common</artifactId>
+        <artifactId>jetty-test-session-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
