@@ -78,6 +78,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -85,7 +86,6 @@ import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.CookieCache;
 import org.eclipse.jetty.server.FormFields;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -951,13 +951,19 @@ public class ServletApiRequest implements HttpServletRequest
             throw new ServletException("Unable to instantiate handler class", e);
         }
 
-        HttpConnection httpConnection = (HttpConnection)_servletContextRequest.getConnectionMetaData().getConnection();
-        httpConnection.getParser().upgrade();
+        Connection connection = _servletContextRequest.getConnectionMetaData().getConnection();
+        if (connection instanceof Connection.Upgrade upgradeableConnection)
+        {
+            outputStream.flush(); // commit the 101 response
+            upgradeableConnection.upgrade();
+        }
+        else
+        {
+            LOG.warn("Unexpected connection type {}", connection);
+            throw new IllegalStateException();
+        }
+
         AsyncContext asyncContext = forceStartAsync(); // force the servlet in async mode
-
-        outputStream.flush(); // commit the 101 response
-        httpConnection.getGenerator().servletUpgrade(); // tell the generator it can send data as-is
-
         CompletableFuture.allOf(inputStreamComplete, outputStreamComplete).whenComplete((result, failure) ->
         {
             upgradeHandler.destroy();

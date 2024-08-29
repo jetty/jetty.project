@@ -455,10 +455,16 @@ public class HttpGenerator
         }
     }
 
-    public void servletUpgrade()
+    public void upgrade()
     {
         _noContentResponse = false;
         _state = State.COMMITTED;
+    }
+
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void servletUpgrade()
+    {
+        upgrade();
     }
 
     private void prepareChunk(ByteBuffer chunk, int remaining)

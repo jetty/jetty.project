@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.annotation.Name;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

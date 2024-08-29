@@ -28,4 +28,5 @@ module org.eclipse.jetty.server
 
     exports org.eclipse.jetty.server.jmx to
          org.eclipse.jetty.jmx;
+    exports org.eclipse.jetty.server.internal;
 }

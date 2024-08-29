@@ -2023,7 +2023,7 @@ public class HttpParser
         _contentLength = -1;
     }
 
-    @Deprecated
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public void servletUpgrade()
     {
         upgrade();

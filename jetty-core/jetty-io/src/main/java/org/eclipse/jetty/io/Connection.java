@@ -140,6 +140,11 @@ public interface Connection extends Closeable
         void onUpgradeTo(ByteBuffer buffer);
     }
 
+    interface Upgrade
+    {
+        void upgrade();
+    }
+
     /**
      * <p>A Listener for connection events.</p>
      * <p>Listeners can be added to a {@link Connection} to get open and close events.
