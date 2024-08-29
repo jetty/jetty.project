@@ -1470,7 +1470,6 @@ public interface RetainableByteBuffer extends Retainable
 
         private DynamicCapacity(List<RetainableByteBuffer> buffers, ByteBufferPool.Sized pool, long maxSize, int minRetainSize)
         {
-            super();
             _pool = pool == null ? ByteBufferPool.SIZED_NON_POOLING : pool;
             _maxSize = maxSize < 0 ? Long.MAX_VALUE : maxSize;
             _buffers = buffers == null ? new ArrayList<>() : buffers;
@@ -1479,6 +1478,12 @@ public interface RetainableByteBuffer extends Retainable
 
             if (_pool.getSize() == 0 && _maxSize >= Integer.MAX_VALUE && _minRetainSize != 0)
                 throw new IllegalArgumentException("must always retain if cannot aggregate");
+        }
+
+        private void checkNotReleased()
+        {
+            if (getRetained() <= 0)
+                throw new IllegalStateException("Already released");
         }
 
         public long getMaxSize()
@@ -1515,6 +1520,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("getByteBuffer {}", this);
+            checkNotReleased();
             return switch (_buffers.size())
             {
                 case 0 -> BufferUtil.EMPTY_BUFFER;
@@ -1548,6 +1554,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("take {} {}", this, length);
+            checkNotReleased();
 
             if (_buffers.isEmpty() || length == 0)
                 return RetainableByteBuffer.EMPTY;
@@ -1613,6 +1620,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("take {} {}", this, skip);
+            checkNotReleased();
 
             if (_buffers.isEmpty() || skip > size())
                 return RetainableByteBuffer.EMPTY;
@@ -1678,6 +1686,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("takeByteArray {}", this);
+            checkNotReleased();
             return switch (_buffers.size())
             {
                 case 0 -> BufferUtil.EMPTY_BUFFER.array();
@@ -1723,6 +1732,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("get {}", this);
+            checkNotReleased();
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
                 RetainableByteBuffer buffer = i.next();
@@ -1749,6 +1759,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("get {} {}", this, index);
+            checkNotReleased();
             for (RetainableByteBuffer buffer : _buffers)
             {
                 long size = buffer.size();
@@ -1764,6 +1775,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("get array {} {}", this, length);
+            checkNotReleased();
             int got = 0;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); length > 0 && i.hasNext();)
             {
@@ -1791,6 +1803,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean hasRemaining()
         {
+            checkNotReleased();
             for (RetainableByteBuffer rbb : _buffers)
                 if (!rbb.isEmpty())
                     return true;
@@ -1802,6 +1815,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("skip {} {}", this, length);
+            checkNotReleased();
             long skipped = 0;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); length > 0 && i.hasNext();)
             {
@@ -1824,6 +1838,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("limit {} {}", this, limit);
+            checkNotReleased();
             for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
             {
                 RetainableByteBuffer buffer = i.next();
@@ -1851,6 +1866,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("slice {}", this);
+            checkNotReleased();
             List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             for (RetainableByteBuffer rbb : _buffers)
                 buffers.add(rbb.slice());
@@ -1862,6 +1878,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("slice {} {}", this, length);
+            checkNotReleased();
             List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             for (Iterator<RetainableByteBuffer> i = _buffers.iterator(); i.hasNext();)
             {
@@ -1904,6 +1921,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("copy {}", this);
+            checkNotReleased();
             List<RetainableByteBuffer> buffers = new ArrayList<>(_buffers.size());
             for (RetainableByteBuffer rbb : _buffers)
                 buffers.add(rbb.copy());
@@ -1925,6 +1943,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public long size()
         {
+            checkNotReleased();
             long length = 0;
             for (RetainableByteBuffer buffer : _buffers)
                 length += buffer.remaining();
@@ -1953,6 +1972,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("release {}", this);
+            checkNotReleased();
             if (super.release())
             {
                 for (RetainableByteBuffer buffer : _buffers)
@@ -1985,6 +2005,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("clear {}", this);
+            checkNotReleased();
             if (_buffers.isEmpty())
                 return;
             _aggregate = null;
@@ -1998,8 +2019,10 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("append BB {} <- {}", this, BufferUtil.toDetailString(bytes));
+            checkNotReleased();
             // Cannot mutate contents if retained
-            assert !isRetained();
+            if (isRetained())
+                throw new IllegalStateException("Cannot append to a retained instance");
 
             // handle empty appends
             if (bytes == null)
@@ -2097,9 +2120,10 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("append RBB {} {}", this, retainableBytes);
-
+            checkNotReleased();
             // Cannot mutate contents if retained
-            assert !isRetained();
+            if (isRetained())
+                throw new IllegalStateException("Cannot append to a retained instance");
 
             // Optimize appending dynamics
             if (retainableBytes instanceof DynamicCapacity dynamicCapacity)
@@ -2159,6 +2183,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("add BB {} <- {}", this, BufferUtil.toDetailString(bytes));
+            checkNotReleased();
             add(RetainableByteBuffer.wrap(bytes));
             return this;
         }
@@ -2168,6 +2193,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("add RBB {} <- {}", this, bytes);
+            checkNotReleased();
             long size = size();
             long space = _maxSize - size;
             long length = bytes.size();
@@ -2188,6 +2214,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public Mutable put(byte b)
         {
+            checkNotReleased();
             ensure(1).put(b);
             return this;
         }
@@ -2195,6 +2222,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public Mutable put(long index, byte b)
         {
+            checkNotReleased();
             for (RetainableByteBuffer buffer : _buffers)
             {
                 long size = buffer.size();
@@ -2211,6 +2239,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public Mutable putShort(short s)
         {
+            checkNotReleased();
             ensure(2).putShort(s);
             return this;
         }
@@ -2218,6 +2247,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public Mutable putInt(int i)
         {
+            checkNotReleased();
             ensure(4).putInt(i);
             return this;
         }
@@ -2225,6 +2255,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public Mutable putLong(long l)
         {
+            checkNotReleased();
             ensure(8).putLong(l);
             return this;
         }
@@ -2232,6 +2263,7 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public Mutable put(byte[] bytes, int offset, int length)
         {
+            checkNotReleased();
             // Use existing aggregate if the length is large and there is space for at least half
             if (length >= 16 && _aggregate != null)
             {
@@ -2293,6 +2325,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("appendTo BB {} -> {}", this, BufferUtil.toDetailString(to));
+            checkNotReleased();
             _aggregate = null;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
@@ -2310,6 +2343,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("appendTo RBB {} -> {}", this, to);
+            checkNotReleased();
             _aggregate = null;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
@@ -2327,6 +2361,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("putTo BB {} -> {}", this, toInfillMode);
+            checkNotReleased();
             _aggregate = null;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
@@ -2342,6 +2377,7 @@ public interface RetainableByteBuffer extends Retainable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("writeTo {} -> {} {} {}", this, sink, last, callback);
+            checkNotReleased();
             _aggregate = null;
             switch (_buffers.size())
             {

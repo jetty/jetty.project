@@ -122,7 +122,7 @@ public class BadURITest
             Thread.sleep(1000);
 
             // Send a second request and verify that it hits the Handler.
-            accumulator.release();
+            accumulator.clear();
             MetaData.Request metaData2 = new MetaData.Request(
                 HttpMethod.GET.asString(),
                 HttpScheme.HTTP.asString(),
