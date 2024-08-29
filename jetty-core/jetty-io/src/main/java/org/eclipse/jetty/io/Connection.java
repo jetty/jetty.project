@@ -140,6 +140,13 @@ public interface Connection extends Closeable
         void onUpgradeTo(ByteBuffer buffer);
     }
 
+    /**
+     * <p>{@link Connection} implementations implement this interface when they
+     * can be upgraded to a different protocol. For an HTTP request it will read
+     * content from the request until EOF treating this as bytes over the new
+     * protocol.</p>
+     * <p>This is used for the {@code HttpServletRequest#upgrade()} implementation.</p>
+     */
     interface Upgrade
     {
         void upgrade();
