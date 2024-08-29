@@ -386,8 +386,11 @@ public abstract class HttpSender
         }
     }
 
-    private void internalAbort(HttpExchange exchange, Throwable failure)
+    private void internalAbort(Throwable failure)
     {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
         anyToFailure(failure);
         abortRequest(exchange);
     }
@@ -620,7 +623,7 @@ public abstract class HttpSender
         protected void onFailure(Throwable x)
         {
             failRequest(x);
-            internalAbort(exchange, x);
+            internalAbort(x);
 
             Promise<Boolean> promise = abort;
             if (promise != null)
