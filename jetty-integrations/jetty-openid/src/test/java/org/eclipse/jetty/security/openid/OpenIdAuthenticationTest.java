@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.session.FileSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.tests.OpenIdProvider;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
