@@ -426,11 +426,10 @@ public abstract class HttpSender
     @Override
     public String toString()
     {
-        return String.format("%s@%x(req=%s,channel=%s,cs=%s,failure=%s)",
+        return String.format("%s@%x(req=%s,cs=%s,failure=%s)",
             getClass().getSimpleName(),
             hashCode(),
             requestState,
-            channel,
             contentSender,
             failure);
     }
