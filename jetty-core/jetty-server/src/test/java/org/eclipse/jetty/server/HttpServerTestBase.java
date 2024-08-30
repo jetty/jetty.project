@@ -200,7 +200,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
         });
 
-        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class); Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -233,7 +233,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
         });
 
-        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class); Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -1669,12 +1669,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
 
         String line = in.readLine();
-        System.err.println(line);
         assertThat(line, containsString(" 304 "));
         while (true)
         {
             line = in.readLine();
-            System.err.println(line);
             if (line == null)
                 throw new EOFException();
             if (line.length() == 0)
@@ -1685,7 +1683,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(line, not(containsString("Transfer-Encoding")));
         }
 
-        System.err.println("---");
         line = in.readLine();
         assertThat(line, containsString(" 304 "));
         while (true)
