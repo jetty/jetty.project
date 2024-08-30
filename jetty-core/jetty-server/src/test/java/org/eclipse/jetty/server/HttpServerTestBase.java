@@ -1911,6 +1911,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         if (rbbp instanceof ArrayByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+            contents.forEach(System.err::println);
             contents.forEach(Content.Chunk::release);
             long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
             assertThat(buffersAfterRelease, greaterThan(buffersBeforeRelease));

@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.io.AbstractRetainableByteBuffer;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
@@ -169,7 +170,11 @@ public abstract class ByteBufferChunk implements Content.Chunk
         @Override
         public String toString()
         {
-            return "%s[%s]".formatted(super.toString(), retainable);
+            Retainable r = retainable;
+            while (r instanceof Retainable.Wrapper wrapper)
+                r = wrapper.getWrapped();
+
+            return "Chunk.%s[%s]".formatted(super.toString(), r instanceof AbstractRetainableByteBuffer abstractBuffer ? abstractBuffer.toReferenceString() : r.toString());
         }
     }
 }

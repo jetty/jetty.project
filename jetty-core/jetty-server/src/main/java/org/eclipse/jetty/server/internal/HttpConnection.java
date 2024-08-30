@@ -66,6 +66,7 @@ import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -341,9 +342,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("releaseRequestBuffer {}", this);
-            if (_retainableByteBuffer.release())
-                _retainableByteBuffer = null;
-            else
+            RetainableByteBuffer buffer = _retainableByteBuffer;
+            _retainableByteBuffer = null;
+            if (!buffer.release())
                 throw new IllegalStateException("unreleased buffer " + _retainableByteBuffer);
         }
     }
@@ -457,6 +458,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         finally
         {
             setCurrentConnection(last);
+
+            // If handling has completed
+            if (_stream.get() == null && _retainableByteBuffer != null)
+            {
+                _retainableByteBuffer.release();
+                _retainableByteBuffer = null;
+            }
             if (LOG.isDebugEnabled())
                 LOG.debug("<<onFillable exit {} {} {}", this, _httpChannel, _retainableByteBuffer);
         }
@@ -906,12 +914,20 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         protected void onCompleteSuccess()
         {
+            if (_shutdownOut)
+            {
+                HttpStreamOverHTTP1 stream = _stream.get();
+                if (stream == null || !stream._upgraded)
+                    getEndPoint().shutdownOutput();
+            }
             release().succeeded();
         }
 
         @Override
         public void onCompleteFailure(final Throwable x)
         {
+            if (_shutdownOut)
+                getEndPoint().shutdownOutput();
             failedCallback(release(), x);
         }
 
@@ -1088,6 +1104,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         private HostPortHttpField _hostField;
         private MetaData.Request _request;
         private HttpField _upgrade = null;
+        private boolean _upgraded;
         private Content.Chunk _chunk;
         private boolean _connectionClose = false;
         private boolean _connectionKeepAlive = false;
@@ -1470,7 +1487,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             HttpFields.Mutable response101 = HttpFields.build();
             Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _request, response101);
-            if (upgradeConnection == null)
+            if (upgradeConnection == null || !(_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
@@ -1484,6 +1501,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrading from {} to {}", getEndPoint().getConnection(), upgradeConnection);
+            _upgraded = true;
             getEndPoint().upgrade(upgradeConnection);
 
             return true;
@@ -1513,8 +1531,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
-            Connection upgradeConnection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
-            if (upgradeConnection != null)
+            if (_upgraded && _httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection upgradeConnection)
             {
                 getEndPoint().upgrade(upgradeConnection);
                 _httpChannel.recycle();
@@ -1523,12 +1540,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
-            // As this is not an upgrade, we can shutdown the output if we know we are not persistent
-            if (_sendCallback._shutdownOut)
-                getEndPoint().shutdownOutput();
+            // if we still need to shutdown we will close now, as no further reading can be done.
+            if (_sendCallback._shutdownOut && !getEndPoint().isOutputShutdown())
+                IO.close(getEndPoint());
 
             _httpChannel.recycle();
-
 
             // If a 100 Continue is still expected to be sent, but no content was read, then
             // close the parser so that seeks EOF below, not the next request.
