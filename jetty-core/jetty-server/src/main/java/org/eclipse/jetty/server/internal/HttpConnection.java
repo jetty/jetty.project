@@ -371,11 +371,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             while (getEndPoint().isOpen())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("onFillable fill and parse {} {} {}", this, _httpChannel, _retainableByteBuffer);
-
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onFillable filled {} {} {} {}", filled, this, _httpChannel, _retainableByteBuffer);
+
                 if (filled < 0 && getEndPoint().isOutputShutdown())
                     close();
 
@@ -1523,12 +1523,17 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
+            // as this is not an upgrade, we can shutdown the output if we know we are not persistent
+            if (_sendCallback._shutdownOut)
+                getEndPoint().shutdownOutput();
+
             _httpChannel.recycle();
 
+
+            // If we are still expecting 100 Continue and no content was read, then
+            // close the parser so that below it seeks EOF, not the next request.
             if (_expects100Continue)
             {
-                // No content was read, and no 100 Continue response was sent.
-                // Close the parser so that below it seeks EOF, not the next request.
                 _expects100Continue = false;
                 _parser.close();
             }
@@ -1541,7 +1546,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 else
                     _parser.close();
             }
-
             _generator.reset();
 
             // Can the onFillable thread continue processing
@@ -1551,9 +1555,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // we need to organized further processing
             if (LOG.isDebugEnabled())
                 LOG.debug("non-current completion {}", this);
-
-            if (_sendCallback._shutdownOut)
-                getEndPoint().shutdownOutput();
 
             // If we are looking for the next request
             if (_parser.isStart())
