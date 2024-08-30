@@ -1523,15 +1523,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
-            // as this is not an upgrade, we can shutdown the output if we know we are not persistent
+            // As this is not an upgrade, we can shutdown the output if we know we are not persistent
             if (_sendCallback._shutdownOut)
                 getEndPoint().shutdownOutput();
 
             _httpChannel.recycle();
 
 
-            // If we are still expecting 100 Continue and no content was read, then
-            // close the parser so that below it seeks EOF, not the next request.
+            // If a 100 Continue is still expected to be sent, but no content was read, then
+            // close the parser so that seeks EOF below, not the next request.
             if (_expects100Continue)
             {
                 _expects100Continue = false;
