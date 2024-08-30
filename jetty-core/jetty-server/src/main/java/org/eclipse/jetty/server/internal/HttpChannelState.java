@@ -130,8 +130,8 @@ public class HttpChannelState implements HttpChannel, Components
     {
         _connectionMetaData = connectionMetaData;
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
-        _readInvoker = new HttpChannelSerializedInvoker();
-        _writeInvoker = new HttpChannelSerializedInvoker();
+        _readInvoker = new HttpChannelSerializedInvoker(HttpChannelState.class.getSimpleName() + "_readInvoker");
+        _writeInvoker = new HttpChannelSerializedInvoker(HttpChannelState.class.getSimpleName() + "_writeInvoker");
     }
 
     @Override
@@ -1825,6 +1825,11 @@ public class HttpChannelState implements HttpChannel, Components
 
     private class HttpChannelSerializedInvoker extends SerializedInvoker
     {
+        public HttpChannelSerializedInvoker(String name)
+        {
+            super(name);
+        }
+
         @Override
         protected void onError(Runnable task, Throwable failure)
         {

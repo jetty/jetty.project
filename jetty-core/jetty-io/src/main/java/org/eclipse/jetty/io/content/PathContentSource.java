@@ -41,7 +41,7 @@ public class PathContentSource implements Content.Source
     // TODO in 12.1.x reimplement this class based on ByteChannelContentSource
 
     private final AutoLock lock = new AutoLock();
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker = new SerializedInvoker(PathContentSource.class);
     private final Path path;
     private final long length;
     private final ByteBufferPool byteBufferPool;

@@ -67,7 +67,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final HttpChannelOverFCGI channel;
     private RetainableByteBuffer networkBuffer;
     private Object attachment;
-    private Runnable action;
+    private State state = State.STATUS;
     private long idleTimeout;
     private boolean shutdown;
 
@@ -168,7 +168,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.networkBuffer = null;
     }
 
-    boolean parseAndFill()
+    boolean parseAndFill(boolean notifyContentAvailable)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parseAndFill {}", networkBuffer);
@@ -179,7 +179,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             while (true)
             {
-                if (parse(networkBuffer.getByteBuffer()))
+                if (parse(networkBuffer.getByteBuffer(), notifyContentAvailable))
                     return false;
 
                 if (networkBuffer.isRetained())
@@ -214,13 +214,35 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         }
     }
 
-    private boolean parse(ByteBuffer buffer)
+    private boolean parse(ByteBuffer buffer, boolean notifyContentAvailable)
     {
-        boolean parse = parser.parse(buffer);
-        Runnable action = getAndSetAction(null);
-        if (action != null)
-            action.run();
-        return parse;
+        boolean handle = parser.parse(buffer);
+
+        switch (state)
+        {
+            case STATUS ->
+            {
+                // Nothing to do.
+            }
+            case HEADERS -> channel.responseHeaders();
+            case CONTENT ->
+            {
+                if (notifyContentAvailable)
+                    channel.responseContentAvailable();
+            }
+            case COMPLETE ->
+            {
+                // For the complete event, handle==false, and cannot
+                // differentiate between a complete event and a parse()
+                // with zero or not enough bytes, so the state is reset
+                // here to avoid calling responseSuccess() again.
+                state = State.STATUS;
+                channel.responseSuccess();
+            }
+            default -> throw new IllegalStateException("Invalid state " + state);
+        }
+
+        return handle;
     }
 
     private void shutdown()
@@ -318,13 +340,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         }, x -> close(failure)));
     }
 
-    private Runnable getAndSetAction(Runnable action)
-    {
-        Runnable r = this.action;
-        this.action = action;
-        return r;
-    }
-
     protected HttpChannelOverFCGI newHttpChannel()
     {
         return new HttpChannelOverFCGI(this);
@@ -414,6 +429,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onBegin r={},c={},reason={}", request, code, reason);
+            state = State.STATUS;
             channel.responseBegin(code, reason);
         }
 
@@ -430,8 +446,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onHeaders r={} {}", request, networkBuffer);
-            if (getAndSetAction(channel::responseHeaders) != null)
-                throw new IllegalStateException();
+            state = State.HEADERS;
             return true;
         }
 
@@ -444,13 +459,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             {
                 case STD_OUT ->
                 {
-                    // No need to call networkBuffer.retain() here, since we know
-                    // that the action will be run before releasing the networkBuffer.
-                    // The receiver of the chunk decides whether to consume/retain it.
                     Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
-                    if (getAndSetAction(() -> channel.content(chunk)) == null)
-                        return true;
-                    throw new IllegalStateException();
+                    channel.content(chunk);
+                    state = State.CONTENT;
+                    return true;
                 }
                 case STD_ERR -> LOG.info(BufferUtil.toUTF8String(buffer));
                 default -> throw new IllegalArgumentException();
@@ -464,6 +476,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             if (LOG.isDebugEnabled())
                 LOG.debug("onEnd r={}", request);
             channel.end();
+            state = State.COMPLETE;
         }
 
         @Override
@@ -473,5 +486,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                 LOG.debug("onFailure request={}", request, failure);
             failAndClose(failure);
         }
+    }
+
+    private enum State
+    {
+        STATUS, HEADERS, CONTENT, COMPLETE
     }
 }
