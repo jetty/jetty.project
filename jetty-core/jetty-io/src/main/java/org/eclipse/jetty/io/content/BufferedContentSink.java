@@ -44,7 +44,7 @@ public class BufferedContentSink implements Content.Sink
 
     private final Content.Sink _delegate;
     private final RetainableByteBuffer.DynamicCapacity _aggregator;
-    private final SerializedInvoker _serializer = new SerializedInvoker();
+    private final SerializedInvoker _serializer = new SerializedInvoker(BufferedContentSink.class);
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
