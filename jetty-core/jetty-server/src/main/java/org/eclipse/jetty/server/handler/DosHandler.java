@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -32,6 +33,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -41,7 +43,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * A Denial of Service Handler.
  * <p>Protect from denial of service attacks by limiting the request rate from remote hosts</p>
  */
-@ManagedObject("DOS Prevention Handler")
+@ManagedObject("DoS Prevention Handler")
 public class DosHandler extends ConditionalHandler.ElseNext
 {
     /**
@@ -88,22 +90,33 @@ public class DosHandler extends ConditionalHandler.ElseNext
      */
     public interface RateControl
     {
+        /**
+         * Calculate if the rate is exceeded at the given time
+         * @param now The {@link NanoTime#now()} at which to calculate the rate
+         * @param addSample If {@code true} then a sample is added to the rate being calculated
+         * @return {@code true} if the rate is currently exceeded
+         */
         boolean isRateExceeded(long now, boolean addSample);
 
+        /**
+         * Check if the tracker is now idle
+         * @param now The {@link NanoTime#now()} at which to calculate the rate
+         * @return {@code true} if the rate is currently near zero
+         */
         boolean isIdle(long now);
-    }
 
-    /**
-     * A factory to create new {@link RateControl} instances
-     */
-    public interface RateControlFactory
-    {
-        RateControl newRate();
+        /**
+         * A factory to create new {@link RateControl} instances
+         */
+        interface Factory
+        {
+            RateControl newRate();
+        }
     }
 
     private final Map<String, Tracker> _trackers = new ConcurrentHashMap<>();
     private final Function<Request, String> _getId;
-    private final RateControlFactory _rateControlFactory;
+    private final RateControl.Factory _rateControlFactory;
     private final Request.Handler _rejectHandler;
     private final int _maxTrackers;
     private CyclicTimeouts<Tracker> _cyclicTimeouts;
@@ -142,7 +155,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
      */
     public DosHandler(
         @Name("getId") Function<Request, String> getId,
-        @Name("rateFactory") RateControlFactory rateControlFactory,
+        @Name("rateFactory") RateControl.Factory rateControlFactory,
         @Name("rejectHandler") Request.Handler rejectHandler,
         @Name("maxTrackers") int maxTrackers)
     {
@@ -159,7 +172,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
     public DosHandler(
         @Name("handler") Handler handler,
         @Name("getId") Function<Request, String> getId,
-        @Name("rateFactory") RateControlFactory rateControlFactory,
+        @Name("rateFactory") RateControl.Factory rateControlFactory,
         @Name("rejectHandler") Request.Handler rejectHandler,
         @Name("maxTrackers") int maxTrackers)
     {
@@ -170,7 +183,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
         _rateControlFactory = Objects.requireNonNull(rateControlFactory);
         installBean(_rateControlFactory);
         _maxTrackers = maxTrackers <= 0 ? 10_000 : maxTrackers;
-        _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, TooManyRequestsRejectHandler::new);
+        _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, StatusRejectHandler::new);
         installBean(_rejectHandler);
     }
 
@@ -186,8 +199,14 @@ public class DosHandler extends ConditionalHandler.ElseNext
     protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
         // Reject if we have too many Trackers
-        if (_maxTrackers > 0 && _trackers.size() > _maxTrackers)
-            return _rejectHandler.handle(request, response, callback);
+        if (_maxTrackers > 0 && _trackers.size() >= _maxTrackers)
+        {
+            // Try shrinking the tracker pool
+            long now = NanoTime.now();
+            _trackers.values().removeIf(tracker -> tracker.isIdle(now));
+            if (_trackers.size() >= _maxTrackers)
+                return _rejectHandler.handle(request, response, callback);
+        }
 
         // Calculate an id for the request (which may be global empty string)
         String id;
@@ -226,7 +245,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
             @Override
             protected boolean onExpired(Tracker tracker)
             {
-                return tracker.isIdle(System.nanoTime());
+                return tracker.isIdle(NanoTime.now());
             }
         };
         super.doStart();
@@ -254,7 +273,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
         {
             _id = id;
             _rateControl = rateControl;
-            _expireAt = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+            _expireAt = NanoTime.now() + TimeUnit.SECONDS.toNanos(2);
         }
 
         public String getId()
@@ -307,11 +326,11 @@ public class DosHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * A {@link RateControlFactory} that uses an
+     * A {@link RateControl.Factory} that uses an
      * <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">Exponential Moving Average</a>
      * to limit the request rate to a maximum number of requests per second.
      */
-    public static class ExponentialMovingAverageRateControlFactory implements RateControlFactory
+    public static class ExponentialMovingAverageRateControlFactory implements RateControl.Factory
     {
         private final long _samplePeriod;
         private final double _alpha;
@@ -355,7 +374,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
             private ExponentialMovingAverageRateControl()
             {
-                _sampleStart = System.nanoTime();
+                _sampleStart = NanoTime.now();
             }
 
             @Override
@@ -367,7 +386,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
                 long elapsedTime = now - _sampleStart;
 
-                // We calculate the rate if:
+                // We calculate the moving average if:
                 //    + we didn't add a sample
                 //    + the sample exceeds the rate
                 //    + the sample period has been exceeded
@@ -415,22 +434,40 @@ public class DosHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * A Handler to reject DOS requests with {@link HttpStatus#TOO_MANY_REQUESTS_429}.
+     * A Handler to reject DoS requests with a status code or failure.
      */
-    public static class EnhanceYourCalmRejectHandler implements Request.Handler
+    public static class StatusRejectHandler implements Request.Handler
     {
+        private final int _status;
+
+        public StatusRejectHandler()
+        {
+            this(-1);
+        }
+
+        /**
+         * @param status The status used to reject a request, or 0 to fail the request or -1 for a default ({@link HttpStatus#TOO_MANY_REQUESTS_429}.
+         */
+        public StatusRejectHandler(int status)
+        {
+            _status = status >= 0 ? status : HttpStatus.TOO_MANY_REQUESTS_429;
+        }
+
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            Response.writeError(request, response, callback, HttpStatus.TOO_MANY_REQUESTS_429);
+            if (_status == 0)
+                callback.failed(new RejectedExecutionException());
+            else
+                Response.writeError(request, response, callback, _status);
             return true;
         }
     }
 
     /**
-     * A Handler to reject DOS requests with {@link HttpStatus#TOO_MANY_REQUESTS_429}.
+     * A Handler to reject DoS requests after first delaying them.
      */
-    public static class TooManyRequestsRejectHandler extends Handler.Abstract
+    public static class DelayedRejectHandler extends Handler.Abstract
     {
         record Exchange(Request request, Response response, Callback callback)
         {}
@@ -439,23 +476,27 @@ public class DosHandler extends ConditionalHandler.ElseNext
         private final Deque<Exchange> _delayQueue = new ArrayDeque<>();
         private final int _maxDelayQueue;
         private final long _delayMs;
+        private final Request.Handler _reject;
         private Scheduler _scheduler;
 
-        public TooManyRequestsRejectHandler()
+        public DelayedRejectHandler()
         {
-            this(1000, 1000);
+            this(-1, -1, null);
         }
 
         /**
-         * @param delayMs The delay in milliseconds to hold rejected requests before sending a response
-         * @param maxDelayQueue The maximum number of delayed requests to hold.
+         * @param delayMs The delay in milliseconds to hold rejected requests before sending a response or -1 for a default (1000ms)
+         * @param maxDelayQueue The maximum number of delayed requests to hold or -1 for a default (1000ms).
+         * @param reject The {@link Request.Handler} used to reject {@link Request}s or null for a default ({@link HttpStatus#TOO_MANY_REQUESTS_429}).
          */
-        public TooManyRequestsRejectHandler(
+        public DelayedRejectHandler(
             @Name("delayMs") long delayMs,
-            @Name("maxDelayQueue") int maxDelayQueue)
+            @Name("maxDelayQueue") int maxDelayQueue,
+            @Name("reject") Request.Handler reject)
         {
-            _delayMs = delayMs;
-            _maxDelayQueue = maxDelayQueue;
+            _delayMs = delayMs >= 0 ? delayMs : 1000;
+            _maxDelayQueue = maxDelayQueue >= 0 ? maxDelayQueue : 1000;
+            _reject = Objects.requireNonNullElseGet(reject, () -> new StatusRejectHandler(HttpStatus.TOO_MANY_REQUESTS_429));
         }
 
         @Override
@@ -482,7 +523,8 @@ public class DosHandler extends ConditionalHandler.ElseNext
                 while (_delayQueue.size() >= _maxDelayQueue)
                 {
                     Exchange exchange = _delayQueue.removeFirst();
-                    Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.TOO_MANY_REQUESTS_429);
+                    if (!_reject.handle(exchange.request, exchange.response, exchange.callback))
+                        exchange.callback.failed(new RejectedExecutionException());
                 }
 
                 if (_delayQueue.isEmpty())
@@ -494,7 +536,7 @@ public class DosHandler extends ConditionalHandler.ElseNext
 
         private void onTick()
         {
-            long expired = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(_delayMs);
+            long expired = NanoTime.now() - TimeUnit.MILLISECONDS.toNanos(_delayMs);
 
             try (AutoLock ignored = _lock.lock())
             {

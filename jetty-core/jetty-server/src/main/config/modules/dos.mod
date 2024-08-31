@@ -39,8 +39,11 @@ etc/jetty-dos.xml
 ## The maximum number of requests to be held in the delay queue
 #jetty.dos.maxDelayQueueSize=1000
 
-## The maximum number of clients to track or -1 for a default value
+## The maximum number of clients to track; or -1 for a default value
 #jetty.dos.maxTrackers=10000
+
+## The status code used to reject requests; or 0 to abort the request; or -1 for a default
+#jetty.dos.rejectStatus=429
 
 ## List of InetAddress patterns to include
 #jetty.dos.include.inet=10.10.10-14.0-128
