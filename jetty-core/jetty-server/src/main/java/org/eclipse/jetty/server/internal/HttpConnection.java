@@ -914,12 +914,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         protected void onCompleteSuccess()
         {
-            if (_shutdownOut)
-            {
-                HttpStreamOverHTTP1 stream = _stream.get();
-                if (stream == null || !stream._upgraded)
-                    getEndPoint().shutdownOutput();
-            }
+            if (_shutdownOut && !(_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection))
+                getEndPoint().shutdownOutput();
             release().succeeded();
         }
 
@@ -1104,7 +1100,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         private HostPortHttpField _hostField;
         private MetaData.Request _request;
         private HttpField _upgrade = null;
-        private boolean _upgraded;
         private Content.Chunk _chunk;
         private boolean _connectionClose = false;
         private boolean _connectionKeepAlive = false;
@@ -1487,7 +1482,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             HttpFields.Mutable response101 = HttpFields.build();
             Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _request, response101);
-            if (upgradeConnection == null || !(_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection))
+            if (upgradeConnection == null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
@@ -1501,7 +1496,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrading from {} to {}", getEndPoint().getConnection(), upgradeConnection);
-            _upgraded = true;
             getEndPoint().upgrade(upgradeConnection);
 
             return true;
@@ -1531,7 +1525,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
-            if (_upgraded && _httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection upgradeConnection)
+            if (_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection upgradeConnection)
             {
                 getEndPoint().upgrade(upgradeConnection);
                 _httpChannel.recycle();
@@ -1540,7 +1534,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
-            // if we still need to shutdown we will close now, as no further reading can be done.
+            // Failsafe shutdown (should have been done by SendCallback)
             if (_sendCallback._shutdownOut && !getEndPoint().isOutputShutdown())
                 IO.close(getEndPoint());
 
