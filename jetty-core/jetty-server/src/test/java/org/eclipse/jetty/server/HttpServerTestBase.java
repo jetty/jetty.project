@@ -52,11 +52,15 @@ import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +72,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1086,6 +1091,56 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
+    public void testCloseWhileCompletePending() throws Exception
+    {
+        String content = "The End!\r\n";
+        CountDownLatch handleComplete = new CountDownLatch(1);
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                FutureCallback writeComplete = new FutureCallback();
+                Content.Sink.write(response, true, content, writeComplete);
+                // Wait until the write is complete
+                writeComplete.get(30, TimeUnit.SECONDS);
+
+                // Wait until test lets the handling complete
+                assertTrue(handleComplete.await(30, TimeUnit.SECONDS));
+
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write("""
+                   GET / HTTP/1.1\r
+                   Host: localhost:%d\r
+                   Connection: close\r
+                   \r
+                   """.formatted(_serverURI.getPort())
+                .getBytes());
+            output.flush();
+
+            client.setSoTimeout(5000);
+            long start = NanoTime.now();
+            HttpTester.Input input = HttpTester.from(client.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(content, response.getContent());
+            assertFalse(input.isEOF());
+            assertEquals(-1, input.fillBuffer());
+            assertTrue(input.isEOF());
+            assertThat(NanoTime.secondsSince(start), lessThan(5L));
+
+        }
+        handleComplete.countDown();
+    }
+
+    @Test
     public void testBigBlocks() throws Exception
     {
         startServer(new BigBlockHandler());
@@ -1813,8 +1868,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    @Test
-    public void testHoldContent() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false /* TODO, true */})
+    public void testHoldContent(boolean close) throws Exception
     {
         Queue<Content.Chunk> contents = new ConcurrentLinkedQueue<>();
         final int bufferSize = 1024;
@@ -1857,6 +1913,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
 
                 response.setStatus(200);
+
+                if (close)
+                    request.getConnectionMetaData().getConnection().getEndPoint().close();
+
                 callback.succeeded();
                 return true;
             }
@@ -1897,9 +1957,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             out.flush();
 
             // check the response
-            HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
-            assertNotNull(response);
-            assertThat(response.getStatus(), is(200));
+            if (!close)
+            {
+                HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+                assertNotNull(response);
+                assertThat(response.getStatus(), is(200));
+            }
         }
 
         assertTrue(closed.await(10, TimeUnit.SECONDS));

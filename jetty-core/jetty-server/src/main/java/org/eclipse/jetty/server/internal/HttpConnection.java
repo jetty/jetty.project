@@ -318,15 +318,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public ByteBuffer onUpgradeFrom()
     {
-        if (!isRequestBufferEmpty())
+        if (isRequestBufferEmpty())
         {
-            ByteBuffer unconsumed = ByteBuffer.allocateDirect(_retainableByteBuffer.remaining());
-            unconsumed.put(_retainableByteBuffer.getByteBuffer());
-            unconsumed.flip();
             releaseRequestBuffer();
-            return unconsumed;
+            return null;
         }
-        return null;
+        ByteBuffer unconsumed = ByteBuffer.allocateDirect(_retainableByteBuffer.remaining());
+        unconsumed.put(_retainableByteBuffer.getByteBuffer());
+        unconsumed.flip();
+        releaseRequestBuffer();
+        return unconsumed;
     }
 
     @Override
@@ -341,10 +342,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("releaseRequestBuffer {}", this);
-            if (_retainableByteBuffer.release())
-                _retainableByteBuffer = null;
-            else
-                throw new IllegalStateException("unreleased buffer " + _retainableByteBuffer);
+            RetainableByteBuffer buffer = _retainableByteBuffer;
+            _retainableByteBuffer = null;
+            if (!buffer.release())
+                throw new IllegalStateException("unreleased buffer " + buffer);
         }
     }
 
@@ -369,7 +370,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         HttpConnection last = setCurrentConnection(this);
         try
         {
-            while (getEndPoint().isOpen())
+            // We must loop until we fill -1 or there is an async pause in handling.
+            // Note that the endpoint might already be closed in some special circumstances.
+            while (true)
             {
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
@@ -906,6 +909,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         protected void onCompleteSuccess()
         {
+            // If we are a non-persistent connection and have succeeded the last write...
+            if (_shutdownOut && !(_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection))
+            {
+                // then we shutdown the output here so that the client sees the body termination ASAP and
+                // cannot be delayed by any further server handling before the stream callback is completed.
+                getEndPoint().shutdownOutput();
+            }
             release().succeeded();
         }
 
@@ -1513,8 +1523,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
-            Connection upgradeConnection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
-            if (upgradeConnection != null)
+            if (_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection upgradeConnection)
             {
                 getEndPoint().upgrade(upgradeConnection);
                 _httpChannel.recycle();
@@ -1523,12 +1532,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 return;
             }
 
-            // As this is not an upgrade, we can shutdown the output if we know we are not persistent
-            if (_sendCallback._shutdownOut)
-                getEndPoint().shutdownOutput();
-
             _httpChannel.recycle();
-
 
             // If a 100 Continue is still expected to be sent, but no content was read, then
             // close the parser so that seeks EOF below, not the next request.
