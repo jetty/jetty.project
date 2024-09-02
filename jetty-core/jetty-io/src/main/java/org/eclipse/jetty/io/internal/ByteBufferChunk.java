@@ -169,7 +169,7 @@ public abstract class ByteBufferChunk implements Content.Chunk
         @Override
         public String toString()
         {
-            return "Chunk@%x.%s[%s]".formatted(hashCode(), super.toString(), retainable);
+            return "%s[%s]".formatted(super.toString(), retainable);
         }
     }
 }
