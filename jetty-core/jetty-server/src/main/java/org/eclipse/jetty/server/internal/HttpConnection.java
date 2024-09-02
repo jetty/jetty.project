@@ -66,7 +66,6 @@ import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -345,7 +344,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             RetainableByteBuffer buffer = _retainableByteBuffer;
             _retainableByteBuffer = null;
             if (!buffer.release())
-                throw new IllegalStateException("unreleased buffer " + _retainableByteBuffer);
+                throw new IllegalStateException("unreleased buffer " + buffer);
         }
     }
 
@@ -370,7 +369,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         HttpConnection last = setCurrentConnection(this);
         try
         {
-            while (getEndPoint().isOpen())
+            while (true)
             {
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
@@ -423,6 +422,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 }
                 else if (filled < 0)
                 {
+                    releaseRequestBuffer();
                     getEndPoint().shutdownOutput();
                     break;
                 }
@@ -1536,7 +1536,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             // Failsafe shutdown (should have been done by SendCallback)
             if (_sendCallback._shutdownOut && !getEndPoint().isOutputShutdown())
-                IO.close(getEndPoint());
+                getEndPoint().shutdownOutput();
 
             _httpChannel.recycle();
 

@@ -52,7 +52,9 @@ import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
@@ -68,6 +70,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1083,6 +1086,59 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 assertThat(response, startsWith("HTTP/1.1 200 OK"));
             }
         }
+    }
+
+    @Test
+    public void testCloseWhileCompletePending() throws Exception
+    {
+        CountDownLatch handleComplete = new CountDownLatch(1);
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                FutureCallback writeComplete = new FutureCallback();
+                Content.Sink.write(response, true, "The End!\r\n", writeComplete);
+                // Wait until the write is complete
+                writeComplete.get(30, TimeUnit.SECONDS);
+
+                // Wait until test lets the handling complete
+                assertTrue(handleComplete.await(30, TimeUnit.SECONDS));
+
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write("""
+                   GET / HTTP/1.1\r
+                   Host: localhost:%d\r
+                   Connection: close\r
+                   \r
+                   """.formatted(_serverURI.getPort())
+                .getBytes());
+            os.flush();
+
+            // We can read to EOF even though handling is not complete.
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            String line = in.readLine();
+            assertThat(line, is("HTTP/1.1 200 OK"));
+
+            long start = NanoTime.now();
+            boolean theEnd = false;
+            while (line != null)
+            {
+                theEnd |= "The End!".equals(line);
+                line = in.readLine();
+            }
+            assertThat(NanoTime.secondsSince(start), lessThan(5L));
+            assertTrue(theEnd);
+        }
+        handleComplete.countDown();
     }
 
     @Test
