@@ -563,7 +563,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parsed {} {}", this, handle, _parser);
+            LOG.debug("{} parsed {} {} {}", this, handle, _parser, _retainableByteBuffer);
 
         // recycle buffer ?
         if (_retainableByteBuffer != null && !_retainableByteBuffer.isRetained())
