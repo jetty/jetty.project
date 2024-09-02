@@ -370,6 +370,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         HttpConnection last = setCurrentConnection(this);
         try
         {
+            // We must iterate until we fill -1 or there is an async pause in handling
+            // Note that the endpoint might already be closed in some special circumstances.
             while (true)
             {
                 // Fill the request buffer (if needed).
@@ -908,7 +910,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         protected void onCompleteSuccess()
         {
+            // If we are a non-persistent connection and have succeeded the last write...
             if (_shutdownOut && !(_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection))
+                // then we shutdown the output here so that the client sees the body termination ASAP and cannot be delayed
+                // by any further server handling before the stream callback is completed.
                 getEndPoint().shutdownOutput();
             release().succeeded();
         }
