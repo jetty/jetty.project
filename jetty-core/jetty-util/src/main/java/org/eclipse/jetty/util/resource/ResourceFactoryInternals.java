@@ -19,7 +19,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.IO;
@@ -40,21 +42,19 @@ class ResourceFactoryInternals
     /**
      * The Index (Map) of URI schemes to ResourceFactory implementations that is used by {@link CompositeResourceFactory}
      */
-    static final Index.Mutable<ResourceFactory> RESOURCE_FACTORIES = new Index.Builder<ResourceFactory>()
-        .caseSensitive(false)
-        .mutable()
-        .build();
+    static final Index.Mutable<ResourceFactory> RESOURCE_FACTORIES;
 
     static
     {
+        Map<String, ResourceFactory> entries = new HashMap<>();
         CURRENT_WORKING_DIR = Path.of(System.getProperty("user.dir"));
 
         // The default resource factories
         MountedPathResourceFactory mountedPathResourceFactory = new MountedPathResourceFactory();
-        RESOURCE_FACTORIES.put("jar", mountedPathResourceFactory);
+        entries.put("jar", mountedPathResourceFactory);
         PathResourceFactory pathResourceFactory = new PathResourceFactory();
-        RESOURCE_FACTORIES.put("file", pathResourceFactory);
-        RESOURCE_FACTORIES.put("jrt", pathResourceFactory);
+        entries.put("file", pathResourceFactory);
+        entries.put("jrt", pathResourceFactory);
 
         /* Best-effort attempt to support an alternate FileSystem type that is in use for classpath
          * resources.
@@ -64,7 +64,7 @@ class ResourceFactoryInternals
          * resource as a reference.
          */
         URL url = ResourceFactoryInternals.class.getResource("/org/eclipse/jetty/version/build.properties");
-        if ((url != null) && !RESOURCE_FACTORIES.contains(url.getProtocol()))
+        if ((url != null) && !entries.containsKey(url.getProtocol()))
         {
             ResourceFactory resourceFactory;
             if (GraalIssue5720PathResource.isAffectedURL(url))
@@ -76,8 +76,13 @@ class ResourceFactoryInternals
                 resourceFactory = url.toString().contains("!/") ? mountedPathResourceFactory : pathResourceFactory;
             }
 
-            RESOURCE_FACTORIES.put(url.getProtocol(), resourceFactory);
+            entries.put(url.getProtocol(), resourceFactory);
         }
+
+        RESOURCE_FACTORIES = new Index.Builder<ResourceFactory>().caseSensitive(false)
+            .withAll(() -> entries)
+            .mutable()
+            .build();
     }
 
     static ResourceFactory ROOT = new CompositeResourceFactory()
