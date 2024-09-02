@@ -14,15 +14,15 @@
 [[dump]]
 = Jetty Component Dump
 
-Jetty is based on components organized as a tree, with the `Server` instance at the root of the tree.
+Jetty is based on components organized as a tree of Objects (aka beans), with the `Server` or `Client` instance typically at the root of the tree.
 
 As explained in the xref:operations-guide:jmx/index.adoc[JMX section], these components can be exported as JMX MBeans and therefore be accessible from JMX Consoles such as Java Missions Control (JMC).
 
-Being able to take a snapshot of the state of Jetty while it is running is the most useful information that can be attached when reporting an issue.
-Such state includes:
+Being able to take a snapshot of a Jetty component tree while it is running is the most useful information that can be attached when reporting an issue as it can contain both configuration and current state of Jetty.
+A dump of the component tree for the Server includes:
 
 * The thread pool configuration and its current state, including how many threads are in use, and their stack trace.
-* The TLS configuration.
+* The Connector configuration (including TLS configuration), state and statistics.
 * The I/O configuration and its current state, including the ports Jetty listens to, how many connections are currently open, and he state of each connection, and the state of the request/response handling for each connection.
 * The `Handler` structure and its configuration.
 * The web applications deployed and their configurations, including the class loader information.
