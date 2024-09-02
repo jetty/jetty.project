@@ -1093,6 +1093,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testCloseWhileCompletePending() throws Exception
     {
+        String content = "The End!\r\n";
         CountDownLatch handleComplete = new CountDownLatch(1);
         startServer(new Handler.Abstract()
         {
@@ -1100,7 +1101,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 FutureCallback writeComplete = new FutureCallback();
-                Content.Sink.write(response, true, "The End!\r\n", writeComplete);
+                Content.Sink.write(response, true, content, writeComplete);
                 // Wait until the write is complete
                 writeComplete.get(30, TimeUnit.SECONDS);
 
@@ -1114,31 +1115,27 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
-            OutputStream os = client.getOutputStream();
-
-            os.write("""
+            OutputStream output = client.getOutputStream();
+            output.write("""
                    GET / HTTP/1.1\r
                    Host: localhost:%d\r
                    Connection: close\r
                    \r
                    """.formatted(_serverURI.getPort())
                 .getBytes());
-            os.flush();
+            output.flush();
 
-            // We can read to EOF even though handling is not complete.
-            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            String line = in.readLine();
-            assertThat(line, is("HTTP/1.1 200 OK"));
-
+            client.setSoTimeout(5000);
             long start = NanoTime.now();
-            boolean theEnd = false;
-            while (line != null)
-            {
-                theEnd |= "The End!".equals(line);
-                line = in.readLine();
-            }
+            HttpTester.Input input = HttpTester.from(client.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(content, response.getContent());
+            assertFalse(input.isEOF());
+            assertEquals(-1, input.fillBuffer());
+            assertTrue(input.isEOF());
             assertThat(NanoTime.secondsSince(start), lessThan(5L));
-            assertTrue(theEnd);
+
         }
         handleComplete.countDown();
     }

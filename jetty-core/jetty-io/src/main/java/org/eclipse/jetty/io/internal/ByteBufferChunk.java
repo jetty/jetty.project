@@ -17,10 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.eclipse.jetty.io.AbstractRetainableByteBuffer;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
@@ -143,7 +140,6 @@ public abstract class ByteBufferChunk implements Content.Chunk
 
     public static class WithRetainable extends ByteBufferChunk
     {
-        private static final Pattern RC_VALUE = Pattern.compile(".*\\[(rc=[^,]*),.*");
         private final Retainable retainable;
 
         public WithRetainable(ByteBuffer byteBuffer, boolean last, Retainable retainable)
@@ -173,20 +169,7 @@ public abstract class ByteBufferChunk implements Content.Chunk
         @Override
         public String toString()
         {
-            Retainable r = retainable;
-            String s = String.valueOf(r);
-
-            // Optimization to avoid double output if the retainable is the buffer itself.
-            while (r instanceof Retainable.Wrapper wrapper)
-                r = wrapper.getWrapped();
-            if (r instanceof AbstractRetainableByteBuffer)
-            {
-                Matcher matcher = RC_VALUE.matcher(r.toString());
-                if (matcher.find())
-                    s = matcher.group(1);
-            }
-
-            return "Chunk@%x.%s[%s]".formatted(hashCode(), super.toString(), s);
+            return "Chunk@%x.%s[%s]".formatted(hashCode(), super.toString(), retainable);
         }
     }
 }
