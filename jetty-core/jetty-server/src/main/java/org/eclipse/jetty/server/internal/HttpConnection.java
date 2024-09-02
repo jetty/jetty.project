@@ -922,8 +922,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void onCompleteFailure(final Throwable x)
         {
-            if (_shutdownOut)
-                getEndPoint().shutdownOutput();
             failedCallback(release(), x);
         }
 
