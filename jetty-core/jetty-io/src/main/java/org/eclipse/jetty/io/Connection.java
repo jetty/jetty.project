@@ -141,15 +141,13 @@ public interface Connection extends Closeable
     }
 
     /**
-     * <p>{@link Connection} implementations implement this interface when they
-     * can be upgraded to a different protocol. For an HTTP request it will read
-     * content from the request until EOF treating this as bytes over the new
-     * protocol.</p>
-     * <p>This is used for the {@code HttpServletRequest#upgrade()} implementation.</p>
+     * <p>Start a tunnel over the current connection without replacing the connection.</p>
+     * <p>This can be used for upgrade within a connection, but it is not really an upgrade for this connection
+     * as the connection remains and just tunnels data to/from its endpoint.</p>
      */
-    interface Upgrade
+    interface Tunnel
     {
-        void upgrade();
+        void startTunnel();
     }
 
     /**

@@ -455,7 +455,7 @@ public class HttpGenerator
         }
     }
 
-    public void upgrade()
+    public void startTunnel()
     {
         _noContentResponse = false;
         _state = State.COMMITTED;
@@ -464,7 +464,7 @@ public class HttpGenerator
     @Deprecated(since = "12.1.0", forRemoval = true)
     public void servletUpgrade()
     {
-        upgrade();
+        startTunnel();
     }
 
     private void prepareChunk(ByteBuffer chunk, int remaining)

@@ -2016,7 +2016,7 @@ public class HttpParser
         _headerComplete = false;
     }
 
-    public void upgrade()
+    public void startTunnel()
     {
         setState(State.EOF_CONTENT);
         _endOfContent = EndOfContent.EOF_CONTENT;
@@ -2026,7 +2026,7 @@ public class HttpParser
     @Deprecated(since = "12.1.0", forRemoval = true)
     public void servletUpgrade()
     {
-        upgrade();
+        startTunnel();
     }
 
     protected void setState(State state)

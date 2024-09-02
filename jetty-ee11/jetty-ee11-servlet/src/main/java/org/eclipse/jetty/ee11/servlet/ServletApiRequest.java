@@ -952,10 +952,10 @@ public class ServletApiRequest implements HttpServletRequest
         }
 
         Connection connection = _servletContextRequest.getConnectionMetaData().getConnection();
-        if (connection instanceof Connection.Upgrade upgradeableConnection)
+        if (connection instanceof Connection.Tunnel upgradeableConnection)
         {
             outputStream.flush(); // commit the 101 response
-            upgradeableConnection.upgrade();
+            upgradeableConnection.startTunnel();
         }
         else
         {
