@@ -59,6 +59,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1869,8 +1871,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    @Test
-    public void testHoldContent() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false /* TODO, true */})
+    public void testHoldContent(boolean close) throws Exception
     {
         Queue<Content.Chunk> contents = new ConcurrentLinkedQueue<>();
         final int bufferSize = 1024;
@@ -1913,6 +1916,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
 
                 response.setStatus(200);
+
+                if (close)
+                    request.getConnectionMetaData().getConnection().getEndPoint().close();
+
                 callback.succeeded();
                 return true;
             }
@@ -1953,9 +1960,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             out.flush();
 
             // check the response
-            HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
-            assertNotNull(response);
-            assertThat(response.getStatus(), is(200));
+            if (!close)
+            {
+                HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+                assertNotNull(response);
+                assertThat(response.getStatus(), is(200));
+            }
         }
 
         assertTrue(closed.await(10, TimeUnit.SECONDS));

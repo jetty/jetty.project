@@ -326,6 +326,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             releaseRequestBuffer();
             return unconsumed;
         }
+        releaseRequestBuffer();
         return null;
     }
 
@@ -458,13 +459,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         finally
         {
             setCurrentConnection(last);
-
-            // If handling has completed
-            if (_stream.get() == null && _retainableByteBuffer != null)
-            {
-                _retainableByteBuffer.release();
-                _retainableByteBuffer = null;
-            }
             if (LOG.isDebugEnabled())
                 LOG.debug("<<onFillable exit {} {} {}", this, _httpChannel, _retainableByteBuffer);
         }
