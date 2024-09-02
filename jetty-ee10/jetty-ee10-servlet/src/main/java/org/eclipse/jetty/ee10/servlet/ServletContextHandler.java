@@ -62,7 +62,6 @@ import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
@@ -1191,13 +1190,9 @@ public class ServletContextHandler extends ContextHandler
     protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         boolean initialDispatch = request instanceof ServletContextRequest;
-        if (initialDispatch && isProtectedTarget(pathInContext))
-        {
-            Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
-            return true;
-        }
-
-        return false;
+        if (!initialDispatch)
+            return false;
+        return super.handleByContextHandler(pathInContext, request, response, callback);
     }
 
     @Override
