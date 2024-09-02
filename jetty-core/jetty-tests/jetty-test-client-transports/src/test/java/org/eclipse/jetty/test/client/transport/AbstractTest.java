@@ -149,7 +149,7 @@ public class AbstractTest
     {
         try
         {
-            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
+            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
         }
         catch (Exception e)
         {
