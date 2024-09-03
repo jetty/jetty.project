@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+  <Call name="addEventListener">
+    <Arg>
+      <New class="org.eclipse.jetty.ee10.servlet.DebugListener">
+        <Arg name="outputStream">
+          <New class="org.eclipse.jetty.util.RolloverFileOutputStream">
+            <Arg type="String"><Property name="jetty.debug.logs" deprecated="jetty.logs" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>
+            <Arg type="boolean"><Property name="jetty.debug.append" default="true"/></Arg>
+            <Arg type="int"><Property name="jetty.debug.retainDays" default="14"/></Arg>
+            <Arg>
+              <Call class="java.util.TimeZone" name="getTimeZone"><Arg><Property name="jetty.debug.timezone" default="GMT"/></Arg></Call>
+            </Arg>
+          </New>
+        </Arg>
+        <Arg name="showHeaders" type="boolean"><Property name="jetty.debug.showHeaders" default="true"/></Arg>
+        <Arg name="renameThread" type="boolean"><Property name="jetty.debug.renameThread" default="false"/></Arg>
+        <Arg name="dumpContext" type="boolean"><Property name="jetty.debug.dumpContext" default="true"/></Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
