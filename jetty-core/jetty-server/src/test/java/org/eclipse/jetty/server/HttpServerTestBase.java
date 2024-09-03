@@ -68,7 +68,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -1930,7 +1929,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 response.setStatus(200);
 
                 if (close)
+                {
+                    LOG.info("Closing {}", request.getConnectionMetaData().getConnection().getEndPoint());
                     request.getConnectionMetaData().getConnection().getEndPoint().close();
+                }
 
                 callback.succeeded();
                 return true;
@@ -1951,7 +1953,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 Transfer-Encoding: chunked\r
                 \r
                 """.formatted(pipeline ? "other" : "close");
-            System.err.println(request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("raw request {}", request);
             out.write(request.getBytes(StandardCharsets.ISO_8859_1));
 
             // single chunk
@@ -1974,7 +1977,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             BufferUtil.append(last, "\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             if (pipeline)
                 BufferUtil.append(last, "GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
-            System.err.println(BufferUtil.toString(last));
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("last {}", BufferUtil.toString(last));
             out.write(BufferUtil.toArray(last));
             out.flush();
 
@@ -1987,7 +1992,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             {
                 HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
                 assertNotNull(response);
-                System.err.println(response);
                 assertThat(response.getStatus(), is(200));
 
                 if (pipeline)
@@ -2008,9 +2012,23 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         if (rbbp instanceof ArrayByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("pool {}", pool);
+                contents.stream().map(Content.Chunk::toString).forEach(LOG::debug);
+            }
             contents.forEach(Content.Chunk::release);
-            long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
-            assertThat(buffersAfterRelease, greaterThan(buffersBeforeRelease));
+
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() ->
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("pool {}", pool);
+                    contents.stream().map(Content.Chunk::toString).forEach(LOG::debug);
+                }
+                long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+                return buffersAfterRelease > buffersBeforeRelease;
+            });
             assertThat(pool.getAvailableDirectMemory() + pool.getAvailableHeapMemory(), greaterThanOrEqualTo(chunk.length * 4L));
         }
         else
