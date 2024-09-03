@@ -434,6 +434,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("upgraded {} -> {} {}", this, getEndPoint().getConnection(), _requestBuffer);
+                        // Non-empty buffer will be copied from and released later in onUpgradeFrom()
                         releaseRequestBufferIfEmpty();
                         break;
                     }
@@ -447,6 +448,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 else if (_requestHandler._failure != null)
                 {
                     // There was an error, don't fill more.
+                    releaseRequestBuffer();
                     break;
                 }
                 else if (filled == 0)
@@ -463,11 +465,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("caught exception {} {}", this, _httpChannel, x);
-                if (_requestBuffer != null)
-                {
-                    _requestBuffer.clear();
-                    releaseRequestBuffer();
-                }
+                releaseRequestBuffer();
             }
             finally
             {
@@ -479,10 +477,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             setCurrentConnection(last);
             if (LOG.isDebugEnabled())
                 LOG.debug("<<onFillable exit {} {} {}", this, _httpChannel, _requestBuffer);
-
-            // TODO this works, but is too special purpose and probably should not be here anyway
-            if (!getEndPoint().isOpen())
-                releaseRequestBuffer();
         }
     }
 
