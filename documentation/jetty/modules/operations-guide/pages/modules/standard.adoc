@@ -99,6 +99,20 @@ It is recommended that you consider configuring also the property `jetty.crossor
 When set to `true`, clients send cookies and authentication headers in cross-origin requests to your domain.
 When set to `false`, cookies and authentication headers are not sent.
 
+[[eeN-debug]]
+== Module `{ee-all}-debug`
+include::{jetty-home}/modules/ee10-debug.mod[tags=description]
+
+Enabling this module produces a log file that is useful to debug incoming traffic.
+It will log entry and exit points of HTTP requests as well as the response code.
+
+Multiple versions of this module exist (`{ee-all}-debug`) to support each Jakarta EE platform's version of the Java Servlet specification.
+Jetty's configuration properties are identical across these versions; the configuration properties for the `{ee-current}-debug` Jetty module are:
+
+----
+include::{jetty-home}/modules/ee10-debug.mod[tags=ini-template]
+----
+
 [[eeN-deploy]]
 == Module `{ee-all}-deploy`
 

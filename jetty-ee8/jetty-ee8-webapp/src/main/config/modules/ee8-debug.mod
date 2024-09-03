@@ -21,6 +21,7 @@ basehome:modules/ee8-debug.d/ee8-debug.properties|webapps/ee8-debug.properties
 basehome:modules/ee8-debug.d/jetty-ee8-debug.xml|etc/jetty-ee8-debug.xml
 
 [ini-template]
+# tag::ini-template[]
 ## How many days to retain old log files
 # jetty.debug.retainDays=14
 
@@ -41,4 +42,4 @@ basehome:modules/ee8-debug.d/jetty-ee8-debug.xml|etc/jetty-ee8-debug.xml
 
 ## Dump context as deployed
 # jetty.debug.dumpContext=true
-
+# end::ini-template[]
