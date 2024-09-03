@@ -126,7 +126,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
             }
           }
           runLaunchable ("verify")
-          runLaunchable ("record build build --name ${BUILD_TAG} --source jetty/jetty.project=.")
+          runLaunchable ("record build --name ${BUILD_TAG} --source jetty/jetty.project=.")
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
