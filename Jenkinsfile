@@ -126,7 +126,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
             }
           }
           runLaunchable ("verify")
-          runLaunchable ("record build --name jetty-12.0.x")
+          runLaunchable ("record build build --name ${BUILD_TAG} --source jetty/jetty.project=.")
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
@@ -138,7 +138,9 @@ def mavenBuild(jdk, cmdline, mvnName) {
     {
       junit testDataPublishers: [[$class: 'JUnitFlakyTestDataPublisher']], testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
       echo "Launchable record tests"
-      runLaunchable ("record tests --build jetty-12.0.x maven '**/target/surefire-reports/**/*.xml' '**/target/invoker-reports/TEST*.xml'")
+      //launchable verify && launchable record tests --session ${session} --flavor platform=${platform} --flavor jdk=${jdk} maven './**/target/surefire-reports'
+      runLaunchable ("verify")
+      runLaunchable ("record tests maven --flavor jdk=${jdk} '**/target/surefire-reports/**/*.xml' '**/target/invoker-reports/TEST*.xml'")
     }
   }
 }
