@@ -1557,6 +1557,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_handling.compareAndSet(true, false))
                 return;
 
+            // The handling thread has completed, so we can free up any empty buffer here
             releaseRequestBufferIfEmpty();
 
             // we need to organized further processing
@@ -1604,7 +1605,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
             {
                 releaseRequestBuffer();
-                getEndPoint().close();
             }
         }
 
