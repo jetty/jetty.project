@@ -206,7 +206,7 @@ xref:xml/index.adoc[Jetty context XML file] files can be applied to _all_ webapp
 
 Add a properties file to the deployment directory that contains a property naming the location of the xml file to apply.
 The properties file name must be prefixed by the name of the `environment`.
-For example `ee8.properties, ee8-more.properties ee8-other.properties` would all apply to the `ee8` environment.
+For example `ee8.properties, ee8-more.properties ee8-other.properties` would all apply to all contexts deployed in the `ee8` environment.
 
 The properties files contain at minimum one property whose name is prefixed with `org.eclipse.jetty.deploy.environmentXml`.
 So for example `org.eclipse.jetty.deploy.environmentXml, org.eclipse.jetty.deploy.environmentXml.more, org.eclipse.jetty.deploy.environmentXml.other` are all acceptable as names.
