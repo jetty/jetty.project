@@ -1557,6 +1557,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_handling.compareAndSet(true, false))
                 return;
 
+            releaseRequestBufferIfEmpty();
+
             // we need to organized further processing
             if (LOG.isDebugEnabled())
                 LOG.debug("non-current completion {}", this);
@@ -1584,17 +1586,26 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                             LOG.warn("Failed dispatch of {}", this, e);
                         else
                             LOG.trace("IGNORED", e);
+                        releaseRequestBuffer();
                         getEndPoint().close();
                     }
                 }
                 else
                 {
+                    releaseRequestBuffer();
                     getEndPoint().close();
                 }
             }
             // else the parser must be closed, so seek the EOF if we are still open
             else if (getEndPoint().isOpen())
+            {
                 fillInterested();
+            }
+            else
+            {
+                releaseRequestBuffer();
+                getEndPoint().close();
+            }
         }
 
         @Override
@@ -1607,6 +1618,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     LOG.debug("ignored", x);
                 return;
             }
+
+            releaseRequestBuffer();
+
             if (LOG.isDebugEnabled())
                 LOG.debug("aborting", x);
             abort(x);

@@ -32,12 +32,14 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+@Isolated
 public class HttpServerTestFixture
 {
     protected static final long PAUSE = 10L;
