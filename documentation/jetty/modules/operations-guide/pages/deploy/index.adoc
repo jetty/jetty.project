@@ -210,7 +210,7 @@ For example `ee8.properties, ee8-more.properties ee8-other.properties` would all
 
 The properties files contain at minimum one property whose name is prefixed with `org.eclipse.jetty.deploy.environmentXml`.
 So for example `org.eclipse.jetty.deploy.environmentXml, org.eclipse.jetty.deploy.environmentXml.more, org.eclipse.jetty.deploy.environmentXml.other` are all acceptable as names.
-Each property configures the location of a context xml file to apply to a context when it is being created and deployed.
+Each property configures the location of a context XML file to apply to a context when it is being created and deployed.
 The location may be either absolute or relative to _the parent of the deployment directory_.
 So if your webapp deployment directory is `$JETTY_BASE/webapps`, then `$JETTY_BASE` will be used to resolve any relative filenames.
 
