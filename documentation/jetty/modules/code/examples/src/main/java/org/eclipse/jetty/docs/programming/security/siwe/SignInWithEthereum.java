@@ -11,27 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.siwe.example;
+package org.eclipse.jetty.docs.programming.security.siwe;
 
-import java.io.PrintWriter;
-import java.nio.file.Paths;
-import java.util.Objects;
-
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.siwe.EthereumAuthenticator;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.session.SessionHandler;
-import org.eclipse.jetty.util.Callback;
 
 public class SignInWithEthereum
 {
