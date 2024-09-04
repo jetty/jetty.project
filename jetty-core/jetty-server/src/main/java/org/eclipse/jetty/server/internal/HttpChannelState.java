@@ -681,13 +681,10 @@ public class HttpChannelState implements HttpChannel, Components
                 callbackCompleted = _callbackCompleted;
                 lastStreamSendComplete = lockedIsLastStreamSendCompleted();
                 completeStream = callbackCompleted && lastStreamSendComplete;
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, failure, callbackCompleted, HttpChannelState.this);
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("stream={}, failure={}, callbackCompleted={}, completeStream={}", stream, failure, callbackCompleted, completeStream);
+                LOG.debug("handler invoked: stream={}, failure={}, callbackCompleted={}, completeStream={} {}", stream, failure, callbackCompleted, completeStream, this);
 
             if (completeStream)
             {

@@ -389,8 +389,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 // Fill the request buffer (if needed).
                 int filled = fillRequestBuffer();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("onFillable filled {} {} {} {}", filled, this, _httpChannel, _requestBuffer);
 
                 if (filled < 0 && getEndPoint().isOutputShutdown())
                     close();
@@ -540,7 +538,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 filled = getEndPoint().fill(requestBuffer);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} filled {} {}", this, filled, _requestBuffer);
+                LOG.debug("filled {} {} {}", filled, this, _requestBuffer);
 
             if (filled > 0)
                 bytesIn.add(filled);
@@ -563,7 +561,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private boolean parseRequestBuffer()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parse {}", this, _requestBuffer);
+            LOG.debug("parse {} {}", this, _requestBuffer);
 
         if (_parser.isTerminated())
             throw new RuntimeIOException("Parser is terminated");
@@ -571,7 +569,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         boolean handle = _parser.parseNext(_requestBuffer == null ? BufferUtil.EMPTY_BUFFER : _requestBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parsed {} {} {}", this, handle, _parser, _requestBuffer);
+            LOG.debug("parsed {} {} {} {}", handle, _parser, this, _requestBuffer);
 
         return handle;
     }
@@ -635,6 +633,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             _sendCallback.close();
         else
             _sendCallback.abort(cause);
+        releaseRequestBuffer();
         super.onClose(cause);
     }
 
@@ -1510,11 +1509,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public void succeeded()
         {
             HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
+            if (LOG.isDebugEnabled())
+                LOG.debug("succeeded {} {}", stream, HttpConnection.this);
+
             if (stream == null)
                 return;
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("succeeded {}", HttpConnection.this);
             // If we are fill interested, then a read is pending and we must abort
             if (isFillInterested())
             {
