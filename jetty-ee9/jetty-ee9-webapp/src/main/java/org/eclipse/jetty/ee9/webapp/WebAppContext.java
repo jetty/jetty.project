@@ -945,6 +945,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         dumpObjects(out, indent,
             Dumpable.named("environment", ContextHandler.ENVIRONMENT.getName()),
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Systemclasses " + name, systemClasses),
             new DumpableCollection("Serverclasses " + name, serverClasses),
