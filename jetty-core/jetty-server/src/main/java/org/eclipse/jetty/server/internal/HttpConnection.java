@@ -319,14 +319,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public ByteBuffer onUpgradeFrom()
     {
         if (isRequestBufferEmpty())
-        {
-            releaseRequestBuffer();
             return null;
-        }
         ByteBuffer unconsumed = ByteBuffer.allocateDirect(_requestBuffer.remaining());
         unconsumed.put(_requestBuffer.getByteBuffer());
         unconsumed.flip();
-        releaseRequestBuffer();
         return unconsumed;
     }
 
@@ -1584,7 +1580,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 if (LOG.isDebugEnabled())
                     LOG.debug("Resuming onFillable() {}", HttpConnection.this);
                 // Dispatch to handle pipelined requests.
-                getExecutor().execute(HttpConnection.this);
+                _httpChannel.getRequest().getComponents().getExecutor().execute(HttpConnection.this);
             }
             catch (RejectedExecutionException x)
             {

@@ -482,7 +482,8 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
-        // Consume content as soon as possible to open any flow control window.
+        // Consume content as soon as possible to open any
+        // flow control window and release any request buffer.
         Throwable unconsumed = stream.consumeAvailable();
         if (unconsumed != null && LOG.isDebugEnabled())
             LOG.debug("consuming content during error {}", unconsumed.toString());
