@@ -191,7 +191,7 @@ public class RequestListenersTest
             Content-Length: 1
             Connection: close
                             
-            """, 2000 * idleTimeout, TimeUnit.MILLISECONDS));
+            """, 2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         int expectedStatus = succeedCallback ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
         assertEquals(expectedStatus, response.getStatus());
