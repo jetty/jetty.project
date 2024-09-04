@@ -19,6 +19,7 @@ import java.nio.channels.WritePendingException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -425,12 +426,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 }
                 else if (filled == 0)
                 {
+                    assert isRequestBufferEmpty();
                     releaseRequestBuffer();
                     fillInterested();
                     break;
                 }
                 else if (filled < 0)
                 {
+                    assert isRequestBufferEmpty();
                     releaseRequestBuffer();
                     getEndPoint().shutdownOutput();
                     break;
@@ -1580,7 +1583,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 if (LOG.isDebugEnabled())
                     LOG.debug("Resuming onFillable() {}", HttpConnection.this);
                 // Dispatch to handle pipelined requests.
-                _httpChannel.getRequest().getComponents().getExecutor().execute(HttpConnection.this);
+                Request request = _httpChannel.getRequest();
+                Executor executor = request == null ? getExecutor() : request.getComponents().getExecutor();
+                executor.execute(HttpConnection.this);
             }
             catch (RejectedExecutionException x)
             {
