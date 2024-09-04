@@ -80,7 +80,7 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractMetaDataConnection implements Runnable, Connection.UpgradeFrom, Connection.UpgradeTo, ConnectionMetaData
+public class HttpConnection extends AbstractMetaDataConnection implements Runnable, Connection.UpgradeFrom, Connection.UpgradeTo, Connection.Tunnel, ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
@@ -334,6 +334,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public void onUpgradeTo(ByteBuffer buffer)
     {
         BufferUtil.append(getRequestBuffer(), buffer);
+    }
+
+    @Override
+    public void startTunnel()
+    {
+        getParser().startTunnel();
+        getGenerator().startTunnel();
     }
 
     void releaseRequestBuffer()

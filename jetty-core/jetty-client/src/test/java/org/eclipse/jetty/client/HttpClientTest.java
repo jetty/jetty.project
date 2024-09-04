@@ -1865,7 +1865,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     }
                 });
                 // Close the parser to cause the issue.
-                org.eclipse.jetty.server.HttpConnection.getCurrentConnection().getParser().close();
+                org.eclipse.jetty.server.internal.HttpConnection.getCurrentConnection().getParser().close();
             }
         });
         server.start();

@@ -596,7 +596,7 @@ public class Request implements HttpServletRequest
      * <dl>
      * <dt>org.eclipse.jetty.server.Server</dt><dd>The Jetty Server instance</dd>
      * <dt>org.eclipse.jetty.server.HttpChannel</dt><dd>The HttpChannel for this request</dd>
-     * <dt>org.eclipse.jetty.server.HttpConnection</dt><dd>The HttpConnection or null if another transport is used</dd>
+     * <dt>org.eclipse.jetty.io.Connection</dt><dd>The Connection or null if another transport is used</dd>
      * </dl>
      * While these attributes may look like security problems, they are exposing nothing that is not already
      * available via reflection from a Request instance.
