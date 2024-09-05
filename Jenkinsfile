@@ -39,6 +39,17 @@ pipeline {
           }
         }
 
+        stage("Build / Test - JDK23") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk23", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk23", name: "Static Analysis jdk23", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+            }
+          }
+        }
+
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
