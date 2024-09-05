@@ -1118,7 +1118,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     _chunk.release();
                 _chunk = Content.Chunk.from(result, true);
             }
-            releaseRequestBuffer();
             return result;
         }
 
