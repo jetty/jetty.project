@@ -488,11 +488,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (!_parser.inContentState())
             {
                 // The request is complete, and we are going to re-enter onFillable(),
-                // because either A) the request/response was completed synchronously
-                // so the onFillable() thread will loop, or B) the request/response
+                // because either A: the request/response was completed synchronously
+                // so the onFillable() thread will loop, or B: the request/response
                 // was completed asynchronously, and the HttpStreamOverHTTP1 dispatches
                 // a call to onFillable() to process the next request.
-                // Therefore, there is no need to release the request buffer here.
+                // Therefore, there is no need to release the request buffer here,
+                // also because the buffer may contain pipelined requests.
                 break;
             }
 
@@ -612,19 +613,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             fillInterested();
         else
             getExecutor().execute(this);
-    }
-
-    @Override
-    public void onClose(Throwable cause)
-    {
-        // TODO: do we really need to do this?
-        //  This event is fired really late, sendCallback should already be failed at this point.
-        //  Revisit whether we still need IteratingCallback.close().
-        if (cause == null)
-            _sendCallback.close();
-        else
-            _sendCallback.abort(cause);
-        super.onClose(cause);
     }
 
     @Override
