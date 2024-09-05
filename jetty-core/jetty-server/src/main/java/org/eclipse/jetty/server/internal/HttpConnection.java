@@ -398,6 +398,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     if (LOG.isDebugEnabled())
                         LOG.debug("HANDLE {} {}", request, this);
 
+                    // If the buffer is empty and no body is expected, then release the buffer
+                    if (isRequestBufferEmpty() && !_parser.hasContent())
+                    {
+                        // try parsing now to the end of the message
+                        parseRequestBuffer();
+                        if (_parser.isComplete())
+                            releaseRequestBuffer();
+                    }
+
                     // Handle the request by running the task.
                     _handling.set(true);
                     Runnable onRequest = _onRequest;
@@ -416,6 +425,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         // The request buffer will be released by the application
                         // reading the request content, or by the implementation
                         // trying to consume the request content.
+                        break;
+                    }
+
+                    // If we have already released the request buffer, then use fill interest before allocating another
+                    if (_requestBuffer == null)
+                    {
+                        fillInterested();
                         break;
                     }
 
