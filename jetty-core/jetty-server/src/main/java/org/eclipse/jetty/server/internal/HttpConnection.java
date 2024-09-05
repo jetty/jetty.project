@@ -337,7 +337,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private void releaseRequestBuffer()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("releasing request buffer {} {}", this, _requestBuffer);
+            LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
         _requestBuffer.release();
         _requestBuffer = null;
     }
@@ -345,7 +345,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private void ensureRequestBuffer()
     {
         if (_requestBuffer == null)
+        {
             _requestBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            if (LOG.isDebugEnabled())
+                LOG.debug("request buffer acquired {} {}", _requestBuffer, this);
+        }
     }
 
     public boolean isRequestBufferEmpty()
@@ -357,7 +361,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onFillable enter {} {} {}", this, _httpChannel, _requestBuffer);
+            LOG.debug("onFillable enter {} {} {}", _httpChannel, _requestBuffer, this);
 
         HttpConnection last = setCurrentConnection(this);
         try
@@ -370,7 +374,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 int filled = fillRequestBuffer();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("onFillable filled {} {} {} {}", filled, this, _httpChannel, _requestBuffer);
+                    LOG.debug("onFillable filled {} {} {} {}", filled, _httpChannel, _requestBuffer, this);
 
                 if (filled < 0 && getEndPoint().isOutputShutdown())
                     close();
@@ -406,7 +410,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     if (_handling.compareAndSet(true, false))
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("request !complete {} {}", request, this);
+                            LOG.debug("request !complete {} {} {}", request, _requestBuffer, this);
                         // Cannot release the request buffer here, because the
                         // application may read concurrently from another thread.
                         // The request buffer will be released by the application
@@ -464,7 +468,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             setCurrentConnection(last);
             if (LOG.isDebugEnabled())
-                LOG.debug("onFillable exit {} {} {}", this, _httpChannel, _requestBuffer);
+                LOG.debug("onFillable exit {} {} {}", _httpChannel, _requestBuffer, this);
         }
     }
 
@@ -524,7 +528,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 filled = getEndPoint().fill(requestBuffer);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} filled {} {}", this, filled, _requestBuffer);
+                LOG.debug("filled {} {} {}", filled, _requestBuffer, this);
 
             if (filled > 0)
                 bytesIn.add(filled);
@@ -545,7 +549,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private boolean parseRequestBuffer()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parse {}", this, _requestBuffer);
+            LOG.debug("parse {} {}", _requestBuffer, this);
 
         if (_parser.isTerminated())
             throw new RuntimeIOException("Parser is terminated");
@@ -553,7 +557,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         boolean handle = _parser.parseNext(_requestBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parsed {} {}", this, handle, _parser);
+            LOG.debug("parsed {} {} {} {}", handle, _parser, _requestBuffer, this);
 
         return handle;
     }
@@ -1114,6 +1118,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     _chunk.release();
                 _chunk = Content.Chunk.from(result, true);
             }
+            releaseRequestBuffer();
             return result;
         }
 
