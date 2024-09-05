@@ -370,68 +370,73 @@ public class ContextProvider extends ScanningAppProvider
             // apply the context xml files named by the ordered jetty.deploy.environmentXml[.zzzz] properties
             String env = app.getEnvironmentName() == null ? "" : app.getEnvironmentName();
 
-            List<Path> envPropertyFiles = new ArrayList<>();
-            Path parent = app.getPath().getParent();
-
-            //Get all environment specific properties files for this environment,
-            //order them according to the lexical ordering of the filenames
-            try (Stream<Path> paths = Files.list(parent))
+            if (StringUtil.isNotBlank(env))
             {
-                envPropertyFiles = paths.filter(Files::isRegularFile)
-                    .map(p -> parent.relativize(p))
-                    .filter(p ->
-                    {
-                        String name = p.getName(0).toString();
-                        if (!name.endsWith(".properties"))
-                            return false;
-                        if (!name.startsWith(env))
-                            return false;
-                        return true;
-                    }).sorted().collect(Collectors.toList());
-            }
+                List<Path> envPropertyFiles = new ArrayList<>();
+                Path parent = app.getPath().getParent();
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Environment property files {}", envPropertyFiles);
-
-            Map<String, Path> envXmlFilenameMap = new HashMap<>();
-            for (Path file : envPropertyFiles)
-            {
-                Path resolvedFile = parent.resolve(file);
-                if (Files.exists(resolvedFile))
+                //Get all environment specific properties files for this environment,
+                //order them according to the lexical ordering of the filenames
+                try (Stream<Path> paths = Files.list(parent))
                 {
-                    Properties tmp = new Properties();
-                    try (InputStream stream = Files.newInputStream(resolvedFile))
-                    {
-                        tmp.load(stream);
-                        //put each property into our substitution pool
-                        tmp.stringPropertyNames().forEach(k -> properties.put(k, tmp.getProperty(k)));
-                        //extract any properties that name environment context xml files
-                        for (Map.Entry<Object, Object> entry : tmp.entrySet())
+                    envPropertyFiles = paths.filter(Files::isRegularFile)
+                        .map(p -> parent.relativize(p))
+                        .filter(p ->
                         {
-                            String name = Objects.toString(entry.getKey(), "");
-                            if (name.startsWith(Deployable.ENVIRONMENT_XML))
-                            {
-                                //ensure all environment context xml files are absolute paths
-                                Path envXmlPath = Paths.get(entry.getValue().toString());
-                                if (!envXmlPath.isAbsolute())
-                                    envXmlPath = getMonitoredDirResource().getPath().getParent().resolve(envXmlPath);
-                                //accumulate all properties that name environment xml files so they can be ordered
-                                envXmlFilenameMap.put(name, envXmlPath);
-                            }
+                            String name = p.getName(0).toString();
+                            if (!name.endsWith(".properties"))
+                                return false;
+                            if (!name.startsWith(env))
+                                return false;
+                            return true;
+                        }).sorted().collect(Collectors.toList());
+                }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Environment property files {}", envPropertyFiles);
+
+                Map<String, Path> envXmlFilenameMap = new HashMap<>();
+                for (Path file : envPropertyFiles)
+                {
+                    Path resolvedFile = parent.resolve(file);
+                    if (Files.exists(resolvedFile))
+                    {
+                        Properties tmp = new Properties();
+                        try (InputStream stream = Files.newInputStream(resolvedFile))
+                        {
+                            tmp.load(stream);
+                            //put each property into our substitution pool
+                            tmp.stringPropertyNames().forEach(k -> properties.put(k, tmp.getProperty(k)));
                         }
                     }
                 }
-            }
-            //order the environment context xml files according to the name of their properties
-            List<String> sortedEnvXmlProperties = envXmlFilenameMap.keySet().stream().sorted().toList();
 
-            //apply each environment context xml file
-            for (String property : sortedEnvXmlProperties)
-            {
-                Path envXmlPath = envXmlFilenameMap.get(property);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Applying environment specific context file {}", envXmlPath);
-                context = applyXml(context, envXmlPath, env, properties);
+                //extract any properties that name environment context xml files
+                for (Map.Entry<String, String> entry : properties.entrySet())
+                {
+                    String name = Objects.toString(entry.getKey(), "");
+                    if (name.startsWith(Deployable.ENVIRONMENT_XML))
+                    {
+                        //ensure all environment context xml files are absolute paths
+                        Path envXmlPath = Paths.get(entry.getValue().toString());
+                        if (!envXmlPath.isAbsolute())
+                            envXmlPath = getMonitoredDirResource().getPath().getParent().resolve(envXmlPath);
+                        //accumulate all properties that name environment xml files so they can be ordered
+                        envXmlFilenameMap.put(name, envXmlPath);
+                    }
+                }
+
+                //order the environment context xml files according to the name of their properties
+                List<String> sortedEnvXmlProperties = envXmlFilenameMap.keySet().stream().sorted().toList();
+
+                //apply each environment context xml file
+                for (String property : sortedEnvXmlProperties)
+                {
+                    Path envXmlPath = envXmlFilenameMap.get(property);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Applying environment specific context file {}", envXmlPath);
+                    context = applyXml(context, envXmlPath, env, properties);
+                }
             }
 
             //add in properties specific to the deployable
