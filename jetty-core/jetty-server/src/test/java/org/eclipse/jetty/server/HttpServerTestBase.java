@@ -60,7 +60,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -1869,8 +1868,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {false /* TODO, true */})
-    public void testHoldContent(boolean close) throws Exception
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
+    public void testHoldContent(boolean close, boolean pipeline) throws Exception
     {
         Queue<Content.Chunk> contents = new ConcurrentLinkedQueue<>();
         final int bufferSize = 1024;
@@ -1881,6 +1880,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Handling request: {}", request);
+                if ("GET".equals(request.getMethod()))
+                {
+                    response.setStatus(200);
+                    callback.succeeded();
+                    return true;
+                }
+
                 request.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
                 {
                     @Override
@@ -1889,10 +1897,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         closed.countDown();
                     }
                 });
+
                 while (true)
                 {
                     Content.Chunk chunk = request.read();
-
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("read: {}", chunk);
                     if (chunk == null)
                     {
                         try (Blocker.Runnable blocker = Blocker.runnable())
@@ -1902,81 +1912,111 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                             continue;
                         }
                     }
-
                     if (chunk.hasRemaining())
                         contents.add(chunk);
                     else
                         chunk.release();
-
                     if (chunk.isLast())
                         break;
                 }
-
                 response.setStatus(200);
 
                 if (close)
+                {
+                    LOG.info("Closing {}", request.getConnectionMetaData().getConnection().getEndPoint());
                     request.getConnectionMetaData().getConnection().getEndPoint().close();
+                }
 
                 callback.succeeded();
                 return true;
             }
         });
-
         byte[] chunk = new byte[bufferSize / 2];
         Arrays.fill(chunk, (byte)'X');
-
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
             BufferedOutputStream out = new BufferedOutputStream(os, bufferSize);
-            out.write(("""
+            String request = """
                 POST / HTTP/1.1\r
                 Host: localhost\r
-                Connection: close\r
+                Connection: %s\r
                 Transfer-Encoding: chunked\r
                 \r
-                """).getBytes(StandardCharsets.ISO_8859_1));
+                """.formatted(pipeline ? "other" : "close");
+            if (LOG.isDebugEnabled())
+                LOG.debug("raw request {}", request);
+            out.write(request.getBytes(StandardCharsets.ISO_8859_1));
 
             // single chunk
             out.write((Integer.toHexString(chunk.length) + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             out.write(chunk);
             out.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
             out.flush();
-
-            // double chunk (will overflow)
+            // double chunk (will overflow bufferSize)
             out.write((Integer.toHexString(chunk.length * 2) + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             out.write(chunk);
             out.write(chunk);
             out.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
             out.flush();
 
-            // single chunk and end chunk
-            out.write((Integer.toHexString(chunk.length) + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
-            out.write(chunk);
-            out.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            // single chunk and end chunk plus optional pipelined request
+            ByteBuffer last = BufferUtil.allocate(4096);
+            BufferUtil.append(last, (Integer.toHexString(chunk.length) + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            BufferUtil.append(last, chunk);
+            BufferUtil.append(last, "\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            if (pipeline)
+                BufferUtil.append(last, "GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("last {}", BufferUtil.toString(last));
+            out.write(BufferUtil.toArray(last));
             out.flush();
 
             // check the response
-            if (!close)
+            if (close)
+            {
+                assertThat(client.getInputStream().read(), equalTo(-1));
+            }
+            else
             {
                 HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
                 assertNotNull(response);
                 assertThat(response.getStatus(), is(200));
+
+                if (pipeline)
+                {
+                    response = HttpTester.parseResponse(client.getInputStream());
+                    assertNotNull(response);
+                    assertThat(response.getStatus(), is(200));
+                }
             }
         }
 
         assertTrue(closed.await(10, TimeUnit.SECONDS));
-
         long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
-
         ByteBufferPool rbbp = _connector.getByteBufferPool();
         if (rbbp instanceof ArrayByteBufferPool pool)
         {
             long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("pool {}", pool);
+                contents.stream().map(Content.Chunk::toString).forEach(LOG::debug);
+            }
             contents.forEach(Content.Chunk::release);
-            long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
-            assertThat(buffersAfterRelease, greaterThan(buffersBeforeRelease));
+
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() ->
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("pool {}", pool);
+                    contents.stream().map(Content.Chunk::toString).forEach(LOG::debug);
+                }
+                long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+                return buffersAfterRelease > buffersBeforeRelease;
+            });
             assertThat(pool.getAvailableDirectMemory() + pool.getAvailableHeapMemory(), greaterThanOrEqualTo(chunk.length * 4L));
         }
         else
