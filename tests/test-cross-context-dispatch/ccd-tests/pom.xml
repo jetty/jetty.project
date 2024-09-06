@@ -16,18 +16,6 @@
     <junit.jupiter.execution.parallel.config.fixed.parallelism>1</junit.jupiter.execution.parallel.config.fixed.parallelism>
   </properties>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.tests.ccd</groupId>

@@ -10,18 +10,6 @@
   <packaging>war</packaging>
   <name>Tests :: Cross Context Dispatch :: ee9 WebApp</name>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>jakarta.servlet</groupId>
