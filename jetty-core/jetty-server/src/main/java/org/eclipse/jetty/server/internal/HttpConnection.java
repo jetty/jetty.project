@@ -428,19 +428,20 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         break;
                     }
 
-                    // If we have already released the request buffer, then use fill interest before allocating another
-                    if (_requestBuffer == null)
-                    {
-                        fillInterested();
-                        break;
-                    }
-
                     // If there was an upgrade, release and return.
                     if (getEndPoint().getConnection() != this)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("upgraded {} -> {}", this, getEndPoint().getConnection());
-                        releaseRequestBuffer();
+                        if (_requestBuffer != null)
+                            releaseRequestBuffer();
+                        break;
+                    }
+
+                    // If we have already released the request buffer, then use fill interest before allocating another
+                    if (_requestBuffer == null)
+                    {
+                        fillInterested();
                         break;
                     }
                 }
