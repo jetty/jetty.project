@@ -198,7 +198,7 @@ public class EventsHandlerTest extends AbstractTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), is("ABCDEF"));
         assertThat(stringBuffer.toString(), is("ABCDEF"));
-        assertThat(failures.size(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).during(1, TimeUnit.SECONDS).until(failures::size, is(0));
     }
 
     @ParameterizedTest
@@ -394,56 +394,48 @@ public class EventsHandlerTest extends AbstractTest
         @Override
         protected void onBeforeHandling(Request request)
         {
-//            System.out.println("onBeforeHandling");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onRequestRead(Request request, Content.Chunk chunk)
         {
-//            System.out.println("onRequestRead " + chunk);
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onAfterHandling(Request request, boolean handled, Throwable failure)
         {
-//            System.out.println("onAfterHandling");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onResponseBegin(Request request, int status, HttpFields headers)
         {
-//            System.out.println("onResponseBegin");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
         {
-//            System.out.println("onResponseWrite");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onResponseWriteComplete(Request request, Throwable failure)
         {
-//            System.out.println("onResponseWriteComplete");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onResponseTrailersComplete(Request request, HttpFields trailers)
         {
-//            System.out.println("onResponseTrailersComplete");
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
         protected void onComplete(Request request, int status, HttpFields headers, Throwable failure)
         {
-//            System.out.println("onComplete");
             useForbiddenMethods(request, exceptions);
         }
 
