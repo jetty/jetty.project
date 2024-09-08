@@ -46,6 +46,7 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -824,6 +825,55 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         ContentResponse response = completable.get(15, TimeUnit.SECONDS);
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testUnreadRequestContentDrainsResponseContent() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                // Do not read the request content,
+                // the server will reset the stream,
+                // then send a response with content.
+                ByteBuffer content = ByteBuffer.allocate(1024);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.remaining());
+                response.write(true, content, callback);
+                return true;
+            }
+        });
+
+        AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
+        AtomicReference<Content.Chunk> chunkRef = new AtomicReference<>();
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+        httpClient.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .body(new AsyncRequestContent(ByteBuffer.allocate(1024)))
+            .onResponseContentSource((response, contentSource) -> contentSourceRef.set(contentSource))
+            // The request is failed before the response, verify that
+            // reading at the request failure event yields a failure chunk.
+            .onRequestFailure((request, failure) -> chunkRef.set(contentSourceRef.get().read()))
+            .send(resultRef::set);
+
+        // Wait for the RST_STREAM to arrive and drain the response content.
+        Thread.sleep(1000);
+
+        // Verify that the chunk read at the request failure event is a failure chunk.
+        Content.Chunk chunk = chunkRef.get();
+        assertNotNull(chunk);
+        assertNotNull(chunk.getFailure());
+        // Reading more also yields a failure chunk.
+        chunk = contentSourceRef.get().read();
+        assertNotNull(chunk);
+        assertNotNull(chunk.getFailure());
+
+        Result result = resultRef.get();
+        assertNotNull(result);
+        assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+        assertNotNull(result.getRequestFailure());
+        assertNotNull(result.getResponseFailure());
     }
 
     @Test
