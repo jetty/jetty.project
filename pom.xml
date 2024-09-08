@@ -225,7 +225,7 @@
     <guava.version>33.3.0-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
-    <hamcrest.version>2.2</hamcrest.version>
+    <hamcrest.version>3.0</hamcrest.version>
     <hawtio.version>3.0.2</hawtio.version>
     <hazelcast.version>5.3.7</hazelcast.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
@@ -318,7 +318,7 @@
     <maven.shade.plugin.version>3.6.0</maven.shade.plugin.version>
     <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.5.0</maven.surefire.plugin.version>
-    <maven.version>3.9.6</maven.version>
+    <maven.version>3.9.8</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
     <mina.core.version>2.2.3</mina.core.version>
     <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
@@ -1305,6 +1305,11 @@
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-servlet</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.sisu</groupId>
+        <artifactId>org.eclipse.sisu.inject</artifactId>
+        <version>0.9.0.M3</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jaxb</groupId>
