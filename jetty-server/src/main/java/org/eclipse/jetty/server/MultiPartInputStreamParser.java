@@ -379,7 +379,7 @@ public class MultiPartInputStreamParser
      */
     public MultiPartInputStreamParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
-        this (in, contentType, config, contextTmpDir, ContextHandler.DEFAULT_MAX_FORM_KEYS);
+        this(in, contentType, config, contextTmpDir, ContextHandler.DEFAULT_MAX_FORM_KEYS);
     }
 
     /**
