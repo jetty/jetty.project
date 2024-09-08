@@ -335,7 +335,7 @@
     <plexus-xml.version>4.0.4</plexus-xml.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <settingsPath>src/it/settings.xml</settingsPath>
-    <slf4j.version>2.0.9</slf4j.version>
+    <slf4j.version>2.0.13</slf4j.version>
     <spotbugs.maven.plugin.version>4.8.6.3</spotbugs.maven.plugin.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
