@@ -269,11 +269,18 @@ public class HttpClientContinueTest extends AbstractTest
                 {
                     assertTrue(result.isFailed());
                     assertNotNull(result.getRequestFailure());
-                    assertNull(result.getResponseFailure());
-                    byte[] content = getContent();
-                    assertNotNull(content);
-                    assertTrue(content.length > 0);
                     assertEquals(error, result.getResponse().getStatus());
+                    Throwable responseFailure = result.getResponseFailure();
+                    // For HTTP/2 the response may fail because the
+                    // server may not fully read the request content,
+                    // and sends a reset that may drop the response
+                    // content and cause the response failure.
+                    if (responseFailure == null)
+                    {
+                        byte[] content = getContent();
+                        assertNotNull(content);
+                        assertTrue(content.length > 0);
+                    }
                     latch.countDown();
                 }
             });
@@ -828,7 +835,7 @@ public class HttpClientContinueTest extends AbstractTest
         startServer(Transport.HTTP, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 assertEquals(0, request.getContentLengthLong());
                 assertNotNull(request.getHeader(HttpHeader.EXPECT.asString()));
