@@ -92,6 +92,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -847,6 +848,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
         AtomicReference<Content.Chunk> chunkRef = new AtomicReference<>();
+        CountDownLatch responseFailureLatch = new CountDownLatch(1);
         AtomicReference<Result> resultRef = new AtomicReference<>();
         httpClient.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
@@ -855,22 +857,20 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             // The request is failed before the response, verify that
             // reading at the request failure event yields a failure chunk.
             .onRequestFailure((request, failure) -> chunkRef.set(contentSourceRef.get().read()))
+            .onResponseFailure((response, failure) -> responseFailureLatch.countDown())
             .send(resultRef::set);
 
         // Wait for the RST_STREAM to arrive and drain the response content.
-        Thread.sleep(1000);
+        assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
 
         // Verify that the chunk read at the request failure event is a failure chunk.
         Content.Chunk chunk = chunkRef.get();
-        assertNotNull(chunk);
-        assertNotNull(chunk.getFailure());
+        assertTrue(Content.Chunk.isFailure(chunk, true));
         // Reading more also yields a failure chunk.
         chunk = contentSourceRef.get().read();
-        assertNotNull(chunk);
-        assertNotNull(chunk.getFailure());
+        assertTrue(Content.Chunk.isFailure(chunk, true));
 
-        Result result = resultRef.get();
-        assertNotNull(result);
+        Result result = await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, notNullValue());
         assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
         assertNotNull(result.getRequestFailure());
         assertNotNull(result.getResponseFailure());
