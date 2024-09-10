@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
@@ -106,6 +107,7 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=CREATE");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat("CREATE / Set-Cookie", response.getHeaders().get(HttpHeader.SET_COOKIE), containsString("SameSite=Strict"));
                 assertThat(response.getContentAsString(), containsString("SESSION CREATED"));
 
                 response = client.GET("http://localhost:" + port + "/test/session?action=READ");

@@ -18,4 +18,10 @@
     <url-pattern>/session</url-pattern>
   </servlet-mapping>
 
+  <session-config>
+    <cookie-config>
+      <comment>__SAME_SITE_STRICT__</comment>
+    </cookie-config>
+  </session-config>
+
 </web-app>
