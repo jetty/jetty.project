@@ -30,3 +30,6 @@ etc/jetty-debuglog.xml
 
 ## Timezone of the log entries
 # jetty.debuglog.timezone=GMT
+
+## Show Request/Response headers
+# jetty.debug.showHeaders=true

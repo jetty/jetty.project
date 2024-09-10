@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -37,9 +38,11 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
  */
 public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 {
-    private final DateCache _date = new DateCache("HH:mm:ss", Locale.US);
+    private static final DateCache __date = new DateCache("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
     private OutputStream _out;
     private PrintStream _print;
+    private boolean _showHeaders;
+private final String _attr = String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
 
     public DebugHandler()
     {
@@ -51,6 +54,16 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         super(handler);
     }
 
+    public boolean isShowHeaders()
+    {
+        return _showHeaders;
+    }
+
+    public void setShowHeaders(boolean showHeaders)
+    {
+        _showHeaders = showHeaders;
+    }
+
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
@@ -58,12 +71,18 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         String name = thread.getName() + ":" + request.getHttpURI();
 
         String ex = null;
+        String rname = findRequestName(request);
         try
         {
-            print(name, "REQUEST " + Request.getRemoteAddr(request) +
-                " " + request.getMethod() +
-                " " + request.getHeaders().get("Cookie") +
-                "; " + request.getHeaders().get("User-Agent"));
+            String headers = _showHeaders ? ("\n" + request.getHeaders().toString()) : "";
+
+            log(">> r=%s %s %s %s %s %s",
+                rname,
+                request.getMethod(),
+                request.getHttpURI(),
+                request.getConnectionMetaData().getProtocol(),
+                request.getConnectionMetaData(),
+                headers);
             thread.setName(name);
 
             return getHandler().handle(request, response, callback);
@@ -76,17 +95,44 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         finally
         {
             // TODO this should be done in a completion event
-            print(name, "RESPONSE " + response.getStatus() + (ex == null ? "" : ("/" + ex)) + " " + response.getHeaders().get(HttpHeader.CONTENT_TYPE));
+            log("<< r=%s async=false %d%n%s", rname, response.getStatus(), response.getHeaders());
         }
     }
 
-    private void print(String name, String message)
+    protected void log(String format, Object... arg)
     {
-        long now = System.currentTimeMillis();
-        final String d = _date.format(now);
-        final int ms = (int)(now % 1000);
+        if (!isRunning())
+            return;
 
-        _print.println(d + (ms > 99 ? "." : (ms > 9 ? ".0" : ".00")) + ms + ":" + name + " " + message);
+        String s = String.format(format, arg);
+
+        long now = System.currentTimeMillis();
+        long ms = now % 1000;
+        if (_print != null)
+            _print.printf("%s.%03d:%s%n", __date.format(now), ms, s);
+    }
+
+    protected String findRequestName(Request request)
+    {
+        if (request == null)
+            return null;
+
+        try
+        {
+            String n = (String)request.getAttribute(_attr);
+            if (n == null)
+            {
+                n = String.format("%s@%x", request.getHttpURI(), request.hashCode());
+                request.setAttribute(_attr, n);
+            }
+            return n;
+        }
+        catch (IllegalStateException e)
+        {
+            // TODO can we avoid creating and catching this exception? see #8024
+            // Handle the case when the request has already been completed
+            return String.format("%s@%x", request.getHttpURI(), request.hashCode());
+        }
     }
 
     @Override
@@ -138,12 +184,12 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     @Override
     public void onOpened(Connection connection)
     {
-        print(Thread.currentThread().getName(), "OPENED " + connection.toString());
+        log("%s OPENED %s", Thread.currentThread().getName(), connection.toString());
     }
 
     @Override
     public void onClosed(Connection connection)
     {
-        print(Thread.currentThread().getName(), "CLOSED " + connection.toString());
+        log("%s CLOSED %s", Thread.currentThread().getName(), connection.toString());
     }
 }
