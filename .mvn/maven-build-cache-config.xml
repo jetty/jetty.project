@@ -65,11 +65,6 @@
   <executionControl>
     <runAlways>
       <goalsLists>
-        <goalsList artifactId="maven-jar-plugin">
-          <goals>
-            <goal>test-jar</goal>
-          </goals>
-        </goalsList>
         <goalsList artifactId="maven-install-plugin">
           <goals>
             <goal>install</goal>
