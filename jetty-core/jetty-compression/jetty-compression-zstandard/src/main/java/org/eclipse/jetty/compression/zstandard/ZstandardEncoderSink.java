@@ -14,6 +14,7 @@
 package org.eclipse.jetty.compression.zstandard;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.luben.zstd.EndDirective;
@@ -74,10 +75,6 @@ public class ZstandardEncoderSink extends EncoderSink
             }
         }
 
-        // Requirement of zstd-jni
-        if (!content.isDirect())
-            throw new IllegalArgumentException("ByteBuffer must be direct for zstd-jni");
-
         return true;
     }
 
@@ -109,6 +106,36 @@ public class ZstandardEncoderSink extends EncoderSink
             LOG.debug("encode() stateIn={}, last={}, content={}, write={}, stateNow={}",
                 initialState, last, content, writeRecord, state);
         return writeRecord;
+    }
+
+    @Override
+    protected ByteBuffer ensureByteBuffer(ByteBuffer buffer)
+    {
+        if (buffer.isDirect())
+        {
+            buffer.order(ByteOrder.LITTLE_ENDIAN); // zstandard requirement
+            return buffer;
+        }
+
+        // We use direct allocation, not via ByteBufferPool here, as Content.Sink and EncoderSink does
+        // not work with ByteBufferPool acquire/release.
+        ByteBuffer direct = ByteBuffer.allocateDirect(buffer.capacity());
+        direct.order(ByteOrder.LITTLE_ENDIAN); // zstandard requirement
+        // copy the entire ByteBuffer (including pos/limit)
+        int pos = buffer.position();
+        int limit = buffer.limit();
+        buffer.position(0);
+        buffer.limit(buffer.capacity());
+        direct.put(buffer);
+
+        // set direct to be same pos/limit as buffer
+        direct.position(pos);
+        direct.limit(limit);
+
+        // set input buffer to consumed
+        buffer.position(buffer.capacity());
+
+        return direct;
     }
 
     private WriteRecord continueOp(boolean last, ByteBuffer content)

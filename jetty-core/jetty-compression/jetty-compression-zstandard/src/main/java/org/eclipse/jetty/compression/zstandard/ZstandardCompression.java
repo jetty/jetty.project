@@ -98,6 +98,8 @@ public class ZstandardCompression extends Compression
             buffer.release();
             throw new IllegalStateException("ByteBufferPool does not return zstd-jni required direct ByteBuffer");
         }
+        // We rely on the ByteBufferPool.release(ByteBuffer) performing a ByteBuffer order reset to default (big-endian).
+        // Typically, this is done with a BufferUtil.reset(ByteBuffer) call on.
         buffer.getByteBuffer().order(getByteOrder());
         return buffer;
     }
