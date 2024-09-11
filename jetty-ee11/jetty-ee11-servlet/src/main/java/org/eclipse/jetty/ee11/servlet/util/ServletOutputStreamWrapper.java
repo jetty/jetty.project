@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee11.servlet.util;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
@@ -29,96 +28,6 @@ public class ServletOutputStreamWrapper extends ServletOutputStream
     }
 
     @Override
-    public void print(String s) throws IOException
-    {
-        _outputStream.print(s);
-    }
-
-    @Override
-    public void print(boolean b) throws IOException
-    {
-        _outputStream.print(b);
-    }
-
-    @Override
-    public void print(char c) throws IOException
-    {
-        _outputStream.print(c);
-    }
-
-    @Override
-    public void print(int i) throws IOException
-    {
-        _outputStream.print(i);
-    }
-
-    @Override
-    public void print(long l) throws IOException
-    {
-        _outputStream.print(l);
-    }
-
-    @Override
-    public void print(float f) throws IOException
-    {
-        _outputStream.print(f);
-    }
-
-    @Override
-    public void print(double d) throws IOException
-    {
-        _outputStream.print(d);
-    }
-
-    @Override
-    public void println() throws IOException
-    {
-        _outputStream.println();
-    }
-
-    @Override
-    public void println(String s) throws IOException
-    {
-        _outputStream.println(s);
-    }
-
-    @Override
-    public void println(boolean b) throws IOException
-    {
-        _outputStream.println(b);
-    }
-
-    @Override
-    public void println(char c) throws IOException
-    {
-        _outputStream.println(c);
-    }
-
-    @Override
-    public void println(int i) throws IOException
-    {
-        _outputStream.println(i);
-    }
-
-    @Override
-    public void println(long l) throws IOException
-    {
-        _outputStream.println(l);
-    }
-
-    @Override
-    public void println(float f) throws IOException
-    {
-        _outputStream.println(f);
-    }
-
-    @Override
-    public void println(double d) throws IOException
-    {
-        _outputStream.println(d);
-    }
-
-    @Override
     public boolean isReady()
     {
         return _outputStream.isReady();
@@ -128,11 +37,6 @@ public class ServletOutputStreamWrapper extends ServletOutputStream
     public void setWriteListener(WriteListener writeListener)
     {
         _outputStream.setWriteListener(writeListener);
-    }
-
-    public static OutputStream nullOutputStream()
-    {
-        return OutputStream.nullOutputStream();
     }
 
     @Override

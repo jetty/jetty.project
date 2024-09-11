@@ -17,6 +17,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
@@ -29,16 +32,18 @@ import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.StringUtil.CRLF;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletUpgradeTest
@@ -47,10 +52,13 @@ public class ServletUpgradeTest
 
     private Server server;
     private int port;
+    private static CountDownLatch destroyLatch;
 
     @BeforeEach
     public void setUp() throws Exception
     {
+        destroyLatch = new CountDownLatch(1);
+
         server = new Server();
 
         ServerConnector connector = new ServerConnector(server);
@@ -72,130 +80,64 @@ public class ServletUpgradeTest
         server.stop();
     }
 
-    @Disabled
     @Test
     public void upgradeTest() throws Exception
     {
-        boolean passed1 = false;
-        boolean passed2 = false;
-        boolean passed3 = false;
-        String expectedResponse1 = "TCKHttpUpgradeHandler.init";
-        String expectedResponse2 = "onDataAvailable|Hello";
-        String expectedResponse3 = "onDataAvailable|World";
+        Socket socket = new Socket("localhost", port);
+        socket.setSoTimeout(0);
+        InputStream input = socket.getInputStream();
+        OutputStream output = socket.getOutputStream();
 
-        InputStream input = null;
-        OutputStream output = null;
-        Socket s = null;
+        String request = "POST /TestServlet HTTP/1.1" + CRLF +
+            "Host: localhost:" + port + CRLF +
+            "Upgrade: YES" + CRLF +
+            "Connection: Upgrade" + CRLF +
+            CRLF;
 
-        try
+        output.write(request.getBytes());
+        writeChunk(output, "Hello");
+        writeChunk(output, "World");
+        output.flush();
+        socket.shutdownOutput();
+
+        CompletableFuture<String> futureContent = new CompletableFuture<>();
+        new Thread(() ->
         {
-            s = new Socket("localhost", port);
-            output = s.getOutputStream();
-
-            StringBuilder reqStr = new StringBuilder()
-                .append("POST /TestServlet HTTP/1.1").append(CRLF)
-                .append("User-Agent: Java/1.6.0_33").append(CRLF)
-                .append("Host: localhost:").append(port).append(CRLF)
-                .append("Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2").append(CRLF)
-                .append("Upgrade: YES").append(CRLF)
-                .append("Connection: Upgrade").append(CRLF)
-                .append("Content-type: application/x-www-form-urlencoded").append(CRLF)
-                .append(CRLF);
-
-            LOG.info("REQUEST=========" + reqStr.toString());
-            output.write(reqStr.toString().getBytes());
-
-            LOG.info("Writing first chunk");
-            writeChunk(output, "Hello");
-
-            LOG.info("Writing second chunk");
-            writeChunk(output, "World");
-
             LOG.info("Consuming the response from the server");
-
-            // Consume the response from the server
-            input = s.getInputStream();
-            int len;
-            byte[] b = new byte[1024];
-            boolean receivedFirstMessage = false;
-            boolean receivedSecondMessage = false;
-            boolean receivedThirdMessage = false;
-            StringBuilder sb = new StringBuilder();
-            while ((len = input.read(b)) != -1)
-            {
-                String line = new String(b, 0, len);
-                sb.append(line);
-                LOG.info("==============Read from server:" + CRLF + sb + CRLF);
-                if (passed1 = compareString(expectedResponse1, sb.toString()))
-                {
-                    LOG.info("==============Received first expected response!" + CRLF);
-                    receivedFirstMessage = true;
-                }
-                if (passed2 = compareString(expectedResponse2, sb.toString()))
-                {
-                    LOG.info("==============Received second expected response!" + CRLF);
-                    receivedSecondMessage = true;
-                }
-                if (passed3 = compareString(expectedResponse3, sb.toString()))
-                {
-                    LOG.info("==============Received third expected response!" + CRLF);
-                    receivedThirdMessage = true;
-                }
-                LOG.info("receivedFirstMessage : " + receivedFirstMessage);
-                LOG.info("receivedSecondMessage : " + receivedSecondMessage);
-                LOG.info("receivedThirdMessage : " + receivedThirdMessage);
-                if (receivedFirstMessage && receivedSecondMessage && receivedThirdMessage)
-                {
-                    break;
-                }
-            }
-        }
-        finally
-        {
+            Utf8StringBuilder sb = new Utf8StringBuilder();
             try
             {
-                if (input != null)
+                while (true)
                 {
-                    LOG.info("Closing input...");
-                    input.close();
-                    LOG.info("Input closed.");
+                    int read = input.read();
+                    if (read == -1)
+                        break;
+                    sb.append((byte)read);
                 }
+                futureContent.complete(sb.toCompleteString());
             }
-            catch (Exception ex)
+            catch (Throwable t)
             {
-                LOG.error("Failed to close input:" + ex.getMessage(), ex);
+                LOG.warn("failed with content: " + sb, t);
+                futureContent.completeExceptionally(t);
             }
 
-            try
-            {
-                if (output != null)
-                {
-                    LOG.info("Closing output...");
-                    output.close();
-                    LOG.info("Output closed .");
-                }
-            }
-            catch (Exception ex)
-            {
-                LOG.error("Failed to close output:" + ex.getMessage(), ex);
-            }
+        }).start();
 
-            try
-            {
-                if (s != null)
-                {
-                    LOG.info("Closing socket..." + CRLF);
-                    s.close();
-                    LOG.info("Socked closed.");
-                }
-            }
-            catch (Exception ex)
-            {
-                LOG.error("Failed to close socket:" + ex.getMessage(), ex);
-            }
-        }
+        String content = futureContent.get(5, TimeUnit.SECONDS);
+        String expectedContent = """
+            TCKHttpUpgradeHandler.init\r
+            =onDataAvailable\r
+            HelloWorld\r
+            =onAllDataRead\r
+            """;
+        assertThat(content, startsWith("HTTP/1.1 101 Switching Protocols"));
+        assertThat(content, endsWith(expectedContent));
 
-        assertTrue(passed1 && passed2 && passed3);
+        input.close();
+        output.close();
+        socket.close();
+        assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
     }
 
     private static class TestServlet extends HttpServlet
@@ -227,7 +169,7 @@ public class ServletUpgradeTest
         @Override
         public void destroy()
         {
-            LOG.debug("===============destroy");
+            destroyLatch.countDown();
         }
 
         @Override
@@ -237,9 +179,9 @@ public class ServletUpgradeTest
             {
                 ServletInputStream input = wc.getInputStream();
                 ServletOutputStream output = wc.getOutputStream();
-                TestReadListener readListener = new TestReadListener("/", input, output);
+                TestReadListener readListener = new TestReadListener(input, output);
                 input.setReadListener(readListener);
-                output.println("===============TCKHttpUpgradeHandler.init");
+                output.println("TCKHttpUpgradeHandler.init");
                 output.flush();
             }
             catch (Exception ex)
@@ -253,20 +195,20 @@ public class ServletUpgradeTest
     {
         private final ServletInputStream input;
         private final ServletOutputStream output;
-        private final String delimiter;
+        private boolean outputOnDataAvailable = false;
 
-        TestReadListener(String del, ServletInputStream in, ServletOutputStream out)
+        TestReadListener(ServletInputStream in, ServletOutputStream out)
         {
             input = in;
             output = out;
-            delimiter = del;
         }
 
+        @Override
         public void onAllDataRead()
         {
             try
             {
-                output.println("=onAllDataRead");
+                output.println("\r\n=onAllDataRead");
                 output.close();
             }
             catch (Exception ex)
@@ -275,11 +217,17 @@ public class ServletUpgradeTest
             }
         }
 
+        @Override
         public void onDataAvailable()
         {
             try
             {
-                output.println("=onDataAvailable");
+                if (!outputOnDataAvailable)
+                {
+                    outputOnDataAvailable = true;
+                    output.println("=onDataAvailable");
+                }
+
                 StringBuilder sb = new StringBuilder();
                 int len;
                 byte[] b = new byte[1024];
@@ -288,7 +236,7 @@ public class ServletUpgradeTest
                     String data = new String(b, 0, len);
                     sb.append(data);
                 }
-                output.println(delimiter + sb.toString());
+                output.print(sb.toString());
                 output.flush();
             }
             catch (Exception ex)
@@ -297,48 +245,11 @@ public class ServletUpgradeTest
             }
         }
 
+        @Override
         public void onError(final Throwable t)
         {
             LOG.error("TestReadListener error", t);
         }
-    }
-
-    private static boolean compareString(String expected, String actual)
-    {
-        String[] listExpected = expected.split("[|]");
-        boolean found = true;
-        for (int i = 0, n = listExpected.length, startIdx = 0, bodyLength = actual.length(); i < n; i++)
-        {
-            String search = listExpected[i];
-            if (startIdx >= bodyLength)
-            {
-                startIdx = bodyLength;
-            }
-
-            int searchIdx = actual.toLowerCase().indexOf(search.toLowerCase(), startIdx);
-
-            LOG.debug("[ServletTestUtil] Scanning response for " + "search string: '" + search + "' starting at index " + "location: " + startIdx);
-            if (searchIdx < 0)
-            {
-                found = false;
-                String s = "[ServletTestUtil] Unable to find the following " +
-                    "search string in the server's " +
-                    "response: '" + search + "' at index: " +
-                    startIdx +
-                    "\n[ServletTestUtil] Server's response:\n" +
-                    "-------------------------------------------\n" +
-                    actual +
-                    "\n-------------------------------------------\n";
-                LOG.debug(s);
-                break;
-            }
-
-            LOG.debug("[ServletTestUtil] Found search string: '" + search + "' at index '" + searchIdx + "' in the server's " + "response");
-            // the new searchIdx is the old index plus the lenght of the
-            // search string.
-            startIdx = searchIdx + search.length();
-        }
-        return found;
     }
 
     private static void writeChunk(OutputStream out, String data) throws IOException

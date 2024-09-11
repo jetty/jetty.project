@@ -18,7 +18,7 @@ pipeline {
         stage("Build / Test - JDK21") {
           agent { node { label 'linux' } }
           steps {
-            timeout( time: 180, unit: 'MINUTES' ) {
+            timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
@@ -31,7 +31,7 @@ pipeline {
         stage("Build / Test - JDK22") {
           agent { node { label 'linux' } }
           steps {
-            timeout( time: 180, unit: 'MINUTES' ) {
+            timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk22", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk22", name: "Static Analysis jdk22", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
@@ -39,10 +39,21 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK17") {
+        stage("Build / Test - JDK23") {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk23", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk23", name: "Static Analysis jdk23", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+            }
+          }
+        }
+
+        stage("Build / Test - JDK17") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk17", "clean install -Perrorprone", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,

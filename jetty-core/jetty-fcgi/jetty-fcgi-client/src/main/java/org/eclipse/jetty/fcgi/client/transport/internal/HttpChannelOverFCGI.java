@@ -119,11 +119,25 @@ public class HttpChannelOverFCGI extends HttpChannel
             receiver.content(chunk);
     }
 
+    protected void responseContentAvailable()
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+            receiver.responseContentAvailable(exchange);
+    }
+
     protected void end()
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
-            receiver.end(exchange);
+            receiver.end();
+    }
+
+    protected void responseSuccess()
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange != null)
+            receiver.responseSuccess(exchange);
     }
 
     protected void responseFailure(Throwable failure, Promise<Boolean> promise)

@@ -55,7 +55,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -68,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Tag("flaky") // TODO investigate H3
 public class HttpClientContinueTest extends AbstractTest
 {
     @ParameterizedTest
@@ -271,11 +269,18 @@ public class HttpClientContinueTest extends AbstractTest
                 {
                     assertTrue(result.isFailed());
                     assertNotNull(result.getRequestFailure());
-                    assertNull(result.getResponseFailure());
-                    byte[] content = getContent();
-                    assertNotNull(content);
-                    assertTrue(content.length > 0);
                     assertEquals(error, result.getResponse().getStatus());
+                    Throwable responseFailure = result.getResponseFailure();
+                    // For HTTP/2 the response may fail because the
+                    // server may not fully read the request content,
+                    // and sends a reset that may drop the response
+                    // content and cause the response failure.
+                    if (responseFailure == null)
+                    {
+                        byte[] content = getContent();
+                        assertNotNull(content);
+                        assertTrue(content.length > 0);
+                    }
                     latch.countDown();
                 }
             });
@@ -830,7 +835,7 @@ public class HttpClientContinueTest extends AbstractTest
         startServer(Transport.HTTP, new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 assertEquals(0, request.getContentLengthLong());
                 assertNotNull(request.getHeader(HttpHeader.EXPECT.asString()));

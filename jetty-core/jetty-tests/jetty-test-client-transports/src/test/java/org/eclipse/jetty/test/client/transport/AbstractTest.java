@@ -150,7 +150,7 @@ public class AbstractTest
     {
         try
         {
-            await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> assertThat("\n---\n" + msg + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
         }
         catch (Exception e)
         {

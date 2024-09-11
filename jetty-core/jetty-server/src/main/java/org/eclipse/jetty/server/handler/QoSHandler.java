@@ -397,11 +397,16 @@ public class QoSHandler extends ConditionalHandler.Abstract
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} resuming {}", this, entry.request);
                 // Always dispatch to avoid StackOverflowError.
-                getServer().getThreadPool().execute(entry);
+                execute(entry.request, entry);
                 return true;
             }
         }
         return false;
+    }
+
+    private void execute(Request request, Runnable task)
+    {
+        request.getComponents().getExecutor().execute(task);
     }
 
     private class Entry implements CyclicTimeouts.Expirable, Runnable
@@ -458,7 +463,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             }
 
             if (removed)
-                failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
+                execute(request, () -> failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException()));
         }
 
         @Override

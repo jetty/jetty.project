@@ -1074,6 +1074,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
+        if (isProtectedTarget(pathInContext))
+        {
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404, null);
+            return true;
+        }
+
         return false;
     }
 

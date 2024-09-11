@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SerializedExecutor implements Executor
 {
-    private final SerializedInvoker _invoker = new SerializedInvoker()
+    private final SerializedInvoker _invoker = new SerializedInvoker(SerializedExecutor.class)
     {
         @Override
         protected void onError(Runnable task, Throwable t)
