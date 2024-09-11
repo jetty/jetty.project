@@ -125,11 +125,11 @@ def mavenBuild(jdk, cmdline, mvnName) {
           buildCache = useBuildCache()
           if (buildCache) {
             echo "Using build cache"
-            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server -Daether.connector.http.supportWebDav=true "
+            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred  "
           } else {
             // when not using cache
             echo "Not using build cache"
-            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server -Daether.connector.http.supportWebDav=true "
+            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred "
           }
           if (env.BRANCH_NAME ==~ /PR-\d+/) {
             if (pullRequest.labels.contains("build-all-tests")) {
