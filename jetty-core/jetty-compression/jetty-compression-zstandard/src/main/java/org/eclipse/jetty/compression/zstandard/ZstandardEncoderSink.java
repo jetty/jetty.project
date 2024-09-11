@@ -23,6 +23,7 @@ import com.github.luben.zstd.ZstdFrameProgression;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,32 +109,30 @@ public class ZstandardEncoderSink extends EncoderSink
         return writeRecord;
     }
 
-    @Override
-    protected ByteBuffer ensureByteBuffer(ByteBuffer buffer)
+    protected RetainableByteBuffer ensureDirect(ByteBuffer buffer, int size)
     {
         if (buffer.isDirect())
         {
             buffer.order(ByteOrder.LITTLE_ENDIAN); // zstandard requirement
-            return buffer;
+            return RetainableByteBuffer.wrap(buffer);
         }
 
-        // We use direct allocation, not via ByteBufferPool here, as Content.Sink and EncoderSink does
-        // not work with ByteBufferPool acquire/release.
-        ByteBuffer direct = ByteBuffer.allocateDirect(buffer.capacity());
-        direct.order(ByteOrder.LITTLE_ENDIAN); // zstandard requirement
-        // copy the entire ByteBuffer (including pos/limit)
+        RetainableByteBuffer direct = compression.acquireByteBuffer(size);
+
+        // Remember the original pos/limit
         int pos = buffer.position();
         int limit = buffer.limit();
-        buffer.position(0);
-        buffer.limit(buffer.capacity());
-        direct.put(buffer);
+        int length = Math.min(buffer.remaining(), size);
+        buffer.limit(pos + length);
 
-        // set direct to be same pos/limit as buffer
-        direct.position(pos);
-        direct.limit(limit);
+        BufferUtil.flipToFill(direct.getByteBuffer());
+        direct.getByteBuffer().put(buffer);
 
-        // set input buffer to consumed
-        buffer.position(buffer.capacity());
+        BufferUtil.flipToFlush(direct.getByteBuffer(), 0);
+
+        // consume length on original buffer
+        buffer.limit(limit);
+        buffer.position(pos + length);
 
         return direct;
     }
@@ -145,14 +144,29 @@ public class ZstandardEncoderSink extends EncoderSink
         // process content (input) buffer using zstd-jni CONTINUE directive
         while (content.hasRemaining())
         {
-            outputBuf.getByteBuffer().clear();
-            boolean flushed = compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), content, EndDirective.CONTINUE);
-            outputBuf.getByteBuffer().flip();
-            if (outputBuf.getByteBuffer().hasRemaining())
+            // content must be a direct bytebuffer, and we have to assume that the size
+            // of the content buffer can be huge (multi megabyte or bigger), so lets
+            // process the content one limited direct buffer at a time.
+            RetainableByteBuffer inputBuf = ensureDirect(content, bufferSize);
+            while (inputBuf.hasRemaining())
             {
-                Callback writeCallback = Callback.from(outputBuf::release);
-                return new WriteRecord(false, outputBuf.getByteBuffer(), writeCallback);
+                outputBuf.getByteBuffer().clear();
+                boolean flushed = compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), inputBuf.getByteBuffer(), EndDirective.CONTINUE);
+                outputBuf.getByteBuffer().flip();
+                if (outputBuf.getByteBuffer().hasRemaining())
+                {
+                    Callback writeCallback = Callback.from(outputBuf::release);
+                    if (inputBuf.hasRemaining())
+                    {
+                        // rollback unprocessed inputBuf to content buffer position.
+                        content.position(content.position() - inputBuf.remaining());
+                    }
+                    // we are about to return, release inputBuffer
+                    inputBuf.release();
+                    return new WriteRecord(false, outputBuf.getByteBuffer(), writeCallback);
+                }
             }
+            inputBuf.release();
         }
         outputBuf.release();
         if (last)

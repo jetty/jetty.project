@@ -14,6 +14,8 @@
 package org.eclipse.jetty.compression;
 
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -26,6 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -139,6 +142,52 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
         String content = new String(decompress(response.getContent()), UTF_8);
         assertThat(content, is(message));
+    }
+
+    /**
+     * Testing how CompressionHandler acts with a single compression implementation added.
+     * Using all defaults for both the compression impl, and the CompressionHandler.
+     */
+    @ParameterizedTest
+    @MethodSource("textInputs")
+    public void testDefaultCompressionConfigurationText(Class<Compression> compressionClass, String resourceName) throws Exception
+    {
+        newCompression(compressionClass);
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        String resourceBody = Files.readString(resourcePath, UTF_8);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.addCompression(compression);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "texts/plain;charset=utf-8");
+                Content.Sink.write(response, true, resourceBody, callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+            })
+            .path("/textbody")
+            .send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
+        String content = new String(decompress(response.getContent()), UTF_8);
+        assertThat(content, is(resourceBody));
     }
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)

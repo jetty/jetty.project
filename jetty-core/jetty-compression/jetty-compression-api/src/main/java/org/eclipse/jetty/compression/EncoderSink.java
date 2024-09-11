@@ -68,23 +68,10 @@ public abstract class EncoderSink implements Content.Sink
             return;
         }
 
-        ByteBuffer buffer = ensureByteBuffer(content);
-
         if (content != null || last)
-            new EncodeBufferCallback(last, buffer, callback).iterate();
+            new EncodeBufferCallback(last, content, callback).iterate();
         else
             callback.succeeded();
-    }
-
-    /**
-     * Ensure that the ByteBuffer that arrives here is of the correct state
-     * to operate in this EncoderSink.
-     * @param buffer the buffer (likely from the application)
-     * @return the corrected buffer (suitable for the EncoderSink)
-     */
-    protected ByteBuffer ensureByteBuffer(ByteBuffer buffer)
-    {
-        return buffer;
     }
 
     protected abstract WriteRecord encode(boolean last, ByteBuffer content);
