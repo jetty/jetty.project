@@ -92,7 +92,8 @@ public abstract class AbstractCompressionTest
     public void stopCompression()
     {
         LifeCycle.stop(compression);
-        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
+        if (pool != null)
+            assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
     }
 
     /**
