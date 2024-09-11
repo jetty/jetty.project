@@ -715,7 +715,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         int sslPort = Tester.freePort();
 
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demos", env) + "," + toEnvironment("debug", env)
+            "--add-modules=http," + toEnvironment("demos", env) + ",debuglog"
         };
 
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
