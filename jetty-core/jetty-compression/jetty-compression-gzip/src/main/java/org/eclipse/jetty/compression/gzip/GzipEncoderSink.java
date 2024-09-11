@@ -128,6 +128,9 @@ public class GzipEncoderSink extends EncoderSink
     @Override
     protected WriteRecord encode(boolean last, ByteBuffer content)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("encode() last={}, content={}", last, BufferUtil.toDetailString(content));
+
         RetainableByteBuffer output = null;
         try
         {
@@ -162,7 +165,7 @@ public class GzipEncoderSink extends EncoderSink
                             // no remaining content (and input has been provided)
                             return null;
                         }
-                        if (last)
+                        if (!content.hasRemaining() && last)
                         {
                             state.compareAndSet(State.BODY, State.FLUSHING);
                             // Reset input, so that Gzip stops looking at ByteBuffer (that might be reused)
