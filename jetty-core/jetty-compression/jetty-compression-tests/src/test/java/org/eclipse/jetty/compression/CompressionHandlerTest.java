@@ -14,7 +14,6 @@
 package org.eclipse.jetty.compression;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -117,10 +116,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "texts/plain;charset=utf-8");
-                ByteBuffer msg = ByteBuffer.allocateDirect(message.length()*2);
-                msg.put(message.getBytes(UTF_8));
-                msg.flip();
-                response.write(true, msg, callback);
+                Content.Sink.write(response, true, message, callback);
                 return true;
             }
         });
