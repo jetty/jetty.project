@@ -19,6 +19,7 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -150,6 +151,56 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         String content = new String(decompress(response.getContent()), UTF_8);
         assertThat(content, is(resourceBody));
     }
+
+    /**
+     * Testing how CompressionHandler acts with a single compression implementation added.
+     * Using all defaults for both the compression impl, and the CompressionHandler.
+     */
+    @ParameterizedTest
+    @MethodSource("textInputs")
+    public void testExcludeCompressionConfigurationText(Class<Compression> compressionClass, String resourceName) throws Exception
+    {
+        newCompression(compressionClass);
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        String resourceBody = Files.readString(resourcePath, UTF_8);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.addCompression(compression);
+        CompressionConfig config = CompressionConfig.builder().build();
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "texts/plain;charset=utf-8");
+                Content.Sink.write(response, true, resourceBody, callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+            })
+            .path("/textbody")
+            .send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
+        String content = new String(decompress(response.getContent()), UTF_8);
+        assertThat(content, is(resourceBody));
+    }
+
 
     @Test
     public void testDefaultConfiguration() throws Exception

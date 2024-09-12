@@ -29,6 +29,7 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
     private Compression compression;
     private HttpFields fields;
     private DecoderSource decoderSource;
+
     public DecompressionRequest(Request wrapped)
     {
         super(wrapped);
@@ -42,30 +43,19 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
         super(request);
         this.compression = compression;
         fields = updateRequestFields(request);
-
-        int inflateBufferSize = config.getInflateBufferSize();
-        if (inflateBufferSize > 0)
-        {
-            decoderSource = compression.newDecoderSource(this);
-        }
+        decoderSource = compression.newDecoderSource(this);
     }
 
     @Override
     public void demand(Runnable demandCallback)
     {
-        if (decoderSource != null)
-            decoderSource.demand(demandCallback);
-        else
-            super.demand(demandCallback);
+        decoderSource.demand(demandCallback);
     }
 
     public void destroy()
     {
-        if (decoderSource != null)
-        {
-            if (decoderSource instanceof Destroyable destroyable)
-                destroyable.destroy();
-        }
+        if (decoderSource instanceof Destroyable destroyable)
+            destroyable.destroy();
     }
 
     @Override
@@ -79,9 +69,7 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
     @Override
     public Content.Chunk read()
     {
-        if (decoderSource != null)
-            return decoderSource.read();
-        return super.read();
+        return decoderSource.read();
     }
 
     private HttpFields updateRequestFields(Request request)

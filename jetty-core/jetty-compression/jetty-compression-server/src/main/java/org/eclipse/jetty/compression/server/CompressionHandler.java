@@ -53,15 +53,31 @@ public class CompressionHandler extends Handler.Wrapper
         addBean(compression);
     }
 
-    public void addConfiguration(PathSpec pathSpec, CompressionConfig config)
+    public CompressionConfig getConfiguration(PathSpec pathSpec)
+    {
+        // TODO: should we return null here?
+        //   It would make using this for additive changes to an existing configuration tricky (from an XML)
+        return pathConfigs.computeIfAbsent(pathSpec, (spec) ->
+        {
+            return CompressionConfig.builder().build();
+        });
+    }
+
+    public CompressionConfig getConfiguration(String pathSpecString)
+    {
+        PathSpec pathSpec = PathSpec.from(pathSpecString);
+        return getConfiguration(pathSpec);
+    }
+
+    public void putConfiguration(PathSpec pathSpec, CompressionConfig config)
     {
         pathConfigs.put(pathSpec, config);
     }
 
-    public void addConfiguration(String pathSpecString, CompressionConfig config)
+    public void putConfiguration(String pathSpecString, CompressionConfig config)
     {
         PathSpec pathSpec = PathSpec.from(pathSpecString);
-        addConfiguration(pathSpec, config);
+        putConfiguration(pathSpec, config);
     }
 
     @Override
@@ -206,7 +222,8 @@ public class CompressionHandler extends Handler.Wrapper
     {
         if (pathConfigs.isEmpty())
         {
-            pathConfigs.put("/", new CompressionConfig());
+            // add default configuration if no paths have been configured.
+            pathConfigs.put("/", CompressionConfig.builder().build());
         }
 
         super.doStart();

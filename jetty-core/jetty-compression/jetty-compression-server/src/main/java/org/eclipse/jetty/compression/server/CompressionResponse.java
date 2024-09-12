@@ -32,7 +32,6 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
     private final CompressionConfig config;
     private final Compression compression;
     private final EncoderSink encoderSink;
-    private final boolean syncFlush;
     private boolean last;
 
     public CompressionResponse(Compression compression, Request request, Response wrapped, Callback callback, CompressionConfig config)
@@ -42,7 +41,6 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
         this.config = config;
         this.compression = compression;
         this.encoderSink = compression.newEncoderSink(wrapped);
-        syncFlush = config.isSyncFlush();
         getHeaders().put(compression.getContentEncodingField());
     }
 
@@ -72,6 +70,11 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
+        // TODO: on response commit, determine if response Content-Type is an allowed
+        // to be compressed type based on the CompressionConfig.mimeType settings.
+        // We need to modify the response headers before commit to know if we
+        // allow compression (or not).
+
         encoderSink.write(last, content, callback);
         if (last)
             this.last = true;

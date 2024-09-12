@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.compression.server;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.Deflater;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -25,263 +25,71 @@ import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.IncludeExclude;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@ManagedObject("Compression Configuration")
 public class CompressionConfig extends AbstractLifeCycle
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CompressionConfig.class);
-
-    private static final int MIN_FUNCTIONAL_SIZE = 23;
-    private static final int DEFAULT_MIN_COMPRESS_SIZE = 32;
     /**
      * Set of `Content-Encoding` encodings that are supported by this configuration.
      */
-    private final IncludeExclude<String> decompressEncodings = new IncludeExclude<>();
+    private final IncludeExcludeSet<String, String> decompressEncodings;
     /**
      * Set of `Accept-Encoding` encodings that are supported by this configuration.
      */
-    private final IncludeExclude<String> compressEncodings = new IncludeExclude<>();
+    private final IncludeExcludeSet<String, String> compressEncodings;
     /**
      * Set of HTTP Methods that are supported by this configuration.
      */
-    private final IncludeExclude<String> methods = new IncludeExclude<>();
-    // TODO: rename or eliminate
-    private final IncludeExclude<String> inflatePaths = new IncludeExclude<>(PathSpecSet.class);
-    // TODO: rename or eliminate
-    private final IncludeExclude<String> paths = new IncludeExclude<>(PathSpecSet.class);
-    private final IncludeExclude<String> mimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
-    private int compressSizeMinimum = DEFAULT_MIN_COMPRESS_SIZE;
-    private int decompressBufferSize = -1;
-    private boolean syncFlush = false; // TODO: move to gzip specific config
-    private HttpField vary = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
+    private final IncludeExcludeSet<String, String> methods;
+    private final IncludeExcludeSet<String, String> mimetypes;
+    private final IncludeExcludeSet<String, String> decompressPaths;
+    private final IncludeExcludeSet<String, String> compressPaths;
+    private final HttpField vary;
 
-    // TODO: preference order of compressions.
-    // TODO: compression specific config (eg: compression level, strategy, etc)
-    // TODO: dictionary support
-
-    /**
-     * Adds excluded Path Specs for request filtering on request inflation.
-     *
-     * <p>
-     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
-     * Regex based.  This means that the initial characters on the path spec
-     * line are very strict, and determine the behavior of the path matching.
-     * <ul>
-     * <li>If the spec starts with <code>'^'</code> the spec is assumed to be
-     * a regex based path spec and will match with normal Java regex rules.</li>
-     * <li>If the spec starts with <code>'/'</code> then spec is assumed to be
-     * a Servlet url-pattern rules path spec for either an exact match
-     * or prefix based match.</li>
-     * <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
-     * a Servlet url-pattern rules path spec for a suffix based match.</li>
-     * <li>All other syntaxes are unsupported</li>
-     * </ul>
-     * <p>
-     * Note: inclusion takes precedence over exclude.
-     *
-     * @param pathspecs Path specs (as per servlet spec) to exclude. If a
-     * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute.<br>
-     * For backward compatibility the pathspecs may be comma separated strings, but this
-     * will not be supported in future versions.
-     * @see #addIncludedInflationPaths(String...)
-     * @deprecated review "backward compatibility" here.
-     */
-    @Deprecated // TODO review "backward compatibility" here. (use of csvSplit with var-args)
-    public void addExcludedInflationPaths(String... pathspecs)
+    private CompressionConfig(Builder builder)
     {
-        for (String p : pathspecs)
-        {
-            inflatePaths.exclude(StringUtil.csvSplit(p));
-        }
+        this.decompressEncodings = builder.decompressEncodings.asImmutable();
+        this.compressEncodings = builder.compressEncodings.asImmutable();
+        this.methods = builder.methods.asImmutable();
+        this.mimetypes = builder.mimetypes.asImmutable();
+        this.decompressPaths = builder.decompressPaths.asImmutable();
+        this.compressPaths = builder.compressPaths.asImmutable();
+        this.vary = builder.vary;
+    }
+
+    public static Builder builder()
+    {
+        return new Builder();
     }
 
     /**
-     * Add excluded to the HTTP methods filtering.
+     * Get the set of excluded Path Specs for response compression.
      *
-     * @param methods The methods to exclude in compression
-     * @see #addIncludedMethods(String...)
+     * @return the set of excluded Path Specs
+     * @see #getCompressPathIncludes()
      */
-    public void addExcludedMethods(String... methods)
+    @ManagedAttribute("Set of Response Compression Path Exclusions")
+    public Set<String> getCompressPathExcludes()
     {
-        for (String m : methods)
-        {
-            this.methods.exclude(m);
-        }
+        Set<String> excluded = compressPaths.getExcluded();
+        return Collections.unmodifiableSet(excluded);
     }
 
     /**
-     * Adds excluded MIME types for response filtering.
+     * Get the set of included Path Specs for response compression.
      *
-     * <p>
-     * <em>Deprecation Warning: </em>
-     * For backward compatibility the MIME types parameters may be comma separated strings,
-     * but this will not be supported in future versions of Jetty.
-     * </p>
-     *
-     * @param types The mime types to exclude (without charset or other parameters).
-     * @see #addIncludedMimeTypes(String...)
-     * @deprecated review "backward compatibility" here.
+     * @return the set of included Path Specs
+     * @see #getCompressPathExcludes()
      */
-    @Deprecated // TODO review "backward compatibility" here. (use of csvSplit with var-args)
-    public void addExcludedMimeTypes(String... types)
+    @ManagedAttribute("Set of Response Compression Path Exclusions")
+    public Set<String> getCompressPathIncludes()
     {
-        for (String t : types)
-        {
-            mimeTypes.exclude(StringUtil.csvSplit(t));
-        }
-    }
-
-    /**
-     * Adds excluded Path Specs for request filtering.
-     *
-     * <p>
-     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
-     * Regex based.  This means that the initial characters on the path spec
-     * line are very strict, and determine the behavior of the path matching.
-     * <ul>
-     * <li>If the spec starts with <code>'^'</code> the spec is assumed to be
-     * a regex based path spec and will match with normal Java regex rules.</li>
-     * <li>If the spec starts with <code>'/'</code> then spec is assumed to be
-     * a Servlet url-pattern rules path spec for either an exact match
-     * or prefix based match.</li>
-     * <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
-     * a Servlet url-pattern rules path spec for a suffix based match.</li>
-     * <li>All other syntaxes are unsupported</li>
-     * </ul>
-     * <p>
-     * Note: inclusion takes precedence over exclude.
-     *
-     * @param pathspecs Path specs (as per servlet spec) to exclude. If a
-     * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute.<br>
-     * For backward compatibility the pathspecs may be comma separated strings, but this
-     * will not be supported in future versions.
-     * @see #addIncludedPaths(String...)
-     * @deprecated review "backward compatibility" here.
-     */
-    @Deprecated // TODO review "backward compatibility" here. (use of csvSplit with var-args)
-    public void addExcludedPaths(String... pathspecs)
-    {
-        for (String p : pathspecs)
-        {
-            paths.exclude(StringUtil.csvSplit(p));
-        }
-    }
-
-    /**
-     * Add included Path Specs for filtering on request inflation.
-     *
-     * <p>
-     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
-     * Regex based.  This means that the initial characters on the path spec
-     * line are very strict, and determine the behavior of the path matching.
-     * <ul>
-     * <li>If the spec starts with <code>'^'</code> the spec is assumed to be
-     * a regex based path spec and will match with normal Java regex rules.</li>
-     * <li>If the spec starts with <code>'/'</code> then spec is assumed to be
-     * a Servlet url-pattern rules path spec for either an exact match
-     * or prefix based match.</li>
-     * <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
-     * a Servlet url-pattern rules path spec for a suffix based match.</li>
-     * <li>All other syntaxes are unsupported</li>
-     * </ul>
-     * <p>
-     * Note: inclusion takes precedence over exclusion.
-     *
-     * @param pathspecs Path specs (as per servlet spec) to include. If a
-     * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute
-     * @deprecated review "backward compatibility" here.
-     */
-    @Deprecated // TODO review "backward compatibility" here. (use of csvSplit with var-args)
-    public void addIncludedInflationPaths(String... pathspecs)
-    {
-        for (String p : pathspecs)
-        {
-            inflatePaths.include(StringUtil.csvSplit(p));
-        }
-    }
-
-    /**
-     * Adds included HTTP Methods (eg: POST, PATCH, DELETE) for filtering.
-     *
-     * @param methods The HTTP methods to include in compression.
-     * @see #addExcludedMethods(String...)
-     */
-    public void addIncludedMethods(String... methods)
-    {
-        for (String m : methods)
-        {
-            this.methods.include(m);
-        }
-    }
-
-    /**
-     * Add included MIME types for response filtering
-     *
-     * @param types The mime types to include (without charset or other parameters)
-     * For backward compatibility the mimetypes may be comma separated strings, but this
-     * will not be supported in future versions.
-     * @see #addExcludedMimeTypes(String...)
-     * @deprecated review "backward compatibility" here.
-     */
-    @Deprecated // TODO review "backward compatibility" here. (use of csvSplit with var-args)
-    public void addIncludedMimeTypes(String... types)
-    {
-        for (String t : types)
-        {
-            mimeTypes.include(StringUtil.csvSplit(t));
-        }
-    }
-
-    /**
-     * Add included Path Specs for filtering.
-     *
-     * <p>
-     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
-     * Regex based.  This means that the initial characters on the path spec
-     * line are very strict, and determine the behavior of the path matching.
-     * <ul>
-     * <li>If the spec starts with <code>'^'</code> the spec is assumed to be
-     * a regex based path spec and will match with normal Java regex rules.</li>
-     * <li>If the spec starts with <code>'/'</code> then spec is assumed to be
-     * a Servlet url-pattern rules path spec for either an exact match
-     * or prefix based match.</li>
-     * <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
-     * a Servlet url-pattern rules path spec for a suffix based match.</li>
-     * <li>All other syntaxes are unsupported</li>
-     * </ul>
-     * <p>
-     * Note: inclusion takes precedence over exclusion.
-     *
-     * @param pathspecs Path specs (as per servlet spec) to include. If a
-     * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute
-     * @deprecated review "backward compatibility" here.
-     */
-    @Deprecated // TODO review "backward compatibility" here. (use of csvSplit with var-args)
-    public void addIncludedPaths(String... pathspecs)
-    {
-        for (String p : pathspecs)
-        {
-            paths.include(StringUtil.csvSplit(p));
-        }
-    }
-
-    /**
-     * Get the minimum size, in bytes, that a response {@code Content-Length} must be
-     * before compression will trigger.
-     *
-     * @return minimum response size (in bytes) that triggers compression
-     * @see #setMinGzipSize(int)
-     */
-    public int getCompressSizeMinimum()
-    {
-        return compressSizeMinimum;
+        Set<String> includes = compressPaths.getIncluded();
+        return Collections.unmodifiableSet(includes);
     }
 
     public String getCompressionEncoding(List<String> requestAcceptEncoding, Request request, String pathInContext)
@@ -309,6 +117,32 @@ public class CompressionConfig extends AbstractLifeCycle
         return matchedEncoding;
     }
 
+    /**
+     * Get the set of excluded Path Specs for request decompression.
+     *
+     * @return the set of excluded Path Specs
+     * @see #getDecompressPathIncludes()
+     */
+    @ManagedAttribute("Set of Request Decompression Path Exclusions")
+    public Set<String> getDecompressPathExcludes()
+    {
+        Set<String> excluded = decompressPaths.getExcluded();
+        return Collections.unmodifiableSet(excluded);
+    }
+
+    /**
+     * Get the set of included Path Specs for request decompression.
+     *
+     * @return the set of included Path Specs
+     * @see #getDecompressPathExcludes()
+     */
+    @ManagedAttribute("Set of Request Decompression Path Inclusions")
+    public Set<String> getDecompressPathIncludes()
+    {
+        Set<String> includes = decompressPaths.getIncluded();
+        return Collections.unmodifiableSet(includes);
+    }
+
     public String getDecompressionEncoding(String requestContentEncoding, Request request, String pathInContext)
     {
         String matchedEncoding = null;
@@ -319,6 +153,7 @@ public class CompressionConfig extends AbstractLifeCycle
         if (!isMethodSupported(request.getMethod()))
             return null;
 
+        // TODO: testing mime-type is really a response test, not a request test.
         if (!isMimeTypeCompressible(request.getContext().getMimeTypes(), pathInContext))
             return null;
 
@@ -326,240 +161,55 @@ public class CompressionConfig extends AbstractLifeCycle
     }
 
     /**
-     * Get the current filter list of excluded Path Specs for request inflation.
+     * Get the set of excluded HTTP methods
      *
-     * @return the filter list of excluded Path Specs
-     * @see #getIncludedInflationPaths()
+     * @return the set of excluded HTTP methods
+     * @see #getMethodIncludes()
      */
-    public String[] getExcludedInflationPaths()
-    {
-        Set<String> excluded = inflatePaths.getExcluded();
-        return excluded.toArray(new String[0]);
-    }
-
-    /**
-     * Get the excluded filter list of HTTP methods in CSV format
-     *
-     * @return the excluded filter list of HTTP methods in CSV format
-     * @see #getIncludedMethodList()
-     */
-    public String getExcludedMethodList()
-    {
-        return String.join(",", getExcludedMethods());
-    }
-
-    /**
-     * Set the excluded filter list of HTTP Methods (replacing any previously set)
-     *
-     * @param csvMethods the list of methods, CSV format
-     * @see #setIncludedMethodList(String)
-     */
-    public void setExcludedMethodList(String csvMethods)
-    {
-        setExcludedMethods(StringUtil.csvSplit(csvMethods));
-    }
-
-    /**
-     * Get the current filter list of excluded HTTP methods
-     *
-     * @return the filter list of excluded HTTP methods
-     * @see #getIncludedMethods()
-     */
-    public String[] getExcludedMethods()
+    @ManagedAttribute("Set of HTTP Method Exclusions")
+    public Set<String> getMethodExcludes()
     {
         Set<String> excluded = methods.getExcluded();
-        return excluded.toArray(new String[0]);
+        return Collections.unmodifiableSet(excluded);
     }
 
     /**
-     * Set the excluded filter list of HTTP methods (replacing any previously set)
+     * Get the set of included HTTP methods
      *
-     * @param methods the HTTP methods to exclude
-     * @see #setIncludedMethods(String...)
+     * @return the set of included HTTP methods
+     * @see #getMethodExcludes()
      */
-    public void setExcludedMethods(String... methods)
-    {
-        this.methods.getExcluded().clear();
-        this.methods.exclude(methods);
-    }
-
-    /**
-     * Get the current filter list of excluded MIME types
-     *
-     * @return the filter list of excluded MIME types
-     * @see #getIncludedMimeTypes()
-     */
-    public String[] getExcludedMimeTypes()
-    {
-        Set<String> excluded = mimeTypes.getExcluded();
-        return excluded.toArray(new String[0]);
-    }
-
-    /**
-     * Set the excluded filter list of MIME types (replacing any previously set)
-     *
-     * @param types The mime types to exclude (without charset or other parameters)
-     * @see #setIncludedMimeTypes(String...)
-     */
-    public void setExcludedMimeTypes(String... types)
-    {
-        mimeTypes.getExcluded().clear();
-        mimeTypes.exclude(types);
-    }
-
-    /**
-     * Get the current filter list of excluded Path Specs
-     *
-     * @return the filter list of excluded Path Specs
-     * @see #getIncludedPaths()
-     */
-    public String[] getExcludedPaths()
-    {
-        Set<String> excluded = paths.getExcluded();
-        return excluded.toArray(new String[0]);
-    }
-
-    /**
-     * Set the excluded filter list of Path specs (replacing any previously set)
-     *
-     * @param pathspecs Path specs (as per servlet spec) to exclude. If a
-     * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute.
-     * @see #setIncludedPaths(String...)
-     */
-    public void setExcludedPaths(String... pathspecs)
-    {
-        paths.getExcluded().clear();
-        paths.exclude(pathspecs);
-    }
-
-    /**
-     * Get the current filter list of included Path Specs for request inflation.
-     *
-     * @return the filter list of included Path Specs
-     * @see #getExcludedInflationPaths()
-     */
-    public String[] getIncludedInflationPaths()
-    {
-        Set<String> includes = inflatePaths.getIncluded();
-        return includes.toArray(new String[0]);
-    }
-
-    /**
-     * Get the included filter list of HTTP methods in CSV format
-     *
-     * @return the included filter list of HTTP methods in CSV format
-     * @see #getExcludedMethodList()
-     */
-    public String getIncludedMethodList()
-    {
-        return String.join(",", getIncludedMethods());
-    }
-
-    /**
-     * Set the included filter list of HTTP Methods (replacing any previously set)
-     *
-     * @param csvMethods the list of methods, CSV format
-     * @see #setExcludedMethodList(String)
-     */
-    public void setIncludedMethodList(String csvMethods)
-    {
-        setIncludedMethods(StringUtil.csvSplit(csvMethods));
-    }
-
-    /**
-     * Get the current filter list of included HTTP Methods
-     *
-     * @return the filter list of included HTTP methods
-     * @see #getExcludedMethods()
-     */
-    public String[] getIncludedMethods()
+    @ManagedAttribute("Set of HTTP Method Inclusions")
+    public Set<String> getMethodIncludes()
     {
         Set<String> includes = methods.getIncluded();
-        return includes.toArray(new String[0]);
+        return Collections.unmodifiableSet(includes);
     }
 
     /**
-     * Set the included filter list of HTTP methods (replacing any previously set)
+     * Get the set of excluded MIME types
      *
-     * @param methods The methods to include in compression
-     * @see #setExcludedMethods(String...)
+     * @return the set of excluded MIME types
+     * @see #getMimeTypeIncludes()
      */
-    public void setIncludedMethods(String... methods)
+    @ManagedAttribute("Set of Mime Type Exclusions")
+    public Set<String> getMimeTypeExcludes()
     {
-        this.methods.getIncluded().clear();
-        this.methods.include(methods);
+        Set<String> excluded = mimetypes.getExcluded();
+        return Collections.unmodifiableSet(excluded);
     }
 
     /**
-     * Get the current filter list of included MIME types
+     * Get the set of included MIME types
      *
      * @return the filter list of included MIME types
-     * @see #getExcludedMimeTypes()
+     * @see #getMimeTypeExcludes()
      */
-    public String[] getIncludedMimeTypes()
+    @ManagedAttribute("Set of Mime Type Inclusions")
+    public Set<String> getMimeTypeIncludes()
     {
-        Set<String> includes = mimeTypes.getIncluded();
-        return includes.toArray(new String[0]);
-    }
-
-    /**
-     * Set the included filter list of MIME types (replacing any previously set)
-     *
-     * @param types The mime types to include (without charset or other parameters)
-     * @see #setExcludedMimeTypes(String...)
-     */
-    public void setIncludedMimeTypes(String... types)
-    {
-        mimeTypes.getIncluded().clear();
-        mimeTypes.include(types);
-    }
-
-    /**
-     * Get the current filter list of included Path Specs
-     *
-     * @return the filter list of included Path Specs
-     * @see #getExcludedPaths()
-     */
-    public String[] getIncludedPaths()
-    {
-        Set<String> includes = paths.getIncluded();
-        return includes.toArray(new String[0]);
-    }
-
-    /**
-     * Set the included filter list of Path specs (replacing any previously set)
-     *
-     * @param pathspecs Path specs (as per servlet spec) to include. If a
-     * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute
-     * @see #setExcludedPaths(String...)
-     */
-    public void setIncludedPaths(String... pathspecs)
-    {
-        paths.getIncluded().clear();
-        paths.include(pathspecs);
-    }
-
-    /**
-     * Get the size (in bytes) of the {@link java.util.zip.Inflater} buffer used to inflate
-     * compressed requests.
-     *
-     * @return size in bytes of the buffer, or 0 for no inflation.
-     */
-    public int getInflateBufferSize()
-    {
-        return decompressBufferSize;
-    }
-
-    /**
-     * Set the size (in bytes) of the {@link java.util.zip.Inflater} buffer used to inflate comrpessed requests.
-     *
-     * @param size size in bytes of the buffer, or 0 for no inflation.
-     */
-    public void setInflateBufferSize(int size)
-    {
-        decompressBufferSize = size;
+        Set<String> includes = mimetypes.getIncluded();
+        return Collections.unmodifiableSet(includes);
     }
 
     /**
@@ -568,21 +218,6 @@ public class CompressionConfig extends AbstractLifeCycle
     public HttpField getVary()
     {
         return vary;
-    }
-
-    /**
-     * @param vary The VARY field to use. If it is not an instance of {@link PreEncodedHttpField},
-     * then it will be converted to one.
-     */
-    public void setVary(HttpField vary)
-    {
-        if (isRunning())
-            throw new IllegalStateException(getState());
-
-        if (vary == null || (vary instanceof PreEncodedHttpField))
-            this.vary = vary;
-        else
-            this.vary = new PreEncodedHttpField(vary.getHeader(), vary.getName(), vary.getValue());
     }
 
     public boolean isMethodSupported(String method)
@@ -604,93 +239,274 @@ public class CompressionConfig extends AbstractLifeCycle
 
     public boolean isMimeTypeCompressible(String mimeType)
     {
-        return mimeTypes.test(mimeType);
+        return mimetypes.test(mimeType);
     }
 
     /**
-     * Is the {@link Deflater} running {@link Deflater#SYNC_FLUSH} or not.
+     * Builder of CompressionConfig immutable instances.
      *
-     * @return True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
-     * @see #setSyncFlush(boolean)
+     * <p><em>Notes about PathSpec strings</em></p>
+     *
+     * <p>
+     * There are 2 syntaxes supported, Servlet {@code url-pattern} based, and
+     * Regex based.  This means that the initial characters on the path spec
+     * line are very strict, and determine the behavior of the path matching.
+     * </p>
+     *
+     * <ul>
+     * <li>If the spec starts with {@code '^'} the spec is assumed to be
+     * a regex based path spec and will match with normal Java regex rules.</li>
+     * <li>If the spec starts with {@code '/'} then spec is assumed to be
+     * a Servlet url-pattern rules path spec for either an exact match
+     * or prefix based match.</li>
+     * <li>If the spec starts with {@code '*.'} then spec is assumed to be
+     * a Servlet url-pattern rules path spec for a suffix based match.</li>
+     * <li>All other syntaxes are unsupported</li>
+     * </ul>
+     *
+     * <p>
+     *     Note: inclusion take precedence over exclude.
+     * </p>
      */
-    public boolean isSyncFlush()
+    public static class Builder
     {
-        return syncFlush;
-    }
+        /**
+         * Set of `Content-Encoding` encodings that are supported by this configuration.
+         */
+        private final IncludeExclude<String> decompressEncodings = new IncludeExclude<>();
+        /**
+         * Set of `Accept-Encoding` encodings that are supported by this configuration.
+         */
+        private final IncludeExclude<String> compressEncodings = new IncludeExclude<>();
 
-    /**
-     * Set the {@link Deflater} flush mode to use.  {@link Deflater#SYNC_FLUSH}
-     * should be used if the application wishes to stream the data, but this may
-     * hurt compression performance.
-     *
-     * @param syncFlush True if {@link Deflater#SYNC_FLUSH} is used, else {@link Deflater#NO_FLUSH}
-     * @see #isSyncFlush()
-     */
-    public void setSyncFlush(boolean syncFlush)
-    {
-        this.syncFlush = syncFlush;
-    }
+        private final IncludeExclude<String> methods = new IncludeExclude<>();
+        private final IncludeExclude<String> mimetypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
+        private final IncludeExclude<String> decompressPaths = new IncludeExclude<>(PathSpecSet.class);
+        private final IncludeExclude<String> compressPaths = new IncludeExclude<>(PathSpecSet.class);
+        private HttpField vary = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
-    /**
-     * Set the excluded filter list of Path specs (replacing any previously set)
-     *
-     * @param pathspecs Path specs (as per servlet spec) to exclude from inflation. If a
-     * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute.
-     * @see #setIncludedInflatePaths(String...)
-     */
-    public void setExcludedInflatePaths(String... pathspecs)
-    {
-        inflatePaths.getExcluded().clear();
-        inflatePaths.exclude(pathspecs);
-    }
+        public CompressionConfig build()
+        {
+            return new CompressionConfig(this);
+        }
 
-    /**
-     * Set the excluded filter list of MIME types (replacing any previously set)
-     *
-     * @param csvTypes The list of mime types to exclude (without charset or other parameters), CSV format
-     * @see #setIncludedMimeTypesList(String)
-     */
-    public void setExcludedMimeTypesList(String csvTypes)
-    {
-        setExcludedMimeTypes(StringUtil.csvSplit(csvTypes));
-    }
+        /**
+         * A {@code Accept-Encoding} encoding to exclude.
+         *
+         * @param encoding the encoding to exclude
+         * @return this builder
+         */
+        public Builder compressEncodingExclude(String encoding)
+        {
+            this.compressEncodings.exclude(encoding);
+            return this;
+        }
 
-    /**
-     * Set the included filter list of Path specs (replacing any previously set)
-     *
-     * @param pathspecs Path specs (as per servlet spec) to include for inflation. If a
-     * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute
-     * @see #setExcludedInflatePaths(String...)
-     */
-    public void setIncludedInflatePaths(String... pathspecs)
-    {
-        inflatePaths.getIncluded().clear();
-        inflatePaths.include(pathspecs);
-    }
+        /**
+         * A {@code Accept-Encoding} encoding to include.
+         *
+         * @param encoding the encoding to include
+         * @return this builder
+         */
+        public Builder compressEncodingInclude(String encoding)
+        {
+            this.compressEncodings.include(encoding);
+            return this;
+        }
 
-    /**
-     * Set the included filter list of MIME types (replacing any previously set)
-     *
-     * @param csvTypes The list of mime types to include (without charset or other parameters), CSV format
-     * @see #setExcludedMimeTypesList(String)
-     */
-    public void setIncludedMimeTypesList(String csvTypes)
-    {
-        setIncludedMimeTypes(StringUtil.csvSplit(csvTypes));
-    }
+        /**
+         * A path that does not supports response content compression.
+         *
+         * <p>
+         * See {@link Builder} for details on PathSpec string.
+         * </p>
+         *
+         * @param pathSpecString the path spec string to exclude.  The pathInContext
+         * is used to match against this path spec.
+         * @return this builder.
+         * @see #compressPathInclude(String)
+         */
+        public Builder compressPathExclude(String pathSpecString)
+        {
+            this.compressPaths.exclude(pathSpecString);
+            return this;
+        }
 
-    /**
-     * Set the minimum response size to trigger dynamic compression.
-     *
-     * @param minGzipSize minimum response size in bytes (not allowed to be lower then {@code 23}, as the various
-     * compression algorithms start to have issues)
-     */
-    public void setMinGzipSize(int minGzipSize)
-    {
-        if (minGzipSize < MIN_FUNCTIONAL_SIZE)
-            LOG.warn("minGzipSize of {} is inefficient for short content, break even is size {}", minGzipSize, MIN_FUNCTIONAL_SIZE);
-        compressSizeMinimum = Math.max(0, minGzipSize);
+        /**
+         * A path that supports response content compression.
+         *
+         * <p>
+         * See {@link Builder} for details on PathSpec string.
+         * </p>
+         *
+         * @param pathSpecString the path spec string to include.  The pathInContext
+         * is used to match against this path spec.
+         * @return this builder.
+         * @see #compressPathExclude(String)
+         */
+        public Builder compressPathInclude(String pathSpecString)
+        {
+            this.compressPaths.include(pathSpecString);
+            return this;
+        }
+
+        /**
+         * A {@code Content-Encoding} encoding to exclude.
+         *
+         * @param encoding the encoding to exclude
+         * @return this builder
+         */
+        public Builder decompressEncodingExclude(String encoding)
+        {
+            this.decompressEncodings.exclude(encoding);
+            return this;
+        }
+
+        /**
+         * A {@code Content-Encoding} encoding to include.
+         *
+         * @param encoding the encoding to include
+         * @return this builder
+         */
+        public Builder decompressEncodingInclude(String encoding)
+        {
+            this.decompressEncodings.include(encoding);
+            return this;
+        }
+
+        /**
+         * A path that does not support request content decompression.
+         *
+         * <p>
+         * See {@link Builder} for details on PathSpec string.
+         * </p>
+         *
+         * @param pathSpecString the path spec string to exclude.  The pathInContext
+         * is used to match against this path spec.
+         * @return this builder.
+         * @see #decompressPathInclude(String)
+         */
+        public Builder decompressPathExclude(String pathSpecString)
+        {
+            this.decompressPaths.exclude(pathSpecString);
+            return this;
+        }
+
+        /**
+         * A path that supports request content decompression.
+         *
+         * <p>
+         * See {@link Builder} for details on PathSpec string.
+         * </p>
+         *
+         * @param pathSpecString the path spec string to include.  The pathInContext
+         * is used to match against this path spec.
+         * @return this builder.
+         * @see #decompressPathExclude(String)
+         */
+        public Builder decompressPathInclude(String pathSpecString)
+        {
+            this.decompressPaths.include(pathSpecString);
+            return this;
+        }
+
+        /**
+         * Initialize builder with existing {@link CompressionConfig}
+         *
+         * @param config existing config to base builder off of
+         * @return this builder.
+         */
+        public Builder from(CompressionConfig config)
+        {
+            this.decompressEncodings.addAll(config.decompressEncodings);
+            this.decompressPaths.addAll(config.decompressPaths);
+            this.compressEncodings.addAll(config.compressEncodings);
+            this.compressPaths.addAll(config.compressPaths);
+            this.methods.addAll(config.methods);
+            this.mimetypes.addAll(config.mimetypes);
+            this.vary = config.vary;
+            return this;
+        }
+
+        /**
+         * An HTTP method to exclude.
+         *
+         * @param method the method to exclude
+         * @return this builder
+         */
+        public Builder methodExclude(String method)
+        {
+            this.methods.exclude(method);
+            return this;
+        }
+
+        /**
+         * An HTTP method to include.
+         *
+         * @param method the method to include
+         * @return this builder
+         */
+        public Builder methodInclude(String method)
+        {
+            this.methods.include(method);
+            return this;
+        }
+
+        /**
+         * A non-compressible mimetype to exclude.
+         *
+         * <p>
+         * The response {@code Content-Type} is evaluated.
+         * </p>
+         *
+         * @param mimetype the mimetype to exclude
+         * @return this builder
+         */
+        public Builder mimeTypeExclude(String mimetype)
+        {
+            this.mimetypes.exclude(mimetype);
+            return this;
+        }
+
+        /**
+         * A compressible mimetype to include.
+         *
+         * <p>
+         * The response {@code Content-Type} is evaluated.
+         * </p>
+         *
+         * @param mimetype the mimetype to include
+         * @return this builder
+         */
+        public Builder mimeTypeInclude(String mimetype)
+        {
+            this.mimetypes.include(mimetype);
+            return this;
+        }
+
+        /**
+         * Specify the Response {@code Vary} header field to use.
+         *
+         * @param vary the {@code Vary} HTTP field to use.  If it is not an instance of {@link PreEncodedHttpField},
+         * then it will be converted to one.
+         * @return this builder
+         */
+        public Builder varyHeader(HttpField vary)
+        {
+            if (vary == null || (vary instanceof PreEncodedHttpField))
+                this.vary = vary;
+            else
+                this.vary = new PreEncodedHttpField(vary.getHeader(), vary.getName(), vary.getValue());
+            return this;
+        }
+
+        // TODO: preference order of compressions.
+        // TODO: compression specific config (eg: compression level, strategy, etc)
+        // TODO: dictionary support
+
+        // TODO: Add configuration for decompression body size limit (to help with decompression bombs)
+        // See: apache httpd mod_deflate DeflateInflateLimitRequestBody config
+        // TODO: Add configuration for decompression ration burst / limit (to help with decompression bombs)
+        // See: apache httpd mod_deflate DeflateInflateRatioBurst and DeflateInflateRatioLimit configs
     }
 }
