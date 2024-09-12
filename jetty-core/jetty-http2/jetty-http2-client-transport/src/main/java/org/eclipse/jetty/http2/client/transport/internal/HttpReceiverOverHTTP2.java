@@ -68,6 +68,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         Stream stream = getHttpChannel().getStream();
         if (stream == null)
             return Content.Chunk.from(new EOFException("Channel has been released"));
+
         Stream.Data data = stream.readData();
         if (LOG.isDebugEnabled())
             LOG.debug("Read stream data {} in {}", data, this);
@@ -77,13 +78,25 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 stream.demand();
             return null;
         }
+
         DataFrame frame = data.frame();
         boolean last = frame.remaining() == 0 && frame.isEndStream();
         if (!last)
-            return Content.Chunk.asChunk(frame.getByteBuffer(), last, data);
+            return Content.Chunk.asChunk(frame.getByteBuffer(), false, data);
+
         data.release();
-        responseSuccess(getHttpExchange(), null);
-        return Content.Chunk.EOF;
+
+        if (stream.isReset())
+        {
+            Throwable failure = new EOFException("Stream has been reset");
+            responseFailure(failure, Promise.noop());
+            return Content.Chunk.from(failure);
+        }
+        else
+        {
+            responseSuccess(getHttpExchange(), null);
+            return Content.Chunk.EOF;
+        }
     }
 
     @Override

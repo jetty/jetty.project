@@ -1,11 +1,46 @@
-jetty-12.0.13-SNAPSHOT
+jetty-12.0.14-SNAPSHOT
+
+jetty-12.0.13 - 03 September 2024
+ + 3184 Make LifeCycle implement AutoCloseable
+ + 3553 Support sslSession() in Jetty Client
+ + 6514 How to warm up SslConnection
+ + 9121 Jetty 12 - Flaky
+   BlockedWritesWithSmallThreadPoolTest.testServerThreadsBlockedInWrites()
+ + 11322 Change jetty-nosql MongoDB dependency from unmaintained
+   mongo-java-driver to mongodb-driver-sync
+ + 11408 Jetty start module property values with ${expr} are not being expanded
+ + 11434 resolve differences in EE9/EE10/Core AliasCheckerSymlinkTests
+ + 11822 h2 server responses exceeding SETTINGS_MAX_HEADER_LIST_SIZE do not
+   result in RST_STREAM or GOAWAY
+ + 11926 File upload puzzle
+ + 12063 Introduce Jetty module for HTTP/2 client dependencies
+ + 12094 Possible regression in ContextFactory.getObjectInstance() between
+   Jetty 11.0.22 and 12.0.11
+ + 12104 Error handling on ee9 / ee8 with HTTP/1.0 can result in an empty
+   `Connection: ` response header.
+ + 12120 Introduce properties for cipher suites
+ + 12122 NPE in HttpReceiver.responseContentAvailable()
+ + 12124 JSP temp directory regression, possibly due to fix for #12044
+ + 12128 How do I configure embedded Jetty to serve webjars?
+ + 12154 Is it possible to define max number of virtual threads when
+   VirtualThreadsExecutor is enabled, i.e. max number of http requests being
+   handled in the same time?
+ + 12158 Jetty12 migration help
+ + 12163 HttpConfiguration dump is missing entries
+ + 12171 QoSHandler does not resume on a virtual thread
+ + 12173 Jetty Maven Plugin - jetty:run does not work with pom type
+   dependencies
+ + 12175 `SslContextFactory` is hardcoded to use `Password`.
+ + 12185 QosHandler suspend queue limit
+ + 12207 Jetty Maven Plugin 12.x no longer configures `DefaultHandler`
+ + 12212 ShutdownOutput for non-persistent HTTP/1 connections
 
 jetty-12.0.12 - 25 July 2024
- + 265 --list-config license enhancement
+ + 265 list-config license enhancement
  + 10904 jetty.sh reports FAILED too early
  + 11965 Client: Some HTTP/2 requests are never sent
  + 11996 mTLS: client cert verification for QUIC/HTTP3
- + 12000 Cannot use Paths that have spaces with `jetty-ee10-maven-plugin` 
+ + 12000 Cannot use Paths that have spaces with `jetty-ee10-maven-plugin`
  + 12018 NPE when passing null value to Request.param
  + 12019 External property file not being read
  + 12022 Intermittent NPE in OutputStream.close with GzipHandler
