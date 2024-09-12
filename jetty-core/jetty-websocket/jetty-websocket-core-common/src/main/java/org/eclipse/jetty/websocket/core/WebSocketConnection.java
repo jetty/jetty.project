@@ -635,10 +635,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
 
         @Override
-        public void onCompleteFailure(Throwable x)
+        public void onFailure(Throwable x)
         {
             coreSession.processConnectionError(x, NOOP);
-            super.onCompleteFailure(x);
+            super.onFailure(x);
         }
     }
 }

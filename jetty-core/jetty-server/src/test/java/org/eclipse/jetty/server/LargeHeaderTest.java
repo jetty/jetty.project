@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +50,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LargeHeaderTest
 {
@@ -79,7 +82,7 @@ public class LargeHeaderTest
             }
 
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String idCount = request.getHeaders().get("X-Count");
                 LOG.debug("X-Count: {} [handle]", idCount);
@@ -202,31 +205,39 @@ public class LargeHeaderTest
 
                     // String rawResponse = readResponse(client, count, input);
                     String rawResponse = IO.toString(input, UTF_8);
-                    if (rawResponse.isEmpty())
+                    if (StringUtil.isBlank(rawResponse))
                     {
                         LOG.warn("X-Count: {} - Empty Raw Response", count);
                         countEmpty.incrementAndGet();
                         return null;
                     }
 
-                    HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-                    if (response == null)
+                    try
                     {
-                        LOG.warn("X-Count: {} - Null HttpTester.Response", count);
-                        countEmpty.incrementAndGet();
+                        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+                        if (response == null)
+                        {
+                            LOG.warn("X-Count: {} - Null HttpTester.Response", count);
+                            countEmpty.incrementAndGet();
+                        }
+                        else if (response.getStatus() == 500)
+                        {
+                            // expected result
+                            count500.incrementAndGet();
+                            long contentLength = response.getLongField(HttpHeader.CONTENT_LENGTH);
+                            String responseBody = response.getContent();
+                            assertThat((long)responseBody.length(), is(contentLength));
+                        }
+                        else
+                        {
+                            LOG.warn("X-Count: {} - Unexpected Status Code: {}", count, response.getStatus());
+                            countOther.incrementAndGet();
+                        }
                     }
-                    else if (response.getStatus() == 500)
+                    catch (BadMessageException bme)
                     {
-                        // expected result
-                        count500.incrementAndGet();
-                        long contentLength = response.getLongField(HttpHeader.CONTENT_LENGTH);
-                        String responseBody = response.getContent();
-                        assertThat((long)responseBody.length(), is(contentLength));
-                    }
-                    else
-                    {
-                        LOG.warn("X-Count: {} - Unexpected Status Code: {}", count, response.getStatus());
-                        countOther.incrementAndGet();
+                        System.err.printf("%n---[Response:%d]----%n%s%n----%n", rawResponse.length(), rawResponse);
+                        LOG.warn("Failed Response Parse", bme);
                     }
                 }
                 catch (Throwable t)
@@ -245,8 +256,11 @@ public class LargeHeaderTest
             throw issues;
         }
 
+        for (Future<Void> future : futures)
+            future.get(2, TimeUnit.SECONDS);
+
         executorService.shutdown();
-        executorService.awaitTermination(timeout * 2, TimeUnit.SECONDS);
+        assertTrue(executorService.awaitTermination(timeout * 2, TimeUnit.SECONDS));
         assertEquals(iterations, count500.get(), () ->
         {
             return """
@@ -297,12 +311,7 @@ public class LargeHeaderTest
                 }
                 HttpTester.Response response = HttpTester.parseResponse(rawResponse);
                 int status = response.getStatus();
-                if (response == null)
-                {
-                    LOG.warn("X-Count: {} - Empty Parsed Response", count);
-                    countEmpty.incrementAndGet();
-                }
-                else if (status == 500)
+                if (status == 500)
                 {
                     long contentLength = response.getLongField(HttpHeader.CONTENT_LENGTH);
                     String responseBody = response.getContent();
@@ -326,15 +335,13 @@ public class LargeHeaderTest
         }
 
         assertEquals(iterations, count500.get(), () ->
-        {
-            return """
+            """
                 All tasks did not fail as expected.
                 Iterations: %d
                 Count (500 response status) [expected]: %d
                 Count (empty responses): %d
                 Count (throwables): %d
                 Count (other status codes): %d
-                """.formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get());
-        });
+                """.formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get()));
     }
 }

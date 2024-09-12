@@ -14,17 +14,24 @@
 package org.eclipse.jetty.ee11.servlet;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +42,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletTest
 {
@@ -45,7 +54,7 @@ public class ServletTest
     private LocalConnector _connector;
 
     @BeforeEach
-    public void beforeEach() throws Exception
+    public void beforeEach()
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
@@ -70,7 +79,7 @@ public class ServletTest
         _context.addServlet(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.getWriter().println("Hello!");
             }
@@ -93,7 +102,7 @@ public class ServletTest
         _context.addServlet(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 try
                 {
@@ -128,7 +137,7 @@ public class ServletTest
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 String input = IO.toString(req.getInputStream());
-                resp.getWriter().println("Hello " + input);
+                resp.getWriter().print("Hello " + input);
             }
         }, "/post");
 
@@ -142,24 +151,67 @@ public class ServletTest
                 POST /ctx/post HTTP/1.1
                 Host: local
                 Content-Length: 10
-                            
+                
                 """;
             endPoint.addInput(request);
-            endPoint.addInput("1234567890\n");
-            String response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
-            assertThat(response, containsString(" 200 OK"));
-            assertThat(response, containsString("Hello 1234567890"));
+            endPoint.addInput("1234567890");
+            HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("Hello 1234567890"));
 
             endPoint.addInputAndExecute(request);
-            endPoint.addInput("1234567890\n");
-            response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
-            assertThat(response, containsString(" 200 OK"));
-            assertThat(response, containsString("Hello 1234567890"));
+            endPoint.addInput("1234567890");
+            response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("Hello 1234567890"));
 
             endPoint.addInputAndExecute(request);
-            response = endPoint.getResponse(false, 2 * idleTimeout, TimeUnit.MILLISECONDS);
-            assertThat(response, containsString(" 500 "));
-            assertThat(response, containsString("Connection: close"));
+            // Do not send the content.
+            response = HttpTester.parseResponse(endPoint.getResponse(false, 2 * idleTimeout, TimeUnit.MILLISECONDS));
+            assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+            assertTrue(response.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()));
+        }
+    }
+
+    @Test
+    public void testSimpleIdleReadNetwork() throws Exception
+    {
+        ServerConnector networkConnector = new ServerConnector(_server, 1, 1);
+        _server.addConnector(networkConnector);
+
+        long idleTimeout = 1000;
+        _context.addServlet(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                String input = IO.toString(req.getInputStream());
+                resp.getWriter().print("Hello " + input);
+            }
+        }, "/post");
+
+        networkConnector.setIdleTimeout(idleTimeout);
+        _server.start();
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", networkConnector.getLocalPort())))
+        {
+            String request = """
+                POST /ctx/post HTTP/1.1
+                Host: local
+                Content-Length: 10
+                
+                """;
+            client.write(StandardCharsets.UTF_8.encode(request));
+            client.write(StandardCharsets.UTF_8.encode("1234567890"));
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("Hello 1234567890"));
+
+            client.write(StandardCharsets.UTF_8.encode(request));
+            // Do not send the content.
+            response = HttpTester.parseResponse(client);
+            assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+            assertTrue(response.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()));
         }
     }
 
@@ -169,7 +221,7 @@ public class ServletTest
         _context.addServlet(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.getWriter().println("Hello!");
             }
@@ -184,7 +236,7 @@ public class ServletTest
             String request = """
                 GET /ctx/get HTTP/1.1
                 Host: local
-                     
+                
                 """;
             endPoint.addInput(request);
             String response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
@@ -228,7 +280,7 @@ public class ServletTest
         ServletHolder holder = new ServletHolder("MyServlet", new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 HttpServletMapping mapping = req.getHttpServletMapping();
                 resp.getWriter().println("""

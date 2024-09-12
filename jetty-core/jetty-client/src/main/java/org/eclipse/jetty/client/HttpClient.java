@@ -104,7 +104,7 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @ManagedObject("The HTTP client")
-public class HttpClient extends ContainerLifeCycle
+public class HttpClient extends ContainerLifeCycle implements AutoCloseable
 {
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
@@ -471,13 +471,7 @@ public class HttpClient extends ContainerLifeCycle
         port = normalizePort(scheme, port);
         Transport transport = request.getTransport();
         if (transport == null)
-        {
-            // Ask the ClientConnector for backwards compatibility
-            // until ClientConnector.Configurator is removed.
-            transport = connector.newTransport();
-            if (transport == null)
-                transport = Transport.TCP_IP;
-        }
+            transport = Transport.TCP_IP;
         return new Origin(scheme, new Origin.Address(host, port), request.getTag(), protocol, transport);
     }
 
@@ -1140,5 +1134,11 @@ public class HttpClient extends ContainerLifeCycle
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
         return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        stop();
     }
 }

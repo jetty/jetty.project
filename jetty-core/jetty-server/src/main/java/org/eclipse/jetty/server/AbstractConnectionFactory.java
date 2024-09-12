@@ -19,6 +19,7 @@ import java.util.List;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -32,7 +33,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 {
     private final String _protocol;
     private final List<String> _protocols;
-    private int _inputBufferSize = 8192;
+    private int _inputBufferSize = IO.DEFAULT_BUFFER_SIZE;
 
     protected AbstractConnectionFactory(String protocol)
     {

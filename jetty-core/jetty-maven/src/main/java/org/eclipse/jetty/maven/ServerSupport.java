@@ -19,14 +19,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.maven.MavenServerConnector;
-import org.eclipse.jetty.maven.PluginLog;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -55,6 +54,9 @@ public class ServerSupport
 
         if (requestLog != null)
             server.setRequestLog(requestLog);
+
+        if (server.getDefaultHandler() == null)
+            server.setDefaultHandler(new DefaultHandler());
 
         ContextHandlerCollection contexts = findContextHandlerCollection(server);
         if (contexts == null)

@@ -142,6 +142,20 @@ public abstract class AbstractConnection implements Connection, Invocable
         getEndPoint().fillInterested(_readCallback);
     }
 
+    /**
+     * <p>Utility method to be called to register read interest.</p>
+     * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
+     * will be called back as appropriate.</p>
+     *
+     * @see #onFillable()
+     */
+    public void fillInterested(Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("fillInterested {} {}", callback, this);
+        getEndPoint().fillInterested(callback);
+    }
+
     public void tryFillInterested(Callback callback)
     {
         getEndPoint().tryFillInterested(callback);

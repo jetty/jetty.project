@@ -75,6 +75,7 @@ public class ErrorHandler implements Request.Handler
     boolean _showStacks = false;
     boolean _showCauses = false;
     boolean _showMessageInTitle = true;
+    int _bufferSize = -1;
     String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
@@ -198,8 +199,7 @@ public class ErrorHandler implements Request.Handler
                 return false;
         }
 
-        int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        bufferSize = Math.min(8192, bufferSize); // TODO ?
+        int bufferSize = getBufferSize() <= 0 ? computeBufferSize(request) : getBufferSize();
         ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
         RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
 
@@ -254,16 +254,23 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, byteBufferPool, buffer));
+            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
 
             return true;
         }
         catch (Throwable x)
         {
             if (buffer != null)
-                byteBufferPool.removeAndRelease(buffer);
+                buffer.releaseAndRemove();
             throw x;
         }
+    }
+
+    protected int computeBufferSize(Request request)
+    {
+        int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+        bufferSize = Math.min(8192, bufferSize);
+        return bufferSize;
     }
 
     protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks) throws IOException
@@ -530,6 +537,25 @@ public class ErrorHandler implements Request.Handler
         return errorHandler;
     }
 
+    /**
+     * @return Buffer size for entire error response. If error page is bigger than buffer size, it will be truncated.
+     * With a -1 meaning that a heuristic will be used (e.g. min(8K, httpConfig.bufferSize))
+     */
+    @ManagedAttribute("Buffer size for entire error response")
+    public int getBufferSize()
+    {
+        return _bufferSize;
+    }
+
+    /**
+     * @param bufferSize Buffer size for entire error response. If error page is bigger than buffer size, it will be truncated.
+     * With a -1 meaning that a heuristic will be used (e.g. min(8K, httpConfig.bufferSize))
+     */
+    public void setBufferSize(int bufferSize)
+    {
+        this._bufferSize = bufferSize;
+    }
+
     public static class ErrorRequest extends Request.AttributesWrapper
     {
         private static final Set<String> ATTRIBUTES = Set.of(ERROR_MESSAGE, ERROR_EXCEPTION, ERROR_STATUS);
@@ -586,13 +612,11 @@ public class ErrorHandler implements Request.Handler
     private static class WriteErrorCallback implements Callback
     {
         private final AtomicReference<Callback>  _callback;
-        private final ByteBufferPool _pool;
         private final RetainableByteBuffer _buffer;
 
-        public WriteErrorCallback(Callback callback, ByteBufferPool pool, RetainableByteBuffer retainable)
+        public WriteErrorCallback(Callback callback, RetainableByteBuffer retainable)
         {
             _callback = new AtomicReference<>(callback);
-            _pool = pool;
             _buffer = retainable;
         }
 
@@ -600,7 +624,9 @@ public class ErrorHandler implements Request.Handler
         public void succeeded()
         {
             Callback callback = _callback.getAndSet(null);
-            if (callback != null)
+            if (callback == null)
+                _buffer.release();
+            else
                 ExceptionUtil.callAndThen(_buffer::release, callback::succeeded);
         }
 
@@ -608,8 +634,10 @@ public class ErrorHandler implements Request.Handler
         public void failed(Throwable x)
         {
             Callback callback = _callback.getAndSet(null);
-            if (callback != null)
-                ExceptionUtil.callAndThen(x, t -> _pool.removeAndRelease(_buffer), callback::failed);
+            if (callback == null)
+                _buffer.releaseAndRemove();
+            else
+                ExceptionUtil.callAndThen(x, t -> _buffer.releaseAndRemove(), callback::failed);
         }
     }
 }

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign-In with Ethereum</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.1/dist/web3.min.js"></script>
+</head>
+<body>
+<h4>Sign-In with Ethereum</h4>
+<button id="siwe">Sign-In with Ethereum</button>
+<form id="loginForm" action="/auth/login" method="POST" style="display: none;">
+    <input type="hidden" id="signatureField" name="signature">
+    <input type="hidden" id="messageField" name="message">
+</form>
+<p class="alert" style="display: none;">Result: <span id="siweResult"></span></p>
+
+<script>
+    let provider = window.ethereum;
+    let accounts;
+
+    if (!provider) {
+        document.getElementById('siweResult').innerText = 'MetaMask is not installed. Please install MetaMask to use this feature.';
+    } else {
+        document.getElementById('siwe').addEventListener('click', async () => {
+            try {
+                // Request account access if needed
+                accounts = await provider.request({ method: 'eth_requestAccounts' });
+                const domain = window.location.host;
+                const from = accounts[0];
+
+                // Fetch nonce from the server
+                const nonceResponse = await fetch('/auth/nonce');
+                const nonceData = await nonceResponse.json();
+                const nonce = nonceData.nonce;
+
+                const siweMessage = `${domain} wants you to sign in with your Ethereum account:\n${from}\n\nI accept the MetaMask Terms of Service: https://community.metamask.io/tos\n\nURI: https://${domain}\nVersion: 1\nChain ID: 1\nNonce: ${nonce}\nIssued At: ${new Date().toISOString()}`;
+                const signature = await provider.request({
+                    method: 'personal_sign',
+                    params: [siweMessage, from]
+                });
+                console.log("signature: " + signature)
+                console.log("nonce: " + nonce)
+                console.log("length: " + length)
+
+                document.getElementById('signatureField').value = signature;
+                document.getElementById('messageField').value = siweMessage;
+                document.getElementById('loginForm').submit();
+            } catch (error) {
+                console.error('Error during login:', error);
+                document.getElementById('siweResult').innerText = `Error: ${error.message}`;
+                document.getElementById('siweResult').parentElement.style.display = 'block';
+            }
+        });
+    }
+</script>
+</body>
+</html>

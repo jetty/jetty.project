@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 public class ByteChannelContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
-    private final SerializedInvoker _invoker = new SerializedInvoker();
+    private final SerializedInvoker _invoker = new SerializedInvoker(ByteChannelContentSource.class);
     private final ByteBufferPool.Sized _byteBufferPool;
     private ByteChannel _byteChannel;
     private final long _offset;
@@ -73,12 +73,12 @@ public class ByteChannelContentSource implements Content.Source
 
     public ByteChannelContentSource(ByteChannel byteChannel)
     {
-        this(null, byteChannel, -1L, -1L);
+        this(null, byteChannel, 0L, -1L);
     }
 
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
     {
-        this(byteBufferPool, byteChannel, -1L, -1L);
+        this(byteBufferPool, byteChannel, 0L, -1L);
     }
 
     private ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
@@ -253,17 +253,17 @@ public class ByteChannelContentSource implements Content.Source
 
         public PathContentSource(Path path)
         {
-            this(null, path, 0, -1);
+            this(null, path, 0L, -1L);
         }
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path)
         {
-            this(byteBufferPool, path, 0, -1);
+            this(byteBufferPool, path, 0L, -1L);
         }
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
-            super(byteBufferPool, null, offset, length < 0 ? size(path) : length);
+            super(byteBufferPool, null, offset, length < 0L ? size(path) : length);
             _path = path;
         }
 

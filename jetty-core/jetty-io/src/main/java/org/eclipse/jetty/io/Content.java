@@ -209,7 +209,7 @@ public class Content
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param path The {@link Path}s to use as the source.
          * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source.
+         * @param length The length in bytes of the source, -1 for the full length.
          * @return A {@code Content.Source}
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
@@ -247,7 +247,7 @@ public class Content
         }
 
         /**
-         * Create a {@code Content.Source} from a {@link Path}.
+         * Create a {@code Content.Source} from an {@link InputStream}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
          * @return A {@code Content.Source}
@@ -258,7 +258,7 @@ public class Content
         }
 
         /**
-         * Create a {@code Content.Source} from a {@link Path}.
+         * Create a {@code Content.Source} from an {@link InputStream}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
          * @param offset The offset in bytes from which to start the source
@@ -1078,6 +1078,27 @@ public class Content
             if (chunk.isLast())
                 return EOF;
             return null;
+        }
+
+        /**
+         * Convenience method to release a chunk and return {@link #next(Chunk)}.
+         * Equivalent to:
+         * <pre>{@code
+         * if (chunk != null)
+         * {
+         *     chunk.release();
+         *     chunk = Chunk.next(chunk);
+         * }
+         * }</pre>
+         * @param chunk The chunk to release or {@code null}
+         * @return The {@link #next(Chunk)} chunk;
+         */
+        static Chunk releaseAndNext(Chunk chunk)
+        {
+            if (chunk == null)
+                return null;
+            chunk.release();
+            return next(chunk);
         }
 
         /**

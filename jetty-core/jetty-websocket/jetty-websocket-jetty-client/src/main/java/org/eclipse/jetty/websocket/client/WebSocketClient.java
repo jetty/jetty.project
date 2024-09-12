@@ -50,7 +50,7 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketClient extends ContainerLifeCycle implements Configurable, WebSocketContainer
+public class WebSocketClient extends ContainerLifeCycle implements Configurable, WebSocketContainer, AutoCloseable
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketClient.class);
     private final WebSocketCoreClient coreClient;
@@ -401,6 +401,12 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
         if (getStopTimeout() > 0)
             Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
         super.doStop();
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        stop();
     }
 
     @Override

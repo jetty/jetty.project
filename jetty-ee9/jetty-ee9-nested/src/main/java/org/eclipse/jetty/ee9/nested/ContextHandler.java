@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -2465,7 +2466,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private ManagedSession _managedSession;
         private List<ManagedSession> _managedSessions;
 
-        AbstractSessionManager.RequestedSession _requestedSession;
+        AbstractSessionManager.RequestedSession _requestedSession = AbstractSessionManager.RequestedSession.NO_REQUESTED_SESSION;
 
         protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
                                      ScopedContext context,
@@ -2565,7 +2566,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
          */
         public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
         {
-            _requestedSession = requestedSession;
+            _requestedSession = requestedSession == null ? AbstractSessionManager.RequestedSession.NO_REQUESTED_SESSION : requestedSession;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (AbstractSessionManager.RequestedSession.class.getName().equals(name))
+                return _requestedSession;
+            return super.getAttribute(name);
         }
 
         /**
@@ -2652,7 +2661,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             if (_sessionManager == null)
                 throw new IllegalStateException("No SessionManager");
 
-            _sessionManager.newSession(this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
+            _sessionManager.newSession(this, _requestedSession.sessionId(), this::setManagedSession);
 
             if (_managedSession == null)
                 throw new IllegalStateException("Create session failed");
@@ -2688,7 +2697,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public Resource getResourceForTempDirName()
         {
+           return ContextHandler.this.getNestedResourceForTempDirName();
+        }
+
+        private Resource getSuperResourceForTempDirName()
+        {
            return super.getResourceForTempDirName();
+        }
+
+        public void setTempDirectory(File dir)
+        {
+            super.setTempDirectory(dir);
+            setAttribute(ServletContext.TEMPDIR, super.getTempDirectory());
         }
 
         @Override
@@ -2851,5 +2871,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 return true;
             }
         }
+    }
+
+    public Resource getNestedResourceForTempDirName()
+    {
+        return getCoreContextHandler().getSuperResourceForTempDirName();
     }
 }

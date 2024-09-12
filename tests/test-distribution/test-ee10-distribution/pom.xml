@@ -34,6 +34,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-ethereum</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-openid</artifactId>
       <scope>test</scope>
     </dependency>
@@ -53,6 +58,11 @@
       <artifactId>jetty-ee10-test-openid-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-test-common</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

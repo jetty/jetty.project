@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,17 +27,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SerializedInvokerTest
 {
-    SerializedInvoker _serialedInvoker;
+    private SerializedInvoker _serializedInvoker;
+    private ExecutorService _executor;
 
     @BeforeEach
     public void beforeEach()
     {
-        _serialedInvoker = new SerializedInvoker();
+        _serializedInvoker = new SerializedInvoker(SerializedInvokerTest.class);
+        _executor = Executors.newSingleThreadExecutor();
     }
 
     @AfterEach
     public void afterEach()
     {
+        _executor.shutdownNow();
     }
 
     @Test
@@ -45,24 +50,27 @@ public class SerializedInvokerTest
         Task task2 = new Task();
         Task task3 = new Task();
 
-        Runnable todo = _serialedInvoker.offer(task1);
-        assertNull(_serialedInvoker.offer(task2));
-        assertNull(_serialedInvoker.offer(task3));
+        Runnable todo = _serializedInvoker.offer(task1);
+        assertNull(_serializedInvoker.offer(task2));
+        assertNull(_serializedInvoker.offer(task3));
 
         assertFalse(task1.hasRun());
         assertFalse(task2.hasRun());
         assertFalse(task3.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         todo.run();
 
         assertTrue(task1.hasRun());
         assertTrue(task2.hasRun());
         assertTrue(task3.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         Task task4 = new Task();
-        todo = _serialedInvoker.offer(task4);
+        todo = _serializedInvoker.offer(task4);
         todo.run();
         assertTrue(task4.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
     }
 
     @Test
@@ -72,22 +80,25 @@ public class SerializedInvokerTest
         Task task2 = new Task();
         Task task3 = new Task();
 
-        Runnable todo = _serialedInvoker.offer(null, task1, null, task2, null, task3, null);
+        Runnable todo = _serializedInvoker.offer(null, task1, null, task2, null, task3, null);
 
         assertFalse(task1.hasRun());
         assertFalse(task2.hasRun());
         assertFalse(task3.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         todo.run();
 
         assertTrue(task1.hasRun());
         assertTrue(task2.hasRun());
         assertTrue(task3.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         Task task4 = new Task();
-        todo = _serialedInvoker.offer(task4);
+        todo = _serializedInvoker.offer(task4);
         todo.run();
         assertTrue(task4.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
     }
 
     @Test
@@ -99,7 +110,7 @@ public class SerializedInvokerTest
             @Override
             public void run()
             {
-                assertNull(_serialedInvoker.offer(task3));
+                assertNull(_serializedInvoker.offer(task3));
                 super.run();
             }
         };
@@ -108,32 +119,35 @@ public class SerializedInvokerTest
             @Override
             public void run()
             {
-                assertNull(_serialedInvoker.offer(task2));
+                assertNull(_serializedInvoker.offer(task2));
                 super.run();
             }
         };
 
-        Runnable todo = _serialedInvoker.offer(task1);
+        Runnable todo = _serializedInvoker.offer(task1);
 
         assertFalse(task1.hasRun());
         assertFalse(task2.hasRun());
         assertFalse(task3.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         todo.run();
 
         assertTrue(task1.hasRun());
         assertTrue(task2.hasRun());
         assertTrue(task3.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
 
         Task task4 = new Task();
-        todo = _serialedInvoker.offer(task4);
+        todo = _serializedInvoker.offer(task4);
         todo.run();
         assertTrue(task4.hasRun());
+        assertFalse(_serializedInvoker.isCurrentThreadInvoking());
     }
 
-    public static class Task implements Runnable
+    public class Task implements Runnable
     {
-        CountDownLatch _run = new CountDownLatch(1);
+        final CountDownLatch _run = new CountDownLatch(1);
 
         boolean hasRun()
         {
@@ -143,7 +157,17 @@ public class SerializedInvokerTest
         @Override
         public void run()
         {
-            _run.countDown();
+            try
+            {
+                assertTrue(_serializedInvoker.isCurrentThreadInvoking());
+                assertFalse(_executor.submit(() -> _serializedInvoker.isCurrentThreadInvoking()).get());
+
+                _run.countDown();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
