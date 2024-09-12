@@ -679,17 +679,18 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         public void setComment(String comment)
         {
             checkAvailable();
-            _sessionManager.setSessionComment(comment);
+
             if (!StringUtil.isEmpty(comment))
             {
-                if (comment.contains(SAME_SITE_STRICT_COMMENT))
-                    _sessionManager.setSameSite(HttpCookie.SameSite.STRICT);
-                if (comment.contains(SAME_SITE_LAX_COMMENT))
-                     _sessionManager.setSameSite(HttpCookie.SameSite.LAX);
-                if (comment.contains(SAME_SITE_NONE_COMMENT))
-                    _sessionManager.setSameSite(HttpCookie.SameSite.NONE);
-                if (comment.contains(PARTITIONED_COMMENT))
-                    _sessionManager.setPartitioned(true);
+                HttpCookie.SameSite sameSite = Response.HttpCookieFacade.getSameSiteFromComment(comment);
+                if (sameSite != null)
+                    _sessionManager.setSameSite(sameSite);
+
+                boolean partitioned = Response.HttpCookieFacade.isPartitionedInComment(comment);
+                if (partitioned)
+                    _sessionManager.setPartitioned(partitioned);
+
+                _sessionManager.setSessionComment(Response.HttpCookieFacade.getCommentWithoutAttributes(comment));
             }
         }
 

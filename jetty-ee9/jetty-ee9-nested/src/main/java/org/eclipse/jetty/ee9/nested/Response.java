@@ -1494,7 +1494,7 @@ public class Response implements HttpServletResponse
         }
     }
 
-    private static class HttpCookieFacade implements HttpCookie
+    protected static class HttpCookieFacade implements HttpCookie
     {
         private final Cookie _cookie;
         private final String _comment;
@@ -1622,12 +1622,12 @@ public class Response implements HttpServletResponse
             return comment != null && comment.contains(HTTP_ONLY_COMMENT);
         }
 
-        private static boolean isPartitionedInComment(String comment)
+        protected static boolean isPartitionedInComment(String comment)
         {
             return comment != null && comment.contains(PARTITIONED_COMMENT);
         }
 
-        private static SameSite getSameSiteFromComment(String comment)
+        protected static SameSite getSameSiteFromComment(String comment)
         {
             if (comment == null)
                 return null;
@@ -1640,7 +1640,7 @@ public class Response implements HttpServletResponse
             return null;
         }
 
-        private static String getCommentWithoutAttributes(String comment)
+        protected static String getCommentWithoutAttributes(String comment)
         {
             if (comment == null)
                 return null;

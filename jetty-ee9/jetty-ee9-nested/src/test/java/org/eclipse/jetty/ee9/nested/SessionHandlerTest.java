@@ -190,11 +190,7 @@ public class SessionHandlerTest
         sessionCookieConfig.setSecure(false);
         sessionCookieConfig.setPath("/foo");
         sessionCookieConfig.setMaxAge(99);
-        
-        //for < ee10, SameSite cannot be set on the SessionCookieConfig, only on the SessionManager, or 
-        //a default value on the context attribute org.eclipse.jetty.cookie.sameSiteDefault
-        //mgr.setSameSite(HttpCookie.SameSite.STRICT);
-        //mgr.setPartitioned(true);
+
         //test setting SameSite and Partitioned the old way in the comment
         sessionCookieConfig.setComment(SessionHandler.CookieConfig.PARTITIONED_COMMENT + " " + SessionHandler.CookieConfig.SAME_SITE_STRICT_COMMENT);
         
@@ -229,6 +225,7 @@ public class SessionHandlerTest
         ManagedSession session = new ManagedSession(mgr.getSessionManager(), new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
         session.setExtendedId("123.node1");
 
+        //test setting up session cookie via setters on SessionHandler
         mgr.setSessionCookie("SPECIAL");
         mgr.setSessionDomain("universe");
         mgr.setHttpOnly(false);
