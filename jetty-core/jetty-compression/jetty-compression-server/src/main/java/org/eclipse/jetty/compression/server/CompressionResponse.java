@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CompressionResponse extends Response.Wrapper  implements Callback, Invocable
+public class CompressionResponse extends Response.Wrapper implements Callback, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CompressionResponse.class);
 
@@ -47,17 +47,6 @@ public class CompressionResponse extends Response.Wrapper  implements Callback, 
     }
 
     @Override
-    public void succeeded()
-    {
-        // We need to write nothing here to intercept the committing of the
-        // response and possibly change headers in case write is never called.
-        if (last)
-            this.callback.succeeded();
-        else
-            write(true, null, this.callback);
-    }
-
-    @Override
     public void failed(Throwable x)
     {
         this.callback.failed(x);
@@ -67,6 +56,17 @@ public class CompressionResponse extends Response.Wrapper  implements Callback, 
     public InvocationType getInvocationType()
     {
         return this.callback.getInvocationType();
+    }
+
+    @Override
+    public void succeeded()
+    {
+        // We need to write nothing here to intercept the committing of the
+        // response and possibly change headers in case write is never called.
+        if (last)
+            this.callback.succeeded();
+        else
+            write(true, null, this.callback);
     }
 
     @Override

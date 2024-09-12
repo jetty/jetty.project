@@ -81,12 +81,12 @@ public abstract class Compression extends ContainerLifeCycle
      * which is suitable for compressed output from an {@link EncoderSink} or compressed input from a {@link DecoderSource}.
      *
      * <p>
-     *     It is recommended to use this method so that any compression specific details can be
-     *     managed by this Compression implementation (such as ByteOrder or buffer pooling)
+     * It is recommended to use this method so that any compression specific details can be
+     * managed by this Compression implementation (such as ByteOrder or buffer pooling)
      * </p>
      *
      * <p>
-     *     The size of the buffer comes from {@link Compression} implementation.
+     * The size of the buffer comes from {@link Compression} implementation.
      * </p>
      *
      * @return the ByteBuffer suitable for this compression implementation.
@@ -98,8 +98,8 @@ public abstract class Compression extends ContainerLifeCycle
      * which is suitable for compressed output from an {@link EncoderSink} or compressed input from a {@link DecoderSource}.
      *
      * <p>
-     *     It is recommended to use this method so that any compression specific details can be
-     *     managed by this Compression implementation (such as ByteOrder or buffer pooling)
+     * It is recommended to use this method so that any compression specific details can be
+     * managed by this Compression implementation (such as ByteOrder or buffer pooling)
      * </p>
      *
      * @param length the requested size of the buffer
@@ -109,6 +109,7 @@ public abstract class Compression extends ContainerLifeCycle
 
     /**
      * Get an etag with suffix that represents this compression implementation.
+     *
      * @param etag an etag
      * @return the etag with compression suffix
      */
@@ -158,8 +159,8 @@ public abstract class Compression extends ContainerLifeCycle
      * Set the container that this compression implementation should use.
      *
      * <p>
-     *     The container is often a source for common components (beans) that can
-     *     be shared across different implementations.
+     * The container is often a source for common components (beans) that can
+     * be shared across different implementations.
      * </p>
      *
      * @param container the container (often the Server itself).
@@ -212,11 +213,11 @@ public abstract class Compression extends ContainerLifeCycle
      * The filename extensions for this compression implementation.
      *
      * <p>
-     *     Not an exhaustive list, just the most commonly seen extensions.
+     * Not an exhaustive list, just the most commonly seen extensions.
      * </p>
      *
      * @return the list of common extension names (all lowercase) for this compression implementation.
-     *  ordered by most common to least common.
+     * ordered by most common to least common.
      */
     public abstract List<String> getFileExtensionNames();
 

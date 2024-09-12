@@ -66,19 +66,6 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public DecoderConfig getDefaultDecoderConfig()
-    {
-        return this.defaultDecoderConfig;
-    }
-
-    @Override
-    public void setDefaultDecoderConfig(DecoderConfig config)
-    {
-        ZstandardDecoderConfig zstandardDecoderConfig = ZstandardDecoderConfig.class.cast(config);
-        this.defaultDecoderConfig = Objects.requireNonNull(zstandardDecoderConfig);
-    }
-
-    @Override
     public RetainableByteBuffer acquireByteBuffer()
     {
         return acquireByteBuffer(getBufferSize());
@@ -104,35 +91,23 @@ public class ZstandardCompression extends Compression
         return buffer;
     }
 
-    private ByteOrder getByteOrder()
-    {
-        // https://datatracker.ietf.org/doc/html/rfc8478
-        // Zstandard is LITTLE_ENDIAN
-        return ByteOrder.LITTLE_ENDIAN;
-    }
-
-    @Override
-    public String getName()
-    {
-        return "zstandard";
-    }
-
-    @Override
-    public List<String> getFileExtensionNames()
-    {
-        return EXTENSIONS;
-    }
-
-    @Override
-    public HttpField getXContentEncodingField()
-    {
-        return X_CONTENT_ENCODING;
-    }
-
     @Override
     public HttpField getContentEncodingField()
     {
         return CONTENT_ENCODING;
+    }
+
+    @Override
+    public DecoderConfig getDefaultDecoderConfig()
+    {
+        return this.defaultDecoderConfig;
+    }
+
+    @Override
+    public void setDefaultDecoderConfig(DecoderConfig config)
+    {
+        ZstandardDecoderConfig zstandardDecoderConfig = ZstandardDecoderConfig.class.cast(config);
+        this.defaultDecoderConfig = Objects.requireNonNull(zstandardDecoderConfig);
     }
 
     @Override
@@ -149,6 +124,12 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
+    public List<String> getFileExtensionNames()
+    {
+        return EXTENSIONS;
+    }
+
+    @Override
     public int getMinCompressSize()
     {
         return minCompressSize;
@@ -158,6 +139,18 @@ public class ZstandardCompression extends Compression
     public void setMinCompressSize(int minCompressSize)
     {
         this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_ZSTD_SIZE);
+    }
+
+    @Override
+    public String getName()
+    {
+        return "zstandard";
+    }
+
+    @Override
+    public HttpField getXContentEncodingField()
+    {
+        return X_CONTENT_ENCODING;
     }
 
     @Override
@@ -191,5 +184,12 @@ public class ZstandardCompression extends Compression
     {
         ZstandardEncoderConfig zstandardEncoderConfig = ZstandardEncoderConfig.class.cast(config);
         return new ZstandardEncoderSink(this, sink, zstandardEncoderConfig);
+    }
+
+    private ByteOrder getByteOrder()
+    {
+        // https://datatracker.ietf.org/doc/html/rfc8478
+        // Zstandard is LITTLE_ENDIAN
+        return ByteOrder.LITTLE_ENDIAN;
     }
 }

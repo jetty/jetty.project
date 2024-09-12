@@ -292,7 +292,7 @@ public class CompressionConfig extends AbstractLifeCycle
         String matchedEncoding = null;
 
         // TODO: add testcase for `Accept-Encoding: *`
-        for (String encoding: requestAcceptEncoding)
+        for (String encoding : requestAcceptEncoding)
         {
             if (compressEncodings.test(encoding))
             {
@@ -572,7 +572,7 @@ public class CompressionConfig extends AbstractLifeCycle
 
     /**
      * @param vary The VARY field to use. If it is not an instance of {@link PreEncodedHttpField},
-     *             then it will be converted to one.
+     * then it will be converted to one.
      */
     public void setVary(HttpField vary)
     {

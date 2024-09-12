@@ -63,15 +63,16 @@ public class ZstandardEncoderConfig implements EncoderConfig
      * Set Encoder output buffer size.
      *
      * <p>
-     *     Note: only applies when using
-     *     {@link ZstandardCompression#newEncoderSink(Content.Sink, EncoderConfig)} or
-     *     {@link ZstandardCompression#newEncoderSink(Content.Sink)}.
+     * Note: only applies when using
+     * {@link ZstandardCompression#newEncoderSink(Content.Sink, EncoderConfig)} or
+     * {@link ZstandardCompression#newEncoderSink(Content.Sink)}.
      * </p>
      * <p>>
-     *     Note: not applied when using
-     *     {@link ZstandardCompression#newEncoderOutputStream(OutputStream, EncoderConfig)} or
-     *     {@link ZstandardCompression#newEncoderOutputStream(OutputStream)}
+     * Note: not applied when using
+     * {@link ZstandardCompression#newEncoderOutputStream(OutputStream, EncoderConfig)} or
+     * {@link ZstandardCompression#newEncoderOutputStream(OutputStream)}
      * </p>
+     *
      * @param size size of output buffer.
      */
     @Override
@@ -152,14 +153,14 @@ public class ZstandardEncoderConfig implements EncoderConfig
      * Enable or disable magicless zstd frames.
      *
      * <p>
-     *     Note: only applies when using
-     *     {@link ZstandardCompression#newEncoderSink(Content.Sink, EncoderConfig)} or
-     *     {@link ZstandardCompression#newEncoderSink(Content.Sink)}.
+     * Note: only applies when using
+     * {@link ZstandardCompression#newEncoderSink(Content.Sink, EncoderConfig)} or
+     * {@link ZstandardCompression#newEncoderSink(Content.Sink)}.
      * </p>
      * <p>>
-     *     Note: not applied when using
-     *     {@link ZstandardCompression#newEncoderOutputStream(OutputStream, EncoderConfig)} or
-     *     {@link ZstandardCompression#newEncoderOutputStream(OutputStream)}
+     * Note: not applied when using
+     * {@link ZstandardCompression#newEncoderOutputStream(OutputStream, EncoderConfig)} or
+     * {@link ZstandardCompression#newEncoderOutputStream(OutputStream)}
      * </p>
      *
      * @param flag true to enable, false is default.

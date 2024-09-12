@@ -37,17 +37,14 @@ import org.slf4j.LoggerFactory;
 
 public class GzipCompression extends Compression
 {
-    private static final Logger LOG = LoggerFactory.getLogger(GzipCompression.class);
-
     public static final int DEFAULT_MIN_GZIP_SIZE = 32;
     public static final int BREAK_EVEN_GZIP_SIZE = 23;
-
+    public static final List<String> EXTENSIONS = List.of("gz", "gzip");
+    private static final Logger LOG = LoggerFactory.getLogger(GzipCompression.class);
     private static final String ENCODING_NAME = "gzip";
     public static final CompressedContentFormat GZIP = new CompressedContentFormat(ENCODING_NAME, ".gz");
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
-    public static final List<String> EXTENSIONS = List.of("gz", "gzip");
-
     private int minCompressSize = DEFAULT_MIN_GZIP_SIZE;
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
@@ -57,25 +54,6 @@ public class GzipCompression extends Compression
     public GzipCompression()
     {
         super(ENCODING_NAME);
-    }
-
-    @Override
-    public DecoderConfig getDefaultDecoderConfig()
-    {
-        return this.defaultDecoderConfig;
-    }
-
-    @Override
-    public void setDefaultDecoderConfig(DecoderConfig config)
-    {
-        GzipDecoderConfig gzipDecoderConfig = GzipDecoderConfig.class.cast(config);
-        this.defaultDecoderConfig = gzipDecoderConfig;
-    }
-
-    @Override
-    public String getName()
-    {
-        return "gzip";
     }
 
     @Override
@@ -96,48 +74,23 @@ public class GzipCompression extends Compression
         return buffer;
     }
 
-    private ByteOrder getByteOrder()
-    {
-        // Per RFC-1952, GZIP is LITTLE_ENDIAN
-        return ByteOrder.LITTLE_ENDIAN;
-    }
-
-    @Override
-    public List<String> getFileExtensionNames()
-    {
-        return EXTENSIONS;
-    }
-
-    @Override
-    public HttpField getXContentEncodingField()
-    {
-        return X_CONTENT_ENCODING;
-    }
-
     @Override
     public HttpField getContentEncodingField()
     {
         return CONTENT_ENCODING;
     }
 
-    public InflaterPool getInflaterPool()
+    @Override
+    public DecoderConfig getDefaultDecoderConfig()
     {
-        return this.inflaterPool;
+        return this.defaultDecoderConfig;
     }
 
-    public DeflaterPool getDeflaterPool()
+    @Override
+    public void setDefaultDecoderConfig(DecoderConfig config)
     {
-        return this.deflaterPool;
-    }
-
-    public void setDeflaterPool(DeflaterPool deflaterPool)
-    {
-        this.deflaterPool = deflaterPool;
-    }
-
-    public void setInflaterPool(InflaterPool inflaterPool)
-    {
-        this.inflaterPool = inflaterPool;
+        GzipDecoderConfig gzipDecoderConfig = GzipDecoderConfig.class.cast(config);
+        this.defaultDecoderConfig = gzipDecoderConfig;
     }
 
     @Override
@@ -153,6 +106,32 @@ public class GzipCompression extends Compression
         this.defaultEncoderConfig = gzipEncoderConfig;
     }
 
+    public DeflaterPool getDeflaterPool()
+    {
+        return this.deflaterPool;
+    }
+
+    public void setDeflaterPool(DeflaterPool deflaterPool)
+    {
+        this.deflaterPool = deflaterPool;
+    }
+
+    @Override
+    public List<String> getFileExtensionNames()
+    {
+        return EXTENSIONS;
+    }
+
+    public InflaterPool getInflaterPool()
+    {
+        return this.inflaterPool;
+    }
+
+    public void setInflaterPool(InflaterPool inflaterPool)
+    {
+        this.inflaterPool = inflaterPool;
+    }
+
     @Override
     public int getMinCompressSize()
     {
@@ -163,6 +142,18 @@ public class GzipCompression extends Compression
     public void setMinCompressSize(int minCompressSize)
     {
         this.minCompressSize = Math.max(minCompressSize, DEFAULT_MIN_GZIP_SIZE);
+    }
+
+    @Override
+    public String getName()
+    {
+        return "gzip";
+    }
+
+    @Override
+    public HttpField getXContentEncodingField()
+    {
+        return X_CONTENT_ENCODING;
     }
 
     @Override
@@ -221,5 +212,11 @@ public class GzipCompression extends Compression
 
         removeBean(deflaterPool);
         deflaterPool = null;
+    }
+
+    private ByteOrder getByteOrder()
+    {
+        // Per RFC-1952, GZIP is LITTLE_ENDIAN
+        return ByteOrder.LITTLE_ENDIAN;
     }
 }

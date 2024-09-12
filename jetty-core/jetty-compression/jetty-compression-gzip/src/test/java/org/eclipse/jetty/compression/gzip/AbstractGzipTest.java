@@ -36,44 +36,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractGzipTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractGzipTest.class);
     // Signed Integer Max
     protected static final long INT_MAX = Integer.MAX_VALUE;
     // Unsigned Integer Max == 2^32
     protected static final long UINT_MAX = 0xFFFFFFFFL;
-
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractGzipTest.class);
     protected ArrayByteBufferPool.Tracking pool;
     protected ByteBufferPool.Sized sizedPool;
     protected GzipCompression gzip;
-
-    @BeforeEach
-    public void initPool()
-    {
-        pool = new ArrayByteBufferPool.Tracking();
-        sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
-    }
-
-    protected void startGzip() throws Exception
-    {
-        startGzip(-1);
-    }
-
-    protected void startGzip(int bufferSize) throws Exception
-    {
-        gzip = new GzipCompression();
-        if (bufferSize > 0)
-            gzip.setBufferSize(bufferSize);
-
-        gzip.setByteBufferPool(pool);
-        gzip.start();
-    }
-
-    @AfterEach
-    public void tearDown()
-    {
-        LifeCycle.stop(gzip);
-        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
-    }
 
     public static List<String> textResources()
     {
@@ -129,5 +99,34 @@ public abstract class AbstractGzipTest
     public byte[] decompress(ByteBuffer compressedBytes) throws IOException
     {
         return decompress(BufferUtil.toArray(compressedBytes));
+    }
+
+    @BeforeEach
+    public void initPool()
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        LifeCycle.stop(gzip);
+        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
+    }
+
+    protected void startGzip() throws Exception
+    {
+        startGzip(-1);
+    }
+
+    protected void startGzip(int bufferSize) throws Exception
+    {
+        gzip = new GzipCompression();
+        if (bufferSize > 0)
+            gzip.setBufferSize(bufferSize);
+
+        gzip.setByteBufferPool(pool);
+        gzip.start();
     }
 }

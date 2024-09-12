@@ -40,6 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractCompressionTest
 {
+    protected Compression compression;
+    protected ArrayByteBufferPool.Tracking pool;
+
     public static List<Class<? extends Compression>> compressions()
     {
         return List.of(
@@ -63,37 +66,6 @@ public abstract class AbstractCompressionTest
         }
 
         return cases.stream();
-    }
-
-    protected Compression compression;
-    protected ArrayByteBufferPool.Tracking pool;
-
-    protected void startCompression(Class<Compression> compressionClass) throws Exception
-    {
-        startCompression(compressionClass, -1);
-    }
-
-    protected void startCompression(Class<Compression> compressionClass, int bufferSize) throws Exception
-    {
-        newCompression(compressionClass);
-        if (bufferSize > 0)
-            compression.setBufferSize(bufferSize);
-        compression.start();
-    }
-
-    protected void newCompression(Class<Compression> compressionClass) throws Exception
-    {
-        compression = compressionClass.getDeclaredConstructor().newInstance();
-        pool = new ArrayByteBufferPool.Tracking();
-        compression.setByteBufferPool(pool);
-    }
-
-    @AfterEach
-    public void stopCompression()
-    {
-        LifeCycle.stop(compression);
-        if (pool != null)
-            assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
     }
 
     /**
@@ -179,5 +151,33 @@ public abstract class AbstractCompressionTest
     public byte[] decompress(ByteBuffer compressedBytes) throws IOException
     {
         return decompress(BufferUtil.toArray(compressedBytes));
+    }
+
+    @AfterEach
+    public void stopCompression()
+    {
+        LifeCycle.stop(compression);
+        if (pool != null)
+            assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
+    }
+
+    protected void newCompression(Class<Compression> compressionClass) throws Exception
+    {
+        compression = compressionClass.getDeclaredConstructor().newInstance();
+        pool = new ArrayByteBufferPool.Tracking();
+        compression.setByteBufferPool(pool);
+    }
+
+    protected void startCompression(Class<Compression> compressionClass, int bufferSize) throws Exception
+    {
+        newCompression(compressionClass);
+        if (bufferSize > 0)
+            compression.setBufferSize(bufferSize);
+        compression.start();
+    }
+
+    protected void startCompression(Class<Compression> compressionClass) throws Exception
+    {
+        startCompression(compressionClass, -1);
     }
 }

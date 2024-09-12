@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -52,28 +53,15 @@ public class CompressionHandler extends Handler.Wrapper
         addBean(compression);
     }
 
-    @Override
-    protected void doStart() throws Exception
+    public void addConfiguration(PathSpec pathSpec, CompressionConfig config)
     {
-        if (pathConfigs.isEmpty())
-        {
-            pathConfigs.put("/", new CompressionConfig());
-        }
-
-        super.doStart();
+        pathConfigs.put(pathSpec, config);
     }
 
-    @Override
-    protected void doStop() throws Exception
+    public void addConfiguration(String pathSpecString, CompressionConfig config)
     {
-        super.doStop();
-
-        supportedEncodings.values().forEach(
-            (codec) ->
-            {
-                removeBean(codec);
-            }
-        );
+        PathSpec pathSpec = PathSpec.from(pathSpecString);
+        addConfiguration(pathSpec, config);
     }
 
     @Override
@@ -207,6 +195,36 @@ public class CompressionHandler extends Handler.Wrapper
         return false;
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,supported=%s}", getClass().getSimpleName(), hashCode(), getState(), String.join(",", supportedEncodings.keySet()));
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (pathConfigs.isEmpty())
+        {
+            pathConfigs.put("/", new CompressionConfig());
+        }
+
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+
+        supportedEncodings.values().forEach(
+            (codec) ->
+            {
+                removeBean(codec);
+            }
+        );
+    }
+
     private Compression getCompression(String encoding)
     {
         Compression compression = supportedEncodings.get(encoding);
@@ -236,11 +254,5 @@ public class CompressionHandler extends Handler.Wrapper
             return request;
 
         return new DecompressionRequest(compression, request, config);
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x{%s,supported=%s}", getClass().getSimpleName(), hashCode(), getState(), String.join(",", supportedEncodings.keySet()));
     }
 }

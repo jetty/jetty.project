@@ -28,13 +28,11 @@ import org.slf4j.LoggerFactory;
 
 public class GzipDecoderSource extends DecoderSource
 {
-    private static final Logger LOG = LoggerFactory.getLogger(GzipDecoderSource.class);
-
     private enum State
     {
         INITIAL, ID, CM, FLG, MTIME, XFL, OS, FLAGS, EXTRA_LENGTH, EXTRA, NAME, COMMENT, HCRC, DATA, CRC, ISIZE, FINISHED, ERROR
     }
-
+    private static final Logger LOG = LoggerFactory.getLogger(GzipDecoderSource.class);
     // Unsigned Integer Max == 2^32
     private static final long UINT_MAX = 0xFFFFFFFFL;
     private static final ByteBuffer EMPTY_BUFFER = BufferUtil.EMPTY_BUFFER;
@@ -56,12 +54,6 @@ public class GzipDecoderSource extends DecoderSource
         this.inflater.reset();
         this.bufferSize = config.getBufferSize();
         this.state = State.INITIAL;
-    }
-
-    @Override
-    protected void release()
-    {
-        inflaterEntry.release();
     }
 
     @Override
@@ -287,8 +279,7 @@ public class GzipDecoderSource extends DecoderSource
                             return Content.Chunk.EOF;
                         }
                     }
-                    default ->
-                        throw new ZipException("Unknown state: " + state);
+                    default -> throw new ZipException("Unknown state: " + state);
                 }
             }
         }
@@ -298,5 +289,11 @@ public class GzipDecoderSource extends DecoderSource
             return Content.Chunk.from(x, true);
         }
         return readChunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
+    }
+
+    @Override
+    protected void release()
+    {
+        inflaterEntry.release();
     }
 }

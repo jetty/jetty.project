@@ -70,14 +70,14 @@ public class ZstandardDecoderConfig implements DecoderConfig
      * Enable or disable magicless zstd frames.
      *
      * <p>
-     *     Note: only applies when using
-     *     {@link ZstandardCompression#newDecoderSource(Content.Source, DecoderConfig)} or
-     *     {@link ZstandardCompression#newDecoderSource(Content.Source, DecoderConfig)}.
+     * Note: only applies when using
+     * {@link ZstandardCompression#newDecoderSource(Content.Source, DecoderConfig)} or
+     * {@link ZstandardCompression#newDecoderSource(Content.Source, DecoderConfig)}.
      * </p>
      * <p>>
-     *     Note: not applied when using
-     *     {@link ZstandardCompression#newDecoderInputStream(InputStream, DecoderConfig)} or
-     *     {@link ZstandardCompression#newDecoderInputStream(InputStream)}
+     * Note: not applied when using
+     * {@link ZstandardCompression#newDecoderInputStream(InputStream, DecoderConfig)} or
+     * {@link ZstandardCompression#newDecoderInputStream(InputStream)}
      * </p>
      *
      * @param flag true to enable, false is default.

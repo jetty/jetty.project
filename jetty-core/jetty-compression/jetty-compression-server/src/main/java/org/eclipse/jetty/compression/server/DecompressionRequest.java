@@ -26,14 +26,13 @@ import org.eclipse.jetty.util.component.Destroyable;
 
 public class DecompressionRequest extends Request.Wrapper implements Destroyable
 {
+    private Compression compression;
+    private HttpFields fields;
+    private DecoderSource decoderSource;
     public DecompressionRequest(Request wrapped)
     {
         super(wrapped);
     }
-
-    private Compression compression;
-    private HttpFields fields;
-    private DecoderSource decoderSource;
 
     public DecompressionRequest(
         Compression compression,
@@ -51,6 +50,40 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
         }
     }
 
+    @Override
+    public void demand(Runnable demandCallback)
+    {
+        if (decoderSource != null)
+            decoderSource.demand(demandCallback);
+        else
+            super.demand(demandCallback);
+    }
+
+    public void destroy()
+    {
+        if (decoderSource != null)
+        {
+            if (decoderSource instanceof Destroyable destroyable)
+                destroyable.destroy();
+        }
+    }
+
+    @Override
+    public HttpFields getHeaders()
+    {
+        if (fields == null)
+            return super.getHeaders();
+        return fields;
+    }
+
+    @Override
+    public Content.Chunk read()
+    {
+        if (decoderSource != null)
+            return decoderSource.read();
+        return super.read();
+    }
+
     private HttpFields updateRequestFields(Request request)
     {
         HttpFields fields = request.getHeaders();
@@ -58,7 +91,7 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
         boolean contentEncodingSeen = false;
 
         // iterate in reverse to see last content encoding first
-        for (ListIterator<HttpField> i = newFields.listIterator(newFields.size()); i.hasPrevious();)
+        for (ListIterator<HttpField> i = newFields.listIterator(newFields.size()); i.hasPrevious(); )
         {
             HttpField field = i.previous();
 
@@ -104,39 +137,5 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
             }
         }
         return newFields.asImmutable();
-    }
-
-    @Override
-    public HttpFields getHeaders()
-    {
-        if (fields == null)
-            return super.getHeaders();
-        return fields;
-    }
-
-    @Override
-    public Content.Chunk read()
-    {
-        if (decoderSource != null)
-            return decoderSource.read();
-        return super.read();
-    }
-
-    @Override
-    public void demand(Runnable demandCallback)
-    {
-        if (decoderSource != null)
-            decoderSource.demand(demandCallback);
-        else
-            super.demand(demandCallback);
-    }
-
-    public void destroy()
-    {
-        if (decoderSource != null)
-        {
-            if (decoderSource instanceof Destroyable destroyable)
-                destroyable.destroy();
-        }
     }
 }

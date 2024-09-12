@@ -29,16 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GzipCompressionTest extends AbstractGzipTest
 {
-    @Test
-    public void testStripSuffixes() throws Exception
-    {
-        startGzip();
-        assertThat(gzip.stripSuffixes("12345"), is("12345"));
-        assertThat(gzip.stripSuffixes("12345, 666" + gzip.getEtagSuffix()), is("12345, 666"));
-        assertThat(gzip.stripSuffixes("12345, 666" + gzip.getEtagSuffix() + ",W/\"9999" + gzip.getEtagSuffix() + "\""),
-            is("12345, 666,W/\"9999\""));
-    }
-
     /**
      * Proof that the {@link GZIPInputStream} can read an entire block of GZIP compressed content
      * (headers + data + trailers) that is followed by non GZIP content.
@@ -67,6 +57,16 @@ public class GzipCompressionTest extends AbstractGzipTest
             assertEquals(data1, decoded);
             // the extra data2 is not read, and there is no exception.
         }
+    }
+
+    @Test
+    public void testStripSuffixes() throws Exception
+    {
+        startGzip();
+        assertThat(gzip.stripSuffixes("12345"), is("12345"));
+        assertThat(gzip.stripSuffixes("12345, 666" + gzip.getEtagSuffix()), is("12345, 666"));
+        assertThat(gzip.stripSuffixes("12345, 666" + gzip.getEtagSuffix() + ",W/\"9999" + gzip.getEtagSuffix() + "\""),
+            is("12345, 666,W/\"9999\""));
     }
 
     /**
@@ -102,5 +102,4 @@ public class GzipCompressionTest extends AbstractGzipTest
             assertEquals(data1 + data2, decoded);
         }
     }
-
 }

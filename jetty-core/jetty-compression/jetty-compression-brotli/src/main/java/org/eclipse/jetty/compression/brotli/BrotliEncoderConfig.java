@@ -62,6 +62,7 @@ public class BrotliEncoderConfig implements EncoderConfig
 
     /**
      * Set Encoder output buffer size.
+     *
      * @param size size of output buffer.
      */
     @Override

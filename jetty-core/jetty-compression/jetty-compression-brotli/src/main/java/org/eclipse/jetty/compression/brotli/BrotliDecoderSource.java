@@ -42,12 +42,6 @@ public class BrotliDecoderSource extends DecoderSource
     }
 
     @Override
-    protected void release()
-    {
-        decoder.destroy();
-    }
-
-    @Override
     protected Content.Chunk nextChunk(Content.Chunk readChunk) throws IOException
     {
         ByteBuffer compressed = readChunk.getByteBuffer();
@@ -93,5 +87,11 @@ public class BrotliDecoderSource extends DecoderSource
                 }
             }
         }
+    }
+
+    @Override
+    protected void release()
+    {
+        decoder.destroy();
     }
 }

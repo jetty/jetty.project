@@ -27,27 +27,9 @@ public abstract class EncoderSink implements Content.Sink
 {
     private final Content.Sink sink;
 
-    public record WriteRecord(boolean last, ByteBuffer output, Callback callback) {}
-
     protected EncoderSink(Content.Sink sink)
     {
         this.sink = sink;
-    }
-
-    protected void release()
-    {
-    }
-
-    /**
-     * Figure out if the encoding can be done with the provided content.
-     *
-     * @param last the last write.
-     * @param content the content of the write event.
-     * @return true if the {@link #encode(boolean, ByteBuffer)} should proceed.
-     */
-    protected boolean canEncode(boolean last, ByteBuffer content)
-    {
-        return true;
     }
 
     @Override
@@ -74,12 +56,28 @@ public abstract class EncoderSink implements Content.Sink
             callback.succeeded();
     }
 
+    /**
+     * Figure out if the encoding can be done with the provided content.
+     *
+     * @param last the last write.
+     * @param content the content of the write event.
+     * @return true if the {@link #encode(boolean, ByteBuffer)} should proceed.
+     */
+    protected boolean canEncode(boolean last, ByteBuffer content)
+    {
+        return true;
+    }
+
     protected abstract WriteRecord encode(boolean last, ByteBuffer content);
+
+    protected void release()
+    {
+    }
+
+    public record WriteRecord(boolean last, ByteBuffer output, Callback callback) {}
 
     private class EncodeBufferCallback extends IteratingNestedCallback
     {
-        private static final Logger LOG = LoggerFactory.getLogger(EncodeBufferCallback.class);
-
         private enum State
         {
             // Intial state, nothing has been attempted yet
@@ -91,7 +89,7 @@ public abstract class EncoderSink implements Content.Sink
             // The final content has been send (final state)
             FINISHED
         }
-
+        private static final Logger LOG = LoggerFactory.getLogger(EncodeBufferCallback.class);
         private final AtomicReference<State> state = new AtomicReference<>(State.INITIAL);
         private final ByteBuffer content;
         private final boolean last;
@@ -101,6 +99,16 @@ public abstract class EncoderSink implements Content.Sink
             super(callback);
             this.content = content;
             this.last = last;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[content=%s last=%b]",
+                super.toString(),
+                BufferUtil.toDetailString(content),
+                last
+            );
         }
 
         protected void finished()
@@ -158,16 +166,6 @@ public abstract class EncoderSink implements Content.Sink
             if (writeRecord.callback != null)
                 callback = Callback.combine(callback, writeRecord.callback);
             sink.write(writeRecord.last, writeRecord.output, callback);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s[content=%s last=%b]",
-                super.toString(),
-                BufferUtil.toDetailString(content),
-                last
-            );
         }
     }
 }

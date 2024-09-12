@@ -33,44 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class CompressionDecoderSourceTest extends AbstractCompressionTest
 {
     @ParameterizedTest
-    @MethodSource("textInputs")
-    public void testDecodeText(Class<Compression> compressionClass, String textResourceName) throws Exception
-    {
-        startCompression(compressionClass);
-        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().get(0));
-        Path compressed = MavenPaths.findTestResourceFile(compressedName);
-        Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
-
-        ByteBufferPool.Sized sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
-        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source decoderSource = compression.newDecoderSource(fileSource);
-
-        String result = Content.Source.asString(decoderSource);
-        String expected = Files.readString(uncompressed);
-        assertEquals(expected, result);
-    }
-
-    @ParameterizedTest
-    @MethodSource("textInputs")
-    // @Timeout(value = 5, unit = TimeUnit.SECONDS)
-    public void testDecodeTextOneByteAtATime(Class<Compression> compressionClass, String textResourceName) throws Exception
-    {
-        startCompression(compressionClass);
-        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().get(0));
-        Path compressed = MavenPaths.findTestResourceFile(compressedName);
-        Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
-
-        ByteBufferPool.Sized sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
-        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
-        Content.Source maxBufSizeSource = new MaxBufferContentSource(fileSource, 1);
-        Content.Source decoderSource = compression.newDecoderSource(maxBufSizeSource);
-
-        String result = Content.Source.asString(decoderSource);
-        String expected = Files.readString(uncompressed);
-        assertEquals(expected, result);
-    }
-
-    @ParameterizedTest
     @MethodSource("compressions")
     public void testBigBlock(Class<Compression> compressionClass) throws Exception
     {
@@ -152,6 +114,24 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
     }
 
     /**
+     * Decode where only a single no-bytes buffer is compressed.
+     * This is expected to not trigger an IOException about any kind of decoding failure.
+     */
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testDecodeEmptyBlock(Class<Compression> compressionClass) throws Exception
+    {
+        startCompression(compressionClass);
+
+        ByteBuffer bytes = asDirect(compress(""));
+        Content.Source compressedSource = Content.Source.from(bytes);
+        Content.Source decoderSource = compression.newDecoderSource(compressedSource);
+
+        String result = Content.Source.asString(decoderSource);
+        assertEquals("", result);
+    }
+
+    /**
      * Decode where only a single empty buffer is compressed.
      * This is expected to not trigger an IOException about any kind of decoding failure.
      */
@@ -169,22 +149,42 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
         assertEquals("", result);
     }
 
-    /**
-     * Decode where only a single no-bytes buffer is compressed.
-     * This is expected to not trigger an IOException about any kind of decoding failure.
-     */
     @ParameterizedTest
-    @MethodSource("compressions")
-    public void testDecodeEmptyBlock(Class<Compression> compressionClass) throws Exception
+    @MethodSource("textInputs")
+    public void testDecodeText(Class<Compression> compressionClass, String textResourceName) throws Exception
     {
         startCompression(compressionClass);
+        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+        Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 
-        ByteBuffer bytes = asDirect(compress(""));
-        Content.Source compressedSource = Content.Source.from(bytes);
-        Content.Source decoderSource = compression.newDecoderSource(compressedSource);
+        ByteBufferPool.Sized sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source decoderSource = compression.newDecoderSource(fileSource);
 
         String result = Content.Source.asString(decoderSource);
-        assertEquals("", result);
+        String expected = Files.readString(uncompressed);
+        assertEquals(expected, result);
+    }
+
+    @ParameterizedTest
+    @MethodSource("textInputs")
+    // @Timeout(value = 5, unit = TimeUnit.SECONDS)
+    public void testDecodeTextOneByteAtATime(Class<Compression> compressionClass, String textResourceName) throws Exception
+    {
+        startCompression(compressionClass);
+        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+        Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
+
+        ByteBufferPool.Sized sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source maxBufSizeSource = new MaxBufferContentSource(fileSource, 1);
+        Content.Source decoderSource = compression.newDecoderSource(maxBufSizeSource);
+
+        String result = Content.Source.asString(decoderSource);
+        String expected = Files.readString(uncompressed);
+        assertEquals(expected, result);
     }
 
     @ParameterizedTest

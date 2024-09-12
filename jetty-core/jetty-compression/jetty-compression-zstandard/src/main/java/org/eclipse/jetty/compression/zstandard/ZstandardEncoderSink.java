@@ -30,12 +30,6 @@ import org.slf4j.LoggerFactory;
 
 public class ZstandardEncoderSink extends EncoderSink
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ZstandardEncoderSink.class);
-    /**
-     * zstd-jni MUST have direct buffers.
-     */
-    private static final ByteBuffer EMPTY_DIRECT_BUFFER = ByteBuffer.allocateDirect(0);
-
     private enum State
     {
         CONTINUE,
@@ -43,7 +37,11 @@ public class ZstandardEncoderSink extends EncoderSink
         FLUSH,
         FINISHED
     }
-
+    private static final Logger LOG = LoggerFactory.getLogger(ZstandardEncoderSink.class);
+    /**
+     * zstd-jni MUST have direct buffers.
+     */
+    private static final ByteBuffer EMPTY_DIRECT_BUFFER = ByteBuffer.allocateDirect(0);
     private final ZstandardCompression compression;
     private final ZstdCompressCtx compressCtx;
     private final int bufferSize;
@@ -179,7 +177,6 @@ public class ZstandardEncoderSink extends EncoderSink
         if (!last)
             throw new IllegalStateException("Directive.END not possible on non-last encode");
 
-
         state.compareAndSet(State.END, State.FLUSH);
         RetainableByteBuffer outputBuf = compression.acquireByteBuffer(bufferSize);
         // use zstd-jni END directive once.
@@ -193,6 +190,12 @@ public class ZstandardEncoderSink extends EncoderSink
             return new WriteRecord(false, outputBuf.getByteBuffer(), writeCallback);
         }
         outputBuf.release();
+        return null;
+    }
+
+    private WriteRecord finishOp(boolean last)
+    {
+        // do nothing
         return null;
     }
 
@@ -216,12 +219,6 @@ public class ZstandardEncoderSink extends EncoderSink
         }
 
         outputBuf.release();
-        return null;
-    }
-
-    private WriteRecord finishOp(boolean last)
-    {
-        // do nothing
         return null;
     }
 }

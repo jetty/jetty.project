@@ -33,28 +33,21 @@ public class MaxBufferContentSource implements Content.Source
         this.maxSize = maxSize;
     }
 
-    private Content.Chunk readChunk()
+    @Override
+    public void demand(Runnable demandCallback)
     {
-        if (activeChunk != null)
-        {
-            if (activeChunk.hasRemaining())
-                return activeChunk;
-            else
-            {
-                activeChunk.release();
-                activeChunk = null;
-            }
-        }
-
-        activeChunk = delegate.read();
-        return activeChunk;
+        if (activeChunk != null && activeChunk.hasRemaining())
+            demandCallback.run();
+        else
+            delegate.demand(demandCallback);
     }
 
-    private void freeActiveChunk()
+    @Override
+    public void fail(Throwable failure)
     {
-        if (activeChunk != null)
-            activeChunk.release();
-        activeChunk = null;
+        freeActiveChunk();
+        failed = ExceptionUtil.combine(failed, failure);
+        delegate.fail(failure);
     }
 
     @Override
@@ -110,20 +103,27 @@ public class MaxBufferContentSource implements Content.Source
         }
     }
 
-    @Override
-    public void demand(Runnable demandCallback)
+    private void freeActiveChunk()
     {
-        if (activeChunk != null && activeChunk.hasRemaining())
-            demandCallback.run();
-        else
-            delegate.demand(demandCallback);
+        if (activeChunk != null)
+            activeChunk.release();
+        activeChunk = null;
     }
 
-    @Override
-    public void fail(Throwable failure)
+    private Content.Chunk readChunk()
     {
-        freeActiveChunk();
-        failed = ExceptionUtil.combine(failed, failure);
-        delegate.fail(failure);
+        if (activeChunk != null)
+        {
+            if (activeChunk.hasRemaining())
+                return activeChunk;
+            else
+            {
+                activeChunk.release();
+                activeChunk = null;
+            }
+        }
+
+        activeChunk = delegate.read();
+        return activeChunk;
     }
 }

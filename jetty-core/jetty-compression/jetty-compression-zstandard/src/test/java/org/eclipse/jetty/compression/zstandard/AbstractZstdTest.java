@@ -45,35 +45,6 @@ public abstract class AbstractZstdTest
     protected ByteBufferPool.Sized sizedPool;
     protected ZstandardCompression zstd;
 
-    @BeforeEach
-    public void initPool()
-    {
-        pool = new ArrayByteBufferPool.Tracking();
-        sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
-    }
-
-    protected void startZstd() throws Exception
-    {
-        startZstd(-1);
-    }
-
-    protected void startZstd(int bufferSize) throws Exception
-    {
-        zstd = new ZstandardCompression();
-        if (bufferSize > 0)
-            zstd.setBufferSize(bufferSize);
-
-        zstd.setByteBufferPool(pool);
-        zstd.start();
-    }
-
-    @AfterEach
-    public void tearDown()
-    {
-        LifeCycle.stop(zstd);
-        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
-    }
-
     public static List<String> textResources()
     {
         return List.of("texts/logo.svg", "texts/long.txt", "texts/quotes.txt");
@@ -83,9 +54,9 @@ public abstract class AbstractZstdTest
      * Create a Direct ByteBuffer from a byte array.
      *
      * <p>
-     *     This is a replacement of {@link ByteBuffer#wrap(byte[])} but
-     *     for producing Direct {@link ByteBuffer} implementations that
-     *     {@code zstd-jni} require.
+     * This is a replacement of {@link ByteBuffer#wrap(byte[])} but
+     * for producing Direct {@link ByteBuffer} implementations that
+     * {@code zstd-jni} require.
      * </p>
      *
      * @param arr the byte array to populate ByteBuffer.
@@ -160,4 +131,32 @@ public abstract class AbstractZstdTest
         return decompress(BufferUtil.toArray(compressedBytes));
     }
 
+    @BeforeEach
+    public void initPool()
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        LifeCycle.stop(zstd);
+        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
+    }
+
+    protected void startZstd() throws Exception
+    {
+        startZstd(-1);
+    }
+
+    protected void startZstd(int bufferSize) throws Exception
+    {
+        zstd = new ZstandardCompression();
+        if (bufferSize > 0)
+            zstd.setBufferSize(bufferSize);
+
+        zstd.setByteBufferPool(pool);
+        zstd.start();
+    }
 }

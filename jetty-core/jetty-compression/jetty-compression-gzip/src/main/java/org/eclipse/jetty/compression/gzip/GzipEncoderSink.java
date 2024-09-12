@@ -30,38 +30,6 @@ import org.slf4j.LoggerFactory;
 
 public class GzipEncoderSink extends EncoderSink
 {
-    private static final Logger LOG = LoggerFactory.getLogger(GzipEncoderSink.class);
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
-
-    /**
-     * Per RFC-1952 (Section 2.3.1) this is the "Unknown" OS value as a byte.
-     */
-    private static final byte OS_UNKNOWN = (byte)0xFF;
-
-    /**
-     * The static Gzip Header
-     */
-    private static final byte[] GZIP_HEADER = new byte[]{
-        (byte)0x1f, // Gzip Magic number (0x8B1F) [short]
-        (byte)0x8b, // Gzip Magic number (0x8B1F) [short]
-        Deflater.DEFLATED, // compression method
-        0, // flags
-        0, // modification time [int]
-        0, // modification time [int]
-        0, // modification time [int]
-        0, // modification time [int]
-        0, // extra flags
-        OS_UNKNOWN // operating system
-    };
-
-    /**
-     * Per RFC-1952, the GZIP trailer is 8 bytes.
-     * 1. [CRC32] integer (4 bytes) representing CRC of uncompressed data.
-     * 2. [ISIZE] integer (4 bytes) representing total bytes of uncompressed data.
-     * This implies that Gzip cannot properly handle uncompressed sizes above <em>2^32 bytes</em> (or <em>4,294,967,296 bytes</em>)
-     */
-    private static final int GZIP_TRAILER_SIZE = 8;
-
     enum State
     {
         /**
@@ -85,7 +53,34 @@ public class GzipEncoderSink extends EncoderSink
          */
         FINISHED
     }
-
+    private static final Logger LOG = LoggerFactory.getLogger(GzipEncoderSink.class);
+    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+    /**
+     * Per RFC-1952 (Section 2.3.1) this is the "Unknown" OS value as a byte.
+     */
+    private static final byte OS_UNKNOWN = (byte)0xFF;
+    /**
+     * The static Gzip Header
+     */
+    private static final byte[] GZIP_HEADER = new byte[]{
+        (byte)0x1f, // Gzip Magic number (0x8B1F) [short]
+        (byte)0x8b, // Gzip Magic number (0x8B1F) [short]
+        Deflater.DEFLATED, // compression method
+        0, // flags
+        0, // modification time [int]
+        0, // modification time [int]
+        0, // modification time [int]
+        0, // modification time [int]
+        0, // extra flags
+        OS_UNKNOWN // operating system
+    };
+    /**
+     * Per RFC-1952, the GZIP trailer is 8 bytes.
+     * 1. [CRC32] integer (4 bytes) representing CRC of uncompressed data.
+     * 2. [ISIZE] integer (4 bytes) representing total bytes of uncompressed data.
+     * This implies that Gzip cannot properly handle uncompressed sizes above <em>2^32 bytes</em> (or <em>4,294,967,296 bytes</em>)
+     */
+    private static final int GZIP_TRAILER_SIZE = 8;
     private final GzipCompression compression;
     private final CompressionPool<Deflater>.Entry deflaterEntry;
     private final Deflater deflater;
@@ -118,11 +113,20 @@ public class GzipEncoderSink extends EncoderSink
         this.crc.reset();
     }
 
-    @Override
-    protected void release()
+    protected void addInput(ByteBuffer content)
     {
-        inputBuffer.release();
-        deflaterEntry.release();
+        int pos = BufferUtil.flipToFill(input);
+        int space = Math.min(input.remaining(), content.remaining());
+        ByteBuffer slice = content.slice();
+        slice.limit(space);
+        inputBytesProvided += slice.remaining();
+        // Update CRC based on what can be consumed right now.
+        // Any leftover content will be consumed on a later call.
+        crc.update(slice.slice());
+        input.put(slice);
+        BufferUtil.flipToFlush(input, pos);
+        // consume the bytes on content
+        content.position(content.position() + space);
     }
 
     @Override
@@ -211,6 +215,13 @@ public class GzipEncoderSink extends EncoderSink
         }
     }
 
+    @Override
+    protected void release()
+    {
+        inputBuffer.release();
+        deflaterEntry.release();
+    }
+
     /**
      * Encode the content, put output into output buffer.
      *
@@ -227,22 +238,6 @@ public class GzipEncoderSink extends EncoderSink
         int len = deflater.deflate(output);
         BufferUtil.flipToFlush(output, 0);
         return (len > 0);
-    }
-
-    protected void addInput(ByteBuffer content)
-    {
-        int pos = BufferUtil.flipToFill(input);
-        int space = Math.min(input.remaining(), content.remaining());
-        ByteBuffer slice = content.slice();
-        slice.limit(space);
-        inputBytesProvided += slice.remaining();
-        // Update CRC based on what can be consumed right now.
-        // Any leftover content will be consumed on a later call.
-        crc.update(slice.slice());
-        input.put(slice);
-        BufferUtil.flipToFlush(input, pos);
-        // consume the bytes on content
-        content.position(content.position() + space);
     }
 
     /**
