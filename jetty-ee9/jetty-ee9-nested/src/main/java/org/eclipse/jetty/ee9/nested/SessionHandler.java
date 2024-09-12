@@ -53,6 +53,7 @@ import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionIdManager;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -613,12 +614,19 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
      * CookieConfig
      *
      * Implementation of the jakarta.servlet.SessionCookieConfig.
-     * SameSite configuration can be achieved by using setComment
+     * SameSite configuration can be achieved by using setComment.
+     * Partitioned configuration can be achieved by using setComment.
      *
      * @see HttpCookie
      */
     public final class CookieConfig implements SessionCookieConfig
     {
+        protected static final String SAME_SITE_COMMENT = "__SAME_SITE_";
+        protected static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
+        protected static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
+        protected static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
+        protected static final String PARTITIONED_COMMENT = "__PARTITIONED__";
+
         @Override
         public String getComment()
         {
@@ -672,6 +680,17 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         {
             checkAvailable();
             _sessionManager.setSessionComment(comment);
+            if (!StringUtil.isEmpty(comment))
+            {
+                if (comment.contains(SAME_SITE_STRICT_COMMENT))
+                    _sessionManager.setSameSite(HttpCookie.SameSite.STRICT);
+                if (comment.contains(SAME_SITE_LAX_COMMENT))
+                     _sessionManager.setSameSite(HttpCookie.SameSite.LAX);
+                if (comment.contains(SAME_SITE_NONE_COMMENT))
+                    _sessionManager.setSameSite(HttpCookie.SameSite.NONE);
+                if (comment.contains(PARTITIONED_COMMENT))
+                    _sessionManager.setPartitioned(true);
+            }
         }
 
         @Override
