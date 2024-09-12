@@ -452,13 +452,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     fillInterested();
                     break;
                 }
-                else if (filled == 0)
-                {
-                    assert isRequestBufferEmpty();
-                    releaseRequestBuffer();
-                    fillInterested();
-                    break;
-                }
                 else if (filled < 0)
                 {
                     assert isRequestBufferEmpty();
