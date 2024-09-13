@@ -76,20 +76,20 @@ public class Response implements HttpServletResponse
      * String used in the {@code Comment} attribute of {@link Cookie}
      * to support the {@code HttpOnly} attribute.
      **/
-    private static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
+    protected static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
     /**
      * String used in the {@code Comment} attribute of {@link Cookie}
      * to support the {@code Partitioned} attribute.
      **/
-    private static final String PARTITIONED_COMMENT = "__PARTITIONED__";
+    protected static final String PARTITIONED_COMMENT = "__PARTITIONED__";
     /**
      * The strings used in the {@code Comment} attribute of {@link Cookie}
      * to support the {@code SameSite} attribute.
      **/
-    private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
-    private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
-    private static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
-    private static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
+    protected static final String SAME_SITE_COMMENT = "__SAME_SITE_";
+    protected static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
+    protected static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
+    protected static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
 
     public enum OutputType
     {

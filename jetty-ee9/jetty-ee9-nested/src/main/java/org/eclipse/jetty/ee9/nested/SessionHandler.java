@@ -621,12 +621,6 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
      */
     public final class CookieConfig implements SessionCookieConfig
     {
-        protected static final String SAME_SITE_COMMENT = "__SAME_SITE_";
-        protected static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
-        protected static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
-        protected static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
-        protected static final String PARTITIONED_COMMENT = "__PARTITIONED__";
-
         @Override
         public String getComment()
         {

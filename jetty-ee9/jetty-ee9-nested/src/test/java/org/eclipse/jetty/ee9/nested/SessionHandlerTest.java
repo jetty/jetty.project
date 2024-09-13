@@ -192,7 +192,7 @@ public class SessionHandlerTest
         sessionCookieConfig.setMaxAge(99);
 
         //test setting SameSite and Partitioned the old way in the comment
-        sessionCookieConfig.setComment(SessionHandler.CookieConfig.PARTITIONED_COMMENT + " " + SessionHandler.CookieConfig.SAME_SITE_STRICT_COMMENT);
+        sessionCookieConfig.setComment(Response.PARTITIONED_COMMENT + " " + Response.SAME_SITE_STRICT_COMMENT);
         
         HttpCookie cookie = mgr.getSessionManager().getSessionCookie(session, false);
         assertEquals("SPECIAL", cookie.getName());
