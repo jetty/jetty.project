@@ -507,7 +507,19 @@ public interface Request
      * @param listener the listener that receives response events
      */
     void send(Response.CompleteListener listener);
-
+    
+    /**
+     * <p>Sends this request and asynchronously notifies the given listener for response events.</p>
+     * <p>This method should be used when the application needs to be notified of the various response events
+     * as they happen, or when the application needs to efficiently manage the response content.</p>
+     * <p>The listener passed to this method may implement not only {@link PathResponseListener}
+     * but also other response listener interfaces, and all the events implemented will be notified.
+     * This allows application code to write a single listener class to handle all relevant events.</p>
+     *
+     * @param listener the listener that receives response events
+     */
+    void send(PathResponseListener listener);
+    
     /**
      * Attempts to abort the send of this request.
      *
