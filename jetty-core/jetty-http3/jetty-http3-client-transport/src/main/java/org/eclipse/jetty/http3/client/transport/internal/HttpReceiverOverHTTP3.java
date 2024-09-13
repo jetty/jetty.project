@@ -27,10 +27,11 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client.Listener
+public class HttpReceiverOverHTTP3 extends HttpReceiver
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
 
@@ -87,75 +88,74 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         return (HttpChannelOverHTTP3)super.getHttpChannel();
     }
 
-    @Override
-    public void onNewStream(Stream.Client stream)
-    {
-        getHttpChannel().setStream(stream);
-    }
-
-    @Override
-    public void onResponse(Stream.Client stream, HeadersFrame frame)
+    Runnable onResponse(HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return;
+            return null;
 
-        HttpResponse httpResponse = exchange.getResponse();
-        MetaData.Response response = (MetaData.Response)frame.getMetaData();
-        httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
-
-        responseBegin(exchange);
-
-        HttpFields headers = response.getHttpFields();
-        for (HttpField header : headers)
+        return new Invocable.ReadyTask(getInvocationType(), () ->
         {
-            responseHeader(exchange, header);
-        }
+            HttpResponse httpResponse = exchange.getResponse();
+            MetaData.Response response = (MetaData.Response)frame.getMetaData();
+            httpResponse.version(response.getHttpVersion()).status(response.getStatus()).reason(response.getReason());
 
-        // TODO: add support for HttpMethod.CONNECT.
+            responseBegin(exchange);
 
-        responseHeaders(exchange);
+            HttpFields headers = response.getHttpFields();
+            for (HttpField header : headers)
+            {
+                responseHeader(exchange, header);
+            }
+
+            // TODO: add support for HttpMethod.CONNECT.
+
+            responseHeaders(exchange);
+        });
     }
 
-    @Override
-    public void onDataAvailable(Stream.Client stream)
+    Runnable onDataAvailable()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Data available notification in {}", this);
 
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return;
+            return null;
 
-        responseContentAvailable(exchange);
+        return new Invocable.ReadyTask(getInvocationType(), () -> responseContentAvailable(exchange));
     }
 
-    @Override
-    public void onTrailer(Stream.Client stream, HeadersFrame frame)
+    Runnable onTrailer(HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return;
+            return null;
 
         HttpFields trailers = frame.getMetaData().getHttpFields();
         trailers.forEach(exchange.getResponse()::trailer);
 
-        responseSuccess(exchange, null);
+        return new Invocable.ReadyTask(getInvocationType(), () -> responseSuccess(exchange, null));
     }
 
-    @Override
-    public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
+    Runnable onIdleTimeout(Throwable failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
-            exchange.abort(failure, Promise.from(aborted -> promise.succeeded(!aborted), promise::failed));
-        else
+        if (exchange == null)
+        {
             promise.succeeded(false);
+            return null;
+        }
+        return new Invocable.ReadyTask(getInvocationType(), () -> exchange.abort(failure, Promise.from(aborted -> promise.succeeded(!aborted), promise::failed)));
     }
 
-    @Override
-    public void onFailure(Stream.Client stream, long error, Throwable failure)
+    Runnable onFailure(Throwable failure)
     {
-        responseFailure(failure, Promise.noop());
+        return new Invocable.ReadyTask(getInvocationType(), () -> responseFailure(failure, Promise.noop()));
+    }
+
+    private Invocable.InvocationType getInvocationType()
+    {
+        return getHttpChannel().getHttpConnection().getInvocationType();
     }
 }

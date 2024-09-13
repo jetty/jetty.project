@@ -52,12 +52,10 @@ public abstract class AbstractConnection implements Connection, Invocable
         _readCallback = new ReadCallback();
     }
 
-    @Deprecated
     @Override
-    public InvocationType getInvocationType()
+    @Deprecated(since = "12.0.0", forRemoval = true)
+    public Invocable.InvocationType getInvocationType()
     {
-        // TODO consider removing the #fillInterested method from the connection and only use #fillInterestedCallback
-        //      so a connection need not be Invocable
         return Invocable.super.getInvocationType();
     }
 
@@ -140,9 +138,20 @@ public abstract class AbstractConnection implements Connection, Invocable
      */
     public void fillInterested()
     {
+        fillInterested(_readCallback);
+    }
+
+    /**
+     * <p>Registers read interest with the given callback.</p>
+     * <p>When read readiness is signaled, the callback will be completed.</p>
+     *
+     * @param callback the callback to complete when read readiness is signaled
+     */
+    public void fillInterested(Callback callback)
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("fillInterested {}", this);
-        getEndPoint().fillInterested(_readCallback);
+            LOG.debug("fillInterested {} {}", callback, this);
+        getEndPoint().fillInterested(callback);
     }
 
     public void tryFillInterested(Callback callback)
@@ -167,10 +176,10 @@ public abstract class AbstractConnection implements Connection, Invocable
      *
      * @param cause the exception that caused the failure
      */
-    protected void onFillInterestedFailed(Throwable cause)
+    public void onFillInterestedFailed(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillInterestedFailed {}", this, cause);
+            LOG.debug("{} onFillInterestedFailed", this, cause);
         if (_endPoint.isOpen())
         {
             boolean close = true;
@@ -332,12 +341,6 @@ public abstract class AbstractConnection implements Connection, Invocable
         public String toString()
         {
             return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), AbstractConnection.this);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return AbstractConnection.this.getInvocationType();
         }
     }
 }

@@ -184,7 +184,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         @Override
         public void onHeaders(Stream stream, HeadersFrame frame)
         {
-            receiver.onHeaders(stream, frame);
+            offerTask(receiver.onHeaders(stream, frame));
         }
 
         @Override
@@ -197,28 +197,33 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public void onDataAvailable(Stream stream)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onDataAvailable(), false);
+            offerTask(channel.onDataAvailable());
         }
 
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onReset(frame, callback), false);
+            offerTask(channel.onReset(frame, callback));
         }
 
         @Override
         public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onTimeout(x, promise), false);
+            offerTask(channel.onTimeout(x, promise));
         }
 
         @Override
         public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
-            connection.offerTask(channel.onFailure(failure, callback), false);
+            offerTask(channel.onFailure(failure, callback));
+        }
+
+        private void offerTask(Runnable task)
+        {
+            connection.offerTask(task, false);
         }
     }
 }

@@ -63,7 +63,7 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
             promise.succeeded(true);
             return null;
         }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        return new Invocable.ReadyTask(getInvocationType(), () ->
         {
             boolean expire = connection.onIdleExpired(timeout);
             if (expire)
@@ -78,7 +78,7 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        return new Invocable.ReadyTask(getInvocationType(), () ->
         {
             processFailure(failure);
             close(failure);

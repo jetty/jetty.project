@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -260,34 +261,35 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} is readable, processing: {}", streamId, interested);
+
         if (interested)
         {
-            getFillInterest().fillable();
+            Invocable.ReadyTask task = new Invocable.ReadyTask(getFillInterest().getCallbackInvocationType(), getFillInterest()::fillable);
+            getQuicSession().getProtocolSession().offer(task, false);
+            return true;
         }
-        else
+
+        if (isStreamFinished())
         {
-            if (isStreamFinished())
+            // Check if the stream was finished normally.
+            try
             {
-                // Check if the stream was finished normally.
-                try
-                {
-                    fill(BufferUtil.EMPTY_BUFFER);
-                }
-                catch (EOFException x)
-                {
-                    // Got reset.
-                    getFillInterest().onFail(x);
-                    getQuicSession().onFailure(x);
-                }
-                catch (Throwable x)
-                {
-                    EofException e = new EofException(x);
-                    getFillInterest().onFail(e);
-                    getQuicSession().onFailure(e);
-                }
+                fill(BufferUtil.EMPTY_BUFFER);
+            }
+            catch (EOFException x)
+            {
+                // Got reset.
+                getFillInterest().onFail(x);
+                getQuicSession().onFailure(x);
+            }
+            catch (Throwable x)
+            {
+                EofException e = new EofException(x);
+                getFillInterest().onFail(e);
+                getQuicSession().onFailure(e);
             }
         }
-        return interested;
+        return false;
     }
 
     @Override

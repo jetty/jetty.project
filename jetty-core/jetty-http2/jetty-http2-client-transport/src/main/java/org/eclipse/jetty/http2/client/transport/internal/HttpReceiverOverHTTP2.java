@@ -116,13 +116,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         return (HttpChannelOverHTTP2)super.getHttpChannel();
     }
 
-    void onHeaders(Stream stream, HeadersFrame frame)
+    Runnable onHeaders(Stream stream, HeadersFrame frame)
     {
         MetaData metaData = frame.getMetaData();
-        if (metaData.isResponse())
-            onResponse(stream, frame);
-        else
-            onTrailer(frame);
+        Runnable task = metaData.isResponse() ? () -> onResponse(stream, frame) : () -> onTrailer(frame);
+        return new Invocable.ReadyTask(getInvocationType(), task);
     }
 
     private void onResponse(Stream stream, HeadersFrame frame)
@@ -224,7 +222,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return null;
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseContentAvailable(exchange));
+        return new Invocable.ReadyTask(getInvocationType(), () -> responseContentAvailable(exchange));
     }
 
     @Override
@@ -236,7 +234,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             callback.succeeded();
             return null;
         }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        return new Invocable.ReadyTask(getInvocationType(), () ->
         {
             int error = frame.getError();
             IOException failure = new IOException(ErrorCode.toString(error, "reset_code_" + error));
@@ -253,7 +251,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             promise.succeeded(false);
             return null;
         }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        return new Invocable.ReadyTask(getInvocationType(), () ->
             promise.completeWith(exchange.getRequest().abort(failure))
         );
     }
@@ -262,6 +260,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     public Runnable onFailure(Throwable failure, Callback callback)
     {
         Promise<Boolean> promise = Promise.from(failed -> callback.succeeded(), callback::failed);
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseFailure(failure, promise));
+        return new Invocable.ReadyTask(getInvocationType(), () -> responseFailure(failure, promise));
+    }
+
+    private Invocable.InvocationType getInvocationType()
+    {
+        return getHttpChannel().getHttpConnection().getInvocationType();
     }
 }
