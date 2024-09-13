@@ -27,7 +27,11 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,6 +51,45 @@ public class IteratingCallbackTest
     public void dispose() throws Exception
     {
         scheduler.stop();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testIterateWhileProcessingLoopCount(boolean succeededWinsRace)
+    {
+        AtomicInteger count = new AtomicInteger();
+        IteratingCallback icb = new IteratingCallback()
+        {
+
+            @Override
+            protected Action process()
+            {
+                int counter = count.getAndIncrement();
+                if (counter == 0)
+                {
+                    iterate();
+                    if (succeededWinsRace)
+                    {
+                        succeeded();
+                    }
+                    else
+                    {
+                        new Thread(() ->
+                        {
+                            await().atMost(5, TimeUnit.SECONDS).until(this::isPending, is(true));
+                            succeeded();
+                        }).start();
+                    }
+                    return Action.SCHEDULED;
+                }
+                return Action.IDLE;
+            }
+        };
+
+        icb.iterate();
+
+        await().atMost(10, TimeUnit.SECONDS).until(icb::isIdle, is(true));
+        assertEquals(2, count.get());
     }
 
     @Test
