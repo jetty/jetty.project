@@ -545,6 +545,14 @@ public abstract class IteratingCallback implements Callback
             onCompleteFailure(failure);
     }
 
+    boolean isPending()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _state == State.PENDING;
+        }
+    }
+
     /**
      * @return whether this callback is idle, and {@link #iterate()} needs to be called
      */
