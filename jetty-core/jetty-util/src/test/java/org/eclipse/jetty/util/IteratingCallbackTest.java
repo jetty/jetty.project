@@ -65,9 +65,17 @@ public class IteratingCallbackTest
                 {
                     iterate();
                     if (succeededWinsRace)
+                    {
                         succeeded();
+                    }
                     else
-                        scheduler.schedule(this::succeeded, 100, TimeUnit.MILLISECONDS);
+                    {
+                        new Thread(() ->
+                        {
+                            await().atMost(5, TimeUnit.SECONDS).until(this::isPending, is(true));
+                            succeeded();
+                        }).start();
+                    }
                     return Action.SCHEDULED;
                 }
                 return Action.IDLE;
@@ -76,7 +84,7 @@ public class IteratingCallbackTest
 
         icb.iterate();
 
-        await().atMost(5, TimeUnit.SECONDS).until(icb::isIdle, is(true));
+        await().atMost(10, TimeUnit.SECONDS).until(icb::isIdle, is(true));
         assertEquals(2, icb.counter);
     }
 
