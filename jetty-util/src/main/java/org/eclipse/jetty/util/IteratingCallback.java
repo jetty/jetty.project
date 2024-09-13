@@ -275,6 +275,7 @@ public abstract class IteratingCallback implements Callback
                                 }
                                 case SCHEDULED:
                                 {
+                                    _iterate = false;
                                     // we won the race against the callback, so the callback has to process and we can break processing
                                     _state = State.PENDING;
                                     break processing;
@@ -300,6 +301,7 @@ public abstract class IteratingCallback implements Callback
                     {
                         if (action != Action.SCHEDULED)
                             throw new IllegalStateException(String.format("%s[action=%s]", this, action));
+                        _iterate = false;
                         // we lost the race, so we have to keep processing
                         _state = State.PROCESSING;
                         continue;
@@ -457,6 +459,14 @@ public abstract class IteratingCallback implements Callback
 
         if (failure != null)
             onCompleteFailure(new IOException(failure));
+    }
+
+    boolean isPending()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _state == State.PENDING;
+        }
     }
 
     /**
