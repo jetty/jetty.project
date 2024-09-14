@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.ee10.tests.distribution.openid.OpenIdProvider;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
+import org.eclipse.jetty.tests.testers.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.api.Test;

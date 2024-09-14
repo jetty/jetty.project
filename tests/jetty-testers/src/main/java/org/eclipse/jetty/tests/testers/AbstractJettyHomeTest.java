@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tests.distribution;
+package org.eclipse.jetty.tests.testers;
 
 import java.nio.file.Path;
 import java.util.function.Supplier;

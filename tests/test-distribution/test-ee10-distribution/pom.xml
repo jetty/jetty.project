@@ -60,11 +60,6 @@
       <artifactId>jetty-testers</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-distribution-common</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
 </project>

@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.tests.testers.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;

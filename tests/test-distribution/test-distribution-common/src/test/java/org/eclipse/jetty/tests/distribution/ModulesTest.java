@@ -24,7 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest.START_TIMEOUT;
+import static org.eclipse.jetty.tests.testers.AbstractJettyHomeTest.START_TIMEOUT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 

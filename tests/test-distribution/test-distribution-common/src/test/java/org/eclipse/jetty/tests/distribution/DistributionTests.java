@@ -57,6 +57,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
+import org.eclipse.jetty.tests.testers.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;

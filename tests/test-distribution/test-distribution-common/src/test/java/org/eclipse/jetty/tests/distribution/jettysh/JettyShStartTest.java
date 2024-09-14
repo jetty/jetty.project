@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
+import org.eclipse.jetty.tests.testers.AbstractJettyHomeTest;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
