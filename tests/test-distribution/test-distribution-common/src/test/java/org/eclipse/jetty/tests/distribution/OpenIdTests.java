@@ -42,7 +42,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenIdTests.class);
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9","ee10"})
+    @ValueSource(strings = {"ee9", "ee10"})
     public void testOpenID(String eeX) throws Exception
     {
         try (KeycloakContainer container = new KeycloakContainer().withRealmImportFile("keycloak/realm-export.json"))
