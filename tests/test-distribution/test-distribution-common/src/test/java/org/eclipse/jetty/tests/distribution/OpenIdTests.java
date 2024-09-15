@@ -11,20 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.tests.distribution;
+package org.eclipse.jetty.tests.distribution;
 
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.HtmlForm;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,15 +34,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Isolated
 public class OpenIdTests extends AbstractJettyHomeTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenIdTests.class);
 
-    @Test
-    public void testOpenID() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {"ee9","ee10"})
+    public void testOpenID(String eeX) throws Exception
     {
         try (KeycloakContainer container = new KeycloakContainer().withRealmImportFile("keycloak/realm-export.json"))
         {
@@ -55,7 +58,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
             String[] args1 = {
                     "--create-startd",
                     "--approve-all-licenses",
-                    "--add-to-start=http,ee9-webapp,ee9-deploy,ee9-openid"
+                    "--add-to-start=http," + eeX + "-webapp," + eeX + "-deploy," + eeX + "-openid"
             };
 
             String clientId = "jetty-api";
@@ -65,7 +68,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
                 assertEquals(0, run1.getExitValue());
 
-                Path webApp = distribution.resolveArtifact("org.eclipse.jetty.ee9:jetty-ee9-test-openid-webapp:war:" + jettyVersion);
+                Path webApp = distribution.resolveArtifact("org.eclipse.jetty." + eeX + ":jetty-" + eeX + "-test-openid-webapp:war:" + jettyVersion);
                 distribution.installWar(webApp, "test");
                 String openIdProvider = container.getAuthServerUrl() + "/realms/jetty";
                 LOGGER.info("openIdProvider: {}", openIdProvider);
@@ -80,40 +83,46 @@ public class OpenIdTests extends AbstractJettyHomeTest
                         //"jetty.server.dumpAfterStart=true",
                 };
 
-                try (JettyHomeTester.Run run2 = distribution.start(args2))
+                try (JettyHomeTester.Run run2 = distribution.start(args2); WebClient webClient = new WebClient();)
                 {
                     assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
-                    startHttpClient(false);
                     String uri = "http://localhost:" + port + "/test";
-
                     // Initially not authenticated
-                    ContentResponse response = client.GET(uri + "/");
-                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
-                    String content = response.getContentAsString();
+                    HtmlPage page = webClient.getPage(uri + "/");
+                    assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
+                    String content = page.getWebResponse().getContentAsString();
                     assertThat(content, containsString("not authenticated"));
 
                     // Request to login is success
-                    response = client.GET(uri + "/login");
-                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
-                    content = response.getContentAsString();
-                    assertThat(content, containsString("success"));
+                    page = webClient.getPage(uri + "/login");
+                    assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
+                    // redirect to openid provider login form
+                    HtmlForm htmlForm = page.getForms().get(0);
+                    htmlForm.getInputByName("username").setValue("jetty");
+                    htmlForm.getInputByName("password").setValue("JettyRocks!");
+
+                    HtmlSubmitInput submit = htmlForm.getOneHtmlElementByAttribute(
+                            "input", "type", "submit");
+                    page = submit.click();
+                    assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
+                    assertThat(page.getWebResponse().getContentAsString(), containsString("success"));
 
                     // Now authenticated we can get info
-                    response = client.GET(uri + "/");
-                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
-                    content = response.getContentAsString();
-                    assertThat(content, containsString("userId: 123456789"));
-                    assertThat(content, containsString("name: Alice"));
-                    assertThat(content, containsString("email: Alice@example.com"));
+                    page = webClient.getPage(uri + "/");
+                    assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
+                    content = page.getWebResponse().getContentAsString();
+                    assertThat(content, containsString("name: Foo Doe"));
+                    assertThat(content, containsString("email: jetty@jetty.org"));
 
                     // Request to admin page gives 403 as we do not have admin role
-                    response = client.GET(uri + "/admin");
-                    assertThat(response.getStatus(), is(HttpStatus.FORBIDDEN_403));
+                    FailingHttpStatusCodeException failingHttpStatusCodeException =
+                            assertThrows(FailingHttpStatusCodeException.class, () -> webClient.getPage(uri + "/admin"));
+                    assertThat(failingHttpStatusCodeException.getStatusCode(), is(HttpStatus.FORBIDDEN_403));
 
                     // We are no longer authenticated after logging out
-                    response = client.GET(uri + "/logout");
-                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
-                    content = response.getContentAsString();
+                    page = webClient.getPage(uri + "/logout");
+                    assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
+                    content = page.getWebResponse().getContentAsString();
                     assertThat(content, containsString("not authenticated"));
 
                 }

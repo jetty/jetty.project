@@ -15,9 +15,15 @@
     <bundle-symbolic-name>${project.groupId}.tests.distribution.common</bundle-symbolic-name>
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
+    <testcontainers-keycloak.version>3.4.0</testcontainers-keycloak.version>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.github.dasniko</groupId>
+      <artifactId>testcontainers-keycloak</artifactId>
+      <version>${testcontainers-keycloak.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
@@ -125,6 +131,12 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>net.sourceforge.htmlunit</groupId>
+      <artifactId>htmlunit</artifactId>
+      <version>2.70.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
@@ -153,6 +165,20 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-test-log4j2-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-test-openid-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>

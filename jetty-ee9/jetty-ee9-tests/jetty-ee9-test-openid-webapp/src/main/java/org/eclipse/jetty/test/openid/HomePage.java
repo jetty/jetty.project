@@ -32,7 +32,6 @@ public class HomePage extends HttpServlet
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> userInfo = (Map<String, Object>)request.getSession().getAttribute("org.eclipse.jetty.security.openid.claims");
-            response.getWriter().println("userId: " + userInfo.get("sub") + "<br>");
             response.getWriter().println("name: " + userInfo.get("name") + "<br>");
             response.getWriter().println("email: " + userInfo.get("email") + "<br>");
             response.getWriter().println("<br><a href=\"" + request.getContextPath() + "/logout\">Logout</a>");
