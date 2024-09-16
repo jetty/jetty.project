@@ -18,16 +18,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
+import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -161,46 +157,44 @@ public class OpenIdTests extends AbstractJettyHomeTest
                     //"jetty.server.dumpAfterStart=true",
             };
 
-            try (JettyHomeTester.Run run2 = distribution.start(args2); WebClient webClient = new WebClient();)
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 String uri = "http://localhost:" + port + "/test";
                 // Initially not authenticated
-                HtmlPage page = webClient.getPage(uri + "/");
-                assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
-                String content = page.getWebResponse().getContentAsString();
-                assertThat(content, containsString("not authenticated"));
-                // Request to login is success
-                page = webClient.getPage(uri + "/login");
-                assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
-                // redirect to openid provider login form
-                HtmlForm htmlForm = page.getForms().get(0);
-                htmlForm.getInputByName("username").setValue(userName);
-                htmlForm.getInputByName("password").setValue(password);
+                startHttpClient();
+                ContentResponse contentResponse = client.GET(uri + "/");
+                assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
+                assertThat(contentResponse.getContentAsString(), containsString("not authenticated"));
 
-                HtmlSubmitInput submit = htmlForm.getOneHtmlElementByAttribute(
-                        "input", "type", "submit");
-                page = submit.click();
-                assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
-                assertThat(page.getWebResponse().getContentAsString(), containsString("success"));
+                // Request to login is success
+                contentResponse = client.GET(uri + "/login");
+                assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
+                // need to extract form
+                String html = contentResponse.getContentAsString();
+                // need this attribute  <form ***** action="***"
+                String postUrl = html.substring(html.indexOf("action=\"")).substring(0, html.substring(html.indexOf("action=\"")).indexOf("\"", 9)).substring(8);
+                Fields fields = new Fields();
+                fields.put("username", userName);
+                fields.add("password", password);
+                contentResponse = client.FORM(postUrl, fields);
+                assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
+                assertThat(contentResponse.getContentAsString(), containsString("success"));
 
                 // Now authenticated we can get info
-                page = webClient.getPage(uri + "/");
-                assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
-                content = page.getWebResponse().getContentAsString();
+                String content = client.GET(uri + "/").getContentAsString();
                 assertThat(content, containsString("userId: " + userId));
                 assertThat(content, containsString("name: " + firstName + " " + lastName));
                 assertThat(content, containsString("email: " + email));
 
                 // Request to admin page gives 403 as we do not have admin role
-                FailingHttpStatusCodeException failingHttpStatusCodeException =
-                        assertThrows(FailingHttpStatusCodeException.class, () -> webClient.getPage(uri + "/admin"));
-                assertThat(failingHttpStatusCodeException.getStatusCode(), is(HttpStatus.FORBIDDEN_403));
+                contentResponse = client.GET(uri + "/admin");
+                assertThat(contentResponse.getStatus(), is(HttpStatus.FORBIDDEN_403));
 
                 // We are no longer authenticated after logging out
-                page = webClient.getPage(uri + "/logout");
-                assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
-                content = page.getWebResponse().getContentAsString();
+                contentResponse = client.GET(uri + "/logout");
+                assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
+                content = contentResponse.getContentAsString();
                 assertThat(content, containsString("not authenticated"));
 
             }
