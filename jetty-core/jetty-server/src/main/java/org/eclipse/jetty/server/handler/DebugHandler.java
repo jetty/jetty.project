@@ -16,12 +16,11 @@ package org.eclipse.jetty.server.handler;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -42,7 +41,47 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     private OutputStream _out;
     private PrintStream _print;
     private boolean _showHeaders;
-private final String _attr = String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
+    private final String _attr = String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
+
+    private class HandlingCallback extends Callback.Nested
+    {
+        private final Request _request;
+        private final Response _response;
+        private final AtomicBoolean _handling = new AtomicBoolean(true); //when created, the request is being handled
+
+        private HandlingCallback(Callback callback, Request request, Response response)
+        {
+            super(callback);
+            _request = request;
+            _response = response;
+        }
+
+        private boolean handlingCompleted()
+        {
+            //test if the request is still being handled or not
+            return !_handling.compareAndSet(true, false);
+        }
+
+        private void callbackCompleted(Throwable throwable)
+        {
+            if (_handling.compareAndSet(true, false))
+                log("<< r=%s async=false %d %s%n%s", findRequestName(_request), _response.getStatus(), (throwable == null ? "" : throwable.toString()), _response.getHeaders());
+        }
+
+        @Override
+        public void succeeded()
+        {
+            callbackCompleted(null);
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            callbackCompleted(x);
+            super.failed(x);
+        }
+    }
 
     public DebugHandler()
     {
@@ -72,6 +111,8 @@ private final String _attr = String.format("__R%s@%x", this.getClass().getSimple
 
         String ex = null;
         String rname = findRequestName(request);
+        HandlingCallback handlingCallback = new HandlingCallback(callback, request, response);
+
         try
         {
             String headers = _showHeaders ? ("\n" + request.getHeaders().toString()) : "";
@@ -85,7 +126,7 @@ private final String _attr = String.format("__R%s@%x", this.getClass().getSimple
                 headers);
             thread.setName(name);
 
-            return getHandler().handle(request, response, callback);
+            return getHandler().handle(request, response, handlingCallback);
         }
         catch (Throwable x)
         {
@@ -94,8 +135,15 @@ private final String _attr = String.format("__R%s@%x", this.getClass().getSimple
         }
         finally
         {
-            // TODO this should be done in a completion event
-            log("<< r=%s async=false %d%n%s", rname, response.getStatus(), response.getHeaders());
+            //check if the request has finished, or if async is still in progress
+            if (handlingCallback.handlingCompleted())
+            {
+                log("<< r=%s async=false %d %s%n%s", rname, response.getStatus(), (ex == null ? "" : ex), response.getHeaders());
+            }
+            else
+            {
+                log("|| r=%s async=true", rname);
+            }
         }
     }
 
@@ -165,6 +213,7 @@ private final String _attr = String.format("__R%s@%x", this.getClass().getSimple
 
     /**
      * Get the out.
+     *
      * @return the out
      */
     public OutputStream getOutputStream()
@@ -174,6 +223,7 @@ private final String _attr = String.format("__R%s@%x", this.getClass().getSimple
 
     /**
      * Set the out to set.
+     *
      * @param out the out to set
      */
     public void setOutputStream(OutputStream out)

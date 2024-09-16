@@ -702,7 +702,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
-    public void testDebugModule(String env) throws Exception
+    public void testDebugLogModule(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");

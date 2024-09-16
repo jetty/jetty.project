@@ -93,25 +93,21 @@ The module properties are:
 include::{jetty-home}/modules/cross-origin.mod[tags=documentation]
 ----
 
-You must configure at least the property `jetty.crossorigin.allowedOriginPatterns` to allow one or more origins.
+[[debuglog]
+== Module `debuglog`
 
-It is recommended that you consider configuring also the property `jetty.crossorigin.allowCredentials`.
-When set to `true`, clients send cookies and authentication headers in cross-origin requests to your domain.
-When set to `false`, cookies and authentication headers are not sent.
+The `debuglog` module logs extra information about request processing.
 
-[[eeN-debug]]
-== Module `{ee-all}-debug`
-include::{jetty-home}/modules/ee10-debug.mod[tags=description]
+This module installs the `DebugHandler` into the handler tree and logs information into a rollover log file.
+By default, the location of the log file is `$jetty.base/logs`, although this can be configured via the `jetty.debuglog.dir`.
+The name of the log file is of the form: `yyyy_mm_dd.debug.log`, for example `2024-10-01.debug.log`.
 
-Enabling this module produces a log file that is useful to debug incoming traffic.
-It will log entry and exit points of HTTP requests as well as the response code.
-
-Multiple versions of this module exist (`{ee-all}-debug`) to support each Jakarta EE platform's version of the Java Servlet specification.
-Jetty's configuration properties are identical across these versions; the configuration properties for the `{ee-current}-debug` Jetty module are:
+The module properties are:
 
 ----
-include::{jetty-home}/modules/ee10-debug.mod[tags=ini-template]
+include::{jetty-home}/modules/debuglog.mod[tags=documentation]
 ----
+
 
 [[eeN-deploy]]
 == Module `{ee-all}-deploy`
