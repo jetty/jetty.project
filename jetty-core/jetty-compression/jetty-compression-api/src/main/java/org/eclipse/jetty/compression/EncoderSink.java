@@ -89,6 +89,7 @@ public abstract class EncoderSink implements Content.Sink
             // The final content has been send (final state)
             FINISHED
         }
+
         private static final Logger LOG = LoggerFactory.getLogger(EncodeBufferCallback.class);
         private final AtomicReference<State> state = new AtomicReference<>(State.INITIAL);
         private final ByteBuffer content;

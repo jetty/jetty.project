@@ -53,6 +53,7 @@ public class GzipEncoderSink extends EncoderSink
          */
         FINISHED
     }
+
     private static final Logger LOG = LoggerFactory.getLogger(GzipEncoderSink.class);
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     /**

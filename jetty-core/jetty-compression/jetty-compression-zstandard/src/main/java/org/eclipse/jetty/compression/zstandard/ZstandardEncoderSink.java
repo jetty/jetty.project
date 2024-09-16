@@ -37,6 +37,7 @@ public class ZstandardEncoderSink extends EncoderSink
         FLUSH,
         FINISHED
     }
+
     private static final Logger LOG = LoggerFactory.getLogger(ZstandardEncoderSink.class);
     /**
      * zstd-jni MUST have direct buffers.

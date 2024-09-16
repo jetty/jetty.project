@@ -201,7 +201,6 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         assertThat(content, is(resourceBody));
     }
 
-
     @Test
     public void testDefaultConfiguration() throws Exception
     {

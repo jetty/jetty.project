@@ -46,6 +46,7 @@ public class BrotliEncoderSink extends EncoderSink
          */
         FINISHED;
     }
+
     private static final Logger LOG = LoggerFactory.getLogger(BrotliEncoderSink.class);
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private final BrotliCompression compression;
