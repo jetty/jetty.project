@@ -24,7 +24,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import jakarta.ws.rs.core.Response;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
@@ -35,7 +34,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -72,7 +70,6 @@ public class OpenIdTests extends AbstractJettyHomeTest
     public static void startKeycloak()
     {
         KEYCLOAK_CONTAINER.start();
-
         // init keycloak
         try (Keycloak keycloak = KEYCLOAK_CONTAINER.getKeycloakAdminClient())
         {
@@ -98,18 +95,15 @@ public class OpenIdTests extends AbstractJettyHomeTest
             user.setUsername(userName);
             user.setEmail(email);
 
-            Response response = keycloak.realm("jetty").users().create(user);
-            userId = CreatedResponseUtil.getCreatedId(response);
+            userId = CreatedResponseUtil.getCreatedId(keycloak.realm("jetty").users().create(user));
 
             CredentialRepresentation passwordCred = new CredentialRepresentation();
             passwordCred.setTemporary(false);
             passwordCred.setType(CredentialRepresentation.PASSWORD);
             passwordCred.setValue(password);
 
-            UserResource userResource = keycloak.realm("jetty").users().get(userId);
-
             // Set password credential
-            userResource.resetPassword(passwordCred);
+            keycloak.realm("jetty").users().get(userId).resetPassword(passwordCred);
         }
     }
 
@@ -146,7 +140,6 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 "--approve-all-licenses",
                 "--add-to-start=http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + "," + openIdModule
         };
-
 
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
@@ -213,6 +206,5 @@ public class OpenIdTests extends AbstractJettyHomeTest
 
             }
         }
-
     }
 }

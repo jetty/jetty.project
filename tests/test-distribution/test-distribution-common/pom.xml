@@ -28,7 +28,6 @@
           <groupId>io.quarkus</groupId>
           <artifactId>quarkus-junit4-mock</artifactId>
         </exclusion>
-
       </exclusions>
     </dependency>
     <dependency>
