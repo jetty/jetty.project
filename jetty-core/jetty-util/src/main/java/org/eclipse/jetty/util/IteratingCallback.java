@@ -292,7 +292,7 @@ public abstract class IteratingCallback implements Callback
     {
         ExceptionUtil.callAndThen(cause, this::onAborted, this::onFailure);
     }
-    
+
     private void doOnAbortedOnFailureOnCompleted(Throwable cause)
     {
         ExceptionUtil.callAndThen(cause, this::doOnAbortedOnFailure, _onCompleted);
@@ -423,6 +423,7 @@ public abstract class IteratingCallback implements Callback
                             {
                                 // we won the race against the callback, so the callback has to process and we can break processing
                                 _state = State.PENDING;
+                                _reprocess = false;
                                 if (_aborted)
                                 {
                                     onAbortedOnFailureIfNotPendingDoCompleted = _failure;
@@ -482,6 +483,7 @@ public abstract class IteratingCallback implements Callback
                         }
                         callOnSuccess = true;
                         _state = State.PROCESSING;
+                        _reprocess = false;
                         break;
                     }
 
@@ -816,6 +818,14 @@ public abstract class IteratingCallback implements Callback
             doOnAbortedOnFailureIfNotPendingDoCompleted(cause);
 
         return true;
+    }
+
+    boolean isPending()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _state == State.PENDING;
+        }
     }
 
     /**

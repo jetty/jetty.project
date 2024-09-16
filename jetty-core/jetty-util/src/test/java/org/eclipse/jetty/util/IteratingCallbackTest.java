@@ -33,7 +33,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -61,6 +63,45 @@ public class IteratingCallbackTest
     public void dispose() throws Exception
     {
         scheduler.stop();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testIterateWhileProcessingLoopCount(boolean succeededWinsRace)
+    {
+        var icb = new IteratingCallback()
+        {
+            int counter = 0;
+
+            @Override
+            protected Action process()
+            {
+                int counter = this.counter++;
+                if (counter == 0)
+                {
+                    iterate();
+                    if (succeededWinsRace)
+                    {
+                        succeeded();
+                    }
+                    else
+                    {
+                        new Thread(() ->
+                        {
+                            await().atMost(5, TimeUnit.SECONDS).until(this::isPending, is(true));
+                            succeeded();
+                        }).start();
+                    }
+                    return Action.SCHEDULED;
+                }
+                return Action.IDLE;
+            }
+        };
+
+        icb.iterate();
+
+        await().atMost(10, TimeUnit.SECONDS).until(icb::isIdle, is(true));
+        assertEquals(2, icb.counter);
     }
 
     @Test
