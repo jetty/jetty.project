@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.WebClient;
@@ -29,6 +33,8 @@ import org.eclipse.jetty.tests.testers.Tester;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,26 +50,34 @@ public class OpenIdTests extends AbstractJettyHomeTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenIdTests.class);
 
-    private static KeycloakContainer container = new KeycloakContainer().withRealmImportFile("keycloak/realm-export.json");
+    private static final KeycloakContainer KEYCLOAK_CONTAINER = new KeycloakContainer().withRealmImportFile("keycloak/realm-export.json");
 
     @BeforeAll
     public static void startKeycloak()
     {
-        container.start();
+        KEYCLOAK_CONTAINER.start();
     }
 
     @AfterAll
     public static void stopKeycloak()
     {
-        if (container.isRunning())
+        if (KEYCLOAK_CONTAINER.isRunning())
         {
-            container.stop();
+            KEYCLOAK_CONTAINER.stop();
         }
     }
 
+    public static Stream<Arguments> tests()
+    {
+        return Stream.of(
+                Arguments.of("ee9", "ee9-openid"),
+                Arguments.of("ee10", "openid")
+        );
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
-    public void testOpenID(String env) throws Exception
+    @MethodSource("tests")
+    public void testOpenID(String env, String openIdModule) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -75,7 +89,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
         String[] args1 = {
                 "--create-startd",
                 "--approve-all-licenses",
-                "--add-to-start=http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + "," + toEnvironment("openid", env)
+                "--add-to-start=http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + "," + openIdModule
         };
 
         String clientId = "jetty-api";
@@ -87,7 +101,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
 
             Path webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-openid-webapp:war:" + jettyVersion);
             distribution.installWar(webApp, "test");
-            String openIdProvider = container.getAuthServerUrl() + "/realms/jetty";
+            String openIdProvider = KEYCLOAK_CONTAINER.getAuthServerUrl() + "/realms/jetty";
             LOGGER.info("openIdProvider: {}", openIdProvider);
 
             int port = Tester.freePort();
