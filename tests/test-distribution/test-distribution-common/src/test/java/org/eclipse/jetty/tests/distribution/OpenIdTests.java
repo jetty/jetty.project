@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -26,7 +24,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import org.eclipse.jetty.client.UpgradeProtocolHandler;
+import jakarta.ws.rs.core.Response;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
@@ -35,7 +33,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.keycloak.admin.client.CreatedResponseUtil;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,12 +54,63 @@ public class OpenIdTests extends AbstractJettyHomeTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenIdTests.class);
 
-    private static final KeycloakContainer KEYCLOAK_CONTAINER = new KeycloakContainer().withRealmImportFile("keycloak/realm-export.json");
+    private static final KeycloakContainer KEYCLOAK_CONTAINER = new KeycloakContainer();
+
+    private static final String clientId = "jetty-api";
+    private static final String clientSecret = "JettyRocks!";
+
+    private static final String userName = "jetty";
+    private static final String password = "JettyRocks!Really";
+
+    private static final String firstName = "John";
+    private static final String lastName = "Doe";
+    private static final String email = "jetty@jetty.org";
+
+    private static String userId;
 
     @BeforeAll
     public static void startKeycloak()
     {
         KEYCLOAK_CONTAINER.start();
+
+        // init keycloak
+        try (Keycloak keycloak = KEYCLOAK_CONTAINER.getKeycloakAdminClient())
+        {
+            RealmRepresentation jettyRealm = new RealmRepresentation();
+            jettyRealm.setId("jetty");
+            jettyRealm.setRealm("jetty");
+            jettyRealm.setEnabled(true);
+            keycloak.realms().create(jettyRealm);
+
+            ClientRepresentation clientRepresentation = new ClientRepresentation();
+            clientRepresentation.setId("jetty-api");
+            clientRepresentation.setClientId("jetty-api");
+            clientRepresentation.setSecret(clientSecret);
+            clientRepresentation.setRedirectUris(List.of("http://localhost:*"));
+            clientRepresentation.setEnabled(true);
+            clientRepresentation.setPublicClient(Boolean.TRUE);
+            keycloak.realm("jetty").clients().create(clientRepresentation);
+
+            UserRepresentation user = new UserRepresentation();
+            user.setEnabled(true);
+            user.setFirstName(firstName);
+            user.setLastName(lastName);
+            user.setUsername(userName);
+            user.setEmail(email);
+
+            Response response = keycloak.realm("jetty").users().create(user);
+            userId = CreatedResponseUtil.getCreatedId(response);
+
+            CredentialRepresentation passwordCred = new CredentialRepresentation();
+            passwordCred.setTemporary(false);
+            passwordCred.setType(CredentialRepresentation.PASSWORD);
+            passwordCred.setValue(password);
+
+            UserResource userResource = keycloak.realm("jetty").users().get(userId);
+
+            // Set password credential
+            userResource.resetPassword(passwordCred);
+        }
     }
 
     @AfterAll
@@ -92,8 +147,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 "--add-to-start=http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + "," + openIdModule
         };
 
-        String clientId = "jetty-api";
-        String clientSecret = "JettyRocks!";
+
         try (JettyHomeTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
@@ -129,8 +183,8 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
                 // redirect to openid provider login form
                 HtmlForm htmlForm = page.getForms().get(0);
-                htmlForm.getInputByName("username").setValue("jetty");
-                htmlForm.getInputByName("password").setValue("JettyRocks!");
+                htmlForm.getInputByName("username").setValue(userName);
+                htmlForm.getInputByName("password").setValue(password);
 
                 HtmlSubmitInput submit = htmlForm.getOneHtmlElementByAttribute(
                         "input", "type", "submit");
@@ -142,8 +196,9 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 page = webClient.getPage(uri + "/");
                 assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
                 content = page.getWebResponse().getContentAsString();
-                assertThat(content, containsString("name: Foo Doe"));
-                assertThat(content, containsString("email: jetty@jetty.org"));
+                assertThat(content, containsString("userId: " + userId));
+                assertThat(content, containsString("name: " + firstName + " " + lastName));
+                assertThat(content, containsString("email: " + email));
 
                 // Request to admin page gives 403 as we do not have admin role
                 FailingHttpStatusCodeException failingHttpStatusCodeException =
