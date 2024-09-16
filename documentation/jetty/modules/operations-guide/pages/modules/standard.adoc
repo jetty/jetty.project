@@ -714,7 +714,6 @@ See also the xref:server/index.adoc#threadpool[section about configuring the thr
 The `threadpool-all-virtual` module allows you to configure the server-wide thread pool, similarly to what you can do with the <<threadpool,`threadpool`>> Jetty module, so that all threads are virtual threads, introduced as an official feature since Java 21.
 
 CAUTION: Only use this module if you are using Java 21 or later.
-If you are using Java 19 or Java 20, use the <<threadpool-virtual-preview,`threadpool-virtual-preview`>> Jetty module instead.
 
 The module properties to configure the thread pool are:
 
@@ -724,17 +723,7 @@ include::{jetty-home}/modules/threadpool-all-virtual.mod[tags=documentation]
 
 The property `jetty.threadpool.maxThreads` limits, using a `Semaphore`, the number of current virtual threads in use.
 
-Limiting the number of current virtual threads helps to limit resource usage in applications, especially in case of load spikes.
-When an unlimited number of virtual threads is allowed, the server might be brought down due to resource (typically memory) exhaustion.
-
-[CAUTION]
-====
-Even when using virtual threads, Jetty uses non-blocking I/O, and dedicates a thread to each `java.nio.channels.Selector` to perform the `Selector.select()` operation.
-
-Currently (up to Java 22), calling `Selector.select()` from a virtual thread pins the carrier thread.
-
-When using the `threadpool-all-virtual` Jetty module, if you have `N` selectors, then `N` carrier threads will be pinned by the virtual threads calling `Selector.select()`, possibly making your system less efficient, and at worst locking up the entire system if there are no carrier threads available to run virtual threads.
-====
+Please refer to the xref:programming-guide:arch/threads.adoc#thread-pool-virtual-threads[virtual threads section] of the Jetty Threading Architecture for more information about virtual threads and their pitfalls.
 
 [[threadpool-virtual]]
 == Module `threadpool-virtual`
