@@ -24,6 +24,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
@@ -80,8 +81,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
             keycloak.realms().create(jettyRealm);
 
             ClientRepresentation clientRepresentation = new ClientRepresentation();
-            clientRepresentation.setId("jetty-api");
-            clientRepresentation.setClientId("jetty-api");
+            clientRepresentation.setClientId(clientId);
             clientRepresentation.setSecret(clientSecret);
             clientRepresentation.setRedirectUris(List.of("http://localhost:*"));
             clientRepresentation.setEnabled(true);
@@ -170,7 +170,6 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
                 String content = page.getWebResponse().getContentAsString();
                 assertThat(content, containsString("not authenticated"));
-
                 // Request to login is success
                 page = webClient.getPage(uri + "/login");
                 assertThat(page.getWebResponse().getStatusCode(), is(HttpStatus.OK_200));
