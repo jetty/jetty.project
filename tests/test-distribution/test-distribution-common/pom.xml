@@ -278,20 +278,6 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-<<<<<<< HEAD
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-=======
->>>>>>> jetty-12.0.x
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables combine.children="append">

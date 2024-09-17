@@ -116,7 +116,8 @@ public class OpenIdTests extends AbstractJettyHomeTest
     {
         return Stream.of(
                 Arguments.of("ee9", "ee9-openid"),
-                Arguments.of("ee10", "openid")
+                Arguments.of("ee10", "openid"),
+                Arguments.of("ee11", "openid")
         );
     }
 
