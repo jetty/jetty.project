@@ -58,7 +58,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             .build();
 
         String[] setupArgs = {
-            "--add-modules=http,"+toEnvironment("webapp", env)+","+toEnvironment("deploy", env)+",disable-urlcache"
+            "--add-modules=http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + ",disable-urlcache"
         };
 
         try (JettyHomeTester.Run setupRun = distribution.start(setupArgs))
@@ -81,7 +81,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             String warXml =
                 "<?xml version=\"1.0\"  encoding=\"ISO-8859-1\"?>" +
                 "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">" +
-                "<Configure class=\"org.eclipse.jetty."+env+".webapp.WebAppContext\">" +
+                "<Configure class=\"org.eclipse.jetty." + env + ".webapp.WebAppContext\">" +
                 "   <Set name=\"contextPath\">/test</Set>" +
                 "   <Set name=\"war\"><Property name=\"jetty.webapps\"/>/test.war</Set>" +
                 "   <Set name=\"tempDirectory\"><Property name=\"jetty.base\"/>/work/test</Set>" +
