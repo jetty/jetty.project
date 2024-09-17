@@ -66,7 +66,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             assertTrue(setupRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, setupRun.getExitValue());
 
-            Path webApp = distribution.resolveArtifact("org.eclipse.jetty."+env+":jetty-"+env+"-test-log4j2-webapp:war:" + jettyVersion);
+            Path webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-log4j2-webapp:war:" + jettyVersion);
             Path testWebApp = distribution.getJettyBase().resolve("webapps/test.war");
 
             Files.copy(webApp, testWebApp);
