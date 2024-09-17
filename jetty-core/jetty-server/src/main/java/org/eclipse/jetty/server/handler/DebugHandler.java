@@ -34,6 +34,9 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
  * Details of the request and response are written to an output stream
  * and the current thread name is updated with information that will link
  * to the details in that output.
+ * <p/>
+ * Note that due to async processing, the logging of request processing may
+ * appear out of order.
  */
 public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 {
@@ -108,7 +111,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     {
         Thread thread = Thread.currentThread();
         String name = thread.getName() + ":" + request.getHttpURI();
-
+        boolean willHandle = false;
         String ex = null;
         String rname = findRequestName(request);
         HandlingCallback handlingCallback = new HandlingCallback(callback, request, response);
@@ -126,7 +129,8 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
                 headers);
             thread.setName(name);
 
-            return getHandler().handle(request, response, handlingCallback);
+            willHandle = getHandler().handle(request, response, handlingCallback);
+            return willHandle;
         }
         catch (Throwable x)
         {
@@ -135,13 +139,19 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         }
         finally
         {
-            //check if the request has finished, or if async is still in progress
-            if (handlingCallback.handlingCompleted())
+            if (!willHandle)
             {
+                //Log that the request was not going to be handled
+                log("!! r=%s not handled", rname);
+            }
+            else if (handlingCallback.handlingCompleted())
+            {
+                //Log that the request was handled, and any async handling is also finished
                 log("<< r=%s async=false %d %s%n%s", rname, response.getStatus(), (ex == null ? "" : ex), response.getHeaders());
             }
             else
             {
+                //Log that the request is being handled, but not yet finished
                 log("|| r=%s async=true", rname);
             }
         }
