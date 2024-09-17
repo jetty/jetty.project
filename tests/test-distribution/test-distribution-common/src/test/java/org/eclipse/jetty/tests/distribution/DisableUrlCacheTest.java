@@ -94,10 +94,11 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             String loggingConfig = """
                 org.eclipse.jetty.LEVEL=INFO
                 org.eclipse.jetty.deploy.LEVEL=DEBUG
-                org.eclipse.jetty.ee10.webapp.LEVEL=DEBUG
-                org.eclipse.jetty.ee10.webapp.WebAppClassLoader.LEVEL=INFO
-                org.eclipse.jetty.ee10.servlet.LEVEL=DEBUG
+                org.eclipse.jetty.eexx.webapp.LEVEL=DEBUG
+                org.eclipse.jetty.eexx.webapp.WebAppClassLoader.LEVEL=INFO
+                org.eclipse.jetty.exx.servlet.LEVEL=DEBUG
                 """;
+            loggingConfig = loggingConfig.replace("eexx", env);
             Files.writeString(loggingFile, loggingConfig, StandardCharsets.UTF_8);
 
 
