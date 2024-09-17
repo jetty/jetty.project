@@ -967,7 +967,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             _onRequest = stream.headerComplete();
 
             // Should we delay dispatch until we have some content?
-            // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
             _delayedForContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
                 (_parser.getContentLength() > 0 || _parser.isChunking()) &&
                 !stream._expects100Continue &&

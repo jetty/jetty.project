@@ -363,6 +363,10 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
 
+            // Too late?
+            if (_request == null || _response == null)
+                return null;
+
             Runnable invokeOnContentAvailable = null;
             if (_readFailure == null)
             {
@@ -704,22 +708,24 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void succeeded()
         {
-            HttpStream completeStream = null;
-            Throwable failure = null;
+            HttpStream stream = null;
             try (AutoLock ignored = _lock.lock())
             {
                 assert _callbackCompleted;
                 _streamSendState = StreamSendState.LAST_COMPLETE;
                 if (_handling == null)
                 {
-                    completeStream = _stream;
+                    stream = _stream;
                     _stream = null;
-                    failure = _callbackFailure;
+
+                    // TODO remove this before merging
+                    if (_callbackFailure != null)
+                        throw new IllegalStateException("failure in succeeded", _callbackFailure);
                 }
             }
 
-            if (completeStream != null)
-                completeStream(completeStream, failure);
+            if (stream != null)
+                completeStream(stream, null);
         }
 
         /**
