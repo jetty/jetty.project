@@ -583,10 +583,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             return true;
 
         Runnable task;
-        if (_delayedForContent && _onRequest != null)
+
+        if (_delayedForContent || _onRequest == null)
+        {
+            task = _httpChannel.onIdleTimeout(timeout);
+        }
+        else
         {
             Runnable onRequest = _onRequest;
             _onRequest = null;
+
             task = () ->
             {
                 try
@@ -596,19 +602,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 finally
                 {
                     _handling.set(false);
-                    Runnable next = _httpChannel.onIdleTimeout(timeout);
-                    if (next != null)
-                        getExecutor().execute(next);
                 }
             };
         }
-        else
-        {
-            task = _httpChannel.onIdleTimeout(timeout);
-        }
         if (task != null)
             getExecutor().execute(task);
-        return false; // We've handle the exception
+        return false; // We've handle (or ignored) the timeout
     }
 
     @Override
@@ -967,11 +966,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             _onRequest = stream.headerComplete();
 
             // Should we delay dispatch until we have some content?
-            _delayedForContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
+            if (getHttpConfiguration().isDelayDispatchUntilContent() &&
+                getEndPoint().getIdleTimeout() > 0 &&
                 (_parser.getContentLength() > 0 || _parser.isChunking()) &&
                 !stream._expects100Continue &&
                 !stream.isCommitted() &&
-                _requestBuffer != null && _requestBuffer.isEmpty();
+                _requestBuffer != null && _requestBuffer.isEmpty())
+            {
+                getEndPoint().setIdleTimeout(getEndPoint().getIdleTimeout() / 2);
+                _delayedForContent = true;
+            }
 
             return !_delayedForContent;
         }
@@ -988,7 +992,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             _requestBuffer.retain();
             stream._chunk = Content.Chunk.asChunk(buffer, false, _requestBuffer);
-            _delayedForContent = false;
+            if (_delayedForContent)
+            {
+                _delayedForContent = false;
+                getEndPoint().setIdleTimeout(getEndPoint().getIdleTimeout() * 2);
+            }
             return true;
         }
 

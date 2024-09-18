@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
@@ -134,7 +133,6 @@ public class ServletTest
         }), "/post");
 
         _connector.setIdleTimeout(idleTimeout);
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(false);
         _server.start();
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
