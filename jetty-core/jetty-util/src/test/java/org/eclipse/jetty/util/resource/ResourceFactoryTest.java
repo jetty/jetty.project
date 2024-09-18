@@ -405,6 +405,39 @@ public class ResourceFactoryTest
     }
 
     @Test
+    public void testSplitOnPathSeparatorWithGlob() throws IOException
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path base = workDir.getEmptyPathDir();
+            Path dir = base.resolve("dir");
+            FS.ensureDirExists(dir);
+            Path foo = dir.resolve("foo");
+            FS.ensureDirExists(foo);
+            Path bar = dir.resolve("bar");
+            FS.ensureDirExists(bar);
+            Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), bar.resolve("lib-foo.jar"));
+            Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), bar.resolve("lib-zed.zip"));
+
+            // This represents the user-space raw configuration with a glob
+            String config = String.format("%s%s%s%s%s%s*", dir, File.pathSeparator, foo, File.pathSeparator, bar, File.separator);
+
+            // Split using commas
+            List<URI> uris = resourceFactory.split(config, File.pathSeparator).stream().map(Resource::getURI).toList();
+
+            URI[] expected = new URI[]{
+                dir.toUri(),
+                foo.toUri(),
+                // Should see the two archives as `jar:file:` URI entries
+                URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
+                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri())
+            };
+
+            assertThat(uris, contains(expected));
+        }
+    }
+
+    @Test
     public void testSplitOnPipeWithGlob() throws IOException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
