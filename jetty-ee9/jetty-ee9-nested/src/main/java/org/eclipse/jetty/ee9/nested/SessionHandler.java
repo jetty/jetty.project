@@ -53,7 +53,7 @@ import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionIdManager;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -614,7 +614,8 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
      * CookieConfig
      *
      * Implementation of the jakarta.servlet.SessionCookieConfig.
-     * SameSite configuration can be achieved by using setComment
+     * SameSite configuration can be achieved by using setComment.
+     * Partitioned configuration can be achieved by using setComment.
      *
      * @see HttpCookie
      */
@@ -672,7 +673,19 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         public void setComment(String comment)
         {
             checkAvailable();
-            _sessionManager.setSessionComment(comment);
+
+            if (!StringUtil.isEmpty(comment))
+            {
+                HttpCookie.SameSite sameSite = Response.HttpCookieFacade.getSameSiteFromComment(comment);
+                if (sameSite != null)
+                    _sessionManager.setSameSite(sameSite);
+
+                boolean partitioned = Response.HttpCookieFacade.isPartitionedInComment(comment);
+                if (partitioned)
+                    _sessionManager.setPartitioned(partitioned);
+
+                _sessionManager.setSessionComment(Response.HttpCookieFacade.getCommentWithoutAttributes(comment));
+            }
         }
 
         @Override

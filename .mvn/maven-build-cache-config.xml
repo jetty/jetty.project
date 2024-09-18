@@ -6,11 +6,11 @@
     <!-- activated via cli -->
     <!-- to disable it just use -Dmaven.build.cache.enabled=false -->
     <!--
-      -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true
-      -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server
+      -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true
+      -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred
     -->
-    <!--    <remote enabled="true" saveToRemote="true" id="remote-build-cache-server">-->
-    <!--      <url>dav:http://nginx-cache-service.jenkins.svc.cluster.local:80</url>-->
+    <!--    <remote enabled="true" saveToRemote="true" id="nexus-cred">-->
+    <!--      <url>http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache</url>-->
     <!--    </remote>-->
     <multiModule>
       <discovery>
