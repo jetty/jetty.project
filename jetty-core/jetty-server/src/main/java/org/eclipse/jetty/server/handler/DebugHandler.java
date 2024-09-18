@@ -30,13 +30,16 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
 
 /**
  * Debug Handler.
+ * <p>
  * A lightweight debug handler that can be used in production code.
  * Details of the request and response are written to an output stream
  * and the current thread name is updated with information that will link
  * to the details in that output.
- * <p/>
+ * </p>
+ * <p>
  * Note that due to async processing, the logging of request processing may
  * appear out of order.
+ * </p>
  */
 public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 {
