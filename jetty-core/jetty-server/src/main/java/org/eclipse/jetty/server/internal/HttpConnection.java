@@ -104,7 +104,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private volatile RetainableByteBuffer _requestBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
-    private boolean _delayedForContent;
     private long _requests;
     private long _responses;
     private long _bytesIn;
@@ -536,13 +535,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 LOG.debug("filled {} {} {}", filled, _requestBuffer, this);
 
             if (filled > 0)
-            {
                 _bytesIn += filled;
-            }
             else if (filled < 0)
-            {
                 _parser.atEOF();
-            }
 
             return filled;
         }
@@ -598,30 +593,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-
-        Runnable task;
-
-        if (!_delayedForContent || _onRequest == null)
-        {
-            task = _httpChannel.onIdleTimeout(timeout);
-        }
-        else
-        {
-            Runnable onRequest = _onRequest;
-            _onRequest = null;
-
-            task = () ->
-            {
-                try
-                {
-                    onRequest.run();
-                }
-                finally
-                {
-                    _handling.set(false);
-                }
-            };
-        }
+        Runnable task = _httpChannel.onIdleTimeout(timeout);
         if (task != null)
             getExecutor().execute(task);
         return false; // We've handle (or ignored) the timeout
@@ -967,7 +939,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 throw new IllegalStateException("Stream pending");
             _headerBuilder.clear();
             _httpChannel.setHttpStream(stream);
-            _delayedForContent = false;
         }
 
         @Override
@@ -979,23 +950,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public boolean headerComplete()
         {
-            HttpStreamOverHTTP1 stream = _stream.get();
-            _onRequest = stream.headerComplete();
-
-            // Should we delay dispatch until we have some content?
-            if (getHttpConfiguration().isDelayDispatchUntilContent() &&
-                getEndPoint().getIdleTimeout() > 0 &&
-                (_parser.getContentLength() > 0 || _parser.isChunking()) &&
-                !stream._expects100Continue &&
-                !stream.isCommitted() &&
-                _requestBuffer != null && _requestBuffer.isEmpty())
-            {
-                // TODO should we max this to 1s?
-                getEndPoint().setIdleTimeout(getEndPoint().getIdleTimeout() / 2);
-                _delayedForContent = true;
-            }
-
-            return !_delayedForContent;
+            _onRequest = _stream.get().headerComplete();
+            return true;
         }
 
         @Override
@@ -1010,22 +966,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             _requestBuffer.retain();
             stream._chunk = Content.Chunk.asChunk(buffer, false, _requestBuffer);
-            if (_delayedForContent)
-            {
-                _delayedForContent = false;
-                getEndPoint().setIdleTimeout(getEndPoint().getIdleTimeout() * 2);
-            }
             return true;
         }
 
         @Override
         public boolean contentComplete()
         {
-            // Do nothing at this point unless we delayed for content
+            // Do nothing at this point.
             // Wait for messageComplete so any trailers can be sent as special content
-            boolean delayed = _delayedForContent;
-            _delayedForContent = false;
-            return delayed;
+            return false;
         }
 
         @Override

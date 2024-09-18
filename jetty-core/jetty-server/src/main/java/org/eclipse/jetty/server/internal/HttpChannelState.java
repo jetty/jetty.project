@@ -709,23 +709,18 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void succeeded()
         {
-            HttpStream stream = null;
+            HttpStream stream;
+            boolean completeStream;
             try (AutoLock ignored = _lock.lock())
             {
                 assert _callbackCompleted;
+                assert _callbackFailure == null;
                 _streamSendState = StreamSendState.LAST_COMPLETE;
-                if (_handling == null)
-                {
-                    stream = _stream;
-                    _stream = null;
-
-                    // TODO remove this before merging
-                    if (_callbackFailure != null)
-                        throw new IllegalStateException("failure in succeeded", _callbackFailure);
-                }
+                completeStream = _handling == null;
+                stream = _stream;
             }
 
-            if (stream != null)
+            if (completeStream)
                 completeStream(stream, null);
         }
 

@@ -52,9 +52,12 @@ public abstract class AbstractConnection implements Connection, Invocable
         _readCallback = new ReadCallback();
     }
 
+    @Deprecated
     @Override
     public InvocationType getInvocationType()
     {
+        // TODO consider removing the #fillInterested method from the connection and only use #fillInterestedCallback
+        //      so a connection need not be Invocable
         return Invocable.super.getInvocationType();
     }
 

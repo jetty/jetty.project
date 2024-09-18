@@ -47,6 +47,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -156,6 +158,124 @@ public class DelayedHandlerTest
             assertFalse(processing.await(250, TimeUnit.MILLISECONDS));
 
             handle.run();
+
+            assertTrue(processing.await(10, TimeUnit.SECONDS));
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("Hello"));
+        }
+    }
+
+    @Test
+    public void testDelayedUntilContent() throws Exception
+    {
+        DelayedHandler delayedHandler = new DelayedHandler();
+
+        _server.setHandler(delayedHandler);
+        CountDownLatch processing = new CountDownLatch(1);
+        delayedHandler.setHandler(new HelloHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Check that we are not called via any demand callback
+                ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
+                new Throwable().printStackTrace(new PrintStream(out));
+                String stack = out.toString(StandardCharsets.ISO_8859_1);
+                assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
+                assertThat(stack, not(containsString("%s.%s".formatted(
+                    DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
+                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
+
+                processing.countDown();
+                return super.handle(request, response, callback);
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Length: 10\r
+                \r
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            assertFalse(processing.await(250, TimeUnit.MILLISECONDS));
+
+            output.write("01234567\r\n".getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            assertTrue(processing.await(10, TimeUnit.SECONDS));
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("Hello"));
+        }
+    }
+
+    @Test
+    public void testDelayedUntilContentInContext() throws Exception
+    {
+        ContextHandler context = new ContextHandler();
+        _server.setHandler(context);
+        DelayedHandler delayedHandler = new DelayedHandler();
+        context.setHandler(delayedHandler);
+
+        CountDownLatch processing = new CountDownLatch(1);
+        delayedHandler.setHandler(new HelloHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Check that we are not called via any demand callback
+                ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
+                new Throwable().printStackTrace(new PrintStream(out));
+                String stack = out.toString(StandardCharsets.ISO_8859_1);
+                assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
+                assertThat(stack, not(containsString("%s.%s".formatted(
+                    DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
+                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
+
+                // Check the thread is in the context
+                assertThat(ContextHandler.getCurrentContext(), sameInstance(context.getContext()));
+
+                // Check the request is wrapped in the context
+                assertThat(request.getContext(), sameInstance(context.getContext()));
+
+                processing.countDown();
+                return super.handle(request, response, callback);
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Length: 10\r
+                \r
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            assertFalse(processing.await(250, TimeUnit.MILLISECONDS));
+
+            output.write("01234567\r\n".getBytes(StandardCharsets.UTF_8));
+            output.flush();
 
             assertTrue(processing.await(10, TimeUnit.SECONDS));
 

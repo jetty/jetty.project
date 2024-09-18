@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
@@ -51,7 +50,6 @@ import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -1124,86 +1122,6 @@ public class HttpConnectionTest
             if (response != null)
                 System.err.println(response);
             throw e;
-        }
-    }
-
-    /**
-     * Ensure that excessively large hexadecimal chunk body length is parsed properly.
-     */
-    @Test
-    public void testDelayedDispatch() throws Exception
-    {
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
-        _server.start();
-        try (LocalConnector.LocalEndPoint connection = _connector.connect())
-        {
-            CounterStatistic dumpCounter = _server.getBean(DumpHandler.class).getHandledCounter();
-
-            // Dispatch with content
-            connection.addInput("""
-                POST /test HTTP/1.1\r
-                Host: localhost\r
-                Content-Length: 5\r
-                Content-Type: text/plain; charset=utf-8\r
-                \r
-                12345
-                """
-            );
-
-            Awaitility.waitAtMost(1, TimeUnit.SECONDS).until(() -> dumpCounter.getTotal() == 1L);
-            Awaitility.waitAtMost(1, TimeUnit.SECONDS).until(() -> dumpCounter.getCurrent() == 0L);
-
-            String raw = connection.getResponse();
-            assertThat(raw, containsString("200 OK"));
-
-            // Dispatch delayed for content
-            dumpCounter.reset();
-            connection.addInput("""
-                POST /test HTTP/1.1\r
-                Host: localhost\r
-                Content-Length: 5\r
-                Content-Type: text/plain; charset=utf-8\r
-                \r
-                """
-            );
-
-            Thread.sleep(10);
-            assertThat(dumpCounter.getTotal(), is(0L));
-            assertThat(dumpCounter.getCurrent(), is(0L));
-
-            connection.addInput("12345");
-            Awaitility.waitAtMost(1, TimeUnit.SECONDS).until(() -> dumpCounter.getTotal() == 1L);
-            Awaitility.waitAtMost(1, TimeUnit.SECONDS).until(() -> dumpCounter.getCurrent() == 0L);
-
-            raw = connection.getResponse();
-            assertThat(raw, containsString("200 OK"));
-
-            // Dispatch delayed for chunked content
-            dumpCounter.reset();
-            connection.addInput("""
-                POST /test HTTP/1.1\r
-                Host: localhost\r
-                Transfer-Encoding: chunked\r
-                Content-Type: text/plain; charset=utf-8\r
-                \r
-                """
-            );
-
-            Thread.sleep(10);
-            assertThat(dumpCounter.getTotal(), is(0L));
-            assertThat(dumpCounter.getCurrent(), is(0L));
-
-            connection.addInput("""
-                5;\r
-                12345\r
-                0;\r
-                \r
-                """);
-            Awaitility.waitAtMost(1, TimeUnit.SECONDS).until(() -> dumpCounter.getTotal() == 1L);
-            Awaitility.waitAtMost(1, TimeUnit.SECONDS).until(() -> dumpCounter.getCurrent() == 0L);
-
-            raw = connection.getResponse();
-            assertThat(raw, containsString("200 OK"));
         }
     }
 

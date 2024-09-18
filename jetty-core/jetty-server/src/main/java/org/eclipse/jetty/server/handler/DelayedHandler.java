@@ -17,6 +17,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -25,6 +26,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -102,7 +104,7 @@ public class DelayedHandler extends Handler.Wrapper
 
         // if no mimeType, then no delay
         if (mimeType == null)
-            return null;
+            return new UntilContentDelayedProcess(handler, request, response, callback);
 
         // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
         return switch (mimeType)
@@ -120,7 +122,7 @@ public class DelayedHandler extends Handler.Wrapper
 
                 yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, config);
             }
-            default -> null;
+            default -> new UntilContentDelayedProcess(handler, request, response, callback);
         };
     }
 
@@ -173,6 +175,64 @@ public class DelayedHandler extends Handler.Wrapper
         }
 
         protected abstract void delay() throws Exception;
+    }
+
+    protected static class UntilContentDelayedProcess extends DelayedProcess
+    {
+        public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
+        {
+            super(handler, request, response, callback);
+        }
+
+        @Override
+        protected void delay()
+        {
+            Content.Chunk chunk = super.getRequest().read();
+            if (chunk == null)
+            {
+                getRequest().demand(this::onContent);
+            }
+            else
+            {
+                RewindChunkRequest request = new RewindChunkRequest(getRequest(), chunk);
+                try
+                {
+                    getHandler().handle(request, getResponse(), getCallback());
+                }
+                catch (Throwable x)
+                {
+                    // Use the wrapped request so that the error handling can
+                    // consume the request content and release the already read chunk.
+                    Response.writeError(request, getResponse(), getCallback(), x);
+                }
+            }
+        }
+
+        public void onContent()
+        {
+            // We must execute here, because demand callbacks are serialized and process may block on a demand callback
+            getRequest().getContext().execute(this::process);
+        }
+
+        private static class RewindChunkRequest extends Request.Wrapper
+        {
+            private final AtomicReference<Content.Chunk> _chunk;
+
+            public RewindChunkRequest(Request wrapped, Content.Chunk chunk)
+            {
+                super(wrapped);
+                _chunk = new AtomicReference<>(chunk);
+            }
+
+            @Override
+            public Content.Chunk read()
+            {
+                Content.Chunk chunk = _chunk.getAndSet(null);
+                if (chunk != null)
+                    return chunk;
+                return super.read();
+            }
+        }
     }
 
     protected static class UntilFormDelayedProcess extends DelayedProcess
