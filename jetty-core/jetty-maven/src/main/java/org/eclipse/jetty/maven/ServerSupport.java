@@ -19,8 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.maven.MavenServerConnector;
-import org.eclipse.jetty.maven.PluginLog;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -65,7 +63,15 @@ public class ServerSupport
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            server.setHandler(contexts);
+            if (server.getHandler() != null)
+            {
+                Handler.Sequence handlers = new Handler.Sequence();
+                handlers.addHandler(server.getHandler());
+                handlers.addHandler(contexts);
+                server.setHandler(handlers);
+            }
+            else
+                server.setHandler(contexts);
         } 
         
         if (contextHandlers != null)
