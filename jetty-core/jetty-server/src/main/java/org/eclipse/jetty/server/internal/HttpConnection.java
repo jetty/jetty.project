@@ -973,6 +973,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 !stream.isCommitted() &&
                 _requestBuffer != null && _requestBuffer.isEmpty())
             {
+                // TODO should we max this to 1s?
                 getEndPoint().setIdleTimeout(getEndPoint().getIdleTimeout() / 2);
                 _delayedForContent = true;
             }

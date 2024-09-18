@@ -137,6 +137,7 @@ public class RequestReaderTest extends AbstractTest
             }
         });
         server.start();
+        connector.setIdleTimeout(1000);
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
         try (AsyncRequestContent content = new AsyncRequestContent())
