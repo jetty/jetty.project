@@ -13,16 +13,17 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.net.URI;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Optional;
+import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.server.Server;
@@ -35,15 +36,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PathResponseListenerTest
 {
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
-    private Path zeroFile;
-    private Path smallFile;
-    private Path largeFile;
+    
+    private static final Path ORIGIN_ZERO_FILE = Path.of(System.getProperty("user.dir"), "origin_zero");
+    private static final Path ORIGIN_SMALL_FILE = Path.of(System.getProperty("user.dir"), "origin_small");
+    private static final Path ORIGIN_LARGE_FILE = Path.of(System.getProperty("user.dir"), "origin_large");
+    
+    private static final Path RESPONSE_ZERO_FILE = Path.of(System.getProperty("user.dir"), "response_zero");
+    private static final Path RESPONSE_SMALL_FILE = Path.of(System.getProperty("user.dir"), "response_small");
+    private static final Path RESPONSE_LARGE_FILE = Path.of(System.getProperty("user.dir"), "response_large");
     
     private void configureServer() throws Exception
     {
@@ -58,23 +65,158 @@ public class PathResponseListenerTest
         server.setHandler(resourceHandler);
     }
     
-    private void createTestFiles() throws Exception
+    private void createZeroFile() throws IOException
     {   
-        zeroFile = Files.createFile(Path.of(System.getProperty("user.dir"), "zero"));
-        smallFile = Files.createFile(Path.of(System.getProperty("user.dir"), "small"));
-        largeFile = Files.createFile(Path.of(System.getProperty("user.dir"), "large"));
-        
-        try (FileOutputStream zeroFileWriter = new FileOutputStream(zeroFile.toFile());
-            FileOutputStream smallFileWriter = new FileOutputStream(smallFile.toFile());
-            FileOutputStream largeFileWriter = new FileOutputStream(largeFile.toFile());
-            )
+        try (OutputStream zeroFileWriter = Files.newOutputStream(ORIGIN_ZERO_FILE, StandardOpenOption.CREATE_NEW))
         {    
             zeroFileWriter.write(ByteBuffer.allocate(0).array());
-            
+        } 
+        catch (IOException e) 
+        {
+            throw e;
+        }
+    }
+    
+    private void createSmallFile() throws IOException
+    {   
+        try (OutputStream smallFileWriter = Files.newOutputStream(ORIGIN_SMALL_FILE, StandardOpenOption.CREATE_NEW))
+        {    
             Random random = new Random();
             for (int i = 0; i < 1048576; i++) 
             {
                 smallFileWriter.write(random.nextInt());
+            }
+        } 
+        catch (IOException e) 
+        {
+            throw e;
+        }
+    }
+    
+    private void createLargeFile() throws IOException
+    {   
+        try (OutputStream largeFileWriter = Files.newOutputStream(ORIGIN_LARGE_FILE, StandardOpenOption.CREATE_NEW))
+        {    
+            Random random = new Random();
+            for (int i = 0; i < 1048576; i++) 
+            {
+                largeFileWriter.write(random.nextInt());
+            }
+        } 
+        catch (IOException e) 
+        {
+            throw e;
+        }
+    }
+    
+    @BeforeEach
+    public void startServer() throws Exception
+    {   
+        Files.deleteIfExists(ORIGIN_ZERO_FILE);
+        Files.deleteIfExists(ORIGIN_SMALL_FILE);
+        Files.deleteIfExists(ORIGIN_LARGE_FILE);
+        Files.deleteIfExists(RESPONSE_ZERO_FILE);
+        Files.deleteIfExists(RESPONSE_SMALL_FILE);
+        Files.deleteIfExists(RESPONSE_LARGE_FILE);
+        
+        createZeroFile();
+        createSmallFile();
+        createLargeFile();
+        
+        configureServer();
+        server.start();
+    }
+
+    @AfterEach
+    public void stopServer() throws Exception
+    {
+        server.stop();
+        
+        Files.deleteIfExists(ORIGIN_ZERO_FILE);
+        Files.deleteIfExists(ORIGIN_SMALL_FILE);
+        Files.deleteIfExists(ORIGIN_LARGE_FILE);
+        Files.deleteIfExists(RESPONSE_ZERO_FILE);
+        Files.deleteIfExists(RESPONSE_SMALL_FILE);
+        Files.deleteIfExists(RESPONSE_LARGE_FILE);
+    }
+
+    @Test
+    public void testClientConnection() throws Exception
+    {
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1)))
+        {
+            client.start();
+
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/favicon.ico");
+            Request request = client.newRequest(url.toURI().toString());
+            Response response = request.send();
+            assertEquals(404, response.getStatus());
+        }
+        
+    }
+    
+    @Test
+    public void testZeroFileDownload() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1)))
+        {   
+            client.start();
+            
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_SMALL_FILE.getFileName().toString());
+            
+            PathResponseListener listener = new PathResponseListener(RESPONSE_ZERO_FILE);
+            Request request = client.newRequest(url.toURI().toString());
+            request.send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(200, response.getStatus());
+
+            MessageDigest originFileChcksm = MessageDigest.getInstance("SHA-256");
+            MessageDigest responseFileChcksm = MessageDigest.getInstance("SHA-256");
+            
+//            try (InputStream responseContent = listener.getInputStream();
+//                 InputStream originFile = Files.newInputStream(Path.of(System.getProperty("user.dir"), "zero"), StandardOpenOption.READ)
+//                )
+//            {   
+//                originFileChcksm.update(originFile.readAllBytes());
+//                responseFileChcksm.update(responseContent.readAllBytes());
+//                
+//                assertTrue(MessageDigest.isEqual(originFileChcksm.digest(), responseFileChcksm.digest()));
+//            }
+            
+            
+        } 
+        catch (Exception e) 
+        {
+            throw e;
+        }
+    }
+    
+    @Test
+    public void testSmalFileDownload() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
+        {   
+            client.start();
+            
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_SMALL_FILE.getFileName().toString());
+            
+            InputStreamResponseListener listener = new InputStreamResponseListener();
+            Request request = client.newRequest(url.toURI().toString());
+            request.send(listener);
+            Response response = listener.get(10, TimeUnit.SECONDS);
+            assertEquals(200, response.getStatus());
+            
+            MessageDigest originFileChcksm = MessageDigest.getInstance("SHA-256");
+            MessageDigest responseFileChcksm = MessageDigest.getInstance("SHA-256");
+            
+            try (InputStream responseContent = listener.getInputStream();
+                 InputStream originFile = Files.newInputStream(ORIGIN_SMALL_FILE, StandardOpenOption.READ)
+                )
+            {   
+                originFileChcksm.update(originFile.readAllBytes());
+                responseFileChcksm.update(responseContent.readAllBytes());
+                
+                assertTrue(MessageDigest.isEqual(originFileChcksm.digest(), responseFileChcksm.digest()));
             }
         } 
         catch (Exception e) 
@@ -83,88 +225,37 @@ public class PathResponseListenerTest
         }
     }
     
-    private void deleteTestFiles() throws Exception
-    {
-        try
-        {                
-            Files.delete(Optional.ofNullable(zeroFile)));
-            Files.delete(smallFile);
-            Files.delete(largeFile);
-        }
-        catch (Exception e)
+    @Test
+    public void testLargeFileDownload() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
+        {
+            client.start();
+            
+            //URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_LARGE_FILE.getFileName().toString());
+            
+            PathResponseListener listener = new PathResponseListener(RESPONSE_LARGE_FILE);
+            Request request = client.newRequest("http://" + "localhost" + ":" + connector.getLocalPort() + "/" + ORIGIN_LARGE_FILE.getFileName().toString());
+            request.send(listener);
+            Response response = listener.get(5, TimeUnit.SECONDS);
+            assertEquals(200, response.getStatus());
+            
+            MessageDigest originFileChcksm = MessageDigest.getInstance("SHA-256");
+            MessageDigest responseFileChcksm = MessageDigest.getInstance("SHA-256");
+            
+            try (InputStream responseFile = Files.newInputStream(RESPONSE_LARGE_FILE, StandardOpenOption.READ);
+                 InputStream originFile = Files.newInputStream(ORIGIN_LARGE_FILE, StandardOpenOption.READ)
+                )
+            {   
+                originFileChcksm.update(originFile.readAllBytes());
+                responseFileChcksm.update(responseFile.readAllBytes());
+                
+                assertTrue(MessageDigest.isEqual(originFileChcksm.digest(), responseFileChcksm.digest()));
+            }
+        } 
+        catch (Exception e) 
         {
             throw e;
         }
-    }
-
-    @BeforeEach
-    public void startServer() throws Exception
-    {   
-        configureServer();
-        createTestFiles();
-        server.start();
-    }
-
-    @AfterEach
-    public void stopServer() throws Exception
-    {
-        server.stop();
-        deleteTestFiles();
-    }
-
-    @Test
-    public void testClientConnection() throws Exception
-    {
-        client = new HttpClient(new HttpClientTransportOverHTTP(1));
-        client.start();
-
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        String path = "/favicon.ico";
-        Request request = client.newRequest("http://" + host + ":" + port + path);
-        Response response = request.send();
-        assertEquals(404, response.getStatus());
-    }
-    
-    @Test
-    public void testZeroFileDownload() throws Exception
-    {
-        client = new HttpClient(new HttpClientTransportOverHTTP(1));
-        client.start();
-        
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        String path = "/zero";
-        Request request = client.newRequest("http://" + host + ":" + port + path);
-        Response response = request.send();
-        assertEquals(200, response.getStatus());
-    }
-    
-    @Test
-    public void testSmalFileDownload() throws Exception
-    {
-        client = new HttpClient(new HttpClientTransportOverHTTP(1));
-        client.start();
-        
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        String path = "/small";
-        Request request = client.newRequest("http://" + host + ":" + port + path);
-        Response response = request.send();
-        assertEquals(200, response.getStatus());
-    }
-    
-    @Test
-    public void testLargeFileDownload() throws Exception
-    {
-        client = new HttpClient(new HttpClientTransportOverHTTP(1));
-        client.start();
-        
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        String path = "/large";
-        Request request = client.newRequest("http://" + host + ":" + port + path);
-        Response response = request.send();
-        assertEquals(200, response.getStatus());
     }
 }

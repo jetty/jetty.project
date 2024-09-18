@@ -13,39 +13,108 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileLock;
 import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.Response.CompleteListener;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * All classes should have a javadoc
  */
 public class PathResponseListener implements CompleteListener, Response.ContentListener
 {
+    private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
+    
+    private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
+    private final CountDownLatch responseLatch = new CountDownLatch(1);
     private Path path;
-    private File file;
-    private FileOutputStream output;
-
-    public PathResponseListener(Path path)
-    {
+    private Response response;
+    private Throwable failure;
+    private int bytesWritten;
+    private FileOutputStream fileOut;
+    private FileLock fileLock;
+    
+    public PathResponseListener(Path path) throws FileNotFoundException, IOException
+    {   
+        if (!path.isAbsolute())
+        {
+            throw new FileNotFoundException();
+        }
+        
         this.path = path;
+        
+        try 
+        {
+            fileOut = new FileOutputStream(this.path.toFile(), true);
+            fileOut.getChannel().truncate(0);
+            fileLock = fileOut.getChannel().lock();
+        }
+        catch (IOException e) 
+        {
+            throw e;
+        }
     }
 
     @Override
-    public void onContent(Response response, ByteBuffer content) throws Exception
+    public void onContent(Response response, ByteBuffer content) throws IOException
     {
-        // TODO Auto-generated method stub
+        if (response.getStatus() != 200)
+        {
+            throw new HttpResponseException(String.format("HTTP status code of this response %d", response.getStatus()), response);
+        }
+        
+        if (!fileLock.isValid())
+        {
+            throw new IOException("File lock is not valid");
+        }
+        try
+        {   
+            bytesWritten += fileOut.getChannel().write(content);
+        }
+        catch (IOException e) 
+        {
+            throw e;
+        }
 
     }
 
     @Override
     public void onComplete(Result result)
     {
-        // TODO Auto-generated method stub
-
+        if (result.isFailed() && this.failure == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Result failure", failure);
+        }
+        
+        this.response = result.getResponse();
     }
-
+    
+    public Response get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException, ExecutionException 
+    {
+        boolean expired = !responseLatch.await(timeout, unit);
+        if (!expired && this.response == null)
+            throw new TimeoutException();
+        try (AutoLock ignored = lock.lock())
+        {
+            // If the request failed there is no response.
+            if (response == null)
+                throw new ExecutionException(failure);
+            return response;
+        }
+    }
+    
 }
