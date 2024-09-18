@@ -729,6 +729,14 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             checkAvailable();
             _sessionManager.setSecureCookies(secure);
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[name=%s,domain=%s,path=%s,max-age=%d,secure=%b,http-only=%b,same-site=%s,comment=%s]",
+                this.getClass().getName(), this.hashCode(), _sessionManager.getSessionCookie(), _sessionManager.getSessionDomain(), _sessionManager.getSessionPath(),
+                _sessionManager.getMaxCookieAge(), _sessionManager.isSecureCookies(), _sessionManager.isHttpOnly(), _sessionManager.getSameSite(), _sessionManager.getSessionComment());
+        }
     }
 
     private class CoreSessionManager extends AbstractSessionManager
