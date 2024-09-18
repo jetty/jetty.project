@@ -254,6 +254,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             SessionHandler.this.setSecureCookies(secure);
         }
 
+        @Override
+        public String toString()
+        {
+              return String.format("%s@%x[name=%s,domain=%s,path=%s,max-age=%d,secure=%b,http-only=%b,comment=%s,attributes=%s]",
+                this.getClass().getName(), this.hashCode(), getName(), getDomain(), getPath(),
+               getMaxAge(), isSecure(), isHttpOnly(),  getComment(), getSessionCookieAttributes().toString());
+        }
+
         private void checkState()
         {
             //It is allowable to call the CookieConfig.setXX methods after the SessionHandler has started,
@@ -427,6 +435,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     public SessionHandler()
     {
         setSessionTrackingModes(DEFAULT_SESSION_TRACKING_MODES);
+        installBean(_cookieConfig);
+        installBean(_sessionListeners);
+        installBean(_sessionIdListeners);
+        installBean(_sessionAttributeListeners);
     }
 
     @Override
