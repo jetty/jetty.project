@@ -584,7 +584,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         Runnable task;
 
-        if (_delayedForContent || _onRequest == null)
+        if (!_delayedForContent || _onRequest == null)
         {
             task = _httpChannel.onIdleTimeout(timeout);
         }
