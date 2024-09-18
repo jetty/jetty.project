@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +39,7 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
     
+    private CompletableFuture<Path> completable = new CompletableFuture<>();
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private Path path;
@@ -106,7 +108,7 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
     public Response get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException, ExecutionException 
     {
         boolean expired = !responseLatch.await(timeout, unit);
-        if (!expired && this.response == null)
+        if (expired && this.response == null)
             throw new TimeoutException();
         try (AutoLock ignored = lock.lock())
         {
@@ -117,4 +119,13 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         }
     }
     
+//    public Response get()
+//    {
+//        
+//    }
+//    
+//    public CompletableFuture<Path> write(Request request, Path path)
+//    {
+//        
+//    }
 }
