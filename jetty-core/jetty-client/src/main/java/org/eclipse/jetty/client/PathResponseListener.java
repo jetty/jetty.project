@@ -83,8 +83,8 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         {   
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to instantiate object", e);
-
-            throw e;
+            else
+                throw e;
         }
     }
 
@@ -108,8 +108,8 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         {   
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to write file", e);
-            
-            throw e;
+            else
+                throw e;
         }
     }
 
@@ -178,8 +178,10 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
                     fileStream.write(contentStream.readAllBytes());
                 }
                 else 
-                {
-                    throw new HttpResponseException(Integer.toString(response.getStatus()), response);
+                {   if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to proceed with request");
+                    else
+                        throw new HttpResponseException(Integer.toString(response.getStatus()), response);
                 }
             }
             catch (InterruptedException | TimeoutException | ExecutionException | IOException | HttpResponseException e)
