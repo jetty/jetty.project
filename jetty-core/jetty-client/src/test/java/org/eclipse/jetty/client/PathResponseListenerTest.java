@@ -58,8 +58,8 @@ public class PathResponseListenerTest
     
     private void configureTestEnvironment() throws Exception
     {   
-        origDigest = MessageDigest.getInstance("SHA-256");
-        respDigest = MessageDigest.getInstance("SHA-256");
+        origDigest = MessageDigest.getInstance("MD5");
+        respDigest = MessageDigest.getInstance("MD5");
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);

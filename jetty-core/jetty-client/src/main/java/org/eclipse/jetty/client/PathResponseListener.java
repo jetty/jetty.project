@@ -37,7 +37,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * All classes should have a javadoc
+ * Implementation of {@link Listener} that produces an {@link Path}
+ * that allows applications to save a file from a response {@link Response}
+ * like curl <URL> -o file.bin does.
+ * <p>
+ * Typical usage is:
+ * <pre>
+ *  httpClient.newRequest(host, port)
+ * .send(new PathResponseListener(Path.of("/tmp/file.bin"));
+ * 
+ *  var request = httpClient.newRequest(host, port);
+ *  CompletableFuture<Path> completable = PathResponseListener.write(request, Path.of("/tmp/file.bin"));
+ * </pre>
+ * </p>
  */
 public class PathResponseListener implements CompleteListener, Response.ContentListener
 {
@@ -99,7 +111,6 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
             
             throw e;
         }
-
     }
 
     @Override
@@ -113,6 +124,7 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         
         this.response = result.getResponse();
         this.completable.complete(this.path);
+        
         try
         {
             fileLock.close();
@@ -150,9 +162,9 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         {
             InputStreamResponseListener listener = new InputStreamResponseListener();
 
-            try (BufferedInputStream contentStream = new BufferedInputStream(listener.getInputStream());
+            try (BufferedInputStream contentStream = new BufferedInputStream(listener.getInputStream(), 1048576);
                 FileOutputStream file = new FileOutputStream(path.toFile(), true);
-                BufferedOutputStream fileStream = new BufferedOutputStream(file);
+                BufferedOutputStream fileStream = new BufferedOutputStream(file, 1048576);
                 FileLock fileLock = file.getChannel().lock();)
             {
                 request.send(listener);
@@ -161,12 +173,16 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
                 if (response.getStatus() == HttpStatus.OK_200)
                 {   
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Starting write file");
+                        LOG.debug("Start writing a file");
                     
                     fileStream.write(contentStream.readAllBytes());
                 }
+                else 
+                {
+                    throw new HttpResponseException(Integer.toString(response.getStatus()), response);
+                }
             }
-            catch (InterruptedException | TimeoutException | ExecutionException | IOException e)
+            catch (InterruptedException | TimeoutException | ExecutionException | IOException | HttpResponseException e)
             {
                 throw new CompletionException(e);
             }
