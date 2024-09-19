@@ -418,9 +418,13 @@ public class ResourceFactoryTest
             FS.ensureDirExists(bar);
             Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), bar.resolve("lib-foo.jar"));
             Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), bar.resolve("lib-zed.zip"));
+            Path exampleJar = base.resolve("example.jar");
+            Files.copy(MavenPaths.findTestResourceFile("example.jar"), exampleJar);
 
-            // This represents the user-space raw configuration with a glob
-            String config = String.format("%s%s%s%s%s%s*", dir, File.pathSeparator, foo, File.pathSeparator, bar, File.separator);
+            // This represents a classpath with a glob
+            String config = String.join(File.pathSeparator, List.of(
+                dir.toString(), foo.toString(), bar + File.separator + "*", exampleJar.toString()
+            ));
 
             // Split using commas
             List<URI> uris = resourceFactory.split(config, File.pathSeparator).stream().map(Resource::getURI).toList();
@@ -430,19 +434,23 @@ public class ResourceFactoryTest
                 foo.toUri(),
                 // Should see the two archives as `jar:file:` URI entries
                 URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
-                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri())
+                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri()),
+                URIUtil.toJarFileUri(exampleJar.toUri())
             };
 
             assertThat(uris, contains(expected));
         }
     }
 
-    @Test
-    public void testSplitOnPipeWithGlob() throws IOException
+    @ParameterizedTest
+    @ValueSource(strings = {";", "|", ","})
+    public void testSplitOnDelimWithGlob(String delimChar) throws IOException
     {
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Path base = workDir.getEmptyPathDir();
+            // TIP: don't allow raw delim to show up in base dir, otherwise the string split later will be wrong.
+            Path base = MavenPaths.targetTestDir("testSplitOnPipeWithGlob_%02x".formatted((byte)delimChar.charAt(0)));
+            FS.ensureEmpty(base);
             Path dir = base.resolve("dir");
             FS.ensureDirExists(dir);
             Path foo = dir.resolve("foo");
@@ -451,9 +459,13 @@ public class ResourceFactoryTest
             FS.ensureDirExists(bar);
             Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), bar.resolve("lib-foo.jar"));
             Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), bar.resolve("lib-zed.zip"));
+            Path exampleJar = base.resolve("example.jar");
+            Files.copy(MavenPaths.findTestResourceFile("example.jar"), exampleJar);
 
             // This represents the user-space raw configuration with a glob
-            String config = String.format("%s;%s;%s%s*", dir, foo, bar, File.separator);
+            String config = String.join(delimChar, List.of(
+                dir.toString(), foo.toString(), bar + File.separator + "*", exampleJar.toString()
+            ));
 
             // Split using commas
             List<URI> uris = resourceFactory.split(config).stream().map(Resource::getURI).toList();
@@ -463,7 +475,8 @@ public class ResourceFactoryTest
                 foo.toUri(),
                 // Should see the two archives as `jar:file:` URI entries
                 URIUtil.toJarFileUri(bar.resolve("lib-foo.jar").toUri()),
-                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri())
+                URIUtil.toJarFileUri(bar.resolve("lib-zed.zip").toUri()),
+                URIUtil.toJarFileUri(exampleJar.toUri())
             };
 
             assertThat(uris, contains(expected));
