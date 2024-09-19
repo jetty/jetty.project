@@ -114,6 +114,9 @@ public class CompressionConfig extends AbstractLifeCycle
         if (!isMethodSupported(request.getMethod()))
             return null;
 
+        if (!compressPaths.test(pathInContext))
+            return null;
+
         return matchedEncoding;
     }
 
