@@ -653,17 +653,24 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     protected void notifyExitScope(Request request)
     {
-        for (int i = _contextListeners.size(); i-- > 0; )
+        for (ContextScopeListener listener : reverse(_contextListeners))
         {
             try
             {
-                _contextListeners.get(i).exitScope(_context, request);
+                listener.exitScope(_context, request);
             }
             catch (Throwable e)
             {
                 LOG.warn("Unable to exit scope", e);
             }
         }
+    }
+
+    private static <T> List<T> reverse(List<T> list)
+    {
+        List<T> result = new ArrayList<>(list);
+        Collections.reverse(result);
+        return result;
     }
 
     /**

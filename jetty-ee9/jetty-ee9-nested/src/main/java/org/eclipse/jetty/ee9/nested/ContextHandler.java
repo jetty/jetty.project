@@ -1000,17 +1000,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         if (!_servletRequestListeners.isEmpty())
         {
             final ServletRequestEvent sre = new ServletRequestEvent(_apiContext, request);
-            for (int i = _servletRequestListeners.size(); i-- > 0; )
+            for (ServletRequestListener listener : reverse(_servletRequestListeners))
             {
-                _servletRequestListeners.get(i).requestDestroyed(sre);
+                listener.requestDestroyed(sre);
             }
         }
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (int i = _servletRequestAttributeListeners.size(); i-- > 0; )
+            for (ServletRequestAttributeListener listener : reverse(_servletRequestAttributeListeners))
             {
-                baseRequest.removeEventListener(_servletRequestAttributeListeners.get(i));
+                baseRequest.removeEventListener(listener);
             }
         }
     }
@@ -1070,11 +1070,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
         if (!_contextListeners.isEmpty())
         {
-            for (int i = _contextListeners.size(); i-- > 0; )
+            for (ContextScopeListener listener : reverse(_contextListeners))
             {
                 try
                 {
-                    _contextListeners.get(i).exitScope(_apiContext, request);
+                    listener.exitScope(_apiContext, request);
                 }
                 catch (Throwable e)
                 {
@@ -1082,6 +1082,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 }
             }
         }
+    }
+
+    private static <T> List<T> reverse(List<T> list)
+    {
+        List<T> result = new ArrayList<>(list);
+        Collections.reverse(result);
+        return result;
     }
 
     /**
