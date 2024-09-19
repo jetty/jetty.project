@@ -21,6 +21,7 @@ import java.util.List;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
@@ -156,6 +157,7 @@ public class MetaInfConfigurationTest
         finally
         {
             config.postConfigure(context);
+            LifeCycle.stop(context.getResourceFactory());
         }
     }
 }
