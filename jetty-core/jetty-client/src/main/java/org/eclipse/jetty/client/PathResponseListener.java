@@ -13,21 +13,25 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.Response.CompleteListener;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +49,6 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
     private Path path;
     private Response response;
     private Throwable failure;
-    private int bytesWritten;
     private FileOutputStream fileOut;
     private FileLock fileLock;
     
@@ -65,7 +68,10 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
             fileLock = fileOut.getChannel().lock();
         }
         catch (IOException e) 
-        {
+        {   
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to instantiate object", e);
+
             throw e;
         }
     }
@@ -73,7 +79,7 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
     @Override
     public void onContent(Response response, ByteBuffer content) throws IOException
     {
-        if (response.getStatus() != 200)
+        if (response.getStatus() != HttpStatus.OK_200)
         {
             throw new HttpResponseException(String.format("HTTP status code of this response %d", response.getStatus()), response);
         }
@@ -84,10 +90,13 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         }
         try
         {   
-            bytesWritten += fileOut.getChannel().write(content);
+            fileOut.getChannel().write(content);
         }
         catch (IOException e) 
-        {
+        {   
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to write file", e);
+            
             throw e;
         }
 
@@ -103,6 +112,16 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         }
         
         this.response = result.getResponse();
+        this.completable.complete(this.path);
+        try
+        {
+            fileLock.close();
+        }
+        catch (IOException e)
+        {   
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to close file", e);
+        }
     }
     
     public Response get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException, ExecutionException 
@@ -119,13 +138,40 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         }
     }
     
-//    public Response get()
-//    {
-//        
-//    }
-//    
-//    public CompletableFuture<Path> write(Request request, Path path)
-//    {
-//        
-//    }
+    public Response get() throws InterruptedException, ExecutionException
+    {
+        this.completable.get();
+        return this.response;
+    }
+   
+    public static CompletableFuture<Path> write(Request request, Path path)
+    {
+        return CompletableFuture.supplyAsync(() -> 
+        {
+            InputStreamResponseListener listener = new InputStreamResponseListener();
+
+            try (BufferedInputStream contentStream = new BufferedInputStream(listener.getInputStream());
+                FileOutputStream file = new FileOutputStream(path.toFile(), true);
+                BufferedOutputStream fileStream = new BufferedOutputStream(file);
+                FileLock fileLock = file.getChannel().lock();)
+            {
+                request.send(listener);
+                Response response = listener.get(5, TimeUnit.SECONDS);
+
+                if (response.getStatus() == HttpStatus.OK_200)
+                {   
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Starting write file");
+                    
+                    fileStream.write(contentStream.readAllBytes());
+                }
+            }
+            catch (InterruptedException | TimeoutException | ExecutionException | IOException e)
+            {
+                throw new CompletionException(e);
+            }
+
+            return path;
+        });
+    }
 }

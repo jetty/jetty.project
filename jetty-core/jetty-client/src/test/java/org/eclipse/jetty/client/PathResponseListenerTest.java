@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,9 +24,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -44,7 +45,8 @@ public class PathResponseListenerTest
 {
     private Server server;
     private ServerConnector connector;
-    private HttpClient client;
+    private MessageDigest origDigest;
+    private MessageDigest respDigest;
     
     private static final Path ORIGIN_ZERO_FILE = Path.of(System.getProperty("user.dir"), "origin_zero");
     private static final Path ORIGIN_SMALL_FILE = Path.of(System.getProperty("user.dir"), "origin_small");
@@ -54,8 +56,10 @@ public class PathResponseListenerTest
     private static final Path RESPONSE_SMALL_FILE = Path.of(System.getProperty("user.dir"), "response_small");
     private static final Path RESPONSE_LARGE_FILE = Path.of(System.getProperty("user.dir"), "response_large");
     
-    private void configureServer() throws Exception
-    {
+    private void configureTestEnvironment() throws Exception
+    {   
+        origDigest = MessageDigest.getInstance("SHA-256");
+        respDigest = MessageDigest.getInstance("SHA-256");
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -65,6 +69,21 @@ public class PathResponseListenerTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
         server.setHandler(resourceHandler);
+    }
+    
+    private void deleteFiles(Path...paths) 
+    {
+        for (Path p : paths)
+        {
+            try
+            {
+                Files.deleteIfExists(p);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
     }
     
     private void createZeroFile() throws IOException
@@ -83,10 +102,16 @@ public class PathResponseListenerTest
     {   
         try (OutputStream smallFileWriter = Files.newOutputStream(ORIGIN_SMALL_FILE, StandardOpenOption.CREATE_NEW))
         {    
+            ByteBuffer buff = ByteBuffer.allocate(1024);
             Random random = new Random();
-            for (int i = 0; i < 1048576; i++) 
+            int writeBytes = 0; 
+            while (writeBytes < 1024)
             {
-                smallFileWriter.write(random.nextInt());
+                random.nextBytes(buff.array());
+                buff.flip();
+                smallFileWriter.write(buff.array());
+                buff.clear();
+                writeBytes++;
             }
         } 
         catch (IOException e) 
@@ -99,10 +124,17 @@ public class PathResponseListenerTest
     {   
         try (OutputStream largeFileWriter = Files.newOutputStream(ORIGIN_LARGE_FILE, StandardOpenOption.CREATE_NEW))
         {   
-//            byte[] buffer = new byte[1073741824];
-//            Random random = new Random();
-//            random.nextBytes(buffer);
-//            largeFileWriter.write(buffer);
+            ByteBuffer buff = ByteBuffer.allocate(1048576);
+            Random random = new Random();
+            int writeBytes = 0; 
+            while (writeBytes < 1024)
+            {
+                random.nextBytes(buff.array());
+                buff.flip();
+                largeFileWriter.write(buff.array());
+                buff.clear();
+                writeBytes++;
+            }
         } 
         catch (IOException e) 
         {
@@ -113,7 +145,7 @@ public class PathResponseListenerTest
     @BeforeEach
     public void startServer() throws Exception
     {   
-        configureServer();
+        configureTestEnvironment();
         server.start();
     }
 
@@ -121,6 +153,10 @@ public class PathResponseListenerTest
     public void stopServer() throws Exception
     {
         server.stop();
+        
+        // Reuse message digest
+        origDigest.reset();
+        respDigest.reset();
     }
 
     @Test
@@ -133,7 +169,7 @@ public class PathResponseListenerTest
             URL url = new URL("http", "localhost", connector.getLocalPort(), "/favicon.ico");
             Request request = client.newRequest(url.toURI().toString());
             Response response = request.send();
-            assertEquals(404, response.getStatus());
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
         }
         
     }
@@ -143,8 +179,7 @@ public class PathResponseListenerTest
     {   
         try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1)))
         {   
-            Files.deleteIfExists(ORIGIN_ZERO_FILE);
-            Files.deleteIfExists(RESPONSE_ZERO_FILE);
+            deleteFiles(ORIGIN_ZERO_FILE, RESPONSE_ZERO_FILE);
             createZeroFile();
             
             client.start();
@@ -155,7 +190,7 @@ public class PathResponseListenerTest
             Request request = client.newRequest(url.toURI().toString());
             request.send(listener);
             Response response = listener.get(5, TimeUnit.SECONDS);
-            assertEquals(200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
   
             File originFile = new File(ORIGIN_ZERO_FILE.toUri());
             File responseFile = new File(RESPONSE_ZERO_FILE.toUri());
@@ -169,8 +204,7 @@ public class PathResponseListenerTest
         } 
         finally 
         {
-            Files.deleteIfExists(ORIGIN_ZERO_FILE);
-            Files.deleteIfExists(RESPONSE_ZERO_FILE);
+            deleteFiles(ORIGIN_ZERO_FILE, RESPONSE_ZERO_FILE);
         }
     }
     
@@ -179,31 +213,27 @@ public class PathResponseListenerTest
     {   
         try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
         {   
-            Files.deleteIfExists(ORIGIN_SMALL_FILE);
-            Files.deleteIfExists(RESPONSE_SMALL_FILE);
+            deleteFiles(ORIGIN_SMALL_FILE, RESPONSE_SMALL_FILE);
             createSmallFile();
             
             client.start();
             
             URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_SMALL_FILE.getFileName().toString());
             
-            InputStreamResponseListener listener = new InputStreamResponseListener();
+            PathResponseListener listener = new PathResponseListener(RESPONSE_SMALL_FILE);
             Request request = client.newRequest(url.toURI().toString());
             request.send(listener);
-            Response response = listener.get(10, TimeUnit.SECONDS);
-            assertEquals(200, response.getStatus());
+            Response response = listener.get();
+            assertEquals(HttpStatus.OK_200, response.getStatus());
             
-            MessageDigest originFileChcksm = MessageDigest.getInstance("SHA-256");
-            MessageDigest responseFileChcksm = MessageDigest.getInstance("SHA-256");
-            
-            try (InputStream responseContent = listener.getInputStream();
+            try (InputStream responseFile = Files.newInputStream(RESPONSE_SMALL_FILE, StandardOpenOption.READ);
                  InputStream originFile = Files.newInputStream(ORIGIN_SMALL_FILE, StandardOpenOption.READ)
                 )
             {   
-                originFileChcksm.update(originFile.readAllBytes());
-                responseFileChcksm.update(responseContent.readAllBytes());
+                origDigest.update(originFile.readAllBytes());
+                respDigest.update(responseFile.readAllBytes());
                 
-                assertTrue(MessageDigest.isEqual(originFileChcksm.digest(), responseFileChcksm.digest()));
+                assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
             }
         } 
         catch (Exception e) 
@@ -212,8 +242,7 @@ public class PathResponseListenerTest
         }
         finally
         {
-            Files.deleteIfExists(ORIGIN_SMALL_FILE);
-            Files.deleteIfExists(RESPONSE_SMALL_FILE);
+            deleteFiles(ORIGIN_SMALL_FILE, RESPONSE_SMALL_FILE);
         }
     }
     
@@ -222,8 +251,7 @@ public class PathResponseListenerTest
     {   
         try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
         {   
-            Files.deleteIfExists(ORIGIN_LARGE_FILE);
-            Files.deleteIfExists(RESPONSE_LARGE_FILE);
+            deleteFiles(ORIGIN_LARGE_FILE, RESPONSE_LARGE_FILE);
             createLargeFile();
             
             client.start();
@@ -234,19 +262,16 @@ public class PathResponseListenerTest
             Request request = client.newRequest(url.toURI().toString());
             request.send(listener);
             Response response = listener.get(25, TimeUnit.SECONDS);
-            assertEquals(200, response.getStatus());
-            
-            MessageDigest originFileChcksm = MessageDigest.getInstance("SHA-256");
-            MessageDigest responseFileChcksm = MessageDigest.getInstance("SHA-256");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
             
             try (InputStream responseFile = Files.newInputStream(RESPONSE_LARGE_FILE, StandardOpenOption.READ);
                  InputStream originFile = Files.newInputStream(ORIGIN_LARGE_FILE, StandardOpenOption.READ)
                 )
             {   
-                originFileChcksm.update(originFile.readAllBytes());
-                responseFileChcksm.update(responseFile.readAllBytes());
+                origDigest.update(originFile.readAllBytes());
+                respDigest.update(responseFile.readAllBytes());
                 
-                assertTrue(MessageDigest.isEqual(originFileChcksm.digest(), responseFileChcksm.digest()));
+                assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
             }
         } 
         catch (Exception e) 
@@ -254,9 +279,137 @@ public class PathResponseListenerTest
             throw e;
         }
         finally
+        {   
+            deleteFiles(ORIGIN_LARGE_FILE, RESPONSE_LARGE_FILE);
+        }
+    }
+    
+    @Test
+    public void testZeroFileDownloadCompletable() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
+        {   
+            deleteFiles(ORIGIN_ZERO_FILE, RESPONSE_ZERO_FILE);
+            createZeroFile();
+            
+            client.start();
+            
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_ZERO_FILE.getFileName().toString());
+            
+            Request request = client.newRequest(url.toURI().toString());
+            
+            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_ZERO_FILE);
+            completable.thenAccept(path -> 
+            {
+                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
+                    InputStream originFile = Files.newInputStream(ORIGIN_ZERO_FILE, StandardOpenOption.READ)
+                   )
+               {   
+                   origDigest.update(originFile.readAllBytes());
+                   respDigest.update(responseFile.readAllBytes());
+                   
+                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
+               }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+            completable.get();
+        } 
+        catch (Exception e) 
         {
-            Files.deleteIfExists(ORIGIN_LARGE_FILE);
-            Files.deleteIfExists(RESPONSE_LARGE_FILE);
+            throw e;
+        }
+        finally
+        {
+            deleteFiles(ORIGIN_ZERO_FILE, RESPONSE_ZERO_FILE);
+        }
+    }
+    
+    @Test
+    public void testSmallFileDownloadCompletable() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
+        {   
+            deleteFiles(ORIGIN_SMALL_FILE, RESPONSE_SMALL_FILE);
+            createSmallFile();
+            
+            client.start();
+            
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_SMALL_FILE.getFileName().toString());
+            
+            Request request = client.newRequest(url.toURI().toString());
+            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_SMALL_FILE);
+//          
+            completable.thenAccept(path -> 
+            {
+                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
+                    InputStream originFile = Files.newInputStream(ORIGIN_SMALL_FILE, StandardOpenOption.READ)
+                   )
+               {   
+                   origDigest.update(originFile.readAllBytes());
+                   respDigest.update(responseFile.readAllBytes());
+                   
+                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
+               }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+            completable.get();
+        } 
+        catch (Exception e) 
+        {
+            throw e;
+        }
+        finally
+        {
+            deleteFiles(ORIGIN_SMALL_FILE, RESPONSE_SMALL_FILE);
+        }
+    }
+    
+    @Test
+    public void testLargeFileDownloadCompletable() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
+        {   
+            deleteFiles(ORIGIN_LARGE_FILE, RESPONSE_LARGE_FILE);
+            createLargeFile();
+            
+            client.start();
+            
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_LARGE_FILE.getFileName().toString());
+            
+            Request request = client.newRequest(url.toURI().toString());
+            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_LARGE_FILE);
+//          
+            completable.thenAccept(path -> 
+            {
+                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
+                    InputStream originFile = Files.newInputStream(ORIGIN_LARGE_FILE, StandardOpenOption.READ)
+                   )
+               {   
+                   origDigest.update(originFile.readAllBytes());
+                   respDigest.update(responseFile.readAllBytes());
+                   
+                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
+               }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+            completable.get();
+        } 
+        catch (Exception e) 
+        {
+            throw e;
+        }
+        finally
+        {
+            deleteFiles(ORIGIN_LARGE_FILE, RESPONSE_LARGE_FILE);
         }
     }
 }
