@@ -18,8 +18,6 @@ import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
@@ -37,9 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of {@link Listener} that produces an {@link Path}
+ * Implementation of {@link Response.ContentListener} that produces an {@link Path}
  * that allows applications to save a file from a response {@link Response}
- * like curl <URL> -o file.bin does.
+ * like curl &lt;URL&gt; -o file.bin does.
  * <p>
  * Typical usage is:
  * <pre>
@@ -47,9 +45,8 @@ import org.slf4j.LoggerFactory;
  * .send(new PathResponseListener(Path.of("/tmp/file.bin"));
  * 
  *  var request = httpClient.newRequest(host, port);
- *  CompletableFuture<Path> completable = PathResponseListener.write(request, Path.of("/tmp/file.bin"));
+ *  CompletableFuture&gt;Path&gt; completable = PathResponseListener.write(request, Path.of("/tmp/file.bin"));
  * </pre>
- * </p>
  */
 public class PathResponseListener implements CompleteListener, Response.ContentListener
 {
