@@ -745,13 +745,6 @@ public class HttpRequest implements Request
         destination.send(this, listener);
     }
     
-    @Override 
-    public void send(PathResponseListener listener)
-    {
-        Destination destination = client.resolveDestination(this);
-        destination.send(this, listener);
-    }
-    
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)
     {
         if (listener != null)

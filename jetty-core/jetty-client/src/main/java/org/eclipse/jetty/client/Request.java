@@ -509,14 +509,6 @@ public interface Request
     void send(Response.CompleteListener listener);
     
     /**
-     * <p>Sends this request and asynchronously notifies the given listener for response events 
-     * parse content with requested file and save it into {@link Path}</p>
-     *
-     * @param listener the listener that receives response events
-     */
-    void send(PathResponseListener listener);
-    
-    /**
      * Attempts to abort the send of this request.
      *
      * @param cause the abort cause, must not be null

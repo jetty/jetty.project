@@ -13,24 +13,19 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileLock;
+import java.nio.channels.FileChannel;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.client.Response.CompleteListener;
+import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,65 +43,61 @@ import org.slf4j.LoggerFactory;
  *  CompletableFuture&gt;Path&gt; completable = PathResponseListener.write(request, Path.of("/tmp/file.bin"));
  * </pre>
  */
-public class PathResponseListener implements CompleteListener, Response.ContentListener
+public class PathResponseListener extends CompletableFuture<Response> implements Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
     
-    private CompletableFuture<Path> completable = new CompletableFuture<>();
-    private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
-    private final CountDownLatch responseLatch = new CountDownLatch(1);
     private Path path;
-    private Response response;
     private Throwable failure;
-    private FileOutputStream fileOut;
-    private FileLock fileLock;
+    private FileChannel fileOut;
+    private int bytesWrite;
     
-    public PathResponseListener(Path path) throws FileNotFoundException, IOException
-    {   
-        if (!path.isAbsolute())
-        {
-            throw new FileNotFoundException();
-        }
-        
+    public PathResponseListener(Path path, boolean overwrite) throws FileNotFoundException, IOException, FileAlreadyExistsException
+    {           
         this.path = path;
         
-        try 
+        // Throws the exception if file can't be overwritten 
+        // otherwise truncate it.
+        if (this.path.toFile().exists() && !overwrite)
         {
-            fileOut = new FileOutputStream(this.path.toFile(), true);
-            fileOut.getChannel().truncate(0);
-            fileLock = fileOut.getChannel().lock();
+            throw new FileAlreadyExistsException("File can't be overwritten");
+        }
+        
+        try
+        {
+            fileOut = FileChannel.open(this.path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
         }
         catch (IOException e) 
         {   
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to instantiate object", e);
-            else
-                throw e;
+            
+            throw e;
         }
     }
-
+    
     @Override
-    public void onContent(Response response, ByteBuffer content) throws IOException
+    public void onHeaders(Response response)
     {
         if (response.getStatus() != HttpStatus.OK_200)
         {
+            this.cancel(true);
             throw new HttpResponseException(String.format("HTTP status code of this response %d", response.getStatus()), response);
         }
-        
-        if (!fileLock.isValid())
-        {
-            throw new IOException("File lock is not valid");
-        }
+    }
+    
+    @Override
+    public void onContent(Response response, ByteBuffer content)
+    {
         try
-        {   
-            fileOut.getChannel().write(content);
-        }
-        catch (IOException e) 
-        {   
+        {
+            this.bytesWrite += this._write(content).get();
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to write file", e);
-            else
-                throw e;
+                LOG.debug("%d bytes written", bytesWrite);
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            e.printStackTrace();
         }
     }
 
@@ -117,76 +108,35 @@ public class PathResponseListener implements CompleteListener, Response.ContentL
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Result failure", failure);
+            
+            this.cancel(true);
+            return;
         }
         
-        this.response = result.getResponse();
-        this.completable.complete(this.path);
+        this.complete(result.getResponse());        
+    }
+    
+    public static CompletableFuture<Response> write(Request request, Path path)
+    {
         
-        try
-        {
-            fileLock.close();
-        }
-        catch (IOException e)
-        {   
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to close file", e);
-        }
     }
     
-    public Response get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException, ExecutionException 
-    {
-        boolean expired = !responseLatch.await(timeout, unit);
-        if (expired && this.response == null)
-            throw new TimeoutException();
-        try (AutoLock ignored = lock.lock())
-        {
-            // If the request failed there is no response.
-            if (response == null)
-                throw new ExecutionException(failure);
-            return response;
-        }
-    }
-    
-    public Response get() throws InterruptedException, ExecutionException
-    {
-        this.completable.get();
-        return this.response;
-    }
-   
-    public static CompletableFuture<Path> write(Request request, Path path)
-    {
-        return CompletableFuture.supplyAsync(() -> 
-        {
-            InputStreamResponseListener listener = new InputStreamResponseListener();
-
-            try (BufferedInputStream contentStream = new BufferedInputStream(listener.getInputStream(), 1048576);
-                FileOutputStream file = new FileOutputStream(path.toFile(), true);
-                BufferedOutputStream fileStream = new BufferedOutputStream(file, 1048576);
-                FileLock fileLock = file.getChannel().lock();)
-            {
-                request.send(listener);
-                Response response = listener.get(5, TimeUnit.SECONDS);
-
-                if (response.getStatus() == HttpStatus.OK_200)
-                {   
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Start writing a file");
-                    
-                    fileStream.write(contentStream.readAllBytes());
-                }
-                else 
-                {   if (LOG.isDebugEnabled())
-                        LOG.debug("Unable to proceed with request");
-                    else
-                        throw new HttpResponseException(Integer.toString(response.getStatus()), response);
-                }
+    private CompletableFuture<Integer> _write(ByteBuffer content) {
+        return CompletableFuture.supplyAsync(() -> {
+            int bytesWritten = 0;
+            try
+            {   
+                bytesWritten += fileOut.write(content);
             }
-            catch (InterruptedException | TimeoutException | ExecutionException | IOException | HttpResponseException e)
-            {
+            catch (IOException e) 
+            {   
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to write file", e);
+                
                 throw new CompletionException(e);
             }
-
-            return path;
+            
+            return bytesWritten;
         });
     }
 }
