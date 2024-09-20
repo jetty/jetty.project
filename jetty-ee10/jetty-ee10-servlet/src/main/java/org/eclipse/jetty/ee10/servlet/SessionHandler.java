@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {
@@ -570,18 +570,11 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         getSessionContext().run(() ->
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-            for (HttpSessionListener  listener : reverse(_sessionListeners))
+            for (HttpSessionListener  listener : TypeUtil.reverse(_sessionListeners))
             {
                 listener.sessionDestroyed(event);
             }
         });
-    }
-
-    private static <T> List<T> reverse(List<T> list)
-    {
-        List<T> result = new ArrayList<>(list);
-        Collections.reverse(result);
-        return result;
     }
 
     @Override

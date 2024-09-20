@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -55,6 +54,7 @@ import org.eclipse.jetty.session.SessionIdManager;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -835,19 +835,12 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             Runnable r = () ->
             {
                 HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-                for (HttpSessionListener listener : reverse(_sessionListeners))
+                for (HttpSessionListener listener : TypeUtil.reverse(_sessionListeners))
                 {
                     listener.sessionDestroyed(event);
                 }
             };
             _contextHandler.getCoreContextHandler().getContext().run(r);
-        }
-
-        private static <T> List<T> reverse(List<T> list)
-        {
-            List<T> result = new ArrayList<>(list);
-            Collections.reverse(result);
-            return result;
         }
 
         @Override

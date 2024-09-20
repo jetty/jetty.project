@@ -1000,7 +1000,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         if (!_servletRequestListeners.isEmpty())
         {
             final ServletRequestEvent sre = new ServletRequestEvent(_apiContext, request);
-            for (ServletRequestListener listener : reverse(_servletRequestListeners))
+            for (ServletRequestListener listener : TypeUtil.reverse(_servletRequestListeners))
             {
                 listener.requestDestroyed(sre);
             }
@@ -1008,7 +1008,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (ServletRequestAttributeListener listener : reverse(_servletRequestAttributeListeners))
+            for (ServletRequestAttributeListener listener : TypeUtil.reverse(_servletRequestAttributeListeners))
             {
                 baseRequest.removeEventListener(listener);
             }
@@ -1070,7 +1070,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
         if (!_contextListeners.isEmpty())
         {
-            for (ContextScopeListener listener : reverse(_contextListeners))
+            for (ContextScopeListener listener : TypeUtil.reverse(_contextListeners))
             {
                 try
                 {
@@ -1082,13 +1082,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 }
             }
         }
-    }
-
-    private static <T> List<T> reverse(List<T> list)
-    {
-        List<T> result = new ArrayList<>(list);
-        Collections.reverse(result);
-        return result;
     }
 
     /**

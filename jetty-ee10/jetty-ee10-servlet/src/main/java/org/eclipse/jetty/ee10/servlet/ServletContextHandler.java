@@ -95,6 +95,7 @@ import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -518,7 +519,7 @@ public class ServletContextHandler extends ContextHandler
                     //Call context listeners
                     Throwable multiException = null;
                     ServletContextEvent event = new ServletContextEvent(getServletContext());
-                    for (ServletContextListener listener : reverse(_destroyServletContextListeners))
+                    for (ServletContextListener listener : TypeUtil.reverse(_destroyServletContextListeners))
                     {
                         try
                         {
@@ -573,7 +574,7 @@ public class ServletContextHandler extends ContextHandler
         if (!_servletRequestListeners.isEmpty())
         {
             final ServletRequestEvent sre = new ServletRequestEvent(getServletContext(), request);
-            for (ServletRequestListener listener : reverse(_servletRequestListeners))
+            for (ServletRequestListener listener : TypeUtil.reverse(_servletRequestListeners))
             {
                 listener.requestDestroyed(sre);
             }
@@ -581,7 +582,7 @@ public class ServletContextHandler extends ContextHandler
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (ServletRequestAttributeListener listener : reverse(_servletRequestAttributeListeners))
+            for (ServletRequestAttributeListener listener : TypeUtil.reverse(_servletRequestAttributeListeners))
             {
                 scopedRequest.removeEventListener(listener);
             }
@@ -1222,7 +1223,7 @@ public class ServletContextHandler extends ContextHandler
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
         {
-            for (ServletContextScopeListener listener : reverse(_contextListeners))
+            for (ServletContextScopeListener listener : TypeUtil.reverse(_contextListeners))
             {
                 try
                 {
@@ -1236,13 +1237,6 @@ public class ServletContextHandler extends ContextHandler
         }
 
         super.notifyExitScope(request);
-    }
-
-    private static <T> List<T> reverse(List<T> list)
-    {
-        List<T> result = new ArrayList<>(list);
-        Collections.reverse(result);
-        return result;
     }
 
     /**
