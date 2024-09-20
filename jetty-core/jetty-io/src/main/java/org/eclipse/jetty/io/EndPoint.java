@@ -401,8 +401,8 @@ public interface EndPoint extends Closeable, Content.Sink
     interface SslSessionData
     {
         /**
-         * The name at which an {@code SslSessionData} instance may be found as a request
-         * {@link org.eclipse.jetty.util.Attributes Attribute} or from {@link SSLSession#getValue(String)}.
+         * The name at which an {@code SslSessionData} instance may be found
+         * as a request {@link org.eclipse.jetty.util.Attributes attribute}.
          */
         String ATTRIBUTE = "org.eclipse.jetty.io.Endpoint.SslSessionData";
 
