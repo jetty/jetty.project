@@ -87,7 +87,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      * @param cache whether a {@link ThreadLocal} cache should be used for the most recently released entry
      * @deprecated cache is no longer supported. Use {@link StrategyType#THREAD_ID}
      */
-    @Deprecated
+    @Deprecated(since = "12.0.4", forRemoval = true)
     public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache)
     {
         this(strategyType, maxSize, pooled -> 1);
@@ -103,7 +103,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      * @param maxMultiplex a function that given the pooled object returns the max multiplex count
      * @deprecated cache is no longer supported. Use {@link StrategyType#THREAD_ID}
      */
-    @Deprecated
+    @Deprecated(since = "12.0.4", forRemoval = true)
     public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache, ToIntFunction<P> maxMultiplex)
     {
         this(strategyType, maxSize, maxMultiplex);
@@ -148,7 +148,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     {
         leaked.increment();
         if (LOG.isDebugEnabled())
-            LOG.debug("Leaked " + holder);
+            LOG.debug("Leaked {}", holder);
         leaked();
     }
 
@@ -195,15 +195,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
     void sweep()
     {
-        for (int i = 0; i < entries.size(); i++)
+        // Remove entries atomically with respect to remove(Entry).
+        entries.removeIf(holder ->
         {
-            Holder<P> holder = entries.get(i);
-            if (holder.getEntry() == null)
-            {
-                entries.remove(i--);
+            boolean remove = holder.getEntry() == null;
+            if (remove)
                 leaked(holder);
-            }
-        }
+            return remove;
+        });
     }
 
     @Override
@@ -285,8 +284,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         if (!removed)
             return false;
 
-        // No need to lock, no race with reserve()
-        // and the race with terminate() is harmless.
+        // In a harmless race with reserve()/sweep()/terminate().
         Holder<P> holder = ((ConcurrentEntry<P>)entry).getHolder();
         boolean evicted = entries.remove(holder);
         if (LOG.isDebugEnabled())
@@ -313,10 +311,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             // Field this.terminated must be modified with the lock held
             // because the list of entries is modified, see reserve().
             terminated = true;
-            copy = entries.stream()
-                .map(Holder::getEntry)
-                .filter(Objects::nonNull)
-                .toList();
+            copy = stream().toList();
             entries.clear();
         }
 

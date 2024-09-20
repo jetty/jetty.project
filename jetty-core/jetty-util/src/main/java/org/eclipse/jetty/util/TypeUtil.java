@@ -174,6 +174,21 @@ public class TypeUtil
     }
 
     /**
+     * <p>Returns a new list with the elements of the specified list in reverse order.</p>
+     * <p>The specified list is not modified, differently from {@link Collections#reverse(List)}.</p>
+     *
+     * @param list the list whose elements are to be reversed
+     * @return a new list with the elements in reverse order
+     * @param <T> the element type
+     */
+    public static <T> List<T> reverse(List<T> list)
+    {
+        List<T> result = new ArrayList<>(list);
+        Collections.reverse(result);
+        return result;
+    }
+
+    /**
      * Class from a canonical name for a type.
      *
      * @param name A class or type name.

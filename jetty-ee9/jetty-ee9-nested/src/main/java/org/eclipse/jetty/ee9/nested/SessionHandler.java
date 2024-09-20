@@ -54,6 +54,7 @@ import org.eclipse.jetty.session.SessionIdManager;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -834,9 +835,9 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             Runnable r = () ->
             {
                 HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-                for (int i = _sessionListeners.size() - 1; i >= 0; i--)
+                for (HttpSessionListener listener : TypeUtil.reverse(_sessionListeners))
                 {
-                    _sessionListeners.get(i).sessionDestroyed(event);
+                    listener.sessionDestroyed(event);
                 }
             };
             _contextHandler.getCoreContextHandler().getContext().run(r);

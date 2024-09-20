@@ -47,6 +47,7 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {
@@ -569,9 +570,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         getSessionContext().run(() ->
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-            for (int i = _sessionListeners.size() - 1; i >= 0; i--)
+            for (HttpSessionListener  listener : TypeUtil.reverse(_sessionListeners))
             {
-                _sessionListeners.get(i).sessionDestroyed(event);
+                listener.sessionDestroyed(event);
             }
         });
     }
