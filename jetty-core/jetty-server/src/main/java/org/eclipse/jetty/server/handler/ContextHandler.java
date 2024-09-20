@@ -653,11 +653,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     protected void notifyExitScope(Request request)
     {
-        for (int i = _contextListeners.size(); i-- > 0; )
+        for (ContextScopeListener listener : TypeUtil.reverse(_contextListeners))
         {
             try
             {
-                _contextListeners.get(i).exitScope(_context, request);
+                listener.exitScope(_context, request);
             }
             catch (Throwable e)
             {
