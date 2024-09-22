@@ -473,6 +473,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         public StatusRejectHandler(int status)
         {
             _status = status >= 0 ? status : HttpStatus.TOO_MANY_REQUESTS_429;
+            if (!HttpStatus.isClientError(_status) && !HttpStatus.isServerError(_status))
+                throw new IllegalArgumentException("status must be a client or server error");
         }
 
         @Override
