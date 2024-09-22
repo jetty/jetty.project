@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.tests.distribution;
+package org.eclipse.jetty.tests.distribution;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,16 +19,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +48,17 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(DisableUrlCacheTest.class);
 
-    @Test
-    public void testReloadWebAppWithLog4j2() throws Exception
+    public static Stream<Arguments> tests()
+    {
+        return Stream.of(
+                Arguments.of("ee10", "Started oeje10w.WebAppContext@"),
+                Arguments.of("ee11", "Started oeje11w.WebAppContext@")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("tests")
+    public void testReloadWebAppWithLog4j2(String env, String logToSearch) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -55,7 +69,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             .build();
 
         String[] setupArgs = {
-            "--add-modules=http,ee10-webapp,ee10-deploy,disable-urlcache"
+            "--add-modules=http," + toEnvironment("webapp", env) + "," + toEnvironment("deploy", env) + ",disable-urlcache"
         };
 
         try (JettyHomeTester.Run setupRun = distribution.start(setupArgs))
@@ -63,7 +77,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             assertTrue(setupRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, setupRun.getExitValue());
 
-            Path webApp = distribution.resolveArtifact("org.eclipse.jetty.ee10:jetty-ee10-test-log4j2-webapp:war:" + jettyVersion);
+            Path webApp = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-log4j2-webapp:war:" + jettyVersion);
             Path testWebApp = distribution.getJettyBase().resolve("webapps/test.war");
 
             Files.copy(webApp, testWebApp);
@@ -75,16 +89,15 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             FS.ensureEmpty(resourcesDir);
 
             Path webappsDir = distribution.getJettyBase().resolve("webapps");
-            String warXml = """
-                <?xml version="1.0"  encoding="ISO-8859-1"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
-                   <Set name="contextPath">/test</Set>
-                   <Set name="war"><Property name="jetty.webapps"/>/test.war</Set>
-                   <Set name="tempDirectory"><Property name="jetty.base"/>/work/test</Set>
-                   <Set name="tempDirectoryPersistent">false</Set>
-                </Configure>
-                """;
+            String warXml =
+                "<?xml version=\"1.0\"  encoding=\"ISO-8859-1\"?>" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">" +
+                "<Configure class=\"org.eclipse.jetty." + env + ".webapp.WebAppContext\">" +
+                "   <Set name=\"contextPath\">/test</Set>" +
+                "   <Set name=\"war\"><Property name=\"jetty.webapps\"/>/test.war</Set>" +
+                "   <Set name=\"tempDirectory\"><Property name=\"jetty.base\"/>/work/test</Set>" +
+                "   <Set name=\"tempDirectoryPersistent\">false</Set>" +
+                "</Configure>";
             Path warXmlPath = webappsDir.resolve("test.xml");
             Files.writeString(warXmlPath, warXml, StandardCharsets.UTF_8);
 
@@ -92,10 +105,11 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             String loggingConfig = """
                 org.eclipse.jetty.LEVEL=INFO
                 org.eclipse.jetty.deploy.LEVEL=DEBUG
-                org.eclipse.jetty.ee10.webapp.LEVEL=DEBUG
-                org.eclipse.jetty.ee10.webapp.WebAppClassLoader.LEVEL=INFO
-                org.eclipse.jetty.ee10.servlet.LEVEL=DEBUG
+                org.eclipse.jetty.eexx.webapp.LEVEL=DEBUG
+                org.eclipse.jetty.eexx.webapp.WebAppClassLoader.LEVEL=INFO
+                org.eclipse.jetty.exx.servlet.LEVEL=DEBUG
                 """;
+            loggingConfig = loggingConfig.replace("eexx", env);
             Files.writeString(loggingFile, loggingConfig, StandardCharsets.UTF_8);
 
 
@@ -121,7 +135,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 touch(warXmlPath);
 
                 // Wait for reload to start context
-                assertTrue(run2.awaitConsoleLogsFor("Started oeje10w.WebAppContext@", START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor(logToSearch, START_TIMEOUT, TimeUnit.SECONDS));
                 // wait for deployer node to complete so context is Started not Starting
                 assertTrue(run2.awaitConsoleLogsFor("Executing Node Node[started]", START_TIMEOUT, TimeUnit.SECONDS));
 
