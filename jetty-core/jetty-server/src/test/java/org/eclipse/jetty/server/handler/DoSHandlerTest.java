@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,36 +31,36 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DosHandlerTest
+public class DoSHandlerTest
 {
     @Test
     public void testTrackerSteadyBelowRate() throws Exception
     {
-        DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.newTracker("id");
+        DoSHandler handler = new DoSHandler(100);
+        DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int sample = 0; sample < 400; sample++)
         {
-            boolean exceeded = tracker.isRateExceeded(now, true);
+            boolean exceeded = tracker.isRateExceededBySample(now);
             assertFalse(exceeded);
             now += TimeUnit.MILLISECONDS.toNanos(11);
         }
-        double rate = tracker.getRateControl() instanceof DosHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        double rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
         assertThat(rate, both(greaterThan((1000.0D / 11) - 5)).and(lessThan(100.0D)));
     }
 
     @Test
     public void testTrackerSteadyAboveRate() throws Exception
     {
-        DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.newTracker("id");
+        DoSHandler handler = new DoSHandler(100);
+        DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         boolean exceeded = false;
         for (int sample = 0; sample < 200; sample++)
         {
-            if (tracker.isRateExceeded(now, true))
+            if (tracker.isRateExceededBySample(now))
             {
                 exceeded = true;
                 break;
@@ -73,15 +74,15 @@ public class DosHandlerTest
     @Test
     public void testTrackerUnevenBelowRate() throws Exception
     {
-        DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.newTracker("id");
+        DoSHandler handler = new DoSHandler(100);
+        DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int sample = 0; sample < 20; sample++)
         {
             for (int burst = 0; burst < 9; burst++)
             {
-                boolean exceeded = tracker.isRateExceeded(now, true);
+                boolean exceeded = tracker.isRateExceededBySample(now);
                 assertFalse(exceeded);
             }
 
@@ -92,8 +93,8 @@ public class DosHandlerTest
     @Test
     public void testTrackerUnevenAboveRate() throws Exception
     {
-        DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.newTracker("id");
+        DoSHandler handler = new DoSHandler(100);
+        DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         boolean exceeded = false;
@@ -101,7 +102,7 @@ public class DosHandlerTest
         {
             for (int burst = 0; burst < 11; burst++)
             {
-                if (tracker.isRateExceeded(now, true))
+                if (tracker.isRateExceededBySample(now))
                 {
                     exceeded = true;
                     break;
@@ -117,15 +118,15 @@ public class DosHandlerTest
     @Test
     public void testTrackerBurstBelowRate() throws Exception
     {
-        DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.newTracker("id");
+        DoSHandler handler = new DoSHandler(100);
+        DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 99; burst++)
             {
-                boolean exceeded = tracker.isRateExceeded(now, true);
+                boolean exceeded = tracker.isRateExceededBySample(now);
                 assertFalse(exceeded);
             }
 
@@ -136,8 +137,8 @@ public class DosHandlerTest
     @Test
     public void testTrackerBurstAboveRate() throws Exception
     {
-        DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.newTracker("id");
+        DoSHandler handler = new DoSHandler(100);
+        DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         boolean exceeded = false;
@@ -145,7 +146,7 @@ public class DosHandlerTest
         {
             for (int burst = 0; burst < 101; burst++)
             {
-                if (tracker.isRateExceeded(now, true))
+                if (tracker.isRateExceededBySample(now))
                 {
                     exceeded = true;
                     break;
@@ -161,30 +162,30 @@ public class DosHandlerTest
     @Test
     public void testRecoveryAfterBursts() throws Exception
     {
-        DosHandler handler = new DosHandler(100);
-        DosHandler.Tracker tracker = handler.newTracker("id");
+        DoSHandler handler = new DoSHandler(100);
+        DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 99; burst++)
-                assertFalse(tracker.isRateExceeded(now++, true));
+                assertFalse(tracker.isRateExceededBySample(now++));
 
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
 
-        double rate = tracker.getRateControl() instanceof DosHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        double rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
         assertThat(rate, both(greaterThan(90.0D)).and(lessThan(100.0D)));
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 49; burst++)
-                assertFalse(tracker.isRateExceeded(now++, true));
+                assertFalse(tracker.isRateExceededBySample(now++));
 
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
 
-        rate = tracker.getRateControl() instanceof DosHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
         assertThat(rate, both(greaterThan(40.0D)).and(lessThan(50.0D)));
     }
 
@@ -195,7 +196,7 @@ public class DosHandlerTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DosHandler dosHandler = new DosHandler(1000);
+        DoSHandler dosHandler = new DoSHandler(1000);
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
@@ -211,7 +212,7 @@ public class DosHandlerTest
             {
                 try
                 {
-                    while (System.nanoTime() < end)
+                    while (NanoTime.isBefore(NanoTime.now(), end))
                     {
                         String response = connector.getResponse("""
                                 GET / HTTP/1.1\r
@@ -240,7 +241,7 @@ public class DosHandlerTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DosHandler dosHandler = new DosHandler(1000);
+        DoSHandler dosHandler = new DoSHandler(1000);
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
@@ -257,7 +258,7 @@ public class DosHandlerTest
             {
                 try
                 {
-                    while (System.nanoTime() < end)
+                    while (NanoTime.isBefore(NanoTime.now(), end))
                     {
                         try
                         {
