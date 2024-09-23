@@ -175,12 +175,10 @@ public class TypeUtil
     }
 
     /**
-     * <p>Returns a {@link ListIterator} positioned at the last item in a list</p>
-     * <p>The method is safe for concurrent modifications iff the list iterator itself is safe.</p>
+     * <p>Returns a {@link ListIterator} positioned at the last item in a list.</p>
      * @param list the list
      * @param <T> the element type
-     * @return A {@link ListIterator} with {@link ListIterator#hasNext()} that would have return {@code false}
-     * at the snapshot of the list represented by this call.
+     * @return A {@link ListIterator} positioned at the last item of the list.
      */
     public static <T> ListIterator<T> listIteratorAtEnd(List<T> list)
     {
