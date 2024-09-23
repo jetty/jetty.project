@@ -65,7 +65,6 @@ public class TypeUtil
     public static final int CR = '\r';
     public static final int LF = '\n';
     private static final  Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
-    private static final ListIterator<?> EMPTY_LIST_ITERATOR = Collections.EMPTY_LIST.listIterator();
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
 
@@ -189,11 +188,7 @@ public class TypeUtil
         {
             int size = list.size();
             if (size == 0)
-            {
-                @SuppressWarnings("unchecked")
-                ListIterator<T> emptyListIterator = (ListIterator<T>)EMPTY_LIST_ITERATOR;
-                return emptyListIterator;
-            }
+                return Collections.emptyListIterator();
             return list.listIterator(size);
         }
         catch (IndexOutOfBoundsException e)
