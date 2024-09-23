@@ -29,6 +29,7 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -1000,17 +1001,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         if (!_servletRequestListeners.isEmpty())
         {
             final ServletRequestEvent sre = new ServletRequestEvent(_apiContext, request);
-            for (ServletRequestListener listener : TypeUtil.reverse(_servletRequestListeners))
+            for (ListIterator<ServletRequestListener> i = TypeUtil.listIteratorAtEnd(_servletRequestListeners); i.hasPrevious();)
             {
-                listener.requestDestroyed(sre);
+                i.previous().requestDestroyed(sre);
             }
         }
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (ServletRequestAttributeListener listener : TypeUtil.reverse(_servletRequestAttributeListeners))
+            for (ListIterator<ServletRequestAttributeListener> i = TypeUtil.listIteratorAtEnd(_servletRequestAttributeListeners); i.hasPrevious();)
             {
-                baseRequest.removeEventListener(listener);
+                baseRequest.removeEventListener(i.previous());
             }
         }
     }
@@ -1070,11 +1071,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
         if (!_contextListeners.isEmpty())
         {
-            for (ContextScopeListener listener : TypeUtil.reverse(_contextListeners))
+            for (ListIterator<ContextScopeListener> i = TypeUtil.listIteratorAtEnd(_contextListeners); i.hasPrevious();)
             {
                 try
                 {
-                    listener.exitScope(_apiContext, request);
+                    i.previous().exitScope(_apiContext, request);
                 }
                 catch (Throwable e)
                 {

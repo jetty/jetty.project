@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
@@ -64,6 +65,7 @@ public class TypeUtil
     public static final int CR = '\r';
     public static final int LF = '\n';
     private static final  Pattern TRAILING_DIGITS = Pattern.compile("^\\D*(\\d+)$");
+    private static final ListIterator<?> EMPTY_LIST_ITERATOR = Collections.EMPTY_LIST.listIterator();
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
 
@@ -174,18 +176,35 @@ public class TypeUtil
     }
 
     /**
-     * <p>Returns a new list with the elements of the specified list in reverse order.</p>
-     * <p>The specified list is not modified, differently from {@link Collections#reverse(List)}.</p>
-     *
-     * @param list the list whose elements are to be reversed
-     * @return a new list with the elements in reverse order
+     * <p>Returns a {@link ListIterator} positioned at the last item in a list</p>
+     * <p>The method is safe for concurrent modifications iff the list iterator itself is safe.</p>
+     * @param list the list
      * @param <T> the element type
+     * @return A {@link ListIterator} with {@link ListIterator#hasNext()} that would have return {@code false}
+     * at the snapshot of the list represented by this call.
      */
-    public static <T> List<T> reverse(List<T> list)
+    public static <T> ListIterator<T> listIteratorAtEnd(List<T> list)
     {
-        List<T> result = new ArrayList<>(list);
-        Collections.reverse(result);
-        return result;
+        try
+        {
+            int size = list.size();
+            if (size == 0)
+            {
+                @SuppressWarnings("unchecked")
+                ListIterator<T> emptyListIterator = (ListIterator<T>)EMPTY_LIST_ITERATOR;
+                return emptyListIterator;
+            }
+            return list.listIterator(size);
+        }
+        catch (IndexOutOfBoundsException e)
+        {
+            // list was concurrently modified, so do this the hard way
+            ListIterator<T> i = list.listIterator();
+            while (i.hasNext())
+                i.next();
+
+            return i;
+        }
     }
 
     /**

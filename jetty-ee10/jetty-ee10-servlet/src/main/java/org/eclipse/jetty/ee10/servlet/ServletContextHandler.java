@@ -31,6 +31,7 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -519,11 +520,11 @@ public class ServletContextHandler extends ContextHandler
                     //Call context listeners
                     Throwable multiException = null;
                     ServletContextEvent event = new ServletContextEvent(getServletContext());
-                    for (ServletContextListener listener : TypeUtil.reverse(_destroyServletContextListeners))
+                    for (ListIterator<ServletContextListener> i = TypeUtil.listIteratorAtEnd(_destroyServletContextListeners); i.hasPrevious();)
                     {
                         try
                         {
-                            callContextDestroyed(listener, event);
+                            callContextDestroyed(i.previous(), event);
                         }
                         catch (Exception x)
                         {
@@ -574,17 +575,17 @@ public class ServletContextHandler extends ContextHandler
         if (!_servletRequestListeners.isEmpty())
         {
             final ServletRequestEvent sre = new ServletRequestEvent(getServletContext(), request);
-            for (ServletRequestListener listener : TypeUtil.reverse(_servletRequestListeners))
+            for (ListIterator<ServletRequestListener> i = TypeUtil.listIteratorAtEnd(_servletRequestListeners); i.hasPrevious();)
             {
-                listener.requestDestroyed(sre);
+                i.previous().requestDestroyed(sre);
             }
         }
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (ServletRequestAttributeListener listener : TypeUtil.reverse(_servletRequestAttributeListeners))
+            for (ListIterator<ServletRequestAttributeListener> i = TypeUtil.listIteratorAtEnd(_servletRequestAttributeListeners); i.hasPrevious();)
             {
-                scopedRequest.removeEventListener(listener);
+                scopedRequest.removeEventListener(i.previous());
             }
         }
     }
@@ -1223,11 +1224,11 @@ public class ServletContextHandler extends ContextHandler
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
         {
-            for (ServletContextScopeListener listener : TypeUtil.reverse(_contextListeners))
+            for (ListIterator<ServletContextScopeListener> i = TypeUtil.listIteratorAtEnd(_contextListeners); i.hasPrevious(); )
             {
                 try
                 {
-                    listener.exitScope(getContext(), scopedRequest);
+                    i.previous().exitScope(getContext(), scopedRequest);
                 }
                 catch (Throwable e)
                 {
