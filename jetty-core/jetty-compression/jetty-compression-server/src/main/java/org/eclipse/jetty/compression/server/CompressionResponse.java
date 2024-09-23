@@ -42,7 +42,7 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
     private final Callback callback;
     private final CompressionConfig config;
     private final Compression compression;
-    private final EncoderSink encoderSink;
+    private EncoderSink encoderSink;
     private AtomicReference<State> state = new AtomicReference<>(State.MIGHT_COMPRESS);
     private boolean last;
 
@@ -52,7 +52,6 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
         this.callback = callback;
         this.config = config;
         this.compression = compression;
-        this.encoderSink = compression.newEncoderSink(wrapped);
     }
 
     @Override
@@ -81,41 +80,48 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        if (state.get() == State.MIGHT_COMPRESS)
+        switch (state.get())
         {
-            boolean compressing = false;
+            case MIGHT_COMPRESS ->
+            {
+                boolean compressing = false;
 
-            HttpField contentTypeField = getHeaders().getField(HttpHeader.CONTENT_TYPE);
-            if (contentTypeField == null)
-            {
-                compressing = state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
-            }
-            else
-            {
-                String mimeType = MimeTypes.getContentTypeWithoutCharset(contentTypeField.getValue());
-                if (config.isMimeTypeCompressible(mimeType))
+                HttpField contentTypeField = getHeaders().getField(HttpHeader.CONTENT_TYPE);
+                if (contentTypeField == null)
                 {
                     compressing = state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
                 }
                 else
                 {
-                    state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
+                    String mimeType = MimeTypes.getContentTypeWithoutCharset(contentTypeField.getValue());
+                    if (config.isMimeTypeCompressible(mimeType))
+                    {
+                        compressing = state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
+                    }
+                    else
+                    {
+                        state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
+                    }
                 }
+
+                if (compressing)
+                {
+                    this.encoderSink = compression.newEncoderSink(getWrapped());
+                    getHeaders().put(compression.getContentEncodingField());
+                }
+
+                this.write(last, content, callback);
             }
-
-            if (compressing)
-                getHeaders().put(compression.getContentEncodingField());
-        }
-
-        if (state.get() == State.COMPRESSING)
-        {
-            encoderSink.write(last, content, callback);
-            if (last)
-                this.last = true;
-        }
-        else
-        {
-            super.write(last, content, callback);
+            case COMPRESSING ->
+            {
+                encoderSink.write(last, content, callback);
+                if (last)
+                    this.last = true;
+            }
+            case NOT_COMPRESSING ->
+            {
+                super.write(last, content, callback);
+            }
         }
     }
 }
