@@ -66,6 +66,86 @@ public class CompressionHandlerTest extends AbstractCompressionTest
 
     /**
      * Testing how CompressionHandler acts with a single compression implementation added.
+     * Configuration is only using {@code compressEncodings} excluding {@code zstd}, and including both
+     * {@code br} and {@code gzip}
+     */
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        # type,    resourceName,     resourceContentType,      requestedPath,              expectedIsCompressed
+        br,        texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        true
+        br,        texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          true
+        br,        texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
+        zstandard, texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        false
+        zstandard, texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          false
+        zstandard, texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          false
+        zstandard, images/logo.png,  image/png,                /images/logo.png,           false
+        zstandard, images/logo.png,  image/png,                /path/deep/images/logo.png, false
+        gzip,      texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        true
+        gzip,      texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          true
+        gzip,      texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
+        """)
+    public void testCompressEncodingsConfig(String compressionType,
+                                    String resourceName,
+                                    String resourceContentType,
+                                    String requestedPath,
+                                    boolean expectedIsCompressed) throws Exception
+    {
+        newCompression(compressionType);
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        byte[] resourceBody = Files.readAllBytes(resourcePath);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.addCompression(compression);
+        CompressionConfig config = CompressionConfig.builder()
+            .compressEncodingInclude("br")
+            .compressEncodingInclude("gzip")
+            .compressEncodingExclude("zstd")
+            .build();
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+            })
+            .path(requestedPath)
+            .send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+        if (expectedIsCompressed)
+        {
+            assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
+            byte[] content = decompress(response.getContent());
+            assertThat(content, is(resourceBody));
+        }
+        else
+        {
+            assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
+            byte[] content = response.getContent();
+            assertThat(content, is(resourceBody));
+        }
+    }
+
+    /**
+     * Testing how CompressionHandler acts with a single compression implementation added.
      * Configuration is only using {@code compressPath} excluding {@code *.png} paths, and including {@code /path/*}
      */
     @ParameterizedTest
@@ -148,7 +228,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
 
     /**
      * Testing how CompressionHandler acts with a single compression implementation added.
-     * Configuration is only using {@code mimeTypes} excluding {@code image/png} paths, and including both
+     * Configuration is only using {@code mimeTypes} excluding {@code image/png}, and including both
      * {@code text/plain} and {@code image/svg+xml}
      */
     @ParameterizedTest
