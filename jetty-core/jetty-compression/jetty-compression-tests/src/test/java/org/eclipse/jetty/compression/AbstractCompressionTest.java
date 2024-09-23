@@ -37,6 +37,7 @@ import org.junit.jupiter.params.provider.Arguments;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class AbstractCompressionTest
 {
@@ -161,14 +162,25 @@ public abstract class AbstractCompressionTest
             assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
     }
 
-    protected void newCompression(Class<Compression> compressionClass) throws Exception
+    protected void newCompression(String compressionType) throws Exception
+    {
+        switch (compressionType)
+        {
+            case "br" -> newCompression(BrotliCompression.class);
+            case "zstandard" -> newCompression(ZstandardCompression.class);
+            case "gzip" -> newCompression(GzipCompression.class);
+            default -> fail("Unrecognized compressionType: " + compressionType);
+        };
+    }
+
+    protected void newCompression(Class<? extends Compression> compressionClass) throws Exception
     {
         compression = compressionClass.getDeclaredConstructor().newInstance();
         pool = new ArrayByteBufferPool.Tracking();
         compression.setByteBufferPool(pool);
     }
 
-    protected void startCompression(Class<Compression> compressionClass, int bufferSize) throws Exception
+    protected void startCompression(Class<? extends Compression> compressionClass, int bufferSize) throws Exception
     {
         newCompression(compressionClass);
         if (bufferSize > 0)
@@ -176,7 +188,7 @@ public abstract class AbstractCompressionTest
         compression.start();
     }
 
-    protected void startCompression(Class<Compression> compressionClass) throws Exception
+    protected void startCompression(Class<? extends Compression> compressionClass) throws Exception
     {
         startCompression(compressionClass, -1);
     }
