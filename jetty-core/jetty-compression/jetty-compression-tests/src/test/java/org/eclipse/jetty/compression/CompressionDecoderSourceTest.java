@@ -141,7 +141,7 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
     {
         startCompression(compressionClass);
 
-        ByteBuffer bytes = asDirect(compress(null));
+        ByteBuffer bytes = asDirect(compress((byte[])null));
         Content.Source compressedSource = Content.Source.from(bytes);
         Content.Source decoderSource = compression.newDecoderSource(compressedSource);
 

@@ -40,6 +40,7 @@ public class CompressionHandler extends Handler.Wrapper
     public static final String HANDLER_ETAGS = CompressionHandler.class.getPackageName() + ".ETag";
 
     private static final Logger LOG = LoggerFactory.getLogger(CompressionHandler.class);
+    // TODO: make into a case-insensitive map
     private final Map<String, Compression> supportedEncodings = new HashMap<>();
     private final PathMappings<CompressionConfig> pathConfigs = new PathMappings<CompressionConfig>();
 
@@ -126,7 +127,7 @@ public class CompressionHandler extends Handler.Wrapper
             {
                 case CONTENT_ENCODING ->
                 {
-                    String contentEncoding = field.getLowerCaseName();
+                    String contentEncoding = field.getValue();
                     if (supportedEncodings.containsKey(contentEncoding))
                         requestContentEncoding = contentEncoding;
                 }

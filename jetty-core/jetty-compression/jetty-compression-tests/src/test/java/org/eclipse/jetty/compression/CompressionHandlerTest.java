@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.compression.server.CompressionConfig;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -44,6 +46,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class CompressionHandlerTest extends AbstractCompressionTest
 {
@@ -85,10 +88,10 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         gzip,      texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
         """)
     public void testCompressEncodingsConfig(String compressionType,
-                                    String resourceName,
-                                    String resourceContentType,
-                                    String requestedPath,
-                                    boolean expectedIsCompressed) throws Exception
+                                            String resourceName,
+                                            String resourceContentType,
+                                            String requestedPath,
+                                            boolean expectedIsCompressed) throws Exception
     {
         newCompression(compressionType);
         Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
@@ -182,90 +185,6 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         CompressionConfig config = CompressionConfig.builder()
             .compressPathInclude("/path/*")
             .compressPathExclude("*.png")
-            .build();
-
-        compressionHandler.putConfiguration("/", config);
-        compressionHandler.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                response.setStatus(200);
-                response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ByteBuffer.wrap(resourceBody), callback);
-                return true;
-            }
-        });
-
-        startServer(compressionHandler);
-
-        URI serverURI = server.getURI();
-        client.getContentDecoderFactories().clear();
-
-        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
-            .method(HttpMethod.GET)
-            .headers((headers) ->
-            {
-                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
-            })
-            .path(requestedPath)
-            .send();
-        dumpResponse(response);
-        assertThat(response.getStatus(), is(200));
-        if (expectedIsCompressed)
-        {
-            assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
-            byte[] content = decompress(response.getContent());
-            assertThat(content, is(resourceBody));
-        }
-        else
-        {
-            assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
-            byte[] content = response.getContent();
-            assertThat(content, is(resourceBody));
-        }
-    }
-
-    /**
-     * Testing how CompressionHandler acts with a single compression implementation added.
-     * Configuration is only using {@code mimeTypes} excluding {@code image/png}, and including both
-     * {@code text/plain} and {@code image/svg+xml}
-     */
-    @ParameterizedTest
-    @CsvSource(textBlock = """
-        # type,    resourceName,     resourceContentType,      requestedPath,              expectedIsCompressed
-        br,        texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        true
-        br,        texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          true
-        br,        texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
-        br,        images/logo.png,  image/png,                /images/logo.png,           false
-        br,        images/logo.png,  image/png,                /path/deep/images/logo.png, false
-        zstandard, texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        true
-        zstandard, texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          true
-        zstandard, texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
-        zstandard, images/logo.png,  image/png,                /images/logo.png,           false
-        zstandard, images/logo.png,  image/png,                /path/deep/images/logo.png, false
-        gzip,      texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        true
-        gzip,      texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          true
-        gzip,      texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
-        gzip,      images/logo.png,  image/png,                /images/logo.png,           false
-        gzip,      images/logo.png,  image/png,                /path/deep/images/logo.png, false
-        """)
-    public void testMimeTypesConfig(String compressionType,
-                                       String resourceName,
-                                       String resourceContentType,
-                                       String requestedPath,
-                                       boolean expectedIsCompressed) throws Exception
-    {
-        newCompression(compressionType);
-        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
-        byte[] resourceBody = Files.readAllBytes(resourcePath);
-
-        CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(compression);
-        CompressionConfig config = CompressionConfig.builder()
-            .mimeTypeInclude("text/plain")
-            .mimeTypeInclude("image/svg+xml")
-            .mimeTypeExclude("image/png")
             .build();
 
         compressionHandler.putConfiguration("/", config);
@@ -427,6 +346,213 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             .send();
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), is("Hello World"));
+    }
+
+    /**
+     * Testing how CompressionHandler acts with a single compression implementation added.
+     * Configuration is only using {@code methods} excluding {@code PUT}, and including both
+     * {@code GET} and {@code POST}
+     */
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        # type,    resourceName,     resourceContentType,      requestMethod, requestedPath
+        br,        texts/quotes.txt, text/plain;charset=utf-8, GET,           /path/to/quotes.txt
+        br,        texts/logo.svg,   image/svg+xml,            POST,          /post/to/
+        br,        texts/long.txt,   text/plain;charset=utf-8, PUT,           /put/to/
+        zstandard, texts/quotes.txt, text/plain;charset=utf-8, GET,           /path/to/quotes.txt
+        zstandard, texts/logo.svg,   image/svg+xml,            POST,          /post/to/
+        zstandard, texts/long.txt,   text/plain;charset=utf-8, PUT,           /put/to/
+        gzip,      texts/quotes.txt, text/plain;charset=utf-8, GET,           /path/to/quotes.txt
+        gzip,      texts/logo.svg,   image/svg+xml,            POST,          /post/to/
+        gzip,      texts/long.txt,   text/plain;charset=utf-8, PUT,           /put/to/
+        """)
+    @Disabled("Need to work out what's going on with decompression of request body")
+    public void testMethodsConfig(String compressionType,
+                                  String resourceName,
+                                  String resourceContentType,
+                                  String requestMethod,
+                                  String requestedPath) throws Exception
+    {
+        newCompression(compressionType);
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        byte[] resourceBody = Files.readAllBytes(resourcePath);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.addCompression(compression);
+        CompressionConfig config = CompressionConfig.builder()
+            .methodInclude("GET")
+            .methodInclude("POST")
+            .methodExclude("PUT")
+            .compressPathExclude("/*") // don't compress the responses
+            .build();
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                switch (request.getMethod())
+                {
+                    case "GET" ->
+                    {
+                        response.setStatus(200);
+                        response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                        response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                    }
+                    case "PUT", "POST" ->
+                    {
+                        ByteBuffer requestContent = Content.Source.asByteBuffer(request);
+                        response.setStatus(200);
+                        response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                        response.getHeaders().put("X-Request-Content-Length", requestContent.remaining());
+                        response.write(true, requestContent, callback);
+                    }
+                }
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        org.eclipse.jetty.client.Request request = client.newRequest(serverURI.getHost(), serverURI.getPort());
+        switch (requestMethod)
+        {
+            case "GET" ->
+            {
+                request.method(HttpMethod.GET)
+                    .headers((headers) ->
+                    {
+                        headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+                    });
+            }
+            case "POST" ->
+            {
+                byte[] compressed = compress(resourceBody);
+                request.method(HttpMethod.POST)
+                    .headers((headers) ->
+                    {
+                        headers.put(HttpHeader.CONTENT_ENCODING, compression.getEncodingName());
+                    })
+                    .body(new BytesRequestContent(resourceContentType, compressed));
+            }
+            case "PUT" ->
+            {
+                byte[] compressed = compress(resourceBody);
+                request.method(HttpMethod.PUT)
+                    .headers((headers) ->
+                    {
+                        headers.put(HttpHeader.CONTENT_ENCODING, compression.getEncodingName());
+                    })
+                    .body(new BytesRequestContent(resourceContentType, compressed));
+            }
+            default ->
+            {
+                fail("Unhandled request method: " + requestMethod);
+            }
+        }
+
+        ContentResponse response = request.path(requestedPath).send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+
+        assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
+        switch (requestMethod)
+        {
+            case "POST", "PUT" ->
+            {
+                assertThat("Original Request Content Length", response.getHeaders().get("X-Request-Content-Length"), is(resourceBody.length));
+            }
+        }
+        byte[] content = response.getContent();
+        assertThat(content, is(resourceBody));
+    }
+
+    /**
+     * Testing how CompressionHandler acts with a single compression implementation added.
+     * Configuration is only using {@code mimeTypes} excluding {@code image/png}, and including both
+     * {@code text/plain} and {@code image/svg+xml}
+     */
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        # type,    resourceName,     resourceContentType,      requestedPath,              expectedIsCompressed
+        br,        texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        true
+        br,        texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          true
+        br,        texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
+        br,        images/logo.png,  image/png,                /images/logo.png,           false
+        br,        images/logo.png,  image/png,                /path/deep/images/logo.png, false
+        zstandard, texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        true
+        zstandard, texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          true
+        zstandard, texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
+        zstandard, images/logo.png,  image/png,                /images/logo.png,           false
+        zstandard, images/logo.png,  image/png,                /path/deep/images/logo.png, false
+        gzip,      texts/quotes.txt, text/plain;charset=utf-8, /path/to/quotes.txt,        true
+        gzip,      texts/logo.svg,   image/svg+xml,            /path/to/logo.svg,          true
+        gzip,      texts/long.txt,   text/plain;charset=utf-8, /path/to/long.txt,          true
+        gzip,      images/logo.png,  image/png,                /images/logo.png,           false
+        gzip,      images/logo.png,  image/png,                /path/deep/images/logo.png, false
+        """)
+    public void testMimeTypesConfig(String compressionType,
+                                       String resourceName,
+                                       String resourceContentType,
+                                       String requestedPath,
+                                       boolean expectedIsCompressed) throws Exception
+    {
+        newCompression(compressionType);
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        byte[] resourceBody = Files.readAllBytes(resourcePath);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.addCompression(compression);
+        CompressionConfig config = CompressionConfig.builder()
+            .mimeTypeInclude("text/plain")
+            .mimeTypeInclude("image/svg+xml")
+            .mimeTypeExclude("image/png")
+            .build();
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+            })
+            .path(requestedPath)
+            .send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+        if (expectedIsCompressed)
+        {
+            assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
+            byte[] content = decompress(response.getContent());
+            assertThat(content, is(resourceBody));
+        }
+        else
+        {
+            assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
+            byte[] content = response.getContent();
+            assertThat(content, is(resourceBody));
+        }
     }
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)

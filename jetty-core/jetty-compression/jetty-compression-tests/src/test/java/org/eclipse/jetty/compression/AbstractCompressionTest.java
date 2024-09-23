@@ -107,7 +107,7 @@ public abstract class AbstractCompressionTest
      * @return the compressed bytes
      * @throws IOException if unable to compress input data
      */
-    public byte[] compress(String data) throws IOException
+    public byte[] compress(byte[] data) throws IOException
     {
         Assertions.assertNotNull(compression, "Compression implementation not started yet");
 
@@ -115,10 +115,22 @@ public abstract class AbstractCompressionTest
              OutputStream output = compression.newEncoderOutputStream(bytesOut))
         {
             if (data != null)
-                output.write(data.getBytes(UTF_8));
+                output.write(data);
             output.close();
             return bytesOut.toByteArray();
         }
+    }
+
+    /**
+     * Generate compressed bytes using Compression specific OutputStream
+     *
+     * @param data the data to compress
+     * @return the compressed bytes
+     * @throws IOException if unable to compress input data
+     */
+    public byte[] compress(String data) throws IOException
+    {
+        return compress(data.getBytes(UTF_8));
     }
 
     /**
