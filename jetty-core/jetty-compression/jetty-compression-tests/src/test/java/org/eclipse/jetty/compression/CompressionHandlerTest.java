@@ -148,7 +148,8 @@ public class CompressionHandlerTest extends AbstractCompressionTest
 
     /**
      * Testing how CompressionHandler acts with a single compression implementation added.
-     * Configuration is only using {@code compressPath} excluding {@code *.png} paths, and including {@code /path/*}
+     * Configuration is only using {@code mimeTypes} excluding {@code image/png} paths, and including both
+     * {@code text/plain} and {@code image/svg+xml}
      */
     @ParameterizedTest
     @CsvSource(textBlock = """
