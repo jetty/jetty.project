@@ -14,9 +14,13 @@
 package org.eclipse.jetty.compression.server;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.EncoderSink;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -28,10 +32,18 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
 {
     private static final Logger LOG = LoggerFactory.getLogger(CompressionResponse.class);
 
+    enum State
+    {
+        MIGHT_COMPRESS,
+        NOT_COMPRESSING,
+        COMPRESSING
+    }
+
     private final Callback callback;
     private final CompressionConfig config;
     private final Compression compression;
     private final EncoderSink encoderSink;
+    private AtomicReference<State> state = new AtomicReference<>(State.MIGHT_COMPRESS);
     private boolean last;
 
     public CompressionResponse(Compression compression, Request request, Response wrapped, Callback callback, CompressionConfig config)
@@ -41,7 +53,6 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
         this.config = config;
         this.compression = compression;
         this.encoderSink = compression.newEncoderSink(wrapped);
-        getHeaders().put(compression.getContentEncodingField());
     }
 
     @Override
@@ -70,13 +81,41 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        // TODO: on response commit, determine if response Content-Type is an allowed
-        // to be compressed type based on the CompressionConfig.mimeType settings.
-        // We need to modify the response headers before commit to know if we
-        // allow compression (or not).
+        if (state.get() == State.MIGHT_COMPRESS)
+        {
+            boolean compressing = false;
 
-        encoderSink.write(last, content, callback);
-        if (last)
-            this.last = true;
+            HttpField contentTypeField = getHeaders().getField(HttpHeader.CONTENT_TYPE);
+            if (contentTypeField == null)
+            {
+                compressing = state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
+            }
+            else
+            {
+                String mimeType = MimeTypes.getContentTypeWithoutCharset(contentTypeField.getValue());
+                if (config.isMimeTypeCompressible(mimeType))
+                {
+                    compressing = state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
+                }
+                else
+                {
+                    state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
+                }
+            }
+
+            if (compressing)
+                getHeaders().put(compression.getContentEncodingField());
+        }
+
+        if (state.get() == State.COMPRESSING)
+        {
+            encoderSink.write(last, content, callback);
+            if (last)
+                this.last = true;
+        }
+        else
+        {
+            super.write(last, content, callback);
+        }
     }
 }
