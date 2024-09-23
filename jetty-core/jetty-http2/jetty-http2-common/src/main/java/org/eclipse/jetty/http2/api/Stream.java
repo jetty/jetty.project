@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
@@ -432,6 +433,15 @@ public interface Stream
          */
         public default void onClosed(Stream stream)
         {
+        }
+
+        interface NonBlocking extends Listener, Invocable
+        {
+            @Override
+            default InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
         }
     }
 

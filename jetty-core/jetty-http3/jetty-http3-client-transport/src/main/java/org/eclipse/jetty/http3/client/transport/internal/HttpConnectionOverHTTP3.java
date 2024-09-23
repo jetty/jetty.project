@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,5 +163,10 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
         if (super.onIdleTimeout(idleTimeout, failure))
             close(failure);
         return false;
+    }
+
+    Invocable.InvocationType getInvocationType()
+    {
+        return getHttpClient().getTransport().getInvocationType(this);
     }
 }

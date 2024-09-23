@@ -46,11 +46,14 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Attachable;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,10 +62,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
+    private final SerializedInvoker invoker = new SerializedInvoker(HTTP2Stream.class);
     private final Deque<Data> dataQueue = new ArrayDeque<>(1);
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
+    private final Runnable notifyAndProcessData = this::notifyAndProcessData;
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final long creationNanoTime = NanoTime.now();
@@ -81,6 +86,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private boolean committed;
     private long idleTimeout;
     private long expireNanoTime = Long.MAX_VALUE;
+    private boolean eof;
 
     public HTTP2Stream(HTTP2Session session, int streamId, MetaData.Request request, boolean local)
     {
@@ -310,14 +316,22 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         if (LOG.isDebugEnabled())
             LOG.debug("Idle timeout {}ms expired on {}", getIdleTimeout(), this);
 
-        // Notify the application.
-        notifyIdleTimeout(this, timeout, Promise.from(timedOut ->
+        Runnable task = invoker.offer(() ->
         {
-            if (timedOut)
-                reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            else
-                notIdle();
-        }, x -> reset(new ResetFrame(getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Notifying idle timeout expired on {}", this);
+
+            notifyIdleTimeout(this, timeout, Promise.from(timedOut ->
+            {
+                if (timedOut)
+                    reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                else
+                    notIdle();
+            }, x -> reset(new ResetFrame(getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
+        });
+
+        if (task != null)
+            session.offerTask(new ReadyTask(getApplicationInvocationType(), task));
     }
 
     private ConcurrentMap<String, Object> attributes()
@@ -327,9 +341,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             map = new ConcurrentHashMap<>();
             if (!attributes.compareAndSet(null, map))
-            {
                 map = attributes.get();
-            }
         }
         return map;
     }
@@ -376,49 +388,79 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
-        boolean offered = false;
         MetaData metaData = frame.getMetaData();
-        boolean isTrailer = !metaData.isRequest() && !metaData.isResponse();
-        if (isTrailer)
-        {
-            // In case of trailers, notify first and then offer EOF to
-            // avoid race conditions due to concurrent calls to readData().
-            boolean closed = updateClose(true, CloseState.Event.RECEIVED);
-            notifyHeaders(this, frame);
-            if (closed)
-                getSession().removeStream(this);
-            // Offer EOF in case the application calls readData() or demand().
-            offered = offer(Data.eof(getId()));
-        }
-        else
+        if (metaData.isRequest() || metaData.isResponse())
         {
             HttpFields fields = metaData.getHttpFields();
             long length = -1;
             if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length;
-
-            if (frame.isEndStream())
-            {
-                // Offer EOF for either the request or the response in
-                // case the application calls readData() or demand().
-                offered = offer(Data.eof(getId()));
-            }
-
-            // Requests are notified to a Session.Listener, here only notify responses.
-            if (metaData.isResponse())
-            {
-                boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
-                notifyHeaders(this, frame);
-                if (closed)
-                    getSession().removeStream(this);
-            }
         }
 
-        if (offered)
-            processData();
+        if (metaData.isRequest())
+            onRequest(frame, callback);
+        else if (metaData.isResponse())
+            onResponse(frame, callback);
+        else
+            onTrailers(frame, callback);
+    }
 
+    private void onRequest(HeadersFrame frame, Callback callback)
+    {
+        if (frame.isEndStream())
+            offer(Data.eof(getId()));
         callback.succeeded();
+    }
+
+    private void onResponse(HeadersFrame frame, Callback callback)
+    {
+        if (frame.isEndStream())
+            offer(Data.eof(getId()));
+
+        processHeaders(frame, callback);
+    }
+
+    private void processHeaders(HeadersFrame frame, Callback callback)
+    {
+        Runnable task = invoker.offer(() ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Notifying {} on {}", frame, this);
+
+            boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+            notifyHeaders(this, frame);
+            if (closed)
+                getSession().removeStream(this);
+
+            callback.succeeded();
+        });
+
+        if (task != null)
+            session.offerTask(new ReadyTask(getApplicationInvocationType(), task));
+    }
+
+    private void onTrailers(HeadersFrame frame, Callback callback)
+    {
+        boolean noData;
+        try (AutoLock ignored = lock.lock())
+        {
+            noData = dataQueue.isEmpty();
+        }
+
+        Data data;
+        if (noData)
+        {
+            // There was no data, or it has been read already.
+            processHeaders(frame, callback);
+            data = Data.eof(getId());
+        }
+        else
+        {
+            data = new Trailers(frame, callback);
+        }
+        if (offer(data))
+            processData();
     }
 
     private void onData(Data data)
@@ -468,7 +510,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         boolean process;
         try (AutoLock ignored = lock.lock())
         {
-            process = dataQueue.isEmpty() && dataDemand;
+            process = dataDemand && dataQueue.isEmpty();
             dataQueue.offer(data);
         }
         if (LOG.isDebugEnabled())
@@ -482,11 +524,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         Data data;
         try (AutoLock ignored = lock.lock())
         {
-            if (dataQueue.isEmpty())
-                return null;
+            if (eof)
+                return Data.eof(getId());
+
             data = dataQueue.poll();
-            if (data.frame().isEndStream())
-                dataQueue.offer(Data.eof(getId()));
+            if (data == null)
+                return null;
+
+            eof = data.frame().isEndStream();
         }
 
         if (updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED))
@@ -502,6 +547,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         // memory beyond the flow control window, without copying them.
         session.dataConsumed(this, data.frame().flowControlLength());
 
+        if (data instanceof Trailers trailers)
+        {
+            processHeaders(trailers.frame, trailers.callback);
+            return null;
+        }
+
         return data;
     }
 
@@ -512,7 +563,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         try (AutoLock ignored = lock.lock())
         {
             dataDemand = true;
-            if (dataStalled && !dataQueue.isEmpty())
+            if (dataStalled && (eof || !dataQueue.isEmpty()))
             {
                 dataStalled = false;
                 process = true;
@@ -526,22 +577,31 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     public void processData()
     {
-        while (true)
+        try (AutoLock ignored = lock.lock())
         {
-            try (AutoLock ignored = lock.lock())
+            if (!dataDemand || (dataQueue.isEmpty() && !eof))
             {
-                if (dataQueue.isEmpty() || !dataDemand)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Stalling data processing for {}", this);
-                    dataStalled = true;
-                    return;
-                }
-                dataDemand = false;
-                dataStalled = false;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Stalling data processing for {}", this);
+                dataStalled = true;
+                return;
             }
-            notifyDataAvailable(this);
+            dataDemand = false;
+            dataStalled = false;
         }
+
+        // Notify the application that there is data available.
+        Runnable task = invoker.offer(notifyAndProcessData);
+        if (task != null)
+            session.offerTask(new ReadyTask(getApplicationInvocationType(), task));
+    }
+
+    private void notifyAndProcessData()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Notifying data available on {}", this);
+        notifyDataAvailable(this);
+        processData();
     }
 
     private boolean hasDemand()
@@ -579,13 +639,24 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             failure = new EofException("reset");
             flowControlLength = drain();
         }
+        session.dataConsumed(this, flowControlLength);
         close();
         boolean removed = session.removeStream(this);
-        session.dataConsumed(this, flowControlLength);
         if (removed)
-            notifyReset(this, frame, callback);
+        {
+            Runnable task = invoker.offer(() ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Notifying {} on {}", frame, this);
+                notifyReset(this, frame, callback);
+            });
+            if (task != null)
+                session.offerTask(new ReadyTask(getApplicationInvocationType(), task));
+        }
         else
+        {
             callback.succeeded();
+        }
     }
 
     private void onPush(PushPromiseFrame frame, Callback callback)
@@ -613,9 +684,20 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         boolean removed = session.removeStream(this);
         session.dataConsumed(this, flowControlLength);
         if (removed)
-            notifyFailure(this, frame, callback);
+        {
+            Runnable task = invoker.offer(() ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Notifying failure on {}", this, frame.getFailure());
+                notifyFailure(this, frame, callback);
+            });
+            if (task != null)
+                session.offerTask(new ReadyTask(getApplicationInvocationType(), task));
+        }
         else
+        {
             callback.succeeded();
+        }
     }
 
     private int drain()
@@ -630,11 +712,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             data.release();
             DataFrame frame = data.frame();
             length += frame.flowControlLength();
-            if (frame.isEndStream())
-            {
-                dataQueue.offer(Data.eof(getId()));
-                break;
-            }
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Drained {} bytes for {}", length, this);
@@ -741,6 +818,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 }
             }
         }
+    }
+
+    private InvocationType getApplicationInvocationType()
+    {
+        return Invocable.getInvocationType(getListener());
     }
 
     public int getSendWindow()
@@ -1030,6 +1112,19 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         public List<StreamFrame> getFrames()
         {
             return frames;
+        }
+    }
+
+    private class Trailers extends Data
+    {
+        private final HeadersFrame frame;
+        private final Callback callback;
+
+        private Trailers(HeadersFrame frame, Callback callback)
+        {
+            super(new DataFrame(getId(), BufferUtil.EMPTY_BUFFER, true));
+            this.frame = frame;
+            this.callback = callback;
         }
     }
 }

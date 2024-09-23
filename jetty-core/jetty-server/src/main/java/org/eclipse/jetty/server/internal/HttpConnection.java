@@ -88,6 +88,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
     private static final AtomicLong __connectionIdGenerator = new AtomicLong();
 
+    private final Callback fillableCallback = new FillableCallback();
     private final TunnelSupport _tunnelSupport = new TunnelSupportOverHTTP1();
     private final AtomicLong _streamIdGenerator = new AtomicLong();
     private final long _id;
@@ -152,12 +153,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _parser = newHttpParser(configuration.getHttpCompliance());
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
-    }
-
-    @Override
-    public InvocationType getInvocationType()
-    {
-        return getServer().getInvocationType();
     }
 
     /**
@@ -456,7 +451,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     assert isRequestBufferEmpty();
                     releaseRequestBuffer();
-                    fillInterested();
+                    setFillInterest();
                     break;
                 }
                 else if (filled < 0)
@@ -603,7 +598,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     }
 
     @Override
-    protected void onFillInterestedFailed(Throwable cause)
+    public void onFillInterestedFailed(Throwable cause)
     {
         _parser.close();
         super.onFillInterestedFailed(cause);
@@ -634,20 +629,20 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         super.onOpen();
         if (isRequestBufferEmpty())
-            fillInterested();
+            setFillInterest();
         else
             getExecutor().execute(this);
+    }
+
+    private void setFillInterest()
+    {
+        fillInterested(fillableCallback);
     }
 
     @Override
     public void run()
     {
         onFillable();
-    }
-
-    public void asyncReadFillInterested()
-    {
-        getEndPoint().tryFillInterested(_demandContentCallback);
     }
 
     @Override
@@ -1666,6 +1661,27 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public String getReason()
         {
             return getMessage();
+        }
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getServer().getInvocationType();
         }
     }
 }

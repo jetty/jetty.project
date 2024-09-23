@@ -36,7 +36,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
             HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
             boolean setFillInterest = httpConnection.parseAndFill(true);
             if (!hasContent() && setFillInterest)
-                httpConnection.fillInterested();
+                fillInterested(httpConnection);
         }
         else
         {
@@ -86,7 +86,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         if (chunk != null)
             return chunk;
         if (needFillInterest && fillInterestIfNeeded)
-            httpConnection.fillInterested();
+            fillInterested(httpConnection);
         return null;
     }
 
@@ -138,7 +138,12 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
         boolean setFillInterest = httpConnection.parseAndFill(true);
         if (!hasContent() && setFillInterest)
-            httpConnection.fillInterested();
+            fillInterested(httpConnection);
+    }
+
+    private void fillInterested(HttpConnectionOverFCGI httpConnection)
+    {
+        httpConnection.setFillInterest();
     }
 
     @Override

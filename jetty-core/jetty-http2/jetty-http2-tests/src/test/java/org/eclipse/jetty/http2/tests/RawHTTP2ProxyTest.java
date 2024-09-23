@@ -158,7 +158,7 @@ public class RawHTTP2ProxyTest
             {
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug("SERVER1 received {}", frame);
-                return new Stream.Listener()
+                return new Stream.Listener.NonBlocking()
                 {
                     @Override
                     public void onHeaders(Stream stream, HeadersFrame frame)
@@ -192,7 +192,7 @@ public class RawHTTP2ProxyTest
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug("SERVER2 received {}", frame);
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Listener.NonBlocking()
                 {
                     @Override
                     public void onDataAvailable(Stream stream)
@@ -232,83 +232,89 @@ public class RawHTTP2ProxyTest
         Server proxyServer = startServer("proxyServer", new ClientToProxySessionListener(proxyClient));
         ServerConnector proxyConnector = (ServerConnector)proxyServer.getAttribute("connector");
         InetSocketAddress proxyAddress = new InetSocketAddress("localhost", proxyConnector.getLocalPort());
-        HTTP2Client client = startClient("client");
 
-        Session clientSession = client.connect(proxyAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
-
-        // Send a request with trailers for server1.
-        HttpFields.Mutable fields1 = HttpFields.build();
-        fields1.put("X-Target", String.valueOf(connector1.getLocalPort()));
-        MetaData.Request request1 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields1);
-        CountDownLatch latch1 = new CountDownLatch(1);
-        Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener()
+        try (HTTP2Client client = startClient("client"))
         {
-            private final RetainableByteBuffer.DynamicCapacity aggregator = new RetainableByteBuffer.DynamicCapacity(client.getByteBufferPool(), true, data1.length * 2);
+            Session clientSession = client.connect(proxyAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
 
-            @Override
-            public void onHeaders(Stream stream, HeadersFrame frame)
+            // Send a request with trailers for server1.
+            HttpFields.Mutable fields1 = HttpFields.build();
+            fields1.put("X-Target", String.valueOf(connector1.getLocalPort()));
+            MetaData.Request request1 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields1);
+            CountDownLatch latch1 = new CountDownLatch(1);
+            Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener.NonBlocking()
             {
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT1 received {}", frame);
-                stream.demand();
-            }
+                private final RetainableByteBuffer.DynamicCapacity aggregator = new RetainableByteBuffer.DynamicCapacity(client.getByteBufferPool(), true, data1.length * 2);
 
-            @Override
-            public void onDataAvailable(Stream stream)
-            {
-                Stream.Data data = stream.readData();
-                DataFrame frame = data.frame();
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT1 received {}", frame);
-                assertTrue(aggregator.append(frame.getByteBuffer()));
-                data.release();
-                if (!data.frame().isEndStream())
+                @Override
+                public void onHeaders(Stream stream, HeadersFrame frame)
                 {
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("CLIENT1 received {}", frame);
                     stream.demand();
-                    return;
                 }
-                RetainableByteBuffer buffer = aggregator.take();
-                assertNotNull(buffer);
-                assertEquals(buffer1.slice(), buffer.getByteBuffer());
-                buffer.release();
-                latch1.countDown();
-            }
-        }).get(5, TimeUnit.SECONDS);
-        stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY), null, true), Callback.NOOP);
 
-        // Send a request for server2.
-        HttpFields.Mutable fields2 = HttpFields.build();
-        fields2.put("X-Target", String.valueOf(connector2.getLocalPort()));
-        MetaData.Request request2 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields2);
-        CountDownLatch latch2 = new CountDownLatch(1);
-        Stream stream2 = clientSession.newStream(new HeadersFrame(request2, null, false), new Stream.Listener()
-        {
-            @Override
-            public void onHeaders(Stream stream, HeadersFrame frame)
+                @Override
+                public void onDataAvailable(Stream stream)
+                {
+                    Stream.Data data = stream.readData();
+                    DataFrame frame = data.frame();
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("CLIENT1 received {}", frame);
+                    assertTrue(aggregator.append(frame.getByteBuffer()));
+                    data.release();
+                    if (!data.frame().isEndStream())
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    RetainableByteBuffer buffer = aggregator.take();
+                    assertNotNull(buffer);
+                    assertEquals(buffer1.slice(), buffer.getByteBuffer());
+                    buffer.release();
+                    latch1.countDown();
+                }
+            }).get(5, TimeUnit.SECONDS);
+            stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY), null, true), Callback.NOOP);
+
+            // Send a request for server2.
+            HttpFields.Mutable fields2 = HttpFields.build();
+            fields2.put("X-Target", String.valueOf(connector2.getLocalPort()));
+            MetaData.Request request2 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields2);
+            CountDownLatch latch2 = new CountDownLatch(1);
+            Stream stream2 = clientSession.newStream(new HeadersFrame(request2, null, false), new Stream.Listener.NonBlocking()
             {
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT2 received {}", frame);
-                if (frame.isEndStream())
-                    latch2.countDown();
-                else
-                    stream.demand();
-            }
+                @Override
+                public void onHeaders(Stream stream, HeadersFrame frame)
+                {
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("CLIENT2 received {}", frame);
+                    if (frame.isEndStream())
+                        latch2.countDown();
+                    else
+                        stream.demand();
+                }
 
-            @Override
-            public void onDataAvailable(Stream stream)
-            {
-                Stream.Data data = stream.readData();
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT2 received {}", data.frame());
-                data.release();
-                if (!data.frame().isEndStream())
+                @Override
+                public void onDataAvailable(Stream stream)
+                {
+                    Stream.Data data = stream.readData();
+                    if (LOGGER.isDebugEnabled())
+                        LOGGER.debug("CLIENT2 received {}", data);
+                    if (data != null)
+                    {
+                        data.release();
+                        if (data.frame().isEndStream())
+                            return;
+                    }
                     stream.demand();
-            }
-        }).get(5, TimeUnit.SECONDS);
-        stream2.data(new DataFrame(stream2.getId(), buffer1.slice(), true), Callback.NOOP);
+                }
+            }).get(5, TimeUnit.SECONDS);
+            stream2.data(new DataFrame(stream2.getId(), buffer1.slice(), true), Callback.NOOP);
 
-        assertTrue(latch1.await(5, TimeUnit.SECONDS));
-        assertTrue(latch2.await(5, TimeUnit.SECONDS));
+            assertTrue(latch1.await(5, TimeUnit.SECONDS));
+            assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        }
     }
 
     private static class ClientToProxySessionListener implements ServerSessionListener
@@ -364,7 +370,7 @@ public class RawHTTP2ProxyTest
         }
     }
 
-    private static class ClientToProxyToServer extends IteratingCallback implements Stream.Listener
+    private static class ClientToProxyToServer extends IteratingCallback implements Stream.Listener.NonBlocking
     {
         private final AutoLock lock = new AutoLock();
         private final Map<Stream, Deque<FrameInfo>> frames = new HashMap<>();
@@ -376,6 +382,7 @@ public class RawHTTP2ProxyTest
         private Session proxyToServerSession;
         private FrameInfo frameInfo;
         private Stream clientToProxyStream;
+        private boolean eof;
 
         private ClientToProxyToServer(String host, int port, HTTP2Client client)
         {
@@ -529,7 +536,10 @@ public class RawHTTP2ProxyTest
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS:{} received {} on {}", port, frame, stream);
-            offer(stream, frame, NOOP, false);
+            if (eof)
+                return;
+            eof = frame.isEndStream();
+            offer(stream, frame, Callback.NOOP, false);
             if (!frame.isEndStream())
                 stream.demand();
         }
@@ -547,9 +557,20 @@ public class RawHTTP2ProxyTest
             Stream.Data data = stream.readData();
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS:{} read {} on {}", port, data, stream);
-            offer(stream, data.frame(), Callback.from(data::release), false);
-            if (!data.frame().isEndStream())
-                stream.demand();
+            if (data != null)
+            {
+                if (eof)
+                {
+                    data.release();
+                    return;
+                }
+                DataFrame frame = data.frame();
+                eof = frame.isEndStream();
+                offer(stream, frame, Callback.from(data::release), false);
+                if (frame.isEndStream())
+                    return;
+            }
+            stream.demand();
         }
 
         @Override
@@ -601,7 +622,7 @@ public class RawHTTP2ProxyTest
         }
     }
 
-    private static class ServerToProxyToClient extends IteratingCallback implements Stream.Listener
+    private static class ServerToProxyToClient extends IteratingCallback implements Stream.Listener.NonBlocking
     {
         private final AutoLock lock = new AutoLock();
         private final Map<Stream, Deque<FrameInfo>> frames = new HashMap<>();
@@ -609,6 +630,7 @@ public class RawHTTP2ProxyTest
         private final int port;
         private FrameInfo frameInfo;
         private Stream serverToProxyStream;
+        private boolean eof;
 
         private ServerToProxyToClient(int port)
         {
@@ -695,7 +717,10 @@ public class RawHTTP2ProxyTest
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC:{} received {} on {}", port, frame, stream);
-            offer(stream, frame, NOOP);
+            if (eof)
+                return;
+            eof = frame.isEndStream();
+            offer(stream, frame, Callback.NOOP);
             if (!frame.isEndStream())
                 stream.demand();
         }
@@ -715,9 +740,20 @@ public class RawHTTP2ProxyTest
             Stream.Data data = stream.readData();
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC:{} read {} on {}", port, data, stream);
-            offer(stream, data.frame(), Callback.from(data::release));
-            if (!data.frame().isEndStream())
-                stream.demand();
+            if (data != null)
+            {
+                if (eof)
+                {
+                    data.release();
+                    return;
+                }
+                DataFrame frame = data.frame();
+                eof = frame.isEndStream();
+                offer(stream, frame, Callback.from(data::release));
+                if (frame.isEndStream())
+                    return;
+            }
+            stream.demand();
         }
 
         @Override
