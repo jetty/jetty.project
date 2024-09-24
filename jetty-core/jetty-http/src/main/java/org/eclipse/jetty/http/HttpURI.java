@@ -954,6 +954,21 @@ public interface HttpURI
             return _violations == null ? Collections.emptySet() : Collections.unmodifiableCollection(_violations);
         }
 
+        /**
+         * Clear, from the violations list, any path related violations.
+         */
+        private void clearPathViolations()
+        {
+            if (_violations == null)
+                return;
+            _violations.removeIf((violation) ->
+                    (violation == Violation.AMBIGUOUS_PATH_PARAMETER) ||
+                    (violation == Violation.AMBIGUOUS_PATH_SEGMENT) ||
+                    (violation == Violation.AMBIGUOUS_PATH_SEPARATOR) ||
+                    (violation == Violation.AMBIGUOUS_PATH_ENCODING) ||
+                    (violation == Violation.AMBIGUOUS_EMPTY_SEGMENT));
+        }
+
         public Mutable normalize()
         {
             HttpScheme scheme = _scheme == null ? null : HttpScheme.CACHE.get(_scheme);
@@ -994,6 +1009,8 @@ public interface HttpURI
                 throw new IllegalArgumentException("Relative path with authority");
             if (!URIUtil.isPathValid(path))
                 throw new IllegalArgumentException("Path not correctly encoded: " + path);
+            // since we are resetting the path, lets clear out the path specific violations.
+            clearPathViolations();
             _uri = null;
             _path = null;
             _canonicalPath = null;
@@ -1016,6 +1033,8 @@ public interface HttpURI
         {
             if (hasAuthority() && !isPathValidForAuthority(pathQuery))
                 throw new IllegalArgumentException("Relative path with authority");
+            // since we are resetting the path, lets clear out the path specific violations.
+            clearPathViolations();
             _uri = null;
             _path = null;
             _canonicalPath = null;
