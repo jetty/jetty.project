@@ -608,6 +608,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         if (_httpChannel.getRequest() == null)
             return true;
         Runnable task = _httpChannel.onIdleTimeout(timeout);
+
+        // TODO should we run the task directly here, even though that may block the scheduler?
+        //      This may be preferable to not running an idle task that might free a thread in a fully consumed
+        //      thread pool
         if (task != null)
             getExecutor().execute(task);
         return false; // We've handle the exception

@@ -1164,14 +1164,15 @@ public class HttpChannelState implements HttpChannel, Components
         private Runnable lockedFailWrite(Throwable x)
         {
             assert _request._lock.isHeldByCurrentThread();
-            Callback writeCallback = _writeCallback;
-            _writeCallback = null;
-            if (writeCallback == null)
-                return null;
+            // We always record the failure here, so even if there is no write, subsequent writes will fail.
             if (_writeFailure == null)
                 _writeFailure = x;
             else
                 ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
+            Callback writeCallback = _writeCallback;
+            _writeCallback = null;
+            if (writeCallback == null)
+                return null;
             return () -> HttpChannelState.failed(writeCallback, x);
         }
 
