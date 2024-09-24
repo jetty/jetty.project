@@ -61,6 +61,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
@@ -163,11 +164,32 @@ public class AsyncMiddleManServletTest
     }
 
     @AfterEach
-    public void dispose() throws Exception
+    public void dispose()
     {
         LifeCycle.stop(client);
         LifeCycle.stop(proxy);
-        LifeCycle.stop(proxy);
+        LifeCycle.stop(server);
+    }
+
+    @Test
+    public void testExpect100WithBody() throws Exception
+    {
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet());
+        startClient();
+
+        for (int i = 0; i < 100; i++)
+        {
+            String body = Character.toString('a' + (i % 26)); // only use 'a' to 'z'
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .path("/" + body)
+                .headers(h -> h.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
+                .timeout(5, TimeUnit.SECONDS)
+                .body(new StringRequestContent(body))
+                .send();
+            assertEquals(200, response.getStatus());
+            assertEquals(body, response.getContentAsString());
+        }
     }
 
     @Test
