@@ -269,132 +269,132 @@ public class PathResponseListenerTest
         }
     }
     
-//    @Test
-//    public void testZeroFileDownloadCompletable() throws Exception
-//    {   
-//        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
-//        {   
-//            deleteFiles(ORIGIN_ZERO_FILE, RESPONSE_ZERO_FILE);
-//            createZeroFile();
-//            
-//            client.start();
-//            
-//            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_ZERO_FILE.getFileName().toString());
-//            
-//            Request request = client.newRequest(url.toURI().toString());
-//            
-//            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_ZERO_FILE);
-//            completable.thenAccept(path -> 
-//            {
-//                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
-//                    InputStream originFile = Files.newInputStream(ORIGIN_ZERO_FILE, StandardOpenOption.READ)
-//                   )
-//               {   
-//                   origDigest.update(originFile.readAllBytes());
-//                   respDigest.update(responseFile.readAllBytes());
-//                   
-//                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
-//               }
-//                catch (IOException e)
-//                {
-//                    e.printStackTrace();
-//                }
-//            });
-//            completable.get();
-//        } 
-//        catch (Exception e) 
-//        {
-//            throw e;
-//        }
-//        finally
-//        {
-//            deleteFiles(ORIGIN_ZERO_FILE, RESPONSE_ZERO_FILE);
-//        }
-//    }
-//    
-//    @Test
-//    public void testSmallFileDownloadCompletable() throws Exception
-//    {   
-//        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
-//        {   
-//            deleteFiles(ORIGIN_SMALL_FILE, RESPONSE_SMALL_FILE);
-//            createSmallFile();
-//            
-//            client.start();
-//            
-//            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_SMALL_FILE.getFileName().toString());
-//            
-//            Request request = client.newRequest(url.toURI().toString());
-//            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_SMALL_FILE);
-////          
-//            completable.thenAccept(path -> 
-//            {
-//                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
-//                    InputStream originFile = Files.newInputStream(ORIGIN_SMALL_FILE, StandardOpenOption.READ)
-//                   )
-//               {   
-//                   origDigest.update(originFile.readAllBytes());
-//                   respDigest.update(responseFile.readAllBytes());
-//                   
-//                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
-//               }
-//                catch (IOException e)
-//                {
-//                    e.printStackTrace();
-//                }
-//            });
-//            completable.get();
-//        } 
-//        catch (Exception e) 
-//        {
-//            throw e;
-//        }
-//        finally
-//        {
-//            deleteFiles(ORIGIN_SMALL_FILE, RESPONSE_SMALL_FILE);
-//        }
-//    }
-//    
-//    @Test
-//    public void testLargeFileDownloadCompletable() throws Exception
-//    {   
-//        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
-//        {   
-//            deleteFiles(ORIGIN_LARGE_FILE, RESPONSE_LARGE_FILE);
-//            createLargeFile();
-//            
-//            client.start();
-//            
-//            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_LARGE_FILE.getFileName().toString());
-//            
-//            Request request = client.newRequest(url.toURI().toString());
-//            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_LARGE_FILE);
-////          
-//            completable.thenAccept(path -> 
-//            {
-//                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
-//                    InputStream originFile = Files.newInputStream(ORIGIN_LARGE_FILE, StandardOpenOption.READ)
-//                   )
-//               {   
-//                   origDigest.update(originFile.readAllBytes());
-//                   respDigest.update(responseFile.readAllBytes());
-//                   
-//                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
-//               }
-//                catch (IOException e)
-//                {
-//                    e.printStackTrace();
-//                }
-//            });
-//            completable.get();
-//        } 
-//        catch (Exception e) 
-//        {
-//            throw e;
-//        }
-//        finally
-//        {
-//            deleteFiles(ORIGIN_LARGE_FILE, RESPONSE_LARGE_FILE);
-//        }
-//    }
+    @Test
+    public void testZeroFileDownloadCompletable() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
+        {   
+            deleteFiles(ORIGIN_ZERO_FILE, RESPONSE_ZERO_FILE);
+            createZeroFile();
+            
+            client.start();
+            
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_ZERO_FILE.getFileName().toString());
+            
+            Request request = client.newRequest(url.toURI().toString());
+            
+            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_ZERO_FILE, true);
+            completable.thenAccept(path -> 
+            {
+                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
+                    InputStream originFile = Files.newInputStream(ORIGIN_ZERO_FILE, StandardOpenOption.READ)
+                   )
+               {   
+                   origDigest.update(originFile.readAllBytes());
+                   respDigest.update(responseFile.readAllBytes());
+                   
+                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
+               }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+            completable.get();
+        } 
+        catch (Exception e) 
+        {
+            throw e;
+        }
+        finally
+        {
+            deleteFiles(ORIGIN_ZERO_FILE, RESPONSE_ZERO_FILE);
+        }
+    }
+    
+    @Test
+    public void testSmallFileDownloadCompletable() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
+        {   
+            deleteFiles(ORIGIN_SMALL_FILE, RESPONSE_SMALL_FILE);
+            createSmallFile();
+            
+            client.start();
+            
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_SMALL_FILE.getFileName().toString());
+            
+            Request request = client.newRequest(url.toURI().toString());
+            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_SMALL_FILE, true);
+            
+            completable.thenAccept(path -> 
+            {
+                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
+                    InputStream originFile = Files.newInputStream(ORIGIN_SMALL_FILE, StandardOpenOption.READ)
+                   )
+               {   
+                   origDigest.update(originFile.readAllBytes());
+                   respDigest.update(responseFile.readAllBytes());
+                   
+                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
+               }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+            completable.get();
+        } 
+        catch (Exception e) 
+        {
+            throw e;
+        }
+        finally
+        {
+            deleteFiles(ORIGIN_SMALL_FILE, RESPONSE_SMALL_FILE);
+        }
+    }
+    
+    @Test
+    public void testLargeFileDownloadCompletable() throws Exception
+    {   
+        try (HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(1));)
+        {   
+            deleteFiles(ORIGIN_LARGE_FILE, RESPONSE_LARGE_FILE);
+            createLargeFile();
+            
+            client.start();
+            
+            URL url = new URL("http", "localhost", connector.getLocalPort(), "/" + ORIGIN_LARGE_FILE.getFileName().toString());
+            
+            Request request = client.newRequest(url.toURI().toString());
+            CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_LARGE_FILE, true);
+          
+            completable.thenAccept(path -> 
+            {
+                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
+                    InputStream originFile = Files.newInputStream(ORIGIN_LARGE_FILE, StandardOpenOption.READ)
+                   )
+               {   
+                   origDigest.update(originFile.readAllBytes());
+                   respDigest.update(responseFile.readAllBytes());
+                   
+                   assertTrue(MessageDigest.isEqual(origDigest.digest(), respDigest.digest()));
+               }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+            completable.get();
+        } 
+        catch (Exception e) 
+        {
+            throw e;
+        }
+        finally
+        {
+            deleteFiles(ORIGIN_LARGE_FILE, RESPONSE_LARGE_FILE);
+        }
+    }
 }
