@@ -22,10 +22,10 @@ etc/jetty-dos.xml
 #jetty.dos.rateControlFactory=org.eclipse.jetty.server.handler.DosHandler$ExponentialMovingAverageRateControlFactory
 
 ## The sample period(ms) to determine the request rate, or -1 for a default value
-#jetty.dos.samplePeriodMs=100
+#jetty.dos.rateControlFactory.samplePeriodMs=100
 
 ## The Exponential factor for the moving average rate
-#jetty.dos.alpha=0.2
+#jetty.dos.rateControlFactory.expMovingAvg.alpha=0.2
 
 ## The maximum requests per second per client
 #jetty.dos.maxRequestsPerSecond=100
@@ -34,10 +34,10 @@ etc/jetty-dos.xml
 #jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DosHandler$TooManyRequestsRejectHandler
 
 ## The period to delay dos requests before rejecting them.
-#jetty.dos.delayMs=1000
+#jetty.dos.rejectHandler.delayed.delayMs=1000
 
 ## The maximum number of requests to be held in the delay queue
-#jetty.dos.maxDelayQueueSize=1000
+#jetty.dos.rejectHandler.delayed.maxDelayQueue=1000
 
 ## The maximum number of clients to track; or -1 for a default value
 #jetty.dos.maxTrackers=10000

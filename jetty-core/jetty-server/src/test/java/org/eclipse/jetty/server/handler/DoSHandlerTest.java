@@ -42,7 +42,7 @@ public class DoSHandlerTest
 
         for (int sample = 0; sample < 400; sample++)
         {
-            boolean exceeded = tracker.isRateExceededBySample(now);
+            boolean exceeded = tracker.onRequest(now);
             assertFalse(exceeded);
             now += TimeUnit.MILLISECONDS.toNanos(11);
         }
@@ -60,7 +60,7 @@ public class DoSHandlerTest
         boolean exceeded = false;
         for (int sample = 0; sample < 200; sample++)
         {
-            if (tracker.isRateExceededBySample(now))
+            if (tracker.onRequest(now))
             {
                 exceeded = true;
                 break;
@@ -82,7 +82,7 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 9; burst++)
             {
-                boolean exceeded = tracker.isRateExceededBySample(now);
+                boolean exceeded = tracker.onRequest(now);
                 assertFalse(exceeded);
             }
 
@@ -102,7 +102,7 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 11; burst++)
             {
-                if (tracker.isRateExceededBySample(now))
+                if (tracker.onRequest(now))
                 {
                     exceeded = true;
                     break;
@@ -126,7 +126,7 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 99; burst++)
             {
-                boolean exceeded = tracker.isRateExceededBySample(now);
+                boolean exceeded = tracker.onRequest(now);
                 assertFalse(exceeded);
             }
 
@@ -146,7 +146,7 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 101; burst++)
             {
-                if (tracker.isRateExceededBySample(now))
+                if (tracker.onRequest(now))
                 {
                     exceeded = true;
                     break;
@@ -169,7 +169,7 @@ public class DoSHandlerTest
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 99; burst++)
-                assertFalse(tracker.isRateExceededBySample(now++));
+                assertFalse(tracker.onRequest(now++));
 
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
@@ -180,7 +180,7 @@ public class DoSHandlerTest
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 49; burst++)
-                assertFalse(tracker.isRateExceededBySample(now++));
+                assertFalse(tracker.onRequest(now++));
 
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }

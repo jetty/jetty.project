@@ -94,11 +94,11 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     public interface RateControl
     {
         /**
-         * Calculate if the rate is exceeded at the given time by adding a sample
+         * Record a request and calculate if the rate is exceeded at the given time.
          * @param now The {@link NanoTime#now()} at which to calculate the rate
          * @return {@code true} if the rate is currently exceeded
          */
-        boolean isRateExceededBySample(long now);
+        boolean onRequest(long now);
 
         /**
          * Check if the tracker is now idle
@@ -220,7 +220,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
         // If we are not over-limit then handle normally
-        if (!tracker.isRateExceededBySample(request.getBeginNanoTime()))
+        if (!tracker.onRequest(request.getBeginNanoTime()))
             return nextHandler(request, response, callback);
 
         // Otherwise reject the request
@@ -271,7 +271,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         private final String _id;
         private final RateControl _rateControl;
         private final Duration _idleCheck;
-        private long _expireAt;
+        private long _nextIdleCheckAt;
 
         Tracker(String id, RateControl rateControl)
         {
@@ -283,7 +283,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             _id = id;
             _rateControl = rateControl;
             _idleCheck = idleCheck == null ? Duration.ofSeconds(2) : idleCheck;
-            _expireAt = NanoTime.now() + _idleCheck.toNanos();
+            _nextIdleCheckAt = NanoTime.now() + _idleCheck.toNanos();
         }
 
         public String getId()
@@ -296,7 +296,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             return _rateControl;
         }
 
-        public boolean isRateExceededBySample(long now)
+        public boolean onRequest(long now)
         {
             try (AutoLock l = _lock.lock())
             {
@@ -304,10 +304,10 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                 if (cyclicTimeouts != null)
                 {
                     // schedule a check to remove this tracker if idle
-                    _expireAt = now + _idleCheck.toNanos();
+                    _nextIdleCheckAt = now + _idleCheck.toNanos();
                     cyclicTimeouts.schedule(this);
                 }
-                return _rateControl.isRateExceededBySample(now);
+                return _rateControl.onRequest(now);
             }
         }
 
@@ -315,6 +315,12 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         {
             try (AutoLock l = _lock.lock())
             {
+                CyclicTimeouts<Tracker> cyclicTimeouts = _cyclicTimeouts;
+                if (cyclicTimeouts != null)
+                {
+                    _nextIdleCheckAt = now + _idleCheck.toNanos();
+                    cyclicTimeouts.schedule(this);
+                }
                 return _rateControl.isIdle(now);
             }
         }
@@ -322,7 +328,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         @Override
         public long getExpireNanoTime()
         {
-            return _expireAt;
+            return _nextIdleCheckAt;
         }
 
         @Override
@@ -396,7 +402,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             }
 
             @Override
-            public boolean isRateExceededBySample(long now)
+            public boolean onRequest(long now)
             {
                 // Count the request
                 _sampleCount++;
@@ -473,7 +479,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         public StatusRejectHandler(int status)
         {
             _status = status >= 0 ? status : HttpStatus.TOO_MANY_REQUESTS_429;
-            if (!HttpStatus.isClientError(_status) && !HttpStatus.isServerError(_status))
+            if (_status != 0 && _status != HttpStatus.OK_200 && !HttpStatus.isClientError(_status) && !HttpStatus.isServerError(_status))
                 throw new IllegalArgumentException("status must be a client or server error");
         }
 
@@ -602,14 +608,14 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                     _scheduler.schedule(this::onTick, _delayMs / 2, TimeUnit.MILLISECONDS);
             }
 
-
             if (rejects != null)
             {
                 for (Exchange exchange : rejects)
                 {
                     try
                     {
-                        Response.writeError(exchange.request, exchange.response, exchange.callback, HttpStatus.TOO_MANY_REQUESTS_429);
+                        if (!_reject.handle(exchange.request, exchange.response, exchange.callback))
+                            exchange.callback.failed(new RejectedExecutionException());
                     }
                     catch (Throwable t)
                     {
