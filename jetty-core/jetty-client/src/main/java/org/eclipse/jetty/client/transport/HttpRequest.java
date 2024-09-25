@@ -744,7 +744,7 @@ public class HttpRequest implements Request
         Destination destination = client.resolveDestination(this);
         destination.send(this, listener);
     }
-    
+
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)
     {
         if (listener != null)

@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
@@ -51,33 +51,21 @@ public class PathResponseListener extends CompletableFuture<Response> implements
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
     
-    private Path path;
-    private Throwable failure;
-    private FileChannel fileOut;
-    private int bytesWrite;
+    private final Path path;
+    private final FileChannel fileOut;
     
-    public PathResponseListener(Path path, boolean overwrite) throws FileNotFoundException, IOException, FileAlreadyExistsException
+    public PathResponseListener(Path path, boolean overwrite) throws IOException
     {           
         this.path = path;
         
         // Throws the exception if file can't be overwritten 
         // otherwise truncate it.
-        if (this.path.toFile().exists() && !overwrite)
+        if (Files.exists(path) && !overwrite)
         {
             throw new FileAlreadyExistsException("File can't be overwritten");
         }
         
-        try
-        {
-            fileOut = FileChannel.open(this.path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
-        }
-        catch (IOException e) 
-        {   
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to instantiate object", e);
-            
-            throw e;
-        }
+        fileOut = FileChannel.open(this.path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
     }
     
     @Override
@@ -86,7 +74,7 @@ public class PathResponseListener extends CompletableFuture<Response> implements
         if (response.getStatus() != HttpStatus.OK_200)
         {
             this.cancel(true);
-            throw new HttpResponseException(String.format("HTTP status code of this response %d", response.getStatus()), response);
+            response.abort(new HttpResponseException(String.format("HTTP status code of response %d", response.getStatus()), response));
         }
     }
     
@@ -95,25 +83,25 @@ public class PathResponseListener extends CompletableFuture<Response> implements
     {
         try
         {
-            this.bytesWrite += this.write(content).get();
+            var bytesWritten = fileOut.write(content);
             if (LOG.isDebugEnabled())
-                LOG.debug("%d bytes written", bytesWrite);
+                LOG.debug("%d bytes written", bytesWritten);
         }
-        catch (InterruptedException | ExecutionException e)
+        catch (IOException e)
         {
-            e.printStackTrace();
+            response.abort(e);
         }
     }
 
     @Override
     public void onComplete(Result result)
     {
-        if (result.isFailed() && this.failure == null)
+        if (result.isFailed())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Result failure", failure);
+                LOG.debug("Result failure", result.getFailure());
             
-            this.cancel(true);
+            completeExceptionally(result.getFailure());
             return;
         }
         
@@ -126,7 +114,7 @@ public class PathResponseListener extends CompletableFuture<Response> implements
         {
             try
             {
-                if (path.toFile().exists() && !overwrite)
+                if (Files.exists(path) && !overwrite)
                 {
                     throw new FileAlreadyExistsException("File can't be overwritten");
                 }
@@ -168,29 +156,5 @@ public class PathResponseListener extends CompletableFuture<Response> implements
         });
         
         return future;
-    }
-    
-    private CompletableFuture<Integer> write(ByteBuffer content) 
-    {
-        return CompletableFuture.supplyAsync(() -> 
-        {
-            int bytesWritten = 0;
-            try
-            {   
-                bytesWritten += fileOut.write(content);
-            }
-            catch (IOException e) 
-            {   
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to write file", e);
-                
-                throw new CompletionException(e);
-            }
-            
-            if (LOG.isDebugEnabled())
-                LOG.debug("%d bytes have been written into a file", bytesWritten);
-            
-            return bytesWritten;
-        });
     }
 }

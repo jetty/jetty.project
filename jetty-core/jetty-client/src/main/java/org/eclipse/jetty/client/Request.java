@@ -507,7 +507,7 @@ public interface Request
      * @param listener the listener that receives response events
      */
     void send(Response.CompleteListener listener);
-    
+
     /**
      * Attempts to abort the send of this request.
      *
