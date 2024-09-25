@@ -19,6 +19,7 @@ import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -572,9 +573,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         getSessionContext().run(() ->
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-            for (HttpSessionListener  listener : TypeUtil.reverse(_sessionListeners))
+            for (ListIterator<HttpSessionListener> i = TypeUtil.listIteratorAtEnd(_sessionListeners); i.hasPrevious();)
             {
-                listener.sessionDestroyed(event);
+                i.previous().sessionDestroyed(event);
             }
         });
     }

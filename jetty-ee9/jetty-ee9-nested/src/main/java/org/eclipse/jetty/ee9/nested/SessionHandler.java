@@ -20,6 +20,7 @@ import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
@@ -835,9 +836,9 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             Runnable r = () ->
             {
                 HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-                for (HttpSessionListener listener : TypeUtil.reverse(_sessionListeners))
+                for (ListIterator<HttpSessionListener> i = TypeUtil.listIteratorAtEnd(_sessionListeners); i.hasPrevious();)
                 {
-                    listener.sessionDestroyed(event);
+                    i.previous().sessionDestroyed(event);
                 }
             };
             _contextHandler.getCoreContextHandler().getContext().run(r);
