@@ -36,7 +36,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -45,6 +44,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -366,7 +366,6 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         gzip,      texts/logo.svg,   image/svg+xml,            POST,          /post/to/
         gzip,      texts/long.txt,   text/plain;charset=utf-8, PUT,           /put/to/
         """)
-    @Disabled("Need to work out what's going on with decompression of request body")
     public void testMethodsConfig(String compressionType,
                                   String resourceName,
                                   String resourceContentType,
@@ -383,7 +382,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             .methodInclude("GET")
             .methodInclude("POST")
             .methodExclude("PUT")
-            .compressPathExclude("/*") // don't compress the responses
+            .compressEncodingExclude(compression.getEncodingName()) // don't compress the responses
             .build();
 
         compressionHandler.putConfiguration("/", config);
@@ -462,13 +461,22 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
         switch (requestMethod)
         {
-            case "POST", "PUT" ->
+            case "PUT" ->
             {
-                assertThat("Original Request Content Length", response.getHeaders().get("X-Request-Content-Length"), is(resourceBody.length));
+                // PUT was excluded, so expect no automatic decompression
+                int originalLength = resourceBody.length;
+                int responseLength = response.getContent().length;
+                assertThat("Content Length", responseLength, lessThan(originalLength));
+            }
+            case "POST" ->
+            {
+                // POST was included, so expect a decompression
+                String expectedLength = Integer.toString(resourceBody.length);
+                assertThat("Original Request Content Length", response.getHeaders().get("X-Request-Content-Length"), is(expectedLength));
+                byte[] content = response.getContent();
+                assertThat(content, is(resourceBody));
             }
         }
-        byte[] content = response.getContent();
-        assertThat(content, is(resourceBody));
     }
 
     /**

@@ -30,11 +30,6 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
     private HttpFields fields;
     private DecoderSource decoderSource;
 
-    public DecompressionRequest(Request wrapped)
-    {
-        super(wrapped);
-    }
-
     public DecompressionRequest(
         Compression compression,
         Request request,
@@ -43,7 +38,7 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
         super(request);
         this.compression = compression;
         fields = updateRequestFields(request);
-        decoderSource = compression.newDecoderSource(this);
+        decoderSource = compression.newDecoderSource(request);
     }
 
     @Override
