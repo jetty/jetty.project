@@ -2415,6 +2415,7 @@
                 </goals>
                 <phase>verify</phase>
                 <configuration>
+                  <excludeGroupIds>com.hazelcast</excludeGroupIds>
                   <failWhenReviewNeeded>true</failWhenReviewNeeded>
                 </configuration>
               </execution>
