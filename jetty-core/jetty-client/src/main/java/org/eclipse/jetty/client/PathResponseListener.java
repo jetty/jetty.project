@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *  CompletableFuture&gt;Path&gt; completable = PathResponseListener.write(request, Path.of("/tmp/file.bin"), rewriteExistingFile);
  * </pre>
  */
-public class PathResponseListener extends CompletableFuture<Response> implements Listener
+public class PathResponseListener extends CompletableFuture<Path> implements Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
     
@@ -105,56 +105,22 @@ public class PathResponseListener extends CompletableFuture<Response> implements
             return;
         }
         
-        this.complete(result.getResponse());        
+        this.complete(this.path);        
     }
     
     public static CompletableFuture<Path> write(Request request, Path path, boolean overwrite)
     {        
-        var future = CompletableFuture.supplyAsync(() -> 
+        CompletableFuture<Path> l = null;
+        try
         {
-            try
-            {
-                if (Files.exists(path) && !overwrite)
-                {
-                    throw new FileAlreadyExistsException("File can't be overwritten");
-                }
-            }
-            catch (FileAlreadyExistsException e)
-            {
-                throw new CompletionException(e);
-            }
-            
-            InputStreamResponseListener listener = new InputStreamResponseListener();
-
-            try (InputStream responseContent = listener.getInputStream(); 
-                FileOutputStream responseFile = new FileOutputStream(path.toFile(), true))
-            {   
-                request.send(listener);
-
-                Response response = listener.get(5, TimeUnit.SECONDS);
-
-                if (response.getStatus() == HttpStatus.OK_200)
-                {
-                    // Wrap all bytes from InputStream into Byte Buffer
-                    // to be able to write it down to file channel.
-                    // It might lead to Out of memory exception.
-                    // ByteBuffer byteBuffer = ByteBuffer.wrap(responseContent.readAllBytes());
-                    
-                    responseFile.write(responseContent.readAllBytes());
-                } 
-                else    
-                {
-                    throw new HttpResponseException(String.format("HTTP status code of this response %d", response.getStatus()), response);
-                }                
-                
-                return path;
-            }
-            catch (InterruptedException | TimeoutException | ExecutionException | IOException e)
-            {
-                throw new CompletionException(e);
-            }
-        });
-        
-        return future;
+            l = new PathResponseListener(path, overwrite);
+            request.send((PathResponseListener)l);
+        }
+        catch (IOException e)
+        {
+            l.completeExceptionally(e);
+            e.printStackTrace();
+        }
+        return l;
     }
 }

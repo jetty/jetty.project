@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -174,8 +175,9 @@ public class PathResponseListenerTest
             PathResponseListener listener = new PathResponseListener(RESPONSE_ZERO_FILE, true);
             Request request = client.newRequest(url.toURI().toString());
             request.send(listener);
-            Response response = listener.get(600, TimeUnit.SECONDS);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Path path = listener.get(600, TimeUnit.SECONDS);
+
+            assertTrue(Files.exists(path));
   
             File originFile = new File(ORIGIN_ZERO_FILE.toUri());
             File responseFile = new File(RESPONSE_ZERO_FILE.toUri());
@@ -208,8 +210,9 @@ public class PathResponseListenerTest
             PathResponseListener listener = new PathResponseListener(RESPONSE_SMALL_FILE, true);
             Request request = client.newRequest(url.toURI().toString());
             request.send(listener);
-            Response response = listener.get();
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Path path = listener.get();
+            
+            assertTrue(Files.exists(path));
             
             try (InputStream responseFile = Files.newInputStream(RESPONSE_SMALL_FILE, StandardOpenOption.READ);
                  InputStream originFile = Files.newInputStream(ORIGIN_SMALL_FILE, StandardOpenOption.READ)
@@ -246,8 +249,9 @@ public class PathResponseListenerTest
             PathResponseListener listener = new PathResponseListener(RESPONSE_LARGE_FILE, true);
             Request request = client.newRequest(url.toURI().toString());
             request.send(listener);
-            Response response = listener.get();
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            Path path = listener.get();
+            
+            assertTrue(Files.exists(path));
             
             try (InputStream responseFile = Files.newInputStream(RESPONSE_LARGE_FILE, StandardOpenOption.READ);
                  InputStream originFile = Files.newInputStream(ORIGIN_LARGE_FILE, StandardOpenOption.READ)
@@ -286,8 +290,8 @@ public class PathResponseListenerTest
             CompletableFuture<Path> completable = PathResponseListener.write(request, RESPONSE_ZERO_FILE, true);
             completable.thenAccept(path -> 
             {
-                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
-                    InputStream originFile = Files.newInputStream(ORIGIN_ZERO_FILE, StandardOpenOption.READ)
+                try (InputStream responseFile = new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ));
+                    InputStream originFile = new BufferedInputStream(Files.newInputStream(ORIGIN_ZERO_FILE, StandardOpenOption.READ))
                    )
                {   
                    origDigest.update(originFile.readAllBytes());
@@ -329,8 +333,8 @@ public class PathResponseListenerTest
             
             completable.thenAccept(path -> 
             {
-                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
-                    InputStream originFile = Files.newInputStream(ORIGIN_SMALL_FILE, StandardOpenOption.READ)
+                try (InputStream responseFile = new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ));
+                    InputStream originFile = new BufferedInputStream(Files.newInputStream(ORIGIN_SMALL_FILE, StandardOpenOption.READ))
                    )
                {   
                    origDigest.update(originFile.readAllBytes());
@@ -372,8 +376,8 @@ public class PathResponseListenerTest
           
             completable.thenAccept(path -> 
             {
-                try (InputStream responseFile = Files.newInputStream(path, StandardOpenOption.READ);
-                    InputStream originFile = Files.newInputStream(ORIGIN_LARGE_FILE, StandardOpenOption.READ)
+                try (BufferedInputStream responseFile = new BufferedInputStream(Files.newInputStream(path, StandardOpenOption.READ));
+                    BufferedInputStream originFile = new BufferedInputStream(Files.newInputStream(ORIGIN_LARGE_FILE, StandardOpenOption.READ));
                    )
                {   
                    origDigest.update(originFile.readAllBytes());
