@@ -94,7 +94,7 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
                 else
                 {
                     String mimeType = MimeTypes.getContentTypeWithoutCharset(contentTypeField.getValue());
-                    if (config.isMimeTypeCompressible(mimeType))
+                    if (config.isCompressMimeTypeSupported(mimeType))
                     {
                         compressing = state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
                     }

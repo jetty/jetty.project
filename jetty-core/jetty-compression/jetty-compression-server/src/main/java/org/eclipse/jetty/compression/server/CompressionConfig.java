@@ -19,7 +19,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Request;
@@ -34,36 +33,108 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 public class CompressionConfig extends AbstractLifeCycle
 {
     /**
-     * Set of `Content-Encoding` encodings that are supported by this configuration.
-     */
-    private final IncludeExcludeSet<String, String> decompressEncodings;
-    /**
-     * Set of `Accept-Encoding` encodings that are supported by this configuration.
+     * Set of {@code Accept-Encoding} encodings that are supported for compressing Response content.
      */
     private final IncludeExcludeSet<String, String> compressEncodings;
     /**
-     * Set of HTTP Methods that are supported by this configuration.
+     * Set of {@code Content-Encoding} encodings that are supported for decompressing Request content.
      */
-    private final IncludeExcludeSet<String, String> methods;
-    private final IncludeExcludeSet<String, String> mimetypes;
-    private final IncludeExcludeSet<String, String> decompressPaths;
+    private final IncludeExcludeSet<String, String> decompressEncodings;
+    /**
+     * Set of HTTP Methods that are supported for compressing Response content.
+     */
+    private final IncludeExcludeSet<String, String> compressMethods;
+    /**
+     * Set of HTTP Methods that are supported for decompressing Request content.
+     */
+    private final IncludeExcludeSet<String, String> decompressMethods;
+    /**
+     * Mime-Types that support decompressing of Request content.
+     */
+    private final IncludeExcludeSet<String, String> compressMimeTypes;
+    /**
+     * Mime-Types that support compressing Response content.
+     */
+    private final IncludeExcludeSet<String, String> decompressMimeTypes;
+    /**
+     * Set of paths that support compressing Response content.
+     */
     private final IncludeExcludeSet<String, String> compressPaths;
+    /**
+     * Set of paths that support decompressing Request content.
+     */
+    private final IncludeExcludeSet<String, String> decompressPaths;
+
     private final HttpField vary;
 
     private CompressionConfig(Builder builder)
     {
-        this.decompressEncodings = builder.decompressEncodings.asImmutable();
         this.compressEncodings = builder.compressEncodings.asImmutable();
-        this.methods = builder.methods.asImmutable();
-        this.mimetypes = builder.mimetypes.asImmutable();
-        this.decompressPaths = builder.decompressPaths.asImmutable();
+        this.decompressEncodings = builder.decompressEncodings.asImmutable();
+        this.compressMethods = builder.decompressMethods.asImmutable();
+        this.decompressMethods = builder.decompressMethods.asImmutable();
+        this.compressMimeTypes = builder.compressMimeTypes.asImmutable();
+        this.decompressMimeTypes = builder.decompressMimeTypes.asImmutable();
         this.compressPaths = builder.compressPaths.asImmutable();
+        this.decompressPaths = builder.decompressPaths.asImmutable();
         this.vary = builder.vary;
     }
 
     public static Builder builder()
     {
         return new Builder();
+    }
+
+    /**
+     * Get the set of excluded HTTP methods for Response compression.
+     *
+     * @return the set of excluded HTTP methods
+     * @see #getCompressMethodIncludes()
+     */
+    @ManagedAttribute("Set of HTTP Method Exclusions")
+    public Set<String> getCompressMethodExcludes()
+    {
+        Set<String> excluded = compressMethods.getExcluded();
+        return Collections.unmodifiableSet(excluded);
+    }
+
+    /**
+     * Get the set of included HTTP methods for Response compression
+     *
+     * @return the set of included HTTP methods
+     * @see #getCompressMethodExcludes()
+     */
+    @ManagedAttribute("Set of HTTP Method Inclusions")
+    public Set<String> getCompressMethodIncludes()
+    {
+        Set<String> includes = compressMethods.getIncluded();
+        return Collections.unmodifiableSet(includes);
+    }
+
+    /**
+     * Get the set of excluded MIME types for Response compression.
+     *
+     * @return the set of excluded MIME types
+     * @see #getCompressMimeTypeIncludes()
+     */
+    @ManagedAttribute("Set of Mime-Types Excluded from Response compression")
+    public Set<String> getCompressMimeTypeExcludes()
+    {
+        Set<String> excluded = compressMimeTypes.getExcluded();
+        return Collections.unmodifiableSet(excluded);
+    }
+
+    /**
+     * Get the set of included MIME types for Response compression.
+     *
+     * @return the filter list of included MIME types
+     * @see #getCompressMimeTypeExcludes()
+     */
+    @ManagedAttribute("Set of Mime-Types Included in Response compression")
+    public Set<String> getCompressMimeTypeIncludes()
+    {
+        Set<String> includes = compressMimeTypes.getIncluded();
+        return Collections.unmodifiableSet(includes);
     }
 
     /**
@@ -99,7 +170,6 @@ public class CompressionConfig extends AbstractLifeCycle
 
         String matchedEncoding = null;
 
-        // TODO: add testcase for `Accept-Encoding: *`
         for (String encoding : requestAcceptEncoding)
         {
             if (compressEncodings.test(encoding))
@@ -111,13 +181,39 @@ public class CompressionConfig extends AbstractLifeCycle
         if (matchedEncoding == null)
             return null;
 
-        if (!isMethodSupported(request.getMethod()))
+        if (!compressMimeTypes.test(request.getMethod()))
             return null;
 
         if (!compressPaths.test(pathInContext))
             return null;
 
         return matchedEncoding;
+    }
+
+    /**
+     * Get the set of excluded HTTP methods for Request decompression.
+     *
+     * @return the set of excluded HTTP methods
+     * @see #getDecompressMethodIncludes()
+     */
+    @ManagedAttribute("Set of HTTP Method Exclusions")
+    public Set<String> getDecompressMethodExcludes()
+    {
+        Set<String> excluded = decompressMethods.getExcluded();
+        return Collections.unmodifiableSet(excluded);
+    }
+
+    /**
+     * Get the set of included HTTP methods for Request decompression
+     *
+     * @return the set of included HTTP methods
+     * @see #getDecompressMethodExcludes()
+     */
+    @ManagedAttribute("Set of HTTP Method Inclusions")
+    public Set<String> getDecompressMethodIncludes()
+    {
+        Set<String> includes = decompressMethods.getIncluded();
+        return Collections.unmodifiableSet(includes);
     }
 
     /**
@@ -153,66 +249,14 @@ public class CompressionConfig extends AbstractLifeCycle
         if (decompressEncodings.test(requestContentEncoding))
             matchedEncoding = requestContentEncoding;
 
-        if (!isMethodSupported(request.getMethod()))
+        if (!decompressMethods.test(request.getMethod()))
             return null;
 
-        // TODO: testing mime-type is really a response test, not a request test.
-        if (!isMimeTypeCompressible(request.getContext().getMimeTypes(), pathInContext))
+        String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+        if (!decompressMimeTypes.test(contentType))
             return null;
 
         return matchedEncoding;
-    }
-
-    /**
-     * Get the set of excluded HTTP methods
-     *
-     * @return the set of excluded HTTP methods
-     * @see #getMethodIncludes()
-     */
-    @ManagedAttribute("Set of HTTP Method Exclusions")
-    public Set<String> getMethodExcludes()
-    {
-        Set<String> excluded = methods.getExcluded();
-        return Collections.unmodifiableSet(excluded);
-    }
-
-    /**
-     * Get the set of included HTTP methods
-     *
-     * @return the set of included HTTP methods
-     * @see #getMethodExcludes()
-     */
-    @ManagedAttribute("Set of HTTP Method Inclusions")
-    public Set<String> getMethodIncludes()
-    {
-        Set<String> includes = methods.getIncluded();
-        return Collections.unmodifiableSet(includes);
-    }
-
-    /**
-     * Get the set of excluded MIME types
-     *
-     * @return the set of excluded MIME types
-     * @see #getMimeTypeIncludes()
-     */
-    @ManagedAttribute("Set of Mime Type Exclusions")
-    public Set<String> getMimeTypeExcludes()
-    {
-        Set<String> excluded = mimetypes.getExcluded();
-        return Collections.unmodifiableSet(excluded);
-    }
-
-    /**
-     * Get the set of included MIME types
-     *
-     * @return the filter list of included MIME types
-     * @see #getMimeTypeExcludes()
-     */
-    @ManagedAttribute("Set of Mime Type Inclusions")
-    public Set<String> getMimeTypeIncludes()
-    {
-        Set<String> includes = mimetypes.getIncluded();
-        return Collections.unmodifiableSet(includes);
     }
 
     /**
@@ -223,26 +267,24 @@ public class CompressionConfig extends AbstractLifeCycle
         return vary;
     }
 
-    public boolean isMethodSupported(String method)
+    public boolean isCompressMethodSupported(String method)
     {
-        return methods.test(method);
+        return compressMethods.test(method);
     }
 
-    public boolean isMimeTypeCompressible(MimeTypes mimeTypes, String pathInContext)
+    public boolean isCompressMimeTypeSupported(String mimeType)
     {
-        // Exclude non-compressible mime-types known from URI extension
-        String mimeType = mimeTypes.getMimeByExtension(pathInContext);
-        if (mimeType != null)
-        {
-            mimeType = HttpField.getValueParameters(mimeType, null);
-            return isMimeTypeCompressible(mimeType);
-        }
-        return true;
+        return compressMimeTypes.test(mimeType);
     }
 
-    public boolean isMimeTypeCompressible(String mimeType)
+    public boolean isDecompressMethodSupported(String method)
     {
-        return mimetypes.test(mimeType);
+        return decompressMethods.test(method);
+    }
+
+    public boolean isDecompressMimeTypeSupported(String mimeType)
+    {
+        return decompressMimeTypes.test(mimeType);
     }
 
     /**
@@ -274,18 +316,37 @@ public class CompressionConfig extends AbstractLifeCycle
     public static class Builder
     {
         /**
-         * Set of `Content-Encoding` encodings that are supported by this configuration.
+         * Set of {@code Content-Encoding} encodings that are supported for decompressing Request content.
          */
         private final IncludeExclude<String> decompressEncodings = new IncludeExclude<>();
         /**
-         * Set of `Accept-Encoding` encodings that are supported by this configuration.
+         * Set of {@code Accept-Encoding} encodings that are supported for compressing Response content.
          */
         private final IncludeExclude<String> compressEncodings = new IncludeExclude<>();
-
-        private final IncludeExclude<String> methods = new IncludeExclude<>();
-        private final IncludeExclude<String> mimetypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
+        /**
+         * Set of HTTP Methods that are supported for decompressing Request content.
+         */
+        private final IncludeExclude<String> decompressMethods = new IncludeExclude<>();
+        /**
+         * Set of HTTP Methods that are supported for compressing Response content.
+         */
+        private final IncludeExclude<String> compressMethods = new IncludeExclude<>();
+        /**
+         * Set of paths that support decompressing of Request content.
+         */
         private final IncludeExclude<String> decompressPaths = new IncludeExclude<>(PathSpecSet.class);
+        /**
+         * Set of paths that support compressing Response content.
+         */
         private final IncludeExclude<String> compressPaths = new IncludeExclude<>(PathSpecSet.class);
+        /**
+         * Mime-Types that support decompressing of Request content.
+         */
+        private final IncludeExclude<String> compressMimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
+        /**
+         * Mime-Types that support compressing Response content.
+         */
+        private final IncludeExclude<String> decompressMimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
         private HttpField vary = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
         public CompressionConfig build()
@@ -314,6 +375,62 @@ public class CompressionConfig extends AbstractLifeCycle
         public Builder compressEncodingInclude(String encoding)
         {
             this.compressEncodings.include(encoding);
+            return this;
+        }
+
+        /**
+         * An HTTP method to exclude for Response compression.
+         *
+         * @param method the method to exclude
+         * @return this builder
+         */
+        public Builder compressMethodExclude(String method)
+        {
+            this.compressMethods.exclude(method);
+            return this;
+        }
+
+        /**
+         * An HTTP method to include for Response compression.
+         *
+         * @param method the method to include
+         * @return this builder
+         */
+        public Builder compressMethodInclude(String method)
+        {
+            this.compressMethods.include(method);
+            return this;
+        }
+
+        /**
+         * A non-compressible mimetype to exclude for Response compression.
+         *
+         * <p>
+         * The response {@code Content-Type} is evaluated.
+         * </p>
+         *
+         * @param mimetype the mimetype to exclude
+         * @return this builder
+         */
+        public Builder compressMimeTypeExclude(String mimetype)
+        {
+            this.compressMimeTypes.exclude(mimetype);
+            return this;
+        }
+
+        /**
+         * A compressible mimetype to include for Response compression.
+         *
+         * <p>
+         * The response {@code Content-Type} is evaluated.
+         * </p>
+         *
+         * @param mimetype the mimetype to include
+         * @return this builder
+         */
+        public Builder compressMimeTypeInclude(String mimetype)
+        {
+            this.compressMimeTypes.include(mimetype);
             return this;
         }
 
@@ -378,6 +495,62 @@ public class CompressionConfig extends AbstractLifeCycle
         }
 
         /**
+         * An HTTP method to exclude for Request decompression.
+         *
+         * @param method the method to exclude
+         * @return this builder
+         */
+        public Builder decompressMethodExclude(String method)
+        {
+            this.decompressMethods.exclude(method);
+            return this;
+        }
+
+        /**
+         * An HTTP method to include for Request decompression.
+         *
+         * @param method the method to include
+         * @return this builder
+         */
+        public Builder decompressMethodInclude(String method)
+        {
+            this.decompressMethods.include(method);
+            return this;
+        }
+
+        /**
+         * A non-compressed mimetype to exclude for Request decompression.
+         *
+         * <p>
+         * The Request {@code Content-Type} is evaluated.
+         * </p>
+         *
+         * @param mimetype the mimetype to exclude
+         * @return this builder
+         */
+        public Builder decompressMimeTypeExclude(String mimetype)
+        {
+            this.decompressMimeTypes.exclude(mimetype);
+            return this;
+        }
+
+        /**
+         * A compressed mimetype to include for Request decompression.
+         *
+         * <p>
+         * The request {@code Content-Type} is evaluated.
+         * </p>
+         *
+         * @param mimetype the mimetype to include
+         * @return this builder
+         */
+        public Builder decompressMimeTypeInclude(String mimetype)
+        {
+            this.decompressMimeTypes.include(mimetype);
+            return this;
+        }
+
+        /**
          * A path that does not support request content decompression.
          *
          * <p>
@@ -421,69 +594,15 @@ public class CompressionConfig extends AbstractLifeCycle
          */
         public Builder from(CompressionConfig config)
         {
-            this.decompressEncodings.addAll(config.decompressEncodings);
-            this.decompressPaths.addAll(config.decompressPaths);
             this.compressEncodings.addAll(config.compressEncodings);
+            this.decompressEncodings.addAll(config.decompressEncodings);
+            this.compressMethods.addAll(config.compressMethods);
+            this.decompressMethods.addAll(config.decompressMethods);
+            this.compressMimeTypes.addAll(config.compressMimeTypes);
+            this.decompressMimeTypes.addAll(config.decompressMimeTypes);
             this.compressPaths.addAll(config.compressPaths);
-            this.methods.addAll(config.methods);
-            this.mimetypes.addAll(config.mimetypes);
+            this.decompressPaths.addAll(config.decompressPaths);
             this.vary = config.vary;
-            return this;
-        }
-
-        /**
-         * An HTTP method to exclude.
-         *
-         * @param method the method to exclude
-         * @return this builder
-         */
-        public Builder methodExclude(String method)
-        {
-            this.methods.exclude(method);
-            return this;
-        }
-
-        /**
-         * An HTTP method to include.
-         *
-         * @param method the method to include
-         * @return this builder
-         */
-        public Builder methodInclude(String method)
-        {
-            this.methods.include(method);
-            return this;
-        }
-
-        /**
-         * A non-compressible mimetype to exclude.
-         *
-         * <p>
-         * The response {@code Content-Type} is evaluated.
-         * </p>
-         *
-         * @param mimetype the mimetype to exclude
-         * @return this builder
-         */
-        public Builder mimeTypeExclude(String mimetype)
-        {
-            this.mimetypes.exclude(mimetype);
-            return this;
-        }
-
-        /**
-         * A compressible mimetype to include.
-         *
-         * <p>
-         * The response {@code Content-Type} is evaluated.
-         * </p>
-         *
-         * @param mimetype the mimetype to include
-         * @return this builder
-         */
-        public Builder mimeTypeInclude(String mimetype)
-        {
-            this.mimetypes.include(mimetype);
             return this;
         }
 
