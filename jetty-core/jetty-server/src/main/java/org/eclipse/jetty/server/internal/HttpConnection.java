@@ -66,6 +66,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
@@ -609,11 +610,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             return true;
         Runnable task = _httpChannel.onIdleTimeout(timeout);
 
-        // TODO should we run the task directly here, even though that may block the scheduler?
-        //      This may be preferable to not running an idle task that might free a thread in a fully consumed
-        //      thread pool
         if (task != null)
-            getExecutor().execute(task);
+            ExceptionUtil.mustExecute(getExecutor(), task);
         return false; // We've handle the exception
     }
 

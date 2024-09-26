@@ -376,7 +376,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // If a write call is pending, take the writeCallback to fail below.
-            Runnable invokeWriteFailure = _response.lockedFailWrite(t);
+            Runnable invokeWriteFailure = _response.lockedFailWrite(t, false);
 
             // If there was a pending IO operation, deliver the idle timeout via them.
             if (invokeOnContentAvailable != null || invokeWriteFailure != null)
@@ -456,7 +456,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _onContentAvailable = null;
 
                 // If a write call is in progress, take the writeCallback to fail below.
-                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
+                Runnable invokeWriteFailure = _response.lockedFailWrite(x, true);
 
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
@@ -1161,18 +1161,17 @@ public class HttpChannelState implements HttpChannel, Components
             return _writeCallback != null;
         }
 
-        private Runnable lockedFailWrite(Throwable x)
+        private Runnable lockedFailWrite(Throwable x, boolean alwaysFailFutureWrites)
         {
             assert _request._lock.isHeldByCurrentThread();
-            // We always record the failure here, so even if there is no write, subsequent writes will fail.
-            if (_writeFailure == null)
-                _writeFailure = x;
-            else
-                ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
+            if (alwaysFailFutureWrites)
+                _writeFailure = ExceptionUtil.combine(_writeFailure, x);
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
             if (writeCallback == null)
                 return null;
+            if (!alwaysFailFutureWrites)
+                _writeFailure = ExceptionUtil.combine(_writeFailure, x);
             return () -> HttpChannelState.failed(writeCallback, x);
         }
 
