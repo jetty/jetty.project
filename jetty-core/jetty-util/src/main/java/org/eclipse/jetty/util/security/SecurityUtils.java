@@ -22,20 +22,16 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionException;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.util.JavaVersion;
-
 /**
  * <p>Collections of utility methods to deal with the scheduled removal
  * of the security classes defined by <a href="https://openjdk.org/jeps/411">JEP 411</a>.</p>
- * <p>To enable usage of a {@link SecurityManager}, the system property {@link #USE_SECURITY_MANAGER} must be set to {@code true}
- * for JVMs after version 21.</p>
  */
 public class SecurityUtils
 {
-    public static final boolean USE_SECURITY_MANAGER = Boolean.parseBoolean(
-        System.getProperty("org.eclipse.jetty.util.security.useSecurityManager", JavaVersion.VERSION.getMajor() <= 21 ? "true" : "false"));
     private static final MethodHandle callAs = lookupCallAs();
     private static final MethodHandle doPrivileged = lookupDoPrivileged();
+    private static final MethodHandle getSecurityManager = lookupGetSecurityManager();
+    private static final MethodHandle checkPermission = lookupCheckPermission();
 
     private static MethodHandle lookupCallAs()
     {
@@ -51,8 +47,6 @@ public class SecurityUtils
         {
             try
             {
-                if (!USE_SECURITY_MANAGER)
-                    return null;
                 // Otherwise (Java 17), lookup the old API.
                 MethodType oldSignature = MethodType.methodType(Object.class, Subject.class, PrivilegedAction.class);
                 MethodHandle doAs = lookup.findStatic(Subject.class, "doAs", oldSignature);
@@ -70,8 +64,6 @@ public class SecurityUtils
 
     private static MethodHandle lookupDoPrivileged()
     {
-        if (!USE_SECURITY_MANAGER)
-            return null;
         try
         {
             // Use reflection to work with Java versions that have and don't have AccessController.
@@ -85,21 +77,53 @@ public class SecurityUtils
         }
     }
 
+    private static MethodHandle lookupGetSecurityManager()
+    {
+        try
+        {
+            // Use reflection to work with Java versions that have and don't have System.getSecurityManager().
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            return lookup.findStatic(java.lang.System.class, "getSecurityManager", MethodType.methodType(Object.class));
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
+    private static MethodHandle lookupCheckPermission()
+    {
+        try
+        {
+            // Use reflection to work with Java versions that have and don't have java.lang.SecurityManager.
+            Class<?> klass = ClassLoader.getPlatformClassLoader().loadClass("java.lang.SecurityManager");
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            return lookup.findVirtual(klass, "checkPermission", MethodType.methodType(Void.class, Permission.class));
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
     /**
      * Get the current security manager, if available.
      * @return the current security manager, if available
      */
     public static Object getSecurityManager()
     {
+        if (getSecurityManager == null)
+        {
+            // method does not exist in this Java version
+            return null;
+        }
         try
         {
-            if (!USE_SECURITY_MANAGER)
-                return null;
-            // Use reflection to work with Java versions that have and don't have SecurityManager.
-            return System.class.getMethod("getSecurityManager").invoke(null);
+            return getSecurityManager.invoke();
         }
         catch (Throwable ignored)
         {
+            // Security manager is not enabled (or maybe some other problem)
             return null;
         }
     }
@@ -113,17 +137,18 @@ public class SecurityUtils
      */
     public static void checkPermission(Permission permission) throws SecurityException
     {
-        if (!USE_SECURITY_MANAGER)
+        if (getSecurityManager == null || checkPermission == null)
+        {
             return;
+        }
         Object securityManager = SecurityUtils.getSecurityManager();
         if (securityManager == null)
             return;
         try
         {
-            securityManager.getClass().getMethod("checkPermission")
-                .invoke(securityManager, permission);
+            checkPermission.invoke(securityManager, permission);
         }
-        catch (SecurityException x)
+        catch (SecurityException | NullPointerException x)
         {
             throw x;
         }
@@ -142,9 +167,11 @@ public class SecurityUtils
      */
     public static <T> T doPrivileged(PrivilegedAction<T> action)
     {
-        if (!USE_SECURITY_MANAGER || doPrivileged == null)
+        // Keep this method short and inlineable.
+        MethodHandle methodHandle = doPrivileged;
+        if (methodHandle == null)
             return action.run();
-        return doPrivileged(doPrivileged, action);
+        return doPrivileged(methodHandle, action);
     }
 
     @SuppressWarnings("unchecked")
