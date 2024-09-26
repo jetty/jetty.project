@@ -352,6 +352,21 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return new UriCompliance(name, remainder);
     }
 
+    /**
+     * Test if violation is referencing a URI path violation.
+     *
+     * @param violation the violation to test.
+     * @return true if violation is a path violation.
+     */
+    public static boolean isPathViolation(UriCompliance.Violation violation)
+    {
+        return (violation == Violation.AMBIGUOUS_PATH_PARAMETER) ||
+            (violation == Violation.AMBIGUOUS_PATH_SEGMENT) ||
+            (violation == Violation.AMBIGUOUS_PATH_SEPARATOR) ||
+            (violation == Violation.AMBIGUOUS_PATH_ENCODING) ||
+            (violation == Violation.AMBIGUOUS_EMPTY_SEGMENT);
+    }
+
     @Override
     public String toString()
     {
