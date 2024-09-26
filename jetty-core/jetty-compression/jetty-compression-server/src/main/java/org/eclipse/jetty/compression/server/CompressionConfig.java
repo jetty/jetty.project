@@ -16,9 +16,11 @@ package org.eclipse.jetty.compression.server;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Request;
@@ -181,7 +183,7 @@ public class CompressionConfig extends AbstractLifeCycle
         if (matchedEncoding == null)
             return null;
 
-        if (!compressMimeTypes.test(request.getMethod()))
+        if (!compressMethods.test(request.getMethod()))
             return null;
 
         if (!compressPaths.test(pathInContext))
@@ -583,6 +585,53 @@ public class CompressionConfig extends AbstractLifeCycle
         public Builder decompressPathInclude(String pathSpecString)
         {
             this.decompressPaths.include(pathSpecString);
+            return this;
+        }
+
+        /**
+         * Setup MimeType exclusion and path exclusion from the provided {@link MimeTypes} configuration.
+         *
+         * @param mimeTypes the mime types to iterate.
+         * @return this builder.
+         */
+        public Builder from(MimeTypes mimeTypes)
+        {
+            for (String type : mimeTypes.getMimeMap().values())
+            {
+                if ("image/svg+xml".equals(type))
+                {
+                    compressMimeTypeExclude(type);
+                    decompressMimeTypeExclude(type);
+                    compressPathExclude("*.svgz");
+                    decompressPathExclude("*.svgz");
+                }
+                else if (type.startsWith("image/") ||
+                    type.startsWith("audio/") ||
+                    type.startsWith("video/"))
+                {
+                    compressMimeTypeExclude(type);
+                    decompressMimeTypeExclude(type);
+                }
+            }
+
+            Stream.of("application/compress",
+                "application/zip",
+                "application/gzip",
+                "application/x-bzip2",
+                "application/brotli",
+                "application/x-br",
+                "application/x-xz",
+                "application/x-rar-compressed",
+                "application/vnd.bzip3",
+                "application/zstd",
+                // It is possible to use SSE with CompressionHandler, but only if you use `gzip` encoding with syncFlush to true which will impact performance.
+                "text/event-stream"
+                ).forEach((type) ->
+            {
+                compressMimeTypeExclude(type);
+                decompressMimeTypeExclude(type);
+            });
+
             return this;
         }
 

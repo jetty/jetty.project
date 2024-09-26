@@ -435,7 +435,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     /**
      * Testing how CompressionHandler acts with a single compression implementation added.
      * Configuration is only using {@code decompressMethods} excluding {@code PUT}, and including both
-     * {@code GET} and {@code POST}
+     * {@code GET} and {@code POST}.  This is focused on the decompression of request bodies.
      */
     @ParameterizedTest
     @CsvSource(textBlock = """

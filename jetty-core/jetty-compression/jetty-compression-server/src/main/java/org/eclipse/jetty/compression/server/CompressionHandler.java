@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -224,7 +225,10 @@ public class CompressionHandler extends Handler.Wrapper
         if (pathConfigs.isEmpty())
         {
             // add default configuration if no paths have been configured.
-            pathConfigs.put("/", CompressionConfig.builder().build());
+            pathConfigs.put("/",
+                CompressionConfig.builder()
+                    .from(MimeTypes.DEFAULTS)
+                    .build());
         }
 
         super.doStart();
