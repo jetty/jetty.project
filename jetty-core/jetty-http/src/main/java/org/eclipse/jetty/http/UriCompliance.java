@@ -145,7 +145,21 @@ public final class UriCompliance implements ComplianceViolation.Mode
     }
 
     public static final Set<Violation> NO_VIOLATION = Collections.unmodifiableSet(EnumSet.noneOf(Violation.class));
+
+    /**
+     * Set of violations that can trigger a HttpURI.isAmbiguous violation.
+     */
     public static final Set<Violation> AMBIGUOUS_VIOLATIONS = Collections.unmodifiableSet(EnumSet.of(
+        Violation.AMBIGUOUS_EMPTY_SEGMENT,
+        Violation.AMBIGUOUS_PATH_ENCODING,
+        Violation.AMBIGUOUS_PATH_PARAMETER,
+        Violation.AMBIGUOUS_PATH_SEGMENT,
+        Violation.AMBIGUOUS_PATH_SEPARATOR));
+
+    /**
+     * List of Violations that apply only to the HttpURI.path section.
+     */
+    private static final Set<Violation> PATH_VIOLATIONS = Collections.unmodifiableSet(EnumSet.of(
         Violation.AMBIGUOUS_EMPTY_SEGMENT,
         Violation.AMBIGUOUS_PATH_ENCODING,
         Violation.AMBIGUOUS_PATH_PARAMETER,
@@ -353,18 +367,14 @@ public final class UriCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * Test if violation is referencing a URI path violation.
+     * Test if violation is referencing a HttpURI.path violation.
      *
      * @param violation the violation to test.
      * @return true if violation is a path violation.
      */
     public static boolean isPathViolation(UriCompliance.Violation violation)
     {
-        return (violation == Violation.AMBIGUOUS_PATH_PARAMETER) ||
-            (violation == Violation.AMBIGUOUS_PATH_SEGMENT) ||
-            (violation == Violation.AMBIGUOUS_PATH_SEPARATOR) ||
-            (violation == Violation.AMBIGUOUS_PATH_ENCODING) ||
-            (violation == Violation.AMBIGUOUS_EMPTY_SEGMENT);
+        return PATH_VIOLATIONS.contains(violation);
     }
 
     @Override
