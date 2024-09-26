@@ -54,6 +54,22 @@ This property allows you to cap the max heap memory retained by the pool.
 `jetty.byteBufferPool.maxDirectMemory`::
 This property allows you to cap the max direct memory retained by the pool.
 
+[[connectionlimit]]
+== Module `connectionlimit`
+
+The `connectionlimit` module limits the number of connections accepted by the server, across all connectors.
+
+Once the configured maximum number of connections is reached, Jetty will not accept more connections.
+Existing, established connections will work normally.
+When existing connections are closed, accepting new connections will be resumed.
+
+NOTE: The number of connections seen at the JVM level may be different from the number of connections seen at the OS level.
+For more information, refer to xref:programming-guide:server/http.adoc#connector-limiting[this section].
+
+The module file is `$JETTY_HOME/modules/connectionlimit.mod`:
+
+include::{jetty-home}/modules/connectionlimit.mod[tags=documentation]
+
 [[console-capture]]
 == Module `console-capture`
 
