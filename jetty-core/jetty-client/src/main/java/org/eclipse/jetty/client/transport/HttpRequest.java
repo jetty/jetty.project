@@ -46,7 +46,6 @@ import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PathRequestContent;
-import org.eclipse.jetty.client.PathResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.RequestListeners;
 import org.eclipse.jetty.client.Response;
