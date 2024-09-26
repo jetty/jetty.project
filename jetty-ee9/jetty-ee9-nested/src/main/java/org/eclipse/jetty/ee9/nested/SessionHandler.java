@@ -20,6 +20,7 @@ import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
@@ -53,6 +54,8 @@ import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionIdManager;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -613,7 +616,8 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
      * CookieConfig
      *
      * Implementation of the jakarta.servlet.SessionCookieConfig.
-     * SameSite configuration can be achieved by using setComment
+     * SameSite configuration can be achieved by using setComment.
+     * Partitioned configuration can be achieved by using setComment.
      *
      * @see HttpCookie
      */
@@ -671,7 +675,19 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         public void setComment(String comment)
         {
             checkAvailable();
-            _sessionManager.setSessionComment(comment);
+
+            if (!StringUtil.isEmpty(comment))
+            {
+                HttpCookie.SameSite sameSite = Response.HttpCookieFacade.getSameSiteFromComment(comment);
+                if (sameSite != null)
+                    _sessionManager.setSameSite(sameSite);
+
+                boolean partitioned = Response.HttpCookieFacade.isPartitionedInComment(comment);
+                if (partitioned)
+                    _sessionManager.setPartitioned(partitioned);
+
+                _sessionManager.setSessionComment(Response.HttpCookieFacade.getCommentWithoutAttributes(comment));
+            }
         }
 
         @Override
@@ -714,6 +730,14 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         {
             checkAvailable();
             _sessionManager.setSecureCookies(secure);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[name=%s,domain=%s,path=%s,max-age=%d,secure=%b,http-only=%b,same-site=%s,comment=%s]",
+                this.getClass().getName(), this.hashCode(), _sessionManager.getSessionCookie(), _sessionManager.getSessionDomain(), _sessionManager.getSessionPath(),
+                _sessionManager.getMaxCookieAge(), _sessionManager.isSecureCookies(), _sessionManager.isHttpOnly(), _sessionManager.getSameSite(), _sessionManager.getSessionComment());
         }
     }
 
@@ -812,9 +836,9 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             Runnable r = () ->
             {
                 HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-                for (int i = _sessionListeners.size() - 1; i >= 0; i--)
+                for (ListIterator<HttpSessionListener> i = TypeUtil.listIteratorAtEnd(_sessionListeners); i.hasPrevious();)
                 {
-                    _sessionListeners.get(i).sessionDestroyed(event);
+                    i.previous().sessionDestroyed(event);
                 }
             };
             _contextHandler.getCoreContextHandler().getContext().run(r);
