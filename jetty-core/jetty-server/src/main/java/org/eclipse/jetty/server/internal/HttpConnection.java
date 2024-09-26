@@ -608,10 +608,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        Runnable task = _httpChannel.onIdleTimeout(timeout);
-
-        if (task != null)
-            ExceptionUtil.mustExecute(getExecutor(), task);
+        ExceptionUtil.mustExecute(getExecutor(), _httpChannel.onIdleTimeout(timeout));
         return false; // We've handle the exception
     }
 

@@ -214,6 +214,9 @@ public class ExceptionUtil
     // TODO javadoc
     public static void mustExecute(Executor executor, Runnable task)
     {
+        if (task == null)
+            return;
+
         if (executor instanceof TryExecutor tryExecutor && tryExecutor.tryExecute(task))
             return;
 
