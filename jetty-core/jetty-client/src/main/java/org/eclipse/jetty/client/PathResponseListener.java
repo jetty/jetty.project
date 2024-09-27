@@ -20,27 +20,31 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of {@link Response.ContentListener} that produces an {@link Path}
- * that allows applications to save a file from a response {@link Response}
- * like {@code curl <url> -o file.bin} does.
- * <p>
- * Typical usage is:
- * <pre>{@code httpClient.newRequest(host, port)
- * .send(new PathResponseListener(Path.of("/tmp/file.bin"));
- * 
- *  var request = httpClient.newRequest(host, port);
- *  CompletableFuture<Path> completable = PathResponseListener.write(request, Path.of("/tmp/file.bin"), rewriteExistingFile);
- *  }</pre>
+ * <p>Implementation of {@link Response.ContentListener} that
+ * saves the response content to a file {@link Path}, like
+ * {@code curl <url> -o file.bin} does.</p>
+ * <p>Typical usage is:</p>
+ * <pre>{@code
+ * // Typical usage.
+ * httpClient.newRequest(host, port)
+ *     .send(new PathResponseListener(Path.of("/tmp/file.bin")), overwriteExistingFile);
+ *
+ * // Alternative usage.
+ * var request = httpClient.newRequest(host, port);
+ * CompletableFuture<PathResponse> completable = PathResponseListener.write(request, Path.of("/tmp/file.bin"), overwriteExistingFile);
+ * }</pre>
  */
-public class PathResponseListener extends CompletableFuture<Path> implements Listener
+public class PathResponseListener extends CompletableFuture<PathResponseListener.PathResponse> implements Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
 
@@ -51,23 +55,19 @@ public class PathResponseListener extends CompletableFuture<Path> implements Lis
     {
         this.path = path;
 
-        // Throws the exception if file can't be overwritten 
-        // otherwise truncate it.
         if (Files.exists(path) && !overwrite)
-        {
-            throw new FileAlreadyExistsException("File can't be overwritten");
-        }
+            throw new FileAlreadyExistsException(path.toString(), null, "File cannot be overwritten");
 
-        fileChannel = FileChannel.open(this.path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+        fileChannel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     @Override
     public void onHeaders(Response response)
     {
         if (response.getStatus() != HttpStatus.OK_200)
-        {
-            response.abort(new HttpResponseException(String.format("HTTP status code of response %d", response.getStatus()), response));
-        }
+            response.abort(new HttpResponseException(String.format("Cannot save response content for HTTP status code %d", response.getStatus()), response));
+        else if (LOG.isDebugEnabled())
+            LOG.debug("saving response content to {}", path);
     }
 
     @Override
@@ -77,63 +77,64 @@ public class PathResponseListener extends CompletableFuture<Path> implements Lis
         {
             var bytesWritten = fileChannel.write(content);
             if (LOG.isDebugEnabled())
-                LOG.debug("%d bytes written", bytesWritten);
+                LOG.debug("{} bytes written to {}", bytesWritten, path);
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            response.abort(e);
+            response.abort(x);
         }
+    }
+
+    @Override
+    public void onSuccess(Response response)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("saved response content to {}", path);
+    }
+
+    @Override
+    public void onFailure(Response response, Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failed to save response content to {}", path);
     }
 
     @Override
     public void onComplete(Result result)
     {
-        try
-        {
-            if (result.isFailed())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Result failure", result.getFailure());
-                completeExceptionally(result.getFailure());
-                return;
-            }
-
-            this.complete(this.path);
-        }
-        finally
-        {
-            try
-            {
-                fileChannel.close();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-
+        IO.close(fileChannel);
+        if (result.isSucceeded())
+            complete(new PathResponse(result.getResponse(), path));
+        else
+            completeExceptionally(result.getFailure());
     }
 
     /**
-     * Writes a file into {@link Path}.
+     * <p>Writes the response content to the given file {@link Path}.</p>
      * 
-     * @param request to a server
-     * @param path to write a file
-     * @param overwrite true overwrites a file, otherwise fails
-     * @return {@code CompletableFuture<Path>}
+     * @param request the HTTP request
+     * @param path the path to write the response content to
+     * @param overwrite whether to overwrite an existing file
+     * @return a {@link CompletableFuture} that is completed when the exchange completes
      */
-    public static CompletableFuture<Path> write(Request request, Path path, boolean overwrite)
+    public static CompletableFuture<PathResponse> write(Request request, Path path, boolean overwrite)
     {
-        PathResponseListener l = null;
+        PathResponseListener listener = null;
         try
         {
-            l = new PathResponseListener(path, overwrite);
-            request.send(l);
+            listener = new PathResponseListener(path, overwrite);
+            request.send(listener);
+            return listener;
         }
-        catch (Throwable e)
+        catch (Throwable x)
         {
-            l.completeExceptionally(e);
+            CompletableFuture<PathResponse> completable = Objects.requireNonNullElse(listener, new CompletableFuture<>());
+            completable.completeExceptionally(x);
+            return completable;
         }
-        return l;
+    }
+
+    public record PathResponse(Response response, Path path)
+    {
     }
 }
