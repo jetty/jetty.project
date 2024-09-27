@@ -49,11 +49,15 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     private boolean _showHeaders;
     private final String _attr = String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
 
+    /**
+     * Callback class used to manage possibly async handling by downstream handlers.
+     * The
+     */
     private class HandlingCallback extends Callback.Nested
     {
         private final Request _request;
         private final Response _response;
-        private final AtomicBoolean _handling = new AtomicBoolean(true); //when created, the request is being handled
+        private final AtomicBoolean _completing = new AtomicBoolean(false);
 
         private HandlingCallback(Callback callback, Request request, Response response)
         {
@@ -62,29 +66,59 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
             _response = response;
         }
 
-        private boolean handlingCompleted()
+        /**
+         * Called when the handler chain has completed. We log either the completion of the request
+         * or an in-progress message if the request is still being processed asynchronously (ie this
+         * callback's {@link #succeeded()} or {@link #failed(Throwable)} methods have not yet been called).
+         */
+        private void onHandlingCompleted(Throwable throwable)
         {
-            //test if the request is still being handled or not
-            return !_handling.compareAndSet(true, false);
+            if (_completing.compareAndSet(false, true))
+            {
+                logContinuation();
+            }
+            else
+            {
+                logCompletion(throwable);
+            }
         }
 
-        private void callbackCompleted(Throwable throwable)
+        /**
+         * Called when this callback completes, either with success or failure. We output a
+         * request completion log message only in the case where we have been called back
+         * asynchronously after the handler chain has finished.
+         * @param throwable null if the handling succeeded or otherwise the failure that occurred
+         */
+        private void onCallbackCompleted(Throwable throwable)
         {
-            if (_handling.compareAndSet(true, false))
-                log("<< r=%s async=false %d %s%n%s", findRequestName(_request), _response.getStatus(), (throwable == null ? "" : throwable.toString()), _response.getHeaders());
+            //If we can set the value to true, we know that handling has not yet finalized and onHandlingCompleted(Throwable)
+            //will be called and will log the completion message. On the other hand, if we are not able to set it, then this means that
+            //handling has already finished, so we must log the completion message.
+            if (!_completing.compareAndSet(false, true))
+                logCompletion(throwable);
+        }
+
+        private void logCompletion(Throwable throwable)
+        {
+            log("<< r=%s async=false %d %s%n%s", findRequestName(_request), _response.getStatus(), (throwable == null ? "" : throwable.toString()), _response.getHeaders());
+        }
+
+        private void logContinuation()
+        {
+            log("|| r=%s async=true", findRequestName(_request));
         }
 
         @Override
         public void succeeded()
         {
-            callbackCompleted(null);
+            onCallbackCompleted(null);
             super.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            callbackCompleted(x);
+            onCallbackCompleted(x);
             super.failed(x);
         }
     }
@@ -115,7 +149,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         Thread thread = Thread.currentThread();
         String name = thread.getName() + ":" + request.getHttpURI();
         boolean willHandle = false;
-        String ex = null;
+        Throwable ex = null;
         String rname = findRequestName(request);
         HandlingCallback handlingCallback = new HandlingCallback(callback, request, response);
 
@@ -137,7 +171,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         }
         catch (Throwable x)
         {
-            ex = x + ":" + x.getCause();
+            ex = x;
             throw x;
         }
         finally
@@ -147,15 +181,9 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
                 //Log that the request was not going to be handled
                 log("!! r=%s not handled", rname);
             }
-            else if (handlingCallback.handlingCompleted())
-            {
-                //Log that the request was handled, and any async handling is also finished
-                log("<< r=%s async=false %d %s%n%s", rname, response.getStatus(), (ex == null ? "" : ex), response.getHeaders());
-            }
             else
             {
-                //Log that the request is being handled, but not yet finished
-                log("|| r=%s async=true", rname);
+                handlingCallback.onHandlingCompleted(ex);
             }
         }
     }
