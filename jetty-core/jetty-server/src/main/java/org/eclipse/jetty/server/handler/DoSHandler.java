@@ -113,6 +113,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         interface Factory
         {
             RateControl newRateControl();
+
+            Duration idleCheckPeriod();
         }
     }
 
@@ -207,7 +209,13 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             long now = NanoTime.now();
             _trackers.values().removeIf(tracker -> tracker.isIdle(now));
             if (_trackers.size() >= _maxTrackers)
-                return _rejectHandler.handle(request, response, callback);
+            {
+                // Try shrinking the tracker pool as if we are at the next idle check already
+                long nextIdleCheck = NanoTime.now() + _rateControlFactory.idleCheckPeriod().getNano();
+                _trackers.values().removeIf(tracker -> tracker.isIdle(nextIdleCheck));
+                if (_trackers.size() >= _maxTrackers)
+                    return _rejectHandler.handle(request, response, callback);
+            }
         }
 
         // Calculate an id for the request (which may be global empty string)
@@ -349,6 +357,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     public static class ExponentialMovingAverageRateControlFactory implements RateControl.Factory
     {
         private final Duration _samplePeriod;
+        private final Duration _idleCheckPeriod;
         private final double _alpha;
         private final int _maxRequestsPerSecond;
 
@@ -375,13 +384,29 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             @Name("alpha") double alpha,
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
         {
+            this(samplePeriod, null, alpha, maxRequestsPerSecond);
+        }
+
+        public ExponentialMovingAverageRateControlFactory(
+            @Name("samplePeriod") Duration samplePeriod,
+            @Name("idleCheckPeriod") Duration idleCheckPeriod,
+            @Name("alpha") double alpha,
+            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
+        {
             _samplePeriod = samplePeriod == null ? Duration.ofMillis(100) : samplePeriod;
+            _idleCheckPeriod = idleCheckPeriod == null ? _samplePeriod.multipliedBy(20) : idleCheckPeriod;
             _alpha = alpha <= 0.0 ? 0.2 : alpha;
             if (_samplePeriod.compareTo(Duration.ofSeconds(1)) > 0)
                 throw new IllegalArgumentException("Sample period must be less than or equal to 1 second");
             if (_alpha > 1.0)
                 throw new IllegalArgumentException("Alpha " + _alpha + " is too large");
             _maxRequestsPerSecond = maxRequestsPerSecond;
+        }
+
+        @Override
+        public Duration idleCheckPeriod()
+        {
+            return _idleCheckPeriod;
         }
 
         @Override
