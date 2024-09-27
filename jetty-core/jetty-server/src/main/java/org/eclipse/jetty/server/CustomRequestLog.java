@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.util.DateCache;
@@ -201,7 +202,6 @@ import static java.lang.invoke.MethodType.methodType;
  * <p>The query string, prepended with a ? if a query string exists, otherwise an empty string.</p>
  * </td>
  * </tr>
- * <!-- TODO ATTRIBUTE LOGGING -->
  * <tr>
  * <td>%r</td>
  * <td>
@@ -214,13 +214,13 @@ import static java.lang.invoke.MethodType.methodType;
  * <p>The name of the Handler or Servlet generating the response (if any).</p>
  * </td>
  * </tr>
-  * <tr>
+ * <tr>
  * <td>%s</td>
  * <td>
  * <p>The HTTP response status code.</p>
  * </td>
  * </tr>
-  * <tr>
+ * <tr>
  * <td>%{format|timeZone|locale}t</td>
  * <td>
  * <p>The time at which the request was received.</p>
@@ -262,7 +262,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <p>The URL path requested, not including any query string.</p>
  * </td>
  * </tr>
-  * <tr>
+ * <tr>
  * <td>%X</td>
  * <td>
  * <p>The connection status when response is completed:</p>
@@ -288,6 +288,36 @@ import static java.lang.invoke.MethodType.methodType;
  * <p>The value of the VARNAME response trailer.</p>
  * </td>
  * </tr>
+ * <tr>
+ * <td>%A</td>
+ * <td>
+ * <p>The Request authority (which might differ from the Host header).</p>
+ * </td>
+ * </tr>
+ * <tr>
+ * <td>%h</td>
+ * <td>
+ * <p>The Request scheme.</p>
+ * </td>
+ * </tr>
+ * <tr>
+ * <td>%uri</td>
+ * <td>
+ * <p>The entire Request HttpURI (excluding query).</p>
+ * </td>
+ * </tr>
+ * <tr>
+ * <td>%{q}uri</td>
+ * <td>
+ * <p>The entire Request HttpURI (including query).</p>
+ * </td>
+ * </tr>
+ * <tr>
+ * <td>%{attributeName}attr</td>
+ * <td>
+ * <p>A request attribute.</p>
+ * </td>
+ * </tr>
  * </table>
  * <!-- end::documentation[] -->
  */
@@ -309,6 +339,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     public static final String LOG_DETAIL = CustomRequestLog.class.getName() + ".logDetail";
     private static final Logger LOG = LoggerFactory.getLogger(CustomRequestLog.class);
     private static final ThreadLocal<StringBuilder> _buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
+    private static final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|(?:uri)|(?:attr)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)", Pattern.DOTALL | Pattern.MULTILINE);
 
     private final RequestLog.Writer _requestLogWriter;
     private final MethodHandle _logHandle;
@@ -444,7 +475,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void append(StringBuilder buf, String s)
     {
-        if (s == null || s.length() == 0)
+        if (s == null || s.isEmpty())
             buf.append('-');
         else
             buf.append(s);
@@ -489,8 +520,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             {PARAM} is an optional string parameter to the percent code.
             CODE is a 1 to 2 character string corresponding to a format code.
          */
-        final Pattern PATTERN = Pattern.compile("^(?:%(?<MOD>!?[0-9,]+)?(?:\\{(?<ARG>[^}]+)})?(?<CODE>(?:(?:ti)|(?:to)|[a-zA-Z%]))|(?<LITERAL>[^%]+))(?<REMAINING>.*)", Pattern.DOTALL | Pattern.MULTILINE);
-
         List<Token> tokens = new ArrayList<>();
         String remaining = formatString;
         while (remaining.length() > 0)
@@ -788,6 +817,27 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
                 yield lookup.findStatic(CustomRequestLog.class, "logResponseTrailer", logTypeArg).bindTo(arg);
             }
+            case "A" -> lookup.findStatic(CustomRequestLog.class, "logRequestAuthority", logType);
+            case "h" -> lookup.findStatic(CustomRequestLog.class, "logRequestScheme", logType);
+            case "uri" ->
+            {
+                if (arg == null)
+                    arg = "";
+                String method = switch (arg)
+                {
+                    case "" -> "logRequestHttpUri";
+                    case "q" -> "logRequestHttpUriQuery";
+                    default -> throw new IllegalArgumentException("Invalid arg for %uri");
+                };
+
+                yield lookup.findStatic(CustomRequestLog.class, method, logType);
+            }
+            case "attr" ->
+            {
+                MethodType logRequestAttribute = methodType(void.class, String.class, StringBuilder.class, Request.class, Response.class);
+                yield lookup.findStatic(CustomRequestLog.class, "logRequestAttribute", logRequestAttribute).bindTo(arg);
+            }
+
             default -> throw new IllegalArgumentException("Unsupported code %" + code);
         };
 
@@ -1136,6 +1186,45 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         HttpFields trailers = supplier == null ? null : supplier.get();
         if (trailers != null)
             append(b, trailers.get(arg));
+        else
+            b.append('-');
+    }
+
+    @SuppressWarnings("unused")
+    private static void logRequestAuthority(StringBuilder b, Request request, Response response)
+    {
+        HttpURI httpURI = request.getHttpURI();
+        if (httpURI.hasAuthority())
+            append(b, httpURI.getAuthority());
+        else
+            b.append('-');
+    }
+
+    @SuppressWarnings("unused")
+    private static void logRequestScheme(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getHttpURI().getScheme());
+    }
+
+    @SuppressWarnings("unused")
+    private static void logRequestHttpUri(StringBuilder b, Request request, Response response)
+    {
+        HttpURI.Mutable uri = HttpURI.build(request.getHttpURI()).query(null);
+        append(b, uri.toString());
+    }
+
+    @SuppressWarnings("unused")
+    private static void logRequestHttpUriQuery(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getHttpURI().toString());
+    }
+
+    @SuppressWarnings("unused")
+    private static void logRequestAttribute(String arg, StringBuilder b, Request request, Response response)
+    {
+        Object attribute = request.getAttribute(arg);
+        if (attribute != null)
+            append(b, attribute.toString());
         else
             b.append('-');
     }
