@@ -164,7 +164,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
         Violation.AMBIGUOUS_PATH_ENCODING,
         Violation.AMBIGUOUS_PATH_PARAMETER,
         Violation.AMBIGUOUS_PATH_SEGMENT,
-        Violation.AMBIGUOUS_PATH_SEPARATOR));
+        Violation.AMBIGUOUS_PATH_SEPARATOR,
+        Violation.SUSPICIOUS_PATH_CHARACTERS,
+        Violation.ILLEGAL_PATH_CHARACTERS));
 
     /**
      * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
