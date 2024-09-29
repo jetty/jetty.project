@@ -2536,8 +2536,11 @@
                 </goals>
                 <phase>verify</phase>
                 <configuration>
-                  <!-- Works with approval for Hazelcast https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/15797 -->
-                  <excludeGroupIds>com.hazelcast</excludeGroupIds>
+                  <!--
+                    Works with approval for Hazelcast https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/15797
+                    org.jboss.weld only used for testing
+                  -->
+                  <excludeGroupIds>com.hazelcast,org.jboss.weld</excludeGroupIds>
                   <failWhenReviewNeeded>true</failWhenReviewNeeded>
                 </configuration>
               </execution>
