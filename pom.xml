@@ -193,7 +193,7 @@
     <guava.version>33.2.1-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hazelcast.version>5.4.0</hazelcast.version>
+    <hazelcast.version>5.5.0</hazelcast.version>
     <hibernate.search.version>7.1.1.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.0.5.Final</infinispan.docker.image.version>
@@ -2371,6 +2371,53 @@
                     -->
                     <ignoredClassPattern>org.infinispan.commons.util.CloseableIterator</ignoredClassPattern>
                   </ignoredClassPatterns>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>eclipse-dash</id>
+      <pluginRepositories>
+        <pluginRepository>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>dash-licenses-releases</id>
+          <url>https://repo.eclipse.org/content/repositories/dash-licenses-releases/</url>
+        </pluginRepository>
+        <pluginRepository>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+          <id>dash-licenses-snapshots</id>
+          <url>https://repo.eclipse.org/content/repositories/dash-licenses-snapshots/</url>
+        </pluginRepository>
+      </pluginRepositories>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.dash</groupId>
+            <artifactId>license-tool-plugin</artifactId>
+            <version>1.1.0</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>license-check</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <!-- Works with approval for Hazelcast https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/15797 -->
+                  <excludeGroupIds>com.hazelcast</excludeGroupIds>
+                  <failWhenReviewNeeded>true</failWhenReviewNeeded>
                 </configuration>
               </execution>
             </executions>
