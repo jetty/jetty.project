@@ -1230,10 +1230,10 @@ public class HttpChannelTest
 
         Callback.Completable callback = new Callback.Completable();
 
-        // Writes are not possible
+        // Writes are possible, unless a pending write is failed.
         handling.get().write(false, null, callback);
         assertTrue(callback.isDone());
-        assertTrue(callback.isCompletedExceptionally());
+        assertFalse(callback.isCompletedExceptionally());
 
         // Run the onFailure task.
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
