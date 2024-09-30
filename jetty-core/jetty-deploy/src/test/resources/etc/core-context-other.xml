@@ -14,13 +14,12 @@
 
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
-  <Set name="contextPath">/global</Set>
   <Call name="setAttribute">
-    <Arg>somename</Arg>
-    <Arg>somevalue</Arg>
+    <Arg>other</Arg>
+    <Arg>othervalue</Arg>
   </Call>
   <Call name="setAttribute">
-    <Arg>core-context-0</Arg>
-    <Arg>core-context-0</Arg>
+    <Arg>somename</Arg>
+    <Arg>othervalue</Arg>
   </Call>
 </Configure>
