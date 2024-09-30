@@ -66,13 +66,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -608,8 +608,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        ExceptionUtil.mustExecute(getExecutor(), _httpChannel.onIdleTimeout(timeout));
-        return false; // We've handle the exception
+        ThreadPool.mustExecute(getExecutor(), _httpChannel.onIdleTimeout(timeout));
+        return false;
     }
 
     @Override
@@ -683,9 +683,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
                 LOG.debug("demand failed {}", task, x);
-            if (task != null)
-                // Execute error path as invocation type is probably wrong.
-                getConnector().getExecutor().execute(task);
+            ThreadPool.mustExecute(getConnector().getExecutor(), task);
         }
 
         @Override
@@ -1039,9 +1037,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
-            Runnable task = _httpChannel.onFailure(_failure);
-            if (task != null)
-                getServer().getThreadPool().execute(task);
+            ThreadPool.mustExecute(getServer().getThreadPool(), _httpChannel.onFailure(_failure));
         }
 
         @Override

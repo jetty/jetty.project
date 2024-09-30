@@ -18,11 +18,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.TryExecutor;
 
 /**
  * <p>Exception (or rather {@link Throwable} utility methods.</p>
@@ -208,30 +206,6 @@ public class ExceptionUtil
                 throwable.addSuppressed(suppressed);
             else if (s == MAX_SUPPRESSED)
                 throwable.addSuppressed(new IllegalStateException("Too many suppressed", suppressed));
-        }
-    }
-
-    // TODO javadoc
-    public static void mustExecute(Executor executor, Runnable task)
-    {
-        if (task == null)
-            return;
-
-        if (executor instanceof TryExecutor tryExecutor && tryExecutor.tryExecute(task))
-            return;
-
-        switch (Invocable.getInvocationType(task))
-        {
-            case NON_BLOCKING -> task.run();
-            case EITHER -> Invocable.invokeNonBlocking(task);
-            default ->
-            {
-                Executor virtual = VirtualThreads.getVirtualThreadsExecutor(executor);
-                if (virtual != null)
-                    virtual.execute(task);
-                else
-                    new Thread(task).start();
-            }
         }
     }
 

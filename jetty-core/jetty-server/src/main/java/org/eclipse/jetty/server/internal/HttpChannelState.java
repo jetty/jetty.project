@@ -456,7 +456,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _onContentAvailable = null;
 
                 // If a write call is in progress, take the writeCallback to fail below.
-                Runnable invokeWriteFailure = _response.lockedFailWrite(x, true);
+                Runnable invokeWriteFailure = _response.lockedFailWrite(x, false);
 
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
@@ -1008,9 +1008,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void fail(Throwable failure)
         {
-            Runnable runnable = _httpChannelState.onFailure(failure);
-            if (runnable != null)
-                getContext().execute(runnable);
+            ThreadPool.mustExecute(getContext(), _httpChannelState.onFailure(failure));
         }
 
         @Override
