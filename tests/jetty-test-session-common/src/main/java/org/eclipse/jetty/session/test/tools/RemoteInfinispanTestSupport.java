@@ -16,10 +16,8 @@ package org.eclipse.jetty.session.test.tools;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.ElementType;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.UUID;
 
 import org.eclipse.jetty.session.SessionData;

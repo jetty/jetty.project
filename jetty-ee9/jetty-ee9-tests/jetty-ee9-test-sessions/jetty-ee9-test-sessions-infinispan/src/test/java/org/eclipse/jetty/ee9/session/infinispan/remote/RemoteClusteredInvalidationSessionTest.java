@@ -20,8 +20,6 @@ import org.eclipse.jetty.session.test.tools.LoggingUtil;
 import org.eclipse.jetty.session.test.tools.RemoteInfinispanTestSupport;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.util.UUID;
-
 /**
  * InvalidationSessionTest
  */
