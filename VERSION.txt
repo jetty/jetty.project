@@ -1,11 +1,80 @@
-jetty-12.0.13-SNAPSHOT
+jetty-12.1.0-SNAPSHOT
+
+jetty-12.0.14 - 30 September 2024
+ + 929 Implement a utility class to save large downloads to a file (@arsenalzp)
+ + 7515 Connection limit problem for "onAccepting" connections
+ + 7951 OutputStreamContentProvider blocks forever during an HTTP2 upload after
+   idle timeout is reached
+ + 11092 Jetty 12.x startup fails because MetaInfConfiguration is throwing an
+   exception while parsing java classpath with URIUtil when classpath contains
+   wildcard ./mypath/*
+ + 11298 Error 400 - Ambiguous URI Empty Segment
+ + 12047 Server should NOT open connectors early in start sequence (@kelunik)
+ + 12191 DebugListener module in `core` refers to non-existent
+   `org.eclipse.jetty.server.DebugListener`
+ + 12195 Integrate Eclipse Dash License Tool to our build
+ + 12227 Improve HttpConnection buffer recycling
+ + 12239 Optimize buffer release in HttpConnection
+ + 12241 Unable to Add SameSite Cookie Attribute Value in Jetty 12 EE8
+   environment with Java 17
+ + 12249 HTTP/2 responses with Content-Length may have no content
+ + 12255 Environment CookieConfig details not visible in Server Dump or JMX
+ + 12256 Configuring Virtual Thread executor in Jetty Http client makes my
+   Spring Boot app freeze
+ + 12265 Jetty 12.0.13 fails to start when the `threadpool-all-virtual` module
+   is enabled.
+ + 12268 `IteratingCallback` may iterate too much when `process()` returns
+   Action.IDLE
+ + 12279 org.eclipse.jetty.maven.ServerSupport.configureHandlers(Server,
+   List<ContextHandler>, RequestLog)  removes handlers
+ + 12284 Excessive heap consumption by SSLSessionImpl by Jetty Server with TLS
+   1.3 and long-lived client
+ + 12289 Improve ConcurrentPool concurrency
+ + 12297 Avoid list copy on reverse iteration
+ + 12303 Use sessionRequest for wrapping HTTP stream instead of original Request (@robbie01)
+ + 12309 `SessionAuthentication._session` is not marked as `transient`
+
+jetty-12.0.13 - 03 September 2024
+ + 3184 Make LifeCycle implement AutoCloseable
+ + 3553 Support sslSession() in Jetty Client
+ + 6514 How to warm up SslConnection
+ + 9121 Jetty 12 - Flaky
+   BlockedWritesWithSmallThreadPoolTest.testServerThreadsBlockedInWrites()
+ + 11322 Change jetty-nosql MongoDB dependency from unmaintained
+   mongo-java-driver to mongodb-driver-sync
+ + 11408 Jetty start module property values with ${expr} are not being expanded
+ + 11434 resolve differences in EE9/EE10/Core AliasCheckerSymlinkTests
+ + 11822 h2 server responses exceeding SETTINGS_MAX_HEADER_LIST_SIZE do not
+   result in RST_STREAM or GOAWAY
+ + 11926 File upload puzzle
+ + 12063 Introduce Jetty module for HTTP/2 client dependencies
+ + 12094 Possible regression in ContextFactory.getObjectInstance() between
+   Jetty 11.0.22 and 12.0.11
+ + 12104 Error handling on ee9 / ee8 with HTTP/1.0 can result in an empty
+   `Connection: ` response header.
+ + 12120 Introduce properties for cipher suites
+ + 12122 NPE in HttpReceiver.responseContentAvailable()
+ + 12124 JSP temp directory regression, possibly due to fix for #12044
+ + 12128 How do I configure embedded Jetty to serve webjars?
+ + 12154 Is it possible to define max number of virtual threads when
+   VirtualThreadsExecutor is enabled, i.e. max number of http requests being
+   handled in the same time?
+ + 12158 Jetty12 migration help
+ + 12163 HttpConfiguration dump is missing entries
+ + 12171 QoSHandler does not resume on a virtual thread
+ + 12173 Jetty Maven Plugin - jetty:run does not work with pom type
+   dependencies
+ + 12175 `SslContextFactory` is hardcoded to use `Password`
+ + 12185 QosHandler suspend queue limit
+ + 12207 Jetty Maven Plugin 12.x no longer configures `DefaultHandler`
+ + 12212 ShutdownOutput for non-persistent HTTP/1 connections
 
 jetty-12.0.12 - 25 July 2024
  + 265 --list-config license enhancement
  + 10904 jetty.sh reports FAILED too early
  + 11965 Client: Some HTTP/2 requests are never sent
  + 11996 mTLS: client cert verification for QUIC/HTTP3
- + 12000 Cannot use Paths that have spaces with `jetty-ee10-maven-plugin` 
+ + 12000 Cannot use Paths that have spaces with `jetty-ee10-maven-plugin`
  + 12018 NPE when passing null value to Request.param
  + 12019 External property file not being read
  + 12022 Intermittent NPE in OutputStream.close with GzipHandler
