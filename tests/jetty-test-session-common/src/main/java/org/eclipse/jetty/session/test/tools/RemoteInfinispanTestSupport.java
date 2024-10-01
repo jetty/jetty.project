@@ -49,7 +49,6 @@ public class RemoteInfinispanTestSupport
     private static final Logger LOG = LoggerFactory.getLogger(RemoteInfinispanTestSupport.class);
     public RemoteCache<String, InfinispanSessionData> _cache;
     private final String _name;
-    public static RemoteCacheManager _manager;
     private static final Logger INFINISPAN_LOG =
             LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
@@ -57,27 +56,31 @@ public class RemoteInfinispanTestSupport
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + INFINISPAN_VERSION;
 
-    private static final GenericContainer<?> infinispan = new GenericContainer<>(IMAGE_NAME);
-
-    static
+    private static final class Holder
     {
-        infinispan.withEnv("USER", "theuser")
-                .withEnv("PASS", "foobar")
-                .withEnv("MGMT_USER", "admin")
-                .withEnv("MGMT_PASS", "admin")
-                .withEnv("CONFIG_PATH", "/user-config/config.yaml")
-                .waitingFor(Wait.forListeningPorts(11222))
-                .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-                .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
-                .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY)
-                .start();
+        private static final Holder INSTANCE = new Holder();
 
-        // setup instance
+        private final RemoteCacheManager manager;
+
+        private Holder()
         {
+            GenericContainer<?> container = new GenericContainer<>(IMAGE_NAME);
+
+            container.withEnv("USER", "theuser")
+                    .withEnv("PASS", "foobar")
+                    .withEnv("MGMT_USER", "admin")
+                    .withEnv("MGMT_PASS", "admin")
+                    .withEnv("CONFIG_PATH", "/user-config/config.yaml")
+                    .waitingFor(Wait.forListeningPorts(11222))
+                    .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+                    .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
+                    .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY)
+                    .start();
+
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
                     .addServer()
-                    .host(infinispan.getHost())
-                    .port(infinispan.getMappedPort(11222))
+                    .host(container.getHost())
+                    .port(container.getMappedPort(11222))
                     // we just want to limit connectivity to list of host:port we knows at start
                     // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
                     .clientIntelligence(ClientIntelligence.BASIC)
@@ -93,7 +96,7 @@ public class RemoteInfinispanTestSupport
             configurationBuilder.addContextInitializer(new InfinispanSerializationContextInitializer());
             Configuration configuration = configurationBuilder.build();
 
-            _manager = new RemoteCacheManager(configuration);
+            manager = new RemoteCacheManager(configuration);
 
             //upload the session.proto file to the remote cache
             ByteArrayOutputStream baos;
@@ -111,10 +114,8 @@ public class RemoteInfinispanTestSupport
             }
 
             String content = baos.toString(StandardCharsets.UTF_8);
-            _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
-
+            manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
         }
-
     }
 
     public RemoteInfinispanTestSupport(String cacheName)
@@ -129,7 +130,7 @@ public class RemoteInfinispanTestSupport
                 "</infinispan>", _name);
 
         StringConfiguration xmlConfig = new StringConfiguration(xml);
-        _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
+        _cache = Holder.INSTANCE.manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 
     public RemoteCache<String, InfinispanSessionData> getCache()
