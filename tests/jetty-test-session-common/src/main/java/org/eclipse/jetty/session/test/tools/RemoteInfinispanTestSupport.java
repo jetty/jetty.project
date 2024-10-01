@@ -20,6 +20,7 @@ import java.lang.annotation.ElementType;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.UUID;
 
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
@@ -54,7 +55,7 @@ public class RemoteInfinispanTestSupport
     private static final Logger INFINISPAN_LOG =
             LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
-    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "14.0.25.Final");
+    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "15.0.9.Final");
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + INFINISPAN_VERSION;
 
@@ -121,7 +122,7 @@ public class RemoteInfinispanTestSupport
     public RemoteInfinispanTestSupport(String cacheName)
     {
         Objects.requireNonNull(cacheName, "cacheName cannot be null");
-        _name = cacheName;
+        _name = UUID.randomUUID().toString();
         String xml = String.format("<infinispan>"  +
                 "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
                 "<encoding media-type=\"application/x-protostream\"/>" +
