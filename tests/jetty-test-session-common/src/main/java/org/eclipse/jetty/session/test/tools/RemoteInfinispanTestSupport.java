@@ -34,7 +34,6 @@ import org.infinispan.commons.configuration.StringConfiguration;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -56,13 +55,13 @@ public class RemoteInfinispanTestSupport
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + INFINISPAN_VERSION;
 
-    private static final class Holder
+    private static final class Infinispan
     {
-        private static final Holder INSTANCE = new Holder();
+        private static final Infinispan INSTANCE = new Infinispan();
 
         private final RemoteCacheManager manager;
 
-        private Holder()
+        private Infinispan()
         {
             GenericContainer<?> container = new GenericContainer<>(IMAGE_NAME);
 
@@ -70,12 +69,10 @@ public class RemoteInfinispanTestSupport
                     .withEnv("PASS", "foobar")
                     .withEnv("MGMT_USER", "admin")
                     .withEnv("MGMT_PASS", "admin")
-                    //.withEnv("CONFIG_PATH", "/user-config/config.yaml")
                     .withEnv("JAVA_OPTIONS", "-Xms64m -Xmx256m -Djgroups.dns.query=infinispan-dns-ping.myproject.svc.cluster.local")
                     .waitingFor(Wait.forListeningPorts(11222))
                     .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
                     .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
-                    //.withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY)
                     .start();
 
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
@@ -139,7 +136,7 @@ public class RemoteInfinispanTestSupport
     public RemoteInfinispanTestSupport(String cacheName)
     {
         Objects.requireNonNull(cacheName, "cacheName cannot be null");
-        _name = UUID.randomUUID().toString();
+        _name = cacheName + "-" + UUID.randomUUID();
         String xml = String.format("<infinispan>"  +
                 "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
                 "<encoding media-type=\"application/x-protostream\"/>" +
@@ -148,7 +145,7 @@ public class RemoteInfinispanTestSupport
                 "</infinispan>", _name);
 
         StringConfiguration xmlConfig = new StringConfiguration(xml);
-        _cache = Holder.INSTANCE.manager.administration().getOrCreateCache(_name, xmlConfig);
+        _cache = Infinispan.INSTANCE.manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 
     public RemoteCache<String, InfinispanSessionData> getCache()
