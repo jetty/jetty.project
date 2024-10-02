@@ -116,6 +116,23 @@ public class RemoteInfinispanTestSupport
 
             String content = baos.toString(StandardCharsets.UTF_8);
             manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() ->
+            {
+                try
+                {
+                    if(container.isRunning())
+                    {
+                        LOG.info("Stopping Infinispan");
+                        container.stop();
+                    }
+                }
+                catch (Throwable x)
+                {
+                    // ignore any error here
+                    LOG.warn(x.getMessage(), x);
+                }
+            }));
         }
     }
 
