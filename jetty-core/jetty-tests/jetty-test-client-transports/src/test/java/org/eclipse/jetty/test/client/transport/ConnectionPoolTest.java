@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.test.client.transport;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.Destination;
@@ -28,10 +28,10 @@ import org.eclipse.jetty.server.internal.HttpConnection;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.is;
 
 public class ConnectionPoolTest extends AbstractTest
 {
@@ -39,13 +39,14 @@ public class ConnectionPoolTest extends AbstractTest
     @MethodSource("transports")
     public void testPreCreateConnections(Transport transport) throws Exception
     {
+        int maxConnectionsPerDestination = 8;
         prepareServer(transport, new EmptyServerHandler());
         ConnectionListener serverConnections = new ConnectionListener();
         connector.addBean(serverConnections);
         server.start();
 
         startClient(transport);
-        client.setMaxConnectionsPerDestination(8);
+        client.setMaxConnectionsPerDestination(maxConnectionsPerDestination);
         if (transport == Transport.HTTPS)
             ((HttpClientTransportOverHTTP)client.getTransport()).setInitializeConnections(true);
 
@@ -54,15 +55,17 @@ public class ConnectionPoolTest extends AbstractTest
         destination.getConnectionPool().preCreateConnections(client.getMaxConnectionsPerDestination())
             .get(5, TimeUnit.SECONDS);
 
-        // Verify that connections have been created.
-        List<Connection> connections = switch (transport)
+        // Verify that server connections have been created.
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
         {
-            case HTTP, HTTPS -> serverConnections.filter(HttpConnection.class);
-            case H2C, H2 -> serverConnections.filter(HTTP2ServerConnection.class);
-            case H3 -> serverConnections.filter(ServerQuicConnection.class);
-            case FCGI -> serverConnections.filter(ServerFCGIConnection.class);
-        };
-        assertThat(connections, not(empty()));
+            switch (transport)
+            {
+                case HTTP, HTTPS -> assertThat(serverConnections.filter(HttpConnection.class).size(), is(maxConnectionsPerDestination));
+                case H2C, H2 -> assertThat(serverConnections.filter(HTTP2ServerConnection.class).size(), is(maxConnectionsPerDestination));
+                case H3 -> assertThat(serverConnections.filter(ServerQuicConnection.class).size(), is(1));
+                case FCGI -> assertThat(serverConnections.filter(ServerFCGIConnection.class).size(), is(maxConnectionsPerDestination));
+            }
+        });
 
         // Verify that TLS was performed.
         List<Connection> sslConnections = switch (transport)
@@ -72,7 +75,7 @@ public class ConnectionPoolTest extends AbstractTest
         };
         if (sslConnections != null)
         {
-            assertThat(sslConnections.size(), greaterThan(0));
+            assertThat(sslConnections.size(), is(maxConnectionsPerDestination));
             sslConnections.forEach(c -> assertThat(c.getBytesIn(), greaterThan(0L)));
             sslConnections.forEach(c -> assertThat(c.getBytesOut(), greaterThan(0L)));
         }
@@ -80,7 +83,7 @@ public class ConnectionPoolTest extends AbstractTest
 
     private static class ConnectionListener implements Connection.Listener
     {
-        private final List<Connection> connections = new ArrayList<>();
+        private final List<Connection> connections = new CopyOnWriteArrayList<>();
 
         @Override
         public void onOpened(Connection connection)
