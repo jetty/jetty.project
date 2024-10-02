@@ -115,11 +115,14 @@ public interface ThreadPool extends Executor
             case EITHER -> Invocable.invokeNonBlocking(task);
             default ->
             {
-                Runtime runtime = Runtime.getRuntime();
-                if (runtime.maxMemory() - runtime.totalMemory() > (100 * 1024))
+                try
+                {
                     new Thread(task).start();
-                else
+                }
+                catch (OutOfMemoryError ignored)
+                {
                     task.run();
+                }
             }
         }
     }
