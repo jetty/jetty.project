@@ -220,8 +220,8 @@ public class ResourceServlet extends HttpServlet
             boolean addAliasCheck = true;
             for (AliasCheck aliasCheck : contextHandler.getAliasChecks())
             {
-                if (aliasCheck instanceof AllowedResourceAliasChecker allowedResourceAliasChecker
-                    && Objects.equals(baseResource, allowedResourceAliasChecker.getBaseResource()))
+                if (aliasCheck instanceof AllowedResourceAliasChecker allowedResourceAliasChecker &&
+                    Objects.equals(baseResource, allowedResourceAliasChecker.getBaseResource()))
                 {
                     addAliasCheck = false;
                     break;
