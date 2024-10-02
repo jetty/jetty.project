@@ -1,4 +1,7 @@
-jetty-10.0.24-SNAPSHOT
+jetty-10.0.25-SNAPSHOT
+
+jetty-10.0.24 - 26 August 2024
+ + 12201 backport ThreadLimitHandler improvements from Jetty 12
 
 jetty-10.0.23 - 13 August 2024
  + 12041 backport tracking retainable pool from Jetty 12
