@@ -1,5 +1,8 @@
 jetty-11.0.25-SNAPSHOT
 
+jetty-11.0.24 - 26 August 2024
+ + 12201 backport ThreadLimitHandler improvements from Jetty 12
+
 jetty-11.0.23 - 13 August 2024
  + 12041 backport tracking retainable pool from Jetty 12
  + 12156 Improvements to HttpConnection when reading 0 bytes
