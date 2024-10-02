@@ -121,7 +121,7 @@ public class RemoteInfinispanTestSupport
             {
                 try
                 {
-                    if(container.isRunning())
+                    if (container.isRunning())
                     {
                         LOG.info("Stopping Infinispan");
                         container.stop();
