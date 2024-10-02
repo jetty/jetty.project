@@ -60,18 +60,10 @@ public class ConnectionPoolTest extends AbstractTest
         {
             switch (transport)
             {
-                case HTTP, HTTPS:
-                    assertThat(serverConnections.filter(HttpConnection.class).size(), is(maxConnectionsPerDestination));
-                    break;
-                case H2C, H2:
-                    assertThat(serverConnections.filter(HTTP2ServerConnection.class).size(), is(maxConnectionsPerDestination));
-                    break;
-                case H3:
-                    assertThat(serverConnections.filter(ServerQuicConnection.class).size(), is(1));
-                    break;
-                case FCGI:
-                    assertThat(serverConnections.filter(ServerFCGIConnection.class).size(), is(maxConnectionsPerDestination));
-                    break;
+                case HTTP, HTTPS -> assertThat(serverConnections.filter(HttpConnection.class).size(), is(maxConnectionsPerDestination));
+                case H2C, H2 -> assertThat(serverConnections.filter(HTTP2ServerConnection.class).size(), is(maxConnectionsPerDestination));
+                case H3 -> assertThat(serverConnections.filter(ServerQuicConnection.class).size(), is(1));
+                case FCGI -> assertThat(serverConnections.filter(ServerFCGIConnection.class).size(), is(maxConnectionsPerDestination));
             }
         });
 
