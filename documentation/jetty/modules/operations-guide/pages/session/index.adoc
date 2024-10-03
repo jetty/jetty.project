@@ -206,10 +206,11 @@ Boolean, default `false`.
 Controls whether the session cache should ask a `SessionDataStore` to delete a session that cannot be restored - for example because it is corrupted.
 
 jetty.session.flushOnResponseCommit::
-Boolean, default `false`.
-If true, if a session is "dirty" - ie its attributes have changed - it will be written to the `SessionDataStore` as the response is about to commit.
-This ensures that all subsequent requests whether to the same or different node will see the updated session data.
+Boolean, default `true`.
+If true, if a session is "dirty" - ie it has never been saved or its attributes have changed - it will be written to the `SessionDataStore` as the response is about to commit.
+This ensures that all subsequent requests - whether to the same or different node - will see the updated session data.
 If false, a dirty session will only be written to the backing store when the last simultaneous request for it leaves the session.
+Be aware that in this case, the write can happen _after_ the response is returned to the client.
 
 jetty.session.invalidateOnShutdown::
 Boolean, default `false`.

@@ -661,4 +661,21 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
             assertTrue(data.getLastSaved() > lastSaved);
         }
     }
+
+    @Test
+    public void testFlushOnResponseCommitDefault() throws Exception
+    {
+        //test factory defaults to flushOnResponseCommit==true
+        DefaultSessionCacheFactory sessionCacheFactory = new DefaultSessionCacheFactory();
+        assertTrue(sessionCacheFactory.isFlushOnResponseCommit());
+
+        //test cache produced by factory defaults to flushOnResponseCommit==true
+        DefaultSessionCache cacheFromFactory = (DefaultSessionCache)sessionCacheFactory.newSessionCache(new TestableSessionManager());
+        assertTrue(cacheFromFactory.isFlushOnResponseCommit());
+
+        //test cache defaults to flushOnResponseCommit==true
+        DefaultSessionCache sessionCache = new DefaultSessionCache(new TestableSessionManager());
+        assertTrue(sessionCache.isFlushOnResponseCommit());
+    }
+
 }
