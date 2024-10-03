@@ -101,4 +101,111 @@ public interface Frame
     boolean isRsv2();
 
     boolean isRsv3();
+
+    class Wrapper implements Frame
+    {
+        private final Frame _frame;
+
+        public Wrapper(Frame frame)
+        {
+            _frame = frame;
+        }
+
+        @Override
+        public byte[] getMask()
+        {
+            return _frame.getMask();
+        }
+
+        @Override
+        public byte getOpCode()
+        {
+            return _frame.getOpCode();
+        }
+
+        @Override
+        public ByteBuffer getPayload()
+        {
+            return _frame.getPayload();
+        }
+
+        @Override
+        public int getPayloadLength()
+        {
+            return _frame.getPayloadLength();
+        }
+
+        @Override
+        public Type getType()
+        {
+            return _frame.getType();
+        }
+
+        @Override
+        public boolean hasPayload()
+        {
+            return _frame.hasPayload();
+        }
+
+        @Override
+        public boolean isFin()
+        {
+            return _frame.isFin();
+        }
+
+        @Override
+        public boolean isMasked()
+        {
+            return _frame.isMasked();
+        }
+
+        @Override
+        public boolean isRsv1()
+        {
+            return _frame.isRsv1();
+        }
+
+        @Override
+        public boolean isRsv2()
+        {
+            return _frame.isRsv2();
+        }
+
+        @Override
+        public boolean isRsv3()
+        {
+            return _frame.isRsv3();
+        }
+    }
+
+    static Frame copy(Frame frame)
+    {
+        ByteBuffer payloadCopy = copy(frame.getPayload());
+        return new Frame.Wrapper(frame)
+        {
+            @Override
+            public ByteBuffer getPayload()
+            {
+                return payloadCopy;
+            }
+
+            @Override
+            public int getPayloadLength()
+            {
+                return payloadCopy == null ? 0 : payloadCopy.remaining();
+            }
+        };
+    }
+
+    private static ByteBuffer copy(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return null;
+        int p = buffer.position();
+        ByteBuffer clone = buffer.isDirect() ? ByteBuffer.allocateDirect(buffer.remaining()) : ByteBuffer.allocate(buffer.remaining());
+        clone.put(buffer);
+        clone.flip();
+        buffer.position(p);
+        return clone;
+    }
 }

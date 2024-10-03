@@ -206,18 +206,60 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 coreCallback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause));
                 return;
             }
+
+            switch (frame.getOpCode())
+            {
+                case OpCode.TEXT ->
+                {
+                    if (textHandle == null)
+                        autoDemand();
+                }
+                case OpCode.BINARY ->
+                {
+                    if (binaryHandle == null)
+                        autoDemand();
+                }
+                case OpCode.CONTINUATION ->
+                {
+                    if (activeMessageSink == null)
+                        autoDemand();
+                }
+                case OpCode.PING ->
+                {
+                    if (pingHandle == null)
+                        autoDemand();
+                }
+                case OpCode.PONG ->
+                {
+                    if (pongHandle == null)
+                        autoDemand();
+                }
+                case OpCode.CLOSE ->
+                {
+                    // Do nothing.
+                }
+                default ->
+                {
+                    coreCallback.failed(new IllegalStateException());
+                    return;
+                }
+            };
         }
 
         Callback.Completable eventCallback = new Callback.Completable();
         switch (frame.getOpCode())
         {
-            case OpCode.CLOSE -> onCloseFrame(frame, eventCallback);
-            case OpCode.PING -> onPingFrame(frame, eventCallback);
-            case OpCode.PONG -> onPongFrame(frame, eventCallback);
             case OpCode.TEXT -> onTextFrame(frame, eventCallback);
             case OpCode.BINARY -> onBinaryFrame(frame, eventCallback);
             case OpCode.CONTINUATION -> onContinuationFrame(frame, eventCallback);
-            default -> coreCallback.failed(new IllegalStateException());
+            case OpCode.PING -> onPingFrame(frame, eventCallback);
+            case OpCode.PONG -> onPongFrame(frame, eventCallback);
+            case OpCode.CLOSE -> onCloseFrame(frame, eventCallback);
+            default ->
+            {
+                coreCallback.failed(new IllegalStateException());
+                return;
+            }
         };
 
         // Combine the callback from the frame handler and the event handler.
@@ -315,6 +357,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         else
         {
+            // If we have a frameHandler it takes responsibility for handling the ping and demanding.
+            if (frameHandle != null)
+            {
+                callback.succeeded();
+                return;
+            }
+
             // Automatically respond.
             getSession().sendPong(frame.getPayload(), new org.eclipse.jetty.websocket.api.Callback()
             {
@@ -358,7 +407,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         else
         {
-            internalDemand();
+            // If we have a frameHandler it takes responsibility for handling the pong and demanding.
+            callback.succeeded();
+            if (frameHandle == null)
+                internalDemand();
         }
     }
 
@@ -387,7 +439,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
-            internalDemand();
+            if (frameHandle == null)
+                internalDemand();
             return;
         }
 
