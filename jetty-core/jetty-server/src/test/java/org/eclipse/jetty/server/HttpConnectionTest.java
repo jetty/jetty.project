@@ -965,7 +965,7 @@ public class HttpConnectionTest
         checkNotContained(response, offset, "56789");
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "pathInContext=/R2");
-        offset = checkContains(response, offset, "charset=UTF-8");
+        offset = checkContains(response, offset, "charset=utf-8");
         checkContains(response, offset, "abcdefghij");
     }
 
@@ -1061,7 +1061,7 @@ public class HttpConnectionTest
         offset = checkContains(response, offset, "HTTP/1.1 599");
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "/R2");
-        offset = checkContains(response, offset, "text/plain; charset=UTF-8");
+        offset = checkContains(response, offset, "text/plain; charset=utf-8");
         checkContains(response, offset, "abcdefghij");
     }
 

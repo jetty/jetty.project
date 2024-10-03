@@ -15,6 +15,7 @@ package org.eclipse.jetty.docs.programming.migration;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
@@ -118,6 +120,8 @@ public class ServletToHandlerDocs
             // Gets the request Content-Type.
             // Replaces:
             //   - servletRequest.getContentType()
+            MimeTypes.Type mimeType = Request.getContentMimeType(request);
+            Charset charset = Request.getCharset(request);
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
 
             // Gets the request Content-Length.

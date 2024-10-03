@@ -134,7 +134,7 @@ public class CharacterEncodingTest
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
-        assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=utf-8"));
     }
 
 }

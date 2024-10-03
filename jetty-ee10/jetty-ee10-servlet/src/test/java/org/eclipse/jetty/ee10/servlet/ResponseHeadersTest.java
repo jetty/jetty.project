@@ -146,7 +146,7 @@ public class ResponseHeadersTest
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
-        assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/plain;charset=UTF-8"));
+        assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/plain;charset=utf-8"));
 
         String expected = StringUtil.replace(actualPathInfo, "%0A", " "); // replace OBS fold with space
         expected = URLDecoder.decode(expected, StandardCharsets.UTF_8); // decode the rest
@@ -189,7 +189,7 @@ public class ResponseHeadersTest
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
         // The Content-Type should not have a charset= portion
-        assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/html;charset=UTF-8"));
+        assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/html;charset=utf-8"));
     }
 
     @Test

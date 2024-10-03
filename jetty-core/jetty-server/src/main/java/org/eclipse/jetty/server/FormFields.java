@@ -19,6 +19,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
@@ -51,7 +52,15 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (!config.getFormEncodedMethods().contains(request.getMethod()))
             return null;
 
-        String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+        HttpField contentTypeField= request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+        if (contentTypeField instanceof MimeTypes.ContentTypeField contentMimeTypeField)
+        {
+            MimeTypes.Type type = contentMimeTypeField.getMimeType();
+            if (type != null && type.getCharset() != null)
+                return type.getCharset();
+        }
+
+        String contentType = contentTypeField.getValue();
         if (request.getLength() == 0 || StringUtil.isBlank(contentType))
             return null;
 

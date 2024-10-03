@@ -111,7 +111,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     protected static final String REQUEST2_HEADER =
         "POST / HTTP/1.0\n" +
             "Host: localhost\n" +
-            "Content-Type: text/xml; charset=ISO-8859-1\n" +
+            "Content-Type: text/xml; charset=iso-8859-1\n" +
             "Content-Length: ";
     protected static final String REQUEST2_CONTENT =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -127,7 +127,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
     protected static final String RESPONSE2 =
         "HTTP/1.1 200 OK\n" +
-            "Content-Type: text/xml; charset=ISO-8859-1\n" +
+            "Content-Type: text/xml; charset=iso-8859-1\n" +
             "Content-Length: " + REQUEST2_CONTENT.getBytes().length + "\n" +
             "\n" +
             REQUEST2_CONTENT;

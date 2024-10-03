@@ -2601,7 +2601,25 @@ public class HttpParserTest
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
     @SuppressWarnings("ReferenceEquality")
-    public void testCachedField(String eoln)
+    public void testInsensitiveCachedField(String eoln)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.1" + eoln +
+                "Content-Type: text/plain;Charset=UTF-8" + eoln +
+                eoln);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        HttpField field = _fields.get(0);
+        assertThat(field.getValue(), is("text/plain;charset=utf-8"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\r\n", "\n"})
+    @SuppressWarnings("ReferenceEquality")
+    public void testDynamicCachedField(String eoln)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.1" + eoln +
