@@ -11,15 +11,26 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.util;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
-public class TestEncoderHandler implements Instruction.Handler
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.qpack.Instruction;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
+
+public class TestDecoderHandler implements QpackDecoder.Handler, Instruction.Handler
 {
+    private final LinkedList<MetaData> _metadataList = new LinkedList<>();
     private final LinkedList<Instruction> _instructionList = new LinkedList<>();
+
+    @Override
+    public void onMetaData(long streamId, MetaData metadata, boolean wasBlocked)
+    {
+        _metadataList.add(metadata);
+    }
 
     @Override
     public void onInstructions(List<Instruction> instructions)
@@ -34,6 +45,11 @@ public class TestEncoderHandler implements Instruction.Handler
         return byteBuffer;
     }
 
+    public MetaData getMetaData()
+    {
+        return _metadataList.poll();
+    }
+
     public Instruction getInstruction()
     {
         return _instructionList.poll();
@@ -41,6 +57,6 @@ public class TestEncoderHandler implements Instruction.Handler
 
     public boolean isEmpty()
     {
-        return _instructionList.isEmpty();
+        return _metadataList.isEmpty() && _instructionList.isEmpty();
     }
 }

@@ -27,6 +27,9 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentI
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
+import org.eclipse.jetty.http3.qpack.util.QpackTestUtil;
+import org.eclipse.jetty.http3.qpack.util.TestDecoderHandler;
+import org.eclipse.jetty.http3.qpack.util.TestEncoderHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -154,5 +157,33 @@ public class EncodeDecodeTest
         assertThat(instruction, instanceOf(LiteralNameEntryInstruction.class));
         assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565"));
         _encoder.getInstructionHandler().onInsertCountIncrement(1);
+    }
+
+    @Test
+    public void testEncoderSetCapacity()
+    {
+        _encoder.setMaxTableCapacity(1024 * 1024);
+
+        // Since capacity is already 0, this should not produce an instruction.
+        _encoder.setTableCapacity(0);
+        Instruction instruction = _encoderHandler.getInstruction();
+        assertNull(instruction);
+
+        // If we change the value of the table an instruction will be produced.
+        _encoder.setTableCapacity(1024);
+        instruction = _encoderHandler.getInstruction();
+        assertThat(instruction, instanceOf(SetCapacityInstruction.class));
+        assertThat(((SetCapacityInstruction)instruction).getCapacity(), is(1024));
+
+        // No instruction since size was already 1024.
+        _encoder.setTableCapacity(1024);
+        instruction = _encoderHandler.getInstruction();
+        assertNull(instruction);
+
+        // We can return the size back to 0 and an instruction is sent.
+        _encoder.setTableCapacity(0);
+        instruction = _encoderHandler.getInstruction();
+        assertThat(instruction, instanceOf(SetCapacityInstruction.class));
+        assertThat(((SetCapacityInstruction)instruction).getCapacity(), is(0));
     }
 }
