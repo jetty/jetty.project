@@ -616,7 +616,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionManager);
 
         //test values: allow first save, fail evict save, allow save
-        FailableSessionDataStore sessionDataStore = new FailableSessionDataStore(new boolean[]{true, false, true});
+        FailableSessionDataStore sessionDataStore = new FailableSessionDataStore(new boolean[]{true, true, false, true});
         cache.setSessionDataStore(sessionDataStore);
         sessionManager.setSessionCache(cache);
         server.addBean(sessionManager);
