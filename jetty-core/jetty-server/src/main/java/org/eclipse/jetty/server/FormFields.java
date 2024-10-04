@@ -53,6 +53,9 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
             return null;
 
         HttpField contentTypeField = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+        if (contentTypeField == null)
+            return null;
+
         if (contentTypeField instanceof MimeTypes.ContentTypeField contentMimeTypeField)
         {
             MimeTypes.Type type = contentMimeTypeField.getMimeType();
