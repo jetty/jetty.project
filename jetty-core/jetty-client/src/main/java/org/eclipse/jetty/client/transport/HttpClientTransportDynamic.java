@@ -25,6 +25,7 @@ import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
@@ -127,6 +128,16 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             .flatMap(info -> info.getContainedBeans(ClientConnector.class).stream())
             .findFirst()
             .orElseGet(ClientConnector::new);
+    }
+
+    @Override
+    public void setHttpClient(HttpClient client)
+    {
+        super.setHttpClient(client);
+        infos.stream()
+            .filter(info -> info instanceof HttpClient.Aware)
+            .map(HttpClient.Aware.class::cast)
+            .forEach(info -> info.setHttpClient(getHttpClient()));
     }
 
     @Override

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
@@ -35,7 +36,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle implements ClientConnectionFactory
+public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle implements ClientConnectionFactory, HttpClient.Aware
 {
     private final ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
     private final HTTP2Client http2Client;
@@ -44,6 +45,12 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
     {
         this.http2Client = http2Client;
         installBean(http2Client);
+    }
+
+    @Override
+    public void setHttpClient(HttpClient httpClient)
+    {
+        HttpClientTransportOverHTTP2.configure(httpClient, http2Client);
     }
 
     @Override
@@ -61,7 +68,7 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
      *
      * @see HttpClientConnectionFactory#HTTP11
      */
-    public static class HTTP2 extends Info
+    public static class HTTP2 extends Info implements HttpClient.Aware
     {
         private static final List<String> protocols = List.of("h2", "h2c");
         private static final List<String> h2c = List.of("h2c");
@@ -69,6 +76,13 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
         public HTTP2(HTTP2Client http2Client)
         {
             super(new ClientConnectionFactoryOverHTTP2(http2Client));
+        }
+
+        @Override
+        public void setHttpClient(HttpClient httpClient)
+        {
+            ClientConnectionFactoryOverHTTP2 factory = (ClientConnectionFactoryOverHTTP2)getClientConnectionFactory();
+            factory.setHttpClient(httpClient);
         }
 
         @Override

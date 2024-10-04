@@ -1147,4 +1147,13 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     {
         stop();
     }
+
+    /**
+     * <p>Implementations of this interface are made aware of
+     * the {@code HttpClient} instance while it is starting.</p>
+     */
+    public interface Aware
+    {
+        void setHttpClient(HttpClient httpClient);
+    }
 }
