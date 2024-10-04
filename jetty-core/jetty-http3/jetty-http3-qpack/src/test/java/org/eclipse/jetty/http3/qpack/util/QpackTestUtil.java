@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3.qpack;
+package org.eclipse.jetty.http3.qpack.util;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -21,6 +21,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.qpack.Instruction;
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
+import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
