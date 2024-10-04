@@ -923,6 +923,7 @@ public class MimeTypes
     public static class ContentTypeField extends PreEncodedHttpField
     {
         private final Type _type;
+
         public ContentTypeField(MimeTypes.Type type)
         {
             this(type, type.toString());
