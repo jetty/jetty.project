@@ -543,7 +543,7 @@ public interface Request extends Attributes, Content.Source
      */
     static MimeTypes.Type getContentMimeType(Request request)
     {
-        HttpField contentType= request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+        HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
         if (contentType instanceof MimeTypes.ContentTypeField contentTypeField)
             return contentTypeField.getMimeType();
         if (contentType == null)
@@ -560,7 +560,7 @@ public interface Request extends Attributes, Content.Source
      */
     static Charset getCharset(Request request) throws IllegalCharsetNameException, UnsupportedCharsetException
     {
-        HttpField contentType= request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+        HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
         if (contentType == null)
             return null;
         return Objects.requireNonNullElse(request.getContext().getMimeTypes(), MimeTypes.DEFAULTS).getCharset(contentType);
