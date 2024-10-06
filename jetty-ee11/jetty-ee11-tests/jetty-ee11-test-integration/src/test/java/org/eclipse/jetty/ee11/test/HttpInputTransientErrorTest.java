@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -101,7 +102,7 @@ public class HttpInputTransientErrorTest
             {
                 AsyncContext asyncContext = req.startAsync(req, resp);
                 asyncContext.setTimeout(0);
-                resp.setContentType("text/plain;charset=UTF-8");
+                resp.setContentType("text/plain;charset=utf-8");
 
                 // Since the client sends a request with a content-length header, but sends
                 // the content only after idle timeout expired, this ReadListener will have
@@ -132,7 +133,7 @@ public class HttpInputTransientErrorTest
                     {
                         events.add("onAllDataRead");
                         resp.setStatus(HttpStatus.OK_200);
-                        resp.setContentType("text/plain;charset=UTF-8");
+                        resp.setContentType("text/plain;charset=utf-8");
                         resp.getWriter().println("read=" + counter.get());
                         asyncContext.complete();
                     }
@@ -180,7 +181,7 @@ public class HttpInputTransientErrorTest
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.get(HttpHeader.CONNECTION), nullValue());
-            assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
+            assertThat(response.get(HttpHeader.CONTENT_TYPE), equalToIgnoringCase("text/plain;charset=utf-8"));
             assertThat(response.getContent(), containsString("read=10"));
             assertInstanceOf(TimeoutException.class, failure.get());
             assertThat(events, contains("onError", "onAllDataRead"));
@@ -200,7 +201,7 @@ public class HttpInputTransientErrorTest
             {
                 AsyncContext asyncContext = req.startAsync(req, resp);
                 asyncContext.setTimeout(0);
-                resp.setContentType("text/plain;charset=UTF-8");
+                resp.setContentType("text/plain;charset=utf-8");
 
                 // Not calling setReadListener will make Jetty set the ServletChannelState
                 // in state WAITING upon doPost return, so idle timeouts are ignored.
@@ -272,7 +273,7 @@ public class HttpInputTransientErrorTest
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
-            assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
+            assertThat(response.get(HttpHeader.CONTENT_TYPE), equalToIgnoringCase("text/plain;charset=utf-8"));
             assertThat(response.getContent(), containsString("read=10"));
             assertThat(failure.get(), nullValue());
         }
@@ -362,7 +363,7 @@ public class HttpInputTransientErrorTest
 
                 String content = IO.toString(req.getInputStream());
                 resp.setStatus(HttpStatus.OK_200);
-                resp.setContentType("text/plain;charset=UTF-8");
+                resp.setContentType("text/plain;charset=utf-8");
                 resp.getWriter().println("read=" + content.length());
             }
         });
@@ -381,7 +382,7 @@ public class HttpInputTransientErrorTest
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
-            assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
+            assertThat(response.get(HttpHeader.CONTENT_TYPE), equalToIgnoringCase("text/plain;charset=utf-8"));
             assertThat(response.getContent(), containsString("read=10"));
             assertInstanceOf(IOException.class, failure.get());
             assertInstanceOf(TimeoutException.class, failure.get().getCause());
