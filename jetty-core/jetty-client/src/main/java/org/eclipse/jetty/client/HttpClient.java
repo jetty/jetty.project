@@ -218,7 +218,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         if (cookieStore == null)
             cookieStore = new HttpCookieStore.Default();
 
-        transport.setHttpClient(this);
+        getContainedBeans(Aware.class).forEach(bean -> bean.setHttpClient(this));
 
         super.doStart();
 
@@ -1149,8 +1149,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * <p>Implementations of this interface are made aware of
-     * the {@code HttpClient} instance while it is starting.</p>
+     * <p>Descendant beans of {@code HttpClient} that implement this interface
+     * are made aware of the {@code HttpClient} instance while it is starting.</p>
      */
     public interface Aware
     {

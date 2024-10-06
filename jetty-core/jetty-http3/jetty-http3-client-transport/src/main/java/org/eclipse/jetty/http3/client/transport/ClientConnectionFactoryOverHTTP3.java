@@ -58,7 +58,7 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
      *
      * @see HttpClientConnectionFactory#HTTP11
      */
-    public static class HTTP3 extends Info implements ProtocolSession.Factory, HttpClient.Aware
+    public static class HTTP3 extends Info implements ProtocolSession.Factory
     {
         private static final List<String> protocols = List.of("h3");
 
@@ -68,13 +68,6 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
         {
             super(new ClientConnectionFactoryOverHTTP3(client));
             http3Client = client;
-        }
-
-        @Override
-        public void setHttpClient(HttpClient httpClient)
-        {
-            ClientConnectionFactoryOverHTTP3 factory = (ClientConnectionFactoryOverHTTP3)getClientConnectionFactory();
-            factory.setHttpClient(httpClient);
         }
 
         public HTTP3Client getHTTP3Client()

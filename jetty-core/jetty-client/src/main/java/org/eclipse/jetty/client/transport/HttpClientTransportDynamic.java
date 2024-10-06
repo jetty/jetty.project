@@ -25,7 +25,6 @@ import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.Origin;
@@ -82,7 +81,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportDynamic.class);
 
-    private final List<ClientConnectionFactory.Info> infos;
+    private final List<ClientConnectionFactory.Info> clientConnectionFactoryInfos;
 
     /**
      * Creates a dynamic transport that speaks only HTTP/1.1.
@@ -115,8 +114,8 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     public HttpClientTransportDynamic(ClientConnector connector, ClientConnectionFactory.Info... infos)
     {
         super(connector);
-        this.infos = infos.length == 0 ? List.of(HttpClientConnectionFactory.HTTP11) : List.of(infos);
-        this.infos.forEach(this::installBean);
+        this.clientConnectionFactoryInfos = infos.length == 0 ? List.of(HttpClientConnectionFactory.HTTP11) : List.of(infos);
+        this.clientConnectionFactoryInfos.forEach(this::installBean);
         setConnectionPoolFactory(destination ->
             new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1)
         );
@@ -131,16 +130,6 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     }
 
     @Override
-    public void setHttpClient(HttpClient client)
-    {
-        super.setHttpClient(client);
-        infos.stream()
-            .filter(info -> info instanceof HttpClient.Aware)
-            .map(HttpClient.Aware.class::cast)
-            .forEach(info -> info.setHttpClient(getHttpClient()));
-    }
-
-    @Override
     public Origin newOrigin(Request request)
     {
         boolean secure = HttpScheme.isSecure(request.getScheme());
@@ -152,7 +141,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         {
             HttpVersion version = request.getVersion();
             List<String> wanted = toProtocols(version);
-            for (Info info : infos)
+            for (Info info : clientConnectionFactoryInfos)
             {
                 // Find the first protocol that matches the version.
                 List<String> protocols = info.getProtocols(secure);
@@ -175,7 +164,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         else
         {
-            Info preferredInfo = infos.get(0);
+            Info preferredInfo = clientConnectionFactoryInfos.get(0);
             if (secure)
             {
                 if (preferredInfo.getProtocols(true).contains("h3"))
@@ -189,7 +178,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
                     // If the preferred protocol is not HTTP/3, then
                     // must be excluded since it won't be compatible
                     // with the other HTTP versions due to UDP vs TCP.
-                    for (Info info : infos)
+                    for (Info info : clientConnectionFactoryInfos)
                     {
                         if (info.getProtocols(true).contains("h3"))
                             continue;
@@ -211,7 +200,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             else
             {
                 // Pick the first that allows non-secure.
-                for (Info info : infos)
+                for (Info info : clientConnectionFactoryInfos)
                 {
                     if (info.getProtocols(false).contains("h3"))
                         continue;
@@ -260,7 +249,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         if (protocol == null)
         {
             // Use the default ClientConnectionFactory.
-            factory = infos.get(0).getClientConnectionFactory();
+            factory = clientConnectionFactoryInfos.get(0).getClientConnectionFactory();
         }
         else
         {
@@ -306,7 +295,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             else
             {
                 // Server does not support ALPN, let's try the first protocol.
-                factoryInfo = infos.get(0);
+                factoryInfo = clientConnectionFactoryInfos.get(0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("No ALPN protocol, using {}", factoryInfo);
             }
@@ -321,7 +310,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
 
     private Optional<Info> findClientConnectionFactoryInfo(List<String> protocols, boolean secure)
     {
-        return infos.stream()
+        return clientConnectionFactoryInfos.stream()
             .filter(info -> info.matches(protocols, secure))
             .findFirst();
     }
