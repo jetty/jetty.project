@@ -1259,10 +1259,12 @@ public class HttpParser
             if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
             {
                 boolean header = _state == State.HEADER;
-                LOG.warn("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
-                throw new BadMessageException(header
-                    ? HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431
-                    : HttpStatus.PAYLOAD_TOO_LARGE_413);
+                if (debugEnabled)
+                    LOG.debug("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
+                if (_requestParser)
+                    throw new BadMessageException(header ? HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431 : HttpStatus.PAYLOAD_TOO_LARGE_413);
+                // There is no equivalent of 431 for response headers.
+                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Response Header Fields Too Large");
             }
 
             switch (_fieldState)

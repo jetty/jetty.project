@@ -41,9 +41,14 @@ public class HttpGenerator
     private static final Logger LOG = LoggerFactory.getLogger(HttpGenerator.class);
 
     public static final boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
-
     private static final byte[] __colon_space = new byte[]{':', ' '};
     public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(100, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
+    private static final Index<Boolean> ASSUMED_CONTENT_METHODS = new Index.Builder<Boolean>()
+        .caseSensitive(false)
+        .with(HttpMethod.POST.asString(), Boolean.TRUE)
+        .with(HttpMethod.PUT.asString(), Boolean.TRUE)
+        .build();
+    public static final int CHUNK_SIZE = 12;
 
     // states
     public enum State
@@ -68,25 +73,14 @@ public class HttpGenerator
         DONE                    // The current phase of generation is complete
     }
 
-    // other statics
-    public static final int CHUNK_SIZE = 12;
-
     private State _state = State.START;
     private EndOfContent _endOfContent = EndOfContent.UNKNOWN_CONTENT;
     private MetaData _info;
-
     private long _contentPrepared = 0;
     private boolean _noContentResponse = false;
     private Boolean _persistent = null;
-
-    private static final Index<Boolean> ASSUMED_CONTENT_METHODS = new Index.Builder<Boolean>()
-        .caseSensitive(false)
-        .with(HttpMethod.POST.asString(), Boolean.TRUE)
-        .with(HttpMethod.PUT.asString(), Boolean.TRUE)
-        .build();
-
-    // data
     private boolean _needCRLF = false;
+    private int _maxHeaderBytes;
 
     public HttpGenerator()
     {
@@ -101,6 +95,16 @@ public class HttpGenerator
         _persistent = null;
         _contentPrepared = 0;
         _needCRLF = false;
+    }
+
+    public int getMaxHeaderBytes()
+    {
+        return _maxHeaderBytes;
+    }
+
+    public void setMaxHeaderBytes(int maxHeaderBytes)
+    {
+        _maxHeaderBytes = maxHeaderBytes;
     }
 
     public State getState()
@@ -590,28 +594,28 @@ public class HttpGenerator
                 HttpField field = fields.getField(f);
                 HttpHeader h = field.getHeader();
                 if (h == null)
+                {
                     putTo(field, header);
+                }
                 else
                 {
                     switch (h)
                     {
-                        case CONTENT_LENGTH:
+                        case CONTENT_LENGTH ->
+                        {
                             if (contentLength < 0)
                                 contentLength = field.getLongValue();
                             else if (contentLength != field.getLongValue())
                                 throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, field.getLongValue()));
                             contentLengthField = true;
-                            break;
-
-                        case CONTENT_TYPE:
+                        }
+                        case CONTENT_TYPE ->
                         {
                             // write the field to the header
                             contentType = true;
                             putTo(field, header);
-                            break;
                         }
-
-                        case TRANSFER_ENCODING:
+                        case TRANSFER_ENCODING ->
                         {
                             if (http11)
                             {
@@ -620,10 +624,8 @@ public class HttpGenerator
                                 transferEncoding = field;
                                 chunkedHint = field.contains(HttpHeaderValue.CHUNKED.asString());
                             }
-                            break;
                         }
-
-                        case CONNECTION:
+                        case CONNECTION ->
                         {
                             String value = field.getValue();
 
@@ -677,13 +679,11 @@ public class HttpGenerator
                             {
                                 putTo(field, header);
                             }
-                            break;
                         }
-
-                        default:
-                            putTo(field, header);
+                        default -> putTo(field, header);
                     }
                 }
+                checkMaxHeaderBytes(header);
             }
         }
 
@@ -798,12 +798,23 @@ public class HttpGenerator
 
         // end the header.
         header.put(HttpTokens.CRLF);
+
+        checkMaxHeaderBytes(header);
+    }
+
+    private void checkMaxHeaderBytes(ByteBuffer header)
+    {
+        int maxHeaderBytes = getMaxHeaderBytes();
+        if (maxHeaderBytes > 0 && header.position() > maxHeaderBytes)
+            throw new BufferOverflowException();
     }
 
     private static void putContentLength(ByteBuffer header, long contentLength)
     {
         if (contentLength == 0)
+        {
             header.put(CONTENT_LENGTH_0);
+        }
         else
         {
             header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());

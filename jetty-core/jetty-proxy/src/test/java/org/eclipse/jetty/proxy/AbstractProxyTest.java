@@ -14,6 +14,7 @@
 package org.eclipse.jetty.proxy;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
@@ -39,6 +40,8 @@ public class AbstractProxyTest
         return List.of(HttpVersion.HTTP_1_1, HttpVersion.HTTP_2);
     }
 
+    protected HttpConfiguration serverHttpConfig = new HttpConfiguration();
+    protected HttpConfiguration proxyHttpConfig = new HttpConfiguration();
     protected Server server;
     protected ServerConnector serverConnector;
     protected Server proxy;
@@ -47,12 +50,18 @@ public class AbstractProxyTest
 
     protected void startClient() throws Exception
     {
+        startClient(client -> {});
+    }
+
+    protected void startClient(Consumer<HttpClient> configurator) throws Exception
+    {
         ClientConnector clientConnector = new ClientConnector();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         client = new HttpClient(new HttpClientTransportDynamic(clientConnector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
+        configurator.accept(client);
         client.start();
     }
 
@@ -61,10 +70,9 @@ public class AbstractProxyTest
         QueuedThreadPool proxyPool = new QueuedThreadPool();
         proxyPool.setName("proxy");
         proxy = new Server(proxyPool);
-        HttpConfiguration configuration = new HttpConfiguration();
-        configuration.setSendDateHeader(false);
-        configuration.setSendServerVersion(false);
-        proxyConnector = new ServerConnector(proxy, 1, 1, new HttpConnectionFactory(configuration), new HTTP2CServerConnectionFactory(configuration));
+        proxyHttpConfig.setSendDateHeader(false);
+        proxyHttpConfig.setSendServerVersion(false);
+        proxyConnector = new ServerConnector(proxy, 1, 1, new HttpConnectionFactory(proxyHttpConfig), new HTTP2CServerConnectionFactory(proxyHttpConfig));
         proxy.addConnector(proxyConnector);
         proxy.setHandler(handler);
         proxy.start();
@@ -75,8 +83,7 @@ public class AbstractProxyTest
         QueuedThreadPool serverPool = new QueuedThreadPool();
         serverPool.setName("server");
         server = new Server(serverPool);
-        HttpConfiguration httpConfig = new HttpConfiguration();
-        serverConnector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(httpConfig), new HTTP2CServerConnectionFactory(httpConfig));
+        serverConnector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(serverHttpConfig), new HTTP2CServerConnectionFactory(serverHttpConfig));
         server.addConnector(serverConnector);
         server.setHandler(handler);
         server.start();

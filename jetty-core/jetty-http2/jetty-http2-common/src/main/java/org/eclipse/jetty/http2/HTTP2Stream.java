@@ -179,9 +179,15 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
         session.dataConsumed(this, flowControlLength);
         if (resetFailure != null)
+        {
+            close();
+            session.removeStream(this);
             callback.failed(resetFailure);
+        }
         else
+        {
             session.reset(this, frame, callback);
+        }
     }
 
     private boolean startWrite(Callback callback)
