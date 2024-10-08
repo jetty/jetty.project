@@ -107,7 +107,10 @@ public interface ThreadPool extends Executor
 
         Executor virtual = VirtualThreads.getVirtualThreadsExecutor(executor);
         if (virtual != null)
+        {
             virtual.execute(task);
+            return;
+        }
 
         switch (Invocable.getInvocationType(task))
         {
@@ -119,7 +122,7 @@ public interface ThreadPool extends Executor
                 {
                     new Thread(task).start();
                 }
-                catch (OutOfMemoryError ignored)
+                catch (Throwable ignored)
                 {
                     task.run();
                 }
