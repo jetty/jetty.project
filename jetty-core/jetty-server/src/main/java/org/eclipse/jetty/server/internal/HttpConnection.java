@@ -608,7 +608,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        ThreadPool.mustExecute(getExecutor(), _httpChannel.onIdleTimeout(timeout));
+        ThreadPool.executeImmediately(getExecutor(), _httpChannel.onIdleTimeout(timeout));
         return false;
     }
 
@@ -683,7 +683,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
                 LOG.debug("demand failed {}", task, x);
-            ThreadPool.mustExecute(getConnector().getExecutor(), task);
+            ThreadPool.executeImmediately(getConnector().getExecutor(), task);
         }
 
         @Override
@@ -1037,7 +1037,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
-            ThreadPool.mustExecute(getServer().getThreadPool(), _httpChannel.onFailure(_failure));
+            ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(_failure));
         }
 
         @Override

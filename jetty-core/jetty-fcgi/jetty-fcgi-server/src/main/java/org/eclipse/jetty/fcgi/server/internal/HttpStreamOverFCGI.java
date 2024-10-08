@@ -344,7 +344,7 @@ public class HttpStreamOverFCGI implements HttpStream
 
     public boolean onIdleTimeout(TimeoutException timeout)
     {
-        ThreadPool.mustExecute(_connection.getConnector().getExecutor(), _httpChannel.onIdleTimeout(timeout));
+        ThreadPool.executeImmediately(_connection.getConnector().getExecutor(), _httpChannel.onIdleTimeout(timeout));
         return false;
     }
 
@@ -364,7 +364,7 @@ public class HttpStreamOverFCGI implements HttpStream
         @Override
         public void failed(Throwable x)
         {
-            ThreadPool.mustExecute(_connection.getConnector().getExecutor(), _httpChannel.onFailure(x));
+            ThreadPool.executeImmediately(_connection.getConnector().getExecutor(), _httpChannel.onFailure(x));
         }
 
         @Override

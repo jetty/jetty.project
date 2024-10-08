@@ -97,7 +97,7 @@ public interface ThreadPool extends Executor
      * @param executor An executor that may be used
      * @param task The task that must be executed.
      */
-    static void mustExecute(Executor executor, Runnable task)
+    static void executeImmediately(Executor executor, Runnable task)
     {
         if (task == null)
             return;

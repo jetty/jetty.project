@@ -317,7 +317,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         HttpStreamOverFCGI stream = this.stream;
         if (stream == null)
             return true;
-        ThreadPool.mustExecute(getExecutor(), stream.getHttpChannel().onIdleTimeout(timeoutException));
+        ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onIdleTimeout(timeoutException));
         return false;
     }
 
@@ -399,7 +399,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 LOG.debug("Request {} failure on {}", request, stream, failure);
             if (stream != null)
             {
-                ThreadPool.mustExecute(getExecutor(), stream.getHttpChannel().onFailure(new BadMessageException(null, failure)));
+                ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onFailure(new BadMessageException(null, failure)));
             }
             stream = null;
         }

@@ -1008,7 +1008,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void fail(Throwable failure)
         {
-            ThreadPool.mustExecute(getContext(), _httpChannelState.onFailure(failure));
+            ThreadPool.executeImmediately(getContext(), _httpChannelState.onFailure(failure));
         }
 
         @Override
