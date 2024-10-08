@@ -383,7 +383,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         for (String host : hosts)
         {
             host = host.trim();
-            if (host.length() == 0)
+            if (host.isEmpty())
                 continue;
             result.add(host);
         }
@@ -538,7 +538,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     protected void addProxyHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
         addViaHeader(proxyRequest);
-        addXForwardedHeaders(clientRequest, proxyRequest);
+        addForwardedHeader(clientRequest, proxyRequest);
     }
 
     /**
@@ -580,23 +580,43 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 .flatMap(field -> Stream.of(field.getValues()))
                 .filter(value -> !StringUtil.isBlank(value))
                 .collect(Collectors.joining(separator));
-            if (newValue.length() > 0)
+            if (!newValue.isEmpty())
                 newValue += separator;
             newValue += viaHeaderValue;
             return new HttpField(HttpHeader.VIA, newValue);
         }));
     }
 
-    protected void addXForwardedHeaders(HttpServletRequest clientRequest, Request proxyRequest)
+    protected void addForwardedHeader(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_FOR, clientRequest.getRemoteAddr()));
-        proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_PROTO, clientRequest.getScheme()));
-        String hostHeader = clientRequest.getHeader(HttpHeader.HOST.asString());
-        if (hostHeader != null)
-            proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_HOST, hostHeader));
-        String localName = clientRequest.getLocalName();
-        if (localName != null)
-            proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_SERVER, localName));
+        String byAttr = clientRequest.getLocalAddr();
+        String forAttr = clientRequest.getRemoteAddr();
+        String hostAttr = clientRequest.getHeader(HttpHeader.HOST.asString());
+        String scheme = clientRequest.getScheme();
+        String protoAttr = scheme == null ? (clientRequest.isSecure() ? "https" : "http") : scheme;
+        String forwardedValue = "by=%s;for=%s;host=%s;proto=%s".formatted(
+            HttpField.PARAMETER_TOKENIZER.quote(byAttr),
+            HttpField.PARAMETER_TOKENIZER.quote(forAttr),
+            HttpField.PARAMETER_TOKENIZER.quote(hostAttr),
+            protoAttr
+        );
+        proxyRequest.headers(headers -> headers.computeField(HttpHeader.FORWARDED, (header, fields) ->
+        {
+            String newValue;
+            if (fields == null || fields.isEmpty())
+            {
+                newValue = forwardedValue;
+            }
+            else
+            {
+                String separator = ", ";
+                newValue = fields.stream()
+                    .flatMap(field -> field.getValueList().stream())
+                    .collect(Collectors.joining(separator));
+                newValue += separator + forwardedValue;
+            }
+            return new HttpField(HttpHeader.FORWARDED, newValue);
+        }));
     }
 
     protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
