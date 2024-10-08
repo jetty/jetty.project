@@ -206,44 +206,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 coreCallback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause));
                 return;
             }
-
-            switch (frame.getOpCode())
-            {
-                case OpCode.TEXT ->
-                {
-                    if (textHandle == null)
-                        autoDemand();
-                }
-                case OpCode.BINARY ->
-                {
-                    if (binaryHandle == null)
-                        autoDemand();
-                }
-                case OpCode.CONTINUATION ->
-                {
-                    if (activeMessageSink == null)
-                        autoDemand();
-                }
-                case OpCode.PING ->
-                {
-                    if (pingHandle == null)
-                        autoDemand();
-                }
-                case OpCode.PONG ->
-                {
-                    if (pongHandle == null)
-                        autoDemand();
-                }
-                case OpCode.CLOSE ->
-                {
-                    // Do nothing.
-                }
-                default ->
-                {
-                    coreCallback.failed(new IllegalStateException());
-                    return;
-                }
-            };
         }
 
         Callback.Completable eventCallback = new Callback.Completable();
@@ -361,6 +323,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             if (frameHandle != null)
             {
                 callback.succeeded();
+                autoDemand();
                 return;
             }
 
@@ -411,6 +374,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             callback.succeeded();
             if (frameHandle == null)
                 internalDemand();
+            else
+                autoDemand();
         }
     }
 
@@ -441,6 +406,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             callback.succeeded();
             if (frameHandle == null)
                 internalDemand();
+            else
+                autoDemand();
             return;
         }
 
