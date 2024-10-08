@@ -813,6 +813,11 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             return _managed == Managed.MANAGED;
         }
 
+        /**
+         * @return {@code true} if this bean {@link #isManaged() is managed};
+         * {@code true} if this bean will be managed if it were to be started;
+         * {@code false} otherwise
+         */
         public boolean isManageable()
         {
             return switch (_managed)
