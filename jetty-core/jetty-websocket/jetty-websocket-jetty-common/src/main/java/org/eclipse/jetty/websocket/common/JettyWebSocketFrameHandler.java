@@ -69,6 +69,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSession session;
+    private byte messageType;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container, Object endpointInstance, JettyWebSocketFrameHandlerMetadata metadata)
     {
@@ -193,13 +194,17 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback coreCallback)
     {
+        if (frame.getOpCode() == OpCode.TEXT || frame.getOpCode() == OpCode.BINARY)
+            messageType = frame.getOpCode();
+
         CompletableFuture<Void> frameCallback = null;
         if (frameHandle != null)
         {
             try
             {
+                byte effectiveOpCode = frame.isDataFrame() ? messageType : frame.getOpCode();
                 frameCallback = new org.eclipse.jetty.websocket.api.Callback.Completable();
-                frameHandle.invoke(new JettyWebSocketFrame(frame), frameCallback);
+                frameHandle.invoke(new JettyWebSocketFrame(frame, effectiveOpCode), frameCallback);
             }
             catch (Throwable cause)
             {

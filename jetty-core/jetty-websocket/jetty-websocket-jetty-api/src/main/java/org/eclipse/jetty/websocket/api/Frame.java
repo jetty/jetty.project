@@ -102,6 +102,15 @@ public interface Frame
 
     boolean isRsv3();
 
+    /**
+     * The effective opcode of the frame accounting for the CONTINUATION opcode.
+     * If the frame is a CONTINUATION frame for a TEXT message, this will return TEXT.
+     * If the frame is a CONTINUATION frame for a BINARY message, this will return BINARY.
+     * Otherwise, this will return the same opcode as the frame.
+     * @return the effective opcode of the frame.
+     */
+    byte getEffectiveOpCode();
+
     class Wrapper implements Frame
     {
         private final Frame _frame;
@@ -175,6 +184,12 @@ public interface Frame
         public boolean isRsv3()
         {
             return _frame.isRsv3();
+        }
+
+        @Override
+        public byte getEffectiveOpCode()
+        {
+            return _frame.getEffectiveOpCode();
         }
     }
 
