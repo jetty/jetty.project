@@ -447,21 +447,40 @@ public interface ResourceFactory
     }
 
     /**
-     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into URIs.
+     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into a List of {@link Resource}.
      * <p>
-     *     Each part of the input string could be path references (unix or windows style), or string URI references.
+     *     Each part of the input string could be path references (unix or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
      * </p>
      * <p>
      *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
      * </p>
      *
      * @param str the input string of references
+     * @return list of resources
      */
     default List<Resource> split(String str)
     {
+        return split(str, ",;|");
+    }
+
+    /**
+     * Split a string of references by provided delims into a List of {@link Resource}.
+     * <p>
+     *     Each part of the input string could be path references (unix or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
+     *     Note: that if you use the {@code :} character in your delims, then URI references will be impossible.
+     * </p>
+     * <p>
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
+     * </p>
+     *
+     * @param str the input string of references
+     * @return list of resources
+     */
+    default List<Resource> split(String str, String delims)
+    {
         List<Resource> list = new ArrayList<>();
 
-        StringTokenizer tokenizer = new StringTokenizer(str, ",;|");
+        StringTokenizer tokenizer = new StringTokenizer(str, delims);
         while (tokenizer.hasMoreTokens())
         {
             String reference = tokenizer.nextToken();
@@ -475,7 +494,6 @@ public interface ResourceFactory
                     {
                         List<Resource> expanded = dir.list();
                         expanded.sort(ResourceCollators.byName(true));
-                        // TODO it is unclear why non archive files are not expanded into the list
                         expanded.stream().filter(r -> FileID.isLibArchive(r.getName())).forEach(list::add);
                     }
                 }
@@ -487,11 +505,12 @@ public interface ResourceFactory
             }
             catch (Exception e)
             {
-                LOG.warn("Invalid Resource Reference: " + reference);
+                LOG.warn("Invalid Resource Reference: {}", reference);
                 throw e;
             }
         }
 
+        // Perform Archive file mounting (if needed)
         for (ListIterator<Resource> i = list.listIterator(); i.hasNext(); )
         {
             Resource resource = i.next();
