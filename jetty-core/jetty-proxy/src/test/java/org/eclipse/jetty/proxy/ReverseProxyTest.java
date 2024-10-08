@@ -200,7 +200,7 @@ public class ReverseProxyTest extends AbstractProxyTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-//        assertTrue(serverToProxyFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverToProxyFailureLatch.await(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
     }
 
