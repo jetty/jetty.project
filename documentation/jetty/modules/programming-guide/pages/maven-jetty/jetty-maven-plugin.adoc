@@ -256,6 +256,7 @@ Usually, only `war` projects are suitable, however, you may configure other type
 The plugin will refuse to start if the &lt;packaging&gt; type in the pom is not in list of `supportedPackagings`.
 systemProperties::
 Optional.
+A map of property name, value pairs.
 Allows you to configure System properties for the execution of the plugin.
 For more information, see <<setting-system-properties,Setting System Properties>>.
 systemPropertiesFile::

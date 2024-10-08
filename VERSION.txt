@@ -1,4 +1,38 @@
-jetty-12.0.14-SNAPSHOT
+jetty-12.0.15-SNAPSHOT
+
+jetty-12.0.14 - 30 September 2024
+ + 929 Implement a utility class to save large downloads to a file (@arsenalzp)
+ + 7515 Connection limit problem for "onAccepting" connections
+ + 7951 OutputStreamContentProvider blocks forever during an HTTP2 upload after
+   idle timeout is reached
+ + 11092 Jetty 12.x startup fails because MetaInfConfiguration is throwing an
+   exception while parsing java classpath with URIUtil when classpath contains
+   wildcard ./mypath/*
+ + 11298 Error 400 - Ambiguous URI Empty Segment
+ + 12047 Server should NOT open connectors early in start sequence (@kelunik)
+ + 12191 DebugListener module in `core` refers to non-existent
+   `org.eclipse.jetty.server.DebugListener`
+ + 12195 Integrate Eclipse Dash License Tool to our build
+ + 12227 Improve HttpConnection buffer recycling
+ + 12239 Optimize buffer release in HttpConnection
+ + 12241 Unable to Add SameSite Cookie Attribute Value in Jetty 12 EE8
+   environment with Java 17
+ + 12249 HTTP/2 responses with Content-Length may have no content
+ + 12255 Environment CookieConfig details not visible in Server Dump or JMX
+ + 12256 Configuring Virtual Thread executor in Jetty Http client makes my
+   Spring Boot app freeze
+ + 12265 Jetty 12.0.13 fails to start when the `threadpool-all-virtual` module
+   is enabled.
+ + 12268 `IteratingCallback` may iterate too much when `process()` returns
+   Action.IDLE
+ + 12279 org.eclipse.jetty.maven.ServerSupport.configureHandlers(Server,
+   List<ContextHandler>, RequestLog)  removes handlers
+ + 12284 Excessive heap consumption by SSLSessionImpl by Jetty Server with TLS
+   1.3 and long-lived client
+ + 12289 Improve ConcurrentPool concurrency
+ + 12297 Avoid list copy on reverse iteration
+ + 12303 Use sessionRequest for wrapping HTTP stream instead of original Request (@robbie01)
+ + 12309 `SessionAuthentication._session` is not marked as `transient`
 
 jetty-12.0.13 - 03 September 2024
  + 3184 Make LifeCycle implement AutoCloseable
@@ -30,7 +64,7 @@ jetty-12.0.13 - 03 September 2024
  + 12171 QoSHandler does not resume on a virtual thread
  + 12173 Jetty Maven Plugin - jetty:run does not work with pom type
    dependencies
- + 12175 `SslContextFactory` is hardcoded to use `Password`.
+ + 12175 `SslContextFactory` is hardcoded to use `Password`
  + 12185 QosHandler suspend queue limit
  + 12207 Jetty Maven Plugin 12.x no longer configures `DefaultHandler`
  + 12212 ShutdownOutput for non-persistent HTTP/1 connections
