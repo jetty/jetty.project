@@ -46,7 +46,13 @@ public class DoSHandlerTest
             assertFalse(exceeded);
             now += TimeUnit.MILLISECONDS.toNanos(11);
         }
-        double rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        double rate = 0.0;
+        if (tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.RateControl rc)
+            rate = rc.getCurrentRatePerSecond();
+        if (tracker.getRateControl() instanceof DoSHandler.LeakyBucketRateControlFactory.RateControl rc)
+            rate = rc.getCurrentRatePerSecond();
+
+
         assertThat(rate, both(greaterThan((1000.0D / 11) - 5)).and(lessThan(100.0D)));
     }
 
@@ -174,7 +180,7 @@ public class DoSHandlerTest
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
 
-        double rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        double rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.RateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
         assertThat(rate, both(greaterThan(90.0D)).and(lessThan(100.0D)));
 
         for (int seconds = 0; seconds < 2; seconds++)
@@ -185,7 +191,7 @@ public class DoSHandlerTest
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
 
-        rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.ExponentialMovingAverageRateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
+        rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.RateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
         assertThat(rate, both(greaterThan(40.0D)).and(lessThan(50.0D)));
     }
 

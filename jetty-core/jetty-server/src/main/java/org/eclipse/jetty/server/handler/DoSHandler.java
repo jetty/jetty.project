@@ -148,7 +148,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
         @Name("maxTrackers") int maxTrackers)
     {
-        this(null, getId, new ExponentialMovingAverageRateControlFactory(maxRequestsPerSecond), null, maxTrackers);
+        this(null, getId, new LeakyBucketRateControlFactory(null, maxRequestsPerSecond), null, maxTrackers);
     }
 
     /**
@@ -349,8 +349,77 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         }
     }
 
+    public static class LeakyBucketRateControlFactory implements RateControl.Factory
+    {
+        private final Duration _samplePeriod;
+        private final long _samplePeriodNanos;
+        private final int _maxRequestsPerSecond;
+        private final Double _samplesPerSecond;
+        private final int _dripsPerSample;
+
+        public LeakyBucketRateControlFactory(
+            @Name("samplePeriod") Duration samplePeriod,
+            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
+        {
+            _samplePeriod = samplePeriod == null ? Duration.ofMillis(1000) : samplePeriod;
+            _samplePeriodNanos = _samplePeriod.toNanos();
+            _maxRequestsPerSecond = maxRequestsPerSecond;
+            _samplesPerSecond = (1.0 * _maxRequestsPerSecond) / TimeUnit.SECONDS.toNanos(1);
+            _dripsPerSample = (int)(_maxRequestsPerSecond / _samplesPerSecond);
+        }
+
+        @Override
+        public Duration idleCheckPeriod()
+        {
+            return _samplePeriod;
+        }
+
+        @Override
+        public RateControl newRateControl()
+        {
+            return new RateControl();
+        }
+
+        public class RateControl implements DoSHandler.RateControl
+        {
+            private int _drips;
+            private long _lastTopUp;
+
+            @Override
+            public boolean onRequest(long now)
+            {
+                if (NanoTime.elapsed(_lastTopUp, now) >= _samplePeriodNanos)
+                {
+                    _lastTopUp = now;
+                    _drips = _dripsPerSample;
+                }
+
+                int drips = _drips > 1 ? _drips - 1 : 0;
+                return drips == 0;
+            }
+
+            @Override
+            public boolean isIdle(long now)
+            {
+                if (NanoTime.elapsed(_lastTopUp, now) >= _samplePeriodNanos)
+                {
+                    _lastTopUp = now;
+                    boolean idle = _drips == _dripsPerSample;
+                    _drips = _dripsPerSample;
+                    return idle;
+                }
+                return false;
+            }
+
+            public double getCurrentRatePerSecond()
+            {
+                return _samplesPerSecond * (_dripsPerSample - _drips);
+            }
+        }
+    }
+
     /**
-     * A {@link RateControl.Factory} that uses an
+     * A {@link DoSHandler.RateControl.Factory} that uses an
      * <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">Exponential Moving Average</a>
      * to limit the request rate to a maximum number of requests per second.
      */
@@ -410,18 +479,18 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         }
 
         @Override
-        public RateControl newRateControl()
+        public DoSHandler.RateControl newRateControl()
         {
-            return new ExponentialMovingAverageRateControl();
+            return new RateControl();
         }
 
-        class ExponentialMovingAverageRateControl implements RateControl
+        class RateControl implements DoSHandler.RateControl
         {
             private double _exponentialMovingAverage;
             private int _sampleCount;
             private long _sampleStart;
 
-            private ExponentialMovingAverageRateControl()
+            private RateControl()
             {
                 _sampleStart = NanoTime.now();
             }
