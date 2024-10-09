@@ -217,7 +217,7 @@
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
-    <jetty.test.version>6.2</jetty.test.version>
+    <jetty.test.version>6.3</jetty.test.version>
     <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <jetty.url>https://jetty.org/</jetty.url>
@@ -2418,6 +2418,7 @@
                 <configuration>
                   <!-- Works with approval for Hazelcast https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/15797 -->
                   <excludeGroupIds>com.hazelcast</excludeGroupIds>
+                  <excludeScope>test</excludeScope>
                   <failWhenReviewNeeded>true</failWhenReviewNeeded>
                 </configuration>
               </execution>
