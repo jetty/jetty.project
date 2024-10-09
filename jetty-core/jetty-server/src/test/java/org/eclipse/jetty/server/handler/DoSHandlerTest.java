@@ -16,12 +16,16 @@ package org.eclipse.jetty.server.handler;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
@@ -33,40 +37,44 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DoSHandlerTest
 {
-    @Test
-    public void testTrackerSteadyBelowRate() throws Exception
+    public static Stream<Arguments> factories()
     {
-        DoSHandler handler = new DoSHandler(100);
+        return Stream.of(
+            Arguments.of(new DoSHandler.LeakyBucketTrackerFactory(100))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testTrackerSteadyBelowRate(DoSHandler.Tracker.Factory factory)
+    {
+        DoSHandler handler = new DoSHandler(factory);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int sample = 0; sample < 400; sample++)
         {
-            boolean exceeded = tracker.onRequest(now);
+            boolean exceeded = !tracker.onRequest(now);
             assertFalse(exceeded);
             now += TimeUnit.MILLISECONDS.toNanos(11);
         }
-        double rate = 0.0;
-        if (tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.RateControl rc)
-            rate = rc.getCurrentRatePerSecond();
-        if (tracker.getRateControl() instanceof DoSHandler.LeakyBucketRateControlFactory.RateControl rc)
-            rate = rc.getCurrentRatePerSecond();
+        int rate = tracker.getRequestsPerSecond(now);
 
-
-        assertThat(rate, both(greaterThan((1000.0D / 11) - 5)).and(lessThan(100.0D)));
+        assertThat(rate, both(greaterThan((1000/ 11) - 5)).and(lessThan(100)));
     }
 
-    @Test
-    public void testTrackerSteadyAboveRate() throws Exception
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testTrackerSteadyAboveRate(DoSHandler.Tracker.Factory factory)
     {
-        DoSHandler handler = new DoSHandler(100);
+        DoSHandler handler = new DoSHandler(factory);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         boolean exceeded = false;
         for (int sample = 0; sample < 200; sample++)
         {
-            if (tracker.onRequest(now))
+            if (!tracker.onRequest(now))
             {
                 exceeded = true;
                 break;
@@ -77,10 +85,11 @@ public class DoSHandlerTest
         assertTrue(exceeded);
     }
 
-    @Test
-    public void testTrackerUnevenBelowRate() throws Exception
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testTrackerUnevenBelowRate(DoSHandler.Tracker.Factory factory)
     {
-        DoSHandler handler = new DoSHandler(100);
+        DoSHandler handler = new DoSHandler(factory);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -88,7 +97,7 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 9; burst++)
             {
-                boolean exceeded = tracker.onRequest(now);
+                boolean exceeded = !tracker.onRequest(now);
                 assertFalse(exceeded);
             }
 
@@ -96,10 +105,11 @@ public class DoSHandlerTest
         }
     }
 
-    @Test
-    public void testTrackerUnevenAboveRate() throws Exception
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testTrackerUnevenAboveRate(DoSHandler.Tracker.Factory factory)
     {
-        DoSHandler handler = new DoSHandler(100);
+        DoSHandler handler = new DoSHandler(factory);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -108,7 +118,7 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 11; burst++)
             {
-                if (tracker.onRequest(now))
+                if (!tracker.onRequest(now))
                 {
                     exceeded = true;
                     break;
@@ -121,10 +131,11 @@ public class DoSHandlerTest
         assertTrue(exceeded);
     }
 
-    @Test
-    public void testTrackerBurstBelowRate() throws Exception
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testTrackerBurstBelowRate(DoSHandler.Tracker.Factory factory)
     {
-        DoSHandler handler = new DoSHandler(100);
+        DoSHandler handler = new DoSHandler(factory);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -132,7 +143,7 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 99; burst++)
             {
-                boolean exceeded = tracker.onRequest(now);
+                boolean exceeded = !tracker.onRequest(now);
                 assertFalse(exceeded);
             }
 
@@ -140,10 +151,11 @@ public class DoSHandlerTest
         }
     }
 
-    @Test
-    public void testTrackerBurstAboveRate() throws Exception
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testTrackerBurstAboveRate(DoSHandler.Tracker.Factory factory)
     {
-        DoSHandler handler = new DoSHandler(100);
+        DoSHandler handler = new DoSHandler(factory);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -152,7 +164,7 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 101; burst++)
             {
-                if (tracker.onRequest(now))
+                if (!tracker.onRequest(now))
                 {
                     exceeded = true;
                     break;
@@ -165,34 +177,34 @@ public class DoSHandlerTest
         assertTrue(exceeded);
     }
 
-    @Test
-    public void testRecoveryAfterBursts() throws Exception
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testRecoveryAfterBursts(DoSHandler.Tracker.Factory factory)
     {
-        DoSHandler handler = new DoSHandler(100);
+        DoSHandler handler = new DoSHandler(factory);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 99; burst++)
-                assertFalse(tracker.onRequest(now++));
+                assertTrue(tracker.onRequest(now++));
 
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
 
-        double rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.RateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
-        assertThat(rate, both(greaterThan(90.0D)).and(lessThan(100.0D)));
+        int rate = tracker.getRequestsPerSecond(now);
+        assertThat(rate, both(greaterThan(90)).and(lessThan(100)));
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
             for (int burst = 0; burst < 49; burst++)
-                assertFalse(tracker.onRequest(now++));
+                assertTrue(tracker.onRequest(now++));
 
             now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
         }
-
-        rate = tracker.getRateControl() instanceof DoSHandler.ExponentialMovingAverageRateControlFactory.RateControl rc ? rc.getCurrentRatePerSecond() : 0.0;
-        assertThat(rate, both(greaterThan(40.0D)).and(lessThan(50.0D)));
+        rate = tracker.getRequestsPerSecond(now);
+        assertThat(rate, both(greaterThan(40)).and(lessThan(50)));
     }
 
     @Test

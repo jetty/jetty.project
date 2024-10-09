@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -88,39 +89,9 @@ public class DoSHandler extends ConditionalHandler.ElseNext
      */
     public static final Function<Request, String> ID_FROM_CONNECTION = request -> request.getConnectionMetaData().getId();
 
-    /**
-     * An interface implemented to track and control the rate of requests for a specific ID.
-     */
-    public interface RateControl
-    {
-        /**
-         * Record a request and calculate if the rate is exceeded at the given time.
-         * @param now The {@link NanoTime#now()} at which to calculate the rate
-         * @return {@code true} if the rate is currently exceeded
-         */
-        boolean onRequest(long now);
-
-        /**
-         * Check if the tracker is now idle
-         * @param now The {@link NanoTime#now()} at which to calculate the rate
-         * @return {@code true} if the rate is currently near zero
-         */
-        boolean isIdle(long now);
-
-        /**
-         * A factory to create new {@link RateControl} instances
-         */
-        interface Factory
-        {
-            RateControl newRateControl();
-
-            Duration idleCheckPeriod();
-        }
-    }
-
     private final Map<String, Tracker> _trackers = new ConcurrentHashMap<>();
     private final Function<Request, String> _getId;
-    private final RateControl.Factory _rateControlFactory;
+    private final Tracker.Factory _trackerFactory;
     private final Request.Handler _rejectHandler;
     private final int _maxTrackers;
     private CyclicTimeouts<Tracker> _cyclicTimeouts;
@@ -139,6 +110,14 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
+     * @param trackerFactory Factory to create a Tracker
+     */
+    public DoSHandler(@Name("trackerFactory") Tracker.Factory trackerFactory)
+    {
+        this(null, trackerFactory, null, -1);
+    }
+
+    /**
      * @param getId Function to extract an remote ID from a request.
      * @param maxRequestsPerSecond The maximum requests per second allows per ID.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
@@ -148,35 +127,35 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
         @Name("maxTrackers") int maxTrackers)
     {
-        this(null, getId, new LeakyBucketRateControlFactory(null, maxRequestsPerSecond), null, maxTrackers);
+        this(null, getId, new LeakyBucketTrackerFactory(maxRequestsPerSecond), null, maxTrackers);
     }
 
     /**
      * @param getId Function to extract an remote ID from a request.
-     * @param rateControlFactory Factory to create a Rate per Tracker
+     * @param trackerFactory Factory to create a Tracker
      * @param rejectHandler A {@link Handler} used to reject excess requests, or {@code null} for a default.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DoSHandler(
         @Name("getId") Function<Request, String> getId,
-        @Name("rateFactory") RateControl.Factory rateControlFactory,
+        @Name("trackerFactory") Tracker.Factory trackerFactory,
         @Name("rejectHandler") Request.Handler rejectHandler,
         @Name("maxTrackers") int maxTrackers)
     {
-        this(null, getId, rateControlFactory, rejectHandler, maxTrackers);
+        this(null, getId, trackerFactory, rejectHandler, maxTrackers);
     }
 
     /**
      * @param handler Then next {@link Handler} or {@code null}
      * @param getId Function to extract an remote ID from a request.
-     * @param rateControlFactory Factory to create a Rate per Tracker
+     * @param trackerFactory Factory to create a Tracker
      * @param rejectHandler A {@link Handler} used to reject excess requests, or {@code null} for a default.
      * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DoSHandler(
         @Name("handler") Handler handler,
         @Name("getId") Function<Request, String> getId,
-        @Name("rateFactory") RateControl.Factory rateControlFactory,
+        @Name("trackerFactory") Tracker.Factory trackerFactory,
         @Name("rejectHandler") Request.Handler rejectHandler,
         @Name("maxTrackers") int maxTrackers)
     {
@@ -184,8 +163,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         installBean(_trackers);
         _getId = Objects.requireNonNullElse(getId, ID_FROM_REMOTE_ADDRESS);
         installBean(_getId);
-        _rateControlFactory = Objects.requireNonNull(rateControlFactory);
-        installBean(_rateControlFactory);
+        _trackerFactory = Objects.requireNonNull(trackerFactory);
+        installBean(_trackerFactory);
         _maxTrackers = maxTrackers < 0 ? 10_000 : maxTrackers;
         _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, StatusRejectHandler::new);
         installBean(_rejectHandler);
@@ -210,8 +189,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             _trackers.values().removeIf(tracker -> tracker.isIdle(now));
             if (_trackers.size() >= _maxTrackers)
             {
-                // Try shrinking the tracker pool as if we are at the next idle check already
-                long nextIdleCheck = NanoTime.now() + _rateControlFactory.idleCheckPeriod().getNano();
+                // Try shrinking the tracker pool as if we are at the next sample period already
+                long nextIdleCheck = NanoTime.now() + _trackerFactory.getSamplePeriod().getNano();
                 _trackers.values().removeIf(tracker -> tracker.isIdle(nextIdleCheck));
                 if (_trackers.size() >= _maxTrackers)
                     return _rejectHandler.handle(request, response, callback);
@@ -228,7 +207,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
         // If we are not over-limit then handle normally
-        if (!tracker.onRequest(request.getBeginNanoTime()))
+        if (tracker.onRequest(request.getBeginNanoTime()))
             return nextHandler(request, response, callback);
 
         // Otherwise reject the request
@@ -237,7 +216,10 @@ public class DoSHandler extends ConditionalHandler.ElseNext
 
     Tracker newTracker(String id)
     {
-        return new Tracker(id, _rateControlFactory.newRateControl());
+        Tracker tracker = _trackerFactory.newTracker(id);
+        if (_cyclicTimeouts != null)
+            _cyclicTimeouts.schedule(tracker);
+        return tracker;
     }
 
     @Override
@@ -271,27 +253,15 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * A RateTracker is associated with a connection, and stores request rate data.
+     * A RateTracker is associated with an id, and stores request rate data.
      */
-    class Tracker implements CyclicTimeouts.Expirable
+    public abstract static class Tracker implements CyclicTimeouts.Expirable
     {
-        private final AutoLock _lock = new AutoLock();
         private final String _id;
-        private final RateControl _rateControl;
-        private final Duration _idleCheck;
-        private long _nextIdleCheckAt;
 
-        Tracker(String id, RateControl rateControl)
-        {
-            this(id, rateControl, null);
-        }
-
-        Tracker(String id, RateControl rateControl, Duration idleCheck)
+        protected Tracker(String id)
         {
             _id = id;
-            _rateControl = rateControl;
-            _idleCheck = idleCheck == null ? Duration.ofSeconds(2) : idleCheck;
-            _nextIdleCheckAt = NanoTime.now() + _idleCheck.toNanos();
         }
 
         public String getId()
@@ -299,258 +269,202 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             return _id;
         }
 
-        RateControl getRateControl()
-        {
-            return _rateControl;
-        }
+        public abstract boolean isIdle(long now);
 
-        public boolean onRequest(long now)
-        {
-            try (AutoLock l = _lock.lock())
-            {
-                CyclicTimeouts<Tracker> cyclicTimeouts = _cyclicTimeouts;
-                if (cyclicTimeouts != null)
-                {
-                    // schedule a check to remove this tracker if idle
-                    _nextIdleCheckAt = now + _idleCheck.toNanos();
-                    cyclicTimeouts.schedule(this);
-                }
-                return _rateControl.onRequest(now);
-            }
-        }
+        /**
+         * Add a request to the tracker and check the rate limit
+         *
+         * @param now The timestamp of the request
+         * @return {@code true} if the request is below the limit
+         */
+        public abstract boolean onRequest(long now);
 
-        public boolean isIdle(long now)
-        {
-            try (AutoLock l = _lock.lock())
-            {
-                CyclicTimeouts<Tracker> cyclicTimeouts = _cyclicTimeouts;
-                if (cyclicTimeouts != null)
-                {
-                    _nextIdleCheckAt = now + _idleCheck.toNanos();
-                    cyclicTimeouts.schedule(this);
-                }
-                return _rateControl.isIdle(now);
-            }
-        }
+        public abstract int getRequestsPerSecond(long now);
 
-        @Override
-        public long getExpireNanoTime()
-        {
-            return _nextIdleCheckAt;
-        }
-
-        @Override
         public String toString()
         {
-            try (AutoLock l = _lock.lock())
+            return "Tracker(%s)@%x".formatted(_id, hashCode());
+        }
+
+        public abstract static class Factory
+        {
+            private static final long MAX_PERIOD_MS = TimeUnit.HOURS.toMillis(1);
+            private static final long ENCODE_NANOS_FACTOR = MAX_PERIOD_MS * 10;
+
+            protected final int _maxRequestsPerSecond;
+            protected final Duration _samplePeriod;
+            protected final int _requestsPerSample;
+
+            public Factory(
+                @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
+                @Name("samplePeriod") Duration samplePeriod)
             {
-                return "Tracker@%s{rc=%s}".formatted(_id, _rateControl);
+                _maxRequestsPerSecond = maxRequestsPerSecond;
+                _samplePeriod = samplePeriod == null ? Duration.ofSeconds(1) : samplePeriod;
+                if (_samplePeriod.toMillis() >= MAX_PERIOD_MS)
+                    throw new IllegalArgumentException("Sample Period must be less that 1 hour");
+
+                double samplesPerSecond = Duration.ofSeconds(1).toNanos() * 1.0D / _samplePeriod.toNanos();
+                _requestsPerSample = (int)(1.0D * maxRequestsPerSecond / samplesPerSecond);
             }
+
+            protected static int encodeNanoTime(long nanoTime)
+            {
+                return (int)(TimeUnit.NANOSECONDS.toMillis(nanoTime) % (ENCODE_NANOS_FACTOR));
+            }
+
+            protected static long decodeNanoTime(int encodedTime, long referenceTime)
+            {
+                return TimeUnit.MILLISECONDS.toNanos((TimeUnit.NANOSECONDS.toMillis(referenceTime) / (ENCODE_NANOS_FACTOR)) * ENCODE_NANOS_FACTOR + encodedTime);
+            }
+
+            public abstract Tracker newTracker(String id);
+
+            public abstract Duration getSamplePeriod();
         }
     }
 
-    public static class LeakyBucketRateControlFactory implements RateControl.Factory
+    public static class LeakyBucketTrackerFactory extends Tracker.Factory
     {
-        private final Duration _samplePeriod;
-        private final long _samplePeriodNanos;
-        private final int _maxRequestsPerSecond;
-        private final Double _samplesPerSecond;
-        private final int _dripsPerSample;
-
-        public LeakyBucketRateControlFactory(
-            @Name("samplePeriod") Duration samplePeriod,
+        public LeakyBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
         {
-            _samplePeriod = samplePeriod == null ? Duration.ofMillis(1000) : samplePeriod;
-            _samplePeriodNanos = _samplePeriod.toNanos();
-            _maxRequestsPerSecond = maxRequestsPerSecond;
-            _samplesPerSecond = (1.0 * _maxRequestsPerSecond) / TimeUnit.SECONDS.toNanos(1);
-            _dripsPerSample = (int)(_maxRequestsPerSecond / _samplesPerSecond);
+            this(maxRequestsPerSecond, null);
+        }
+
+        public LeakyBucketTrackerFactory(
+            @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
+            @Name("samplePeriod") Duration samplePeriod)
+        {
+            super(maxRequestsPerSecond, samplePeriod);
         }
 
         @Override
-        public Duration idleCheckPeriod()
+        public Duration getSamplePeriod()
         {
             return _samplePeriod;
         }
 
         @Override
-        public RateControl newRateControl()
+        public DoSHandler.Tracker newTracker(String id)
         {
-            return new RateControl();
+            return new Tracker(id);
         }
 
-        public class RateControl implements DoSHandler.RateControl
+        public class Tracker extends DoSHandler.Tracker
         {
-            private int _drips;
-            private long _lastTopUp;
+            /**
+             * The state of the tracker:
+             * <ul>
+             *     <li>High integer records the timestamp encoded as an int</li>
+             *     <li>Low integer records the requests in the current sample.</li>
+             * </ul>
+             */
+            private final AtomicBiInteger _state = new AtomicBiInteger();
+            private long _requestsInPreviousSample;
 
-            @Override
-            public boolean onRequest(long now)
+            protected Tracker(String id)
             {
-                if (NanoTime.elapsed(_lastTopUp, now) >= _samplePeriodNanos)
-                {
-                    _lastTopUp = now;
-                    _drips = _dripsPerSample;
-                }
-
-                int drips = _drips > 1 ? _drips - 1 : 0;
-                return drips == 0;
+                super(id);
             }
 
             @Override
-            public boolean isIdle(long now)
+            public long getExpireNanoTime()
             {
-                if (NanoTime.elapsed(_lastTopUp, now) >= _samplePeriodNanos)
-                {
-                    _lastTopUp = now;
-                    boolean idle = _drips == _dripsPerSample;
-                    _drips = _dripsPerSample;
-                    return idle;
-                }
-                return false;
+                return getExpireNanoTime(NanoTime.now());
             }
 
-            public double getCurrentRatePerSecond()
+            public long getExpireNanoTime(long now)
             {
-                return _samplesPerSecond * (_dripsPerSample - _drips);
-            }
-        }
-    }
-
-    /**
-     * A {@link DoSHandler.RateControl.Factory} that uses an
-     * <a href="https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">Exponential Moving Average</a>
-     * to limit the request rate to a maximum number of requests per second.
-     */
-    public static class ExponentialMovingAverageRateControlFactory implements RateControl.Factory
-    {
-        private final Duration _samplePeriod;
-        private final Duration _idleCheckPeriod;
-        private final double _alpha;
-        private final int _maxRequestsPerSecond;
-
-        public ExponentialMovingAverageRateControlFactory()
-        {
-            this(null, -1.0, 1000);
-        }
-
-        public ExponentialMovingAverageRateControlFactory(@Name("maxRequestsPerSecond") int maxRateRequestsPerSecond)
-        {
-            this(null, -1.0, maxRateRequestsPerSecond);
-        }
-
-        public ExponentialMovingAverageRateControlFactory(
-            @Name("samplePeriodMs") long samplePeriodMs,
-            @Name("alpha") double alpha,
-            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
-        {
-            this(samplePeriodMs <= 0 ? null : Duration.ofMillis(samplePeriodMs), alpha, maxRequestsPerSecond);
-        }
-
-        public ExponentialMovingAverageRateControlFactory(
-            @Name("samplePeriod") Duration samplePeriod,
-            @Name("alpha") double alpha,
-            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
-        {
-            this(samplePeriod, null, alpha, maxRequestsPerSecond);
-        }
-
-        public ExponentialMovingAverageRateControlFactory(
-            @Name("samplePeriod") Duration samplePeriod,
-            @Name("idleCheckPeriod") Duration idleCheckPeriod,
-            @Name("alpha") double alpha,
-            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
-        {
-            _samplePeriod = samplePeriod == null ? Duration.ofMillis(100) : samplePeriod;
-            _idleCheckPeriod = idleCheckPeriod == null ? _samplePeriod.multipliedBy(20) : idleCheckPeriod;
-            _alpha = alpha <= 0.0 ? 0.2 : alpha;
-            if (_samplePeriod.compareTo(Duration.ofSeconds(1)) > 0)
-                throw new IllegalArgumentException("Sample period must be less than or equal to 1 second");
-            if (_alpha > 1.0)
-                throw new IllegalArgumentException("Alpha " + _alpha + " is too large");
-            _maxRequestsPerSecond = maxRequestsPerSecond;
-        }
-
-        @Override
-        public Duration idleCheckPeriod()
-        {
-            return _idleCheckPeriod;
-        }
-
-        @Override
-        public DoSHandler.RateControl newRateControl()
-        {
-            return new RateControl();
-        }
-
-        class RateControl implements DoSHandler.RateControl
-        {
-            private double _exponentialMovingAverage;
-            private int _sampleCount;
-            private long _sampleStart;
-
-            private RateControl()
-            {
-                _sampleStart = NanoTime.now();
+                long state = _state.get();
+                int encodedSampleStart = AtomicBiInteger.getHi(state);
+                long startSample = decodeNanoTime(encodedSampleStart, now);
+                return startSample + _samplePeriod.toNanos();
             }
 
             @Override
             public boolean onRequest(long now)
             {
-                // Count the request
-                _sampleCount++;
-
-                long elapsedTime = NanoTime.elapsed(_sampleStart, now);
-
-                // We calculate the moving average if:
-                //    + the sample exceeds the rate
-                //    + the sample period has been exceeded
-                if (_sampleCount > _maxRequestsPerSecond || (_sampleStart != 0 && elapsedTime > _samplePeriod.toNanos()))
+                while (true)
                 {
-                    calculateMovingAverage(now);
-                }
+                    long state = _state.get();
+                    int encodedSampleStart = AtomicBiInteger.getHi(state);
+                    if (encodedSampleStart == 0)
+                        encodedSampleStart = encodeNanoTime(now);
 
-                // if the rate has been exceeded?
-                return _exponentialMovingAverage > _maxRequestsPerSecond;
+                    int requests = AtomicBiInteger.getLo(state);
+
+                    // If we have requests to spare?
+                    if (requests < _requestsPerSample)
+                    {
+                        if (_state.compareAndSet(state, encodedSampleStart, requests + 1))
+                            return true;
+                        continue;
+                    }
+
+                    // Are we into a new sample period?
+                    long startSample = decodeNanoTime(encodedSampleStart, now);
+                    if (NanoTime.elapsed(startSample, now) > _samplePeriod.toNanos())
+                    {
+                        if (_state.compareAndSet(state, encodeNanoTime(now), 1))
+                        {
+                            _requestsInPreviousSample = requests;
+                            return true;
+                        }
+                        continue;
+                    }
+
+                    if (_state.compareAndSet(state, encodedSampleStart, requests + 1))
+                        return false;
+                }
             }
 
             @Override
             public boolean isIdle(long now)
             {
-                calculateMovingAverage(now);
-                return _exponentialMovingAverage <= 0.0001;
+                // We are idle if we roll over to a new sample period, with no requests
+                while (true)
+                {
+                    long state = _state.get();
+                    int sampleStartMs = AtomicBiInteger.getHi(state);
+                    int requests = AtomicBiInteger.getLo(state);
+
+                    long startSample = decodeNanoTime(sampleStartMs, now);
+                    if (NanoTime.elapsed(startSample, now) > _samplePeriod.toNanos())
+                    {
+                        if (_state.compareAndSet(state, encodeNanoTime(now), 0))
+                        {
+                            _requestsInPreviousSample = requests;
+                            return requests == 0;
+                        }
+                        continue;
+                    }
+                    return false;
+                }
             }
 
-            private void calculateMovingAverage(long now)
+            @Override
+            public int getRequestsPerSecond(long now)
             {
-                double elapsedTime1 = (double)(now - _sampleStart);
-                double count = _sampleCount;
-                if (elapsedTime1 > 0.0)
-                {
-                    double currentRate = (count * TimeUnit.SECONDS.toNanos(1L)) / elapsedTime1;
-                    // Adjust alpha based on the ratio of elapsed time to the interval to allow for long and short intervals
-                    double adjustedAlpha = _alpha * (elapsedTime1 / _samplePeriod.toNanos());
-                    if (adjustedAlpha > 1.0)
-                        adjustedAlpha = 1.0; // Ensure adjustedAlpha does not exceed 1.0
+                long state = _state.get();
+                int sampleStartMs = AtomicBiInteger.getHi(state);
+                int requests = AtomicBiInteger.getLo(state);
 
-                    _exponentialMovingAverage = (adjustedAlpha * currentRate + (1.0 - adjustedAlpha) * _exponentialMovingAverage);
-                }
-                else
-                {
-                    // assume count as the rate for the sample.
-                    double guessedRate = count * TimeUnit.SECONDS.toNanos(1) / _samplePeriod.toNanos();
-                    _exponentialMovingAverage = (_alpha * guessedRate + (1.0 - _alpha) * _exponentialMovingAverage);
-                }
+                long startSample = decodeNanoTime(sampleStartMs, now);
+                long elapsed = NanoTime.elapsed(startSample, now);
 
-                // restart the sample
-                _sampleStart = now;
-                _sampleCount = 0;
+                // If we are more than 25% into a sample, then extrapolate from the current request count
+                if (elapsed > (_samplePeriod.toNanos() / 4))
+                    return Math.toIntExact(requests * TimeUnit.SECONDS.toNanos(1) / elapsed);
+
+                // Otherwise use the previous request count
+                return Math.toIntExact(_requestsInPreviousSample * TimeUnit.SECONDS.toNanos(1) / _samplePeriod.toNanos());
             }
 
-            double getCurrentRatePerSecond()
+            @Override
+            public String toString()
             {
-                return _exponentialMovingAverage;
+                return "%s{%s}".formatted(super.toString(), _state.toString());
             }
         }
     }
