@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketIdleTimeoutTest
 {
-    private final int IDLE_TIMEOUT = 1000;
+    private static final int IDLE_TIMEOUT = 1000;
     private final AtomicBoolean _allowTimeout = new AtomicBoolean();
     private Server _server;
     private ServerConnector _connector;
