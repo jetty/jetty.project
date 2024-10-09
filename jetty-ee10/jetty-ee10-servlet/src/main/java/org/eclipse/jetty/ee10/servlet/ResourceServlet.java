@@ -106,7 +106,7 @@ import org.slf4j.LoggerFactory;
  *     Use {@code true} to generate ETags in responses.
  *     Defaults to {@code false}.
  *   </dd>
- *   <dt>installAliasChecker</dt>
+ *   <dt>installAllowedResourceAliasChecker</dt>
  *   <dd>
  *     Whether to add an {@link AllowedResourceAliasChecker} to the context if one
  *     does not already exist for this baseResource.
@@ -214,7 +214,7 @@ public class ResourceServlet extends HttpServlet
         if (baseResource != null && !(baseResource.isDirectory() && baseResource.isReadable()))
             LOG.warn("baseResource {} is not a readable directory", baseResource);
 
-        if (getInitBoolean("installAliasChecker", true))
+        if (getInitBoolean("installAllowedResourceAliasChecker", true))
         {
             // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
             boolean addAliasCheck = true;
