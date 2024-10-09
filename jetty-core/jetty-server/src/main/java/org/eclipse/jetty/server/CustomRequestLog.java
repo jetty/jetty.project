@@ -309,6 +309,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <dd>The path of the request URI.</dd>
  * <dt>%{query}uri</dt>
  * <dd>The query of the request URI.</dd>
+ * </dl>
  * </td>
  * </tr>
  * <tr>
