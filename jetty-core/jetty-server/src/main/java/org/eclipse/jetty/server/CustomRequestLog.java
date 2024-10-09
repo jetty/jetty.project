@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -289,27 +290,25 @@ import static java.lang.invoke.MethodType.methodType;
  * </td>
  * </tr>
  * <tr>
- * <td>%A</td>
+ * <td>%{OPTION}uri</td>
  * <td>
- * <p>The Request authority (which might differ from the Host header).</p>
- * </td>
- * </tr>
- * <tr>
- * <td>%h</td>
- * <td>
- * <p>The Request scheme.</p>
- * </td>
- * </tr>
- * <tr>
- * <td>%uri</td>
- * <td>
- * <p>The entire Request HttpURI (excluding query).</p>
- * </td>
- * </tr>
- * <tr>
- * <td>%{q}uri</td>
- * <td>
- * <p>The entire Request HttpURI (including query).</p>
+ * <p>The request URI.</p>
+ * <p>The parameter is optional and may have the be one of the following options:</p>
+ * <dl>
+ * <dt>%uri</dt>
+ * <dd>The entire request URI.</dd>
+ * <dt>%{-query}uri</dt>
+ * <dd>The entire request URI without the query.</dd>
+ * <dt>%{-path,-query}uri</dt>
+ * <dd>The request URI without path or query (so just `scheme://authority`).</dd>
+ * <dt>%{scheme}uri</dt>
+ * <dd>The scheme of the request URI.</dd>
+ * <dt>%{authority}uri</dt>
+ * <dd>The authority of the request URI.</dd>
+ * <dt>%{path}uri</dt>
+ * <dd>The path of the request URI.</dd>
+ * <dt>%{query}uri</dt>
+ * <dd>The query of the request URI.</dd>
  * </td>
  * </tr>
  * <tr>
@@ -817,8 +816,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
                 yield lookup.findStatic(CustomRequestLog.class, "logResponseTrailer", logTypeArg).bindTo(arg);
             }
-            case "A" -> lookup.findStatic(CustomRequestLog.class, "logRequestAuthority", logType);
-            case "h" -> lookup.findStatic(CustomRequestLog.class, "logRequestScheme", logType);
             case "uri" ->
             {
                 if (arg == null)
@@ -826,7 +823,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 String method = switch (arg)
                 {
                     case "" -> "logRequestHttpUri";
-                    case "q" -> "logRequestHttpUriQuery";
+                    case "-query" -> "logRequestHttpUriWithoutQuery";
+                    case "-path,-query" -> "logRequestHttpUriWithoutPathQuery";
+                    case "scheme" -> "logRequestScheme";
+                    case "authority" -> "logRequestAuthority";
+                    case "path" -> "logUrlRequestPath";
+                    case "query" -> "logQueryString";
+                    case "host" -> "logRequestHttpUriHost";
+                    case "port" -> "logRequestHttpUriPort";
                     default -> throw new IllegalArgumentException("Invalid arg for %uri");
                 };
 
@@ -1209,14 +1213,47 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestHttpUri(StringBuilder b, Request request, Response response)
     {
+        append(b, request.getHttpURI().toString());
+    }
+
+    @SuppressWarnings("unused")
+    private static void logRequestHttpUriWithoutQuery(StringBuilder b, Request request, Response response)
+    {
         HttpURI.Mutable uri = HttpURI.build(request.getHttpURI()).query(null);
         append(b, uri.toString());
     }
 
     @SuppressWarnings("unused")
-    private static void logRequestHttpUriQuery(StringBuilder b, Request request, Response response)
+    private static void logRequestHttpUriWithoutPathQuery(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getHttpURI().toString());
+        // HttpURI doesn't support null path so we do this manually.
+        HttpURI httpURI = request.getHttpURI();
+        if (httpURI.getScheme() != null)
+            b.append(httpURI.getScheme()).append(':');
+        if (httpURI.getHost() != null)
+        {
+            b.append("//");
+            if (httpURI.getUser() != null)
+                b.append(httpURI.getUser()).append('@');
+            b.append(httpURI.getHost());
+        }
+        int normalizedPort = URIUtil.normalizePortForScheme(httpURI.getScheme(), httpURI.getPort());
+        if (normalizedPort > 0)
+            b.append(':').append(normalizedPort);
+    }
+
+    @SuppressWarnings("unused")
+    private static void logRequestHttpUriHost(StringBuilder b, Request request, Response response)
+    {
+        HttpURI.Mutable uri = HttpURI.build(request.getHttpURI()).query(null);
+        append(b, uri.toString());
+    }
+
+    @SuppressWarnings("unused")
+    private static void logRequestHttpUriPort(StringBuilder b, Request request, Response response)
+    {
+        HttpURI.Mutable uri = HttpURI.build(request.getHttpURI()).query(null);
+        append(b, uri.toString());
     }
 
     @SuppressWarnings("unused")
