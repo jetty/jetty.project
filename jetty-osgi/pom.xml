@@ -40,7 +40,7 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-version>3.7.300</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.20.0</osgi-version>
+    <osgi-version>3.21.0</osgi-version>
   </properties>
 
   <dependencyManagement>
