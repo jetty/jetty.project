@@ -1008,9 +1008,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void fail(Throwable failure)
         {
-            Runnable runnable = _httpChannelState.onFailure(failure);
-            if (runnable != null)
-                getContext().execute(runnable);
+            ThreadPool.executeImmediately(getContext(), _httpChannelState.onFailure(failure));
         }
 
         @Override
@@ -1168,10 +1166,7 @@ public class HttpChannelState implements HttpChannel, Components
             _writeCallback = null;
             if (writeCallback == null)
                 return null;
-            if (_writeFailure == null)
-                _writeFailure = x;
-            else
-                ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
+            _writeFailure = ExceptionUtil.combine(_writeFailure, x);
             return () -> HttpChannelState.failed(writeCallback, x);
         }
 
