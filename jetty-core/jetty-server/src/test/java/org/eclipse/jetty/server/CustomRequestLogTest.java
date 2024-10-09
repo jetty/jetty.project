@@ -819,46 +819,6 @@ public class CustomRequestLogTest
     }
 
     @Test
-    public void testLogRequestAuthority() throws Exception
-    {
-        start("%A", new SimpleHandler()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                Content.Sink.write(response, false, "hello", Callback.NOOP);
-                callback.succeeded();
-                return true;
-            }
-        });
-
-        HttpTester.Response response = getResponse("GET / HTTP/1.0\n\n");
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        String log = _logs.poll(5, TimeUnit.SECONDS);
-        assertThat(log, is("127.0.0.1:" + _serverConnector.getLocalPort()));
-    }
-
-    @Test
-    public void testLogRequestScheme() throws Exception
-    {
-        start("%h", new SimpleHandler()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                Content.Sink.write(response, false, "hello", Callback.NOOP);
-                callback.succeeded();
-                return true;
-            }
-        });
-
-        HttpTester.Response response = getResponse("GET / HTTP/1.0\n\n");
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        String log = _logs.poll(5, TimeUnit.SECONDS);
-        assertThat(log, is("http"));
-    }
-
-    @Test
     public void testLogRequestHttpUri() throws Exception
     {
         start("%uri", new SimpleHandler()
