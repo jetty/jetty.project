@@ -920,6 +920,10 @@ public class MimeTypes
         return builder.toString();
     }
 
+    /**
+     * A {@link PreEncodedHttpField} for `Content-Type` that can hold a {@link MimeTypes.Type} field
+     * for later recovery.
+     */
     public static class ContentTypeField extends PreEncodedHttpField
     {
         private final Type _type;
