@@ -127,7 +127,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
         @Name("maxTrackers") int maxTrackers)
     {
-        this(null, getId, new LeakyBucketTrackerFactory(maxRequestsPerSecond), null, maxTrackers);
+        this(null, getId, new FillingBucketTrackerFactory(maxRequestsPerSecond), null, maxTrackers);
     }
 
     /**
@@ -324,15 +324,20 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         }
     }
 
-    public static class LeakyBucketTrackerFactory extends Tracker.Factory
+    /**
+     * The Tracker implements a version of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     * In this variant, each request is a drip into the bucket, which is emptied on a regular basis.  If the bucket is ever
+     * full, then the rate limit is exceeded.
+     */
+    public static class FillingBucketTrackerFactory extends Tracker.Factory
     {
-        public LeakyBucketTrackerFactory(
+        public FillingBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
         {
             this(maxRequestsPerSecond, null);
         }
 
-        public LeakyBucketTrackerFactory(
+        public FillingBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
             @Name("samplePeriod") Duration samplePeriod)
         {
@@ -447,10 +452,10 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             public int getRequestsPerSecond(long now)
             {
                 long state = _state.get();
-                int sampleStartMs = AtomicBiInteger.getHi(state);
+                int encodedSampleStart = AtomicBiInteger.getHi(state);
                 int requests = AtomicBiInteger.getLo(state);
 
-                long startSample = decodeNanoTime(sampleStartMs, now);
+                long startSample = decodeNanoTime(encodedSampleStart, now);
                 long elapsed = NanoTime.elapsed(startSample, now);
 
                 // If we are more than 25% into a sample, then extrapolate from the current request count
@@ -459,6 +464,157 @@ public class DoSHandler extends ConditionalHandler.ElseNext
 
                 // Otherwise use the previous request count
                 return Math.toIntExact(_requestsInPreviousSample * TimeUnit.SECONDS.toNanos(1) / _samplePeriod.toNanos());
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s{%s}".formatted(super.toString(), _state.toString());
+            }
+        }
+    }
+
+    /**
+     * The Tracker implements a the classic version of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     */
+    public static class LeakingBucketTrackerFactory extends Tracker.Factory
+    {
+        private final long _nanosPerDrip;
+
+        public LeakingBucketTrackerFactory(
+            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
+        {
+            this(maxRequestsPerSecond, null);
+        }
+
+        public LeakingBucketTrackerFactory(
+            @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
+            @Name("samplePeriod") Duration samplePeriod)
+        {
+            super(maxRequestsPerSecond, samplePeriod);
+            _nanosPerDrip = _samplePeriod.dividedBy(maxRequestsPerSecond).toNanos();
+        }
+
+        @Override
+        public Duration getSamplePeriod()
+        {
+            return _samplePeriod;
+        }
+
+        @Override
+        public DoSHandler.Tracker newTracker(String id)
+        {
+            return new Tracker(id);
+        }
+
+        public class Tracker extends DoSHandler.Tracker
+        {
+            /**
+             * The state of the tracker:
+             * <ul>
+             *     <li>High integer records the timestamp encoded as an int</li>
+             *     <li>Low integer records the requests in the current sample.</li>
+             * </ul>
+             */
+            private final AtomicBiInteger _state = new AtomicBiInteger();
+
+            protected Tracker(String id)
+            {
+                super(id);
+            }
+
+            @Override
+            public long getExpireNanoTime()
+            {
+                return getExpireNanoTime(NanoTime.now());
+            }
+
+            public long getExpireNanoTime(long now)
+            {
+                long state = _state.get();
+                int encodedSampleStart = AtomicBiInteger.getHi(state);
+                long startSample = decodeNanoTime(encodedSampleStart, now);
+                return startSample + _samplePeriod.toNanos();
+            }
+
+            @Override
+            public boolean onRequest(long now)
+            {
+                while (true)
+                {
+                    long state = _state.get();
+                    int encodedSampleStart = AtomicBiInteger.getHi(state);
+                    if (encodedSampleStart == 0)
+                        encodedSampleStart = encodeNanoTime(now);
+
+                    int requests = AtomicBiInteger.getLo(state);
+
+                    // Remove any drips from the bucket
+                    long startSample = decodeNanoTime(encodedSampleStart, now);
+                    long elapsed = NanoTime.elapsed(startSample, now);
+                    if (elapsed >= _nanosPerDrip)
+                    {
+                        requests = Math.max(0, requests - (int)(elapsed / _nanosPerDrip));
+                        encodedSampleStart = encodeNanoTime(now);
+                    }
+
+                    // If we have requests to spare?
+                    if (requests < _requestsPerSample)
+                    {
+                        if (_state.compareAndSet(state, encodedSampleStart, requests + 1))
+                            return true;
+                        continue;
+                    }
+
+                    // The bucket is full
+                    if (elapsed < _nanosPerDrip || _state.compareAndSet(state, encodedSampleStart, requests))
+                        return false;
+                }
+            }
+
+            @Override
+            public boolean isIdle(long now)
+            {
+                while (true)
+                {
+                    long state = _state.get();
+                    int encodedSampleStart = AtomicBiInteger.getHi(state);
+                    int requests = AtomicBiInteger.getLo(state);
+
+                    long startSample = decodeNanoTime(encodedSampleStart, now);
+                    long elapsed = NanoTime.elapsed(startSample, now);
+
+                    if (requests > 0)
+                    {
+                        // We are not idle, so just remove drips
+                        if (elapsed >= _nanosPerDrip)
+                        {
+                            requests = Math.max(0, requests - (int)(elapsed / _nanosPerDrip));
+                            if (_state.compareAndSet(state, encodeNanoTime(now), requests))
+                                return false;
+                            continue;
+                        }
+                    }
+
+                    return  elapsed > _samplePeriod.toNanos();
+                }
+            }
+
+            @Override
+            public int getRequestsPerSecond(long now)
+            {
+                long state = _state.get();
+                int sampleStartMs = AtomicBiInteger.getHi(state);
+                int requests = AtomicBiInteger.getLo(state);
+
+                long startSample = decodeNanoTime(sampleStartMs, now);
+                long elapsed = NanoTime.elapsed(startSample, now);
+
+                // If we are more than 25% into a sample, then assume that is the period
+                if (elapsed > (_samplePeriod.toNanos() / 4))
+                    elapsed = _samplePeriod.toNanos() / 4;
+
+                return Math.toIntExact(requests * TimeUnit.SECONDS.toNanos(1) / elapsed);
             }
 
             @Override

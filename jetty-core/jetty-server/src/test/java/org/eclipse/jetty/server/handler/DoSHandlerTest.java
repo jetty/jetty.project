@@ -40,7 +40,8 @@ public class DoSHandlerTest
     public static Stream<Arguments> factories()
     {
         return Stream.of(
-            Arguments.of(new DoSHandler.LeakyBucketTrackerFactory(100))
+            Arguments.of(new DoSHandler.FillingBucketTrackerFactory(100)),
+            Arguments.of(new DoSHandler.LeakingBucketTrackerFactory(100))
         );
     }
 
@@ -74,11 +75,10 @@ public class DoSHandlerTest
         boolean exceeded = false;
         for (int sample = 0; sample < 200; sample++)
         {
-            if (!tracker.onRequest(now))
-            {
-                exceeded = true;
+            exceeded = !tracker.onRequest(now);
+            System.err.printf("%d %d %b %s\n", sample, now, exceeded, tracker);
+            if (exceeded)
                 break;
-            }
             now += TimeUnit.MILLISECONDS.toNanos(9);
         }
 
