@@ -50,6 +50,8 @@ updates:
         versions: [ ">=3.0.0"]
       - dependency-name: "ch.qos.logback:*"
         versions: [ ">=1.4.0"]
+      - dependency-name: "com.hazelcast:*"
+        versions: [ ">=5.4.0"]
 
   - package-ecosystem: "maven"
     directory: "/"
@@ -107,6 +109,8 @@ updates:
         versions: [ ">=5.0.0" ]
       - dependency-name: "org.infinispan:*"
         versions: [ ">=12" ]
+      - dependency-name: "com.hazelcast:*"
+        versions: [ ">=5.4.0"]
 
   - package-ecosystem: "maven"
     directory: "/"

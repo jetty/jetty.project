@@ -227,7 +227,7 @@
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hawtio.version>3.0.2</hawtio.version>
-    <hazelcast.version>5.5.0</hazelcast.version>
+    <hazelcast.version>5.3.8</hazelcast.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
     <infinispan.version>11.0.19.Final</infinispan.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
@@ -344,7 +344,7 @@
     <testcontainers.version>1.20.2</testcontainers.version>
     <versions.maven.plugin.version>2.17.1</versions.maven.plugin.version>
     <weld.version>3.1.9.Final</weld.version>
-    <wildfly.common.version>1.7.0.Final</wildfly.common.version>
+    <wildfly.common.version>2.0.1</wildfly.common.version>
     <wildfly.elytron.version>2.6.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.8</xmemcached.version>
   </properties>
