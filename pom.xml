@@ -163,7 +163,6 @@
   <properties>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.14</ant.version>
-    <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asm.version>9.7</asm.version>
@@ -175,6 +174,7 @@
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
     <commons-codec.version>1.17.0</commons-codec.version>
+    <commons-io.version>2.16.1</commons-io.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.26.2</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
@@ -532,6 +532,11 @@
         <version>${commons-codec.version}</version>
       </dependency>
       <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>${grpc.version}</version>
@@ -565,11 +570,6 @@
         <groupId>org.apache.aries.spifly</groupId>
         <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
         <version>${spifly.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.avro</groupId>
-        <artifactId>avro</artifactId>
-        <version>${apache.avro.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>

@@ -16,30 +16,87 @@ package org.eclipse.jetty.http3.tests;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http3.HTTP3Configuration;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.transport.ClientConnectionFactoryOverHTTP3;
+import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
 {
+    @Test
+    public void testPropertiesAreForwardedOverHTTP3() throws Exception
+    {
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(new SslContextFactory.Client(), null), clientConnector);
+        testPropertiesAreForwarded(http3Client, new HttpClientTransportOverHTTP3(http3Client));
+    }
+
+    @Test
+    public void testPropertiesAreForwardedDynamic() throws Exception
+    {
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(new SslContextFactory.Client(), null), clientConnector);
+        testPropertiesAreForwarded(http3Client, new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
+    }
+
+    private void testPropertiesAreForwarded(HTTP3Client http3Client, HttpClientTransport httpClientTransport) throws Exception
+    {
+        try (HttpClient httpClient = new HttpClient(httpClientTransport))
+        {
+            Executor executor = new QueuedThreadPool();
+            httpClient.setExecutor(executor);
+            httpClient.setConnectTimeout(13);
+            httpClient.setIdleTimeout(17);
+            httpClient.setUseInputDirectByteBuffers(false);
+            httpClient.setUseOutputDirectByteBuffers(false);
+
+            httpClient.start();
+
+            assertTrue(http3Client.isStarted());
+            ClientConnector clientConnector = http3Client.getClientConnector();
+            assertSame(httpClient.getExecutor(), clientConnector.getExecutor());
+            assertSame(httpClient.getScheduler(), clientConnector.getScheduler());
+            assertSame(httpClient.getByteBufferPool(), clientConnector.getByteBufferPool());
+            assertEquals(httpClient.getConnectTimeout(), clientConnector.getConnectTimeout().toMillis());
+            assertEquals(httpClient.getIdleTimeout(), clientConnector.getIdleTimeout().toMillis());
+            HTTP3Configuration http3Configuration = http3Client.getHTTP3Configuration();
+            assertEquals(httpClient.isUseInputDirectByteBuffers(), http3Configuration.isUseInputDirectByteBuffers());
+            assertEquals(httpClient.isUseOutputDirectByteBuffers(), http3Configuration.isUseOutputDirectByteBuffers());
+            assertEquals(httpClient.getMaxResponseHeadersSize(), http3Configuration.getMaxResponseHeadersSize());
+        }
+        assertTrue(http3Client.isStopped());
+    }
+
     @Test
     public void testRequestHasHTTP3Version() throws Exception
     {
