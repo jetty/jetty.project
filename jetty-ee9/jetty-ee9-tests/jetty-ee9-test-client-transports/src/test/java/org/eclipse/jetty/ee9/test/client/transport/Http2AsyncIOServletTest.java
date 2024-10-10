@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.test.client.transport;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -21,12 +22,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -44,21 +48,24 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Http2AsyncIOServletTest
 {
+    private final HttpConfiguration httpConfig = new HttpConfiguration();
     private Server server;
     private ServerConnector connector;
     private HTTP2Client client;
 
-    private void start(HttpConfiguration httpConfig, HttpServlet httpServlet) throws Exception
+    private void start(HttpServlet httpServlet) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server, 1, 1, new HTTP2CServerConnectionFactory(httpConfig));
@@ -82,12 +89,10 @@ public class Http2AsyncIOServletTest
     @ValueSource(booleans = {true, false})
     public void testStartAsyncThenClientResetRemoteErrorNotification(boolean notify) throws Exception
     {
-        HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setNotifyRemoteAsyncErrors(notify);
-
         AtomicReference<AsyncEvent> errorAsyncEventRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        start(httpConfig, new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -146,5 +151,132 @@ public class Http2AsyncIOServletTest
         else
             // Wait for the reset to NOT be notified to the failure listener.
             await().atMost(5, TimeUnit.SECONDS).during(1, TimeUnit.SECONDS).until(errorAsyncEventRef::get, nullValue());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testClientResetNotifiesAsyncListener(boolean commitResponse) throws Exception
+    {
+        CountDownLatch requestLatch = new CountDownLatch(1);
+        CountDownLatch errorLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                if (commitResponse)
+                    response.flushBuffer();
+
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+
+                asyncContext.addListener(new AsyncListener()
+                {
+                    @Override
+                    public void onComplete(AsyncEvent event)
+                    {
+                    }
+
+                    @Override
+                    public void onTimeout(AsyncEvent event)
+                    {
+                    }
+
+                    @Override
+                    public void onError(AsyncEvent event)
+                    {
+                        if (!response.isCommitted())
+                            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                        asyncContext.complete();
+                        errorLatch.countDown();
+                    }
+
+                    @Override
+                    public void onStartAsync(AsyncEvent event)
+                    {
+                    }
+                });
+
+                requestLatch.countDown();
+            }
+        });
+
+        Session session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
+        Stream stream = session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+
+        // Wait for the server to become idle after the request.
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
+        Thread.sleep(500);
+
+        // Reset the stream.
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code));
+
+        assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testClientResetThenWriteAfterComplete() throws Exception
+    {
+        AtomicReference<ServletOutputStream> servletOutputRef = new AtomicReference<>();
+        CountDownLatch requestLatch = new CountDownLatch(1);
+        CountDownLatch errorLatch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.flushBuffer();
+
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                asyncContext.addListener(new AsyncListener()
+                {
+                    @Override
+                    public void onComplete(AsyncEvent event)
+                    {
+                    }
+
+                    @Override
+                    public void onTimeout(AsyncEvent event)
+                    {
+                    }
+
+                    @Override
+                    public void onError(AsyncEvent event)
+                    {
+                        asyncContext.complete();
+                        errorLatch.countDown();
+                    }
+
+                    @Override
+                    public void onStartAsync(AsyncEvent event)
+                    {
+                    }
+                });
+                servletOutputRef.set(response.getOutputStream());
+                requestLatch.countDown();
+            }
+        });
+
+        Session session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
+        Stream stream = session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+
+        // Wait for the server to become idle after the request.
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
+        Thread.sleep(500);
+
+        // Reset the stream and wait to take effect.
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code));
+        assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
+        Thread.sleep(500);
+
+        // Perform an after completion write.
+        assertThrows(IOException.class, () -> servletOutputRef.get().println("write after complete"));
     }
 }
