@@ -662,20 +662,15 @@ public class ServletChannel
             LOG.warn(request == null ? "unknown request" : request.getServletApiRequest().getRequestURI(), failure);
         }
 
-        if (isCommitted())
+        try
+        {
+            boolean abort = _state.onError(failure);
+            if (abort)
+                abort(failure);
+        }
+        catch (Throwable x)
         {
             abort(failure);
-        }
-        else
-        {
-            try
-            {
-                _state.onError(failure);
-            }
-            catch (IllegalStateException e)
-            {
-                abort(failure);
-            }
         }
     }
 

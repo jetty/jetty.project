@@ -1160,7 +1160,7 @@ public class ServletContextHandler extends ContextHandler
 
         ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, decodedPathInContext, matchedResource);
         servletChannel.associate(servletContextRequest);
-        Request.addCompletionListener(request, servletChannel::recycle);
+        Request.addCompletionListener(servletContextRequest, servletChannel::recycle);
         return servletContextRequest;
     }
 
