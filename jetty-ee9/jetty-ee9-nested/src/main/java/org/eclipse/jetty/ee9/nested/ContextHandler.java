@@ -2809,6 +2809,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
             CoreContextRequest coreContextRequest = new CoreContextRequest(request, this.getContext(), httpChannel);
             httpChannel.onRequest(coreContextRequest);
+            HttpChannel channel = httpChannel;
+            org.eclipse.jetty.server.Request.addCompletionListener(coreContextRequest, x -> channel.recycle());
             return coreContextRequest;
         }
 
