@@ -127,7 +127,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           }
           runLaunchable ("verify")
           runLaunchable ("record build --name jetty-12.0.x")
-
+          dashProfile = ""
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
           }
