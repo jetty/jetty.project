@@ -561,7 +561,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", x);
                             if (_state.isResponseCommitted())
+                            {
                                 abort(x);
+                            }
                             else
                             {
                                 try
@@ -1440,18 +1442,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _response.getHttpOutput().completed(null);
                         super.failed(x);
                     }
-
-                    @Override
-                    public void failed(Throwable th)
-                    {
-                        abort(x);
-                        super.failed(x);
-                    }
                 });
             }
             else
             {
-                abort(x);
                 super.failed(x);
             }
         }
