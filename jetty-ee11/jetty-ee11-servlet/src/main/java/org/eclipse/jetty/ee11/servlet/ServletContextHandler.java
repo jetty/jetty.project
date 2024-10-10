@@ -31,6 +31,7 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -62,7 +63,6 @@ import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
@@ -96,6 +96,7 @@ import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -108,7 +109,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
-import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,7 +219,6 @@ public class ServletContextHandler extends ContextHandler
     private Logger _logger;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
-    private boolean _usingSecurityManager = getSecurityManager() != null;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
@@ -324,16 +323,17 @@ public class ServletContextHandler extends ContextHandler
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public boolean isUsingSecurityManager()
     {
-        return _usingSecurityManager;
+        return false;
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
-        if (usingSecurityManager && getSecurityManager() == null)
-            throw new IllegalStateException("No security manager");
-        _usingSecurityManager = usingSecurityManager;
+        if (usingSecurityManager)
+            throw new UnsupportedOperationException("SecurityManager not supported");
     }
 
     /**
@@ -517,12 +517,11 @@ public class ServletContextHandler extends ContextHandler
                 //Call context listeners
                 Throwable multiException = null;
                 ServletContextEvent event = new ServletContextEvent(getServletContext());
-                Collections.reverse(_destroyServletContextListeners);
-                for (ServletContextListener listener : _destroyServletContextListeners)
+                for (ListIterator<ServletContextListener> i = TypeUtil.listIteratorAtEnd(_destroyServletContextListeners); i.hasPrevious();)
                 {
                     try
                     {
-                        callContextDestroyed(listener, event);
+                        callContextDestroyed(i.previous(), event);
                     }
                     catch (Exception x)
                     {
@@ -568,18 +567,18 @@ public class ServletContextHandler extends ContextHandler
         // Handle more REALLY SILLY request events!
         if (!_servletRequestListeners.isEmpty())
         {
-            final ServletRequestEvent sre = new ServletRequestEvent(getServletContext(), request);
-            for (int i = _servletRequestListeners.size(); i-- > 0; )
+            ServletRequestEvent sre = new ServletRequestEvent(getServletContext(), request);
+            for (ListIterator<ServletRequestListener> i = TypeUtil.listIteratorAtEnd(_servletRequestListeners); i.hasPrevious();)
             {
-                _servletRequestListeners.get(i).requestDestroyed(sre);
+                i.previous().requestDestroyed(sre);
             }
         }
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (int i = _servletRequestAttributeListeners.size(); i-- > 0; )
+            for (ListIterator<ServletRequestAttributeListener> i = TypeUtil.listIteratorAtEnd(_servletRequestAttributeListeners); i.hasPrevious();)
             {
-                scopedRequest.removeEventListener(_servletRequestAttributeListeners.get(i));
+                scopedRequest.removeEventListener(i.previous());
             }
         }
     }
@@ -1185,11 +1184,8 @@ public class ServletContextHandler extends ContextHandler
     protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         boolean initialDispatch = request instanceof ServletContextRequest;
-        if (initialDispatch && isProtectedTarget(pathInContext))
-        {
-            Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
-            return true;
-        }
+        if (!initialDispatch)
+            return false;
 
         return super.handleByContextHandler(pathInContext, request, response, callback);
     }
@@ -1222,11 +1218,11 @@ public class ServletContextHandler extends ContextHandler
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
         {
-            for (int i = _contextListeners.size(); i-- > 0; )
+            for (ListIterator<ServletContextScopeListener> i = TypeUtil.listIteratorAtEnd(_contextListeners); i.hasPrevious(); )
             {
                 try
                 {
-                    _contextListeners.get(i).exitScope(getContext(), scopedRequest);
+                    i.previous().exitScope(getContext(), scopedRequest);
                 }
                 catch (Throwable e)
                 {
@@ -1710,11 +1706,6 @@ public class ServletContextHandler extends ContextHandler
     void destroyListener(EventListener listener)
     {
         getContext().destroy(listener);
-    }
-
-    private static Object getSecurityManager()
-    {
-        return SecurityUtils.getSecurityManager();
     }
 
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
@@ -2980,25 +2971,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ClassLoader getClassLoader()
         {
-            // no security manager just return the classloader
-            ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
-            if (isUsingSecurityManager())
-            {
-                // check to see if the classloader of the caller is the same as the context
-                // classloader, or a parent of it, as required by the javadoc specification.
-                ClassLoader callerLoader = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-                    .getCallerClass()
-                    .getClassLoader();
-                while (callerLoader != null)
-                {
-                    if (callerLoader == classLoader)
-                        return classLoader;
-                    else
-                        callerLoader = callerLoader.getParent();
-                }
-                SecurityUtils.checkPermission(new RuntimePermission("getClassLoader"));
-            }
-            return classLoader;
+            return ServletContextHandler.this.getClassLoader();
         }
 
         public void setEnabled(boolean enabled)

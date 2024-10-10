@@ -170,7 +170,7 @@ public abstract class TransformingFlusher
         }
 
         @Override
-        protected void onCompleteFailure(Throwable t)
+        protected void onFailure(Throwable t)
         {
             if (log.isDebugEnabled())
                 log.debug("onCompleteFailure {}", t.toString());
@@ -180,7 +180,7 @@ public abstract class TransformingFlusher
                 notifyCallbackFailure(current.callback, t);
                 current = null;
             }
-            onFailure(t);
+            TransformingFlusher.this.onFailure(t);
         }
     }
 

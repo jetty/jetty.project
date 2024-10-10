@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.Callback;
  * <p>This class is not thread safe and callers must do mutual exclusion.</p>
  * @deprecated Use {@link RetainableByteBuffer.DynamicCapacity}
  */
-@Deprecated
+@Deprecated (forRemoval = true, since = "12.1.0")
 public class ByteBufferCallbackAccumulator
 {
     private final List<Entry> _entries = new ArrayList<>();

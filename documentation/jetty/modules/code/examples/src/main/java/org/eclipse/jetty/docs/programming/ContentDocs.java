@@ -329,11 +329,11 @@ public class ContentDocs
             // Read a chunk.
             chunk = source.read();
 
-            // No chunk, demand to be called back when there will be more chunks.
+            // If no chunk, schedule a demand callback when there are more chunks.
             if (chunk == null)
             {
-                source.demand(this::iterate);
-                return Action.IDLE;
+                source.demand(this::succeeded);
+                return Action.SCHEDULED;
             }
 
             // The read failed, re-throw the failure
@@ -341,23 +341,17 @@ public class ContentDocs
             if (Content.Chunk.isFailure(chunk))
                 throw chunk.getFailure();
 
-            // Copy the chunk.
+            // Copy the chunk by scheduling an asynchronous write.
             sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
             return Action.SCHEDULED;
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
-            // After every successful write, release the chunk.
-            chunk.release();
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            super.failed(x);
+            // After every successful write, release the chunk
+            // and reset to the next chunk
+            chunk = Content.Chunk.releaseAndNext(chunk);
         }
 
         @Override
@@ -368,14 +362,20 @@ public class ContentDocs
         }
 
         @Override
+        protected void onFailure(Throwable cause)
+        {
+            // The copy is failed, fail the callback.
+            // This method is invoked before a write() has completed, so
+            // the chunk is not released here, but in onCompleteFailure().
+            callback.failed(cause);
+        }
+
+        @Override
         protected void onCompleteFailure(Throwable failure)
         {
-            // In case of a failure, either on the
-            // read or on the write, release the chunk.
-            chunk.release();
-
-            // The copy is failed, fail the callback.
-            callback.failed(failure);
+            // In case of a failure, this method is invoked when the write()
+            // is completed, and it is now possible to release the chunk.
+            chunk = Content.Chunk.releaseAndNext(chunk);
         }
 
         @Override

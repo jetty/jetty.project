@@ -217,7 +217,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             switch (property)
             {
-                case Deployable.WAR -> setWar(value);
+                case Deployable.WAR ->
+                {
+                    if (getWar() == null)
+                        setWar(value);
+                }
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
@@ -1567,6 +1571,40 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public MetaData getMetaData()
     {
         return _metadata;
+    }
+
+    @Override
+    protected void makeTempDirectory() throws Exception
+    {
+        super.makeTempDirectory();
+    }
+
+    @Override
+    protected String getCanonicalNameForTmpDir()
+    {
+        return super.getCanonicalNameForTmpDir();
+    }
+
+    /**
+     * If the webapp has no baseresource yet, use
+     * the war to make the temp directory name.
+     *
+     * @return the baseresource if non null, or the war
+     */
+    @Override
+    protected Resource getResourceForTempDirName()
+    {
+        Resource resource = super.getResourceForTempDirName();
+
+        if (resource == null)
+        {
+            if (getWar() == null || getWar().length() == 0)
+                throw new IllegalStateException("No resourceBase or war set for context");
+
+            // Use name of given resource in the temporary dirname
+            resource = newResource(getWar());
+        }
+        return resource;
     }
 
     /**

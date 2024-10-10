@@ -17,7 +17,6 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Callback;
@@ -90,47 +89,6 @@ public abstract class AbstractConnection implements Connection, Invocable
         return _executor;
     }
 
-    protected void failedCallback(final Callback callback, final Throwable x)
-    {
-        Runnable failCallback = () ->
-        {
-            try
-            {
-                callback.failed(x);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Failed callback", x);
-            }
-        };
-
-        switch (Invocable.getInvocationType(callback))
-        {
-            case BLOCKING:
-                try
-                {
-                    getExecutor().execute(failCallback);
-                }
-                catch (RejectedExecutionException e)
-                {
-                    LOG.debug("Rejected", e);
-                    callback.failed(x);
-                }
-                break;
-
-            case NON_BLOCKING:
-                failCallback.run();
-                break;
-
-            case EITHER:
-                Invocable.invokeNonBlocking(failCallback);
-                break;
-
-            default:
-                throw new IllegalStateException();
-        }
-    }
-
     /**
      * <p>Utility method to be called to register read interest.</p>
      * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
@@ -143,6 +101,20 @@ public abstract class AbstractConnection implements Connection, Invocable
         if (LOG.isDebugEnabled())
             LOG.debug("fillInterested {}", this);
         getEndPoint().fillInterested(_readCallback);
+    }
+
+    /**
+     * <p>Utility method to be called to register read interest.</p>
+     * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
+     * will be called back as appropriate.</p>
+     *
+     * @see #onFillable()
+     */
+    public void fillInterested(Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("fillInterested {} {}", callback, this);
+        getEndPoint().fillInterested(callback);
     }
 
     public void tryFillInterested(Callback callback)

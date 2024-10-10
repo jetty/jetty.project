@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.client.transport;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http3.client.HTTP3Client;
@@ -29,13 +30,21 @@ import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle implements ClientConnectionFactory
+public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle implements ClientConnectionFactory, HttpClient.Aware
 {
     private final HTTP3ClientConnectionFactory factory = new HTTP3ClientConnectionFactory();
+    private final HTTP3Client http3Client;
 
     public ClientConnectionFactoryOverHTTP3(HTTP3Client http3Client)
     {
+        this.http3Client = http3Client;
         installBean(http3Client);
+    }
+
+    @Override
+    public void setHttpClient(HttpClient httpClient)
+    {
+        HttpClientTransportOverHTTP3.configure(httpClient, http3Client);
     }
 
     @Override

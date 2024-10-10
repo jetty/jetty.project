@@ -19,13 +19,13 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,7 +50,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -75,6 +75,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -99,6 +100,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
+@Isolated
 public class DefaultServletTest
 {
     public WorkDir workDir;
@@ -2569,44 +2571,52 @@ public class DefaultServletTest
     @Test
     public void testGetPrecompressedSuffixMapping() throws Exception
     {
-        Path docRoot = workDir.getEmptyPathDir().resolve("docroot");
-        FS.ensureDirExists(docRoot);
-
-        startServer((context) ->
+        final AtomicReference<ResourceFactory> oldFileResourceFactory = new AtomicReference<>();
+        try
         {
-            ResourceFactory.registerResourceFactory("file", new URLResourceFactory());
-            Resource resource = ResourceFactory.of(context).newResource(docRoot);
-            assertThat("Expecting URLResource", resource.getClass().getName(), endsWith("URLResource"));
-            context.setBaseResource(resource);
+            Path docRoot = workDir.getEmptyPathDir().resolve("docroot");
+            FS.ensureDirExists(docRoot);
 
-            ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
-            defholder.setInitParameter("cacheControl", "no-store");
-            defholder.setInitParameter("dirAllowed", "false");
-            defholder.setInitParameter("gzip", "false");
-            defholder.setInitParameter("precompressed", "gzip=.gz");
-        });
+            startServer((context) ->
+            {
+                oldFileResourceFactory.set(ResourceFactory.unregisterResourceFactory("file"));
+                ResourceFactory.registerResourceFactory("file", new URLResourceFactory());
+                Resource resource = ResourceFactory.of(context).newResource(docRoot);
+                assertThat("Expecting URLResource", resource.getClass().getName(), endsWith("URLResource"));
+                context.setBaseResource(resource);
 
+                ServletHolder defholder = context.addServlet(DefaultServlet.class, "*.js");
+                defholder.setInitParameter("cacheControl", "no-store");
+                defholder.setInitParameter("dirAllowed", "false");
+                defholder.setInitParameter("gzip", "false");
+                defholder.setInitParameter("precompressed", "gzip=.gz");
+            });
 
-        FS.ensureDirExists(docRoot.resolve("scripts"));
+            FS.ensureDirExists(docRoot.resolve("scripts"));
 
-        String scriptText = "This is a script";
-        Files.writeString(docRoot.resolve("scripts/script.js"), scriptText, UTF_8);
+            String scriptText = "This is a script";
+            Files.writeString(docRoot.resolve("scripts/script.js"), scriptText, UTF_8);
 
-        byte[] compressedBytes = compressGzip(scriptText);
-        Files.write(docRoot.resolve("scripts/script.js.gz"), compressedBytes);
+            byte[] compressedBytes = compressGzip(scriptText);
+            Files.write(docRoot.resolve("scripts/script.js.gz"), compressedBytes);
 
-        String rawResponse = connector.getResponse("""
-            GET /context/scripts/script.js HTTP/1.1
-            Host: test
-            Accept-Encoding: gzip
-            Connection: close
-            
-            """);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("Suffix url-pattern mapping not used", response.get(HttpHeader.CACHE_CONTROL), is("no-store"));
-        String responseDecompressed = decompressGzip(response.getContentBytes());
-        assertThat(responseDecompressed, is("This is a script"));
+            String rawResponse = connector.getResponse("""
+                GET /context/scripts/script.js HTTP/1.1
+                Host: test
+                Accept-Encoding: gzip
+                Connection: close
+                
+                """);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat("Suffix url-pattern mapping not used", response.get(HttpHeader.CACHE_CONTROL), is("no-store"));
+            String responseDecompressed = decompressGzip(response.getContentBytes());
+            assertThat(responseDecompressed, is("This is a script"));
+        }
+        finally
+        {
+            ResourceFactory.registerResourceFactory("file", oldFileResourceFactory.get());
+        }
     }
 
     @Test
@@ -2754,7 +2764,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
         });
@@ -2782,7 +2792,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
         });
@@ -2813,16 +2823,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
-            {
-                final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
-
-                @Override
-                public ByteBuffer getByteBuffer()
-                {
-                    return buffer;
-                }
-            });
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
         });
@@ -2850,16 +2851,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
-            {
-                final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), null, false).getByteBuffer();
-
-                @Override
-                public ByteBuffer getByteBuffer()
-                {
-                    return buffer;
-                }
-            });
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");
         });
@@ -2890,7 +2882,7 @@ public class DefaultServletTest
         {
             Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
             ResourceService resourceService = new ResourceService();
-            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+            resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
             resourceService.setAcceptRanges(false);
             DefaultServlet defaultServlet = new DefaultServlet(resourceService);
             context.addServlet(new ServletHolder(defaultServlet), "/");

@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
 import java.util.Objects;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 /**
  * <p>Abstract implementation of {@link MessageSink}.</p>
@@ -42,21 +42,21 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 public abstract class AbstractMessageSink implements MessageSink
 {
     private final CoreSession session;
-    private final MethodHandle methodHandle;
+    private final MethodHolder methodHandle;
     private final boolean autoDemand;
 
     /**
      * Creates a new {@link MessageSink}.
      *
      * @param session the WebSocket session
-     * @param methodHandle the application function to invoke
+     * @param methodHolder the application function to invoke
      * @param autoDemand whether this {@link MessageSink} manages demand automatically
      * as explained in {@link AbstractMessageSink}
      */
-    public AbstractMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public AbstractMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
         this.session = Objects.requireNonNull(session, "CoreSession");
-        this.methodHandle = Objects.requireNonNull(methodHandle, "MethodHandle");
+        this.methodHandle = Objects.requireNonNull(methodHolder, "MethodHolder");
         this.autoDemand = autoDemand;
     }
 
@@ -73,7 +73,7 @@ public abstract class AbstractMessageSink implements MessageSink
      * Get the application function.
      * @return the application function
      */
-    public MethodHandle getMethodHandle()
+    public MethodHolder getMethodHolder()
     {
         return methodHandle;
     }

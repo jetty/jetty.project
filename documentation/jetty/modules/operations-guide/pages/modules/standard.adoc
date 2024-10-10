@@ -54,6 +54,22 @@ This property allows you to cap the max heap memory retained by the pool.
 `jetty.byteBufferPool.maxDirectMemory`::
 This property allows you to cap the max direct memory retained by the pool.
 
+[[connectionlimit]]
+== Module `connectionlimit`
+
+The `connectionlimit` module limits the number of connections accepted by the server, across all connectors.
+
+Once the configured maximum number of connections is reached, Jetty will not accept more connections.
+Existing, established connections will work normally.
+When existing connections are closed, accepting new connections will be resumed.
+
+NOTE: The number of connections seen at the JVM level may be different from the number of connections seen at the OS level.
+For more information, refer to xref:programming-guide:server/http.adoc#connector-limiting[this section].
+
+The module file is `$JETTY_HOME/modules/connectionlimit.mod`:
+
+include::{jetty-home}/modules/connectionlimit.mod[tags=documentation]
+
 [[console-capture]]
 == Module `console-capture`
 
@@ -93,11 +109,26 @@ The module properties are:
 include::{jetty-home}/modules/cross-origin.mod[tags=documentation]
 ----
 
-You must configure at least the property `jetty.crossorigin.allowedOriginPatterns` to allow one or more origins.
+[[debuglog]]
+== Module `debuglog`
 
-It is recommended that you consider configuring also the property `jetty.crossorigin.allowCredentials`.
-When set to `true`, clients send cookies and authentication headers in cross-origin requests to your domain.
-When set to `false`, cookies and authentication headers are not sent.
+The `debuglog` module logs extra information about request processing.
+
+This module installs the `DebugHandler` into the handler tree and logs information into a rollover log file.
+By default, the location of the log file is `$JETTY_BASE/logs`, although this can be configured via the `jetty.debuglog.dir`.
+The name of the log file is of the form: `yyyy_mm_dd.debug.log`, for example `2024-10-01.debug.log`.
+All deployed contexts will write to the same log file.
+
+Note that if a request uses asynchronous processing, the log event for the completion of handling may occur out of order with the log event for the continuation of processing.
+
+If more precise logging of request processing is required - including well-ordered async processing events - or you wish to constrain request debug logging to particular contexts only, then configure an ee-specific  `DebugListener` for each context instead of using this module.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/debuglog.mod[tags=documentation]
+----
+
 
 [[eeN-deploy]]
 == Module `{ee-all}-deploy`
@@ -432,7 +463,7 @@ Whether you want to send the `Server` header in every HTTP response:
 ----
 HTTP/1.1 200 OK
 Content-Length: 0
-Server: Jetty({version})
+Server: Jetty({jetty-version})
 ----
 
 [[server-config]]
@@ -550,6 +581,10 @@ include::{jetty-home}/modules/ssl.mod[tags=documentation-ssl-context]
 [[ssl-keystore-tls]]
 === KeyStore Properties and TLS Properties
 
+The Jetty component that manages the KeyStore, that contains the cryptographic material and the TLS configuration is an instance of `SslContextFactory.Server`.
+
+You can configure the `SslContextFactory.Server` by specifying properties, or by invoking its method for a more xref:ssl-advanced[advanced configuration].
+
 Among the configurable properties, the most relevant are:
 
 `jetty.sslContext.keyStorePath`::
@@ -566,6 +601,60 @@ Whether client certificate authentication should be required.
 Whether client certificate authentication should be requested.
 
 If you configure client certificate authentication, you need to configure and distribute a client KeyStore as explained in xref:keystore/index.adoc#client-authn[this section].
+
+[[ssl-advanced]]
+=== Advanced TLS Configuration
+
+Configuring `SslContextFactory.Server` using properties as explained in xref:ssl-keystore-tls[this section] is sufficient for most cases.
+
+For the cases where Jetty module properties are not defined, or when you need more advanced configuration (for example the ability to include and/or exclude the TLS cipher suites), you can follow these steps:
+
+. Modify `$JETTY_BASE/start.d/ssl.ini` by adding a path to a custom XML file, for example:
++
+.ssl.ini
+[source,subs="verbatim,quotes"]
+----
+--module=ssl
+*etc/ssl-config.xml* <1>
+...
+----
+<1> The path to the custom XML file, relative to `$JETTY_BASE`.
+. Create the custom XML file, with your advanced configuration.
+For example, to exclude certain TLS ciphers you can use the following file:
++
+.ssl-config.xml
+[source,xml,subs="verbatim"]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Ref refid="sslContextFactory"> <1>
+    <!-- Example using the Set element -->
+    <Set name="ExcludeCipherSuites"> <2>
+      <Array type="String">
+        <Item>^TLS_RSA_.*$</Item>
+        <Item>^.*_(MD5|SHA|SHA1)$</Item>
+      </Array>
+    </Set>
+    <!-- Example using the Call element -->
+    <Call name="addExcludeCipherSuites">
+      <Arg>
+        <Array type="String">
+          <Item>^SSL_.*$</Item>
+        </Array>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
+----
+<1> Reference the existing `sslContextFactory` object.
+<2> Call the method `setExcludeCipherSuites(String\...)` to specify regular expressions of the TLS ciphers you want to exclude.
+
+The syntax to use in the custom XML file is described in xref:xml/index.adoc[this section].
+
+In the custom XML file you can call any `SslContextFactory.Server` method.
+Refer to the `SslContextFactory.Server` link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Server.html[javadocs] for the comprehensive list of methods.
 
 [[ssl-reload]]
 == Module `ssl-reload`
@@ -649,6 +738,23 @@ If you want to use virtual threads, introduced as a preview feature in Java 19 a
 * The <<threadpool-virtual-preview,`threadpool-virtual-preview`>> Jetty module for Java 19 and Java 20.
 
 See also the xref:server/index.adoc#threadpool[section about configuring the thread pool].
+
+[[threadpool-all-virtual]]
+== Module `threadpool-all-virtual`
+
+The `threadpool-all-virtual` module allows you to configure the server-wide thread pool, similarly to what you can do with the <<threadpool,`threadpool`>> Jetty module, so that all threads are virtual threads, introduced as an official feature since Java 21.
+
+CAUTION: Only use this module if you are using Java 21 or later.
+
+The module properties to configure the thread pool are:
+
+----
+include::{jetty-home}/modules/threadpool-all-virtual.mod[tags=documentation]
+----
+
+The property `jetty.threadpool.maxThreads` limits, using a `Semaphore`, the number of current virtual threads in use.
+
+Please refer to the xref:programming-guide:arch/threads.adoc#thread-pool-virtual-threads[virtual threads section] of the Jetty Threading Architecture for more information about virtual threads and their pitfalls.
 
 [[threadpool-virtual]]
 == Module `threadpool-virtual`

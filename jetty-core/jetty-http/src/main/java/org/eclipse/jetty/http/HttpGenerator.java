@@ -18,8 +18,6 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
@@ -457,10 +455,16 @@ public class HttpGenerator
         }
     }
 
-    public void servletUpgrade()
+    public void startTunnel()
     {
         _noContentResponse = false;
         _state = State.COMMITTED;
+    }
+
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void servletUpgrade()
+    {
+        startTunnel();
     }
 
     private void prepareChunk(ByteBuffer chunk, int remaining)
@@ -627,23 +631,58 @@ public class HttpGenerator
 
                         case CONNECTION:
                         {
-                            boolean keepAlive = field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
-                            if (keepAlive && _info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null)
+                            String value = field.getValue();
+
+                            // Handle simple case of close value only
+                            if (HttpHeaderValue.CLOSE.is(value))
                             {
-                                _persistent = true;
-                            }
-                            if (field.contains(HttpHeaderValue.CLOSE.asString()))
-                            {
+                                if (!close)
+                                    header.put(CONNECTION_CLOSE);
                                 close = true;
                                 _persistent = false;
                             }
-                            if (keepAlive && _persistent == Boolean.FALSE)
+                            // Handle close with other values
+                            else if (field.contains(HttpHeaderValue.CLOSE.asString()))
                             {
-                                field = new HttpField(HttpHeader.CONNECTION,
-                                    Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
-                                        .collect(Collectors.joining(", ")));
+                                close = true;
+                                _persistent = false;
+
+                                // Add the field, but without keep-alive
+                                putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
                             }
-                            putTo(field, header);
+                            // Handle Keep-Alive value only
+                            else if (HttpHeaderValue.KEEP_ALIVE.is(value))
+                            {
+                                // If we can persist for HTTP/1.0
+                                if (_persistent != Boolean.FALSE && _info.getHttpVersion() == HttpVersion.HTTP_1_0)
+                                {
+                                    // then do so
+                                    _persistent = true;
+                                    header.put(CONNECTION_KEEP_ALIVE);
+                                }
+                                // otherwise we just ignore the keep-alive
+                            }
+                            // Handle Keep-Alive with other values, but no close
+                            else if (field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            {
+                                // If we can persist for HTTP/1.0
+                                if (_persistent != Boolean.FALSE && _info.getHttpVersion() == HttpVersion.HTTP_1_0)
+                                {
+                                    // then do so
+                                    _persistent = true;
+                                    putTo(field, header);
+                                }
+                                else
+                                {
+                                    // otherwise we add the field, but without keep-alive
+                                    putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
+                                }
+                            }
+                            // Handle connection header without either close nor keep-alive
+                            else
+                            {
+                                putTo(field, header);
+                            }
                             break;
                         }
 
@@ -799,6 +838,7 @@ public class HttpGenerator
     private static final byte[] LAST_CHUNK = {(byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n'};
     private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\r\n");
     private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\r\n");
+    private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\r\n");
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1 + " ");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\r\n");
 

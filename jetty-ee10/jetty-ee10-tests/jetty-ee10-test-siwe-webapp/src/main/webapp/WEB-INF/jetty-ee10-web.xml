@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_12_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+  <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
+    <Arg><Ref refid="Server"/></Arg>
+    <Call id="realmResource" name="newResource">
+      <Arg><SystemProperty name="jetty.base" default="."/>/etc/realm.properties</Arg>
+    </Call>
+  </Call>
+
+  <Call name="getSecurityHandler">
+    <Set name="loginService">
+      <New class="org.eclipse.jetty.security.HashLoginService">
+        <Set name="name">myRealm</Set>
+        <Set name="config"><Ref refid="realmResource"/></Set>
+      </New>
+    </Set>
+  </Call>
+</Configure>

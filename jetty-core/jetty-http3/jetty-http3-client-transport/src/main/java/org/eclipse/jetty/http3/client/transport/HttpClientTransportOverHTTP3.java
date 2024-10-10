@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.client.transport;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.List;
@@ -66,22 +65,25 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     protected void doStart() throws Exception
     {
         if (!http3Client.isStarted())
-        {
-            HttpClient httpClient = getHttpClient();
-            ClientConnector clientConnector = this.http3Client.getClientConnector();
-            clientConnector.setExecutor(httpClient.getExecutor());
-            clientConnector.setScheduler(httpClient.getScheduler());
-            clientConnector.setByteBufferPool(httpClient.getByteBufferPool());
-            clientConnector.setConnectTimeout(Duration.ofMillis(httpClient.getConnectTimeout()));
-            clientConnector.setConnectBlocking(httpClient.isConnectBlocking());
-            clientConnector.setBindAddress(httpClient.getBindAddress());
-            clientConnector.setIdleTimeout(Duration.ofMillis(httpClient.getIdleTimeout()));
-            HTTP3Configuration configuration = http3Client.getHTTP3Configuration();
-            configuration.setInputBufferSize(httpClient.getResponseBufferSize());
-            configuration.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
-            configuration.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
-        }
+            configure(getHttpClient(), http3Client);
         super.doStart();
+    }
+
+    static void configure(HttpClient httpClient, HTTP3Client http3Client)
+    {
+        ClientConnector clientConnector = http3Client.getClientConnector();
+        clientConnector.setExecutor(httpClient.getExecutor());
+        clientConnector.setScheduler(httpClient.getScheduler());
+        clientConnector.setByteBufferPool(httpClient.getByteBufferPool());
+        clientConnector.setConnectTimeout(Duration.ofMillis(httpClient.getConnectTimeout()));
+        clientConnector.setConnectBlocking(httpClient.isConnectBlocking());
+        clientConnector.setBindAddress(httpClient.getBindAddress());
+        clientConnector.setIdleTimeout(Duration.ofMillis(httpClient.getIdleTimeout()));
+        HTTP3Configuration configuration = http3Client.getHTTP3Configuration();
+        configuration.setInputBufferSize(httpClient.getResponseBufferSize());
+        configuration.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
+        configuration.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
+        configuration.setMaxResponseHeadersSize(httpClient.getMaxResponseHeadersSize());
     }
 
     @Override
@@ -97,12 +99,6 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     public Destination newDestination(Origin origin)
     {
         return new HttpDestination(getHttpClient(), origin);
-    }
-
-    @Override
-    public void connect(InetSocketAddress address, Map<String, Object> context)
-    {
-        connect((SocketAddress)address, context);
     }
 
     @Override

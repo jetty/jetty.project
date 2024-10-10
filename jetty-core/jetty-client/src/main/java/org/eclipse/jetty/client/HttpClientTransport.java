@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 
@@ -31,7 +30,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
  * but the HTTP exchange may also be carried using the FCGI protocol, the HTTP/2 protocol or,
  * in future, other protocols.
  */
-public interface HttpClientTransport extends ClientConnectionFactory
+public interface HttpClientTransport extends ClientConnectionFactory, HttpClient.Aware
 {
     public static final String HTTP_DESTINATION_CONTEXT_KEY = "org.eclipse.jetty.client.destination";
     public static final String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.connection.promise";
@@ -45,6 +44,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
      *
      * @param client the {@link HttpClient} that uses this transport.
      */
+    @Override
     public void setHttpClient(HttpClient client);
 
     /**
@@ -71,24 +71,8 @@ public interface HttpClientTransport extends ClientConnectionFactory
      *
      * @param address the address to connect to
      * @param context the context information to establish the connection
-     * @deprecated use {@link #connect(SocketAddress, Map)} instead.
      */
-    @Deprecated
-    public void connect(InetSocketAddress address, Map<String, Object> context);
-
-    /**
-     * Establishes a physical connection to the given {@code address}.
-     *
-     * @param address the address to connect to
-     * @param context the context information to establish the connection
-     */
-    public default void connect(SocketAddress address, Map<String, Object> context)
-    {
-        if (address instanceof InetSocketAddress)
-            connect((InetSocketAddress)address, context);
-        else
-            throw new UnsupportedOperationException("Unsupported SocketAddress " + address);
-    }
+    public void connect(SocketAddress address, Map<String, Object> context);
 
     /**
      * @return the factory for ConnectionPool instances

@@ -57,7 +57,7 @@ The Maven artifact coordinates are the following:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-client</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -158,7 +158,7 @@ Jetty's client library provides the following `ConnectionPool` implementations:
 * `DuplexConnectionPool`, historically the first implementation, only used by the HTTP/1.1 transport.
 * `MultiplexConnectionPool`, the generic implementation valid for any transport where connections are reused with a most recently used algorithm (that is, the connections most recently returned to the connection pool are the more likely to be used again).
 * `RoundRobinConnectionPool`, similar to `MultiplexConnectionPool` but where connections are reused with a round-robin algorithm.
-* `RandomRobinConnectionPool`, similar to `MultiplexConnectionPool` but where connections are reused with an algorithm that chooses them randomly.
+* `RandomConnectionPool`, similar to `MultiplexConnectionPool` but where connections are reused with an algorithm that chooses them randomly.
 
 The `ConnectionPool` implementation can be customized for each destination in by setting a `ConnectionPool.Factory` on the `HttpClientTransport`:
 
@@ -166,6 +166,34 @@ The `ConnectionPool` implementation can be customized for each destination in by
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=setConnectionPool]
 ----
+
+[[connection-pool-precreate-connections]]
+=== Pre-Creating Connections
+
+`ConnectionPool` offers the ability to pre-create connections by calling `ConnectionPool.preCreateConnections(int)`.
+
+Pre-creating the connections saves the time and processing spent to establish the TCP connection, performing the TLS handshake (if necessary) and, for HTTP/2 and HTTP/3, perform the initial protocol setup.
+This is particularly important for HTTP/2 because in the initial protocol setup the server informs the client of the maximum number of concurrent requests per connection (otherwise assumed to be just `1` by the client).
+
+The scenarios where pre-creating connections is useful are, for example:
+
+* Load testing, where you want to prepare the system with connections already created to avoid paying of cost of connection setup.
+* Proxying scenarios, often in conjunction with the use of `RoundRobinConnectionPool` or `RandomConnectionPool`, where the proxy creates early the connections to the backend servers.
+
+This is an example of how to pre-create connections:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=preCreateConnections]
+----
+
+[NOTE]
+====
+Pre-creating connections for secure HTTP/1.1 requires you to call `HttpClientTransportOverHTTP.setInitializeConnections(true)`, otherwise only the TCP connection is established, but the TLS handshake is not initiated.
+
+To initialize connections for secure HTTP/1.1, the client sends an initial `OPTIONS * HTTP/1.1` request to the server.
+The server must be able to handle this request without closing the connection (in particular it must not add the `Connection: close` header in the response).
+====
 
 [[request-processing]]
 == HttpClient Request Processing
@@ -207,7 +235,12 @@ A second request with the same origin sent _after_ the first request/response cy
 A second request with the same origin sent _concurrently_ with the first request will likely cause the opening of a second connection, depending on the connection pool implementation.
 The configuration parameter `HttpClient.maxConnectionsPerDestination` (see also the <<configuration,configuration section>>) controls the max number of connections that can be opened for a destination.
 
-NOTE: If opening connections to a given origin takes a long time, then requests for that origin will queue up in the corresponding destination until the connections are established.
+[NOTE]
+====
+If opening connections to a given origin takes a long time, then requests for that origin will queue up in the corresponding destination until the connections are established.
+
+To save the time spent opening connections, you can xref:connection-pool-precreate-connections[pre-create connections].
+====
 
 Each connection can handle a limited number of concurrent requests.
 For HTTP/1.1, this number is always `1`: there can only be one outstanding request for each connection.
@@ -435,6 +468,13 @@ If you want to avoid buffering, you can wait for the response and then stream th
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=inputStreamResponseListener]
 ----
 
+If you want to save the response content to a file, you can use the `PathResponseListener` utility class:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=pathResponseListener]
+----
+
 Finally, let's look at the advanced usage of the response content handling.
 
 The response content is provided by the `HttpClient` implementation to application listeners following the read/demand model of `org.eclipse.jetty.io.Content.Source`.
@@ -499,6 +539,28 @@ This is a fancy example of how to mix HTTP versions and low-level transports:
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=mixedTransports]
 ----
+
+[[connection-information]]
+=== Request Connection Information
+
+In order to send a request, it is necessary to obtain a connection, as explained in the xref:request-processing[request processing section].
+
+The HTTP/1.1 protocol may send only one request at a time on a single connection, while multiplexed protocols such as HTTP/2 may send many requests at a time on a single connection.
+
+You can access the connection information, for example the local and remote `SocketAddress`, or the `SslSessionData` if the connection is secured, in the following way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=connectionInformation]
+----
+
+[NOTE]
+====
+The connection information is only available when the request is associated with a connection.
+
+This means that the connection is not available in the _request queued_ event, but only starting from the _request begin_ event.
+For more information about request events, see xref:non-blocking[this section].
+====
 
 [[configuration]]
 == HttpClient Configuration

@@ -74,7 +74,7 @@ This allows to use the HTTP/1.1 `Connection` during the initial communication an
 
 Creating `Connection` instances is performed on the server-side by link:{javadoc-url}/org/eclipse/jetty/server/ConnectionFactory.html[`ConnectionFactory`]s and on the client-side by link:{javadoc-url}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`]s.
 
-On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{javadoc-url}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] for TCP sockets, link:{javadoc-url}/org/eclipse/jetty/quic/server/QuicServerConnector.html[`QuicServerConnector`] for QUIC sockets, and link:{JDURL}/org/eclipse/jetty/unixdomain/server/UnixDomainServerConnector.html[`UnixDomainServerConnector`] for Unix-Domain sockets (see the xref:server/io-arch.adoc[server-side architecture section] for more information).
+On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{javadoc-url}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] for TCP sockets, link:{javadoc-url}/org/eclipse/jetty/quic/server/QuicServerConnector.html[`QuicServerConnector`] for QUIC sockets, and link:{javadoc-url}/org/eclipse/jetty/unixdomain/server/UnixDomainServerConnector.html[`UnixDomainServerConnector`] for Unix-Domain sockets (see the xref:server/io-arch.adoc[server-side architecture section] for more information).
 
 On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{javadoc-url}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses (see the xref:client/io-arch.adoc[client-side architecture section] for more information).
 
@@ -187,7 +187,7 @@ In turn, this calls `IteratingCallback.process()`, an abstract method that must 
 Method `process()` must return:
 
 * `Action.SCHEDULED`, to indicate whether the loop has performed a non-blocking, possibly asynchronous, operation
-* `Action.IDLE`, to indicate that the loop should temporarily be suspended to be resumed later
+* `Action.IDLE`, to indicate that the loop should temporarily be suspended to be resumed later with another call to iterate
 * `Action.SUCCEEDED` to indicate that the loop exited successfully
 
 Any exception thrown within `process()` exits the loops with a failure.
@@ -209,12 +209,17 @@ If this was the only active network connection, the system would now be idle, wi
 
 Eventually, the Jetty I/O system will notify that the `write()` completed; this notifies the `IteratingCallback` that can now resume the loop and call `process()` again.
 
-When `process()` is called, it is possible that zero bytes are read from the network; in this case, you want to deallocate the buffer since the other peer may never send more bytes for the `Connection` to read, or it may send them after a long pause -- in both cases we do not want to retain the memory allocated by the buffer; next, you want to call `fillInterested()` to declare again interest for read events, and return `Action.IDLE` since there is nothing to write back and therefore the loop may be suspended.
-When more bytes are again available to be read from the network, `onFillable()` will be called again and that will start the iteration again.
+When `process()` is called, it is possible that zero bytes are read from the network; in this case, you want to deallocate the buffer since the other peer may never send more bytes for the `Connection` to read, or it may send them after a long pause -- in both cases we do not want to retain the memory allocated by the buffer; next, you want to call `fillInterested(this)` to declare again interest for read events, and return `Action.SCHEDULED` since a callback is scheduled to occur once filling is possible.
 
 Another possibility is that during `process()` the read returns `-1` indicating that the other peer has closed the connection; this means that there will not be more bytes to read and the loop can be exited, so you return `Action.SUCCEEDED`; `IteratingCallback` will then call `onCompleteSuccess()` where you can close the `EndPoint`.
 
 The last case is that during `process()` an exception is thrown, for example by `EndPoint.fill(ByteBuffer)` or, in more advanced implementations, by code that parses the bytes that have been read and finds them unacceptable; any exception thrown within `process()` will be caught by `IteratingCallback` that will exit the loop with a failure and call `onCompleteFailure(Throwable)` with the exception that has been thrown, where you can close the `EndPoint`, passing the exception that is the reason for closing prematurely the `EndPoint`.
+
+Note that some failures may occur whilst a scheduled operation is in progress.
+Such failures are notified immediately via the `onFailure(Throwable)` method, but care must be taken to not release any resources that may still be in use by the scheduled operation.
+The `onCompleteFailure(Throwable)` method is called when both a failure has occurred and any scheduled operation has completed.
+An example of this issue is that a buffer used for a write operation cannot be returned to a pool in `onFailure(Throwable)` as the write may still be progressing.
+Either the buffer must be removed from the pool in `onFailure(Throwable)` or the release of the buffer deferred until `onCompleteFailure(Throwable)` is called.
 
 [IMPORTANT]
 ====
@@ -356,9 +361,9 @@ You must initiate a second write only when the first is finished, for example:
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=sinkMany]
 ----
 
-When you need to perform an unknown number of writes, you must use an `IteratingCallback`, explained in <<echo,this section>>, to avoid ``StackOverFlowError``s.
+When you need to perform an unknown number of writes, you may use an `IteratingCallback`, explained in <<echo,this section>>, to avoid ``StackOverFlowError``s.
 
-For example, to copy from a `Content.Source` to a `Content.Sink` you should use the convenience method `Content.copy(Content.Source, Content.Sink, Callback)`.
+For example, to copy from a `Content.Source` to a `Content.Sink` you could use the convenience method `Content.copy(Content.Source, Content.Sink, Callback)`.
 For illustrative purposes, below you can find the implementation of `copy(Content.Source, Content.Sink, Callback)` that uses an `IteratingCallback`:
 
 [,java,indent=0]

@@ -15,7 +15,6 @@ package org.eclipse.jetty.client.transport;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,7 +80,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportDynamic.class);
 
-    private final List<ClientConnectionFactory.Info> infos;
+    private final List<ClientConnectionFactory.Info> clientConnectionFactoryInfos;
 
     /**
      * Creates a dynamic transport that speaks only HTTP/1.1.
@@ -89,19 +88,6 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     public HttpClientTransportDynamic()
     {
         this(new ClientConnector(), HttpClientConnectionFactory.HTTP11);
-    }
-
-    /**
-     * <p>Creates a dynamic transport that speaks the given protocols, in order of preference
-     * (first the most preferred).</p>
-     *
-     * @param infos the protocols this dynamic transport speaks
-     * @deprecated use {@link #HttpClientTransportDynamic(ClientConnector, ClientConnectionFactory.Info...)}
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public HttpClientTransportDynamic(ClientConnectionFactory.Info... infos)
-    {
-        this(findClientConnector(infos), infos);
     }
 
     /**
@@ -114,19 +100,11 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     public HttpClientTransportDynamic(ClientConnector connector, ClientConnectionFactory.Info... infos)
     {
         super(connector);
-        this.infos = infos.length == 0 ? List.of(HttpClientConnectionFactory.HTTP11) : List.of(infos);
-        this.infos.forEach(this::installBean);
+        this.clientConnectionFactoryInfos = infos.length == 0 ? List.of(HttpClientConnectionFactory.HTTP11) : List.of(infos);
+        this.clientConnectionFactoryInfos.forEach(this::installBean);
         setConnectionPoolFactory(destination ->
             new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), 1)
         );
-    }
-
-    private static ClientConnector findClientConnector(ClientConnectionFactory.Info[] infos)
-    {
-        return Arrays.stream(infos)
-            .flatMap(info -> info.getContainedBeans(ClientConnector.class).stream())
-            .findFirst()
-            .orElseGet(ClientConnector::new);
     }
 
     @Override
@@ -141,7 +119,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         {
             HttpVersion version = request.getVersion();
             List<String> wanted = toProtocols(version);
-            for (Info info : infos)
+            for (Info info : clientConnectionFactoryInfos)
             {
                 // Find the first protocol that matches the version.
                 List<String> protocols = info.getProtocols(secure);
@@ -164,7 +142,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         else
         {
-            Info preferredInfo = infos.get(0);
+            Info preferredInfo = clientConnectionFactoryInfos.get(0);
             if (secure)
             {
                 if (preferredInfo.getProtocols(true).contains("h3"))
@@ -178,7 +156,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
                     // If the preferred protocol is not HTTP/3, then
                     // must be excluded since it won't be compatible
                     // with the other HTTP versions due to UDP vs TCP.
-                    for (Info info : infos)
+                    for (Info info : clientConnectionFactoryInfos)
                     {
                         if (info.getProtocols(true).contains("h3"))
                             continue;
@@ -200,7 +178,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             else
             {
                 // Pick the first that allows non-secure.
-                for (Info info : infos)
+                for (Info info : clientConnectionFactoryInfos)
                 {
                     if (info.getProtocols(false).contains("h3"))
                         continue;
@@ -216,11 +194,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         Transport transport = request.getTransport();
         if (transport == null)
         {
-            // Ask the ClientConnector for backwards compatibility
-            // until ClientConnector.Configurator is removed.
-            transport = getClientConnector().newTransport();
-            if (transport == null)
-                transport = matchingInfos.get(0).newTransport();
+            transport = matchingInfos.get(0).newTransport();
             request.transport(transport);
         }
 
@@ -249,7 +223,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         if (protocol == null)
         {
             // Use the default ClientConnectionFactory.
-            factory = infos.get(0).getClientConnectionFactory();
+            factory = clientConnectionFactoryInfos.get(0).getClientConnectionFactory();
         }
         else
         {
@@ -295,7 +269,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             else
             {
                 // Server does not support ALPN, let's try the first protocol.
-                factoryInfo = infos.get(0);
+                factoryInfo = clientConnectionFactoryInfos.get(0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("No ALPN protocol, using {}", factoryInfo);
             }
@@ -310,7 +284,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
 
     private Optional<Info> findClientConnectionFactoryInfo(List<String> protocols, boolean secure)
     {
-        return infos.stream()
+        return clientConnectionFactoryInfos.stream()
             .filter(info -> info.matches(protocols, secure))
             .findFirst();
     }

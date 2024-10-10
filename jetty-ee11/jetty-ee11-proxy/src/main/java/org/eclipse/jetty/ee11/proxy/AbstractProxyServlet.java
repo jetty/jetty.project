@@ -383,7 +383,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         for (String host : hosts)
         {
             host = host.trim();
-            if (host.length() == 0)
+            if (host.isEmpty())
                 continue;
             result.add(host);
         }
@@ -456,9 +456,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected boolean hasContent(HttpServletRequest clientRequest)
     {
-        return clientRequest.getContentLength() > 0 ||
-            clientRequest.getContentType() != null ||
-            clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
+        long contentLength = clientRequest.getContentLengthLong();
+        if (contentLength == 0)
+            return false;
+        if (contentLength > 0)
+            return true;
+        return clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
     }
 
     protected boolean expects100Continue(HttpServletRequest request)
@@ -535,7 +538,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     protected void addProxyHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
         addViaHeader(proxyRequest);
-        addXForwardedHeaders(clientRequest, proxyRequest);
+        addForwardedHeader(clientRequest, proxyRequest);
     }
 
     /**
@@ -577,23 +580,43 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 .flatMap(field -> Stream.of(field.getValues()))
                 .filter(value -> !StringUtil.isBlank(value))
                 .collect(Collectors.joining(separator));
-            if (newValue.length() > 0)
+            if (!newValue.isEmpty())
                 newValue += separator;
             newValue += viaHeaderValue;
             return new HttpField(HttpHeader.VIA, newValue);
         }));
     }
 
-    protected void addXForwardedHeaders(HttpServletRequest clientRequest, Request proxyRequest)
+    protected void addForwardedHeader(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_FOR, clientRequest.getRemoteAddr()));
-        proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_PROTO, clientRequest.getScheme()));
-        String hostHeader = clientRequest.getHeader(HttpHeader.HOST.asString());
-        if (hostHeader != null)
-            proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_HOST, hostHeader));
-        String localName = clientRequest.getLocalName();
-        if (localName != null)
-            proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_SERVER, localName));
+        String byAttr = clientRequest.getLocalAddr();
+        String forAttr = clientRequest.getRemoteAddr();
+        String hostAttr = clientRequest.getHeader(HttpHeader.HOST.asString());
+        String scheme = clientRequest.getScheme();
+        String protoAttr = scheme == null ? (clientRequest.isSecure() ? "https" : "http") : scheme;
+        String forwardedValue = "by=%s;for=%s;host=%s;proto=%s".formatted(
+            HttpField.PARAMETER_TOKENIZER.quote(byAttr),
+            HttpField.PARAMETER_TOKENIZER.quote(forAttr),
+            HttpField.PARAMETER_TOKENIZER.quote(hostAttr),
+            protoAttr
+        );
+        proxyRequest.headers(headers -> headers.computeField(HttpHeader.FORWARDED, (header, fields) ->
+        {
+            String newValue;
+            if (fields == null || fields.isEmpty())
+            {
+                newValue = forwardedValue;
+            }
+            else
+            {
+                String separator = ", ";
+                newValue = fields.stream()
+                    .flatMap(field -> field.getValueList().stream())
+                    .collect(Collectors.joining(separator));
+                newValue += separator + forwardedValue;
+            }
+            return new HttpField(HttpHeader.FORWARDED, newValue);
+        }));
     }
 
     protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
@@ -763,10 +786,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
     }
 
-    protected void onContinue(HttpServletRequest clientRequest, Request proxyRequest)
+    protected Runnable onContinue(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        if (_log.isDebugEnabled())
-            _log.debug("{} handling 100 Continue", getRequestId(clientRequest));
+        return null;
     }
 
     /**
@@ -851,10 +873,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
     class ProxyContinueProtocolHandler extends ContinueProtocolHandler
     {
         @Override
-        protected void onContinue(Request request)
+        protected Runnable onContinue(Request request)
         {
             HttpServletRequest clientRequest = (HttpServletRequest)request.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
-            AbstractProxyServlet.this.onContinue(clientRequest, request);
+            return AbstractProxyServlet.this.onContinue(clientRequest, request);
         }
     }
 }

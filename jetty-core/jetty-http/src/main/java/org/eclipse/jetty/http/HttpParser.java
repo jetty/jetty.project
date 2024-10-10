@@ -422,6 +422,11 @@ public class HttpParser
         return _state;
     }
 
+    public boolean hasContent()
+    {
+        return _endOfContent != EndOfContent.NO_CONTENT;
+    }
+
     public boolean inContentState()
     {
         return _state.ordinal() >= State.CONTENT.ordinal() && _state.ordinal() < State.END.ordinal();
@@ -2016,11 +2021,17 @@ public class HttpParser
         _headerComplete = false;
     }
 
+    public void startTunnel()
+    {
+        setState(State.EOF_CONTENT);
+        _endOfContent = EndOfContent.EOF_CONTENT;
+        _contentLength = -1;
+    }
+
+    @Deprecated(since = "12.1.0", forRemoval = true)
     public void servletUpgrade()
     {
-        setState(State.CONTENT);
-        _endOfContent = EndOfContent.UNKNOWN_CONTENT;
-        _contentLength = -1;
+        startTunnel();
     }
 
     protected void setState(State state)

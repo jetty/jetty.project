@@ -108,7 +108,7 @@ public class BufferUtil
         };
 
     public static final byte[] EMPTY_BYTES = new byte[0];
-    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(EMPTY_BYTES).asReadOnlyBuffer();
+    public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(EMPTY_BYTES);
 
     /**
      * Allocate ByteBuffer in flush mode.
@@ -285,6 +285,29 @@ public class BufferUtil
         buffer.put((byte)((value >>> 16) & 0xFF));
         buffer.put((byte)((value >>> 24) & 0xFF));
         flipToFlush(buffer, p);
+    }
+
+    /**
+     * Slice a buffer given an offset and a length.
+     * @param buffer the buffer to slice
+     * @param offset the offset
+     * @param length the length, -1 meaning use the current limit
+     * @return the sliced buffer
+     */
+    public static ByteBuffer slice(ByteBuffer buffer, int offset, int length)
+    {
+        ByteBuffer slice = buffer.slice();
+        if (offset > 0)
+        {
+            int newPosition = slice.position() + offset;
+            if (newPosition > slice.limit() && length == 0)
+                slice.position(slice.limit());
+            else
+                slice.position(newPosition);
+        }
+        if (length > -1)
+            slice.limit(slice.position() + length);
+        return slice;
     }
 
     /**
@@ -641,11 +664,11 @@ public class BufferUtil
 
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
-        ByteBuffer tmp = allocate(8192);
+        ByteBuffer tmp = allocate(IO.DEFAULT_BUFFER_SIZE);
 
         while (needed > 0 && buffer.hasRemaining())
         {
-            int l = is.read(tmp.array(), 0, 8192);
+            int l = is.read(tmp.array(), 0, IO.DEFAULT_BUFFER_SIZE);
             if (l < 0)
                 break;
             tmp.position(0);
@@ -665,7 +688,7 @@ public class BufferUtil
         else
         {
             int totalRead = 0;
-            ByteBuffer tmp = allocate(8192);
+            ByteBuffer tmp = allocate(IO.DEFAULT_BUFFER_SIZE);
             while (BufferUtil.space(tmp) > 0 && BufferUtil.space(buffer) > 0)
             {
                 int read = is.read(tmp.array(), 0, Math.min(BufferUtil.space(tmp), BufferUtil.space(buffer)));

@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -813,6 +813,11 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             return _managed == Managed.MANAGED;
         }
 
+        /**
+         * @return {@code true} if this bean {@link #isManaged() is managed};
+         * {@code true} if this bean will be managed if it were to be started;
+         * {@code false} otherwise
+         */
         public boolean isManageable()
         {
             return switch (_managed)
@@ -882,7 +887,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     @Override
     public <T> Collection<T> getContainedBeans(Class<T> clazz)
     {
-        Set<T> beans = new HashSet<>();
+        Set<T> beans = new LinkedHashSet<>();
         getContainedBeans(clazz, beans);
         return beans;
     }

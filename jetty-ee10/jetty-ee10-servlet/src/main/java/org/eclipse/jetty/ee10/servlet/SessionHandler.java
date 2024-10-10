@@ -19,6 +19,7 @@ import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +48,7 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {
@@ -253,6 +255,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             SessionHandler.this.setSecureCookies(secure);
         }
 
+        @Override
+        public String toString()
+        {
+              return String.format("%s@%x[name=%s,domain=%s,path=%s,max-age=%d,secure=%b,http-only=%b,comment=%s,attributes=%s]",
+                this.getClass().getName(), this.hashCode(), getName(), getDomain(), getPath(),
+               getMaxAge(), isSecure(), isHttpOnly(),  getComment(), getSessionCookieAttributes().toString());
+        }
+
         private void checkState()
         {
             //It is allowable to call the CookieConfig.setXX methods after the SessionHandler has started,
@@ -383,6 +393,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     public SessionHandler()
     {
         setSessionTrackingModes(DEFAULT_SESSION_TRACKING_MODES);
+        installBean(_cookieConfig);
+        installBean(_sessionListeners);
+        installBean(_sessionIdListeners);
+        installBean(_sessionAttributeListeners);
     }
 
     @Override
@@ -559,9 +573,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         getSessionContext().run(() ->
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-            for (int i = _sessionListeners.size() - 1; i >= 0; i--)
+            for (ListIterator<HttpSessionListener> i = TypeUtil.listIteratorAtEnd(_sessionListeners); i.hasPrevious();)
             {
-                _sessionListeners.get(i).sessionDestroyed(event);
+                i.previous().sessionDestroyed(event);
             }
         });
     }
@@ -708,27 +722,33 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     private class NonServletSessionRequest extends Request.Wrapper
     {
         private final Response _response;
-        private RequestedSession _session;
+        private RequestedSession _requestedSession;
 
         public NonServletSessionRequest(Request request, Response response, RequestedSession requestedSession)
         {
             super(request);
             _response = response;
-            _session = requestedSession;
+            _requestedSession = requestedSession;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (AbstractSessionManager.RequestedSession.isApplicableAttribute(name))
+                return _requestedSession.getAttribute(name);
+            return super.getAttribute(name);
         }
 
         @Override
         public Session getSession(boolean create)
         {
-            ManagedSession session = _session.session();
+            ManagedSession session = _requestedSession.session();
 
             if (session != null || !create)
                 return session;
 
-            newSession(getWrapped(), _session.sessionId(), ms ->
-                _session = new RequestedSession(ms, _session.sessionId(), true));
-
-            session = _session.session();
+            newSession(getWrapped(), _requestedSession.sessionId(), ms -> _requestedSession = new RequestedSession(ms, _requestedSession.sessionId(), _requestedSession.sessionIdFrom()));
+            session = _requestedSession.session();
             if (session == null)
                 throw new IllegalStateException("Create session failed");
 
@@ -740,7 +760,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
         ManagedSession getManagedSession()
         {
-            return _session.session();
+            return _requestedSession.session();
         }
     }
 }

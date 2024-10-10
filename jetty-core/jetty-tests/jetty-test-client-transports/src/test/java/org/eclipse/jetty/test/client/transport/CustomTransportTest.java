@@ -237,7 +237,8 @@ public class CustomTransportTest
             channels.put(channel.id, channel);
 
             // Register for read interest with the EndPoint.
-            endPoint.fillInterested(new EndPointToChannelCallback(channel));
+            EndPointToChannelCallback endPointToChannelCallback = new EndPointToChannelCallback(channel);
+            endPoint.fillInterested(Callback.from(endPointToChannelCallback::iterate));
         }
 
         // Called when there data to read from the Gateway on the given Channel.
@@ -322,16 +323,8 @@ public class CustomTransportTest
                     endPoint.fillInterested(this);
                     return Action.IDLE;
                 }
-                channel.write(this, buffer);
+                channel.write(Callback.from(this::iterate), buffer);
                 return Action.SCHEDULED;
-            }
-
-            @Override
-            public void succeeded()
-            {
-                // There is data to read from the EndPoint.
-                // Iterate to read it and send it to the Gateway.
-                iterate();
             }
 
             @Override
@@ -342,7 +335,7 @@ public class CustomTransportTest
             }
 
             @Override
-            protected void onCompleteFailure(Throwable cause)
+            protected void onFailure(Throwable cause)
             {
                 // There was a write error, close the Gateway Channel.
                 channel.close(cause);
@@ -385,7 +378,7 @@ public class CustomTransportTest
             }
 
             @Override
-            protected void onCompleteFailure(Throwable cause)
+            protected void onFailure(Throwable cause)
             {
                 // There was a write error, close the Gateway Channel.
                 channel.close(cause);

@@ -20,6 +20,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -115,7 +117,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     @AfterEach
     public void dispose() throws Exception
     {
-        assertThat("Server Leaks: " + _trackingBufferPool.dumpLeaks(), _trackingBufferPool.getLeaks().size(), Matchers.is(0));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + _trackingBufferPool.dumpLeaks(), _trackingBufferPool.getLeaks().size(), is(0)));
     }
 
     @Override

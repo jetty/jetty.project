@@ -43,23 +43,27 @@ public class BufferedContentSink implements Content.Sink
     private static final Logger LOG = LoggerFactory.getLogger(BufferedContentSink.class);
 
     private final Content.Sink _delegate;
-    private final int _maxAggregationSize;
     private final RetainableByteBuffer.DynamicCapacity _aggregator;
-    private final SerializedInvoker _serializer = new SerializedInvoker();
+    private final SerializedInvoker _serializer = new SerializedInvoker(BufferedContentSink.class);
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
     public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxAggregationSize, int maxBufferSize)
     {
+        this(delegate, new ByteBufferPool.Sized(bufferPool, direct, maxAggregationSize), maxBufferSize);
+    }
+
+    public BufferedContentSink(Content.Sink delegate, ByteBufferPool.Sized sizedPool, int maxBufferSize)
+    {
         if (maxBufferSize <= 0)
             throw new IllegalArgumentException("maxBufferSize must be > 0, was: " + maxBufferSize);
-        if (maxAggregationSize <= 0)
-            throw new IllegalArgumentException("maxAggregationSize must be > 0, was: " + maxAggregationSize);
-        if (maxBufferSize < maxAggregationSize)
-            throw new IllegalArgumentException("maxBufferSize (" + maxBufferSize + ") must be >= maxAggregationSize (" + maxAggregationSize + ")");
+        if (sizedPool.getSize() <= 0)
+            throw new IllegalArgumentException("pool.size must be > 0, was: " + sizedPool.getSize());
+        if (maxBufferSize < sizedPool.getSize())
+            throw new IllegalArgumentException("maxBufferSize (" + maxBufferSize + ") must be >= pool.size (" + sizedPool.getSize() + ")");
+
         _delegate = delegate;
-        _maxAggregationSize = maxAggregationSize;
-        _aggregator = new RetainableByteBuffer.DynamicCapacity(bufferPool, direct, maxBufferSize);
+        _aggregator = new RetainableByteBuffer.DynamicCapacity(sizedPool, maxBufferSize);
     }
 
     @Override
@@ -86,7 +90,7 @@ public class BufferedContentSink implements Content.Sink
         }
 
         ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-        if (current.remaining() <= _maxAggregationSize && !last && byteBuffer != FLUSH_BUFFER)
+        if (current.remaining() <= _aggregator.getAggregationSize() && !last && byteBuffer != FLUSH_BUFFER)
         {
             // current buffer can be aggregated
             aggregateAndFlush(current, callback);
@@ -128,7 +132,7 @@ public class BufferedContentSink implements Content.Sink
                 LOG.debug("flushing aggregate {}", _aggregator);
             _aggregator.writeTo(_delegate, last, callback);
         }
-        else if (last && currentBuffer.remaining() <= Math.min(_maxAggregationSize, _aggregator.space()) && _aggregator.append(currentBuffer))
+        else if (last && currentBuffer.remaining() <= Math.min(_aggregator.getAggregationSize(), _aggregator.space()) && _aggregator.append(currentBuffer))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing aggregated {}", _aggregator);

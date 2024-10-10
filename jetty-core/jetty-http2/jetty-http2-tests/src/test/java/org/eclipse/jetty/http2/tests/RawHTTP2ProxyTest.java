@@ -513,17 +513,15 @@ public class RawHTTP2ProxyTest
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             frameInfo.callback.succeeded();
-            super.succeeded();
         }
 
         @Override
-        public void failed(Throwable failure)
+        protected void onFailure(Throwable cause)
         {
-            frameInfo.callback.failed(failure);
-            super.failed(failure);
+            frameInfo.callback.failed(cause);
         }
 
         @Override
@@ -669,17 +667,15 @@ public class RawHTTP2ProxyTest
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             frameInfo.callback.succeeded();
-            super.succeeded();
         }
 
         @Override
-        public void failed(Throwable failure)
+        protected void onFailure(Throwable cause)
         {
-            frameInfo.callback.failed(failure);
-            super.failed(failure);
+            frameInfo.callback.failed(cause);
         }
 
         private void offer(Stream stream, Frame frame, Callback callback)

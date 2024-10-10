@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.ByteRange;
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.HttpField;
@@ -43,7 +44,6 @@ import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
@@ -365,7 +365,7 @@ public class ResourceService
             if (ifms != null && ifnm == null)
             {
                 //Get jetty's Response impl
-                String mdlm = content.getLastModifiedValue();
+                String mdlm = DateGenerator.formatDate(content.getLastModifiedInstant());
                 if (ifms.equals(mdlm))
                 {
                     writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
@@ -638,7 +638,7 @@ public class ResourceService
         response.write(true, ByteBuffer.wrap(data), callback);
     }
 
-    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges) throws IOException
+    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
         if (LOG.isDebugEnabled())
         {
@@ -647,7 +647,6 @@ public class ResourceService
         }
 
         long contentLength = content.getContentLengthValue();
-        callback = Callback.from(callback, content::release);
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("sendData content=%s", content));
@@ -659,7 +658,7 @@ public class ResourceService
                 putHeaders(response, content, USE_KNOWN_CONTENT_LENGTH);
             else
                 putHeaders(response, content, NO_CONTENT_LENGTH);
-            writeHttpContent(request, response, callback, content);
+            content.writeTo(response, 0L, -1L, callback);
             return;
         }
 
@@ -681,9 +680,7 @@ public class ResourceService
             putHeaders(response, content, range.getLength());
             response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
-
-            // TODO use a buffer pool
-            IOResources.copy(content.getResource(), response, null, 0, false, range.first(), range.getLength(), callback);
+            content.writeTo(response, range.first(), range.getLength(), callback);
             return;
         }
 
@@ -698,32 +695,6 @@ public class ResourceService
         putHeaders(response, content, partsContentLength);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType + boundary);
         Content.copy(byteRanges, response, callback);
-    }
-
-    protected void writeHttpContent(Request request, Response response, Callback callback, HttpContent content)
-    {
-        try
-        {
-            ByteBuffer buffer = content.getByteBuffer(); // this buffer is going to be consumed by response.write()
-            if (buffer != null)
-            {
-                response.write(true, buffer, callback);
-            }
-            else
-            {
-                IOResources.copy(
-                    content.getResource(),
-                    response, request.getComponents().getByteBufferPool(),
-                    request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize(),
-                    request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers(),
-                    callback);
-            }
-        }
-        catch (Throwable x)
-        {
-            content.release();
-            callback.failed(x);
-        }
     }
 
     protected void putHeaders(Response response, HttpContent content, long contentLength)

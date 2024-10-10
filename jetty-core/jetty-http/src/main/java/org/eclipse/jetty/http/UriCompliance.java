@@ -109,7 +109,12 @@ public final class UriCompliance implements ComplianceViolation.Mode
          * Allow path characters not allowed in the path portion of the URI and HTTP specs.
          * <p>This would allow characters that fall outside of the {@code unreserved / pct-encoded / sub-delims / ":" / "@"} ABNF</p>
          */
-        ILLEGAL_PATH_CHARACTERS("https://datatracker.ietf.org/doc/html/rfc3986#section-3.3", "Illegal Path Character");
+        ILLEGAL_PATH_CHARACTERS("https://datatracker.ietf.org/doc/html/rfc3986#section-3.3", "Illegal Path Character"),
+
+        /**
+         * Allow user info in the authority portion of the URI and HTTP specs.
+         */
+        USER_INFO("https://datatracker.ietf.org/doc/html/rfc9110#name-deprecation-of-userinfo-in-", "Deprecated User Info");
 
         private final String _url;
         private final String _description;
@@ -140,12 +145,28 @@ public final class UriCompliance implements ComplianceViolation.Mode
     }
 
     public static final Set<Violation> NO_VIOLATION = Collections.unmodifiableSet(EnumSet.noneOf(Violation.class));
+
+    /**
+     * Set of violations that can trigger a HttpURI.isAmbiguous violation.
+     */
     public static final Set<Violation> AMBIGUOUS_VIOLATIONS = Collections.unmodifiableSet(EnumSet.of(
         Violation.AMBIGUOUS_EMPTY_SEGMENT,
         Violation.AMBIGUOUS_PATH_ENCODING,
         Violation.AMBIGUOUS_PATH_PARAMETER,
         Violation.AMBIGUOUS_PATH_SEGMENT,
         Violation.AMBIGUOUS_PATH_SEPARATOR));
+
+    /**
+     * List of Violations that apply only to the HttpURI.path section.
+     */
+    private static final Set<Violation> PATH_VIOLATIONS = Collections.unmodifiableSet(EnumSet.of(
+        Violation.AMBIGUOUS_EMPTY_SEGMENT,
+        Violation.AMBIGUOUS_PATH_ENCODING,
+        Violation.AMBIGUOUS_PATH_PARAMETER,
+        Violation.AMBIGUOUS_PATH_SEGMENT,
+        Violation.AMBIGUOUS_PATH_SEPARATOR,
+        Violation.SUSPICIOUS_PATH_CHARACTERS,
+        Violation.ILLEGAL_PATH_CHARACTERS));
 
     /**
      * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
@@ -175,7 +196,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
-            Violation.UTF16_ENCODINGS));
+            Violation.UTF16_ENCODINGS,
+            Violation.USER_INFO));
 
     /**
      * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form, and illegal characters
@@ -344,6 +366,17 @@ public final class UriCompliance implements ComplianceViolation.Mode
         Set<Violation> remainder = _allowed.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_allowed);
         remainder.removeAll(copyOf(violations));
         return new UriCompliance(name, remainder);
+    }
+
+    /**
+     * Test if violation is referencing a HttpURI.path violation.
+     *
+     * @param violation the violation to test.
+     * @return true if violation is a path violation.
+     */
+    public static boolean isPathViolation(UriCompliance.Violation violation)
+    {
+        return PATH_VIOLATIONS.contains(violation);
     }
 
     @Override

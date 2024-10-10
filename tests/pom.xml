@@ -13,6 +13,7 @@
   <modules>
     <module>jetty-testers</module>
     <module>jetty-jmh</module>
+    <module>jetty-test-common</module>
     <module>jetty-test-multipart</module>
     <module>jetty-test-session-common</module>
     <module>test-cross-context-dispatch</module>

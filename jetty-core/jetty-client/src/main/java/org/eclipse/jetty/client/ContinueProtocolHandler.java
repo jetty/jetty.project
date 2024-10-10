@@ -39,10 +39,14 @@ public class ContinueProtocolHandler implements ProtocolHandler
     @Override
     public boolean accept(Request request, Response response)
     {
-        boolean is100 = response.getStatus() == HttpStatus.CONTINUE_100;
-        boolean expect100 = request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
         boolean handled100 = request.getAttributes().containsKey(ATTRIBUTE);
-        return (is100 || expect100) && !handled100;
+        if (handled100)
+            return false;
+        boolean is100 = response.getStatus() == HttpStatus.CONTINUE_100;
+        if (is100)
+            return true;
+        // Also handle non-100 responses, because we need to complete the request to complete the whole exchange.
+        return request.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
     }
 
     @Override
@@ -52,8 +56,9 @@ public class ContinueProtocolHandler implements ProtocolHandler
         return new ContinueListener();
     }
 
-    protected void onContinue(Request request)
+    protected Runnable onContinue(Request request)
     {
+        return null;
     }
 
     protected class ContinueListener extends BufferingResponseListener
@@ -79,8 +84,10 @@ public class ContinueProtocolHandler implements ProtocolHandler
             {
                 // All good, continue.
                 exchange.resetResponse();
-                exchange.proceed(null);
-                onContinue(request);
+                Runnable proceedAction = onContinue(request);
+                // Pass the proceed action to be executed
+                // by the sender, not here by the receiver.
+                exchange.proceed(proceedAction, null);
             }
             else
             {
@@ -90,7 +97,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
                 ResponseListeners listeners = exchange.getResponseListeners();
                 HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
                 listeners.emitSuccess(contentResponse);
-                exchange.proceed(new HttpRequestException("Expectation failed", request));
+                exchange.proceed(null, new HttpRequestException("Expectation failed", request));
             }
         }
 

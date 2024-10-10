@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,7 +40,7 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
+        MethodHolder copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
@@ -56,7 +56,7 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
+        MethodHolder copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();

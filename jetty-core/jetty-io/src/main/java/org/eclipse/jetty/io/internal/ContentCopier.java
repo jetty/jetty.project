@@ -27,7 +27,7 @@ public class ContentCopier extends IteratingNestedCallback
     private final Content.Source source;
     private final Content.Sink sink;
     private final Content.Chunk.Processor chunkProcessor;
-    private Content.Chunk current;
+    private Content.Chunk chunk;
     private boolean terminated;
 
     public ContentCopier(Content.Source source, Content.Sink sink, Content.Chunk.Processor chunkProcessor, Callback callback)
@@ -47,43 +47,47 @@ public class ContentCopier extends IteratingNestedCallback
     @Override
     protected Action process() throws Throwable
     {
-        if (current != null)
-            current.release();
-
         if (terminated)
             return Action.SUCCEEDED;
 
-        current = source.read();
+        chunk = source.read();
 
-        if (current == null)
+        if (chunk == null)
         {
             source.demand(this::succeeded);
             return Action.SCHEDULED;
         }
 
-        if (chunkProcessor != null && chunkProcessor.process(current, this))
+        if (chunkProcessor != null && chunkProcessor.process(chunk, this))
             return Action.SCHEDULED;
 
-        terminated = current.isLast();
+        terminated = chunk.isLast();
 
-        if (Content.Chunk.isFailure(current))
+        if (Content.Chunk.isFailure(chunk))
         {
-            failed(current.getFailure());
+            failed(chunk.getFailure());
             return Action.SCHEDULED;
         }
 
-        sink.write(current.isLast(), current.getByteBuffer(), this);
+        sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
         return Action.SCHEDULED;
+    }
+
+    @Override
+    protected void onSuccess()
+    {
+        chunk = Content.Chunk.releaseAndNext(chunk);
+    }
+
+    @Override
+    protected void onFailure(Throwable cause)
+    {
+        ExceptionUtil.callAndThen(cause, source::fail, super::onFailure);
     }
 
     @Override
     protected void onCompleteFailure(Throwable x)
     {
-        if (current != null)
-        {
-            current.release();
-            current = Content.Chunk.next(current);
-        }
-        ExceptionUtil.callAndThen(x, source::fail, super::onCompleteFailure);
+        chunk = Content.Chunk.releaseAndNext(chunk);
     }
 }

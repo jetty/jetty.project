@@ -75,7 +75,7 @@ public class MessageFlusher extends IteratingCallback
             return Action.SCHEDULED;
         }
 
-        int generated = generator.generate(accumulator, entry.endPoint.getStreamId(), frame, this::failed);
+        int generated = generator.generate(accumulator, entry.endPoint.getStreamId(), frame, this::onGenerateFailure);
         if (generated < 0)
             return Action.SCHEDULED;
 
@@ -88,33 +88,52 @@ public class MessageFlusher extends IteratingCallback
         return Action.SCHEDULED;
     }
 
+    private void onGenerateFailure(Throwable cause)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failed to generate {} on {}", entry, this, cause);
+
+        accumulator.release();
+
+        entry.callback.failed(cause);
+        entry = null;
+
+        // Continue the iteration.
+        succeeded();
+    }
+
     @Override
-    public void succeeded()
+    protected void onSuccess()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entry, this);
 
         accumulator.release();
 
-        entry.callback.succeeded();
-        entry = null;
-
-        super.succeeded();
+        if (entry != null)
+        {
+            entry.callback.succeeded();
+            entry = null;
+        }
     }
 
     @Override
-    public void failed(Throwable x)
+    protected void onFailure(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to write {} on {}", entry, this, x);
+            LOG.debug("failed to write {} on {}", entry, this, cause);
 
+        if (entry != null)
+        {
+            entry.callback.failed(cause);
+            entry = null;
+        }
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
         accumulator.release();
-
-        entry.callback.failed(x);
-        entry = null;
-
-        // Continue the iteration.
-        super.succeeded();
     }
 
     @Override

@@ -15,6 +15,7 @@ package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,13 +33,15 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
     private final Resource _resource;
     private final String _contentType;
     private final String _matchSuffix;
+    private final ByteBufferPool.Sized _sizedBufferPool;
 
-    public VirtualHttpContentFactory(HttpContent.Factory factory, Resource resource, String contentType)
+    public VirtualHttpContentFactory(HttpContent.Factory factory, Resource resource, String contentType, ByteBufferPool.Sized sizedBufferPool)
     {
         _factory = factory;
         _resource = resource;
         _matchSuffix = "/" + _resource.getFileName();
         _contentType = contentType;
+        _sizedBufferPool = sizedBufferPool;
         if (LOG.isDebugEnabled())
             LOG.debug("resource=({}) {}, resource.getFileName()={}", _resource.getClass().getName(), _resource, _resource.getFileName());
     }
@@ -58,7 +61,7 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
         if (content != null)
             return content;
         if (matchResource(path))
-            return new ResourceHttpContent(_resource, _contentType);
+            return new ResourceHttpContent(_resource, _contentType, _sizedBufferPool);
         return null;
     }
 

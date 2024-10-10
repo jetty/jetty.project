@@ -85,29 +85,13 @@ public interface EndPoint extends Closeable, Content.Sink
     }
 
     /**
-     * @return The local InetSocketAddress to which this {@code EndPoint} is bound, or {@code null}
-     * if this {@code EndPoint} is not bound to a Socket address.
-     * @deprecated use {@link #getLocalSocketAddress()} instead
-     */
-    @Deprecated
-    InetSocketAddress getLocalAddress();
-
-    /**
      * @return the local SocketAddress to which this {@code EndPoint} is bound or {@code null}
      * if this {@code EndPoint} is not bound to a Socket address.
      */
     default SocketAddress getLocalSocketAddress()
     {
-        return getLocalAddress();
+        return null;
     }
-
-    /**
-     * @return The remote InetSocketAddress to which this {@code EndPoint} is connected, or {@code null}
-     * if this {@code EndPoint} is not connected to a Socket address.
-     * @deprecated use {@link #getRemoteSocketAddress()} instead.
-     */
-    @Deprecated
-    InetSocketAddress getRemoteAddress();
 
     /**
      * @return The remote SocketAddress to which this {@code EndPoint} is connected, or {@code null}
@@ -115,7 +99,7 @@ public interface EndPoint extends Closeable, Content.Sink
      */
     default SocketAddress getRemoteSocketAddress()
     {
-        return getRemoteAddress();
+        return null;
     }
 
     /**
@@ -417,8 +401,8 @@ public interface EndPoint extends Closeable, Content.Sink
     interface SslSessionData
     {
         /**
-         * The name at which an {@code SslSessionData} instance may be found as a request
-         * {@link org.eclipse.jetty.util.Attributes Attribute} or from {@link SSLSession#getValue(String)}.
+         * The name at which an {@code SslSessionData} instance may be found
+         * as a request {@link org.eclipse.jetty.util.Attributes attribute}.
          */
         String ATTRIBUTE = "org.eclipse.jetty.io.Endpoint.SslSessionData";
 

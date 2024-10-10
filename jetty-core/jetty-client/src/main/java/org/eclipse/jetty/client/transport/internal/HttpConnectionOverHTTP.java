@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.Connection;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.IConnection;
 import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
@@ -61,6 +63,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
     private long idleTimeout;
+    private boolean initialize;
 
     public HttpConnectionOverHTTP(EndPoint endPoint, Map<String, Object> context)
     {
@@ -114,6 +117,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     }
 
     @Override
+    public EndPoint.SslSessionData getSslSessionData()
+    {
+        return delegate.getSslSessionData();
+    }
+
+    @Override
     public long getBytesIn()
     {
         return bytesIn.longValue();
@@ -159,12 +168,46 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         return delegate.send(exchange);
     }
 
+    /**
+     * @return whether to initialize the connection with an {@code OPTIONS * HTTP/1.1} request.
+     */
+    public boolean isInitialize()
+    {
+        return initialize;
+    }
+
+    /**
+     * @param initialize whether to initialize the connection with an {@code OPTIONS * HTTP/1.1} request.
+     */
+    public void setInitialize(boolean initialize)
+    {
+        this.initialize = initialize;
+    }
+
     @Override
     public void onOpen()
     {
         super.onOpen();
         fillInterested();
-        promise.succeeded(this);
+        boolean initialize = isInitialize();
+        if (initialize)
+        {
+            Destination destination = getHttpDestination();
+            Request request = destination.getHttpClient().newRequest(destination.getOrigin().asString())
+                .method(HttpMethod.OPTIONS)
+                .path("*");
+            send(request, result ->
+            {
+                if (result.isSucceeded())
+                    promise.succeeded(this);
+                else
+                    promise.failed(result.getFailure());
+            });
+        }
+        else
+        {
+            promise.succeeded(this);
+        }
     }
 
     @Override
@@ -311,6 +354,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         public SocketAddress getRemoteSocketAddress()
         {
             return getEndPoint().getRemoteSocketAddress();
+        }
+
+        @Override
+        public EndPoint.SslSessionData getSslSessionData()
+        {
+            return getEndPoint().getSslSessionData();
         }
 
         @Override

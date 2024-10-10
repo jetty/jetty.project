@@ -108,7 +108,7 @@ public class ControlFlusher extends IteratingCallback
     }
 
     @Override
-    public void succeeded()
+    protected void onSuccess()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entries, this);
@@ -119,17 +119,13 @@ public class ControlFlusher extends IteratingCallback
         entries.clear();
 
         invocationType = InvocationType.NON_BLOCKING;
-
-        super.succeeded();
     }
 
     @Override
-    protected void onCompleteFailure(Throwable failure)
+    protected void onFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write {} on {}", entries, this, failure);
-
-        accumulator.release();
 
         List<Entry> allEntries = new ArrayList<>(entries);
         entries.clear();
@@ -147,6 +143,12 @@ public class ControlFlusher extends IteratingCallback
 
         // Cannot continue without the control stream, close the session.
         endPoint.getQuicSession().getProtocolSession().outwardClose(error, "control_stream_failure");
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
+        accumulator.release();
     }
 
     @Override

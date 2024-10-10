@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
@@ -736,18 +737,17 @@ public class ConnectHandler extends Handler.Wrapper
                         write(connection.getEndPoint(), byteBuffer, this);
                         return Action.SCHEDULED;
                     }
-                    else if (filled == 0)
+
+                    buffer = Retainable.release(buffer);
+
+                    if (filled == 0)
                     {
-                        buffer.release();
-                        fillInterested();
-                        return Action.IDLE;
+                        fillInterested(this);
+                        return Action.SCHEDULED;
                     }
-                    else
-                    {
-                        buffer.release();
-                        connection.getEndPoint().shutdownOutput();
-                        return Action.SUCCEEDED;
-                    }
+
+                    connection.getEndPoint().shutdownOutput();
+                    return Action.SUCCEEDED;
                 }
                 catch (IOException x)
                 {
@@ -760,26 +760,25 @@ public class ConnectHandler extends Handler.Wrapper
             }
 
             @Override
-            public void succeeded()
+            protected void onSuccess()
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Wrote {} bytes {}", filled, TunnelConnection.this);
-                buffer.release();
-                super.succeeded();
+                buffer = Retainable.release(buffer);
             }
 
             @Override
-            protected void onCompleteSuccess()
-            {
-            }
-
-            @Override
-            protected void onCompleteFailure(Throwable x)
+            protected void onFailure(Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failed to write {} bytes {}", filled, TunnelConnection.this, x);
-                buffer.release();
                 disconnect(x);
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                buffer = Retainable.release(buffer);
             }
 
             private void disconnect(Throwable x)

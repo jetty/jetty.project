@@ -68,6 +68,9 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
         ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
+        String cacheControl = getCacheControl();
+        if (cacheControl != null)
+            response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
 
         // Look for an error page dispatcher
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
@@ -104,7 +107,6 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
                 }
             }
         }
-
 
         String message = (String)request.getAttribute(ERROR_MESSAGE);
         if (message == null)

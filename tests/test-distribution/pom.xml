@@ -13,9 +13,6 @@
 
   <modules>
     <module>test-distribution-common</module>
-    <module>test-ee11-distribution</module>
-    <module>test-ee10-distribution</module>
-    <module>test-ee9-distribution</module>
   </modules>
 
   <properties>

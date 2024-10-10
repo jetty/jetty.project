@@ -15,7 +15,6 @@
     <module>jetty-alpn</module>
     <module>jetty-bom</module>
     <module>jetty-client</module>
-    <module>jetty-demos</module>
     <module>jetty-deploy</module>
     <module>jetty-ee</module>
     <module>jetty-fcgi</module>
@@ -29,7 +28,6 @@
     <module>jetty-jndi</module>
     <module>jetty-keystore</module>
     <module>jetty-maven</module>
-    <module>jetty-openid</module>
     <module>jetty-osgi</module>
     <module>jetty-plus</module>
     <module>jetty-proxy</module>

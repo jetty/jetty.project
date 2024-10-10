@@ -20,7 +20,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -31,11 +30,12 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
@@ -81,11 +81,7 @@ public class HttpServerTestFixture
     {
         try
         {
-            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> _bufferPool.getLeaks().size(), Matchers.is(0));
-        }
-        catch (Exception e)
-        {
-            fail(e.getMessage() + "\n---\nServer Leaks: " + _bufferPool.dumpLeaks() + "---\n");
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + _bufferPool.dumpLeaks(), _bufferPool.getLeaks().size(), is(0)));
         }
         finally
         {

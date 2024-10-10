@@ -322,17 +322,6 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
 
         @Override
-        protected void onCompleteFailure(Throwable x)
-        {
-            if (_deflaterEntry != null)
-            {
-                _deflaterEntry.release();
-                _deflaterEntry = null;
-            }
-            super.onCompleteFailure(x);
-        }
-
-        @Override
         protected Action process() throws Exception
         {
             if (LOG.isDebugEnabled())
@@ -377,10 +366,18 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             };
         }
 
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            cleanup();
+            super.onCompleteFailure(x);
+        }
+
         private void cleanup()
         {
             if (_deflaterEntry != null)
             {
+                _state.set(GZState.FINISHED);
                 _deflaterEntry.release();
                 _deflaterEntry = null;
             }

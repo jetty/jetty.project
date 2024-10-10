@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -28,6 +29,7 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -999,17 +1001,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         if (!_servletRequestListeners.isEmpty())
         {
             final ServletRequestEvent sre = new ServletRequestEvent(_apiContext, request);
-            for (int i = _servletRequestListeners.size(); i-- > 0; )
+            for (ListIterator<ServletRequestListener> i = TypeUtil.listIteratorAtEnd(_servletRequestListeners); i.hasPrevious();)
             {
-                _servletRequestListeners.get(i).requestDestroyed(sre);
+                i.previous().requestDestroyed(sre);
             }
         }
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (int i = _servletRequestAttributeListeners.size(); i-- > 0; )
+            for (ListIterator<ServletRequestAttributeListener> i = TypeUtil.listIteratorAtEnd(_servletRequestAttributeListeners); i.hasPrevious();)
             {
-                baseRequest.removeEventListener(_servletRequestAttributeListeners.get(i));
+                baseRequest.removeEventListener(i.previous());
             }
         }
     }
@@ -1069,11 +1071,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
         if (!_contextListeners.isEmpty())
         {
-            for (int i = _contextListeners.size(); i-- > 0; )
+            for (ListIterator<ContextScopeListener> i = TypeUtil.listIteratorAtEnd(_contextListeners); i.hasPrevious();)
             {
                 try
                 {
-                    _contextListeners.get(i).exitScope(_apiContext, request);
+                    i.previous().exitScope(_apiContext, request);
                 }
                 catch (Throwable e)
                 {
@@ -2465,7 +2467,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private ManagedSession _managedSession;
         private List<ManagedSession> _managedSessions;
 
-        AbstractSessionManager.RequestedSession _requestedSession;
+        AbstractSessionManager.RequestedSession _requestedSession = AbstractSessionManager.RequestedSession.NO_REQUESTED_SESSION;
 
         protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
                                      ScopedContext context,
@@ -2565,7 +2567,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
          */
         public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
         {
-            _requestedSession = requestedSession;
+            _requestedSession = requestedSession == null ? AbstractSessionManager.RequestedSession.NO_REQUESTED_SESSION : requestedSession;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (AbstractSessionManager.RequestedSession.class.getName().equals(name))
+                return _requestedSession;
+            return super.getAttribute(name);
         }
 
         /**
@@ -2652,7 +2662,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             if (_sessionManager == null)
                 throw new IllegalStateException("No SessionManager");
 
-            _sessionManager.newSession(this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
+            _sessionManager.newSession(this, _requestedSession.sessionId(), this::setManagedSession);
 
             if (_managedSession == null)
                 throw new IllegalStateException("Create session failed");
@@ -2671,6 +2681,35 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             super.setHandler(new CoreToNestedHandler());
             installBean(ContextHandler.this, true);
+        }
+
+        @Override
+        public void makeTempDirectory() throws Exception
+        {
+            super.makeTempDirectory();
+        }
+
+        @Override
+        public String getCanonicalNameForTmpDir()
+        {
+            return super.getCanonicalNameForTmpDir();
+        }
+
+        @Override
+        public Resource getResourceForTempDirName()
+        {
+           return ContextHandler.this.getNestedResourceForTempDirName();
+        }
+
+        private Resource getSuperResourceForTempDirName()
+        {
+           return super.getResourceForTempDirName();
+        }
+
+        public void setTempDirectory(File dir)
+        {
+            super.setTempDirectory(dir);
+            setAttribute(ServletContext.TEMPDIR, super.getTempDirectory());
         }
 
         @Override
@@ -2833,5 +2872,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 return true;
             }
         }
+    }
+
+    public Resource getNestedResourceForTempDirName()
+    {
+        return getCoreContextHandler().getSuperResourceForTempDirName();
     }
 }

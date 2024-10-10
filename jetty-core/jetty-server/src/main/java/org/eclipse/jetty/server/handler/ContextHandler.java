@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -57,6 +59,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -143,6 +146,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private File _tempDirectory;
     private boolean _tempDirectoryPersisted = false;
     private boolean _tempDirectoryCreated = false;
+    private boolean _createdTempDirectoryName = false;
     private boolean _crossContextDispatchSupported = false;
 
     public enum Availability
@@ -236,6 +240,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (isStarted())
             throw new IllegalStateException("Started");
 
+        File oldTempDirectory = _tempDirectory;
+
         if (tempDirectory != null)
         {
             try
@@ -247,7 +253,23 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 LOG.warn("Unable to find canonical path for {}", tempDirectory, e);
             }
         }
+
+        if (oldTempDirectory != null)
+        {
+            try
+            {
+                //if we had made up the name of the tmp directory previously, delete it if the new name is different
+                if (_createdTempDirectoryName && (tempDirectory == null || (!Files.isSameFile(oldTempDirectory.toPath(), tempDirectory.toPath()))))
+                    IO.delete(oldTempDirectory);
+            }
+            catch (Exception e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to delete old temp directory {}", oldTempDirectory, e);
+            }
+        }
         _tempDirectory = tempDirectory;
+         _createdTempDirectoryName = false;
     }
 
     /**
@@ -631,11 +653,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
      */
     protected void notifyExitScope(Request request)
     {
-        for (int i = _contextListeners.size(); i-- > 0; )
+        for (ListIterator<ContextScopeListener> i = TypeUtil.listIteratorAtEnd(_contextListeners); i.hasPrevious();)
         {
             try
             {
-                _contextListeners.get(i).exitScope(_context, request);
+                i.previous().exitScope(_context, request);
             }
             catch (Throwable e)
             {
@@ -788,7 +810,187 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         // if we're not persisting the temp dir contents delete it
         if (tempDirectory != null && tempDirectory.exists() && !isTempDirectoryPersistent())
+        {
             IO.delete(tempDirectory);
+        }
+
+        //if it was jetty that created the tmp dir, it can be reset, otherwise we need to retain the name
+        if (_createdTempDirectoryName)
+        {
+            setTempDirectory(null);
+            _createdTempDirectoryName = false;
+        }
+    }
+
+    /** Generate a reasonable name for the temp directory because one has not been
+     * explicitly configured by the user with {@link #setTempDirectory(File)}. The
+     * directory may also be created, if it is not persistent. If it is persistent
+     * it will be created as necessary by {@link #createTempDirectory()} later
+     * during the startup of the context.
+     *
+     * @throws Exception IllegalStateException if the parent tmp directory does
+     * not exist, or IOException if the child tmp directory cannot be created.
+     */
+    protected void makeTempDirectory()
+        throws Exception
+    {
+        File parent = getServer().getContext().getTempDirectory();
+        if (parent == null || !parent.exists() || !parent.canWrite() || !parent.isDirectory())
+            throw new IllegalStateException("Parent for temp dir not configured correctly: " + (parent == null ? "null" : "writeable=" + parent.canWrite()));
+
+        boolean persistent = isTempDirectoryPersistent() || "work".equals(parent.toPath().getFileName().toString());
+
+        //Create a name for the temp dir
+        String temp = getCanonicalNameForTmpDir();
+        File tmpDir;
+        if (persistent)
+        {
+            //if it is to be persisted, make sure it will be the same name
+            //by not using File.createTempFile, which appends random digits
+            tmpDir = new File(parent, temp);
+        }
+        else
+        {
+            // ensure dir will always be unique by having classlib generate random path name
+            tmpDir = Files.createTempDirectory(parent.toPath(), temp).toFile();
+            tmpDir.deleteOnExit();
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Set temp dir {}", tmpDir);
+        setTempDirectory(tmpDir);
+        setTempDirectoryPersistent(persistent);
+        _createdTempDirectoryName = true;
+    }
+
+    /**
+     * Create a canonical name for a context temp directory.
+     * <p>
+     * The form of the name is:
+     *
+     * <pre>"jetty-"+host+"-"+port+"-"+resourceBase+"-_"+context+"-"+virtualhost+"-"+randomdigits+".dir"</pre>
+     *
+     * host and port uniquely identify the server
+     * context and virtual host uniquely identify the context
+     * randomdigits ensure every tmp directory is unique
+     *
+     * @return the canonical name for the context temp directory
+     */
+    protected String getCanonicalNameForTmpDir()
+    {
+        StringBuilder canonicalName = new StringBuilder();
+        canonicalName.append("jetty-");
+
+        //get the host and the port from the first connector
+        Server server = getServer();
+        if (server != null)
+        {
+            Connector[] connectors = server.getConnectors();
+
+            if (connectors.length > 0)
+            {
+                //Get the host
+                String host = null;
+                int port = 0;
+                if (connectors[0] instanceof NetworkConnector connector)
+                {
+                    host = connector.getHost();
+                    port = connector.getLocalPort();
+                    if (port < 0)
+                        port = connector.getPort();
+                }
+                if (host == null)
+                    host = "0.0.0.0";
+                canonicalName.append(host);
+                canonicalName.append("-");
+                canonicalName.append(port);
+                canonicalName.append("-");
+            }
+        }
+
+        // Resource base
+        try
+        {
+            Resource resource = getResourceForTempDirName();
+            String resourceBaseName = getBaseName(resource);
+            canonicalName.append(resourceBaseName);
+            canonicalName.append("-");
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Can't get resource base name", e);
+
+            canonicalName.append("-"); // empty resourceBaseName segment
+        }
+
+        //Context name
+        String contextPath = getContextPath();
+        contextPath = contextPath.replace('/', '_');
+        contextPath = contextPath.replace('\\', '_');
+        canonicalName.append(contextPath);
+
+        //Virtual host (if there is one)
+        canonicalName.append("-");
+        List<String> vhosts = getVirtualHosts();
+        if (vhosts == null || vhosts.size() <= 0)
+            canonicalName.append("any");
+        else
+            canonicalName.append(vhosts.get(0));
+
+        // sanitize
+        for (int i = 0; i < canonicalName.length(); i++)
+        {
+            char c = canonicalName.charAt(i);
+            if (!Character.isJavaIdentifierPart(c) && "-.".indexOf(c) < 0)
+                canonicalName.setCharAt(i, '.');
+        }
+
+        canonicalName.append("-");
+
+        return StringUtil.sanitizeFileSystemName(canonicalName.toString());
+    }
+
+    /**
+     * @return the baseResource for the context to use in the temp dir name
+     */
+    protected Resource getResourceForTempDirName()
+    {
+        return getBaseResource();
+    }
+
+    /**
+     * @param resource the resource whose filename minus suffix to extract
+     * @return the filename of the resource without suffix
+     */
+    protected static String getBaseName(Resource resource)
+    {
+        // Use File System and File interface if present
+        Path resourceFile = resource.getPath();
+
+        if ((resourceFile != null) && (resource instanceof MountedPathResource))
+        {
+            resourceFile = ((MountedPathResource)resource).getContainerPath();
+        }
+
+        if (resourceFile != null)
+        {
+            Path fileName = resourceFile.getFileName();
+            return fileName == null ? "" : fileName.toString();
+        }
+
+        // Use URI itself.
+        URI uri = resource.getURI();
+        if (uri == null)
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Resource has no URI reference: {}", resource);
+            }
+            return "";
+        }
+
+        return URIUtil.getUriLastPathSegment(uri);
     }
 
     public boolean checkVirtualHost(Request request)
@@ -872,6 +1074,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
+        if (isProtectedTarget(pathInContext))
+        {
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404, null);
+            return true;
+        }
+
         return false;
     }
 

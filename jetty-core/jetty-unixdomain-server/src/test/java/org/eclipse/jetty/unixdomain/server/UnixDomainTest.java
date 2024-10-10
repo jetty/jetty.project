@@ -52,7 +52,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -103,12 +102,6 @@ public class UnixDomainTest
                 SocketAddress remote = endPoint.getRemoteSocketAddress();
                 assertThat(remote, Matchers.instanceOf(UnixDomainSocketAddress.class));
 
-                // Verify that other address methods don't throw.
-                local = assertDoesNotThrow(endPoint::getLocalAddress);
-                assertNull(local);
-                remote = assertDoesNotThrow(endPoint::getRemoteAddress);
-                assertNull(remote);
-
                 assertDoesNotThrow(endPoint::toString);
 
                 callback.succeeded();
@@ -116,21 +109,16 @@ public class UnixDomainTest
             }
         });
 
-        // Use the deprecated APIs for backwards compatibility testing.
-        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector));
-        httpClient.start();
-        try
+        ClientConnector clientConnector = new ClientConnector();
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector)))
         {
+            httpClient.start();
             ContentResponse response = httpClient.newRequest(uri)
+                .transport(new Transport.TCPUnix(unixDomainPath))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
-        }
-        finally
-        {
-            httpClient.stop();
         }
     }
 
@@ -153,28 +141,23 @@ public class UnixDomainTest
             }
         });
 
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic());
-        Origin proxyOrigin = new Origin(
-            "http",
-            new Origin.Address("localhost", fakeProxyPort),
-            null,
-            new Origin.Protocol(List.of("http/1.1"), false),
-            new Transport.TCPUnix(unixDomainPath)
-        );
-        httpClient.getProxyConfiguration().addProxy(new HttpProxy(proxyOrigin, null));
-        httpClient.start();
-        try
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic()))
         {
+            Origin proxyOrigin = new Origin(
+                "http",
+                new Origin.Address("localhost", fakeProxyPort),
+                null,
+                new Origin.Protocol(List.of("http/1.1"), false),
+                new Transport.TCPUnix(unixDomainPath)
+            );
+            httpClient.getProxyConfiguration().addProxy(new HttpProxy(proxyOrigin, null));
+            httpClient.start();
             ContentResponse response = httpClient.newRequest("localhost", fakeServerPort)
                 .transport(new Transport.TCPUnix(unixDomainPath))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
-        }
-        finally
-        {
-            httpClient.stop();
         }
     }
 
@@ -215,10 +198,9 @@ public class UnixDomainTest
             }
         });
 
-        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic());
-        httpClient.start();
-        try
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic()))
         {
+            httpClient.start();
             // Try PROXYv1 with the PROXY information retrieved from the EndPoint.
             // PROXYv1 does not support the UNIX family.
             ContentResponse response1 = httpClient.newRequest("localhost", 0)
@@ -240,10 +222,6 @@ public class UnixDomainTest
                 .send();
 
             assertEquals(HttpStatus.OK_200, response2.getStatus());
-        }
-        finally
-        {
-            httpClient.stop();
         }
     }
 

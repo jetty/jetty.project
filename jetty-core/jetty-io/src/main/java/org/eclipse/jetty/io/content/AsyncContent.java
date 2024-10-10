@@ -50,7 +50,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     };
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker = new SerializedInvoker(AsyncContent.class);
     private final Queue<Content.Chunk> chunks = new ArrayDeque<>();
     private Content.Chunk persistentFailure;
     private boolean readClosed;
