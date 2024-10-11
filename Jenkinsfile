@@ -162,7 +162,10 @@ def useBuildCache() {
 }
 
 def useEclipseDash() {
-  return pullRequest.labels.contains("eclipse-dash")
+  if (env.BRANCH_NAME ==~ /PR-\d+/) {
+    return pullRequest.labels.contains("eclipse-dash")
+  }
+  return false
 }
 
 def saveHome() {
