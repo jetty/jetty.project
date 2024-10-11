@@ -56,6 +56,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
@@ -560,23 +561,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", x);
-                            if (_state.isResponseCommitted())
+                            try
                             {
-                                abort(x);
+                                _response.resetContent();
+                                sendResponseAndComplete();
                             }
-                            else
+                            catch (Throwable t)
                             {
-                                try
-                                {
-                                    _response.resetContent();
-                                    sendResponseAndComplete();
-                                }
-                                catch (Throwable t)
-                                {
-                                    if (x != t)
-                                        x.addSuppressed(t);
-                                    abort(x);
-                                }
+                                ExceptionUtil.addSuppressedIfNotAssociated(x, t);
+                                throw x;
                             }
                         }
                         finally
