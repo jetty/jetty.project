@@ -573,6 +573,8 @@ public class HttpGenerator
 
         // default field values
         HttpField transferEncoding = null;
+        HttpField http10Connection = null;
+        boolean http10 = _info.getHttpVersion() == HttpVersion.HTTP_1_0;
         boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
         boolean chunkedHint = _info.getTrailersSupplier() != null;
@@ -644,35 +646,18 @@ public class HttpGenerator
                                 // Add the field, but without keep-alive
                                 putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
                             }
-                            // Handle Keep-Alive value only
-                            else if (HttpHeaderValue.KEEP_ALIVE.is(value))
+                            // Handle Keep-Alive if we are HTTP/10
+                            else if (http10 && _persistent == Boolean.TRUE)
                             {
-                                // If we can persist for HTTP/1.0
-                                if (_persistent != Boolean.FALSE && _info.getHttpVersion() == HttpVersion.HTTP_1_0)
-                                {
-                                    // then do so
-                                    _persistent = true;
-                                    header.put(CONNECTION_KEEP_ALIVE);
-                                }
-                                // otherwise we just ignore the keep-alive
-                            }
-                            // Handle Keep-Alive with other values, but no close
-                            else if (field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
-                            {
-                                // If we can persist for HTTP/1.0
-                                if (_persistent != Boolean.FALSE && _info.getHttpVersion() == HttpVersion.HTTP_1_0)
-                                {
-                                    // then do so
-                                    _persistent = true;
-                                    putTo(field, header);
-                                }
-                                else
-                                {
-                                    // otherwise we add the field, but without keep-alive
-                                    putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
-                                }
+                                // we can't do anything here, so hold the header until we know how we will end the message
+                                http10Connection = field;
                             }
                             // Handle connection header without either close nor keep-alive
+                            else if (field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            {
+                                // add the field, but without keep-alive
+                                putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
+                            }
                             else
                             {
                                 putTo(field, header);
@@ -757,6 +742,13 @@ public class HttpGenerator
             // Use the content length 
             _endOfContent = EndOfContent.CONTENT_LENGTH;
             putContentLength(header, contentLength);
+            if (_persistent && http10)
+            {
+                if (http10Connection == null)
+                    header.put(CONNECTION_KEEP_ALIVE);
+                else
+                    putTo(http10Connection.withValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
+            }
         }
         // Else if we are a response
         else if (response != null)
@@ -769,6 +761,8 @@ public class HttpGenerator
 
             if (http11 && !close)
                 header.put(CONNECTION_CLOSE);
+            if (http10Connection != null)
+                putTo(http10Connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
         }
         // Else we must be a request
         else
@@ -915,7 +909,7 @@ public class HttpGenerator
         {
             ((PreEncodedHttpField)field).putTo(bufferInFillMode, HttpVersion.HTTP_1_0);
         }
-        else
+        else if (field != null)
         {
             HttpHeader header = field.getHeader();
             if (header != null)
