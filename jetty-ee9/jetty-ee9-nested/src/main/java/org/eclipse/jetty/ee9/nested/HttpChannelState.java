@@ -343,6 +343,15 @@ public class HttpChannelState
         }
     }
 
+    /**
+     * <p>Aborts the {@link HttpChannel}, eventually
+     * resulting in the completion of its state machine.</p>
+     *
+     * @param failure the cause of the abort
+     * @return {@code null} when no abort happened because it was already aborted;
+     * {@code false} when abort happened, but there is no need to call {@link HttpChannel#handle()};
+     * {@code true} when abort happened, and {@link HttpChannel#handle()} must be called.
+     */
     Boolean abort(Throwable failure)
     {
         boolean handle;
@@ -808,7 +817,7 @@ public class HttpChannelState
             if (_sendError)
             {
                 LOG.warn("onError not handled due to prior sendError() {}", getStatusStringLocked(), th);
-                return false;
+                return true;
             }
 
             // Check async state to determine type of handling
@@ -841,7 +850,7 @@ public class HttpChannelState
                 default:
                 {
                     LOG.warn("onError not handled due to invalid requestState {}", getStatusStringLocked(), th);
-                    return false;
+                    return true;
                 }
             }
         }
