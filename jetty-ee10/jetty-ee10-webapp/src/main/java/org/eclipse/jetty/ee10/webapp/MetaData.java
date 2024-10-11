@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.util.URIUtil;
@@ -485,7 +486,8 @@ public class MetaData
         resources.add(null); //always apply annotations with no resource first
         resources.addAll(_orderedContainerResources); //next all annotations from container path
         resources.addAll(_webInfClasses); //next everything from web-inf classes
-        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
+        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path
+        resources = resources.stream().distinct().collect(Collectors.toList()); // filter out possible duplicates
 
         for (Resource r : resources)
         {
