@@ -590,6 +590,19 @@ public class HttpField
             return new HttpField(getHeader(), _name, _value + "," + value);
     }
 
+    /**
+     * Return a {@link HttpField} with given values (case-insensitive) ensured
+     * @param values The values to ensure
+     * @return A new {@link HttpField} if the value was added or this {@link HttpField} if it did contain the value
+     */
+    public HttpField withValues(String... values)
+    {
+        HttpField field = this;
+        for (String value : values)
+            field = field.withValue(value);
+        return field;
+    }
+
     private int nameHashCode()
     {
         int h = this._hash;

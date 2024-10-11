@@ -644,20 +644,27 @@ public class HttpGenerator
                                 _persistent = false;
 
                                 // Add the field, but without keep-alive
-                                putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
+                                if (HttpHeaderValue.CLOSE.is(field.getValue()))
+                                    putTo(field, header);
+                                else
+                                    putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
                             }
                             // Handle Keep-Alive if we are HTTP/10
                             else if (http10 && _persistent == Boolean.TRUE)
                             {
                                 // we can't do anything here, so hold the header until we know how we will end the message
-                                http10Connection = field;
+                                if (http10Connection == null)
+                                    http10Connection = field;
+                                else
+                                    http10Connection = http10Connection.withValues(field.getValues());
                             }
-                            // Handle connection header without either close nor keep-alive
+                            // Handle connection header without close but with keep-alive
                             else if (field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
                             {
                                 // add the field, but without keep-alive
                                 putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
                             }
+                            // Handle connection header without either close or keep-alive
                             else
                             {
                                 putTo(field, header);
