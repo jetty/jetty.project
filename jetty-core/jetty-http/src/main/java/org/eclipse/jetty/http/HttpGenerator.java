@@ -619,8 +619,11 @@ public class HttpGenerator
                             {
                                 // Don't add yet, treat this only as a hint that there is content
                                 // with a preference to chunk if we can
-                                transferEncoding = field;
-                                chunkedHint = field.contains(HttpHeaderValue.CHUNKED.asString());
+                                if (transferEncoding == null)
+                                    transferEncoding = field;
+                                else
+                                    transferEncoding = transferEncoding.withValues(field.getValues());
+                                chunkedHint |= field.contains(HttpHeaderValue.CHUNKED.asString());
                             }
                             break;
                         }
