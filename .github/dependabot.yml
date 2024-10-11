@@ -52,6 +52,8 @@ updates:
         versions: [ ">=1.4.0"]
       - dependency-name: "com.hazelcast:*"
         versions: [ ">=5.4.0"]
+      - dependency-name: "org.jboss.threads:jboss-threads"
+        versions: [ ">=3.7.0"]
 
   - package-ecosystem: "maven"
     directory: "/"
