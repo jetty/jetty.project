@@ -2417,7 +2417,8 @@
                 <phase>verify</phase>
                 <configuration>
                   <!-- Works with approval for Hazelcast https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/15797 -->
-                  <excludeGroupIds>com.hazelcast</excludeGroupIds>
+                  <!-- infinispan protostream https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/16550 -->
+                  <excludeGroupIds>com.hazelcast,org.testcontainers,org.infinispan.protostream</excludeGroupIds>
                   <excludeScope>test</excludeScope>
                   <failWhenReviewNeeded>true</failWhenReviewNeeded>
                 </configuration>
