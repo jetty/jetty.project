@@ -653,7 +653,7 @@ public class HttpGenerator
                                     putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
                             }
                             // Handle Keep-Alive if we are HTTP/10
-                            else if (http10 && _persistent == Boolean.TRUE)
+                            else if (http10 && (_persistent == null || _persistent))
                             {
                                 // we can't do anything here, so hold the header until we know how we will end the message
                                 if (http10Connection == null)
@@ -694,7 +694,13 @@ public class HttpGenerator
         boolean noContentRequest = request != null && contentLength <= 0 && !assumedContent;
 
         if (_persistent == null)
-            _persistent = http11 || (request != null && HttpMethod.CONNECT.is(request.getMethod()));
+        {
+            _persistent = http11 ||
+                http10 && (
+                    (http10Connection != null && http10Connection.contains(HttpHeaderValue.KEEP_ALIVE.asString())) ||
+                    (request != null && HttpMethod.CONNECT.is(request.getMethod()))
+                );
+        }
 
         // If the message is known not to have content
         if (_noContentResponse || noContentRequest)
@@ -722,6 +728,15 @@ public class HttpGenerator
                         throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
                 }
             }
+
+            if (http10Connection != null)
+            {
+                if (_persistent)
+                    putTo(http10Connection, header);
+                else
+                    putTo(http10Connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
+            }
+
         }
         // Else if we are HTTP/1.1 and the content length is unknown and we are either persistent
         // or it is a request with content (which cannot EOF) or the app has requested chunking
