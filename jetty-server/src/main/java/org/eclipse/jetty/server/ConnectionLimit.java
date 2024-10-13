@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Connection.Listener;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -169,9 +170,10 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         }
     }
 
-    protected void check()
+    protected boolean check()
     {
-        if ((_accepting.size() + _connections) >= _maxConnections)
+        int total = _accepting.size() + _connections;
+        if (total >= _maxConnections)
         {
             if (!_limiting)
             {
@@ -179,6 +181,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
                 LOG.info("Connection Limit({}) reached for {}", _maxConnections, _connectors);
                 limit();
             }
+            return total > _maxConnections;
         }
         else
         {
@@ -188,6 +191,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
                 LOG.info("Connection Limit({}) cleared for {}", _maxConnections, _connectors);
                 unlimit();
             }
+            return false;
         }
     }
 
@@ -231,7 +235,8 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
             _accepting.add(channel);
             if (LOG.isDebugEnabled())
                 LOG.debug("onAccepting ({}+{}) < {} {}", _accepting.size(), _connections, _maxConnections, channel);
-            check();
+            if (check())
+                IO.close(channel);
         }
     }
 
