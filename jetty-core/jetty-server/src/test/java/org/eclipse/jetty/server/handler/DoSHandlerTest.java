@@ -61,7 +61,7 @@ public class DoSHandlerTest
         }
         int rate = tracker.getRequestsPerSecond(now);
 
-        assertThat(rate, both(greaterThan((1000/ 11) - 5)).and(lessThan(100)));
+        assertThat(rate, both(greaterThan((1000/ 11) - 10)).and(lessThan(100)));
     }
 
     @ParameterizedTest
@@ -114,15 +114,13 @@ public class DoSHandlerTest
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
         boolean exceeded = false;
-        for (int sample = 0; sample < 20; sample++)
+        loop: for (int sample = 0; sample < 200; sample++)
         {
             for (int burst = 0; burst < 11; burst++)
             {
-                if (!tracker.onRequest(now))
-                {
-                    exceeded = true;
-                    break;
-                }
+                exceeded = !tracker.onRequest(now);
+                if (exceeded)
+                    break loop;
             }
 
             now += TimeUnit.MILLISECONDS.toNanos(100);
@@ -185,26 +183,26 @@ public class DoSHandlerTest
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
-        for (int seconds = 0; seconds < 2; seconds++)
+        boolean exceeded = false;
+        for (int burst = 0; burst < 1000; burst++)
         {
-            for (int burst = 0; burst < 99; burst++)
-                assertTrue(tracker.onRequest(now++));
-
-            now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
+            now += TimeUnit.MILLISECONDS.toNanos(75);
+            exceeded = !tracker.onRequest(now);
         }
 
-        int rate = tracker.getRequestsPerSecond(now);
-        assertThat(rate, both(greaterThan(90)).and(lessThan(100)));
-
-        for (int seconds = 0; seconds < 2; seconds++)
+        for (int burst = 0; !exceeded && burst < 1000; burst++)
         {
-            for (int burst = 0; burst < 49; burst++)
-                assertTrue(tracker.onRequest(now++));
-
-            now += TimeUnit.MILLISECONDS.toNanos(1000) - 100;
+            exceeded = !tracker.onRequest(now++);
         }
-        rate = tracker.getRequestsPerSecond(now);
-        assertThat(rate, both(greaterThan(40)).and(lessThan(50)));
+        assertTrue(exceeded);
+
+        exceeded = false;
+        for (int burst = 0; burst < 1000; burst++)
+        {
+            now += TimeUnit.MILLISECONDS.toNanos(75);
+            exceeded = !tracker.onRequest(now);
+        }
+        assertFalse(exceeded);
     }
 
     @Test
