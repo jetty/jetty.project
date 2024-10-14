@@ -537,21 +537,6 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * Get a known {@link MimeTypes.Type} from the request {@link HttpHeader#CONTENT_TYPE}, if any.
-     * @param request The request.
-     * @return A {@link MimeTypes} or {@code null} if the {@code Content-Type} is not set or not known.
-     */
-    static MimeTypes.Type getContentMimeType(Request request)
-    {
-        HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
-        if (contentType instanceof MimeTypes.ContentTypeField contentTypeField)
-            return contentTypeField.getMimeType();
-        if (contentType == null)
-            return null;
-        return MimeTypes.CACHE.get(contentType.getValue());
-    }
-
-    /**
      * Get a {@link Charset} from the request {@link HttpHeader#CONTENT_TYPE}, if any.
      * @param request The request.
      * @return A {@link Charset} or null

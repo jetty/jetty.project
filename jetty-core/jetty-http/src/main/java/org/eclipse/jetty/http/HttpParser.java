@@ -141,11 +141,12 @@ public class HttpParser
             Map<String, HttpField> map = new LinkedHashMap<>();
             for (MimeTypes.Type mimetype : MimeTypes.Type.values())
             {
-                MimeTypes.ContentTypeField contentTypeField = mimetype.getContentTypeField();
+                HttpField contentTypeField = mimetype.getContentTypeField();
                 map.put(contentTypeField.toString(), contentTypeField);
                 if (contentTypeField.getValue().contains(";charset="))
                 {
-                    HttpField contentTypeFieldWithSpace = new MimeTypes.ContentTypeField(contentTypeField.getMimeType(), contentTypeField.getValue().replace(";charset=", "; charset="));
+                    HttpField contentTypeFieldWithSpace =
+                        new MimeTypes.ContentTypeField(MimeTypes.getMimeTypeFromContentType(contentTypeField), contentTypeField.getValue().replace(";charset=", "; charset="));
                     map.put(contentTypeFieldWithSpace.toString(), contentTypeFieldWithSpace);
                 }
             }

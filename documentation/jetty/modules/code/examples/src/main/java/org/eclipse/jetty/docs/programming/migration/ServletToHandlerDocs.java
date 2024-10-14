@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -120,9 +121,18 @@ public class ServletToHandlerDocs
             // Gets the request Content-Type.
             // Replaces:
             //   - servletRequest.getContentType()
-            MimeTypes.Type mimeType = Request.getContentMimeType(request);
-            Charset charset = Request.getCharset(request);
-            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            //   - servletRequest.getCharacterEncoding()
+            HttpField contentTypeField = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+            MimeTypes.Type knownType = MimeTypes.getMimeTypeFromContentType(contentTypeField);
+            if (knownType != null)
+            {
+                Charset charset = knownType.getCharset();
+            }
+            else
+            {
+                String contentType = contentTypeField.getValue();
+                String charset = MimeTypes.getCharsetFromContentType(contentType);
+            }
 
             // Gets the request Content-Length.
             // Replaces:

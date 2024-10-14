@@ -1197,8 +1197,8 @@ public class ServletApiRequest implements HttpServletRequest
             if (contentType != null)
             {
                 _contentType = contentType.getValue();
-                if (_charset == null && contentType instanceof MimeTypes.ContentTypeField contentTypeField)
-                    _charset = contentTypeField.getMimeType().getCharset();
+                if (_charset == null)
+                    _charset = MimeTypes.getCharsetFromContentType(contentType);
             }
         }
         return _contentType;

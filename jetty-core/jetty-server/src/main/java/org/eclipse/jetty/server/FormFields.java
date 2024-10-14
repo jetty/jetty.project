@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.StringUtil;
 
 import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
 
@@ -56,37 +55,11 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (contentTypeField == null)
             return null;
 
-        if (contentTypeField instanceof MimeTypes.ContentTypeField contentMimeTypeField)
-        {
-            MimeTypes.Type type = contentMimeTypeField.getMimeType();
-            if (type != null && type.getCharset() != null)
-                return type.getCharset();
-        }
+        Charset charset = MimeTypes.getCharsetFromContentType(contentTypeField);
+        if (charset != null)
+            return charset;
 
-        String contentType = contentTypeField.getValue();
-        if (request.getLength() == 0 || StringUtil.isBlank(contentType))
-            return null;
-
-        String contentTypeWithoutCharset = MimeTypes.getContentTypeWithoutCharset(contentType);
-        MimeTypes.Type type = MimeTypes.CACHE.get(contentTypeWithoutCharset);
-        if (type != null)
-        {
-            if (type != MimeTypes.Type.FORM_ENCODED)
-                return null;
-        }
-        else
-        {
-            // Could be a non-cached Content-Type with other parameters such as "application/x-www-form-urlencoded; p=v".
-            // Verify that it is actually application/x-www-form-urlencoded.
-            int semi = contentTypeWithoutCharset.indexOf(';');
-            if (semi > 0)
-                contentTypeWithoutCharset = contentTypeWithoutCharset.substring(0, semi);
-            if (!MimeTypes.Type.FORM_ENCODED.is(contentTypeWithoutCharset.trim()))
-                return null;
-        }
-
-        String cs = MimeTypes.getCharsetFromContentType(contentType);
-        return StringUtil.isEmpty(cs) ? StandardCharsets.UTF_8 : Charset.forName(cs);
+        return StandardCharsets.UTF_8;
     }
 
     /**

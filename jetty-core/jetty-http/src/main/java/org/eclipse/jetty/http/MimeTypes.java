@@ -199,7 +199,7 @@ public class MimeTypes
             return _assumedCharset;
         }
 
-        public ContentTypeField getContentTypeField()
+        public HttpField getContentTypeField()
         {
             return _field;
         }
@@ -681,6 +681,46 @@ public class MimeTypes
         return StringUtil.asciiToLowerCase(type);
     }
 
+    public static MimeTypes.Type getMimeTypeFromContentType(HttpField field)
+    {
+        if (field == null)
+            return null;
+
+        assert field.getHeader() == HttpHeader.CONTENT_TYPE;
+
+        if (field instanceof MimeTypes.ContentTypeField contentTypeField)
+            return contentTypeField.getMimeType();
+
+        return MimeTypes.CACHE.get(field.getValue());
+    }
+
+    /**
+     * Efficiently extract the charset value from a {@code Content-Type} {@link HttpField}.
+     * @param field A {@code Content-Type} field.
+     * @return The {@link Charset}
+     */
+    public static Charset getCharsetFromContentType(HttpField field)
+    {
+        if (field == null)
+            return null;
+
+        assert field.getHeader() == HttpHeader.CONTENT_TYPE;
+
+        if (field instanceof ContentTypeField contentTypeField)
+            return contentTypeField._type.getCharset();
+
+        String charset = getCharsetFromContentType(field.getValue());
+        if (charset == null)
+            return null;
+
+        return Charset.forName(charset);
+    }
+
+    /**
+     * Efficiently extract the charset value from a {@code Content-Type} string
+     * @param value A content-type value (e.g. {@code text/plain; charset=utf8}).
+     * @return The charset value (e.g. {@code utf-8}).
+     */
     public static String getCharsetFromContentType(String value)
     {
         if (value == null)
@@ -794,6 +834,11 @@ public class MimeTypes
         return null;
     }
 
+    /**
+     * Efficiently extract the base mime-type from a content-type value
+     * @param value A content-type value (e.g. {@code text/plain; charset=utf8}).
+     * @return The base mime-type value (e.g. {@code text/plain}).
+     */
     public static String getContentTypeWithoutCharset(String value)
     {
         int end = value.length();
@@ -924,7 +969,7 @@ public class MimeTypes
      * A {@link PreEncodedHttpField} for `Content-Type` that can hold a {@link MimeTypes.Type} field
      * for later recovery.
      */
-    public static class ContentTypeField extends PreEncodedHttpField
+    static class ContentTypeField extends PreEncodedHttpField
     {
         private final Type _type;
 
