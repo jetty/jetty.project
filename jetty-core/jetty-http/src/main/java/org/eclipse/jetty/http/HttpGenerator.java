@@ -637,11 +637,7 @@ public class HttpGenerator
                             else
                                 connection = connection.withValues(field.getValues());
 
-                            if (field.contains(HttpHeaderValue.CLOSE.asString()))
-                            {
-                                connectionClose = true;
-                                _persistent = false;
-                            }
+                            connectionClose |= field.contains(HttpHeaderValue.CLOSE.asString());
                             connectionKeepAlive |= field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
                             break;
                         }
@@ -664,6 +660,16 @@ public class HttpGenerator
         boolean assumedContent = assumedContentRequest || contentType || chunkedHint;
         boolean noContentRequest = request != null && contentLength <= 0 && !assumedContent;
 
+        // Handle connect requests
+        if (request != null && HttpMethod.CONNECT.is(request.getMethod()))
+        {
+            _persistent = true;
+            if (http10 && !connectionKeepAlive)
+                connectionKeepAlive = true;
+            if (connectionClose)
+                connectionClose = false;
+        }
+
         // Handle persistence and adjust connection header if necessary.
         if (http11)
         {
@@ -676,35 +682,64 @@ public class HttpGenerator
 
             if (_persistent == null)
             {
-                assert !connectionClose;
-                // Default to persistent
-                _persistent = true;
+                // Default to persistent unless explicitly closed
+                _persistent = !connectionClose;
             }
-            else if (!_persistent && !connectionClose)
+            else if (_persistent)
             {
-                connection = CONNECTION_CLOSE;
-                connectionClose = true;
+                if (connectionClose)
+                    _persistent = false;
+            }
+            else
+            {
+                if (!connectionClose)
+                {
+                    if (connection == null)
+                        connection = CONNECTION_CLOSE;
+                    else
+                        connection = connection.withValue(HttpHeaderValue.CLOSE.asString());
+                    connectionClose = true;
+                }
             }
         }
         else if (http10)
         {
             if (_persistent == null)
             {
-                assert !connectionClose;
                 // If persistence has not been set, then it must be explicitly requested with keep-alive, or a connect request
-                _persistent = connectionKeepAlive || (request != null && HttpMethod.CONNECT.is(request.getMethod()));
+                if (connectionClose)
+                {
+                    _persistent = false;
+                    if (connectionKeepAlive)
+                    {
+                        connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                        connectionKeepAlive = false;
+                    }
+                }
+                else
+                {
+                    _persistent = connectionKeepAlive;
+                }
             }
             else if (_persistent)
             {
-                assert !connectionClose;
-                if (!connectionKeepAlive)
+                if (connectionClose)
+                {
+                    _persistent = false;
+                    if (connectionKeepAlive)
+                    {
+                        connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                        connectionKeepAlive = false;
+                    }
+                }
+                else if (!connectionKeepAlive)
                 {
                     if (connection == null)
                         connection = CONNECTION_KEEP_ALIVE;
                     else
                         connection = connection.withValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                    connectionKeepAlive = true;
                 }
-                connectionKeepAlive = true;
             }
             else
             {
