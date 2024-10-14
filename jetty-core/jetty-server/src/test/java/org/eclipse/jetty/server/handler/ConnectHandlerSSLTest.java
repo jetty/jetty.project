@@ -49,7 +49,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     public void prepare() throws Exception
     {
         sslContextFactory = new SslContextFactory.Server();
-        Path keyStorePath = MavenTestingUtils.getTestResourcePath("server_keystore.p12").toAbsolutePath();
+        Path keyStorePath = MavenTestingUtils.getTestResourcePath("keystore.p12").toAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath.toString());
         sslContextFactory.setKeyStorePassword("storepwd");
         server = new Server();
