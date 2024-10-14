@@ -19,6 +19,7 @@ import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
 {
@@ -254,6 +256,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             SessionHandler.this.setSecureCookies(secure);
         }
 
+        @Override
+        public String toString()
+        {
+              return String.format("%s@%x[name=%s,domain=%s,path=%s,max-age=%d,secure=%b,http-only=%b,comment=%s,attributes=%s]",
+                this.getClass().getName(), this.hashCode(), getName(), getDomain(), getPath(),
+               getMaxAge(), isSecure(), isHttpOnly(),  getComment(), getSessionCookieAttributes().toString());
+        }
+
         private void checkState()
         {
             //It is allowable to call the CookieConfig.setXX methods after the SessionHandler has started,
@@ -427,6 +437,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     public SessionHandler()
     {
         setSessionTrackingModes(DEFAULT_SESSION_TRACKING_MODES);
+        installBean(_cookieConfig);
+        installBean(_sessionListeners);
+        installBean(_sessionIdListeners);
+        installBean(_sessionAttributeListeners);
     }
 
     @Override
@@ -603,9 +617,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         getSessionContext().run(() ->
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getApi());
-            for (int i = _sessionListeners.size() - 1; i >= 0; i--)
+            for (ListIterator<HttpSessionListener> i = TypeUtil.listIteratorAtEnd(_sessionListeners); i.hasPrevious();)
             {
-                _sessionListeners.get(i).sessionDestroyed(event);
+                i.previous().sessionDestroyed(event);
             }
         });
     }

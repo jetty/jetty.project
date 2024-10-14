@@ -468,6 +468,13 @@ If you want to avoid buffering, you can wait for the response and then stream th
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=inputStreamResponseListener]
 ----
 
+If you want to save the response content to a file, you can use the `PathResponseListener` utility class:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=pathResponseListener]
+----
+
 Finally, let's look at the advanced usage of the response content handling.
 
 The response content is provided by the `HttpClient` implementation to application listeners following the read/demand model of `org.eclipse.jetty.io.Content.Source`.

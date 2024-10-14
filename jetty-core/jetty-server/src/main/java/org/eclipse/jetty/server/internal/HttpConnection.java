@@ -905,7 +905,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public void onFailure(final Throwable x)
         {
             Callback callback = resetCallback();
-            failedCallback(callback, x);
+            callback.failed(x);
         }
 
         @Override

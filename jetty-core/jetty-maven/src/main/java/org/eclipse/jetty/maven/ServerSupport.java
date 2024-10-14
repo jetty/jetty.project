@@ -62,7 +62,15 @@ public class ServerSupport
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            server.setHandler(contexts);
+            if (server.getHandler() != null)
+            {
+                Handler.Sequence handlers = new Handler.Sequence();
+                handlers.addHandler(server.getHandler());
+                handlers.addHandler(contexts);
+                server.setHandler(handlers);
+            }
+            else
+                server.setHandler(contexts);
         } 
         
         if (contextHandlers != null)

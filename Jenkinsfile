@@ -28,21 +28,10 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK22") {
-          agent { node { label 'linux' } }
-          steps {
-            timeout( time: 210, unit: 'MINUTES' ) {
-              checkout scm
-              mavenBuild( "jdk22", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk22", name: "Static Analysis jdk22", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
-            }
-          }
-        }
-
         stage("Build / Test - JDK23") {
           agent { node { label 'linux' } }
           steps {
-            timeout( time: 180, unit: 'MINUTES' ) {
+            timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk23", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk23", name: "Static Analysis jdk23", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
@@ -138,7 +127,11 @@ def mavenBuild(jdk, cmdline, mvnName) {
           }
           runLaunchable ("verify")
           runLaunchable ("record build --name jetty-12.1.x")
-          sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          dashProfile = ""
+          if(useEclipseDash()) {
+            dashProfile = " -Peclipse-dash "
+          }
+          sh "mvn $extraArgs $dashProfile -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
@@ -160,12 +153,19 @@ def mavenBuild(jdk, cmdline, mvnName) {
 def useBuildCache() {
   def labelNoBuildCache = false
   if (env.BRANCH_NAME ==~ /PR-\d+/) {
-    labelNoBuildCache = pullRequest.labels.contains("build-no-cache")
+    labelNoBuildCache = pullRequest.labels.contains("build-no-cache") || pullRequest.labels.contains("dependencies")
   }
   def noBuildCache = (env.BRANCH_NAME == 'jetty-12.1.x') || labelNoBuildCache;
   return !noBuildCache;
   // want to skip build cache
   // return false
+}
+
+def useEclipseDash() {
+  if (env.BRANCH_NAME ==~ /PR-\d+/) {
+    return pullRequest.labels.contains("eclipse-dash")
+  }
+  return false
 }
 
 def saveHome() {

@@ -73,7 +73,7 @@ public interface ClientConnectionFactory
         public Info(ClientConnectionFactory factory)
         {
             this.factory = factory;
-            addBean(factory);
+            installBean(factory);
         }
 
         /**

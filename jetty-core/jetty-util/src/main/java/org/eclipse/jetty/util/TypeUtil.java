@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
@@ -171,6 +172,32 @@ public class TypeUtil
         if (a == null)
             return Collections.emptyList();
         return Arrays.asList(a);
+    }
+
+    /**
+     * <p>Returns a {@link ListIterator} positioned at the last item in a list.</p>
+     * @param list the list
+     * @param <T> the element type
+     * @return A {@link ListIterator} positioned at the last item of the list.
+     */
+    public static <T> ListIterator<T> listIteratorAtEnd(List<T> list)
+    {
+        try
+        {
+            int size = list.size();
+            if (size == 0)
+                return Collections.emptyListIterator();
+            return list.listIterator(size);
+        }
+        catch (IndexOutOfBoundsException e)
+        {
+            // list was concurrently modified, so do this the hard way
+            ListIterator<T> i = list.listIterator();
+            while (i.hasNext())
+                i.next();
+
+            return i;
+        }
     }
 
     /**

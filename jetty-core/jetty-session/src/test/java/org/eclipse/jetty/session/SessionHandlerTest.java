@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.session;
 
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -26,7 +27,9 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -737,6 +740,72 @@ public class SessionHandlerTest
             content = response.getContent();
             assertThat(content, containsString("No Session"));
         }
+    }
+
+    @Test
+    public void testFlushOnResponseCommit() throws Exception
+    {
+        // Setup temporary datastore with write-through null cache
+
+        File datastoreDir = MavenTestingUtils.getTargetTestingDir("datastore");
+        IO.delete(datastoreDir);
+
+        FileSessionDataStore datastore = new FileSessionDataStore();
+        datastore.setStoreDir(datastoreDir);
+
+        NullSessionCache cache = new NullSessionCache(_sessionHandler);
+        cache.setSessionDataStore(datastore);
+        cache.setFlushOnResponseCommit(true);
+
+        _sessionHandler.setSessionCache(cache);
+
+        _server.start();
+
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput("""
+            GET /create HTTP/1.1
+            Host: localhost
+
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        String setCookie = response.get(HttpHeader.SET_COOKIE);
+        String id = setCookie.substring(setCookie.indexOf("SESSION_ID=") + 11, setCookie.indexOf("; Path=/"));
+        String content = response.getContent();
+        assertThat(content, startsWith("Session="));
+
+        endPoint.addInput("""
+            GET /set/attribute/value HTTP/1.1
+            Host: localhost
+            Cookie: SESSION_ID=%s
+
+            """.formatted(id));
+
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
+        content = response.getContent();
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+        assertThat(content, containsString("attribute = value"));
+
+        // Session should persist through restart
+        _server.stop();
+        _server.start();
+
+        endPoint.addInput("""
+            GET /set/attribute/value HTTP/1.1
+            Host: localhost
+            Cookie: SESSION_ID=%s
+
+            """.formatted(id));
+
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
+        content = response.getContent();
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+        assertThat(content, containsString("attribute = value"));
     }
 
 }
