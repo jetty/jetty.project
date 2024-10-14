@@ -788,16 +788,24 @@ public class HttpGenerator
             if (contentLength >= 0 && (contentLength > 0 || assumedContent || contentLengthField))
                 putContentLength(header, contentLength);
 
-            if (http11 && !connectionClose)
+            if (http11)
             {
-                if (connection == null)
-                    connection = CONNECTION_CLOSE;
-                else
-                    connection = connection.withValue(HttpHeaderValue.CLOSE.asString());
+                if (!connectionClose)
+                {
+                    if (connection == null)
+                        connection = CONNECTION_CLOSE;
+                    else
+                        connection = connection.withValue(HttpHeaderValue.CLOSE.asString());
+                    connectionClose = true;
+                }
             }
-            else if (http10 && connectionKeepAlive)
+            else if (http10)
             {
-                connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                if (connectionKeepAlive)
+                {
+                    connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                    connectionKeepAlive = false;
+                }
             }
         }
         // Else we must be a request
