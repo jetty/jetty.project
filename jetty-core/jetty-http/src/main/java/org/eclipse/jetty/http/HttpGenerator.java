@@ -702,7 +702,10 @@ public class HttpGenerator
             else
             {
                 if (connectionKeepAlive)
+                {
                     connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                    connectionKeepAlive = false;
+                }
             }
         }
         else
