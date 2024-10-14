@@ -119,9 +119,12 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
     protected boolean generateAcceptableResponse(Request request, Response response, Callback callback, String contentType, List<Charset> charsets, int code, String message, Throwable cause) throws IOException
     {
         boolean result = super.generateAcceptableResponse(request, response, callback, contentType, charsets, code, message, cause);
-        // Do an asynchronous completion
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        servletContextRequest.getServletChannel().sendErrorResponseAndComplete();
+        if (result)
+        {
+            // Do an asynchronous completion
+            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+            servletContextRequest.getServletChannel().sendErrorResponseAndComplete();
+        }
         return result;
     }
 

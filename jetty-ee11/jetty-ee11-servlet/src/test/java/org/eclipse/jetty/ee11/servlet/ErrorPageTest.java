@@ -383,6 +383,7 @@ public class ErrorPageTest
         rawRequest.append("\r\n");
 
         String rawResponse = _connector.getResponse(rawRequest.toString());
+        System.err.println(rawResponse);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(598));
