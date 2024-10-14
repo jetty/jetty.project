@@ -578,6 +578,7 @@ public class HttpGenerator
         boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean connectionClose = false;
         boolean connectionKeepAlive = false;
+        boolean connectionUpgrade = false;
         boolean chunkedHint = _info.getTrailersSupplier() != null;
         boolean contentType = false;
         long contentLength = _info.getContentLength();
@@ -639,6 +640,7 @@ public class HttpGenerator
 
                             connectionClose |= field.contains(HttpHeaderValue.CLOSE.asString());
                             connectionKeepAlive |= field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
+                            connectionUpgrade |= field.contains(HttpHeaderValue.UPGRADE.asString());
                             break;
                         }
 
@@ -660,7 +662,7 @@ public class HttpGenerator
         boolean assumedContent = assumedContentRequest || contentType || chunkedHint;
         boolean noContentRequest = request != null && contentLength <= 0 && !assumedContent;
 
-        // Handle connect requests
+        // Handle CONNECT requests.
         if (request != null && HttpMethod.CONNECT.is(request.getMethod()))
         {
             _persistent = true;
@@ -668,6 +670,16 @@ public class HttpGenerator
                 connectionKeepAlive = true;
             if (connectionClose)
                 connectionClose = false;
+        }
+        // Handle Upgrade responses.
+        if (request != null && connectionUpgrade)
+        {
+            _persistent = true;
+            if (connectionClose)
+            {
+                connection = connection.withoutValue(HttpHeaderValue.CLOSE.asString());
+                connectionClose = false;
+            }
         }
 
         // Handle persistence and adjust connection header if necessary.
