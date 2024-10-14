@@ -94,7 +94,7 @@ public class HttpInputTransientErrorTest
             {
                 AsyncContext asyncContext = req.startAsync(req, resp);
                 asyncContext.setTimeout(0);
-                resp.setContentType("text/plain;charset=UTF-8");
+                resp.setContentType("text/plain;charset=utf-8");
 
                 req.getInputStream().setReadListener(new ReadListener()
                 {

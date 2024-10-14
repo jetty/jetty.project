@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
@@ -138,25 +137,17 @@ public class HttpParser
         .with(new HttpField(HttpHeader.EXPIRES, "Fri, 01 Jan 1990 00:00:00 GMT"))
         .withAll(() ->
         {
-            Map<String, HttpField> map = new LinkedHashMap<>();
             // Add common Content types as fields
-            for (String type : new String[]{
-                "text/plain", "text/html", "text/xml", "text/json", "application/json", "application/x-www-form-urlencoded"
-            })
+            Map<String, HttpField> map = new LinkedHashMap<>();
+            for (MimeTypes.Type mimetype : MimeTypes.Type.values())
             {
-                HttpField field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type);
-                map.put(field.toString(), field);
-
-                for (String charset : new String[]{"utf-8", "iso-8859-1"})
+                HttpField contentTypeField = mimetype.getContentTypeField();
+                map.put(contentTypeField.toString(), contentTypeField);
+                if (contentTypeField.getValue().contains(";charset="))
                 {
-                    PreEncodedHttpField field1 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + ";charset=" + charset);
-                    map.put(field1.toString(), field1);
-                    PreEncodedHttpField field2 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + "; charset=" + charset);
-                    map.put(field2.toString(), field2);
-                    PreEncodedHttpField field3 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + ";charset=" + charset.toUpperCase(Locale.ENGLISH));
-                    map.put(field3.toString(), field3);
-                    PreEncodedHttpField field4 = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, type + "; charset=" + charset.toUpperCase(Locale.ENGLISH));
-                    map.put(field4.toString(), field4);
+                    HttpField contentTypeFieldWithSpace =
+                        new MimeTypes.ContentTypeField(MimeTypes.getMimeTypeFromContentType(contentTypeField), contentTypeField.getValue().replace(";charset=", "; charset="));
+                    map.put(contentTypeFieldWithSpace.toString(), contentTypeFieldWithSpace);
                 }
             }
             return map;
