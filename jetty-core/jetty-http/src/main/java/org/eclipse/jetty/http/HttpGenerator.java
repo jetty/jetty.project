@@ -674,10 +674,17 @@ public class HttpGenerator
                 connectionKeepAlive = false;
             }
 
-            // Default to persistent unless explicitly closed
             if (_persistent == null)
-                _persistent = !connectionClose;
-
+            {
+                assert !connectionClose;
+                // Default to persistent
+                _persistent = true;
+            }
+            else if (!_persistent && !connectionClose)
+            {
+                connection = CONNECTION_CLOSE;
+                connectionClose = true;
+            }
         }
         else if (http10)
         {
