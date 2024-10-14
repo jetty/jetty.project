@@ -325,7 +325,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * The Tracker implements a version of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     * The Tracker implements a variant of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
      * In this variant, each request is a drip into the bucket, which is emptied on a regular basis.  If the bucket is ever
      * full, then the rate limit is exceeded.
      */
@@ -475,7 +475,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * The Tracker implements a the classic version of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     * The Tracker implements the classic version of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
      */
     public static class LeakingBucketTrackerFactory extends Tracker.Factory
     {

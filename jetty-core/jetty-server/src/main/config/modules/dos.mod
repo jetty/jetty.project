@@ -18,17 +18,14 @@ etc/jetty-dos.xml
 #jetty.dos.id.type=ID_FROM_REMOTE_ADDRESS
 #jetty.dos.id.class=org.eclipse.jetty.server.handler.DosHandler
 
-## The class to use to create RateControl instances to track the rate of requests
-#jetty.dos.rateControlFactory=org.eclipse.jetty.server.handler.DosHandler$ExponentialMovingAverageRateControlFactory
+## The class to use to create Tracker instances to track the rate of requests
+#jetty.dos.rateControlFactory=org.eclipse.jetty.server.handler.DoSHandler$LeakingBucketTrackerFactory
 
 ## The sample period(ms) to determine the request rate, or -1 for a default value
-#jetty.dos.rateControlFactory.samplePeriodMs=100
-
-## The Exponential factor for the moving average rate
-#jetty.dos.rateControlFactory.expMovingAvg.alpha=0.2
+#jetty.dos.trackerFactory.samplePeriodMs=1000
 
 ## The maximum requests per second per client
-#jetty.dos.maxRequestsPerSecond=100
+#jetty.dos.trackerFactory.maxRequestsPerSecond=100
 
 ## The Handler class to use to reject DOS requests
 #jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DosHandler$TooManyRequestsRejectHandler

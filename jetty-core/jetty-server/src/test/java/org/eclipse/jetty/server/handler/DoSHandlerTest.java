@@ -76,7 +76,6 @@ public class DoSHandlerTest
         for (int sample = 0; sample < 200; sample++)
         {
             exceeded = !tracker.onRequest(now);
-            System.err.printf("%d %d %b %s\n", sample, now, exceeded, tracker);
             if (exceeded)
                 break;
             now += TimeUnit.MILLISECONDS.toNanos(9);

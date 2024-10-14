@@ -11,12 +11,11 @@
             <Class><Property name="jetty.dos.id.class" default="org.eclipse.jetty.server.handler.DoSHandler"/></Class>
           </Get>
         </Arg>
-        <Arg name="rateControlFactory">
+        <Arg name="trackerFactory">
           <New>
-            <Class><Property name="jetty.dos.rateControlFactory" default="org.eclipse.jetty.server.handler.DoSHandler$ExponentialMovingAverageRateControlFactory"/></Class>
-            <Arg name="samplePeriodMs" type="long"><Property name="jetty.dos.rateControlFactory.samplePeriodMs" default="-1"/></Arg>
-            <Arg name="alpha" type="double"><Property name="jetty.dos.rateControlFactory.expMovingAvg.alpha" default="-1.0"/></Arg>
-            <Arg name="maxRequestsPerSecond" type="int"><Property name="jetty.dos.maxRequestsPerSecond" default="100"/></Arg>
+            <Class><Property name="jetty.dos.trackerFactory" default="org.eclipse.jetty.server.handler.DoSHandler$LeakingBucketTrackerFactory"/></Class>
+            <Arg name="maxRequestsPerSecond" type="int"><Property name="jetty.dos.trackerFactory.maxRequestsPerSecond" default="100"/></Arg>
+            <Arg name="samplePeriodMs" type="long"><Property name="jetty.dos.trackerFactory.samplePeriodMs" default="-1"/></Arg>
           </New>
         </Arg>
         <Arg name="rejectHandler">
