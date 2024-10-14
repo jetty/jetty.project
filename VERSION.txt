@@ -1,17 +1,10 @@
 jetty-10.0.25-SNAPSHOT
 
 jetty-10.0.24 - 26 August 2024
- + 12201 backport ThreadLimitHandler improvements from Jetty 12
+ + 12201 backport ThreadLimitHandler improvements from Jetty 12 (CVE-2024-8184)
 
 jetty-9.4.56.v20240826 - 26 August 2024
- + 12200 Backport ThreadLimitHandler improvements from Jetty 12
-
-jetty-10.0.23 - 13 August 2024
- + 12041 backport tracking retainable pool from Jetty 12
- + 12156 Improvements to HttpConnection when reading 0 bytes
-
-jetty-10.0.22 - 27 June 2024
- + 11917 Update XML configure.dtd locations to new jetty.org website
+ + 12200 Backport ThreadLimitHandler improvements from Jetty 12 (CVE-2024-8184)
 
 jetty-9.4.55.v20240627 - 27 June 2024
  + 10805 Jetty response with an invalid HTTP2 packet if the client set the
@@ -27,7 +20,7 @@ jetty-10.0.21 - 14 May 2024
  + 11782 HttpExchange retained by HttpSenderOverHTTP which caused memory leak
 
 jetty-9.4.54.v20240208 - 08 February 2024
- + 1256 DoSFilter leaks USER_AUTH entries
+ + 1256 DoSFilter leaks USER_AUTH entries (CVE-2024-9823)
  + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
    (CVE-2024-22201)
  + 11389 Strip default ports on ws/wss scheme uris too
@@ -55,7 +48,8 @@ jetty-10.0.19 - 15 December 2023
  + 11043 Update to apache jasper 9.0.83
 
 jetty-10.0.18 - 26 October 2023
- + 1256 DoSFilter leaks USER_AUTH entries
+ + 1256 DoSFilter leaks USER_AUTH entries (CVE-2024-9823)
+ + 9715 Deprecate PushSessionCacheFilter (CVE-2024-6762)
  + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
  + 10519 java.lang.IllegalStateException: Flusher when using HTTP/3 with Spring
    Boot 3.2
