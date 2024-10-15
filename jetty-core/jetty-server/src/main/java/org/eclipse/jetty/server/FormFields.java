@@ -64,7 +64,11 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
             return type.getCharset() == null ? StandardCharsets.UTF_8 : type.getCharset();
         }
 
-        if (!MimeTypes.Type.FORM_ENCODED.is(MimeTypes.getContentTypeWithoutCharset(contentTypeField.getValue())))
+        String contentType = contentTypeField.getValue();
+        int semicolon = contentType.indexOf(';');
+        if (semicolon >= 0)
+            contentType = contentType.substring(0, semicolon).trim();
+        if (!MimeTypes.Type.FORM_ENCODED.is(contentType))
             return null;
 
         Charset charset = MimeTypes.getCharsetFromContentType(contentTypeField);
