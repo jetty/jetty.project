@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -220,5 +221,25 @@ public class HttpFieldTest
         assertThat(field.withoutValue("value"), sameInstance(field));
         assertThat(field.withoutValue("often"), sameInstance(field));
         assertThat(field.withoutValue("of"), equalTo(new HttpField("name", "list, values")));
+    }
+
+    @Test
+    public void testWithValue()
+    {
+        HttpField field = new HttpField("name", "value");
+        assertThat(field.withValue("value"), sameInstance(field));
+        HttpField withOther = field.withValue("other");
+        assertThat(withOther, not(sameInstance(field)));
+        assertTrue(withOther.contains("other"));
+        assertTrue(withOther.contains("value"));
+
+        field = new HttpField("name", "one,value, two");
+        assertThat(field.withValue("value"), sameInstance(field));
+        withOther = field.withValue("other");
+        assertThat(withOther, not(sameInstance(field)));
+        assertTrue(withOther.contains("one"));
+        assertTrue(withOther.contains("two"));
+        assertTrue(withOther.contains("value"));
+        assertTrue(withOther.contains("other"));
     }
 }

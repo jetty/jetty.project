@@ -41,11 +41,13 @@ import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -61,6 +63,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
@@ -106,10 +109,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HttpClientTransportOverHTTP2Test extends AbstractTest
 {
     @Test
-    public void testPropertiesAreForwarded() throws Exception
+    public void testPropertiesAreForwardedOverHTTP2() throws Exception
     {
-        HTTP2Client http2Client = new HTTP2Client();
-        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)))
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        testPropertiesAreForwarded(http2Client, new HttpClientTransportOverHTTP2(http2Client));
+    }
+
+    @Test
+    public void testPropertiesAreForwardedDynamic() throws Exception
+    {
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        testPropertiesAreForwarded(http2Client, new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
+    }
+
+    private void testPropertiesAreForwarded(HTTP2Client http2Client, HttpClientTransport httpClientTransport) throws Exception
+    {
+        try (HttpClient httpClient = new HttpClient(httpClientTransport))
         {
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
@@ -128,6 +145,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
             assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
             assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
+            assertEquals(httpClient.getMaxResponseHeadersSize(), http2Client.getMaxResponseHeadersSize());
         }
         assertTrue(http2Client.isStopped());
     }
