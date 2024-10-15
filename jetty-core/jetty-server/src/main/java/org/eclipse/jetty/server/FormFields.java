@@ -55,6 +55,17 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (contentTypeField == null)
             return null;
 
+        MimeTypes.Type type = MimeTypes.getMimeTypeFromContentType(contentTypeField);
+        if (type != null)
+        {
+            if (type.getBaseType() != MimeTypes.Type.FORM_ENCODED)
+                return null;
+            return type.getCharset();
+        }
+
+        if (!MimeTypes.Type.FORM_ENCODED.is(MimeTypes.getContentTypeWithoutCharset(contentTypeField.getValue())))
+            return null;
+
         Charset charset = MimeTypes.getCharsetFromContentType(contentTypeField);
         if (charset != null)
             return charset;
