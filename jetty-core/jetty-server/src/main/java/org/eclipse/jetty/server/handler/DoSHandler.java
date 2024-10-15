@@ -186,6 +186,9 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     Tracker newTracker(String id)
     {
         Tracker tracker = _trackerFactory.newTracker(id);
+        // TODO but the expiry time for the tracker will be 0 at this point?
+        //      probably only working because that is seen a long way into the future.
+        //      may fail at some times.
         _cyclicTimeouts.schedule(tracker);
         return tracker;
     }
@@ -257,12 +260,12 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         @Override
         public Tracker newTracker(String id)
         {
-            return new LeakingBucketTracker(id, _maxRequestsPerSecond);
+            return new InfiniteLeakingBucketTracker(id, _maxRequestsPerSecond);
         }
 
-        public static class LeakingBucketTracker implements Tracker
+        public static class InfiniteLeakingBucketTracker implements Tracker
         {
-            private static final Logger LOG = LoggerFactory.getLogger(LeakingBucketTracker.class);
+            private static final Logger LOG = LoggerFactory.getLogger(InfiniteLeakingBucketTracker.class);
 
             private final AutoLock _lock = new AutoLock();
             private final String _id;
@@ -271,7 +274,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             private long _sampleStartNanoTime = NanoTime.now();
             private long _samples;
 
-            public LeakingBucketTracker(String id, int maxRequestsPerSecond)
+            public InfiniteLeakingBucketTracker(String id, int maxRequestsPerSecond)
             {
                 _id = id;
                 _maxRequestsPerSecond = maxRequestsPerSecond;
@@ -280,6 +283,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             @Override
             public long getExpireNanoTime()
             {
+                // TODO volatile or protected by lock?
                 return _expireNanoTime;
             }
 
@@ -289,10 +293,11 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                 try (AutoLock ignored = _lock.lock())
                 {
                     // Move the expiration 2 periods in the future.
-                    // TODO this is not strictly correction.  If the bucket is half full, then the tracker will become
+                    // TODO this is not strictly correct.  If the bucket is half full, then the tracker will become
                     //      idle in 1.5s as the drips will empty the bucket in 0.5s and then we are idle if no requests
                     //      for a full period after that. Or are we idle as soon as we go to zero?
                     //      Being idle on time may be important when we are hitting up against maxTrackers
+                    // TODO since the original value was 0, should we do the schedule here?
                     _expireNanoTime = now + TimeUnit.SECONDS.toNanos(2);
 
                     if (NanoTime.elapsed(_sampleStartNanoTime, now) > TimeUnit.SECONDS.toNanos(1))
@@ -311,6 +316,61 @@ public class DoSHandler extends ConditionalHandler.ElseNext
 
                     return allowed;
                 }
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s@%s".formatted(getClass().getSimpleName(), _id);
+            }
+        }
+    }
+
+    /**
+     * The Tracker implements an infinite variant of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     */
+    public static class LeakingBucketTrackerFactory implements Tracker.Factory
+    {
+        private final int _maxRequestsPerSecond;
+
+        public LeakingBucketTrackerFactory(
+            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
+        {
+            _maxRequestsPerSecond = maxRequestsPerSecond;
+        }
+
+        @Override
+        public Tracker newTracker(String id)
+        {
+            return new LeakingBucketTracker(id, _maxRequestsPerSecond);
+        }
+
+        public static class LeakingBucketTracker implements Tracker
+        {
+            private static final Logger LOG = LoggerFactory.getLogger(LeakingBucketTracker.class);
+
+            private final AutoLock _lock = new AutoLock();
+            private final String _id;
+            private final int _maxRequestsPerSecond;
+            private long _expireNanoTime;
+
+            public LeakingBucketTracker(String id, int maxRequestsPerSecond)
+            {
+                _id = id;
+                _maxRequestsPerSecond = maxRequestsPerSecond;
+            }
+
+            @Override
+            public long getExpireNanoTime()
+            {
+                return _expireNanoTime;
+            }
+
+            @Override
+            public boolean onRequest(long now)
+            {
+                // TODO
+                return true;
             }
 
             @Override
