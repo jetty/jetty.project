@@ -358,12 +358,20 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // Note that the endpoint might already be closed in some special circumstances.
             while (true)
             {
-                int filled = fillRequestBuffer();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("onFillable filled {} {} {} {}", filled, _httpChannel, _requestBuffer, this);
+                int filled;
+                if (isRequestBufferEmpty())
+                {
+                    filled = fillRequestBuffer();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("onFillable filled {} {} {} {}", filled, _httpChannel, _requestBuffer, this);
 
-                if (filled < 0 && getEndPoint().isOutputShutdown())
-                    close();
+                    if (filled < 0 && getEndPoint().isOutputShutdown())
+                        close();
+                }
+                else
+                {
+                    filled = 0;
+                }
 
                 boolean handle = parseRequestBuffer();
 
@@ -503,19 +511,22 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             assert !_requestBuffer.hasRemaining();
 
             int filled;
+
+            // The application has retained the content chunks
             if (_requestBuffer.isRetained())
             {
-                // The application has retained the content chunks, we must be careful to not overwrite content.
+                // then we must be careful to not overwrite content.
 
                 // If there is space, we can top up the buffer
                 ByteBuffer backing = _requestBuffer.getByteBuffer();
                 if (backing.limit() < backing.capacity() / 8)
                 {
+                    // pad the buffer so retained content is not overwritten
                     int padding = backing.position();
                     backing.position(0);
                     try
                     {
-                        filled = doFillRequestBuffer();
+                        filled = fillRequestBuffer();
                     }
                     finally
                     {
@@ -546,13 +557,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     }
 
     private int fillRequestBuffer()
-    {
-        if (!isRequestBufferEmpty())
-            return _requestBuffer.remaining();
-        return doFillRequestBuffer();
-    }
-
-    private int doFillRequestBuffer()
     {
         try
         {
