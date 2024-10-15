@@ -60,17 +60,16 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         {
             if (type.getBaseType() != MimeTypes.Type.FORM_ENCODED)
                 return null;
-            return type.getCharset();
+
+            return type.getCharset() == null ? StandardCharsets.UTF_8 : type.getCharset();
         }
 
         if (!MimeTypes.Type.FORM_ENCODED.is(MimeTypes.getContentTypeWithoutCharset(contentTypeField.getValue())))
             return null;
 
         Charset charset = MimeTypes.getCharsetFromContentType(contentTypeField);
-        if (charset != null)
-            return charset;
 
-        return StandardCharsets.UTF_8;
+        return charset == null ? StandardCharsets.UTF_8 : charset;
     }
 
     /**
