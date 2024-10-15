@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;

@@ -56,6 +56,7 @@ public class DelayedHandler extends Handler.Wrapper
 
         boolean contentExpected = false;
         String contentType = null;
+        MimeTypes.Type mimeType = null;
         loop: for (HttpField field : request.getHeaders())
         {
             HttpHeader header = field.getHeader();
@@ -65,6 +66,7 @@ public class DelayedHandler extends Handler.Wrapper
             {
                 case CONTENT_TYPE:
                     contentType = field.getValue();
+                    mimeType = MimeTypes.getMimeTypeFromContentType(field);
                     break;
 
                 case CONTENT_LENGTH:
@@ -87,7 +89,6 @@ public class DelayedHandler extends Handler.Wrapper
             }
         }
 
-        MimeTypes.Type mimeType = MimeTypes.getBaseType(contentType);
         DelayedProcess delayed = newDelayedProcess(contentExpected, contentType, mimeType, next, request, response, callback);
         if (delayed == null)
             return next.handle(request, response, callback);
@@ -102,9 +103,12 @@ public class DelayedHandler extends Handler.Wrapper
         if (!contentExpected)
             return null;
 
-        // if no mimeType, then no delay
+        // are we configured to delay dispatch until content?
+        boolean delayDispatchUntilContent = request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent();
+
+        // if no known mimeType, then only delay until content if configured
         if (mimeType == null)
-            return new UntilContentDelayedProcess(handler, request, response, callback);
+            return delayDispatchUntilContent ? new UntilContentDelayedProcess(handler, request, response, callback) : null;
 
         // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
         return switch (mimeType)
@@ -122,7 +126,8 @@ public class DelayedHandler extends Handler.Wrapper
 
                 yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, config);
             }
-            default -> new UntilContentDelayedProcess(handler, request, response, callback);
+            // if other mimeType, then only delay until content if configured
+            default -> delayDispatchUntilContent ? new UntilContentDelayedProcess(handler, request, response, callback) : null;
         };
     }
 

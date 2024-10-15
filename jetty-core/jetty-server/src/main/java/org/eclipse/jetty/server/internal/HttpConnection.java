@@ -1401,6 +1401,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else if (_generator.isCommitted())
             {
                 callback.failed(new IllegalStateException("Committed"));
+                return;
             }
             else
             {
