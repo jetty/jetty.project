@@ -879,6 +879,46 @@ public class CustomRequestLogTest
     }
 
     @Test
+    public void testLogRequestHttpUriHost() throws Exception
+    {
+        start("%{host}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("127.0.0.1"));
+    }
+
+    @Test
+    public void testLogRequestHttpUriPort() throws Exception
+    {
+        start("%{port}uri", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, false, "hello", Callback.NOOP);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("8080"));
+    }
+
+    @Test
     public void testLogRequestHttpUriScheme() throws Exception
     {
         start("%{scheme}uri", new SimpleHandler()

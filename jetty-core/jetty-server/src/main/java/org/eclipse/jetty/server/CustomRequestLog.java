@@ -309,13 +309,17 @@ import static java.lang.invoke.MethodType.methodType;
  * <dd>The path of the request URI.</dd>
  * <dt>%{query}uri</dt>
  * <dd>The query of the request URI.</dd>
+ * <dt>%{host}uri</dt>
+ * <dd>The host of the request URI.</dd>
+ * <dt>%{port}uri</dt>
+ * <dd>The port of the request URI.</dd>
  * </dl>
  * </td>
  * </tr>
  * <tr>
  * <td>%{attributeName}attr</td>
  * <td>
- * <p>A request attribute.</p>
+ * <p>The value of the request attribute with the given name.</p>
  * </td>
  * </tr>
  * </table>
@@ -1246,15 +1250,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestHttpUriHost(StringBuilder b, Request request, Response response)
     {
-        HttpURI.Mutable uri = HttpURI.build(request.getHttpURI()).query(null);
-        append(b, uri.toString());
+        append(b, request.getHttpURI().getHost());
     }
 
     @SuppressWarnings("unused")
     private static void logRequestHttpUriPort(StringBuilder b, Request request, Response response)
     {
-        HttpURI.Mutable uri = HttpURI.build(request.getHttpURI()).query(null);
-        append(b, uri.toString());
+        b.append(request.getHttpURI().getPort());
     }
 
     @SuppressWarnings("unused")
