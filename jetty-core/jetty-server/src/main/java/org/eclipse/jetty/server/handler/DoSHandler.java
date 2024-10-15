@@ -176,6 +176,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
         // If we are not over-limit then handle normally
+        // TODO should we use NanoTime.now() instead of request.getBeginNanoTime?
+        //      The former is monotonically increasing, whilst there can be jitter in the later
         if (tracker.onRequest(request.getBeginNanoTime()))
             return nextHandler(request, response, callback);
 
