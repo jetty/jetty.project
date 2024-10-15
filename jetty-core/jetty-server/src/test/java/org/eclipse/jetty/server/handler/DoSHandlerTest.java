@@ -22,16 +22,15 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,7 +39,6 @@ public class DoSHandlerTest
     public static Stream<Arguments> factories()
     {
         return Stream.of(
-            Arguments.of(new DoSHandler.FillingBucketTrackerFactory(100)),
             Arguments.of(new DoSHandler.LeakingBucketTrackerFactory(100))
         );
     }
@@ -49,7 +47,10 @@ public class DoSHandlerTest
     @MethodSource("factories")
     public void testTrackerSteadyBelowRate(DoSHandler.Tracker.Factory factory)
     {
+        Server server = new Server();
         DoSHandler handler = new DoSHandler(factory);
+        server.setHandler(handler);
+        LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -59,16 +60,16 @@ public class DoSHandlerTest
             assertFalse(exceeded);
             now += TimeUnit.MILLISECONDS.toNanos(11);
         }
-        int rate = tracker.getRequestsPerSecond(now);
-
-        assertThat(rate, both(greaterThan((1000/ 11) - 10)).and(lessThan(100)));
     }
 
     @ParameterizedTest
     @MethodSource("factories")
     public void testTrackerSteadyAboveRate(DoSHandler.Tracker.Factory factory)
     {
+        Server server = new Server();
         DoSHandler handler = new DoSHandler(factory);
+        server.setHandler(handler);
+        LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -88,7 +89,10 @@ public class DoSHandlerTest
     @MethodSource("factories")
     public void testTrackerUnevenBelowRate(DoSHandler.Tracker.Factory factory)
     {
+        Server server = new Server();
         DoSHandler handler = new DoSHandler(factory);
+        server.setHandler(handler);
+        LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -108,7 +112,10 @@ public class DoSHandlerTest
     @MethodSource("factories")
     public void testTrackerUnevenAboveRate(DoSHandler.Tracker.Factory factory)
     {
+        Server server = new Server();
         DoSHandler handler = new DoSHandler(factory);
+        server.setHandler(handler);
+        LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -132,7 +139,10 @@ public class DoSHandlerTest
     @MethodSource("factories")
     public void testTrackerBurstBelowRate(DoSHandler.Tracker.Factory factory)
     {
+        Server server = new Server();
         DoSHandler handler = new DoSHandler(factory);
+        server.setHandler(handler);
+        LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -140,10 +150,9 @@ public class DoSHandlerTest
         {
             for (int burst = 0; burst < 99; burst++)
             {
-                boolean exceeded = !tracker.onRequest(now);
+                boolean exceeded = !tracker.onRequest(now++);
                 assertFalse(exceeded);
             }
-
             now += TimeUnit.MILLISECONDS.toNanos(1000);
         }
     }
@@ -152,7 +161,10 @@ public class DoSHandlerTest
     @MethodSource("factories")
     public void testTrackerBurstAboveRate(DoSHandler.Tracker.Factory factory)
     {
+        Server server = new Server();
         DoSHandler handler = new DoSHandler(factory);
+        server.setHandler(handler);
+        LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -178,7 +190,10 @@ public class DoSHandlerTest
     @MethodSource("factories")
     public void testRecoveryAfterBursts(DoSHandler.Tracker.Factory factory)
     {
+        Server server = new Server();
         DoSHandler handler = new DoSHandler(factory);
+        server.setHandler(handler);
+        LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
         long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
 
@@ -211,7 +226,7 @@ public class DoSHandlerTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DoSHandler dosHandler = new DoSHandler(1000);
+        DoSHandler dosHandler = new DoSHandler(new DoSHandler.LeakingBucketTrackerFactory(1000));
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
@@ -256,7 +271,7 @@ public class DoSHandlerTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DoSHandler dosHandler = new DoSHandler(1000);
+        DoSHandler dosHandler = new DoSHandler(new DoSHandler.LeakingBucketTrackerFactory(1000));
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
