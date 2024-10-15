@@ -2420,7 +2420,7 @@
                   <!-- Works with approval for Hazelcast https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/15797 -->
                   <!-- infinispan protostream https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/16633 -->
                   <!-- https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/16634 -> https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/16665 -->
-                  <excludeGroupIds>org.apache,com.hazelcast,org.testcontainers,org.infinispan.protostream,org.wildfly,org.hibernate.search</excludeGroupIds>
+                  <excludeGroupIds>org.apache,com.hazelcast,org.testcontainers,org.infinispan.protostream</excludeGroupIds>
                   <excludeScope>test</excludeScope>
                   <failWhenReviewNeeded>true</failWhenReviewNeeded>
                 </configuration>
