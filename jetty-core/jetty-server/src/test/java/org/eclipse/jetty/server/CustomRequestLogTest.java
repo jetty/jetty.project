@@ -915,7 +915,7 @@ public class CustomRequestLogTest
         HttpTester.Response response = getResponse("GET /path?hello=world#fragment HTTP/1.0\n\n");
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
-        assertThat(log, is("8080"));
+        assertThat(log, is(Integer.toString(_serverConnector.getLocalPort())));
     }
 
     @Test
