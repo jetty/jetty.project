@@ -502,18 +502,44 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             assert !_requestBuffer.hasRemaining();
 
+            int filled;
             if (_requestBuffer.isRetained())
             {
-                // The application has retained the content chunks,
-                // reacquire the buffer to avoid overwriting the content.
-                releaseRequestBuffer();
-                ensureRequestBuffer();
+                // The application has retained the content chunks, we must be careful to not overwrite content.
+
+                // If there is space, we can top up the buffer
+                ByteBuffer backing = _requestBuffer.getByteBuffer();
+                if (backing.limit() < backing.capacity() / 8)
+                {
+                    int padding = backing.position();
+                    backing.position(0);
+                    try
+                    {
+                        filled = doFillRequestBuffer();
+                    }
+                    finally
+                    {
+                        backing.position(padding);
+                    }
+                }
+                else
+                {
+                    // otherwise reacquire the buffer and fill into the new buffer.
+                    releaseRequestBuffer();
+                    ensureRequestBuffer();
+                    filled = fillRequestBuffer();
+                }
+            }
+            else
+            {
+                filled = fillRequestBuffer();
             }
 
-            int filled = fillRequestBuffer();
             if (filled <= 0)
             {
-                releaseRequestBuffer();
+                // Keep the buffer if it is retained
+                if (filled < 0 || !_requestBuffer.isRetained())
+                    releaseRequestBuffer();
                 break;
             }
         }
@@ -523,7 +549,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (!isRequestBufferEmpty())
             return _requestBuffer.remaining();
+        return doFillRequestBuffer();
+    }
 
+    private int doFillRequestBuffer()
+    {
         try
         {
             ByteBuffer requestBuffer = _requestBuffer.getByteBuffer();
