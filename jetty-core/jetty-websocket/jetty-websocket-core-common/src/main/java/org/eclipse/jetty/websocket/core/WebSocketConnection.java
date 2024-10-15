@@ -226,20 +226,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         if (LOG.isDebugEnabled())
             LOG.debug("onIdleExpired()");
         WebSocketTimeoutException exception = new WebSocketTimeoutException("Connection Idle Timeout", timeoutException);
-        boolean closeConnection = coreSession.onTimeout(exception);
-        if (closeConnection)
-            coreSession.processConnectionError(exception, Callback.NOOP);
-        return closeConnection;
-    }
-
-    @Override
-    protected boolean onReadTimeout(TimeoutException timeoutException)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onReadTimeout()");
-
-        WebSocketTimeoutException exception = new WebSocketTimeoutException("Timeout on Read", timeoutException);
-        boolean closeConnection = coreSession.onTimeout(exception);
+        boolean closeConnection = coreSession.onIdleTimeout(exception);
         if (closeConnection)
             coreSession.processConnectionError(exception, Callback.NOOP);
         return closeConnection;

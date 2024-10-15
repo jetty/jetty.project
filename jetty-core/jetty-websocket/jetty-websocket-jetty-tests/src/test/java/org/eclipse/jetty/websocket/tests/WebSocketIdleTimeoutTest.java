@@ -81,7 +81,7 @@ public class WebSocketIdleTimeoutTest
         @Override
         public void onOpen(Session session)
         {
-            session.addTimeoutListener(t ->
+            session.addIdleTimeoutListener(t ->
             {
                 if (timeoutLatch != null)
                     timeoutLatch.countDown();

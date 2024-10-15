@@ -72,7 +72,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
     private ClassLoader classLoader;
-    private Predicate<WebSocketTimeoutException> _onTimeout;
+    private Predicate<WebSocketTimeoutException> _onIdleTimeout;
 
     public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
     {
@@ -424,19 +424,19 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     }
 
     @Override
-    public void addTimeoutListener(Predicate<WebSocketTimeoutException> onTimeout)
+    public void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout)
     {
-        if (_onTimeout == null)
+        if (_onIdleTimeout == null)
         {
-            _onTimeout = onTimeout;
+            _onIdleTimeout = onIdleTimeout;
         }
         else
         {
-            Predicate<WebSocketTimeoutException> previous = _onTimeout;
-            _onTimeout = throwable ->
+            Predicate<WebSocketTimeoutException> previous = _onIdleTimeout;
+            _onIdleTimeout = throwable ->
             {
                 if (!previous.test(throwable))
-                    return onTimeout.test(throwable);
+                    return onIdleTimeout.test(throwable);
                 return true;
             };
         }
@@ -445,12 +445,12 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     /**
      * @return true to let the EndPoint handle the timeout, false to tell the EndPoint to halt the handling of the timeout.
      **/
-    public boolean onTimeout(WebSocketTimeoutException timeoutException)
+    boolean onIdleTimeout(WebSocketTimeoutException timeoutException)
     {
-        if (_onTimeout == null)
+        if (_onIdleTimeout == null)
             return true;
         else
-            return _onTimeout.test(timeoutException);
+            return _onIdleTimeout.test(timeoutException);
     }
 
     public WebSocketConnection getConnection()

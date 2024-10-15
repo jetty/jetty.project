@@ -277,9 +277,9 @@ public class WebSocketSession implements Session, Dumpable
     }
 
     @Override
-    public void addTimeoutListener(Predicate<WebSocketTimeoutException> onTimeout)
+    public void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout)
     {
-        coreSession.addTimeoutListener(t -> onTimeout.test(new WebSocketTimeoutException(t)));
+        coreSession.addIdleTimeoutListener(t -> onIdleTimeout.test(new WebSocketTimeoutException(t)));
     }
 
     @Override

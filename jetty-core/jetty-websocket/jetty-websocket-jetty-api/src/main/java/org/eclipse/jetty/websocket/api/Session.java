@@ -204,7 +204,7 @@ public interface Session extends Configurable, Closeable
     boolean isSecure();
 
     /**
-     * <p>Adds a listener for websocket timeouts.</p>
+     * <p>Adds a listener for websocket idle timeouts.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
      * that the timeout should be handled as a fatal failure or {@code false} to ignore
      * that specific timeout and for another timeout to occur after another idle period.</p>
@@ -212,9 +212,9 @@ public interface Session extends Configurable, Closeable
      * returns {@code true} stops the processing of subsequent listeners, which are
      * therefore not invoked.</p>
      *
-     * @param onTimeout the idle timeout listener as a predicate function
+     * @param onIdleTimeout the idle timeout listener as a predicate function
      */
-    void addTimeoutListener(Predicate<WebSocketTimeoutException> onTimeout);
+    void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout);
 
     /**
      * <p>The passive link of communication with a remote WebSocket endpoint.</p>

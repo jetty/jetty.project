@@ -194,7 +194,7 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
     boolean isRsv3Used();
 
     /**
-     * <p>Adds a listener for websocket timeouts.</p>
+     * <p>Adds a listener for websocket idle timeouts.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
      * that the timeout should be handled as a fatal failure or {@code false} to ignore
      * that specific timeout and for another timeout to occur after another idle period.</p>
@@ -202,9 +202,9 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
      * returns {@code true} stops the processing of subsequent listeners, which are
      * therefore not invoked.</p>
      *
-     * @param onTimeout the idle timeout listener as a predicate function
+     * @param onIdleTimeout the idle timeout listener as a predicate function
      */
-    void addTimeoutListener(Predicate<WebSocketTimeoutException> onTimeout);
+    void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout);
 
     class Empty extends ConfigurationCustomizer implements CoreSession
     {
@@ -358,7 +358,7 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
         }
 
         @Override
-        public void addTimeoutListener(Predicate<WebSocketTimeoutException> onTimeout)
+        public void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout)
         {
         }
     }
