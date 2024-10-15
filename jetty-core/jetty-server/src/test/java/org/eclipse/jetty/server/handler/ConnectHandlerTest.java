@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.proxy;
+package org.eclipse.jetty.server.handler;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,7 +28,6 @@ import java.util.Base64;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentMap;
 
-import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
@@ -38,7 +37,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -941,7 +939,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     request.getConnectionMetaData().getConnection().getEndPoint().close();
                     callback.succeeded();
                 }
-                default -> throw new ServletException();
+                default -> throw new IllegalStateException();
             }
             return true;
         }

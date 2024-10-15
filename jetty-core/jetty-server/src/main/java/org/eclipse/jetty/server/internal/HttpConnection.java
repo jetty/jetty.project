@@ -339,7 +339,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (LOG.isDebugEnabled())
             LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
-        _requestBuffer.release();
+        if (_requestBuffer != null)
+            _requestBuffer.release();
         _requestBuffer = null;
     }
 
@@ -1249,7 +1250,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
-                _httpChannel.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
+                _httpChannel.getRequest().setAttribute(ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY, _complianceViolations);
                 _complianceViolations = null;
             }
 
