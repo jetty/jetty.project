@@ -13,9 +13,8 @@
         </Arg>
         <Arg name="trackerFactory">
           <New>
-            <Class><Property name="jetty.dos.trackerFactory" default="org.eclipse.jetty.server.handler.DoSHandler$LeakingBucketTrackerFactory"/></Class>
+            <Class><Property name="jetty.dos.trackerFactory" default="org.eclipse.jetty.server.handler.DoSHandler.InfiniteLeakingBucketTrackerFactory"/></Class>
             <Arg name="maxRequestsPerSecond" type="int"><Property name="jetty.dos.trackerFactory.maxRequestsPerSecond" default="100"/></Arg>
-            <Arg name="samplePeriodMs" type="long"><Property name="jetty.dos.trackerFactory.samplePeriodMs" default="-1"/></Arg>
           </New>
         </Arg>
         <Arg name="rejectHandler">

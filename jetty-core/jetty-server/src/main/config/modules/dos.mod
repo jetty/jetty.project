@@ -21,14 +21,11 @@ etc/jetty-dos.xml
 ## The class to use to create Tracker instances to track the rate of requests
 #jetty.dos.rateControlFactory=org.eclipse.jetty.server.handler.DoSHandler$LeakingBucketTrackerFactory
 
-## The sample period(ms) to determine the request rate, or -1 for a default value
-#jetty.dos.trackerFactory.samplePeriodMs=1000
-
 ## The maximum requests per second per client
 #jetty.dos.trackerFactory.maxRequestsPerSecond=100
 
 ## The Handler class to use to reject DOS requests
-#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DosHandler$TooManyRequestsRejectHandler
+#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DoSHandler.InfiniteLeakingBucketTrackerFactory
 
 ## The period to delay dos requests before rejecting them.
 #jetty.dos.rejectHandler.delayed.delayMs=1000

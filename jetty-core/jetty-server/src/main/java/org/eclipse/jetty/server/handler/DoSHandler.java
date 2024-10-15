@@ -139,6 +139,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         _trackerFactory = Objects.requireNonNull(trackerFactory);
         installBean(_trackerFactory);
         // TODO: why 10k?
+        //  So that by default we are not unbounded - as that will just trigger security researchers to give us new CVEs
         _maxTrackers = maxTrackers < 0 ? 10_000 : maxTrackers;
         _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, StatusRejectHandler::new);
         installBean(_rejectHandler);
@@ -157,6 +158,11 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     {
         // Reject if we have too many Trackers
         if (_maxTrackers > 0 && _trackers.size() >= _maxTrackers)
+            // TODO is there something better that can be done here?
+            //    We may have many trackers that are either idle or effectively idle, should we remove them rather than
+            //    reject requests.  We are meant to be protecting against busy clients not too many clients.
+            //    Perhaps we lift the thresh hold of what is idle rather than reject request?
+            //    Or randomly combine IDs into joint buckets?
             return _rejectHandler.handle(request, response, callback);
 
         // Calculate an id for the request (which may be global empty string).
@@ -226,6 +232,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
          * @return {@code true} if the request is below the limit
          */
         // TODO: this should take the Request as parameter.
+        //      Why?
         boolean onRequest(long now);
 
         interface Factory
@@ -235,13 +242,13 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * The Tracker implements the classic version of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     * The Tracker implements an infinite variant of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
      */
-    public static class LeakingBucketTrackerFactory implements Tracker.Factory
+    public static class InfiniteLeakingBucketTrackerFactory implements Tracker.Factory
     {
         private final int _maxRequestsPerSecond;
 
-        public LeakingBucketTrackerFactory(
+        public InfiniteLeakingBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
         {
             _maxRequestsPerSecond = maxRequestsPerSecond;
@@ -282,6 +289,10 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                 try (AutoLock ignored = _lock.lock())
                 {
                     // Move the expiration 2 periods in the future.
+                    // TODO this is not strictly correction.  If the bucket is half full, then the tracker will become
+                    //      idle in 1.5s as the drips will empty the bucket in 0.5s and then we are idle if no requests
+                    //      for a full period after that. Or are we idle as soon as we go to zero?
+                    //      Being idle on time may be important when we are hitting up against maxTrackers
                     _expireNanoTime = now + TimeUnit.SECONDS.toNanos(2);
 
                     if (NanoTime.elapsed(_sampleStartNanoTime, now) > TimeUnit.SECONDS.toNanos(1))

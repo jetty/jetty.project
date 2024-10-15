@@ -39,7 +39,7 @@ public class DoSHandlerTest
     public static Stream<Arguments> factories()
     {
         return Stream.of(
-            Arguments.of(new DoSHandler.LeakingBucketTrackerFactory(100))
+            Arguments.of(new DoSHandler.InfiniteLeakingBucketTrackerFactory(100))
         );
     }
 
@@ -226,7 +226,7 @@ public class DoSHandlerTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DoSHandler dosHandler = new DoSHandler(new DoSHandler.LeakingBucketTrackerFactory(1000));
+        DoSHandler dosHandler = new DoSHandler(new DoSHandler.InfiniteLeakingBucketTrackerFactory(1000));
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
@@ -271,7 +271,7 @@ public class DoSHandlerTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DoSHandler dosHandler = new DoSHandler(new DoSHandler.LeakingBucketTrackerFactory(1000));
+        DoSHandler dosHandler = new DoSHandler(new DoSHandler.InfiniteLeakingBucketTrackerFactory(1000));
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
