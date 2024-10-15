@@ -12,7 +12,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <osgi-version>3.20.0</osgi-version>
+    <osgi-version>3.21.0</osgi-version>
     <!-- Must stay on 3.11.x - as 3.12.x requires Java 11 -->
     <osgi-services-version>3.11.200</osgi-services-version>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
