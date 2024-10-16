@@ -109,7 +109,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
      * @param clientIdFn Function to extract a remote client identifier from a request.
      * @param trackerFactory Factory to create a Tracker
      * @param rejectHandler A {@link Handler} used to reject excess requests, or {@code null} for a default.
-     * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
+     * @param maxTrackers The maximum number of remote clients to track or -1 for a default value, 0 for unlimited.
+     *                    If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DoSHandler(
         @Name("clientIdFn") Function<Request, String> clientIdFn,
@@ -125,7 +126,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
      * @param clientIdFn Function to extract a remote client identifier from a request.
      * @param trackerFactory Factory to create a Tracker
      * @param rejectHandler A {@link Handler} used to reject excess requests, or {@code null} for a default.
-     * @param maxTrackers The maximum number of remote clients to track or -1 for a default value. If this limit is exceeded, then requests from additional remote clients are rejected.
+     * @param maxTrackers The maximum number of remote clients to track or -1 for a default value, 0 for unlimited.
+     *                    If this limit is exceeded, then requests from additional remote clients are rejected.
      */
     public DoSHandler(
         @Name("handler") Handler handler,
@@ -140,9 +142,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         installBean(_clientIdFn);
         _trackerFactory = Objects.requireNonNull(trackerFactory);
         installBean(_trackerFactory);
-        // TODO: why 10k?
-        //  So that by default we are not unbounded - as that will just trigger security researchers to give us new CVEs
-        _maxTrackers = maxTrackers < 0 ? 10_000 : maxTrackers;
+        // default max trackers to a large, effectively infinite number, but ultimately bounded.
+        _maxTrackers = maxTrackers < 0 ? 1_000_000 : maxTrackers;
         _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, StatusRejectHandler::new);
         installBean(_rejectHandler);
     }
@@ -158,6 +159,9 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     @Override
     protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
+        // use NanoTime.now() instead of request.getBeginNanoTime() to avoid jitter
+        long now = NanoTime.now();
+
         // Reject if we have too many Trackers
         if (_maxTrackers > 0 && _trackers.size() >= _maxTrackers)
         {
@@ -167,7 +171,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             //         + combine multiple IDs into a single tracker
 
             // Try removing any trackers that are almost idle
-            long almostIdle = NanoTime.now() + TimeUnit.MICROSECONDS.toNanos(100);
+            long almostIdle = now + TimeUnit.MICROSECONDS.toNanos(100);
             _trackers.values().removeIf(tracker -> tracker.getExpireNanoTime() < almostIdle);
 
             // reject if we still have too many
@@ -188,9 +192,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
         // If we are not over-limit then handle normally
-        // TODO using NanoTime.now() instead of request.getBeginNanoTime?
-        //      The former is monotonically increasing, whilst there can be jitter in the later
-        if (tracker.onRequest(NanoTime.now()))
+        if (tracker.onRequest(now))
             return nextHandler(request, response, callback);
 
         // Otherwise reject the request
