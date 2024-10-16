@@ -160,11 +160,22 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     {
         // Reject if we have too many Trackers
         if (_maxTrackers > 0 && _trackers.size() >= _maxTrackers)
+        {
             // TODO is there something better that can be done here?  The point of this handler is to limit busy clients,
             //      not to limit the total number of clients. So it may be better to:
             //         + discard the most idle tracker(s)
             //         + combine multiple IDs into a single tracker
-            return _rejectHandler.handle(request, response, callback);
+
+            // Try removing any trackers that are almost idle
+            long almostIdle = NanoTime.now() + TimeUnit.MICROSECONDS.toNanos(100);
+            _trackers.values().removeIf(tracker -> tracker.getExpireNanoTime() < almostIdle);
+
+            // reject if we still have too many
+            if (_trackers.size() >= _maxTrackers)
+            {
+                return _rejectHandler.handle(request, response, callback);
+            }
+        }
 
         // Calculate an id for the request (which may be global empty string).
         String id = _clientIdFn.apply(request);
