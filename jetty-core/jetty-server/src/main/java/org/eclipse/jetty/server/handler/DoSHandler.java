@@ -269,7 +269,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * The Tracker implements an infinite variant of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     * The Tracker implements an infinite variant of the <a https="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
      */
     public static class InfiniteLeakingBucketTrackerFactory implements Tracker.Factory
     {
@@ -352,7 +352,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * The Tracker implements the classic <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     * The Tracker implements the classic <a https="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
      */
     public static class LeakingBucketTrackerFactory implements Tracker.Factory
     {
@@ -372,8 +372,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         /**
          * @param maxRequestsPerSecond the maximum requests per second allowed by this tracker
          * @param maxDripsInBucket the size of the bucket in drips, which is effectively the burst capacity, giving the number
-         *        of request that can be handled in excess of the short term rate, before being rejected. Use <= 0 for a
-         *        heuristic value.
+         *        of request that can be handled in excess of the short term rate, before being rejected.
+         *        Use -1 for a heuristic value.
          */
         public LeakingBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
@@ -381,7 +381,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         {
             _maxRequestsPerSecond = maxRequestsPerSecond;
             _nanosPerDrip = TimeUnit.SECONDS.toNanos(1) / _maxRequestsPerSecond;
-            _maxDripsInBucket = (maxDripsInBucket <= 0)
+            _maxDripsInBucket = (maxDripsInBucket < 0)
                 ? _maxRequestsPerSecond
                 : maxDripsInBucket;
         }
