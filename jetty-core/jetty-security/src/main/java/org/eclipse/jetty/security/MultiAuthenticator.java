@@ -4,6 +4,7 @@ import java.security.Principal;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
@@ -11,16 +12,20 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MultiAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiAuthenticator.class);
+    public static final String LOGIN_PATH_PARAM = "org.eclipse.jetty.security.multi.login_path";
 
     private static final String AUTH_STATE_ATTR = MultiAuthState.class.getName();
-    private static final DefaultAuthenticator DEFAULT_AUTHENTICATOR = new DefaultAuthenticator();
+    private final DefaultAuthenticator _defaultAuthenticator = new DefaultAuthenticator();
     private final PathMappings<Authenticator> _authenticatorsMappings = new PathMappings<>();
+    private String _loginPath;
+    private boolean _dispatch;
 
     public void addAuthenticator(String pathSpec, Authenticator authenticator)
     {
@@ -30,10 +35,50 @@ public class MultiAuthenticator extends LoginAuthenticator
     @Override
     public void setConfiguration(Configuration configuration)
     {
+        String loginPath = configuration.getParameter(LOGIN_PATH_PARAM);
+        if (loginPath != null)
+            setLoginPath(loginPath);
+
         for (Authenticator authenticator : _authenticatorsMappings.values())
         {
             authenticator.setConfiguration(configuration);
         }
+    }
+
+    public void setLoginPath(String loginPath)
+    {
+        if (loginPath != null)
+        {
+            if (!loginPath.startsWith("/"))
+            {
+                LOG.warn("login path must start with /");
+                loginPath = "/" + loginPath;
+            }
+
+            _loginPath = loginPath;
+        }
+    }
+
+    public boolean isLoginPage(String uri)
+    {
+        return matchURI(uri, _loginPath);
+    }
+
+    private boolean matchURI(String uri, String path)
+    {
+        int jsc = uri.indexOf(path);
+        if (jsc < 0)
+            return false;
+        int e = jsc + path.length();
+        if (e == uri.length())
+            return true;
+        char c = uri.charAt(e);
+        return c == ';' || c == '#' || c == '/' || c == '?';
+    }
+
+    public void setDispatch(boolean dispatch)
+    {
+        _dispatch = dispatch;
     }
 
     @Override
@@ -47,7 +92,11 @@ public class MultiAuthenticator extends LoginAuthenticator
     {
         Authenticator authenticator = getAuthenticator(request.getSession(false));
         if (authenticator instanceof LoginAuthenticator loginAuthenticator)
+        {
+            doLogin(request);
             return loginAuthenticator.login(username, password, request, response);
+        }
+
         return super.login(username, password, request, response);
     }
 
@@ -56,9 +105,12 @@ public class MultiAuthenticator extends LoginAuthenticator
     {
         Authenticator authenticator = getAuthenticator(request.getSession(false));
         if (authenticator instanceof LoginAuthenticator loginAuthenticator)
+        {
             loginAuthenticator.logout(request, response);
-        else
-            super.logout(request, response);
+            doLogout(request);
+        }
+
+        super.logout(request, response);
     }
 
     @Override
@@ -80,7 +132,7 @@ public class MultiAuthenticator extends LoginAuthenticator
         if (authenticator == null)
             authenticator = getAuthenticator(session);
         if (authenticator == null)
-            authenticator = DEFAULT_AUTHENTICATOR;
+            authenticator = _defaultAuthenticator;
         saveAuthenticator(session, authenticator);
         return authenticator.getConstraintAuthentication(pathInContext, existing, getSession);
     }
@@ -98,15 +150,14 @@ public class MultiAuthenticator extends LoginAuthenticator
 
         AuthenticationState authenticationState = authenticator.validateRequest(request, response, callback);
         if (authenticationState instanceof AuthenticationState.ResponseSent)
-            return authenticationState;
-
-        // Wrap the successful authentication state to intercept the logout request to clear the session attribute.
-        if (authenticationState instanceof AuthenticationState.Succeeded succeededState)
         {
-            if (succeededState instanceof LoginAuthenticator.UserAuthenticationSent)
+            if (authenticationState instanceof LoginAuthenticator.UserAuthenticationSent)
                 doLogin(request);
-            return new MultiSucceededAuthenticationState(succeededState);
+            return authenticationState;
         }
+
+        if (authenticationState instanceof AuthenticationState.Succeeded succeededState)
+            return new MultiSucceededAuthenticationState(succeededState);
         else if (authenticationState instanceof AuthenticationState.Deferred deferredState)
             return new MultiDelegateAuthenticationState(deferredState);
         return authenticationState;
@@ -213,9 +264,8 @@ public class MultiAuthenticator extends LoginAuthenticator
         }
     }
 
-    private static class DefaultAuthenticator implements Authenticator
+    private class DefaultAuthenticator implements Authenticator
     {
-
         @Override
         public void setConfiguration(Configuration configuration)
         {
@@ -228,8 +278,32 @@ public class MultiAuthenticator extends LoginAuthenticator
         }
 
         @Override
+        public Constraint.Authorization getConstraintAuthentication(String pathInContext, Constraint.Authorization existing, Function<Boolean, Session> getSession)
+        {
+            if (isLoginPage(pathInContext))
+                return Constraint.Authorization.ALLOWED;
+            return existing;
+        }
+
+        @Override
         public AuthenticationState validateRequest(Request request, Response response, Callback callback)
         {
+            if (_loginPath != null)
+            {
+                String loginPath = URIUtil.addPaths(request.getContext().getContextPath(), _loginPath);
+                if (_dispatch)
+                {
+                    HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).pathQuery(loginPath);
+                    return new AuthenticationState.ServeAs(newUri);
+                }
+                else
+                {
+                    Session session = request.getSession(true);
+                    String redirectUri = session.encodeURI(request, loginPath, true);
+                    Response.sendRedirect(request, response, callback, redirectUri, true);
+                    return AuthenticationState.CHALLENGE;
+                }
+            }
             return null;
         }
     }
@@ -316,8 +390,8 @@ public class MultiAuthenticator extends LoginAuthenticator
                 return null;
 
             String name = state.getAuthenticatorName();
-            if (DEFAULT_AUTHENTICATOR.getClass().getName().equals(name))
-                return DEFAULT_AUTHENTICATOR;
+            if (_defaultAuthenticator.getClass().getName().equals(name))
+                return _defaultAuthenticator;
             for (Authenticator authenticator : _authenticatorsMappings.values())
             {
                 if (name.equals(authenticator.getClass().getName()))
