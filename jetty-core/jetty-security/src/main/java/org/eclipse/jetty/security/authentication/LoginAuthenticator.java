@@ -82,7 +82,8 @@ public abstract class LoginAuthenticator implements Authenticator
     @Override
     public void setConfiguration(Configuration configuration)
     {
-        _loginService = configuration.getLoginService();
+        if (_loginService == null)
+            _loginService = configuration.getLoginService();
         if (_loginService == null)
             throw new IllegalStateException("No LoginService for " + this + " in " + configuration);
         _identityService = configuration.getIdentityService();
@@ -95,6 +96,11 @@ public abstract class LoginAuthenticator implements Authenticator
     public LoginService getLoginService()
     {
         return _loginService;
+    }
+
+    public void setLoginService(LoginService loginService)
+    {
+        _loginService = loginService;
     }
 
     /**

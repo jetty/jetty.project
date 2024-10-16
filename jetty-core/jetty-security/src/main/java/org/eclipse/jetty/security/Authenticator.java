@@ -43,6 +43,7 @@ public interface Authenticator
     String NEGOTIATE_AUTH = "NEGOTIATE";
     String OPENID_AUTH = "OPENID";
     String SIWE_AUTH = "SIWE";
+    String MULTI_AUTH = "MULTI";
 
     /**
      * Configure the Authenticator
