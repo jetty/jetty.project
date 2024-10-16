@@ -203,6 +203,20 @@ In Jetty 11, the response content is accessed via `Response.getOutputStream()` o
 In Jetty 12, the `Response` object itself _is-a_ `Content.Sink` that can be written as explained in xref:arch/io.adoc#content-sink[this section].
 In Jetty 12, you can use `Content.Sink.asOutputStream(response)` to obtain an `OutputStream` and minimize the changes to your code, but remember that `OutputStream` only provides blocking APIs, while `Content.Sink` provides non-blocking APIs.
 
+[[api-changes-handler-sequence]]
+=== `HandlerCollection` and `HandlerList`
+
+Jetty 11's `org.eclipse.jetty.server.handler.HandlerCollection` and `org.eclipse.jetty.server.handler.HandlerList` have been replaced by Jetty 12's `org.eclipse.jetty.server.handler.Handler.Sequence`.
+
+Note that class `org.eclipse.jetty.server.handler.ContextHandlerCollection` has been retained (with the updates introduced by `Handler` as described <<api-changes-handler,here>>), and it is typically a better choice: where `Handler.Sequence` just iterates all its children ``Handler``s until one return `true` from the `handle(Request, Response, Callback)` method, `ContextHandlerCollection` more efficiently selects the child `ContextHandler` based on context path and virtual hosts.
+
+[[api-changes-handler-requestlog]]
+=== `RequestLogHandler`
+
+Jetty 11's `org.eclipse.jetty.server.handler.RequestLogHandler` has been removed with no replacement.
+
+In Jetty 12, request logging is achieved by calling `Server.setRequestLog(RequestLog requestLog)`, as described in xref:server/http.adoc#request-logging[this section].
+
 === `HttpClient`
 
 The Jetty 11 `Request.onResponseContentDemanded(Response.DemandedContentListener)` API has been replaced by `Request.onResponseContentSource(Response.ContentSourceListener)` in Jetty 12.

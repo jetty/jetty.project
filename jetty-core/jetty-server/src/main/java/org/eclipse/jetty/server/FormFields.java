@@ -55,11 +55,25 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (contentTypeField == null)
             return null;
 
-        Charset charset = MimeTypes.getCharsetFromContentType(contentTypeField);
-        if (charset != null)
-            return charset;
+        MimeTypes.Type type = MimeTypes.getMimeTypeFromContentType(contentTypeField);
+        if (type != null)
+        {
+            if (type.getBaseType() != MimeTypes.Type.FORM_ENCODED)
+                return null;
 
-        return StandardCharsets.UTF_8;
+            return type.getCharset() == null ? StandardCharsets.UTF_8 : type.getCharset();
+        }
+
+        String contentType = contentTypeField.getValue();
+        int semicolon = contentType.indexOf(';');
+        if (semicolon >= 0)
+            contentType = contentType.substring(0, semicolon).trim();
+        if (!MimeTypes.Type.FORM_ENCODED.is(contentType))
+            return null;
+
+        Charset charset = MimeTypes.getCharsetFromContentType(contentTypeField);
+
+        return charset == null ? StandardCharsets.UTF_8 : charset;
     }
 
     /**

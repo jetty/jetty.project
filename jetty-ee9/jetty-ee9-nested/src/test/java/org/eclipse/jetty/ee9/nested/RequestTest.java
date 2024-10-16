@@ -1463,8 +1463,7 @@ public class RequestTest
             200, TimeUnit.MILLISECONDS
         );
         assertThat(response, containsString("200"));
-        assertThat(response, containsString("Connection: TE"));
-        assertThat(response, containsString("Connection: Other"));
+        assertThat(response, containsString("Connection: TE,Other"));
 
         response = _connector.getResponse(
             "GET / HTTP/1.1\n" +
@@ -1473,7 +1472,7 @@ public class RequestTest
                 "\n"
         );
         assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Connection: close"));
+        assertThat(response, containsString("Connection: TE,Other,close"));
         assertThat(response, containsString("Hello World"));
     }
 

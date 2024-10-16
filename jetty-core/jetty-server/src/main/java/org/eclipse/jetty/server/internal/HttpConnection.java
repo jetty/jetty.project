@@ -324,7 +324,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (LOG.isDebugEnabled())
             LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
-        _requestBuffer.release();
+        if (_requestBuffer != null)
+            _requestBuffer.release();
         _requestBuffer = null;
     }
 

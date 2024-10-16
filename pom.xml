@@ -208,7 +208,7 @@
     <ee10.jakarta.xml.jaxws.impl.version>4.0.2</ee10.jakarta.xml.jaxws.impl.version>
     <ee10.jakarta.xml.ws.api.version>4.0.1</ee10.jakarta.xml.ws.api.version>
     <ee10.jersey.version>3.1.5</ee10.jersey.version>
-    <ee10.jsp.impl.version>10.1.25</ee10.jsp.impl.version>
+    <ee10.jsp.impl.version>10.1.31</ee10.jsp.impl.version>
     <ee10.mail.impl.version>2.0.1</ee10.mail.impl.version>
     <ee10.weld.version>5.1.2.Final</ee10.weld.version>
 
@@ -248,7 +248,7 @@
     <ee8.javax.security.auth.message>1.0.0.v201108011116</ee8.javax.security.auth.message>
     <ee8.javax.servlet.jsp.jstl.impl.version>1.2.5</ee8.javax.servlet.jsp.jstl.impl.version>
     <ee8.jetty.servlet.api.version>4.0.6</ee8.jetty.servlet.api.version>
-    <ee8.jsp.impl.version>9.0.90</ee8.jsp.impl.version>
+    <ee8.jsp.impl.version>9.0.96</ee8.jsp.impl.version>
     <ee8.weld.version>3.1.9.Final</ee8.weld.version>
 
     <ee9.jakarta.activation.api.version>2.0.1</ee9.jakarta.activation.api.version>
