@@ -72,12 +72,29 @@ public class ExplicitDemandTest
     public static class ListenerSocket implements Session.Listener
     {
         final List<Frame> frames = new CopyOnWriteArrayList<>();
+        Session session;
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
+            session.demand();
+        }
 
         @Override
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            frames.add(frame);
+            frames.add(Frame.copy(frame));
+
+            // Because no pingListener is registered, the frameListener is responsible for handling pings.
+            if (frame.getOpCode() == OpCode.PING)
+            {
+                session.sendPong(frame.getPayload(), Callback.from(callback, session::demand));
+                return;
+            }
+
             callback.succeed();
+            session.demand();
         }
     }
 
@@ -109,27 +126,19 @@ public class ExplicitDemandTest
             if (frame.getOpCode() == OpCode.TEXT)
                 textMessages.add(BufferUtil.toString(frame.getPayload()));
             callback.succeed();
+            session.demand();
         }
     }
 
     @WebSocket(autoDemand = false)
     public static class PingSocket extends ListenerSocket
     {
-        Session session;
-
-        @Override
-        public void onWebSocketOpen(Session session)
-        {
-            this.session = session;
-            session.demand();
-        }
-
         @Override
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            super.onWebSocketFrame(frame, callback);
             if (frame.getType() == Frame.Type.TEXT)
                 session.sendPing(ByteBuffer.wrap("server-ping".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+            super.onWebSocketFrame(frame, callback);
         }
     }
 
