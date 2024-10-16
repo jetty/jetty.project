@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -188,7 +189,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
 
         // Reject or handle untracked request
         if (id == null)
-            return _rejectUntracked ? _rejectHandler.handle(request, response, callback) : nextHandler(request, response, callback);
+            id = "";
 
         // Obtain a tracker, creating a new one if necessary (and not too many)
         // Trackers are removed if CyclicTimeouts#onExpired returns true.
@@ -269,96 +270,14 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * The Tracker implements an infinite variant of the <a https="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
-     */
-    public static class InfiniteLeakingBucketTrackerFactory implements Tracker.Factory
-    {
-        private final int _maxRequestsPerSecond;
-
-        public InfiniteLeakingBucketTrackerFactory(
-            @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
-        {
-            _maxRequestsPerSecond = maxRequestsPerSecond;
-        }
-
-        @Override
-        public Tracker newTracker(String id)
-        {
-            return new InfiniteLeakingBucketTracker(id, _maxRequestsPerSecond);
-        }
-
-        private static class InfiniteLeakingBucketTracker implements Tracker
-        {
-            private final AutoLock _lock = new AutoLock();
-            private final String _id;
-            private final int _maxRequestsPerSecond;
-            private long _expireNanoTime;
-            private long _sampleStartNanoTime = NanoTime.now();
-            private long _samples;
-
-            public InfiniteLeakingBucketTracker(String id, int maxRequestsPerSecond)
-            {
-                _id = id;
-                _maxRequestsPerSecond = maxRequestsPerSecond;
-            }
-
-            @Override
-            public long getExpireNanoTime()
-            {
-                try (AutoLock ignored = _lock.lock())
-                {
-                    // TODO The expiry time for the tracker will be 0 when first scheduled
-                    //      probably only working because that is seen a long way into the future.
-                    //      may fail at some times.
-                    return _expireNanoTime;
-                }
-            }
-
-            @Override
-            public boolean onRequest(long now)
-            {
-                try (AutoLock ignored = _lock.lock())
-                {
-                    // Move the expiration 2 periods in the future.
-                    // TODO this is not strictly correct.  If the bucket is half full, then the tracker will become
-                    //      idle in 1.5s as the drips will empty the bucket in 0.5s and then we are idle if no requests
-                    //      for a full period after that. Or are we idle as soon as we go to zero?
-                    //      Being idle on time may be important when we are hitting up against maxTrackers
-                    _expireNanoTime = now + TimeUnit.SECONDS.toNanos(2);
-
-                    if (NanoTime.elapsed(_sampleStartNanoTime, now) > TimeUnit.SECONDS.toNanos(1))
-                    {
-                        // Advance to the next sample period,
-                        // carrying over excess samples.
-                        _sampleStartNanoTime = now;
-                        _samples = Math.max(0, _samples - _maxRequestsPerSecond);
-                    }
-                    // Within the sampling period, increment and check the rate.
-                    ++_samples;
-
-                    return _samples <= _maxRequestsPerSecond;
-                }
-            }
-
-            @Override
-            public String toString()
-            {
-                try (AutoLock ignored = _lock.lock())
-                {
-                    return "%s@%s{%d/%d}".formatted(getClass().getSimpleName(), _id, _samples, _maxRequestsPerSecond);
-                }
-            }
-        }
-    }
-
-    /**
      * The Tracker implements the classic <a https="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
      */
     public static class LeakingBucketTrackerFactory implements Tracker.Factory
     {
         private final int _maxRequestsPerSecond;
-        private final int _maxDripsInBucket;
+        private final int _bucketSize;
         private final long _nanosPerDrip;
+        private final long _idleTimeout;
 
         /**
          * @param maxRequestsPerSecond the maximum requests per second allowed by this tracker
@@ -366,24 +285,28 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         public LeakingBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
         {
-            this(maxRequestsPerSecond, -1);
+            this(maxRequestsPerSecond, -1, null);
         }
 
         /**
          * @param maxRequestsPerSecond the maximum requests per second allowed by this tracker
-         * @param maxDripsInBucket the size of the bucket in drips, which is effectively the burst capacity, giving the number
+         * @param bucketSize the size of the bucket in request/drips, which is effectively the burst capacity, giving the number
          *        of request that can be handled in excess of the short term rate, before being rejected.
          *        Use -1 for a heuristic value.
+         * @param idleTimeout The period to keep an empty bucket before removal, or null to remove a bucket immediately when
+         *        empty
          */
         public LeakingBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
-            @Name("maxDripsInBucket") int maxDripsInBucket)
+            @Name("bucketSize") int bucketSize,
+            @Name("idleTimeout") Duration idleTimeout)
         {
             _maxRequestsPerSecond = maxRequestsPerSecond;
             _nanosPerDrip = TimeUnit.SECONDS.toNanos(1) / _maxRequestsPerSecond;
-            _maxDripsInBucket = (maxDripsInBucket < 0)
+            _bucketSize = (bucketSize < 0)
                 ? _maxRequestsPerSecond
-                : maxDripsInBucket;
+                : bucketSize;
+            _idleTimeout = idleTimeout == null ? 0 : idleTimeout.toNanos();
         }
 
         @Override
@@ -403,6 +326,9 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             public LeakingBucketTracker(String id)
             {
                 _id = id;
+                long now = NanoTime.now();
+                _lastDrip = now;
+                _expireNanoTime = now + _nanosPerDrip + _idleTimeout;
             }
 
             @Override
@@ -410,9 +336,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             {
                 try (AutoLock ignored = _lock.lock())
                 {
-                    // If this is newly constructed, expire after 1 drip
-                    if (_expireNanoTime == 0 && _lastDrip == 0 && _bucket == 0)
-                        return NanoTime.now() + _nanosPerDrip;
                     return _expireNanoTime;
                 }
             }
@@ -422,21 +345,12 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             {
                 try (AutoLock ignored = _lock.lock())
                 {
-                    if (_lastDrip == 0 && _bucket == 0)
-                    {
-                        _bucket = 1;
-                        _lastDrip = now;
-                        _expireNanoTime = now + _nanosPerDrip;
-                        return true;
-                    }
                     long elapsedSinceLastDrip = NanoTime.elapsed(_lastDrip, now);
                     long drips = elapsedSinceLastDrip / _nanosPerDrip;
                     _lastDrip = _lastDrip + drips * _nanosPerDrip;
-
-                    _bucket = Math.min(_maxDripsInBucket, Math.max(0L, _bucket - drips) + 1);
-                    _expireNanoTime = now + _bucket * _nanosPerDrip;
-
-                    return _bucket < _maxDripsInBucket;
+                    _bucket = Math.min(_bucketSize, Math.max(0L, _bucket - drips) + 1);
+                    _expireNanoTime = now + _bucket * _nanosPerDrip + _idleTimeout;
+                    return _bucket < _bucketSize;
                 }
             }
 

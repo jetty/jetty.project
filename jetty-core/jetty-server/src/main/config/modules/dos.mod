@@ -21,11 +21,17 @@ etc/jetty-dos.xml
 ## The class to use to create Tracker instances to track the rate of requests
 #jetty.dos.trackerFactory=org.eclipse.jetty.server.handler.DoSHandler$LeakingBucketTrackerFactory
 
+## The Handler class to use to reject DOS requests
+#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DoSHandler.InfiniteLeakingBucketTrackerFactory
+
 ## The maximum requests per second per client
 #jetty.dos.trackerFactory.maxRequestsPerSecond=100
 
-## The Handler class to use to reject DOS requests
-#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DoSHandler.InfiniteLeakingBucketTrackerFactory
+## The size of the leaky bucket. Larger buckets allow longer bursts before enforcing the rate
+#jetty.dos.trackerFactory.bucketSize=100
+
+## The time in seconds to retain an empty bucket.
+#jetty.dos.trackerFactory.idleTimeout=1
 
 ## The period to delay dos requests before rejecting them.
 #jetty.dos.rejectHandler.delayed.delayMs=1000
@@ -34,9 +40,9 @@ etc/jetty-dos.xml
 #jetty.dos.rejectHandler.delayed.maxDelayQueue=1000
 
 ## The maximum number of clients to track; or -1 for a default value; or 0 for unlimited
-#jetty.dos.maxTrackers=1000000
+#jetty.dos.maxTrackers=100000
 
-## Should untracked requests be allowed or rejected
+## Should untracked requests (due to maxTrackers) be rejected or allowed
 #jetty.dos.rejectUntracked=false
 
 ## The status code used to reject requests; or 0 to abort the request; or -1 for a default

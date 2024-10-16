@@ -38,7 +38,6 @@ public class DoSHandlerTest
     public static Stream<Arguments> factories()
     {
         return Stream.of(
-            Arguments.of(new DoSHandler.InfiniteLeakingBucketTrackerFactory(100)),
             Arguments.of(new DoSHandler.LeakingBucketTrackerFactory(100))
         );
     }
