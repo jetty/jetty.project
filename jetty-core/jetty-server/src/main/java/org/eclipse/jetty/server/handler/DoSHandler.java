@@ -95,6 +95,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     private final Tracker.Factory _trackerFactory;
     private final Request.Handler _rejectHandler;
     private final int _maxTrackers;
+    private final boolean _rejectUntracked;
     private CyclicTimeouts<Tracker> _cyclicTimeouts;
 
     /**
@@ -136,6 +137,25 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         @Name("rejectHandler") Request.Handler rejectHandler,
         @Name("maxTrackers") int maxTrackers)
     {
+        this(handler, clientIdFn, trackerFactory, rejectHandler, maxTrackers, false);
+    }
+
+    /**
+     * @param handler Then next {@link Handler} or {@code null}
+     * @param clientIdFn Function to extract a remote client identifier from a request.
+     * @param trackerFactory Factory to create a Tracker
+     * @param rejectHandler A {@link Handler} used to reject excess requests, or {@code null} for a default.
+     * @param maxTrackers The maximum number of remote clients to track or -1 for a default value, 0 for unlimited.
+     *                    If this limit is exceeded, then requests from additional remote clients are rejected.
+     */
+    public DoSHandler(
+        @Name("handler") Handler handler,
+        @Name("clientIdFn") Function<Request, String> clientIdFn,
+        @Name("trackerFactory") Tracker.Factory trackerFactory,
+        @Name("rejectHandler") Request.Handler rejectHandler,
+        @Name("maxTrackers") int maxTrackers,
+        @Name("rejectUntracked") boolean rejectUntracked)
+    {
         super(handler);
         installBean(_trackers);
         _clientIdFn = Objects.requireNonNullElse(clientIdFn, ID_FROM_REMOTE_ADDRESS);
@@ -146,6 +166,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         _maxTrackers = maxTrackers < 0 ? 1_000_000 : maxTrackers;
         _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, StatusRejectHandler::new);
         installBean(_rejectHandler);
+        _rejectUntracked = rejectUntracked;
     }
 
     @Override
@@ -165,9 +186,9 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         // Calculate an id for the request (which may be global empty string).
         String id = _clientIdFn.apply(request);
 
-        // TODO should we allow unidentified clients?  This handler is reject busy clients, not unknown ones.
+        // Reject or handle untracked request
         if (id == null)
-            return _rejectHandler.handle(request, response, callback);
+            return _rejectUntracked ? _rejectHandler.handle(request, response, callback) : nextHandler(request, response, callback);
 
         // Obtain a tracker, creating a new one if necessary (and not too many)
         // Trackers are removed if CyclicTimeouts#onExpired returns true.
@@ -175,14 +196,13 @@ public class DoSHandler extends ConditionalHandler.ElseNext
 
         // If we have too many trackers, then we will have a null tracker
         if (tracker == null)
-            // just handle normally
-            return nextHandler(request, response, callback);
+            return _rejectUntracked ? _rejectHandler.handle(request, response, callback) : nextHandler(request, response, callback);
 
         // If we are not over-limit then handle normally
         if (tracker.onRequest(now))
             return nextHandler(request, response, callback);
 
-        // Otherwise reject the request
+        // Otherwise reject the request as it is over rate
         return _rejectHandler.handle(request, response, callback);
     }
 

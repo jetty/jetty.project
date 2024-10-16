@@ -30,6 +30,7 @@
           </New>
         </Arg>
         <Arg name="maxTrackers" type="int"><Property name="jetty.dos.maxTrackers" default="-1"/></Arg>
+        <Arg name="rejectUntracked" type="boolean"><Property name="jetty.dos.rejectUntracked" default="false"/></Arg>
 
         <Call name="includeInetAddressPattern">
           <Arg>

@@ -36,6 +36,9 @@ etc/jetty-dos.xml
 ## The maximum number of clients to track; or -1 for a default value; or 0 for unlimited
 #jetty.dos.maxTrackers=1000000
 
+## Should untracked requests be allowed or rejected
+#jetty.dos.rejectUntracked=false
+
 ## The status code used to reject requests; or 0 to abort the request; or -1 for a default
 #jetty.dos.rejectStatus=429
 
