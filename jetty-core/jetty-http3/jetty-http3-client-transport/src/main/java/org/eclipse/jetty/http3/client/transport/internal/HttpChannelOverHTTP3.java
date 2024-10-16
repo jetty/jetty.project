@@ -22,9 +22,12 @@ import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.util.Promise;
 
 public class HttpChannelOverHTTP3 extends HttpChannel
 {
+    private final Stream.Client.Listener listener = new Listener();
     private final HttpConnectionOverHTTP3 connection;
     private final HTTP3SessionClient session;
     private final HttpSenderOverHTTP3 sender;
@@ -52,7 +55,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
     public Stream.Client.Listener getStreamListener()
     {
-        return receiver;
+        return listener;
     }
 
     @Override
@@ -105,7 +108,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     public void release()
     {
         setStream(null);
-        connection.release(this);
+        getHttpConnection().release(this);
     }
 
     @Override
@@ -115,5 +118,49 @@ public class HttpChannelOverHTTP3 extends HttpChannel
             super.toString(),
             sender,
             receiver);
+    }
+
+    private class Listener implements Stream.Client.Listener
+    {
+        @Override
+        public void onNewStream(Stream.Client stream)
+        {
+            setStream(stream);
+        }
+
+        @Override
+        public void onResponse(Stream.Client stream, HeadersFrame frame)
+        {
+            offerTask(receiver.onResponse(frame));
+        }
+
+        @Override
+        public void onDataAvailable(Stream.Client stream)
+        {
+            offerTask(receiver.onDataAvailable());
+        }
+
+        @Override
+        public void onTrailer(Stream.Client stream, HeadersFrame frame)
+        {
+            offerTask(receiver.onTrailer(frame));
+        }
+
+        @Override
+        public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
+        {
+            offerTask(receiver.onIdleTimeout(failure, promise));
+        }
+
+        @Override
+        public void onFailure(Stream.Client stream, long error, Throwable failure)
+        {
+            offerTask(receiver.onFailure(failure));
+        }
+
+        private void offerTask(Runnable task)
+        {
+            getSession().getProtocolSession().offer(task, false);
+        }
     }
 }

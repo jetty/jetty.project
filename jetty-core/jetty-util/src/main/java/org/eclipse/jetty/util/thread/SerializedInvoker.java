@@ -212,7 +212,7 @@ public class SerializedInvoker
         @Override
         public InvocationType getInvocationType()
         {
-            return InvocationType.BLOCKING;
+            return Invocable.getInvocationType(_task);
         }
 
         Link next()

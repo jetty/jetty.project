@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     // An empty DATA frame is the sequence of bytes [0x0, 0x0].
     private static final ByteBuffer EMPTY_DATA_FRAME = ByteBuffer.allocate(2);
 
+    private final Callback fillableCallback = new FillableCallback();
     private final AtomicReference<Runnable> action = new AtomicReference<>();
     private final ByteBufferPool bufferPool;
     private final MessageParser parser;
@@ -87,7 +89,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        setFillInterest();
     }
 
     @Override
@@ -219,7 +221,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                                 // No bytes left in the buffer, but there is demand.
                                 // Set fill interest to call the application when bytes arrive.
                                 tryReleaseInputBuffer(false);
-                                fillInterested();
+                                setFillInterest();
                             }
                         }
 
@@ -321,7 +323,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     }
 
                     if (setFillInterest)
-                        fillInterested();
+                        setFillInterest();
                 }
 
                 return MessageParser.Result.NO_FRAME;
@@ -333,6 +335,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 LOG.debug("parse+fill failure on {}", this, x);
             throw x;
         }
+    }
+
+    private void setFillInterest()
+    {
+        fillInterested(fillableCallback);
     }
 
     private int fill(ByteBuffer byteBuffer) throws IOException
@@ -485,6 +492,27 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             Runnable action = () -> processData(frame, delegate);
             if (!HTTP3StreamConnection.this.action.compareAndSet(null, action))
                 throw new IllegalStateException();
+        }
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.EITHER;
         }
     }
 }

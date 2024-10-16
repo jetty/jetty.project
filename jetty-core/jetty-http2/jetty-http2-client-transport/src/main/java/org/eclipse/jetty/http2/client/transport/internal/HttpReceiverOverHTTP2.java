@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.Client
+public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.Client, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP2.class);
 
@@ -219,49 +219,49 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     }
 
     @Override
-    public Runnable onDataAvailable()
+    public void onDataAvailable()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return null;
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseContentAvailable(exchange));
+        if (exchange != null)
+            responseContentAvailable(exchange);
     }
 
     @Override
-    public Runnable onReset(ResetFrame frame, Callback callback)
+    public void onReset(ResetFrame frame, Callback callback)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-        {
-            callback.succeeded();
-            return null;
-        }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        if (exchange != null)
         {
             int error = frame.getError();
             IOException failure = new IOException(ErrorCode.toString(error, "reset_code_" + error));
             callback.completeWith(exchange.getRequest().abort(failure));
-        });
+        }
+        else
+        {
+            callback.succeeded();
+        }
     }
 
     @Override
-    public Runnable onTimeout(TimeoutException failure, Promise<Boolean> promise)
+    public void onTimeout(TimeoutException failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-        {
+        if (exchange != null)
+            promise.completeWith(exchange.getRequest().abort(failure));
+        else
             promise.succeeded(false);
-            return null;
-        }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
-            promise.completeWith(exchange.getRequest().abort(failure))
-        );
     }
 
     @Override
-    public Runnable onFailure(Throwable failure, Callback callback)
+    public void onFailure(Throwable failure, Callback callback)
     {
         Promise<Boolean> promise = Promise.from(failed -> callback.succeeded(), callback::failed);
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () -> responseFailure(failure, promise));
+        responseFailure(failure, promise);
+    }
+
+    @Override
+    public Invocable.InvocationType getInvocationType()
+    {
+        return getHttpChannel().getHttpConnection().getInvocationType();
     }
 }

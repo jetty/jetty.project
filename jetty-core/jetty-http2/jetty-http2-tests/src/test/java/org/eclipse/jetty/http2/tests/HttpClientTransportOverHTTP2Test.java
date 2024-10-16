@@ -864,19 +864,23 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
         AtomicReference<Content.Chunk> chunkRef = new AtomicReference<>();
+        CountDownLatch requestFailureLatch = new CountDownLatch(1);
         CountDownLatch responseFailureLatch = new CountDownLatch(1);
         AtomicReference<Result> resultRef = new AtomicReference<>();
         httpClient.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .body(new AsyncRequestContent(ByteBuffer.allocate(1024)))
             .onResponseContentSource((response, contentSource) -> contentSourceRef.set(contentSource))
-            // The request is failed before the response, verify that
-            // reading at the request failure event yields a failure chunk.
-            .onRequestFailure((request, failure) -> chunkRef.set(contentSourceRef.get().read()))
-            .onResponseFailure((response, failure) -> responseFailureLatch.countDown())
+            .onRequestFailure((request, failure) -> requestFailureLatch.countDown())
+            .onResponseFailure((response, failure) ->
+            {
+                chunkRef.set(contentSourceRef.get().read());
+                responseFailureLatch.countDown();
+            })
             .send(resultRef::set);
 
         // Wait for the RST_STREAM to arrive and drain the response content.
+        assertTrue(requestFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
 
         // Verify that the chunk read at the request failure event is a failure chunk.

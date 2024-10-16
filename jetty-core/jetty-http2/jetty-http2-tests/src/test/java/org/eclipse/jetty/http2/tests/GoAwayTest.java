@@ -165,7 +165,7 @@ public class GoAwayTest extends AbstractTest
 
         MetaData.Request request1 = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
         CountDownLatch streamFailureLatch = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request1, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        clientSession.newStream(new HeadersFrame(request1, null, true), new Promise.Adapter<>(), new Stream.Listener.NonBlocking()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -176,7 +176,7 @@ public class GoAwayTest extends AbstractTest
                 // The client sends the second request and should eventually fail it
                 // locally since it has a larger streamId, and the server discarded it.
                 MetaData.Request request2 = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
-                clientSession.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener()
+                clientSession.newStream(new HeadersFrame(request2, null, true), new Promise.Adapter<>(), new Stream.Listener.NonBlocking()
                 {
                     @Override
                     public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
@@ -471,7 +471,7 @@ public class GoAwayTest extends AbstractTest
         MetaData.Request request1 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(request1, null, false);
         DataFrame dataFrame1 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), false);
-        ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null), new Promise.Adapter<>(), new Stream.Listener()
+        ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null), new Promise.Adapter<>(), new Stream.Listener.NonBlocking()
         {
             @Override
             public void onHeaders(Stream clientStream1, HeadersFrame frame)

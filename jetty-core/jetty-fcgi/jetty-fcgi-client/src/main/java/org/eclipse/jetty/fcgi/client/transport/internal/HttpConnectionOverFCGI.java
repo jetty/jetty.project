@@ -48,6 +48,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
+    private final Callback fillableCallback = new FillableCallback();
     private final ByteBufferPool networkByteBufferPool;
     private final AtomicInteger requests = new AtomicInteger();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -128,8 +130,13 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        setFillInterest();
         promise.succeeded(this);
+    }
+
+    void setFillInterest()
+    {
+        fillInterested(fillableCallback);
     }
 
     @Override
@@ -491,5 +498,26 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private enum State
     {
         STATUS, HEADERS, CONTENT, COMPLETE
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getHttpDestination().getHttpClient().getTransport().getInvocationType(delegate);
+        }
     }
 }

@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnidirectionalStreamConnection.class);
 
+    private final Callback fillableCallback = new FillableCallback();
     private final ByteBufferPool bufferPool;
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
@@ -72,7 +74,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        setFillInterest();
     }
 
     @Override
@@ -109,7 +111,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
                 else if (filled == 0)
                 {
                     buffer.release();
-                    fillInterested();
+                    setFillInterest();
                     break;
                 }
                 else
@@ -129,6 +131,11 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
             buffer = null;
             getEndPoint().close(x);
         }
+    }
+
+    private void setFillInterest()
+    {
+        fillInterested(fillableCallback);
     }
 
     private void detectAndUpgrade(long streamType)
@@ -175,6 +182,27 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
                     LOG.debug("unsupported stream type {}, closing {}", Long.toHexString(streamType), this);
                 getEndPoint().close(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), null);
             }
+        }
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
     }
 }

@@ -323,7 +323,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
             }
-        }, new Stream.Listener()
+        }, new Stream.Listener.NonBlocking()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

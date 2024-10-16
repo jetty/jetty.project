@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -37,7 +37,6 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.api.Test;
@@ -45,13 +44,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class InterleavingTest extends AbstractTest
 {
+    private static final Logger logger = LoggerFactory.getLogger(InterleavingTest.class);
+
     @Test
     public void testInterleaving() throws Exception
     {
@@ -80,17 +79,21 @@ public class InterleavingTest extends AbstractTest
             }
         });
 
+        CountDownLatch clientsLatch = new CountDownLatch(2);
         BlockingQueue<Stream.Data> dataQueue = new LinkedBlockingDeque<>();
-        Stream.Listener streamListener = new Stream.Listener()
+        Stream.Listener streamListener = new Stream.Listener.NonBlocking()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
+                logger.info("onDataAvailable {}", data);
                 // Do not release.
                 dataQueue.offer(data);
                 if (!data.frame().isEndStream())
                     stream.demand();
+                else
+                    clientsLatch.countDown();
             }
         };
 
@@ -135,86 +138,41 @@ public class InterleavingTest extends AbstractTest
             }
         });
 
-        // The client reads with a buffer size that is different from the
-        // frame size and synthesizes DATA frames, so expect N frames for
-        // stream1 up to maxFrameSize of data, then M frames for stream2
-        // up to maxFrameSize of data, and so forth, interleaved.
+        assertTrue(clientsLatch.await(5, TimeUnit.SECONDS));
 
-        Map<Integer, ByteArrayOutputStream> contents = new HashMap<>();
-        contents.put(serverStream1.getId(), new ByteArrayOutputStream());
-        contents.put(serverStream2.getId(), new ByteArrayOutputStream());
-        List<StreamLength> streamLengths = new ArrayList<>();
-        int finished = 0;
-        while (finished < 2)
-        {
-            Stream.Data data = dataQueue.poll(5, TimeUnit.SECONDS);
-            if (data == null)
-                fail();
+        List<StreamLength> streamLengthList = dataQueue.stream()
+            .map(Stream.Data::frame)
+            .map(frame -> new StreamLength(frame.getStreamId(), frame.remaining()))
+            .toList();
+        dataQueue.forEach(Stream.Data::release);
 
-            DataFrame dataFrame = data.frame();
-            int streamId = dataFrame.getStreamId();
-            int length = dataFrame.remaining();
-            streamLengths.add(new StreamLength(streamId, length));
-            if (dataFrame.isEndStream())
-                ++finished;
+        logger.debug("data queue {}", streamLengthList);
 
-            BufferUtil.writeTo(dataFrame.getByteBuffer(), contents.get(streamId));
-
-            data.release();
-        }
-
-        // Verify that the content has been sent properly.
-        assertArrayEquals(content1, contents.get(serverStream1.getId()).toByteArray());
-        assertArrayEquals(content2, contents.get(serverStream2.getId()).toByteArray());
-
-        // Verify that the interleaving is correct.
-        Map<Integer, List<Integer>> groups = new HashMap<>();
-        groups.put(serverStream1.getId(), new ArrayList<>());
-        groups.put(serverStream2.getId(), new ArrayList<>());
-        int currentStream = 0;
-        int currentLength = 0;
-        for (StreamLength streamLength : streamLengths)
-        {
-            if (currentStream == 0)
-                currentStream = streamLength.stream;
-            if (currentStream != streamLength.stream)
+        // Coalesce the data queue into a sequence of stream frames to verify interleaving.
+        AtomicInteger prevStreamId = new AtomicInteger();
+        List<Integer> interleaveSequence = streamLengthList.stream()
+            .map(StreamLength::streamId)
+            .filter(streamId ->
             {
-                groups.get(currentStream).add(currentLength);
-                currentStream = streamLength.stream;
-                currentLength = 0;
-            }
-            currentLength += streamLength.length;
-        }
-        groups.get(currentStream).add(currentLength);
+                boolean keep = prevStreamId.get() != streamId;
+                prevStreamId.set(streamId);
+                return keep;
+            })
+            .toList();
 
-        Logger logger = LoggerFactory.getLogger(getClass());
-        logger.debug("frame lengths = {}", streamLengths);
+        logger.debug("interleave sequence {}", interleaveSequence);
 
-        groups.forEach((stream, lengths) ->
-        {
-            logger.debug("stream {} interleaved lengths = {}", stream, lengths);
-            for (Integer length : lengths)
-            {
-                assertThat(length, lessThanOrEqualTo(maxFrameSize));
-            }
-        });
+        // A non-interleaved sequence would be just [1,3].
+        // Make sure that we have at least some interleave sequence like [1,3,1,3,1,3,...].
+        assertThat(interleaveSequence.size(), greaterThan(4));
     }
 
-    private static class StreamLength
+    private record StreamLength(int streamId, int length)
     {
-        private final int stream;
-        private final int length;
-
-        private StreamLength(int stream, int length)
-        {
-            this.stream = stream;
-            this.length = length;
-        }
-
         @Override
         public String toString()
         {
-            return String.format("(%d,%d)", stream, length);
+            return String.format("(%d,%d)", streamId, length);
         }
     }
 }

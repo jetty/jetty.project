@@ -1216,6 +1216,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         return (streamId & 1) == 1;
     }
 
+    void offerTask(Runnable task)
+    {
+        HTTP2Connection connection = (HTTP2Connection)getEndPoint().getConnection();
+        connection.offerTask(task, false);
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {

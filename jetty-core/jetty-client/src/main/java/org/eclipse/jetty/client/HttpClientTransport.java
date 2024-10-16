@@ -18,6 +18,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * {@link HttpClientTransport} represents what transport implementations should provide
@@ -84,4 +85,9 @@ public interface HttpClientTransport extends ClientConnectionFactory, HttpClient
      * @param factory the factory for ConnectionPool instances
      */
     public void setConnectionPoolFactory(ConnectionPool.Factory factory);
+
+    public default Invocable.InvocationType getInvocationType(Connection connection)
+    {
+        return Invocable.InvocationType.BLOCKING;
+    }
 }

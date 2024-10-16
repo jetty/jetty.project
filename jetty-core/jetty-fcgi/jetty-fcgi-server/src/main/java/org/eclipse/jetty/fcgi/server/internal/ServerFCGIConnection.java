@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
+    private final Callback fillableCallback = new FillableCallback();
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
@@ -160,7 +162,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        setFillInterest();
     }
 
     @Override
@@ -188,7 +190,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 else if (read == 0)
                 {
                     releaseInputBuffer();
-                    fillInterested();
+                    setFillInterest();
                     return;
                 }
                 else
@@ -304,9 +306,14 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     {
         releaseInputBuffer();
         if (failure == null)
-            fillInterested();
+            setFillInterest();
         else
             getFlusher().shutdown();
+    }
+
+    private void setFillInterest()
+    {
+        fillInterested(fillableCallback);
     }
 
     @Override
@@ -417,5 +424,26 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 task.run();
         }
         super.close();
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getConnector().getServer().getInvocationType();
+        }
     }
 }
