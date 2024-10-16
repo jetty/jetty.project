@@ -19,7 +19,7 @@ etc/jetty-dos.xml
 #jetty.dos.id.class=org.eclipse.jetty.server.handler.DosHandler
 
 ## The class to use to create Tracker instances to track the rate of requests
-#jetty.dos.rateControlFactory=org.eclipse.jetty.server.handler.DoSHandler$LeakingBucketTrackerFactory
+#jetty.dos.trackerFactory=org.eclipse.jetty.server.handler.DoSHandler$LeakingBucketTrackerFactory
 
 ## The maximum requests per second per client
 #jetty.dos.trackerFactory.maxRequestsPerSecond=100
