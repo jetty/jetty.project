@@ -15,14 +15,11 @@ package org.eclipse.jetty.server;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.annotation.Name;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A Connection Factory for HTTP Connections.
@@ -32,10 +29,7 @@ import org.slf4j.LoggerFactory;
  */
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionFactory.class);
     private final HttpConfiguration _config;
-    private boolean _useInputDirectByteBuffers;
-    private boolean _useOutputDirectByteBuffers;
 
     public HttpConnectionFactory()
     {
@@ -47,8 +41,6 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         super(HttpVersion.HTTP_1_1.asString());
         _config = Objects.requireNonNull(config);
         installBean(_config);
-        setUseInputDirectByteBuffers(_config.isUseInputDirectByteBuffers());
-        setUseOutputDirectByteBuffers(_config.isUseOutputDirectByteBuffers());
     }
 
     @Override
@@ -57,45 +49,26 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
-    /**
-     * @deprecated use {@link HttpConfiguration#getComplianceViolationListeners()} instead to know if there
-     * are any {@link ComplianceViolation.Listener} to notify.  this method will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.6", forRemoval = true)
-    public boolean isRecordHttpComplianceViolations()
-    {
-        return !_config.getComplianceViolationListeners().isEmpty();
-    }
-
-    /**
-     * Does nothing.
-     * @deprecated use {@link HttpConfiguration#addComplianceViolationListener(ComplianceViolation.Listener)} instead.
-     * this method will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.6", forRemoval = true)
-    public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
-    {
-        _config.addComplianceViolationListener(new ComplianceViolation.LoggingListener());
-    }
-
     public boolean isUseInputDirectByteBuffers()
     {
-        return _useInputDirectByteBuffers;
+        return _config.isUseInputDirectByteBuffers();
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        _useInputDirectByteBuffers = useInputDirectByteBuffers;
+        _config.setUseInputDirectByteBuffers(useInputDirectByteBuffers);
     }
 
     public boolean isUseOutputDirectByteBuffers()
     {
-        return _useOutputDirectByteBuffers;
+        return _config.isUseOutputDirectByteBuffers();
     }
 
+    @Deprecated(forRemoval = true, since = "12.1.0")
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
-        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+        _config.setUseOutputDirectByteBuffers(useOutputDirectByteBuffers);
     }
 
     @Override

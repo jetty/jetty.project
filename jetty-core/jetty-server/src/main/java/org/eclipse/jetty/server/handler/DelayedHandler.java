@@ -24,6 +24,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartConfig;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -54,6 +56,7 @@ public class DelayedHandler extends Handler.Wrapper
 
         boolean contentExpected = false;
         String contentType = null;
+        MimeTypes.Type mimeType = null;
         loop: for (HttpField field : request.getHeaders())
         {
             HttpHeader header = field.getHeader();
@@ -63,6 +66,7 @@ public class DelayedHandler extends Handler.Wrapper
             {
                 case CONTENT_TYPE:
                     contentType = field.getValue();
+                    mimeType = MimeTypes.getMimeTypeFromContentType(field);
                     break;
 
                 case CONTENT_LENGTH:
@@ -85,7 +89,6 @@ public class DelayedHandler extends Handler.Wrapper
             }
         }
 
-        MimeTypes.Type mimeType = MimeTypes.getBaseType(contentType);
         DelayedProcess delayed = newDelayedProcess(contentExpected, contentType, mimeType, next, request, response, callback);
         if (delayed == null)
             return next.handle(request, response, callback);
@@ -100,19 +103,31 @@ public class DelayedHandler extends Handler.Wrapper
         if (!contentExpected)
             return null;
 
-        // if we are not configured to delay dispatch, then no delay
-        if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
-            return null;
+        // are we configured to delay dispatch until content?
+        boolean delayDispatchUntilContent = request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent();
 
-        // If there is no known content type, then delay only until content is available
+        // if no known mimeType, then only delay until content if configured
         if (mimeType == null)
-            return new UntilContentDelayedProcess(handler, request, response, callback);
+            return delayDispatchUntilContent ? new UntilContentDelayedProcess(handler, request, response, callback) : null;
 
         // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
         return switch (mimeType)
         {
             case FORM_ENCODED -> new UntilFormDelayedProcess(handler, request, response, callback, contentType);
-            default -> new UntilContentDelayedProcess(handler, request, response, callback);
+            case MULTIPART_FORM_DATA ->
+            {
+                MultiPartConfig config;
+                if (request.getContext().getAttribute(MultiPartConfig.class.getName()) instanceof MultiPartConfig mpc)
+                    config = mpc;
+                else if (getHandler().getServer().getAttribute(MultiPartConfig.class.getName()) instanceof MultiPartConfig mpc)
+                    config = mpc;
+                else
+                    yield null;
+
+                yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, config);
+            }
+            // if other mimeType, then only delay until content if configured
+            default -> delayDispatchUntilContent ? new UntilContentDelayedProcess(handler, request, response, callback) : null;
         };
     }
 
@@ -229,9 +244,9 @@ public class DelayedHandler extends Handler.Wrapper
     {
         private final Charset _charset;
 
-        public UntilFormDelayedProcess(Handler handler, Request wrapped, Response response, Callback callback, String contentType)
+        public UntilFormDelayedProcess(Handler handler, Request request, Response response, Callback callback, String contentType)
         {
-            super(handler, wrapped, response, callback);
+            super(handler, request, response, callback);
 
             String cs = MimeTypes.getCharsetFromContentType(contentType);
             _charset = StringUtil.isEmpty(cs) ? StandardCharsets.UTF_8 : Charset.forName(cs);
@@ -257,6 +272,49 @@ public class DelayedHandler extends Handler.Wrapper
         }
 
         private void executeProcess(Fields fields, Throwable x)
+        {
+            if (x == null)
+                // We must execute here as even though we have consumed all the input, we are probably
+                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
+                getRequest().getContext().execute(super::process);
+            else
+                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+        }
+    }
+
+    protected static class UntilMultipartDelayedProcess extends DelayedProcess
+    {
+        private final String _contentType;
+        private final MultiPartConfig _config;
+
+        public UntilMultipartDelayedProcess(Handler handler, Request request, Response response, Callback callback, String contentType, MultiPartConfig config)
+        {
+            super(handler, request, response, callback);
+            _contentType = contentType;
+            _config = config;
+        }
+
+        @Override
+        protected void delay()
+        {
+            Request request = getRequest();
+
+            CompletableFuture<MultiPartFormData.Parts> futureMultiPart = MultiPartFormData.from(request, request, _contentType, _config);
+
+            // if we are done already, then we can call process in this thread, otherwise
+            // we must call executeProcess when the multipart is complete, since it will be called from a serialized callback.
+            futureMultiPart.whenComplete(futureMultiPart.isDone() ? this::process : this::executeProcess);
+        }
+
+        private void process(MultiPartFormData.Parts parts, Throwable failure)
+        {
+            if (failure == null)
+                super.process();
+            else
+                Response.writeError(getRequest(), getResponse(), getCallback(), failure);
+        }
+
+        private void executeProcess(MultiPartFormData.Parts parts, Throwable x)
         {
             if (x == null)
                 // We must execute here as even though we have consumed all the input, we are probably

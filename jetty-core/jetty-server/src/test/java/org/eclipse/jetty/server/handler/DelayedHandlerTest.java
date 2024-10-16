@@ -18,14 +18,18 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartConfig;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -33,6 +37,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
@@ -501,6 +506,74 @@ public class DelayedHandlerTest
             String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
             assertThat(content, containsString("name=[value]"));
             assertThat(content, containsString("x=[1, 2, 3]"));
+        }
+    }
+
+    @Test
+    public void testDelayedMultipart() throws Exception
+    {
+        DelayedHandler delayedHandler = new DelayedHandler();
+        _server.setAttribute(MultiPartConfig.class.getName(), new MultiPartConfig.Builder().build());
+        _server.setHandler(delayedHandler);
+        delayedHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                CompletableFuture<MultiPartFormData.Parts> future = MultiPartFormData.get(request);
+                assertNotNull(future);
+                assertTrue(future.isDone());
+                MultiPartFormData.Parts parts = future.get();
+                assertNotNull(parts);
+                assertThat(parts.size(), equalTo(3));
+                for (int i = 0; i < 3; i++)
+                {
+                    assertThat(parts.get(i).getName(), equalTo("part" + i));
+                    assertThat(parts.get(i).getContentAsString(StandardCharsets.ISO_8859_1),
+                        equalTo("This is the content of Part" + i));
+                }
+
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                response.write(true, BufferUtil.toBuffer("success"), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            String requestContent = """
+                --jettyBoundary123\r
+                Content-Disposition: form-data; name="part0"\r
+                \r
+                This is the content of Part0\r
+                --jettyBoundary123\r
+                Content-Disposition: form-data; name="part1"\r
+                \r
+                This is the content of Part1\r
+                --jettyBoundary123\r
+                Content-Disposition: form-data; name="part2"\r
+                \r
+                This is the content of Part2\r
+                --jettyBoundary123--\r
+                """;
+            String requestHeaders = String.format("""
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: multipart/form-data; boundary=jettyBoundary123\r
+                Content-Length: %s\r
+                \r
+                """, requestContent.getBytes(StandardCharsets.UTF_8).length);
+            OutputStream output = socket.getOutputStream();
+            output.write((requestHeaders + requestContent).getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, equalTo("success"));
         }
     }
 }

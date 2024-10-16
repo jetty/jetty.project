@@ -363,6 +363,10 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
 
+            // too late?
+            if (_stream == null)
+                return null;
+
             Runnable invokeOnContentAvailable = null;
             if (_readFailure == null)
             {
@@ -441,7 +445,8 @@ public class HttpChannelState implements HttpChannel, Components
             // If not handled, then we just fail the request callback
             if (!_handled && _handling == null)
             {
-                task = () -> _request._callback.failed(x);
+                Callback callback = _request._callback;
+                task = () -> callback.failed(x);
             }
             else
             {
@@ -709,6 +714,7 @@ public class HttpChannelState implements HttpChannel, Components
             try (AutoLock ignored = _lock.lock())
             {
                 assert _callbackCompleted;
+                assert _callbackFailure == null;
                 _streamSendState = StreamSendState.LAST_COMPLETE;
                 completeStream = _handling == null;
                 stream = _stream;
