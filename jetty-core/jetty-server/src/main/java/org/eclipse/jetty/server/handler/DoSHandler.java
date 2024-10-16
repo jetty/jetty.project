@@ -198,8 +198,11 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         if (tracker == null)
             return _rejectUntracked ? _rejectHandler.handle(request, response, callback) : nextHandler(request, response, callback);
 
-        // If we are not over-limit then handle normally
-        if (tracker.onRequest(now))
+        // IS the request allowed by the tracker?
+        boolean allowed = tracker.onRequest(now);
+        if (LOG.isDebugEnabled())
+            LOG.debug("allowed={} {}", allowed, tracker);
+        if (allowed)
             return nextHandler(request, response, callback);
 
         // Otherwise reject the request as it is over rate
@@ -212,9 +215,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
            return null;
 
         Tracker tracker = _trackerFactory.newTracker(id);
-        // TODO but the expiry time for the tracker will be 0 at this point?
-        //      probably only working because that is seen a long way into the future.
-        //      may fail at some times.
         _cyclicTimeouts.schedule(tracker);
         return tracker;
     }
@@ -260,8 +260,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
          * @param now The timestamp of the request
          * @return {@code true} if the request is below the limit
          */
-        // TODO: this should take the Request as parameter.
-        //      Why?
         boolean onRequest(long now);
 
         interface Factory
@@ -309,6 +307,9 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             {
                 try (AutoLock ignored = _lock.lock())
                 {
+                    // TODO The expiry time for the tracker will be 0 when first scheduled
+                    //      probably only working because that is seen a long way into the future.
+                    //      may fail at some times.
                     return _expireNanoTime;
                 }
             }
@@ -323,7 +324,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                     //      idle in 1.5s as the drips will empty the bucket in 0.5s and then we are idle if no requests
                     //      for a full period after that. Or are we idle as soon as we go to zero?
                     //      Being idle on time may be important when we are hitting up against maxTrackers
-                    // TODO since the original value was 0, should we do the schedule here?
                     _expireNanoTime = now + TimeUnit.SECONDS.toNanos(2);
 
                     if (NanoTime.elapsed(_sampleStartNanoTime, now) > TimeUnit.SECONDS.toNanos(1))
@@ -335,12 +335,8 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                     }
                     // Within the sampling period, increment and check the rate.
                     ++_samples;
-                    boolean allowed = _samples <= _maxRequestsPerSecond;
 
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("onRequest {}", this);
-
-                    return allowed;
+                    return _samples <= _maxRequestsPerSecond;
                 }
             }
 
@@ -439,9 +435,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
 
                     _bucket = Math.min(_maxDripsInBucket, Math.max(0L, _bucket - drips) + 1);
                     _expireNanoTime = now + _bucket * _nanosPerDrip;
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("onRequest {}", this);
 
                     return _bucket < _maxDripsInBucket;
                 }
