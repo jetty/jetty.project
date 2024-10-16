@@ -1229,6 +1229,7 @@ public class HttpChannelTest
         assertThat(demand.getCount(), is(1L));
 
         Callback.Completable callback = new Callback.Completable();
+
         // Writes are possible, unless a pending write is failed.
         handling.get().write(false, null, callback);
         assertTrue(callback.isDone());

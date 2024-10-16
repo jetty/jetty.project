@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -20,11 +21,11 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.StringTokenizer;
-import java.util.function.Function;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
@@ -197,7 +198,7 @@ public interface ResourceFactory
      *
      * @param resource the resource name to find in a classloader
      * @param searchSystemClassLoader true to search {@link ClassLoader#getSystemResource(String)}, false to skip
-     * @return The new Resource
+     * @return The new Resource, which may be a {@link CombinedResource} if multiple directory resources are found.
      * @throws IllegalArgumentException if resource name or resulting URL from ClassLoader is invalid.
      */
     default Resource newClassLoaderResource(String resource, boolean searchSystemClassLoader)
@@ -205,47 +206,60 @@ public interface ResourceFactory
         if (StringUtil.isBlank(resource))
             throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
-        URL url = null;
-
-        List<Function<String, URL>> loaders = new ArrayList<>();
-        loaders.add(Thread.currentThread().getContextClassLoader()::getResource);
-        loaders.add(ResourceFactory.class.getClassLoader()::getResource);
-        if (searchSystemClassLoader)
-            loaders.add(ClassLoader::getSystemResource);
-
-        for (Function<String, URL> loader : loaders)
+        // We need a local interface to combine static and non-static methods
+        interface Source
         {
-            if (url != null)
-                break;
+            Enumeration<URL> getResources(String name) throws IOException;
+        }
 
-            try
+        List<Source> sources = new ArrayList<>();
+        sources.add(Thread.currentThread().getContextClassLoader()::getResources);
+        sources.add(ResourceFactory.class.getClassLoader()::getResources);
+        if (searchSystemClassLoader)
+            sources.add(ClassLoader::getSystemResources);
+
+        List<Resource> resources = new ArrayList<>();
+        String[] names = resource.startsWith("/") ? new String[] {resource, resource.substring(1)} : new String[] {resource};
+
+        // For each source of resource
+        for (Source source : sources)
+        {
+            // for each variation of the resource name
+            for (String name : names)
             {
-                url = loader.apply(resource);
-                if (url == null && resource.startsWith("/"))
-                    url = loader.apply(resource.substring(1));
-            }
-            catch (IllegalArgumentException e)
-            {
-                // Catches scenario where a bad Windows path like "C:\dev" is
-                // improperly escaped, which various downstream classloaders
-                // tend to have a problem with
-                if (LOG.isTraceEnabled())
-                    LOG.trace("Ignoring bad getResource(): {}", resource, e);
+                try
+                {
+                    // Get all matching URLs
+                    Enumeration<URL> urls = source.getResources(name);
+                    while (urls.hasMoreElements())
+                    {
+                        // Get the resource
+                        Resource r = newResource(urls.nextElement().toURI());
+                        // If it is not a directory, then return it as the singular found resource
+                        if (!r.isDirectory())
+                            return r;
+                        // otherwise add it to a list of resource to combine.
+                        resources.add(r);
+                    }
+                }
+                catch (Throwable e)
+                {
+                    // Catches scenario where a bad Windows path like "C:\dev" is
+                    // improperly escaped, which various downstream classloaders
+                    // tend to have a problem with
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("Ignoring bad getResource(): {}", resource, e);
+                }
             }
         }
 
-        if (url == null)
+        if (resources.isEmpty())
             return null;
 
-        try
-        {
-            URI uri = url.toURI();
-            return newResource(uri);
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException("Error creating resource from URL: " + url, e);
-        }
+        if (resources.size() == 1)
+            return resources.get(0);
+
+        return combine(resources);
     }
 
     /**
@@ -433,21 +447,40 @@ public interface ResourceFactory
     }
 
     /**
-     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into URIs.
+     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into a List of {@link Resource}.
      * <p>
-     *     Each part of the input string could be path references (unix or windows style), or string URI references.
+     *     Each part of the input string could be path references (unix or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
      * </p>
      * <p>
      *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
      * </p>
      *
      * @param str the input string of references
+     * @return list of resources
      */
     default List<Resource> split(String str)
     {
+        return split(str, ",;|");
+    }
+
+    /**
+     * Split a string of references by provided delims into a List of {@link Resource}.
+     * <p>
+     *     Each part of the input string could be path references (unix or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
+     *     Note: that if you use the {@code :} character in your delims, then URI references will be impossible.
+     * </p>
+     * <p>
+     *     If the result of processing the input segment is a java archive, then its resulting URI will be a mountable URI as {@code jar:file:...!/}
+     * </p>
+     *
+     * @param str the input string of references
+     * @return list of resources
+     */
+    default List<Resource> split(String str, String delims)
+    {
         List<Resource> list = new ArrayList<>();
 
-        StringTokenizer tokenizer = new StringTokenizer(str, ",;|");
+        StringTokenizer tokenizer = new StringTokenizer(str, delims);
         while (tokenizer.hasMoreTokens())
         {
             String reference = tokenizer.nextToken();
@@ -461,7 +494,6 @@ public interface ResourceFactory
                     {
                         List<Resource> expanded = dir.list();
                         expanded.sort(ResourceCollators.byName(true));
-                        // TODO it is unclear why non archive files are not expanded into the list
                         expanded.stream().filter(r -> FileID.isLibArchive(r.getName())).forEach(list::add);
                     }
                 }
@@ -473,11 +505,12 @@ public interface ResourceFactory
             }
             catch (Exception e)
             {
-                LOG.warn("Invalid Resource Reference: " + reference);
+                LOG.warn("Invalid Resource Reference: {}", reference);
                 throw e;
             }
         }
 
+        // Perform Archive file mounting (if needed)
         for (ListIterator<Resource> i = list.listIterator(); i.hasNext(); )
         {
             Resource resource = i.next();

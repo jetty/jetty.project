@@ -593,6 +593,18 @@ case "$ACTION" in
 
     testFileSystemPermissions
 
+    if running $JETTY_PID
+    then
+      echo "Already Running $(cat $JETTY_PID)!"
+      exit 1
+    fi
+
+    # remove any lingering state file
+    if [ -f $JETTY_STATE ]
+    then
+      rm $JETTY_STATE
+    fi
+
     echo -n "Starting Jetty: "
 
     # Startup from a service file
@@ -616,13 +628,6 @@ case "$ACTION" in
        --
       (( DEBUG )) && echo "Starting: start-stop-daemon"
     else
-
-      if running $JETTY_PID
-      then
-        echo "Already Running $(cat $JETTY_PID)!"
-        exit 1
-      fi
-
       # Startup if switching users (not as a service, or from root)
       if [ -n "$JETTY_USER" ] && [ `whoami` != "$JETTY_USER" ]
       then

@@ -31,6 +31,7 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -62,7 +63,6 @@ import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
@@ -96,6 +96,7 @@ import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -519,12 +520,11 @@ public class ServletContextHandler extends ContextHandler
                     //Call context listeners
                     Throwable multiException = null;
                     ServletContextEvent event = new ServletContextEvent(getServletContext());
-                    Collections.reverse(_destroyServletContextListeners);
-                    for (ServletContextListener listener : _destroyServletContextListeners)
+                    for (ListIterator<ServletContextListener> i = TypeUtil.listIteratorAtEnd(_destroyServletContextListeners); i.hasPrevious();)
                     {
                         try
                         {
-                            callContextDestroyed(listener, event);
+                            callContextDestroyed(i.previous(), event);
                         }
                         catch (Exception x)
                         {
@@ -575,17 +575,17 @@ public class ServletContextHandler extends ContextHandler
         if (!_servletRequestListeners.isEmpty())
         {
             final ServletRequestEvent sre = new ServletRequestEvent(getServletContext(), request);
-            for (int i = _servletRequestListeners.size(); i-- > 0; )
+            for (ListIterator<ServletRequestListener> i = TypeUtil.listIteratorAtEnd(_servletRequestListeners); i.hasPrevious();)
             {
-                _servletRequestListeners.get(i).requestDestroyed(sre);
+                i.previous().requestDestroyed(sre);
             }
         }
 
         if (!_servletRequestAttributeListeners.isEmpty())
         {
-            for (int i = _servletRequestAttributeListeners.size(); i-- > 0; )
+            for (ListIterator<ServletRequestAttributeListener> i = TypeUtil.listIteratorAtEnd(_servletRequestAttributeListeners); i.hasPrevious();)
             {
-                scopedRequest.removeEventListener(_servletRequestAttributeListeners.get(i));
+                scopedRequest.removeEventListener(i.previous());
             }
         }
     }
@@ -1191,12 +1191,8 @@ public class ServletContextHandler extends ContextHandler
     protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
         boolean initialDispatch = request instanceof ServletContextRequest;
-        if (initialDispatch && isProtectedTarget(pathInContext))
-        {
-            Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
-            return true;
-        }
-
+        if (!initialDispatch)
+            return false;
         return super.handleByContextHandler(pathInContext, request, response, callback);
     }
 
@@ -1228,11 +1224,11 @@ public class ServletContextHandler extends ContextHandler
         ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
         {
-            for (int i = _contextListeners.size(); i-- > 0; )
+            for (ListIterator<ServletContextScopeListener> i = TypeUtil.listIteratorAtEnd(_contextListeners); i.hasPrevious(); )
             {
                 try
                 {
-                    _contextListeners.get(i).exitScope(getContext(), scopedRequest);
+                    i.previous().exitScope(getContext(), scopedRequest);
                 }
                 catch (Throwable e)
                 {

@@ -48,6 +48,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LargeHeaderTest
 {
@@ -79,7 +80,7 @@ public class LargeHeaderTest
             }
 
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String idCount = request.getHeaders().get("X-Count");
                 LOG.debug("X-Count: {} [handle]", idCount);
@@ -245,8 +246,11 @@ public class LargeHeaderTest
             throw issues;
         }
 
+        for (Future<Void> future : futures)
+            future.get(2, TimeUnit.SECONDS);
+
         executorService.shutdown();
-        executorService.awaitTermination(timeout * 2, TimeUnit.SECONDS);
+        assertTrue(executorService.awaitTermination(timeout * 2, TimeUnit.SECONDS));
         assertEquals(iterations, count500.get(), () ->
         {
             return """
@@ -297,12 +301,7 @@ public class LargeHeaderTest
                 }
                 HttpTester.Response response = HttpTester.parseResponse(rawResponse);
                 int status = response.getStatus();
-                if (response == null)
-                {
-                    LOG.warn("X-Count: {} - Empty Parsed Response", count);
-                    countEmpty.incrementAndGet();
-                }
-                else if (status == 500)
+                if (status == 500)
                 {
                     long contentLength = response.getLongField(HttpHeader.CONTENT_LENGTH);
                     String responseBody = response.getContent();
@@ -326,15 +325,13 @@ public class LargeHeaderTest
         }
 
         assertEquals(iterations, count500.get(), () ->
-        {
-            return """
+            """
                 All tasks did not fail as expected.
                 Iterations: %d
                 Count (500 response status) [expected]: %d
                 Count (empty responses): %d
                 Count (throwables): %d
                 Count (other status codes): %d
-                """.formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get());
-        });
+                """.formatted(iterations, count500.get(), countEmpty.get(), countFailure.get(), countOther.get()));
     }
 }

@@ -37,7 +37,7 @@ The Maven artifact coordinates are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-server</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -239,6 +239,18 @@ WebSocket over HTTP/2 or over HTTP/3 initiate the WebSocket communication with a
 
 For more information about how to configure `HostHeaderCustomizer`, see also link:{javadoc-url}/org/eclipse/jetty/server/HostHeaderCustomizer.html[the javadocs].
 
+[[request-customizer-authority]]
+=== `AuthorityCustomizer`
+
+`AuthorityCustomizer` should be added when Jetty receives HTTP/2 or HTTP/3 requests that lack the  `:authority` pseudo-header, and web applications have logic that depends on this value, exposed through the `Request` URI authority via `Request.getHttpURI().getAuthority()`.
+
+The `:authority` pseudo-header may be missing if the request arrived to a proxy in HTTP/1.1 format, and the proxy is converting it to HTTP/2 or HTTP/3 before sending it to the backend server.
+
+`AuthorityCustomizer` will synthesize the authority using the `Host` header field, if present.
+If the `Host` header is also missing, it will use the request _server name_ and _server port_, values that may be influenced by the <<request-customizer-forwarded,`Forwarded` HTTP header>> and the <<connector-protocol-proxy-http11,PROXY protocol>>.
+
+The synthesized authority will be exposed as the `Request` URI authority via `Request.getHttpURI().getAuthority()`.
+
 [[request-customizer-proxy]]
 === `ProxyCustomizer`
 
@@ -381,6 +393,27 @@ For example:
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=sameRandomPort]
 ----
+
+[[connector-limiting]]
+=== Limiting Connections
+
+It is possible to limit the number of connections accepted by the whole server (and therefore across all connectors), or by a specific connector.
+
+This feature is implemented by class `org.eclipse.jetty.server.ConnectionLimit` and you can use it in this way:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=connectionLimit]
+----
+
+[NOTE]
+====
+When the maximum number of connections is reached, no more connections will be accepted _at the JVM level_ -- but they could be accepted at the OS level.
+
+This means that if you are using OS tools (like Linux's `ss`) to count the number of established connections, you may find a number that may be greater than the maximum number of connections configured in a `ConnectionLimit`.
+
+Note also that different operative systems may behave differently when Jetty is not accepting connections: some OS accepts connections at the TCP level anyway (but does not notify this event to the JVM), some other OS may not accept connections at the TCP level.
+====
 
 [[connector-protocol]]
 === Configuring Protocols
@@ -548,7 +581,7 @@ A faster alternative, implemented natively, is Google's https://github.com/googl
 
 CAUTION: As Conscrypt eventually binds to a native library, there is a higher risk that a bug in Conscrypt or in the native library causes a JVM crash, while the Java implementation will not cause a JVM crash.
 
-To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty dependency `jetty-alpn-conscrypt-server-{version}.jar` in the class-path or module-path.
+To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty dependency `jetty-alpn-conscrypt-server-{jetty-version}.jar` in the class-path or module-path.
 
 Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
 
@@ -843,7 +876,7 @@ The Maven artifact coordinates are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-rewrite</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -1186,11 +1219,11 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>
   <artifactId>jetty-{ee-all}-servlet</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
-For example, for Jakarta {ee-current-caps} the coordinates are: `org.eclipse.jetty.{ee-current}:jetty-{ee-current}-servlet:{version}`.
+For example, for Jakarta {ee-current-caps} the coordinates are: `org.eclipse.jetty.{ee-current}:jetty-{ee-current}-servlet:{jetty-version}`.
 
 Below you can find an example of how to set up a Jakarta {ee-current-caps} `ServletContextHandler`:
 
@@ -1237,7 +1270,7 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>
   <artifactId>jetty-{ee-all}-webapp</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
@@ -1292,15 +1325,24 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>
   <artifactId>jetty-{ee-all}-servlet</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 
-Below you can find an example of how to setup `DefaultServlet`:
+Below you can find an example of how to set up `DefaultServlet`:
 
 [,java,indent=0]
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=defaultServlet]
+----
+
+If you wish to serve resources from a non-default location, then `ResourceServlet` should be used instead of the `DefaultServlet`.
+
+Below you can find an example of how to set up both a `DefaultServlet` and a `ResourceServlet`:
+
+[source,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=resourceServlet]
 ----
 
 [[handler-impl]]
@@ -1618,7 +1660,7 @@ The Maven coordinates for the Jetty HTTP session support are:
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-session</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </dependency>
 ----
 

@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 public class ByteChannelContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
-    private final SerializedInvoker _invoker = new SerializedInvoker();
+    private final SerializedInvoker _invoker = new SerializedInvoker(ByteChannelContentSource.class);
     private final ByteBufferPool.Sized _byteBufferPool;
     private ByteChannel _byteChannel;
     private final long _offset;

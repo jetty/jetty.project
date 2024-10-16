@@ -14,6 +14,7 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -699,4 +700,50 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
+    public void testDebugLogModule(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        int httpPort = Tester.freePort();
+        int sslPort = Tester.freePort();
+
+        String[] argsConfig = {
+            "--add-modules=http," + toEnvironment("demos", env) + ",debuglog"
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort,
+                "jetty.ssl.port=" + sslPort,
+                "jetty.server.dumpAfterStart=true"
+            };
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                startHttpClient();
+                String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
+
+                ContentResponse response = client.POST(baseURI + "/dump/info").send();
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                Path jettyLogs = jettyBase.resolve("logs");
+                assertTrue(Files.isDirectory(jettyLogs));
+                try (Stream<Path> files = Files.list(jettyLogs))
+                {
+                    assertTrue(files.anyMatch(p -> p.toFile().getName().endsWith(".debug.log")));
+                }
+            }
+        }
+    }
 }

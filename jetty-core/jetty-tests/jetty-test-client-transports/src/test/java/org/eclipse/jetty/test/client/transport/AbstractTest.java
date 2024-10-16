@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.management.MBeanServer;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -66,7 +65,6 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
@@ -75,6 +73,9 @@ import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(WorkDirExtension.class)
@@ -149,7 +150,7 @@ public class AbstractTest
     {
         try
         {
-            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
         }
         catch (Exception e)
         {
@@ -291,6 +292,12 @@ public class AbstractTest
 
     protected void startClient(Transport transport) throws Exception
     {
+        prepareClient(transport);
+        client.start();
+    }
+
+    protected void prepareClient(Transport transport) throws Exception
+    {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client = new HttpClient(newHttpClientTransport(transport));
@@ -298,7 +305,6 @@ public class AbstractTest
         client.setByteBufferPool(clientBufferPool);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
-        client.start();
     }
 
     public AbstractConnector newConnector(Transport transport, Server server)

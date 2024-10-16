@@ -632,7 +632,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
             if (parser.getState() != MultiPartParser.State.END)
             {
                 if (parser.getState() == MultiPartParser.State.PREAMBLE)
-                    _err = new IOException("Missing initial multi part boundary");
+                    _err = new IOException("Missing content for multipart request");
                 else
                     _err = new IOException("Incomplete Multipart");
             }

@@ -88,11 +88,11 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
 fi
 
 # DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=false"
+DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=false -DdeployAtEnd=true -DretryFailedDeploymentCount=3 "
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
-export MAVEN_OPTS="-Xmx4g"
+export MAVEN_OPTS="-Xmx8g -Xms8g"
 
 echo ""
 echo "-----------------------------------------------"

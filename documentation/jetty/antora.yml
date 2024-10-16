@@ -3,10 +3,9 @@ version: '12'
 title: Eclipse Jetty
 asciidoc:
   attributes:
-    javadoc-url: https://jetty.org/javadoc/jetty-12
-    jdurl: '{javadoc-url}'
+    javadoc-url: https://javadoc.jetty.org/jetty-12
     jetty-home: ${jetty.home}@
-    version: 12.0.10-SNAPSHOT
+    jetty-version: ${project.version}
     idprefix: ''
     idseparator: ''
     ee-all: ee{8,9,10}
@@ -18,11 +17,9 @@ nav:
 - modules/programming-guide/nav.adoc
 ext:
   collector:
-  - run:
-      command: mvn install -ntp -B -Dcollector -Pfast -am -pl documentation/jetty
-    scan:
-      dir: documentation/jetty/target/collector
+  - run: mvn install -ntp -B -Dcollector -Pfast -am -pl documentation/jetty
+    scan: ./target/collector
   - scan:
       dir: jetty-core/jetty-server/src/main/java
       files: org/eclipse/jetty/server/CustomRequestLog.java
-      base: modules/code/partials
+      into: modules/code/partials

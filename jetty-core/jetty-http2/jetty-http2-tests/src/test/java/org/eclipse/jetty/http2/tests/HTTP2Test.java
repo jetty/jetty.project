@@ -1068,6 +1068,7 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testServerSendsLargeHeader() throws Exception
     {
+        int maxResponseHeadersSize = 8 * 1024;
         CompletableFuture<Throwable> serverFailureFuture = new CompletableFuture<>();
         CompletableFuture<String> serverCloseReasonFuture = new CompletableFuture<>();
         start(new ServerSessionListener()
@@ -1076,9 +1077,9 @@ public class HTTP2Test extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 HTTP2Session session = (HTTP2Session)stream.getSession();
-                session.getGenerator().getHpackEncoder().setMaxHeaderListSize(1024 * 1024);
+                session.getGenerator().getHpackEncoder().setMaxHeaderListSize(2 * maxResponseHeadersSize);
 
-                String value = "x".repeat(8 * 1024);
+                String value = "x".repeat(maxResponseHeadersSize);
                 HttpFields fields = HttpFields.build().put("custom", value);
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, fields);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true));
@@ -1100,6 +1101,7 @@ public class HTTP2Test extends AbstractTest
             }
         });
 
+        http2Client.setMaxResponseHeadersSize(maxResponseHeadersSize);
         CompletableFuture<Throwable> clientFailureFuture = new CompletableFuture<>();
         CompletableFuture<String> clientCloseReasonFuture = new CompletableFuture<>();
         Session.Listener listener = new Session.Listener()
