@@ -163,7 +163,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         _trackerFactory = Objects.requireNonNull(trackerFactory);
         installBean(_trackerFactory);
         // default max trackers to a large, effectively infinite number, but ultimately bounded.
-        _maxTrackers = maxTrackers < 0 ? 1_000_000 : maxTrackers;
+        _maxTrackers = maxTrackers < 0 ? 100_000 : maxTrackers;
         _rejectHandler = Objects.requireNonNullElseGet(rejectHandler, StatusRejectHandler::new);
         installBean(_rejectHandler);
         _rejectUntracked = rejectUntracked;
