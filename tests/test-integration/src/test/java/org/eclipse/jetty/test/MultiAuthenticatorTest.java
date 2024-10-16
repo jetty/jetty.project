@@ -14,11 +14,15 @@
 package org.eclipse.jetty.test;
 
 import java.io.PrintWriter;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.AnyUserLoginService;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -48,6 +52,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+
 public class MultiAuthenticatorTest
 {
     private Server _server;
@@ -64,7 +72,6 @@ public class MultiAuthenticatorTest
 
         _server = new Server();
         _connector = new ServerConnector(_server);
-        _connector.setPort(8080); // TODO: remove.
         _server.addConnector(_connector);
 
         OpenIdConfiguration config = new OpenIdConfiguration(_provider.getProvider(), _provider.getClientId(), _provider.getClientSecret());
@@ -77,6 +84,7 @@ public class MultiAuthenticatorTest
         securityHandler.setHandler(new AuthTestHandler());
 
         MultiAuthenticator multiAuthenticator = new MultiAuthenticator();
+        multiAuthenticator.setLoginPath("/login");
 
         OpenIdAuthenticator openIdAuthenticator = new OpenIdAuthenticator(config, "/error");
         openIdAuthenticator.setRedirectPath("/redirect_path");
@@ -116,15 +124,63 @@ public class MultiAuthenticatorTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testMultiAuthentication() throws Exception
     {
-        _server.join();
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
+        ContentResponse response = _client.GET(uri);
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), containsString("<h1>Multi Login Page</h1>"));
+        assertThat(response.getContentAsString(), containsString("/login/openid"));
+        assertThat(response.getContentAsString(), containsString("/login/form"));
+
+        // Try Form Login.
+        response = _client.GET(uri.resolve("/login/form"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), containsString("<form action=\"j_security_check\" method=\"POST\">"));
+
+        // Form login is successful.
+        Fields fields = new Fields();
+        fields.put("j_username", "user");
+        fields.put("j_password", "password");
+        response = _client.POST(uri.resolve("/j_security_check"))
+            .body(new FormRequestContent(fields))
+            .send();
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), containsString("userPrincipal: user"));
+        assertThat(response.getContentAsString(), containsString("MultiAuthenticator$MultiSucceededAuthenticationState"));
+
+        // Logout is successful.
+        response = _client.GET(uri.resolve("/logout"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), containsString("<h1>Multi Login Page</h1>"));
+        assertThat(response.getContentAsString(), containsString("/login/openid"));
+        assertThat(response.getContentAsString(), containsString("/login/form"));
+
+        // We can now log in with OpenID.
+        _provider.setUser(new OpenIdProvider.User("UserId1234", "openIdUser"));
+        response = _client.GET(uri.resolve("/login/openid"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), containsString("userPrincipal: UserId1234"));
+        assertThat(response.getContentAsString(), containsString("Authenticated with OpenID"));
+        assertThat(response.getContentAsString(), containsString("name: openIdUser"));
+
+        // Logout is successful.
+        response = _client.GET(uri.resolve("/logout"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), containsString("<h1>Multi Login Page</h1>"));
+        assertThat(response.getContentAsString(), containsString("/login/openid"));
+        assertThat(response.getContentAsString(), containsString("/login/form"));
     }
 
-    @Test
-    public void test2() throws Exception
+    private static AuthenticationState.Succeeded getAuthentication(Request request)
     {
-        _server.join();
+        AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(request);
+        AuthenticationState.Succeeded auth = null;
+        if (authenticationState instanceof AuthenticationState.Succeeded succeeded)
+            auth = succeeded;
+        else if (authenticationState instanceof AuthenticationState.Deferred deferred)
+            auth = deferred.authenticate(request);
+        return auth;
     }
 
     private static class AuthTestHandler extends Handler.Abstract
@@ -139,51 +195,67 @@ public class MultiAuthenticatorTest
                 return onLogout(request, response, callback);
             else if (pathInContext.startsWith("/login/form"))
                 return onFormLogin(request, response, callback);
+            else if (pathInContext.startsWith("/login/openid"))
+                return onOpenIdLogin(request, response, callback);
 
             try (PrintWriter writer = new PrintWriter(Content.Sink.asOutputStream(response)))
             {
-                AuthenticationState authenticationState = AuthenticationState.getAuthenticationState(request);
+
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html");
-                writer.println("<b>authState: " + authenticationState + "</b><br>");
-                if (authenticationState instanceof AuthenticationState.Deferred deferred)
+                AuthenticationState.Succeeded auth = getAuthentication(request);
+                if (auth != null)
                 {
-                    AuthenticationState.Succeeded succeeded = deferred.authenticate(request);
-                    if (succeeded != null)
-                        writer.println("<b>userPrincipal: " + succeeded.getUserPrincipal() + "</b><br>");
-                    else
-                        writer.println("<b>userPrincipal: null</b><br>");
-                }
-                else if (authenticationState != null)
-                {
-                    writer.println("<b>userPrincipal: " + authenticationState.getUserPrincipal() + "</b><br>");
-                }
+                    writer.println("<b>authState: " + auth + "</b><br>");
+                    writer.println("<b>userPrincipal: " + auth.getUserPrincipal() + "</b><br>");
 
-                Session session = request.getSession(true);
-                @SuppressWarnings("unchecked")
-                Map<String, Object> claims = (Map<String, Object>)session.getAttribute(OpenIdAuthenticator.CLAIMS);
-                if (claims != null)
-                {
-                    writer.printf("""
-                        <br><b>Authenticated with OpenID</b><br>
-                        userId: %s<br>
-                        name: %s<br>
-                        email: %s<br>
-                        """, claims.get("sub"), claims.get("name"), claims.get("email"));
-                }
+                    Session session = request.getSession(true);
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> claims = (Map<String, Object>)session.getAttribute(OpenIdAuthenticator.CLAIMS);
+                    if (claims != null)
+                    {
+                        writer.printf("""
+                            <br><b>Authenticated with OpenID</b><br>
+                            userId: %s<br>
+                            name: %s<br>
+                            email: %s<br>
+                            """, claims.get("sub"), claims.get("name"), claims.get("email"));
+                    }
 
-                writer.println("""
-                    <a href="/login/openid">OpenID Login</a><br>
-                    <a href="/login/form">Form Login</a><br>
-                    <a href="/logout">Logout</a><br>
-                    """);
+                    writer.println("""
+                        <hr>
+                        <a href="/logout">Logout</a><br>
+                        """);
+                }
+                else
+                {
+                    writer.println("""
+                        <h1>Multi Login Page</h1>
+                        <a href="/login/openid">OpenID Login</a><br>
+                        <a href="/login/form">Form Login</a><br>
+                        <a href="/logout">Logout</a><br>
+                        """);
+                }
             }
 
             callback.succeeded();
             return true;
         }
 
+        private boolean onOpenIdLogin(Request request, Response response, Callback callback) throws Exception
+        {
+            Response.sendRedirect(request, response, callback, "/");
+            return true;
+        }
+
         private boolean onFormLogin(Request request, Response response, Callback callback) throws Exception
         {
+            AuthenticationState.Succeeded authentication = getAuthentication(request);
+            if (authentication != null)
+            {
+                Response.sendRedirect(request, response, callback, "/");
+                return true;
+            }
+
             String content = """
                     <h2>Login</h2>
                     <form action="j_security_check" method="POST">
@@ -199,6 +271,8 @@ public class MultiAuthenticatorTest
                             <button type="submit">Login</button>
                         </div>
                     </form>
+                    <p>Username: user or admin<br>
+                    Password: password</p>
                     """;
             response.write(true, BufferUtil.toBuffer(content), callback);
             return true;
