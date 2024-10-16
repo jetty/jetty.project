@@ -49,6 +49,8 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("DoS Prevention Handler")
 public class DoSHandler extends ConditionalHandler.ElseNext
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DoSHandler.class);
+
     /**
      * A {@link Function} to create a remote client identifier from the remote address and remote port of a {@link Request}.
      */
@@ -158,11 +160,10 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     {
         // Reject if we have too many Trackers
         if (_maxTrackers > 0 && _trackers.size() >= _maxTrackers)
-            // TODO is there something better that can be done here?
-            //    We may have many trackers that are either idle or effectively idle, should we remove them rather than
-            //    reject requests.  We are meant to be protecting against busy clients not too many clients.
-            //    Perhaps we lift the thresh hold of what is idle rather than reject request?
-            //    Or randomly combine IDs into joint buckets?
+            // TODO is there something better that can be done here?  The point of this handler is to limit busy clients,
+            //      not to limit the total number of clients. So it may be better to:
+            //         + discard the most idle tracker(s)
+            //         + combine multiple IDs into a single tracker
             return _rejectHandler.handle(request, response, callback);
 
         // Calculate an id for the request (which may be global empty string).
@@ -176,9 +177,9 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
         // If we are not over-limit then handle normally
-        // TODO should we use NanoTime.now() instead of request.getBeginNanoTime?
+        // TODO using NanoTime.now() instead of request.getBeginNanoTime?
         //      The former is monotonically increasing, whilst there can be jitter in the later
-        if (tracker.onRequest(request.getBeginNanoTime()))
+        if (tracker.onRequest(NanoTime.now()))
             return nextHandler(request, response, callback);
 
         // Otherwise reject the request
@@ -267,8 +268,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
 
         public static class InfiniteLeakingBucketTracker implements Tracker
         {
-            private static final Logger LOG = LoggerFactory.getLogger(InfiniteLeakingBucketTracker.class);
-
             private final AutoLock _lock = new AutoLock();
             private final String _id;
             private final int _maxRequestsPerSecond;
@@ -285,8 +284,10 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             @Override
             public long getExpireNanoTime()
             {
-                // TODO volatile or protected by lock?
-                return _expireNanoTime;
+                try (AutoLock ignored = _lock.lock())
+                {
+                    return _expireNanoTime;
+                }
             }
 
             @Override
@@ -314,7 +315,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                     boolean allowed = _samples <= _maxRequestsPerSecond;
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("allowed {} samples {}/{} on {}", allowed, _samples, _maxRequestsPerSecond, this);
+                        LOG.debug("onRequest {}", this);
 
                     return allowed;
                 }
@@ -323,62 +324,114 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             @Override
             public String toString()
             {
-                return "%s@%s".formatted(getClass().getSimpleName(), _id);
+                try (AutoLock ignored = _lock.lock())
+                {
+                    return "%s@%s{%d/%d}".formatted(getClass().getSimpleName(), _id, _samples, _maxRequestsPerSecond);
+                }
             }
         }
     }
 
     /**
-     * The Tracker implements an infinite variant of the <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     * The Tracker implements the classic <a link="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
      */
     public static class LeakingBucketTrackerFactory implements Tracker.Factory
     {
         private final int _maxRequestsPerSecond;
+        private final int _maxDripsInBucket;
+        private final long _nanosPerDrip;
 
+        /**
+         * @param maxRequestsPerSecond the maximum requests per second allowed by this tracker
+         */
         public LeakingBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond)
         {
+            this(maxRequestsPerSecond, -1);
+        }
+
+        /**
+         * @param maxRequestsPerSecond the maximum requests per second allowed by this tracker
+         * @param maxDripsInBucket the size of the bucket in drips, which is effectively the burst capacity, giving the number
+         *        of request that can be handled in excess of the short term rate, before being rejected. Use <= 0 for a
+         *        heuristic value.
+         */
+        public LeakingBucketTrackerFactory(
+            @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
+            @Name("maxDripsInBucket") int maxDripsInBucket)
+            {
             _maxRequestsPerSecond = maxRequestsPerSecond;
+            _nanosPerDrip = TimeUnit.SECONDS.toNanos(1) / _maxRequestsPerSecond;
+            _maxDripsInBucket = (maxDripsInBucket <= 0)
+                // TODO Is there a better threshold to pick?.
+                ? _maxRequestsPerSecond
+                : maxDripsInBucket;
         }
 
         @Override
         public Tracker newTracker(String id)
         {
-            return new LeakingBucketTracker(id, _maxRequestsPerSecond);
+            return new LeakingBucketTracker(id);
         }
 
-        public static class LeakingBucketTracker implements Tracker
+        public class LeakingBucketTracker implements Tracker
         {
-            private static final Logger LOG = LoggerFactory.getLogger(LeakingBucketTracker.class);
-
             private final AutoLock _lock = new AutoLock();
             private final String _id;
-            private final int _maxRequestsPerSecond;
+            private long _bucket;
+            private long _lastDrip;
             private long _expireNanoTime;
 
-            public LeakingBucketTracker(String id, int maxRequestsPerSecond)
+            public LeakingBucketTracker(String id)
             {
                 _id = id;
-                _maxRequestsPerSecond = maxRequestsPerSecond;
             }
 
             @Override
             public long getExpireNanoTime()
             {
-                return _expireNanoTime;
+                try (AutoLock ignored = _lock.lock())
+                {
+                    // If this is newly constructed, expire after 1 drip
+                    if (_expireNanoTime == 0 && _lastDrip == 0 && _bucket == 0)
+                        return NanoTime.now() + _nanosPerDrip;
+                    return _expireNanoTime;
+                }
             }
 
             @Override
             public boolean onRequest(long now)
             {
-                // TODO
-                return true;
+                try (AutoLock ignored = _lock.lock())
+                {
+                    if (_lastDrip == 0 && _bucket == 0)
+                    {
+                        _bucket = 1;
+                        _lastDrip = now;
+                        _expireNanoTime = now + _nanosPerDrip;
+                        return true;
+                    }
+                    long elapsedSinceLastDrip = NanoTime.elapsed(_lastDrip, now);
+                    long drips = elapsedSinceLastDrip / _nanosPerDrip;
+                    _lastDrip = _lastDrip + drips * _nanosPerDrip;
+
+                    _bucket = Math.min(_maxDripsInBucket, Math.max(0L, _bucket - drips) + 1);
+                    _expireNanoTime = now + _bucket * _nanosPerDrip;
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("onRequest {}", this);
+
+                    return _bucket < _maxDripsInBucket;
+                }
             }
 
             @Override
             public String toString()
             {
-                return "%s@%s".formatted(getClass().getSimpleName(), _id);
+                try (AutoLock ignored = _lock.lock())
+                {
+                    return "%s@%s{%d/%d}".formatted(getClass().getSimpleName(), _id, _bucket, _maxRequestsPerSecond);
+                }
             }
         }
     }

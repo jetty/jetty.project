@@ -23,7 +23,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -39,7 +38,8 @@ public class DoSHandlerTest
     public static Stream<Arguments> factories()
     {
         return Stream.of(
-            Arguments.of(new DoSHandler.InfiniteLeakingBucketTrackerFactory(100))
+            Arguments.of(new DoSHandler.InfiniteLeakingBucketTrackerFactory(100)),
+            Arguments.of(new DoSHandler.LeakingBucketTrackerFactory(100))
         );
     }
 
@@ -52,7 +52,7 @@ public class DoSHandlerTest
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
-        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        long now = System.nanoTime();
 
         for (int sample = 0; sample < 400; sample++)
         {
@@ -71,10 +71,10 @@ public class DoSHandlerTest
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
-        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        long now = System.nanoTime();
 
         boolean exceeded = false;
-        for (int sample = 0; sample < 200; sample++)
+        for (int sample = 0; sample < 2000; sample++)
         {
             exceeded = !tracker.onRequest(now);
             if (exceeded)
@@ -94,7 +94,7 @@ public class DoSHandlerTest
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
-        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        long now = System.nanoTime();
 
         for (int sample = 0; sample < 20; sample++)
         {
@@ -117,7 +117,7 @@ public class DoSHandlerTest
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
-        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        long now = System.nanoTime();
 
         boolean exceeded = false;
         loop: for (int sample = 0; sample < 200; sample++)
@@ -144,7 +144,7 @@ public class DoSHandlerTest
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
-        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        long now = System.nanoTime();
 
         for (int seconds = 0; seconds < 2; seconds++)
         {
@@ -166,7 +166,7 @@ public class DoSHandlerTest
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
-        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        long now = System.nanoTime();
 
         boolean exceeded = false;
         for (int seconds = 0; seconds < 2; seconds++)
@@ -195,7 +195,7 @@ public class DoSHandlerTest
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
-        long now = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        long now = System.nanoTime();
 
         boolean exceeded = false;
         for (int burst = 0; burst < 1000; burst++)
@@ -219,14 +219,15 @@ public class DoSHandlerTest
         assertFalse(exceeded);
     }
 
-    @Test
-    public void testOKRequestRate() throws Exception
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testOKRequestRate(DoSHandler.Tracker.Factory factory) throws Exception
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DoSHandler dosHandler = new DoSHandler(new DoSHandler.InfiniteLeakingBucketTrackerFactory(1000));
+        DoSHandler dosHandler = new DoSHandler(factory);
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
@@ -250,7 +251,7 @@ public class DoSHandlerTest
                                 
                                 """);
                         assertThat(response, containsString("200 OK"));
-                        Thread.sleep(100);
+                        Thread.sleep(1000);
                     }
                     latch.countDown();
                 }
@@ -264,14 +265,15 @@ public class DoSHandlerTest
         assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testHighRequestRate() throws Exception
+    @ParameterizedTest
+    @MethodSource("factories")
+    public void testHighRequestRate(DoSHandler.Tracker.Factory factory) throws Exception
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DoSHandler dosHandler = new DoSHandler(new DoSHandler.InfiniteLeakingBucketTrackerFactory(1000));
+        DoSHandler dosHandler = new DoSHandler(factory);
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
@@ -282,7 +284,7 @@ public class DoSHandlerTest
         long end = now + TimeUnit.SECONDS.toNanos(5);
         AtomicInteger outstanding = new AtomicInteger(0);
         AtomicInteger calm = new AtomicInteger();
-        for (int thread = 0; thread < 90; thread++)
+        for (int thread = 0; thread < 120; thread++)
         {
             server.getThreadPool().execute(() ->
             {
@@ -300,7 +302,7 @@ public class DoSHandlerTest
                                 """);
                             if (response.contains(" 429 "))
                                 calm.incrementAndGet();
-                            Thread.sleep(70);
+                            Thread.sleep(1000);
                         }
                         finally
                         {
