@@ -270,7 +270,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * The Tracker implements the classic <a https="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
+     * The Tracker implements the classic <a href="https://en.wikipedia.org/wiki/Leaky_bucket">Leaky Bucket Algorithm</a>.
      */
     public static class LeakingBucketTrackerFactory implements Tracker.Factory
     {
