@@ -162,34 +162,21 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         // use NanoTime.now() instead of request.getBeginNanoTime() to avoid jitter
         long now = NanoTime.now();
 
-        // Reject if we have too many Trackers
-        if (_maxTrackers > 0 && _trackers.size() >= _maxTrackers)
-        {
-            // TODO is there something better that can be done here?  The point of this handler is to limit busy clients,
-            //      not to limit the total number of clients. So it may be better to:
-            //         + discard the most idle tracker(s)
-            //         + combine multiple IDs into a single tracker
-
-            // Try removing any trackers that are almost idle
-            long almostIdle = now + TimeUnit.MICROSECONDS.toNanos(100);
-            _trackers.values().removeIf(tracker -> tracker.getExpireNanoTime() < almostIdle);
-
-            // reject if we still have too many
-            if (_trackers.size() >= _maxTrackers)
-            {
-                return _rejectHandler.handle(request, response, callback);
-            }
-        }
-
         // Calculate an id for the request (which may be global empty string).
         String id = _clientIdFn.apply(request);
 
+        // TODO should we allow unidentified clients?  This handler is reject busy clients, not unknown ones.
         if (id == null)
             return _rejectHandler.handle(request, response, callback);
 
-        // Obtain a tracker, creating a new one if necessary.
+        // Obtain a tracker, creating a new one if necessary (and not too many)
         // Trackers are removed if CyclicTimeouts#onExpired returns true.
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
+
+        // If we have too many trackers, then we will have a null tracker
+        if (tracker == null)
+            // just handle normally
+            return nextHandler(request, response, callback);
 
         // If we are not over-limit then handle normally
         if (tracker.onRequest(now))
@@ -201,6 +188,9 @@ public class DoSHandler extends ConditionalHandler.ElseNext
 
     Tracker newTracker(String id)
     {
+        if (_maxTrackers > 0 && _trackers.size() >= _maxTrackers)
+           return null;
+
         Tracker tracker = _trackerFactory.newTracker(id);
         // TODO but the expiry time for the tracker will be 0 at this point?
         //      probably only working because that is seen a long way into the future.
@@ -279,7 +269,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             return new InfiniteLeakingBucketTracker(id, _maxRequestsPerSecond);
         }
 
-        public static class InfiniteLeakingBucketTracker implements Tracker
+        private static class InfiniteLeakingBucketTracker implements Tracker
         {
             private final AutoLock _lock = new AutoLock();
             private final String _id;
@@ -372,11 +362,10 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         public LeakingBucketTrackerFactory(
             @Name("maxRequestsPerSecond") int maxRequestsPerSecond,
             @Name("maxDripsInBucket") int maxDripsInBucket)
-            {
+        {
             _maxRequestsPerSecond = maxRequestsPerSecond;
             _nanosPerDrip = TimeUnit.SECONDS.toNanos(1) / _maxRequestsPerSecond;
             _maxDripsInBucket = (maxDripsInBucket <= 0)
-                // TODO Is there a better threshold to pick?.
                 ? _maxRequestsPerSecond
                 : maxDripsInBucket;
         }
@@ -387,7 +376,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             return new LeakingBucketTracker(id);
         }
 
-        public class LeakingBucketTracker implements Tracker
+        private class LeakingBucketTracker implements Tracker
         {
             private final AutoLock _lock = new AutoLock();
             private final String _id;
