@@ -911,6 +911,7 @@ public class ConstraintTest
             _server.start();
             String rawResponse = _connector.getResponse(scenario.rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(rawResponse), scenario.rawRequest.startsWith("HEAD "));
+            assertNotNull(response);
             assertThat(response.toString(), response.getStatus(), is(scenario.expectedStatus));
             if (scenario.extraAsserts != null)
                 scenario.extraAsserts.accept(response);

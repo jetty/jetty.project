@@ -1192,7 +1192,15 @@ public class ServletApiRequest implements HttpServletRequest
     public String getContentType()
     {
         if (_contentType == null)
-            _contentType = getFields().get(HttpHeader.CONTENT_TYPE);
+        {
+            HttpField contentType = getFields().getField(HttpHeader.CONTENT_TYPE);
+            if (contentType != null)
+            {
+                _contentType = contentType.getValue();
+                if (_charset == null)
+                    _charset = MimeTypes.getCharsetFromContentType(contentType);
+            }
+        }
         return _contentType;
     }
 

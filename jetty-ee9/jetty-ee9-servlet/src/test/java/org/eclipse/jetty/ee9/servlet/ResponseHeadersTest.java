@@ -44,6 +44,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -242,7 +243,7 @@ public class ResponseHeadersTest
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
-        assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/plain;charset=UTF-8"));
+        assertThat("Response Header Content-Type", response.get("Content-Type"), equalToIgnoringCase("text/plain;charset=utf-8"));
 
         String expected = StringUtil.replace(actualPathInfo, "%0a", " ");  // replace OBS fold with space
         expected = StringUtil.replace(expected, "%0A", " "); // replace OBS fold with space

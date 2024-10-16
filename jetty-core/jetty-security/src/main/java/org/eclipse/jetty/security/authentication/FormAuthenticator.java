@@ -89,7 +89,7 @@ public class FormAuthenticator extends LoginAuthenticator
      * If true, uris that cause a redirect to a login page will always
      * be remembered. If false, only the first uri that leads to a login
      * page redirect is remembered.
-     * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=379909
+     * See <a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=379909">bug 379909</a>
      *
      * @param alwaysSave true to always save the uri
      */
