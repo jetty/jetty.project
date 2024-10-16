@@ -56,6 +56,9 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
     public Authenticator getAuthenticator(Server server, Context context, Configuration configuration)
     {
         String auth = StringUtil.asciiToUpperCase(configuration.getAuthenticationType());
+        if (auth == null)
+            return null;
+
         return switch (auth)
         {
             case Authenticator.BASIC_AUTH -> new BasicAuthenticator();
