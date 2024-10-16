@@ -56,8 +56,7 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
                 if (authenticationState instanceof Succeeded succeeded)
                 {
                     LoginService loginService = _authenticator.getLoginService();
-                    IdentityService identityService = loginService.getIdentityService();
-
+                    IdentityService identityService = loginService == null ? null : loginService.getIdentityService();
                     if (identityService != null)
                     {
                         UserIdentity user = succeeded.getUserIdentity();
