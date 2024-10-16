@@ -33,8 +33,8 @@ etc/jetty-dos.xml
 ## The maximum number of requests to be held in the delay queue
 #jetty.dos.rejectHandler.delayed.maxDelayQueue=1000
 
-## The maximum number of clients to track; or -1 for a default value
-#jetty.dos.maxTrackers=10000
+## The maximum number of clients to track; or -1 for a default value; or 0 for unlimited
+#jetty.dos.maxTrackers=1000000
 
 ## The status code used to reject requests; or 0 to abort the request; or -1 for a default
 #jetty.dos.rejectStatus=429
