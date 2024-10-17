@@ -91,7 +91,8 @@ public class ThreadStarvationTest
         _server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler("/");
-        context.addServlet(new ServletHolder(new HttpServlet() {
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
             @Override
             protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
