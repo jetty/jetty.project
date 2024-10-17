@@ -148,7 +148,7 @@ public class ThreadStarvationTest
             {
                 String response = responseFut.get();
                 assertThat(response, containsString("200 OK"));
-                assertThat(response, containsString("Read Input 10"));
+                assertThat(response, containsString("1234567890"));
             }
         }
         finally
