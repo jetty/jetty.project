@@ -19,12 +19,10 @@
     <dependency>
       <groupId>org.hibernate.search</groupId>
       <artifactId>hibernate-search-mapper-pojo-base</artifactId>
-      <version>7.1.1.Final</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>${gson.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
