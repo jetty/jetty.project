@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  * via {@link RequestDispatcher#include(ServletRequest, ServletResponse)} to
  * close the stream, to be reopened after the inclusion ends.</p>
  */
-public class HttpOutput extends ServletOutputStream implements Runnable
+public class HttpOutput extends ServletOutputStream
 {
     /**
      * The output state
@@ -1352,8 +1352,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    @Override
-    public void run()
+    public void writeCallback()
     {
         Throwable error = null;
 
