@@ -410,7 +410,11 @@ public class Content
         {
             try
             {
-                return asStringAsync(source, charset).get();
+                try (Blocker.Promise<String> promise = Blocker.promise())
+                {
+                    asString(source, charset, promise);
+                    return promise.block();
+                }
             }
             catch (Throwable x)
             {

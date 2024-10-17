@@ -127,6 +127,8 @@ public interface Invocable
      */
     static Task from(InvocationType type, Runnable task)
     {
+        if (task instanceof Task t && t.getInvocationType() == type)
+            return t;
         return new ReadyTask(type, task);
     }
 

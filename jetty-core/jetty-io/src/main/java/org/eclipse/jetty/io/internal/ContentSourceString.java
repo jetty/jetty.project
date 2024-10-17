@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContentSourceString
 {
@@ -39,7 +40,7 @@ public class ContentSourceString
             Content.Chunk chunk = content.read();
             if (chunk == null)
             {
-                content.demand(this::convert);
+                content.demand(Invocable.from(Invocable.getInvocationType(promise), this::convert));
                 return;
             }
             if (Content.Chunk.isFailure(chunk))
