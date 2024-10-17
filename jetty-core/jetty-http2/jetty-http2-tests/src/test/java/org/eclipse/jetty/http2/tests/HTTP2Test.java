@@ -41,6 +41,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
@@ -1137,6 +1138,113 @@ public class HTTP2Test extends AbstractTest
         Throwable failure = clientFailureFuture.get(5, TimeUnit.SECONDS);
         assertThat(failure, instanceOf(IOException.class));
         assertThat(failure.getMessage(), containsString("invalid_hpack_block"));
+    }
+
+    @Test
+    public void testClientCreatesStreamsWithExplicitStreamId() throws Exception
+    {
+        start(new ServerSessionListener() {});
+
+        Session session = newClientSession(new Session.Listener() {});
+
+        int evenStreamId = 128;
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+        assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(evenStreamId, request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS));
+
+        // Equivalent to Integer.MAX_VALUE + 2.
+        int negativeStreamId = Integer.MIN_VALUE + 1;
+        assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(negativeStreamId, request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS));
+
+        int explicitStreamId = 127;
+        Stream stream = session.newStream(new HeadersFrame(explicitStreamId, request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+        assertThat(stream.getId(), equalTo(explicitStreamId));
+
+        stream = session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+        assertThat(stream.getId(), equalTo(explicitStreamId + 2));
+
+        // Cannot create streams with smaller id.
+        int smallerStreamId = explicitStreamId - 2;
+        assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(smallerStreamId, request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS));
+
+        // Should be possible to create the stream with the max id.
+        explicitStreamId = Integer.MAX_VALUE;
+        session.newStream(new HeadersFrame(explicitStreamId, request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+
+        // After the stream with the max id, cannot create more streams on this connection.
+        assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS));
+        // Session should be closed.
+        assertTrue(session.isClosed());
+    }
+
+    @Test
+    public void testServerPushesStreamsWithExplicitStreamId() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                try
+                {
+                    int oddStreamId = 129;
+                    MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+                    assertThrows(ExecutionException.class, () -> stream.push(new PushPromiseFrame(stream.getId(), oddStreamId, request), new Stream.Listener() {})
+                        .get(5, TimeUnit.SECONDS));
+
+                    int negativeStreamId = Integer.MIN_VALUE;
+                    assertThrows(ExecutionException.class, () -> stream.push(new PushPromiseFrame(stream.getId(), negativeStreamId, request), new Stream.Listener() {})
+                        .get(5, TimeUnit.SECONDS));
+
+                    int explicitStreamId = 128;
+                    Stream pushedStream = stream.push(new PushPromiseFrame(stream.getId(), explicitStreamId, request), new Stream.Listener() {})
+                        .get(5, TimeUnit.SECONDS);
+                    assertThat(pushedStream.getId(), equalTo(explicitStreamId));
+
+                    pushedStream = stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Stream.Listener() {})
+                        .get(5, TimeUnit.SECONDS);
+                    assertThat(pushedStream.getId(), equalTo(explicitStreamId + 2));
+
+                    // Cannot push streams with smaller id.
+                    int smallerStreamId = explicitStreamId - 2;
+                    assertThrows(ExecutionException.class, () -> stream.push(new PushPromiseFrame(stream.getId(), smallerStreamId, request), new Stream.Listener() {})
+                        .get(5, TimeUnit.SECONDS));
+
+                    // Should be possible to push the stream with the max id.
+                    explicitStreamId = Integer.MAX_VALUE - 1;
+                    stream.push(new PushPromiseFrame(stream.getId(), explicitStreamId, request), new Stream.Listener() {})
+                        .get(5, TimeUnit.SECONDS);
+
+                    // After the stream with the max id, cannot push more streams on this connection.
+                    assertThrows(ExecutionException.class, () -> stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Stream.Listener() {})
+                        .get(5, TimeUnit.SECONDS));
+                    // Session should be closed.
+                    assertTrue(stream.getSession().isClosed());
+
+                    latch.countDown();
+
+                    return null;
+                }
+                catch (Throwable x)
+                {
+                    throw new RuntimeException(x);
+                }
+            }
+        });
+
+        Session session = newClientSession(new Session.Listener() {});
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+        session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private static void sleep(long time)
