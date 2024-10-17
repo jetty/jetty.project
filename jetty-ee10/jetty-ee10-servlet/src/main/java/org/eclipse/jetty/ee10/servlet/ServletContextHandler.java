@@ -319,6 +319,8 @@ public class ServletContextHandler extends ContextHandler
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent,
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new ClassLoaderDump(getClassLoader()),
             Dumpable.named("context " + this, getContext()),
             Dumpable.named("handler attributes " + this, getContext().getPersistentAttributes()),
@@ -2038,6 +2040,44 @@ public class ServletContextHandler extends ContextHandler
         public void setExtendedListenerTypes(boolean b)
         {
             _servletContext.setExtendedListenerTypes(b);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return switch (name)
+            {
+                case FormFields.MAX_FIELDS_ATTRIBUTE -> getMaxFormKeys();
+                case FormFields.MAX_LENGTH_ATTRIBUTE -> getMaxFormContentSize();
+                default -> super.getAttribute(name);
+            };
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return switch (name)
+            {
+                case FormFields.MAX_FIELDS_ATTRIBUTE ->
+                {
+                    int oldValue = getMaxFormKeys();
+                    if (attribute == null)
+                        setMaxFormKeys(DEFAULT_MAX_FORM_KEYS);
+                    else
+                        setMaxFormKeys(Integer.parseInt(attribute.toString()));
+                    yield oldValue;
+                }
+                case FormFields.MAX_LENGTH_ATTRIBUTE ->
+                {
+                    int oldValue = getMaxFormContentSize();
+                    if (attribute == null)
+                        setMaxFormContentSize(DEFAULT_MAX_FORM_CONTENT_SIZE);
+                    else
+                        setMaxFormContentSize(Integer.parseInt(attribute.toString()));
+                    yield oldValue;
+                }
+                default -> super.setAttribute(name, attribute);
+            };
         }
     }
 
