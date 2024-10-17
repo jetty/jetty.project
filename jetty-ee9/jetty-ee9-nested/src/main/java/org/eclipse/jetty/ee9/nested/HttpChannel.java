@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,11 +156,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public boolean needContent()
     {
         // TODO: optimize by attempting a read?
-        getCoreRequest().demand(() ->
+        Invocable.InvocationType invocationType = getRequest().getHttpInput().getInvocationType();
+        getCoreRequest().demand(Invocable.from(invocationType, () ->
         {
             if (getRequest().getHttpInput().onContentProducible())
                 handle();
-        });
+        }));
         return false;
     }
 

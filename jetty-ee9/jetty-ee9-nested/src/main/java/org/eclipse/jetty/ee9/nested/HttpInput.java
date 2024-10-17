@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * <p> While this class is-a Runnable, it should never be dispatched in it's own thread. It is a runnable only so that the calling thread can use {@link
  * Context#run(Runnable)} to setup classloaders etc. </p>
  */
-public class HttpInput extends ServletInputStream implements Runnable
+public class HttpInput extends ServletInputStream implements Invocable.Task
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpInput.class);
 
@@ -363,6 +364,19 @@ public class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug("available={} {}", available, this);
             return available;
         }
+    }
+
+    @Override
+    public Invocable.InvocationType getInvocationType()
+    {
+        // This is the invocation type used for demand callbacks.
+        // If we are blocking mode, then we implement the callbacks, which just wake up the blocked application thread
+        // If we are async mode, then we need to ask the read listener (which will probably be seen as blocking as
+        // the InvocationType API is normally hidden from a web application.
+        // TODO is there another way for an app to promise its callbacks are not blocking?
+        return _readListener == null
+            ? Invocable.InvocationType.NON_BLOCKING // blocking reads have non blocking callbacks
+            : Invocable.getInvocationType(_readListener);
     }
 
     /* Runnable */

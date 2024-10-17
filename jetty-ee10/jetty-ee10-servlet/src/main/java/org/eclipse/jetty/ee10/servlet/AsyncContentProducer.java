@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * Non-blocking {@link ContentProducer} implementation. Calling {@link ContentProducer#nextChunk()} will never block
  * but will return null when there is no available content.
  */
-class AsyncContentProducer implements ContentProducer
+class AsyncContentProducer implements ContentProducer, Invocable, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
     private static final Content.Chunk RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"), true);
@@ -250,16 +251,7 @@ class AsyncContentProducer implements ContentProducer
         }
 
         state.onReadUnready();
-        _servletChannel.getRequest().demand(() ->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("isReady() demand callback {}", this);
-            // We could call this.onContentProducible() directly but this
-            // would mean we would need to take the lock here while it
-            // is the responsibility of the HttpInput to take it.
-            if (_servletChannel.getHttpInput().onContentProducible())
-                _servletChannel.handle();
-        });
+        _servletChannel.getRequest().demand(this);
 
         if (LOG.isDebugEnabled())
             LOG.debug("isReady(), no chunk {}", this);
@@ -269,6 +261,28 @@ class AsyncContentProducer implements ContentProducer
     boolean isUnready()
     {
         return _servletChannel.getServletRequestState().isInputUnready();
+    }
+
+    /**
+     * This run method is used as the Runnable for demand
+     */
+    @Override
+    public void run()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("isReady() demand callback {}", this);
+        // We could call this.onContentProducible() directly but this
+        // would mean we would need to take the lock here while it
+        // is the responsibility of the HttpInput to take it.
+        if (_servletChannel.getHttpInput().onContentProducible())
+            _servletChannel.handle();
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        // This is the invocation type when the producer is passed as demand, so ask the HttpInput.
+        return _servletChannel.getHttpInput().getInvocationType();
     }
 
     /**
