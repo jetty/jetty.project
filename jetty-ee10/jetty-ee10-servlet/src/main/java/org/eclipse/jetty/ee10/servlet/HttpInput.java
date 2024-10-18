@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * <p> While this class is-a Runnable, it should never be dispatched in it's own thread. It is a runnable only so that the calling thread can use {@link
  * Context#run(Runnable)} to setup classloaders etc. </p>
  */
-public class HttpInput extends ServletInputStream implements Invocable
+public class HttpInput extends ServletInputStream
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpInput.class);
 
@@ -160,8 +160,7 @@ public class HttpInput extends ServletInputStream implements Invocable
         return _readListener != null;
     }
 
-    @Override
-    public Invocable.InvocationType getInvocationType()
+    public Invocable.InvocationType getReadListenerInvocationType()
     {
         // This is the invocation type used for demand callbacks.
         // If we are blocking mode, then we implement the callbacks, which just wake up the blocked application thread

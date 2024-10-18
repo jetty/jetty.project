@@ -545,7 +545,7 @@ public class ServletChannel
 
                     case WRITE_CALLBACK:
                     {
-                        _context.run(() -> _servletContextRequest.getHttpOutput().writeCallback());
+                        _context.run(_servletContextRequest.getHttpOutput()::writeCallback);
                         break;
                     }
 

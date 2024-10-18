@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * Non-blocking {@link ContentProducer} implementation. Calling {@link ContentProducer#nextChunk()} will never block
  * but will return null when there is no available content.
  */
-class AsyncContentProducer implements ContentProducer, Invocable, Runnable
+class AsyncContentProducer implements ContentProducer, Invocable.Task
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
     private static final Content.Chunk RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"), true);
@@ -282,7 +282,7 @@ class AsyncContentProducer implements ContentProducer, Invocable, Runnable
     public InvocationType getInvocationType()
     {
         // This is the invocation type when the producer is passed as demand, so ask the HttpInput.
-        return _servletChannel.getHttpInput().getInvocationType();
+        return _servletChannel.getHttpInput().getReadListenerInvocationType();
     }
 
     /**
