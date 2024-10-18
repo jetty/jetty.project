@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 
 public class DelayedHandler extends Handler.Wrapper
 {
@@ -180,7 +181,7 @@ public class DelayedHandler extends Handler.Wrapper
             Content.Chunk chunk = super.getRequest().read();
             if (chunk == null)
             {
-                getRequest().demand(this::onContent);
+                getRequest().demand(Invocable.from(InvocationType.NON_BLOCKING, this::onContent));
             }
             else
             {
