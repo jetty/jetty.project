@@ -72,6 +72,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -340,7 +341,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (LOG.isDebugEnabled())
             LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
-        _requestBuffer.release();
+        if (_requestBuffer != null)
+            _requestBuffer.release();
         _requestBuffer = null;
     }
 
@@ -609,10 +611,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        Runnable task = _httpChannel.onIdleTimeout(timeout);
-        if (task != null)
-            getExecutor().execute(task);
-        return false; // We've handle the exception
+        ThreadPool.executeImmediately(getExecutor(), _httpChannel.onIdleTimeout(timeout));
+        return false;
     }
 
     @Override
@@ -686,9 +686,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
                 LOG.debug("demand failed {}", task, x);
-            if (task != null)
-                // Execute error path as invocation type is probably wrong.
-                getConnector().getExecutor().execute(task);
+            ThreadPool.executeImmediately(getConnector().getExecutor(), task);
         }
 
         @Override
@@ -1042,9 +1040,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
-            Runnable task = _httpChannel.onFailure(_failure);
-            if (task != null)
-                getServer().getThreadPool().execute(task);
+            ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(_failure));
         }
 
         @Override
@@ -1256,7 +1252,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
-                _httpChannel.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
+                _httpChannel.getRequest().setAttribute(ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY, _complianceViolations);
                 _complianceViolations = null;
             }
 

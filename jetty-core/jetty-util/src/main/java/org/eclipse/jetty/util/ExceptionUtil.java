@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public class ExceptionUtil
 {
+    private static final int MAX_SUPPRESSED = 10;
 
     /**
      * <p>Convert a {@link Throwable} to a specific type by casting or construction on a new instance.</p>
@@ -199,7 +200,13 @@ public class ExceptionUtil
     public static void addSuppressedIfNotAssociated(Throwable throwable, Throwable suppressed)
     {
         if (areNotAssociated(throwable, suppressed))
-            throwable.addSuppressed(suppressed);
+        {
+            int s = throwable.getSuppressed().length;
+            if (s < MAX_SUPPRESSED)
+                throwable.addSuppressed(suppressed);
+            else if (s == MAX_SUPPRESSED)
+                throwable.addSuppressed(new IllegalStateException("Too many suppressed", suppressed));
+        }
     }
 
     /**
@@ -298,8 +305,7 @@ public class ExceptionUtil
     {
         if (t1 == null)
             return t2;
-        if (areNotAssociated(t1, t2))
-            t1.addSuppressed(t2);
+        addSuppressedIfNotAssociated(t1, t2);
         return t1;
     }
 

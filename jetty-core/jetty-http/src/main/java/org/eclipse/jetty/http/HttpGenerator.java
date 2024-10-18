@@ -577,8 +577,12 @@ public class HttpGenerator
 
         // default field values
         HttpField transferEncoding = null;
+        HttpField connection = null;
+        boolean http10 = _info.getHttpVersion() == HttpVersion.HTTP_1_0;
         boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
-        boolean close = false;
+        boolean connectionClose = false;
+        boolean connectionKeepAlive = false;
+        boolean connectionUpgrade = false;
         boolean chunkedHint = _info.getTrailersSupplier() != null;
         boolean contentType = false;
         long contentLength = _info.getContentLength();
@@ -621,64 +625,24 @@ public class HttpGenerator
                             {
                                 // Don't add yet, treat this only as a hint that there is content
                                 // with a preference to chunk if we can
-                                transferEncoding = field;
-                                chunkedHint = field.contains(HttpHeaderValue.CHUNKED.asString());
+                                if (transferEncoding == null)
+                                    transferEncoding = field;
+                                else
+                                    transferEncoding = transferEncoding.withValues(field.getValues());
+                                chunkedHint |= field.contains(HttpHeaderValue.CHUNKED.asString());
                             }
                         }
                         case CONNECTION ->
                         {
-                            String value = field.getValue();
-
-                            // Handle simple case of close value only
-                            if (HttpHeaderValue.CLOSE.is(value))
-                            {
-                                if (!close)
-                                    header.put(CONNECTION_CLOSE);
-                                close = true;
-                                _persistent = false;
-                            }
-                            // Handle close with other values
-                            else if (field.contains(HttpHeaderValue.CLOSE.asString()))
-                            {
-                                close = true;
-                                _persistent = false;
-
-                                // Add the field, but without keep-alive
-                                putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
-                            }
-                            // Handle Keep-Alive value only
-                            else if (HttpHeaderValue.KEEP_ALIVE.is(value))
-                            {
-                                // If we can persist for HTTP/1.0
-                                if (_persistent != Boolean.FALSE && _info.getHttpVersion() == HttpVersion.HTTP_1_0)
-                                {
-                                    // then do so
-                                    _persistent = true;
-                                    header.put(CONNECTION_KEEP_ALIVE);
-                                }
-                                // otherwise we just ignore the keep-alive
-                            }
-                            // Handle Keep-Alive with other values, but no close
-                            else if (field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
-                            {
-                                // If we can persist for HTTP/1.0
-                                if (_persistent != Boolean.FALSE && _info.getHttpVersion() == HttpVersion.HTTP_1_0)
-                                {
-                                    // then do so
-                                    _persistent = true;
-                                    putTo(field, header);
-                                }
-                                else
-                                {
-                                    // otherwise we add the field, but without keep-alive
-                                    putTo(field.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString()), header);
-                                }
-                            }
-                            // Handle connection header without either close nor keep-alive
+                            // Save to connection field for processing when all other fields are known
+                            if (connection == null)
+                                connection = field;
                             else
-                            {
-                                putTo(field, header);
-                            }
+                                connection = connection.withValues(field.getValues());
+
+                            connectionClose |= field.contains(HttpHeaderValue.CLOSE.asString());
+                            connectionKeepAlive |= field.contains(HttpHeaderValue.KEEP_ALIVE.asString());
+                            connectionUpgrade |= field.contains(HttpHeaderValue.UPGRADE.asString());
                         }
                         default -> putTo(field, header);
                     }
@@ -698,8 +662,112 @@ public class HttpGenerator
         boolean assumedContent = assumedContentRequest || contentType || chunkedHint;
         boolean noContentRequest = request != null && contentLength <= 0 && !assumedContent;
 
-        if (_persistent == null)
-            _persistent = http11 || (request != null && HttpMethod.CONNECT.is(request.getMethod()));
+        // Handle CONNECT requests.
+        if (request != null && HttpMethod.CONNECT.is(request.getMethod()))
+        {
+            _persistent = true;
+            if (http10 && !connectionKeepAlive)
+                connectionKeepAlive = true;
+            if (connectionClose)
+                connectionClose = false;
+        }
+        // Handle Upgrade responses.
+        if (request != null && connectionUpgrade)
+        {
+            _persistent = true;
+            if (connectionClose)
+            {
+                connection = connection.withoutValue(HttpHeaderValue.CLOSE.asString());
+                connectionClose = false;
+            }
+        }
+
+        // Handle persistence and adjust connection header if necessary.
+        if (http11)
+        {
+            // Don't use keepAlive
+            if (connectionKeepAlive)
+            {
+                connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                connectionKeepAlive = false;
+            }
+
+            if (_persistent == null)
+            {
+                // Default to persistent unless explicitly closed
+                _persistent = !connectionClose;
+            }
+            else if (_persistent)
+            {
+                if (connectionClose)
+                    _persistent = false;
+            }
+            else
+            {
+                if (!connectionClose)
+                {
+                    if (connection == null)
+                        connection = CONNECTION_CLOSE;
+                    else
+                        connection = connection.withValue(HttpHeaderValue.CLOSE.asString());
+                    connectionClose = true;
+                }
+            }
+        }
+        else if (http10)
+        {
+            if (_persistent == null)
+            {
+                // If persistence has not been set, then it must be explicitly requested with keep-alive, or a connect request
+                if (connectionClose)
+                {
+                    _persistent = false;
+                    if (connectionKeepAlive)
+                    {
+                        connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                        connectionKeepAlive = false;
+                    }
+                }
+                else
+                {
+                    _persistent = connectionKeepAlive;
+                }
+            }
+            else if (_persistent)
+            {
+                if (connectionClose)
+                {
+                    _persistent = false;
+                    if (connectionKeepAlive)
+                    {
+                        connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                        connectionKeepAlive = false;
+                    }
+                }
+                else if (!connectionKeepAlive)
+                {
+                    if (connection == null)
+                        connection = CONNECTION_KEEP_ALIVE;
+                    else
+                        connection = connection.withValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                    connectionKeepAlive = true;
+                }
+            }
+            else
+            {
+                if (connectionKeepAlive)
+                {
+                    connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                    connectionKeepAlive = false;
+                }
+            }
+        }
+        else
+        {
+            _persistent = false;
+        }
+
+        // Work out how the message will be framed:
 
         // If the message is known not to have content
         if (_noContentResponse || noContentRequest)
@@ -751,7 +819,7 @@ public class HttpGenerator
             else
                 throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Bad Transfer-Encoding");
         }
-        // Else if we known the content length and are a request or a persistent response, 
+        // Else if we know the content length and are a request or a persistent response,
         else if (contentLength >= 0 && (request != null || _persistent))
         {
             // Use the content length 
@@ -767,8 +835,25 @@ public class HttpGenerator
             if (contentLength >= 0 && (contentLength > 0 || assumedContent || contentLengthField))
                 putContentLength(header, contentLength);
 
-            if (http11 && !close)
-                header.put(CONNECTION_CLOSE);
+            if (http11)
+            {
+                if (!connectionClose)
+                {
+                    if (connection == null)
+                        connection = CONNECTION_CLOSE;
+                    else
+                        connection = connection.withValue(HttpHeaderValue.CLOSE.asString());
+                    connectionClose = true;
+                }
+            }
+            else if (http10)
+            {
+                if (connectionKeepAlive)
+                {
+                    connection = connection.withoutValue(HttpHeaderValue.KEEP_ALIVE.asString());
+                    connectionKeepAlive = false;
+                }
+            }
         }
         // Else we must be a request
         else
@@ -779,6 +864,10 @@ public class HttpGenerator
 
         if (LOG.isDebugEnabled())
             LOG.debug("endOfContent {} content-Length {}", _endOfContent.toString(), contentLength);
+
+        // Add the connection header if we have one
+        if (connection != null)
+            putTo(connection, header);
 
         // Add transfer encoding if it is not chunking
         if (transferEncoding != null)
@@ -842,8 +931,8 @@ public class HttpGenerator
     private static final byte[] ZERO_CHUNK = {(byte)'0', (byte)'\r', (byte)'\n'};
     private static final byte[] LAST_CHUNK = {(byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n'};
     private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\r\n");
-    private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\r\n");
-    private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\r\n");
+    private static final HttpField CONNECTION_KEEP_ALIVE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+    private static final HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1 + " ");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\r\n");
 
@@ -876,7 +965,7 @@ public class HttpGenerator
             String reason = code.getMessage();
             byte[] line = new byte[versionLength + 5 + reason.length() + 2];
             HttpVersion.HTTP_1_1.toBuffer().get(line, 0, versionLength);
-            line[versionLength + 0] = ' ';
+            line[versionLength] = ' ';
             line[versionLength + 1] = (byte)('0' + i / 100);
             line[versionLength + 2] = (byte)('0' + (i % 100) / 10);
             line[versionLength + 3] = (byte)('0' + (i % 10));
@@ -899,7 +988,7 @@ public class HttpGenerator
         {
             char c = s.charAt(i);
 
-            if (c < 0 || c > 0xff || c == '\r' || c == '\n' || c == ':')
+            if (c > 0xff || c == '\r' || c == '\n' || c == ':')
                 buffer.put((byte)'?');
             else
                 buffer.put((byte)(0xff & c));
@@ -913,7 +1002,7 @@ public class HttpGenerator
         {
             char c = s.charAt(i);
 
-            if (c < 0 || c > 0xff || c == '\r' || c == '\n')
+            if (c > 0xff || c == '\r' || c == '\n')
                 buffer.put((byte)' ');
             else
                 buffer.put((byte)(0xff & c));
@@ -926,7 +1015,7 @@ public class HttpGenerator
         {
             ((PreEncodedHttpField)field).putTo(bufferInFillMode, HttpVersion.HTTP_1_0);
         }
-        else
+        else if (field != null)
         {
             HttpHeader header = field.getHeader();
             if (header != null)

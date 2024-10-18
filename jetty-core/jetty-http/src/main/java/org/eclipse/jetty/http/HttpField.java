@@ -564,25 +564,43 @@ public class HttpField
         if (_value.equalsIgnoreCase(value))
             return null;
 
-        if (_value.length() == value.length())
+        if (!contains(value))
             return this;
 
         QuotedCSV csv = new QuotedCSV(false, _value);
-        boolean removed = false;
         for (Iterator<String> i = csv.iterator(); i.hasNext();)
         {
-            String element = i.next();
-            if (element.equalsIgnoreCase(value))
-            {
-                removed = true;
+            if (i.next().equalsIgnoreCase(value))
                 i.remove();
-            }
         }
 
-        if (!removed)
-            return this;
-
         return new HttpField(_header, _name, csv.asString());
+    }
+
+    /**
+     * Return a {@link HttpField} with a given value (case-insensitive) ensured
+     * @param value The value to ensure
+     * @return A new {@link HttpField} if the value was added or this {@link HttpField} if it did contain the value
+     */
+    public HttpField withValue(String value)
+    {
+        if (contains(value))
+            return this;
+        else
+            return new HttpField(getHeader(), _name, _value + "," + value);
+    }
+
+    /**
+     * Return a {@link HttpField} with given values (case-insensitive) ensured
+     * @param values The values to ensure
+     * @return A new {@link HttpField} if the value was added or this {@link HttpField} if it did contain the value
+     */
+    public HttpField withValues(String... values)
+    {
+        HttpField field = this;
+        for (String value : values)
+            field = field.withValue(value);
+        return field;
     }
 
     private int nameHashCode()
