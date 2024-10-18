@@ -14,12 +14,12 @@
         <Arg name="trackerFactory">
           <New>
             <Class><Property name="jetty.dos.trackerFactory" default="org.eclipse.jetty.server.handler.DoSHandler.LeakingBucketTrackerFactory"/></Class>
-            <Arg name="maxRequestsPerSecond" type="int"><Property name="jetty.dos.trackerFactory.maxRequestsPerSecond" default="100"/></Arg>
-            <Arg name="bucketSize" type="int"><Property name="jetty.dos.trackerFactory.maxDripsInBucket" default="100"/></Arg>
+            <Arg name="maxRequestsPerSecond" type="int"><Property name="jetty.dos.leakingBucketTracker.maxRequestsPerSecond" default="100"/></Arg>
+            <Arg name="bucketSize" type="int"><Property name="jetty.dos.leakingBucketTracker.bucketSize" default="100"/></Arg>
             <Arg name="idleTimeout">
               <Call class="java.time.Duration" name="ofSeconds">
                 <Arg type="long">
-                  <Property name="jetty.dos.trackerFactory.maxDripsInBucket" default="1" />
+                  <Property name="jetty.dos.leakingBucketTracker.idleTimeout" default="1" />
                 </Arg>
               </Call>
             </Arg>

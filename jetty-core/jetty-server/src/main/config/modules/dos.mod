@@ -14,7 +14,7 @@ etc/jetty-dos.xml
 
 [ini-template]
 
-## The algorithm to use for obtaining an Id from an Request: ID_FROM_REMOTE_ADDRESS, ID_FROM_REMOTE_PORT, ID_FROM_REMOTE_ADDRESS_PORT, ID_CONNECTION
+## The algorithm to use for obtaining an remote client identifier from a Request: ID_FROM_REMOTE_ADDRESS, ID_FROM_REMOTE_PORT, ID_FROM_REMOTE_ADDRESS_PORT, ID_FROM_CONNECTION
 #jetty.dos.id.type=ID_FROM_REMOTE_ADDRESS
 #jetty.dos.id.class=org.eclipse.jetty.server.handler.DosHandler
 
@@ -22,16 +22,16 @@ etc/jetty-dos.xml
 #jetty.dos.trackerFactory=org.eclipse.jetty.server.handler.DoSHandler$LeakingBucketTrackerFactory
 
 ## The Handler class to use to reject DOS requests
-#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DoSHandler.InfiniteLeakingBucketTrackerFactory
+#jetty.dos.rejectHandler=org.eclipse.jetty.server.handler.DoSHandler$DelayedRejectHandler
 
 ## The maximum requests per second per client
-#jetty.dos.trackerFactory.maxRequestsPerSecond=100
+#jetty.dos.leakingBucketTracker.maxRequestsPerSecond=100
 
 ## The size of the leaky bucket. Larger buckets allow longer bursts before enforcing the rate
-#jetty.dos.trackerFactory.bucketSize=100
+#jetty.dos.leakingBucketTracker.bucketSize=100
 
 ## The time in seconds to retain an empty bucket.
-#jetty.dos.trackerFactory.idleTimeout=1
+#jetty.dos.leakingBucketTracker.idleTimeout=1
 
 ## The period to delay dos requests before rejecting them.
 #jetty.dos.rejectHandler.delayed.delayMs=1000

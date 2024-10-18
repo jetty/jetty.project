@@ -181,8 +181,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     @Override
     protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
-        // use NanoTime.now() instead of request.getBeginNanoTime() to avoid jitter
-        long now = NanoTime.now();
 
         // Calculate an id for the request (which may be global empty string).
         String id = _clientIdFn.apply(request);
@@ -200,7 +198,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             return _rejectUntracked ? _rejectHandler.handle(request, response, callback) : nextHandler(request, response, callback);
 
         // IS the request allowed by the tracker?
-        boolean allowed = tracker.onRequest(now);
+        boolean allowed = tracker.onRequest(NanoTime.now());
         if (LOG.isDebugEnabled())
             LOG.debug("allowed={} {}", allowed, tracker);
         if (allowed)
@@ -319,15 +317,15 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         {
             private final AutoLock _lock = new AutoLock();
             private final String _id;
-            private long _bucket;
-            private long _lastDrip;
+            private long _lastDripNanoTime;
             private long _expireNanoTime;
+            private int _bucket;
 
             public LeakingBucketTracker(String id)
             {
                 _id = id;
                 long now = NanoTime.now();
-                _lastDrip = now;
+                _lastDripNanoTime = now;
                 _expireNanoTime = now + _nanosPerDrip + _idleTimeout;
             }
 
@@ -345,10 +343,10 @@ public class DoSHandler extends ConditionalHandler.ElseNext
             {
                 try (AutoLock ignored = _lock.lock())
                 {
-                    long elapsedSinceLastDrip = NanoTime.elapsed(_lastDrip, now);
+                    long elapsedSinceLastDrip = NanoTime.elapsed(_lastDripNanoTime, now);
                     long drips = elapsedSinceLastDrip / _nanosPerDrip;
-                    _lastDrip = _lastDrip + drips * _nanosPerDrip;
-                    _bucket = Math.min(_bucketSize, Math.max(0L, _bucket - drips) + 1);
+                    _lastDripNanoTime = _lastDripNanoTime + drips * _nanosPerDrip;
+                    _bucket = Math.min(_bucketSize, Math.toIntExact(Math.max(0L, _bucket - drips) + 1));
                     _expireNanoTime = now + _bucket * _nanosPerDrip + _idleTimeout;
                     return _bucket < _bucketSize;
                 }
