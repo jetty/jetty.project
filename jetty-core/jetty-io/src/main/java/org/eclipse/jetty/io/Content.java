@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -308,11 +307,10 @@ public class Content
          */
         static ByteBuffer asByteBuffer(Source source) throws IOException
         {
-            try
+            try (Blocker.Promise<ByteBuffer> promise = Blocker.promise())
             {
-                FuturePromise<ByteBuffer> promise = new FuturePromise<>();
                 asByteBuffer(source, promise);
-                return promise.get();
+                return promise.block();
             }
             catch (Throwable x)
             {
@@ -327,7 +325,9 @@ public class Content
          * @param maxSize The maximum size to read, or -1 for no limit
          * @return A {@link CompletableFuture} that will be completed when the complete content is read or
          * failed if the max size is exceeded or there is a read error.
+         * @deprecated use {@link #asByteBuffer(Source, Promise)} instead
          */
+        @Deprecated(since = "12.0.15", forRemoval = true)
         static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
         {
             return new ChunkAccumulator().readAll(source, maxSize);
@@ -338,7 +338,9 @@ public class Content
          *
          * @param source the source to read
          * @return the {@link CompletableFuture} to notify when the whole content has been read
+         * @deprecated use {@link #asByteBuffer(Source, Promise)}
          */
+        @Deprecated(since = "12.0.15", forRemoval = true)
         static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source)
         {
             return asByteBufferAsync(source, -1);
@@ -350,7 +352,9 @@ public class Content
          * @param source the source to read
          * @param maxSize The maximum size to read, or -1 for no limit
          * @return the {@link CompletableFuture} to notify when the whole content has been read
+         * @deprecated use {@link #asByteBuffer(Source, Promise)}
          */
+        @Deprecated(since = "12.0.15", forRemoval = true)
         static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
         {
             return asByteArrayAsync(source, maxSize).thenApply(ByteBuffer::wrap);
@@ -365,7 +369,9 @@ public class Content
          * @param maxSize The maximum size to read, or -1 for no limit
          * @return A {@link CompletableFuture} that will be completed when the complete content is read or
          * failed if the max size is exceeded or there is a read error.
+         * @deprecated no replacement
          */
+        @Deprecated(since = "12.0.15", forRemoval = true)
         static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
         {
             return new ChunkAccumulator().readAll(source, pool, direct, maxSize);
@@ -408,13 +414,10 @@ public class Content
          */
         static String asString(Source source, Charset charset) throws IOException
         {
-            try
+            try (Blocker.Promise<String> promise = Blocker.promise())
             {
-                return asStringAsync(source, charset).get();
-            }
-            catch (Throwable x)
-            {
-                throw IO.rethrow(x);
+                asString(source, charset, promise);
+                return promise.block();
             }
         }
 
@@ -425,7 +428,9 @@ public class Content
          * @param source the source to read
          * @param charset the charset to use to decode bytes
          * @return the {@link CompletableFuture} to notify when the whole content has been read
+         * @deprecated use {@link #asString(Source, Charset, Promise)} instead
          */
+        @Deprecated(since = "12.0.15", forRemoval = true)
         static CompletableFuture<String> asStringAsync(Source source, Charset charset)
         {
             Promise.Completable<String> completable = new Promise.Completable<>();
@@ -542,6 +547,12 @@ public class Content
          * {@code Runnable} are serialized and a callback for {@code demand} call is
          * not invoked until any previous {@code demand} callback has returned.
          * Thus the {@code Runnable} should not block waiting for a callback of a future demand call.</p>
+         * <p>The {@code Runnable} callback SHOULD be implemented with non-blocking code.
+         * In case it needs to be implemented with blocking code, it MUST be signaled to the implementation
+         * by using the following code:</p>
+         * <pre>{@code
+         * source.demand(Invocable.from(InvocationType.BLOCKING, () -> { your blocking code here }));
+         * }</pre>
          * <p>The demand callback may be invoked <em>spuriously</em>: a subsequent call to {@link #read()}
          * may return {@code null}.</p>
          * <p>Calling this method establishes a <em>pending demand</em>, which is fulfilled when the demand

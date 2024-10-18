@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -211,21 +211,22 @@ public class ServletToHandlerDocs
         {
             // Non-blocking read the request content as a String.
             // Use with caution as the request content may be large.
-            CompletableFuture<String> completable = Content.Source.asStringAsync(request, UTF_8);
-
-            completable.whenComplete((requestContent, failure) ->
+            Content.Source.asString(request, UTF_8, new Promise<>()
             {
-                if (failure == null)
+                @Override
+                public void succeeded(String result)
                 {
                     // Process the request content here.
 
                     // Implicitly respond with status code 200 and no content.
                     callback.succeeded();
                 }
-                else
+
+                @Override
+                public void failed(Throwable x)
                 {
                     // Implicitly respond with status code 500.
-                    callback.failed(failure);
+                    callback.failed(x);
                 }
             });
 
@@ -243,21 +244,22 @@ public class ServletToHandlerDocs
         {
             // Non-blocking read the request content as a ByteBuffer.
             // Use with caution as the request content may be large.
-            CompletableFuture<ByteBuffer> completable = Content.Source.asByteBufferAsync(request);
-
-            completable.whenComplete((requestContent, failure) ->
+            Content.Source.asByteBuffer(request, new Promise<>()
             {
-                if (failure == null)
+                @Override
+                public void succeeded(ByteBuffer result)
                 {
                     // Process the request content here.
 
                     // Implicitly respond with status code 200 and no content.
                     callback.succeeded();
                 }
-                else
+
+                @Override
+                public void failed(Throwable x)
                 {
                     // Implicitly respond with status code 500.
-                    callback.failed(failure);
+                    callback.failed(x);
                 }
             });
 
@@ -303,6 +305,8 @@ public class ServletToHandlerDocs
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
+            // TODO: deprecate or warn that it should not be used for reads
+            //  due to the risk of calling reader.get().
             CompletableTask<Void> reader = new CompletableTask<>()
             {
                 @Override

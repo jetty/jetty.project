@@ -771,7 +771,7 @@ public class StateTrackingHandler extends Handler.Wrapper
             @Override
             public InvocationType getInvocationType()
             {
-                return Invocable.getInvocationType(callback);
+                return Invocable.getInvocationType(callback, false);
             }
         }
     }

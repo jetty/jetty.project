@@ -127,6 +127,8 @@ public interface Invocable
      */
     static Task from(InvocationType type, Runnable task)
     {
+        if (task instanceof Task t && t.getInvocationType() == type)
+            return t;
         return new ReadyTask(type, task);
     }
 
@@ -182,17 +184,40 @@ public interface Invocable
     }
 
     /**
-     * Get the invocation type of an Object.
+     * <p>Returns the {@link InvocationType} of the given object.</p>
+     * <p>If the object implements {@link Invocable}, returns the result
+     * of calling its {@link #getInvocationType()} method.</p>
+     * <p>Otherwise {@link InvocationType#BLOCKING} is returned.</p>
      *
-     * @param o The object to check the invocation type of.
-     * @return If the object is an Invocable, it is coerced and the {@link #getInvocationType()}
-     * used, otherwise {@link InvocationType#BLOCKING} is returned.
+     * @param o the object to test for its {@link InvocationType}
+     * @return the {@link InvocationType} of the object if it is an {@link Invocable},
+     * otherwise {@link InvocationType#BLOCKING}.
      */
     static InvocationType getInvocationType(Object o)
     {
+        return getInvocationType(o, true);
+    }
+
+    /**
+     * <p>Returns the {@link InvocationType} of the given object.</p>
+     * <p>If the object implements {@link Invocable}, returns the result
+     * of calling its {@link #getInvocationType()} method.</p>
+     * <p>Otherwise, returns {@link InvocationType#BLOCKING} or
+     * {@link InvocationType#NON_BLOCKING} depending on the
+     * {@code blocking} parameter.</p>
+     *
+     * @param o the object to test for its {@link InvocationType}
+     * @param blocking if the object is not an {@link Invocable}, whether to return
+     * {@link InvocationType#BLOCKING} or {@link InvocationType#NON_BLOCKING}.
+     * @return the {@link InvocationType} of the object if it is an {@link Invocable},
+     * otherwise {@link InvocationType#BLOCKING} or {@link InvocationType#NON_BLOCKING}
+     * depending on the {@code blocking} parameter.
+     */
+    static InvocationType getInvocationType(Object o, boolean blocking)
+    {
         if (o instanceof Invocable)
             return ((Invocable)o).getInvocationType();
-        return InvocationType.BLOCKING;
+        return blocking ? InvocationType.BLOCKING : InvocationType.NON_BLOCKING;
     }
 
     /**

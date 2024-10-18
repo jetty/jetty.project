@@ -539,13 +539,13 @@ public class ServletChannel
 
                     case READ_CALLBACK:
                     {
-                        _context.run(() -> _servletContextRequest.getHttpInput().run());
+                        _context.run(_servletContextRequest.getHttpInput());
                         break;
                     }
 
                     case WRITE_CALLBACK:
                     {
-                        _context.run(() -> _servletContextRequest.getHttpOutput().run());
+                        _context.run(_servletContextRequest.getHttpOutput());
                         break;
                     }
 

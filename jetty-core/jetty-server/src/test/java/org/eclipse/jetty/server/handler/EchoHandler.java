@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * Dump request handler.
@@ -136,12 +138,19 @@ public class EchoHandler extends Handler.Abstract
         @Override
         protected void copy(Request request, Response response, Callback callback)
         {
-            Content.Source.asByteBufferAsync(request).whenComplete((b, t) ->
+            Content.Source.asByteBuffer(request, new Promise<>()
             {
-                if (t == null)
-                    response.write(true, b, callback);
-                else
-                    callback.failed(t);
+                @Override
+                public void succeeded(ByteBuffer byteBuffer)
+                {
+                    response.write(true, byteBuffer, callback);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                }
             });
         }
     }

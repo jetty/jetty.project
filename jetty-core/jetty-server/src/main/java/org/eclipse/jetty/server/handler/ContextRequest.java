@@ -59,7 +59,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable
         return _context;
     }
 
-    private class OnContextDemand implements Runnable
+    private class OnContextDemand implements Invocable.Task
     {
         private final Runnable _demandCallback;
 
@@ -72,6 +72,12 @@ public class ContextRequest extends Request.Wrapper implements Invocable
         public void run()
         {
             _context.run(_demandCallback, ContextRequest.this);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return Invocable.getInvocationType(_demandCallback, false);
         }
     }
 }

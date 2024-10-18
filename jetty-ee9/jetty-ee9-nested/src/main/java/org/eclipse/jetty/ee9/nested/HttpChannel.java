@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +87,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Listener _combinedListener;
     private final Dispatchable _requestDispatcher;
     private final Dispatchable _asyncDispatcher;
+    private final Runnable _demandCallback = new NeedContentDemandCallback();
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
     private MetaData.Response _committedMetaData;
@@ -155,11 +157,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public boolean needContent()
     {
         // TODO: optimize by attempting a read?
-        getCoreRequest().demand(() ->
-        {
-            if (getRequest().getHttpInput().onContentProducible())
-                handle();
-        });
+        getCoreRequest().demand(_demandCallback);
         return false;
     }
 
@@ -1600,6 +1598,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _errorHandler.handle(null, _request, _request, _response);
             _request.setHandled(true);
+        }
+    }
+
+    private class NeedContentDemandCallback implements Invocable.Task
+    {
+        @Override
+        public void run()
+        {
+            if (getRequest().getHttpInput().onContentProducible())
+                handle();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getRequest().getHttpInput().getInvocationType();
         }
     }
 }

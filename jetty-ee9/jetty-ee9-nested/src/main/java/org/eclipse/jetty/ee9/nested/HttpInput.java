@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -363,6 +364,19 @@ public class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug("available={} {}", available, this);
             return available;
         }
+    }
+
+    Invocable.InvocationType getInvocationType()
+    {
+        // This is the invocation type used for demand callbacks.
+        // If we are blocking mode, then we implement the callbacks, which just
+        // wake up the blocked application thread, so they are non-blocking.
+        // If we are async mode, then we need to ask the read listener; for EE web
+        // applications, it will be blocking as the InvocationType API is hidden;
+        // for embedded web applications, they can specify the InvocationType.
+        return _readListener == null
+            ? Invocable.InvocationType.NON_BLOCKING
+            : Invocable.getInvocationType(_readListener, false);
     }
 
     /* Runnable */
