@@ -616,7 +616,7 @@ Use the following file as example, copy it as `$JETTY_BASE/webapps/wordpress.xml
 [,xml,options=nowrap]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
 
   <New id="root" class="java.lang.String">

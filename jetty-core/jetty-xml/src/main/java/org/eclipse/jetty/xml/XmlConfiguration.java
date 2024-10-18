@@ -51,6 +51,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -69,6 +70,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 /**
  * <p>Configures objects from XML.</p>
@@ -2066,6 +2068,35 @@ public class XmlConfiguration
             if (catalogUrl == null)
                 throw new IllegalStateException("Catalog not found: catalog-configure.xml");
             addCatalog(URI.create(catalogUrl.toExternalForm()));
+        }
+
+        protected SAXParserFactory newSAXParserFactory()
+        {
+            // Use JVM default implementation (not the one found in the classloader from non-JVM sources)
+            SAXParserFactory factory = SAXParserFactory.newDefaultInstance();
+            // Don't allow use of XInclude to reference external entities.
+            factory.setXIncludeAware(false);
+            return factory;
+        }
+
+        @Override
+        public void setValidating(boolean validating)
+        {
+            super.setValidating(validating);
+
+            try
+            {
+                XMLReader xmlReader = getSAXParser().getXMLReader();
+
+                // disable all external entity references with Jetty's Configuration XML.
+                xmlReader.setFeature("http://xml.org/sax/features/external-general-entities", false);
+                xmlReader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+                xmlReader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            }
+            catch (SAXException e)
+            {
+                LOG.warn(e.getMessage());
+            }
         }
 
         @Override
