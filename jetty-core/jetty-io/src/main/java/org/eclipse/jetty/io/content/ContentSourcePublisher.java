@@ -127,7 +127,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
         }
     }
 
-    private static final class ActiveSubscription extends IteratingCallback implements Flow.Subscription
+    private static final class ActiveSubscription extends IteratingCallback implements Flow.Subscription, Runnable
     {
         private static final long NO_MORE_DEMAND = -1;
         private static final Throwable COMPLETED = new StaticException("Source.Content read fully");
@@ -184,7 +184,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
 
             if (chunk == null)
             {
-                content.demand(this::succeeded);
+                // Pass this, which is Invocable
+                content.demand(this);
                 return Action.SCHEDULED;
             }
 
@@ -217,6 +218,15 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 this.iterate();
 
             return Action.IDLE;
+        }
+
+        /**
+         * Called by {@link Content.Source#demand(Runnable)}
+         */
+        @Override
+        public void run()
+        {
+            succeeded();
         }
 
         @Override

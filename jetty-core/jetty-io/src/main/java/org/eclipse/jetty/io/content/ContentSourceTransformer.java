@@ -17,6 +17,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
 /**
@@ -99,7 +100,7 @@ public abstract class ContentSourceTransformer implements Content.Source
     {
         this.demandCallback = Objects.requireNonNull(demandCallback);
         if (needsRawRead)
-            rawSource.demand(() -> invoker.run(this::invokeDemandCallback));
+            rawSource.demand(Invocable.from(Invocable.getInvocationType(demandCallback), () -> invoker.run(this::invokeDemandCallback)));
         else
             invoker.run(this::invokeDemandCallback);
     }
