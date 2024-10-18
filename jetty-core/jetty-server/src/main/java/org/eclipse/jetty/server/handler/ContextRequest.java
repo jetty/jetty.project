@@ -59,7 +59,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable
         return _context;
     }
 
-    private class OnContextDemand implements Runnable, Invocable
+    private class OnContextDemand implements Invocable.Task
     {
         private final Runnable _demandCallback;
 
