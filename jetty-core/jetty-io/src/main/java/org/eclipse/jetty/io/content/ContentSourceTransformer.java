@@ -100,7 +100,8 @@ public abstract class ContentSourceTransformer implements Content.Source
     {
         this.demandCallback = Objects.requireNonNull(demandCallback);
         if (needsRawRead)
-            rawSource.demand(Invocable.from(Invocable.getInvocationType(demandCallback), () -> invoker.run(this::invokeDemandCallback)));
+            // Inner class used instead of lambda for clarity in stack traces.
+            rawSource.demand(new DemandInvocableTask(demandCallback, this::invokeDemandCallback));
         else
             invoker.run(this::invokeDemandCallback);
     }
@@ -158,4 +159,28 @@ public abstract class ContentSourceTransformer implements Content.Source
      * @return a transformed chunk or {@code null}
      */
     protected abstract Content.Chunk transform(Content.Chunk inputChunk);
+
+    private class DemandInvocableTask implements Invocable.Task
+    {
+        private final Runnable demandCallback;
+        private final Runnable invokeDemandCallback;
+
+        private DemandInvocableTask(Runnable demandCallback, Runnable invokeDemandCallback)
+        {
+            this.demandCallback = demandCallback;
+            this.invokeDemandCallback = invokeDemandCallback;
+        }
+
+        @Override
+        public void run()
+        {
+            invoker.run(invokeDemandCallback);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return Invocable.getInvocationType(demandCallback);
+        }
+    }
 }
