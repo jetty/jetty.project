@@ -87,6 +87,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Listener _combinedListener;
     private final Dispatchable _requestDispatcher;
     private final Dispatchable _asyncDispatcher;
+    private final NeedContentInvocableTask _needContentTask;
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
     private MetaData.Response _committedMetaData;
@@ -114,6 +115,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _combinedListener = new HttpChannelListeners(_connector.getBeans(Listener.class));
         _requestDispatcher = new RequestDispatchable();
         _asyncDispatcher = new AsyncDispatchable();
+        _needContentTask = new NeedContentInvocableTask();
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -156,12 +158,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public boolean needContent()
     {
         // TODO: optimize by attempting a read?
-        Invocable.InvocationType invocationType = getRequest().getHttpInput().getInvocationType();
-        getCoreRequest().demand(Invocable.from(invocationType, () ->
-        {
-            if (getRequest().getHttpInput().onContentProducible())
-                handle();
-        }));
+        getCoreRequest().demand(_needContentTask);
         return false;
     }
 
@@ -1602,6 +1599,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _errorHandler.handle(null, _request, _request, _response);
             _request.setHandled(true);
+        }
+    }
+
+    private class NeedContentInvocableTask implements Invocable.Task
+    {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getRequest().getHttpInput().getReadListenerInvocationType();
+        }
+
+        @Override
+        public void run()
+        {
+            if (getRequest().getHttpInput().onContentProducible())
+                handle();
         }
     }
 }
