@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -231,7 +232,7 @@ public class ResponseListeners
         if (chunk != null)
             chunk.release();
         if (chunk == null || !chunk.isLast())
-            contentSource.demand(() -> consume(contentSource));
+            contentSource.demand(Invocable.from(Invocable.InvocationType.NON_BLOCKING, () -> consume(contentSource)));
     }
 
     private static void notifyContentSource(Response.ContentSourceListener listener, Response response, Content.Source contentSource)
@@ -490,7 +491,7 @@ public class ResponseListeners
             {
                 // Retry the demand on spurious wakeup to avoid passing
                 // a null chunk to the demultiplexer's ContentSources.
-                originalContentSource.demand(this::onDemandCallback);
+                originalContentSource.demand(Invocable.from(deriveOriginalContentSourcesInvocationType(), this::onDemandCallback));
                 return;
             }
             // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
@@ -500,6 +501,20 @@ public class ResponseListeners
                 demultiplexerContentSource.onChunk(chunk);
             }
             chunk.release();
+        }
+
+        private Invocable.InvocationType deriveOriginalContentSourcesInvocationType()
+        {
+            Invocable.InvocationType invocationType = null;
+            for (ContentSource contentSource : contentSources)
+            {
+                Invocable.InvocationType demandCallbackInvocationType = contentSource.getDemandCallbackInvocationType();
+                if (invocationType == null)
+                    invocationType = demandCallbackInvocationType;
+                else
+                    invocationType = Invocable.combine(invocationType, demandCallbackInvocationType);
+            }
+            return invocationType == null ? Invocable.InvocationType.NON_BLOCKING : invocationType;
         }
 
         private void registerFailure(ContentSource contentSource, Throwable failure)
@@ -524,7 +539,7 @@ public class ResponseListeners
             if (processFail)
                 originalContentSource.fail(failure);
             else if (processDemand)
-                originalContentSource.demand(this::onDemandCallback);
+                originalContentSource.demand(Invocable.from(deriveOriginalContentSourcesInvocationType(), this::onDemandCallback));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Registered failure on {}; {}", contentSource, counters);
@@ -547,7 +562,7 @@ public class ResponseListeners
                 }
             }
             if (processDemand)
-                originalContentSource.demand(this::onDemandCallback);
+                originalContentSource.demand(Invocable.from(deriveOriginalContentSourcesInvocationType(), this::onDemandCallback));
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Registered demand on {}; {}", contentSource, counters);
@@ -639,6 +654,11 @@ public class ResponseListeners
                         fail(x);
                     }
                 }
+            }
+
+            private Invocable.InvocationType getDemandCallbackInvocationType()
+            {
+                return Invocable.getInvocationType(demandCallbackRef.get());
             }
 
             @Override

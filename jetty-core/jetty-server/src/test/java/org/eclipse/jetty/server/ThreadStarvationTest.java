@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -39,7 +41,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -50,7 +51,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled // TODO
 public class ThreadStarvationTest
 {
     static final int BUFFER_SIZE = 1024 * 1024;
@@ -163,34 +163,6 @@ public class ThreadStarvationTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testReadInput(Scenario scenario) throws Exception
-    {
-        prepareServer(scenario, new ReadHandler()).start();
-
-        try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort()))
-        {
-            client.setSoTimeout(10000);
-            OutputStream os = client.getOutputStream();
-            InputStream is = client.getInputStream();
-
-            String request =
-                "GET / HTTP/1.0\r\n" +
-                    "Host: localhost\r\n" +
-                    "Content-Length: 10\r\n" +
-                    "\r\n" +
-                    "0123456789\r\n";
-            os.write(request.getBytes(StandardCharsets.UTF_8));
-            os.flush();
-
-            String response = IO.toString(is);
-            assertEquals(-1, is.read());
-            assertThat(response, containsString("200 OK"));
-            assertThat(response, containsString("Read Input 10"));
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("scenarios")
     public void testReadStarvation(Scenario scenario) throws Exception
     {
         prepareServer(scenario, new ReadHandler());
@@ -257,18 +229,8 @@ public class ThreadStarvationTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            /* TODO
-
-            int l = request.getContentLength();
-            int r = 0;
-            while (r < l)
-            {
-                if (request.getInputStream().read() >= 0)
-                    r++;
-            }
-
-            response.write(true, callback, ByteBuffer.wrap(("Read Input " + r + "\r\n").getBytes()));
-            */
+            String string = Content.Source.asString(request);
+            response.write(true, ByteBuffer.wrap(("Read Input " + string.length() + "\r\n").getBytes()), callback);
             return true;
         }
     }
@@ -361,19 +323,17 @@ public class ThreadStarvationTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            /* TODO
-            baseRequest.setHandled(true);
             response.setStatus(200);
 
-            response.setContentLength(BUFFERS * BUFFER_SIZE);
-            OutputStream out = response.getOutputStream();
-            for (int i = 0; i < BUFFERS; i++)
+            try (OutputStream out = Content.Sink.asOutputStream(response))
             {
-                out.write(content);
-                out.flush();
+                for (int i = 0; i < BUFFERS; i++)
+                {
+                    out.write(content);
+                    out.flush();
+                }
             }
 
-             */
             return true;
         }
     }

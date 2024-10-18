@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,43 +23,48 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ThreadStarvationTest
@@ -75,7 +79,86 @@ public class ThreadStarvationTest
     }
 
     @Test
-    @Tag("flaky")
+    public void testReadStarvation() throws Exception
+    {
+        int maxThreads = 5;
+        int clients = maxThreads + 2;
+        QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, maxThreads);
+        threadPool.setDetailedDump(true);
+        _server = new Server(threadPool);
+
+        ServerConnector connector = new ServerConnector(_server, 1, 1);
+        _server.addConnector(connector);
+
+        ServletContextHandler context = new ServletContextHandler(_server, "/");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                IO.copy(req.getInputStream(), resp.getOutputStream());
+            }
+        }), "/*");
+        _server.setHandler(context);
+
+        _server.start();
+
+        ExecutorService clientExecutors = Executors.newFixedThreadPool(clients);
+
+        List<Callable<String>> clientTasks = new ArrayList<>();
+
+        for (int i = 0; i < clients; i++)
+        {
+            clientTasks.add(() ->
+            {
+                try (Socket client = new Socket("localhost", connector.getLocalPort());
+                     OutputStream out = client.getOutputStream();
+                     InputStream in = client.getInputStream())
+                {
+                    client.setSoTimeout(10000);
+
+                    String request =
+                        "PUT / HTTP/1.0\r\n" +
+                            "host: localhost\r\n" +
+                            "content-length: 10\r\n" +
+                            "\r\n" +
+                            "1";
+
+                    // Write partial request
+                    out.write(request.getBytes(StandardCharsets.UTF_8));
+                    out.flush();
+
+                    // Finish Request
+                    Thread.sleep(1500);
+                    out.write(("234567890\r\n").getBytes(StandardCharsets.UTF_8));
+                    out.flush();
+
+                    // Read Response
+                    String response = IO.toString(in);
+                    assertEquals(-1, in.read());
+                    return response;
+                }
+            });
+        }
+
+        try
+        {
+            List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
+
+            for (Future<String> responseFut : responses)
+            {
+                String response = responseFut.get();
+                assertThat(response, containsString("200 OK"));
+                assertThat(response, containsString("1234567890"));
+            }
+        }
+        finally
+        {
+            clientExecutors.shutdownNow();
+        }
+    }
+
+    @Test
     public void testDefaultServletSuccess() throws Exception
     {
         int maxThreads = 6;
@@ -84,10 +167,10 @@ public class ThreadStarvationTest
         _server = new Server(threadPool);
 
         // Prepare a big file to download.
-        File directory = MavenTestingUtils.getTargetTestingDir();
-        Files.createDirectories(directory.toPath());
+        Path directory = MavenTestingUtils.getTargetTestingPath();
+        Files.createDirectories(directory);
         String resourceName = "resource.bin";
-        Path resourcePath = Paths.get(directory.getPath(), resourceName);
+        Path resourcePath = directory.resolve(resourceName);
         try (OutputStream output = Files.newOutputStream(resourcePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE))
         {
             byte[] chunk = new byte[256 * 1024];
@@ -100,7 +183,7 @@ public class ThreadStarvationTest
             }
         }
 
-        CountDownLatch writePending = new CountDownLatch(1);
+        final CountDownLatch writePending = new CountDownLatch(1);
         ServerConnector connector = new ServerConnector(_server, 0, 1)
         {
             @Override
@@ -121,7 +204,7 @@ public class ThreadStarvationTest
         _server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler(_server, "/");
-        context.setResourceBase(directory.toURI().toString());
+        context.setResourceBase(directory.toUri().toString());
         context.addServlet(DefaultServlet.class, "/*").setAsyncSupported(false);
         _server.setHandler(context);
 
@@ -144,37 +227,253 @@ public class ThreadStarvationTest
         // Wait for a thread on the servlet to block.
         assertTrue(writePending.await(5, TimeUnit.SECONDS));
 
-        ExecutorService executor = Executors.newCachedThreadPool();
-
         long expected = Files.size(resourcePath);
-        List<CompletableFuture<Integer>> totals = new ArrayList<>();
+        byte[] buffer = new byte[48 * 1024];
+        List<Exchanger<Long>> totals = new ArrayList<>();
         for (Socket socket : sockets)
         {
-            InputStream input = socket.getInputStream();
-            totals.add(CompletableFuture.supplyAsync(() ->
+            final Exchanger<Long> x = new Exchanger<>();
+            totals.add(x);
+            final InputStream input = socket.getInputStream();
+
+            new Thread()
             {
-                try
+                @Override
+                public void run()
                 {
-                    HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
-                    if (response != null)
-                        return response.getContentBytes().length;
-                    return 0;
+                    long total = 0;
+                    try
+                    {
+                        // look for CRLFCRLF
+                        StringBuilder header = new StringBuilder();
+                        int state = 0;
+                        while (state < 4 && header.length() < 2048)
+                        {
+                            int ch = input.read();
+                            if (ch < 0)
+                                break;
+                            header.append((char)ch);
+                            switch (state)
+                            {
+                                case 0:
+                                    if (ch == '\r')
+                                        state = 1;
+                                    break;
+                                case 1:
+                                    if (ch == '\n')
+                                        state = 2;
+                                    else
+                                        state = 0;
+                                    break;
+                                case 2:
+                                    if (ch == '\r')
+                                        state = 3;
+                                    else
+                                        state = 0;
+                                    break;
+                                case 3:
+                                    if (ch == '\n')
+                                        state = 4;
+                                    else
+                                        state = 0;
+                                    break;
+                            }
+                        }
+
+                        while (total < expected)
+                        {
+                            int read = input.read(buffer);
+                            if (read < 0)
+                                break;
+                            total += read;
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            x.exchange(total);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
                 }
-                catch (IOException x)
-                {
-                    x.printStackTrace();
-                    return -1;
-                }
-            }, executor));
+            }.start();
         }
 
-        // Wait for all responses to arrive.
-        CompletableFuture.allOf(totals.toArray(new CompletableFuture[0])).get(20, TimeUnit.SECONDS);
-
-        for (CompletableFuture<Integer> total : totals)
+        for (Exchanger<Long> x : totals)
         {
-            assertFalse(total.isCompletedExceptionally());
-            assertEquals(expected, total.get().intValue());
+            Long total = x.exchange(-1L, 10000, TimeUnit.SECONDS);
+            assertEquals(expected, total.longValue());
+        }
+
+        // We could read everything, good.
+        for (Socket socket : sockets)
+        {
+            socket.close();
+        }
+    }
+
+    @Test
+    public void testFailureStarvation() throws Exception
+    {
+        int acceptors = 0;
+        int selectors = 1;
+        int maxThreads = 10;
+        final int barried = maxThreads - acceptors - selectors * 2;
+        final CyclicBarrier barrier = new CyclicBarrier(barried);
+
+        QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, maxThreads);
+        threadPool.setDetailedDump(true);
+        _server = new Server(threadPool);
+
+        ServerConnector connector = new ServerConnector(_server, acceptors, selectors)
+        {
+            @Override
+            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+            {
+                return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
+                {
+                    @Override
+                    public boolean flush(ByteBuffer... buffers) throws IOException
+                    {
+                        super.flush(buffers[0]);
+                        throw new IOException("TEST FAILURE");
+                    }
+                };
+            }
+        };
+        connector.setIdleTimeout(Long.MAX_VALUE);
+        _server.addConnector(connector);
+
+        final AtomicInteger count = new AtomicInteger(0);
+        class TheHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                int c = count.getAndIncrement();
+                try
+                {
+                    if (c < barried)
+                    {
+                        barrier.await(10, TimeUnit.SECONDS);
+                    }
+                }
+                catch (InterruptedException | BrokenBarrierException | TimeoutException e)
+                {
+                    throw new ServletException(e);
+                }
+
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 13L);
+                response.write(true, BufferUtil.toBuffer("Hello World!\n"), callback);
+                return true;
+            }
+        }
+
+        _server.setHandler(new TheHandler());
+
+        _server.start();
+
+        List<Socket> sockets = new ArrayList<>();
+        for (int i = 0; i < maxThreads * 2; ++i)
+        {
+            Socket socket = new Socket("localhost", connector.getLocalPort());
+            sockets.add(socket);
+            OutputStream output = socket.getOutputStream();
+            String request =
+                "GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    //                    "Connection: close\r\n" +
+                    "\r\n";
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+        }
+
+        byte[] buffer = new byte[48 * 1024];
+        List<Exchanger<Integer>> totals = new ArrayList<>();
+        for (Socket socket : sockets)
+        {
+            final Exchanger<Integer> x = new Exchanger<>();
+            totals.add(x);
+            final InputStream input = socket.getInputStream();
+
+            new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    int read = 0;
+                    try
+                    {
+                        // look for CRLFCRLF
+                        StringBuilder header = new StringBuilder();
+                        int state = 0;
+                        while (state < 4 && header.length() < 2048)
+                        {
+                            int ch = input.read();
+                            if (ch < 0)
+                                break;
+                            header.append((char)ch);
+                            switch (state)
+                            {
+                                case 0:
+                                    if (ch == '\r')
+                                        state = 1;
+                                    break;
+                                case 1:
+                                    if (ch == '\n')
+                                        state = 2;
+                                    else
+                                        state = 0;
+                                    break;
+                                case 2:
+                                    if (ch == '\r')
+                                        state = 3;
+                                    else
+                                        state = 0;
+                                    break;
+                                case 3:
+                                    if (ch == '\n')
+                                        state = 4;
+                                    else
+                                        state = 0;
+                                    break;
+                            }
+                        }
+
+                        read = input.read(buffer);
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            x.exchange(read);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }.start();
+        }
+
+        for (Exchanger<Integer> x : totals)
+        {
+            Integer read = x.exchange(-1, 10, TimeUnit.SECONDS);
+            assertEquals(-1, read.intValue());
         }
 
         // We could read everything, good.
@@ -183,122 +482,6 @@ public class ThreadStarvationTest
             socket.close();
         }
 
-        executor.shutdown();
-
         _server.stop();
-    }
-
-    @Test
-    @Tag("flaky")
-    public void testFailureStarvation() throws Exception
-    {
-        Logger serverInternalLogger = LoggerFactory.getLogger("org.eclipse.jetty.server.internal");
-        try (StacklessLogging ignored = new StacklessLogging(serverInternalLogger))
-        {
-            int acceptors = 0;
-            int selectors = 1;
-            int maxThreads = 10;
-            int parties = maxThreads - acceptors - selectors * 2;
-            CyclicBarrier barrier = new CyclicBarrier(parties);
-
-            QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, maxThreads);
-            threadPool.setDetailedDump(true);
-            _server = new Server(threadPool);
-
-            ServerConnector connector = new ServerConnector(_server, acceptors, selectors)
-            {
-                @Override
-                protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
-                {
-                    return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
-                    {
-                        @Override
-                        public boolean flush(ByteBuffer... buffers) throws IOException
-                        {
-                            // Write only the headers, then throw.
-                            super.flush(buffers[0]);
-                            throw new IOException("thrown by test");
-                        }
-                    };
-                }
-            };
-            connector.setIdleTimeout(Long.MAX_VALUE);
-            _server.addConnector(connector);
-
-            AtomicInteger count = new AtomicInteger(0);
-            _server.setHandler(new Handler.Abstract()
-            {
-                @Override
-                public boolean handle(Request request, Response response, Callback callback) throws Exception
-                {
-                    int c = count.getAndIncrement();
-                    if (c < parties)
-                        barrier.await(10, TimeUnit.SECONDS);
-                    response.setStatus(200);
-                    response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 13);
-                    Content.Sink.write(response, true, "Hello World!\n", callback);
-                    return true;
-                }
-            });
-
-            _server.start();
-
-            List<Socket> sockets = new ArrayList<>();
-            for (int i = 0; i < maxThreads * 2; ++i)
-            {
-                Socket socket = new Socket("localhost", connector.getLocalPort());
-                sockets.add(socket);
-                OutputStream output = socket.getOutputStream();
-                String request = """
-                    GET / HTTP/1.1\r
-                    Host: localhost\r
-                    \r
-                    """;
-                output.write(request.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-            }
-
-            ExecutorService executor = Executors.newCachedThreadPool();
-
-            List<CompletableFuture<Integer>> totals = new ArrayList<>();
-            for (Socket socket : sockets)
-            {
-                InputStream input = socket.getInputStream();
-                totals.add(CompletableFuture.supplyAsync(() ->
-                {
-                    try
-                    {
-                        HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
-                        if (response != null)
-                            return response.getContentBytes().length;
-                        return input.read();
-                    }
-                    catch (Exception x)
-                    {
-                        x.printStackTrace();
-                        return -1;
-                    }
-                }, executor));
-            }
-
-            // Wait for all responses to arrive.
-            CompletableFuture.allOf(totals.toArray(new CompletableFuture[0])).get(20, TimeUnit.SECONDS);
-
-            for (CompletableFuture<Integer> total : totals)
-            {
-                assertFalse(total.isCompletedExceptionally());
-                assertEquals(-1, total.get().intValue());
-            }
-
-            // We could read everything, good.
-            for (Socket socket : sockets)
-            {
-                socket.close();
-            }
-
-            executor.shutdown();
-
-            _server.stop();
-        }
     }
 }

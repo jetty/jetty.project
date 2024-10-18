@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -589,7 +590,7 @@ public class HttpClientDemandTest extends AbstractTest
         assertThat(accumulatedSize, is(totalBytes));
     }
 
-    private static class Accumulator implements Runnable
+    private static class Accumulator implements Invocable.Task
     {
         private final Content.Source contentSource;
         private final List<Content.Chunk> chunks;
@@ -612,6 +613,12 @@ public class HttpClientDemandTest extends AbstractTest
             chunks.add(chunk);
             if (!chunk.isLast())
                 contentSource.demand(this);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
     }
 

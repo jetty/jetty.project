@@ -188,6 +188,7 @@ public interface Response
         default void onContentSource(Response response, Content.Source contentSource)
         {
             Content.Chunk chunk = contentSource.read();
+            // demandCallback eventually calls onContent() which calls end-user code, so its InvocationType must be BLOCKING.
             Runnable demandCallback = () -> onContentSource(response, contentSource);
             if (chunk == null)
             {
