@@ -159,6 +159,100 @@ public class ThreadStarvationTest
     }
 
     @Test
+    public void testFormStarvation() throws Exception
+    {
+        int maxThreads = 5;
+        int clients = maxThreads + 2;
+        QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, maxThreads);
+        threadPool.setDetailedDump(true);
+        _server = new Server(threadPool);
+
+        ServerConnector connector = new ServerConnector(_server, 1, 1);
+        _server.addConnector(connector);
+
+        ServletContextHandler context = new ServletContextHandler("/");
+        context.addServlet(new ServletHolder(new HttpServlet() {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.setStatus(200);
+                req.getParameterMap().forEach((key, value) ->
+                {
+                    try
+                    {
+                        resp.getWriter().printf("%s=%s\n", key, Arrays.asList(value));
+                    }
+                    catch (IOException ex)
+                    {
+                        throw new RuntimeException(ex);
+                    }
+                });
+            }
+        }), "/*");
+        _server.setHandler(context);
+
+        _server.start();
+
+        ExecutorService clientExecutors = Executors.newFixedThreadPool(clients);
+
+        List<Callable<String>> clientTasks = new ArrayList<>();
+
+        for (int i = 0; i < clients; i++)
+        {
+            clientTasks.add(() ->
+            {
+                try (Socket client = new Socket("localhost", connector.getLocalPort());
+                     OutputStream out = client.getOutputStream();
+                     InputStream in = client.getInputStream())
+                {
+                    client.setSoTimeout(10000);
+
+                    String request = """
+                        POST / HTTP/1.0\r
+                        host: localhost\r
+                        content-type: application/x-www-form-urlencoded\r
+                        content-length: 11\r
+                        \r
+                        a=1&b""";
+
+                    // Write partial request
+                    out.write(request.getBytes(StandardCharsets.UTF_8));
+                    out.flush();
+
+                    // Finish Request
+                    Thread.sleep(1500);
+                    out.write(("=2&c=3\r\n").getBytes(StandardCharsets.UTF_8));
+                    out.flush();
+
+                    // Read Response
+                    String response = IO.toString(in);
+                    assertEquals(-1, in.read());
+                    return response;
+                }
+            });
+        }
+
+        try
+        {
+            List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
+
+            for (Future<String> responseFut : responses)
+            {
+                String response = responseFut.get();
+                assertThat(response, containsString("200 OK"));
+                assertThat(response, containsString("a=[1]"));
+                assertThat(response, containsString("b=[2]"));
+                assertThat(response, containsString("c=[3]"));
+            }
+        }
+        finally
+        {
+            clientExecutors.shutdownNow();
+        }
+    }
+
+
+    @Test
     public void testDefaultServletSuccess() throws Exception
     {
         int maxThreads = 6;

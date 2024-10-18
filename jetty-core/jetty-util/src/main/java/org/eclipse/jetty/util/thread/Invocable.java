@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -242,5 +250,116 @@ public interface Invocable
             }
         }
         return result;
+    }
+
+    /**
+     * An extension of {@link java.util.concurrent.CompletableFuture} that is an {@link Invocable}.
+     * The {@link InvocationType} is initially the type used in construction (default NON_BLOCKING).
+     * If a non async method is called, then the invocation type of any passed function is used.
+     * @param <V>
+     */
+    class InvocableCompletableFuture<V> extends java.util.concurrent.CompletableFuture<V> implements Invocable
+    {
+        private final AtomicReference<InvocationType> _invocationType = new AtomicReference<>();
+
+        public InvocableCompletableFuture()
+        {
+            this(null);
+        }
+
+        public InvocableCompletableFuture(InvocationType invocationType)
+        {
+            _invocationType.set(Objects.requireNonNullElse(invocationType, InvocationType.NON_BLOCKING));
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _invocationType.get();
+        }
+
+        @Override
+        public java.util.concurrent.CompletableFuture<Void> acceptEither(CompletionStage<? extends V> other, Consumer<? super V> action)
+        {
+            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(action)));
+            return super.acceptEither(other, action);
+        }
+
+        @Override
+        public <U> java.util.concurrent.CompletableFuture<U> applyToEither(CompletionStage<? extends V> other, Function<? super V, U> fn)
+        {
+            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(fn)));
+            return super.applyToEither(other, fn);
+        }
+
+        @Override
+        public <U> java.util.concurrent.CompletableFuture<U> handle(BiFunction<? super V, Throwable, ? extends U> fn)
+        {
+            _invocationType.set(Invocable.getInvocationType(fn));
+            return super.handle(fn);
+        }
+
+        @Override
+        public java.util.concurrent.CompletableFuture<Void> runAfterBoth(CompletionStage<?> other, Runnable action)
+        {
+            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(action)));
+            return super.runAfterBoth(other, action);
+        }
+
+        @Override
+        public java.util.concurrent.CompletableFuture<Void> runAfterEither(CompletionStage<?> other, Runnable action)
+        {
+            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(action)));
+            return super.runAfterEither(other, action);
+        }
+
+        @Override
+        public java.util.concurrent.CompletableFuture<Void> thenAccept(Consumer<? super V> action)
+        {
+            _invocationType.set(Invocable.getInvocationType(action));
+            return super.thenAccept(action);
+        }
+
+        @Override
+        public <U> java.util.concurrent.CompletableFuture<Void> thenAcceptBoth(CompletionStage<? extends U> other, BiConsumer<? super V, ? super U> action)
+        {
+            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(action)));
+            return super.thenAcceptBoth(other, action);
+        }
+
+        @Override
+        public <U> java.util.concurrent.CompletableFuture<U> thenApply(Function<? super V, ? extends U> fn)
+        {
+            _invocationType.set(Invocable.getInvocationType(fn));
+            return super.thenApply(fn);
+        }
+
+        @Override
+        public <U, V1> java.util.concurrent.CompletableFuture<V1> thenCombine(CompletionStage<? extends U> other, BiFunction<? super V, ? super U, ? extends V1> fn)
+        {
+            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(fn)));
+            return super.thenCombine(other, fn);
+        }
+
+        @Override
+        public <U> java.util.concurrent.CompletableFuture<U> thenCompose(Function<? super V, ? extends CompletionStage<U>> fn)
+        {
+            _invocationType.set(Invocable.getInvocationType(fn));
+            return super.thenCompose(fn);
+        }
+
+        @Override
+        public java.util.concurrent.CompletableFuture<Void> thenRun(Runnable action)
+        {
+            _invocationType.set(Invocable.getInvocationType(action));
+            return super.thenRun(action);
+        }
+
+        @Override
+        public java.util.concurrent.CompletableFuture<V> whenComplete(BiConsumer<? super V, ? super Throwable> action)
+        {
+            _invocationType.set(Invocable.getInvocationType(action));
+            return super.whenComplete(action);
+        }
     }
 }
