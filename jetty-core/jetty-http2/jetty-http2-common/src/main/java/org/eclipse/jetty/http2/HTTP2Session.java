@@ -741,11 +741,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     private GoAwayFrame newGoAwayFrame(int error, String reason)
     {
-        return newGoAwayFrame(getLastRemoteStreamId(), error, reason);
-    }
-
-    private GoAwayFrame newGoAwayFrame(int lastRemoteStreamId, int error, String reason)
-    {
         byte[] payload = null;
         if (reason != null)
         {
@@ -753,7 +748,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             reason = reason.substring(0, Math.min(reason.length(), 32));
             payload = reason.getBytes(StandardCharsets.UTF_8);
         }
-        return new GoAwayFrame(lastRemoteStreamId, error, payload);
+        return new GoAwayFrame(getLastRemoteStreamId(), error, payload);
     }
 
     @Override
@@ -1267,15 +1262,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             return false;
         }
 
-        @Override
-        public void failed(Throwable x)
+        public void closeAndFail(Throwable failure)
         {
             if (stream != null)
             {
                 stream.close();
                 stream.getSession().removeStream(stream);
             }
-            super.failed(x);
+            failed(failure);
+        }
+
+        public void resetAndFail(Throwable x)
+        {
+            if (stream != null)
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.from(() -> failed(x)));
         }
 
         /**
@@ -1808,10 +1808,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
             if (failStreams)
             {
-                // Must compare the lastStreamId only with local streams.
-                // For example, a client that sent request with streamId=137 may send a GOAWAY(4),
-                // where streamId=4 is the last stream pushed by the server to the client.
-                // The server must not compare its local streamId=4 with remote streamId=137.
+                // The lastStreamId carried by the GOAWAY is that of a local stream,
+                // so the lastStreamId must be compared only to local streams ids.
                 Predicate<Stream> failIf = stream -> stream.isLocal() && stream.getId() > frame.getLastStreamId();
                 failStreams(failIf, "closing", false);
             }
@@ -1839,7 +1837,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                     case REMOTELY_CLOSED ->
                     {
                         closed = CloseState.CLOSING;
-                        GoAwayFrame goAwayFrame = newGoAwayFrame(0, ErrorCode.NO_ERROR.code, reason);
+                        GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
                         zeroStreamsAction = () -> terminate(goAwayFrame);
                         failure = new ClosedChannelException();
                         failStreams = true;
@@ -1869,7 +1867,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             }
             else
             {
-                GoAwayFrame goAwayFrame = newGoAwayFrame(0, ErrorCode.NO_ERROR.code, reason);
+                GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
                 abort(reason, cause, Callback.from(() -> terminate(goAwayFrame)));
             }
         }
@@ -1998,7 +1996,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                         closed = CloseState.CLOSING;
                         zeroStreamsAction = () ->
                         {
-                            GoAwayFrame goAwayFrame = newGoAwayFrame(0, ErrorCode.NO_ERROR.code, reason);
+                            GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
                             terminate(goAwayFrame);
                         };
                         failure = x;

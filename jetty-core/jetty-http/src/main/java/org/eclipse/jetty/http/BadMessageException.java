@@ -49,6 +49,6 @@ public class BadMessageException extends HttpException.RuntimeException
     public BadMessageException(int code, String reason, Throwable cause)
     {
         super(code, reason, cause);
-        assert code >= 400 && code < 500;
+        assert HttpStatus.isClientError(code);
     }
 }
