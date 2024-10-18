@@ -115,6 +115,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _combinedListener = new HttpChannelListeners(_connector.getBeans(Listener.class));
         _requestDispatcher = new RequestDispatchable();
         _asyncDispatcher = new AsyncDispatchable();
+        // Inner class used instead of lambda for clarity in stack traces.
         _needContentTask = new NeedContentInvocableTask();
 
         if (LOG.isDebugEnabled())
@@ -1605,16 +1606,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private class NeedContentInvocableTask implements Invocable.Task
     {
         @Override
-        public InvocationType getInvocationType()
-        {
-            return getRequest().getHttpInput().getReadListenerInvocationType();
-        }
-
-        @Override
         public void run()
         {
             if (getRequest().getHttpInput().onContentProducible())
                 handle();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getRequest().getHttpInput().getReadListenerInvocationType();
         }
     }
 }

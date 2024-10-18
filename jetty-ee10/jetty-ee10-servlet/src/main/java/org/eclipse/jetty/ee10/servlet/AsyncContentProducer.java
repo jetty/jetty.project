@@ -31,13 +31,14 @@ import org.slf4j.LoggerFactory;
  * Non-blocking {@link ContentProducer} implementation. Calling {@link ContentProducer#nextChunk()} will never block
  * but will return null when there is no available content.
  */
-class AsyncContentProducer implements ContentProducer, Invocable.Task
+class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
     private static final Content.Chunk RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"), true);
 
     final AutoLock _lock;
     private final ServletChannel _servletChannel;
+    private final IsReadyInvocableTask _isReadyInvocableTask;
     private Content.Chunk _chunk;
     private long _firstByteNanoTime = Long.MIN_VALUE;
     private long _bytesArrived;
@@ -50,6 +51,8 @@ class AsyncContentProducer implements ContentProducer, Invocable.Task
     {
         _servletChannel = servletChannel;
         _lock = lock;
+        // Inner class used instead of lambda for clarity in stack traces.
+        _isReadyInvocableTask = new IsReadyInvocableTask();
     }
 
     ServletChannel getServletChannel()
@@ -251,7 +254,7 @@ class AsyncContentProducer implements ContentProducer, Invocable.Task
         }
 
         state.onReadUnready();
-        _servletChannel.getRequest().demand(this);
+        _servletChannel.getRequest().demand(_isReadyInvocableTask);
 
         if (LOG.isDebugEnabled())
             LOG.debug("isReady(), no chunk {}", this);
@@ -261,28 +264,6 @@ class AsyncContentProducer implements ContentProducer, Invocable.Task
     boolean isUnready()
     {
         return _servletChannel.getServletRequestState().isInputUnready();
-    }
-
-    /**
-     * This run method is used as the Runnable for demand
-     */
-    @Override
-    public void run()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("isReady() demand callback {}", this);
-        // We could call this.onContentProducible() directly but this
-        // would mean we would need to take the lock here while it
-        // is the responsibility of the HttpInput to take it.
-        if (_servletChannel.getHttpInput().onContentProducible())
-            _servletChannel.handle();
-    }
-
-    @Override
-    public InvocationType getInvocationType()
-    {
-        // This is the invocation type when the producer is passed as demand, so ask the HttpInput.
-        return _servletChannel.getHttpInput().getReadListenerInvocationType();
     }
 
     /**
@@ -418,6 +399,28 @@ class AsyncContentProducer implements ContentProducer, Invocable.Task
         public String toString()
         {
             return getClass().getSimpleName() + " permits=" + _permits;
+        }
+    }
+
+    private class IsReadyInvocableTask implements Invocable.Task
+    {
+        @Override
+        public void run()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("isReady() demand callback {}", this);
+            // We could call this.onContentProducible() directly but this
+            // would mean we would need to take the lock here while it
+            // is the responsibility of the HttpInput to take it.
+            if (_servletChannel.getHttpInput().onContentProducible())
+                _servletChannel.handle();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            // This is the invocation type when the producer is passed as demand, so ask the HttpInput.
+            return _servletChannel.getHttpInput().getReadListenerInvocationType();
         }
     }
 }
