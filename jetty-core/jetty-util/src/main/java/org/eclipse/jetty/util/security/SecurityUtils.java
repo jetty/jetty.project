@@ -95,7 +95,7 @@ public class SecurityUtils
     {
         try
         {
-            // Use reflection to work with Java versions that have and don't have java.lang.SecurityManager.
+            // Use reflection to work with Java versions that have and don't have SecurityManager.
             Class<?> klass = ClassLoader.getPlatformClassLoader().loadClass("java.lang.SecurityManager");
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             return lookup.findVirtual(klass, "checkPermission", MethodType.methodType(Void.class, Permission.class));
@@ -114,7 +114,6 @@ public class SecurityUtils
     {
         if (getSecurityManager == null)
         {
-            // method does not exist in this Java version
             return null;
         }
         try
@@ -123,7 +122,6 @@ public class SecurityUtils
         }
         catch (Throwable ignored)
         {
-            // Security manager is not enabled (or maybe some other problem)
             return null;
         }
     }
@@ -190,7 +188,7 @@ public class SecurityUtils
     }
 
     /**
-     * <p>Runs the given action as the given subject.</p>
+     * <p>Runs the  action as the given subject.</p>
      *
      * @param subject the subject this action runs as
      * @param action the action to run
