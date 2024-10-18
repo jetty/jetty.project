@@ -167,11 +167,9 @@ public class SecurityUtils
      */
     public static <T> T doPrivileged(PrivilegedAction<T> action)
     {
-        // Keep this method short and inlineable.
-        MethodHandle methodHandle = doPrivileged;
-        if (methodHandle == null)
+        if (doPrivileged == null)
             return action.run();
-        return doPrivileged(methodHandle, action);
+        return doPrivileged(doPrivileged, action);
     }
 
     @SuppressWarnings("unchecked")
