@@ -343,8 +343,6 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Invocable.InvocationType getInvocationType()
     {
-        // TODO Can this actually be done, as we may need to invoke other Runnables after onContent?
-        //      Could we at least avoid the lock???
         Runnable onContent;
         try (AutoLock ignored = _lock.lock())
         {
@@ -980,7 +978,10 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     if (httpChannelState._onContentAvailable != null)
                         throw new IllegalArgumentException("demand pending");
-                    httpChannelState._onContentAvailable = demandCallback;
+                    if (demandCallback instanceof Invocable)
+                        httpChannelState._onContentAvailable = demandCallback;
+                    else
+                        httpChannelState._onContentAvailable = new ReadyTask(InvocationType.NON_BLOCKING, demandCallback);
 
                     if (httpChannelState._expects100Continue && httpChannelState._response._writeCallback == null)
                     {

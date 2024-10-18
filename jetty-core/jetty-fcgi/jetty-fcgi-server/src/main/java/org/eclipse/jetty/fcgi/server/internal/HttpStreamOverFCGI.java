@@ -182,8 +182,12 @@ public class HttpStreamOverFCGI implements HttpStream
     private void notifyContentAvailable()
     {
         Runnable onContentAvailable = _httpChannel.onContentAvailable();
-        if (onContentAvailable != null)
+        if (onContentAvailable == null)
+            return;
+        if (Invocable.getInvocationType(onContentAvailable) == InvocationType.NON_BLOCKING)
             onContentAvailable.run();
+        else
+            execute(onContentAvailable);
     }
 
     public void onContent(Content.Chunk chunk)
