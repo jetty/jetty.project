@@ -52,6 +52,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.XMLConstants;
+import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.ConcurrentPool;
@@ -2085,11 +2086,8 @@ public class XmlConfiguration
         }
 
         @Override
-        public void setValidating(boolean validating)
+        protected void configure(SAXParser saxParser)
         {
-            // Initialize the SAXParser and generic XmlParser behaviors.
-            super.setValidating(validating);
-
             try
             {
                 XMLReader xmlReader = getSAXParser().getXMLReader();

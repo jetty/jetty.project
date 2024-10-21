@@ -69,6 +69,7 @@ public class XmlParser
     private Object _xpaths;
     private String _dtd;
     private List<EntityResolver> _entityResolvers = new ArrayList<>();
+    private SAXParserFactory factory;
 
     /**
      * Construct XmlParser
@@ -112,6 +113,16 @@ public class XmlParser
         return SAXParserFactory.newInstance();
     }
 
+    protected SAXParser newSAXParser() throws ParserConfigurationException, SAXException
+    {
+        return factory.newSAXParser();
+    }
+
+    protected void configure(SAXParser saxParser)
+    {
+        /* override to configure sax parser at the right time */
+    }
+
     protected static void setFeature(SAXParserFactory factory, String name, boolean value)
     {
         try
@@ -140,9 +151,9 @@ public class XmlParser
     {
         try
         {
-            SAXParserFactory factory = newSAXParserFactory();
+            factory = newSAXParserFactory();
             factory.setValidating(validating);
-            _parser = factory.newSAXParser();
+            _parser = newSAXParser();
 
             try
             {
@@ -174,6 +185,10 @@ public class XmlParser
         {
             LOG.warn("Unable to set validating on XML Parser", e);
             throw new Error(e.toString());
+        }
+        finally
+        {
+            configure(_parser);
         }
     }
 
