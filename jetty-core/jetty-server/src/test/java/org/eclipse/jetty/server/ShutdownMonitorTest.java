@@ -23,11 +23,9 @@ import java.net.Socket;
 
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
-import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,11 +45,6 @@ public class ShutdownMonitorTest
     public void dispose()
     {
         ShutdownMonitor.reset();
-    }
-
-    public static boolean isStopExitSystemPropertySet()
-    {
-        return System.getProperty("STOP.EXIT") != null;
     }
     
     @Test
@@ -155,7 +148,7 @@ public class ShutdownMonitorTest
      * This test expects STOP.EXIT to be FALSE.
      */
     @Test
-    @EnabledIf("isStopExitSystemPropertySet")
+    @EnabledIfSystemProperty(named="STOP.EXIT", matches="[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
     public void testNoExitSystemProperty() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();

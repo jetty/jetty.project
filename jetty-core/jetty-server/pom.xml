@@ -91,7 +91,7 @@
           <systemPropertyVariables>
             <STOP.EXIT>FALSE</STOP.EXIT>
           </systemPropertyVariables>
-          <argLine>-DSTOP.EXIT=false @{argLine} ${jetty.surefire.argLine}
+          <argLine>@{argLine} ${jetty.surefire.argLine}
             --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging
             --add-reads org.eclipse.jetty.server=java.xml</argLine>
         </configuration>
