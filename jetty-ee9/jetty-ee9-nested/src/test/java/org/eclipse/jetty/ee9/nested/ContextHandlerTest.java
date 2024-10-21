@@ -863,6 +863,12 @@ public class ContextHandlerTest
         assertThat(response.get("Nested"), is("Inserted"));
     }
 
+    @Test
+    public void testGetResourceExists() throws Exception
+    {
+
+    }
+
     private static class TestErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
     {
         @Override
