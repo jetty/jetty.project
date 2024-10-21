@@ -14,18 +14,28 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.server.AliasCheck;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 
-@Disabled // TODO
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class ContextHandlerGetResourceTest
 {
     private static boolean OS_ALIAS_SUPPORTED;
@@ -86,10 +96,10 @@ public class ContextHandlerGetResourceTest
 
         server = new Server();
         context = new ContextHandler("/");
-        /* TODO
+
         context.clearAliasChecks();
-        context.setBaseResource(Resource.newResource(docroot));
-        context.addAliasCheck(new ContextHandler.AliasCheck()
+        context.setBaseResource(ResourceFactory.of(context).newResource(docroot.toPath()));
+        context.addAliasCheck(new AliasCheck()
         {
             final SymlinkAllowedResourceAliasChecker symlinkcheck = new SymlinkAllowedResourceAliasChecker(context);
             {
@@ -97,17 +107,15 @@ public class ContextHandlerGetResourceTest
             }
 
             @Override
-            public boolean check(String pathInContext, Resource resource)
+            public boolean checkAlias(String pathInContext, Resource resource)
             {
                 if (allowAliases.get())
                     return true;
                 if (allowSymlinks.get())
-                    return symlinkcheck.check(pathInContext, resource);
+                    return symlinkcheck.checkAlias(pathInContext, resource);
                 return allowAliases.get();
             }
         });
-
-         */
 
         server.setHandler(context);
         server.start();
@@ -119,7 +127,7 @@ public class ContextHandlerGetResourceTest
         server.stop();
     }
 
-    /* TODO
+    /*
     @Test
     public void testBadPath() throws Exception
     {
