@@ -149,7 +149,7 @@ public class ShutdownMonitorTest
      * This test expects STOP.EXIT to be FALSE.
      */
     @Test
-    @EnabledIfSystemProperty(named="STOP.EXIT", matches="[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
+    @EnabledIfSystemProperty(named = "STOP.EXIT", matches = "[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
     public void testNoExitSystemProperty() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
@@ -181,7 +181,7 @@ public class ShutdownMonitorTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named="STOP.EXIT", matches="[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
+    @DisabledIfSystemProperty(named = "STOP.EXIT", matches = "[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
     public void testExitVmDefault() throws Exception
     {
         //If the STOP.EXIT system property is set, then this will
