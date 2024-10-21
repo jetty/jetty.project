@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -180,7 +181,7 @@ public class ShutdownMonitorTest
     }
 
     @Test
-    @DisabledIf("isStopExitSystemPropertySet")
+    @DisabledIfSystemProperty(named="STOP.EXIT", matches="[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
     public void testExitVmDefault() throws Exception
     {
         //If the STOP.EXIT system property is set, then this will
