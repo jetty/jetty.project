@@ -208,10 +208,10 @@
     <ee10.jakarta.xml.bind.impl.version>4.0.5</ee10.jakarta.xml.bind.impl.version>
     <ee10.jakarta.xml.jaxws.impl.version>4.0.2</ee10.jakarta.xml.jaxws.impl.version>
     <ee10.jakarta.xml.ws.api.version>4.0.1</ee10.jakarta.xml.ws.api.version>
-    <ee10.jersey.version>3.1.5</ee10.jersey.version>
+    <ee10.jersey.version>3.1.9</ee10.jersey.version>
     <ee10.jsp.impl.version>10.1.31</ee10.jsp.impl.version>
     <ee10.mail.impl.version>2.0.1</ee10.mail.impl.version>
-    <ee10.weld.version>5.1.2.Final</ee10.weld.version>
+    <ee10.weld.version>5.1.3.Final</ee10.weld.version>
 
     <ee11.jakarta.activation.api.version>2.1.3</ee11.jakarta.activation.api.version>
     <ee11.jakarta.annotation.api.version>3.0.0</ee11.jakarta.annotation.api.version>
