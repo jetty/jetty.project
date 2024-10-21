@@ -112,7 +112,7 @@ public class XmlParser
         return SAXParserFactory.newInstance();
     }
 
-    protected void setFeature(SAXParserFactory factory, String name, boolean value)
+    protected static void setFeature(SAXParserFactory factory, String name, boolean value)
     {
         try
         {
@@ -124,7 +124,7 @@ public class XmlParser
         }
     }
 
-    protected void setFeature(XMLReader xmlReader, String name, boolean value)
+    protected static void setFeature(XMLReader xmlReader, String name, boolean value)
     {
         try
         {
