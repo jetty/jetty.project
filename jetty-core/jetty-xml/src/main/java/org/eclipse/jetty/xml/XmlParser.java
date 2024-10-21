@@ -31,6 +31,7 @@ import javax.xml.catalog.Catalog;
 import javax.xml.catalog.CatalogFeatures;
 import javax.xml.catalog.CatalogManager;
 import javax.xml.catalog.CatalogResolver;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
@@ -43,6 +44,8 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
@@ -107,6 +110,30 @@ public class XmlParser
     protected SAXParserFactory newSAXParserFactory()
     {
         return SAXParserFactory.newInstance();
+    }
+
+    protected void setFeature(SAXParserFactory factory, String name, boolean value)
+    {
+        try
+        {
+            factory.setFeature(name, value);
+        }
+        catch (SAXNotSupportedException | SAXNotRecognizedException | ParserConfigurationException e)
+        {
+            LOG.warn("Unable to setFeature({}, {})", name, value, e);
+        }
+    }
+
+    protected void setFeature(XMLReader xmlReader, String name, boolean value)
+    {
+        try
+        {
+            xmlReader.setFeature(name, value);
+        }
+        catch (SAXNotSupportedException | SAXNotRecognizedException e)
+        {
+            LOG.warn("Unable to setFeature({}, {})", name, value, e);
+        }
     }
 
     public void setValidating(boolean validating)

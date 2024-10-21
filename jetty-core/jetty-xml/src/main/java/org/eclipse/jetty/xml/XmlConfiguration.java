@@ -51,6 +51,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.ConcurrentPool;
@@ -2074,6 +2075,10 @@ public class XmlConfiguration
         {
             // Use JVM default implementation (not the one found in the classloader from non-JVM sources)
             SAXParserFactory factory = SAXParserFactory.newDefaultInstance();
+            // Use secure processing factory level defaults (to allow
+            // newly created SAXParsers from this factory to be initialized properly
+            // for external entity handling)
+            setFeature(factory, XMLConstants.FEATURE_SECURE_PROCESSING, true);
             // Don't allow use of XInclude to reference external entities.
             factory.setXIncludeAware(false);
             return factory;
@@ -2082,6 +2087,7 @@ public class XmlConfiguration
         @Override
         public void setValidating(boolean validating)
         {
+            // Initialize the SAXParser and generic XmlParser behaviors.
             super.setValidating(validating);
 
             try
@@ -2089,9 +2095,18 @@ public class XmlConfiguration
                 XMLReader xmlReader = getSAXParser().getXMLReader();
 
                 // disable all external entity references with Jetty's Configuration XML.
-                xmlReader.setFeature("http://xml.org/sax/features/external-general-entities", false);
-                xmlReader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-                xmlReader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+                // These features configure the XMLEntityManager that the SAXParser
+                // (and Xerces) uses.   These features are applied to the current
+                // entity (the document being parsed) and how the referenced entities
+                // are to be looked up.  The resulting XMLEntityManager is configured
+                // per document being parsed.
+
+                // Configure SAX
+                setFeature(xmlReader, "http://xml.org/sax/features/external-general-entities", false);
+                setFeature(xmlReader, "http://xml.org/sax/features/external-parameter-entities", false);
+                // Configure Xerces
+                setFeature(xmlReader, "http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
             }
             catch (SAXException e)
             {
