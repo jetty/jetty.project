@@ -15,7 +15,9 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -191,6 +193,16 @@ public interface Invocable
         return InvocationType.BLOCKING;
     }
 
+    static InvocationType combineTypes(InvocationType... it)
+    {
+        if (it == null || it.length == 0)
+            return InvocationType.BLOCKING;
+        InvocationType type = it[0];
+        for (int i = 1; i < it.length; i++)
+            type = combine(type, it[i]);
+        return type;
+    }
+
     /**
      * Get the invocation type of an Object.
      *
@@ -254,111 +266,146 @@ public interface Invocable
 
     /**
      * An extension of {@link java.util.concurrent.CompletableFuture} that is an {@link Invocable}.
-     * The {@link InvocationType} is initially the type used in construction (default NON_BLOCKING).
-     * If a non async method is called, then the invocation type of any passed function is used.
-     * @param <V>
+     * The {@link InvocationType} is the type passed in construction (default NON_BLOCKING).
+     * Methods on {@link java.util.concurrent.CompletableFuture} that may act in contradiction to the passed
+     * {@link InvocationType} are extended to throw {@link IllegalStateException} in those circumstances.
+     * @param <V> The type of the result
      */
     class InvocableCompletableFuture<V> extends java.util.concurrent.CompletableFuture<V> implements Invocable
     {
-        private final AtomicReference<InvocationType> _invocationType = new AtomicReference<>();
-
-        public InvocableCompletableFuture()
-        {
-            this(null);
-        }
+        private final InvocationType _invocationType;
 
         public InvocableCompletableFuture(InvocationType invocationType)
         {
-            _invocationType.set(Objects.requireNonNullElse(invocationType, InvocationType.NON_BLOCKING));
+            _invocationType = Objects.requireNonNull(invocationType);
+            if (_invocationType == InvocationType.EITHER)
+                throw new IllegalArgumentException("EITHER is not supported");
         }
 
         @Override
         public InvocationType getInvocationType()
         {
-            return _invocationType.get();
+            return _invocationType;
+        }
+
+        @Override
+        public V get() throws InterruptedException, ExecutionException
+        {
+            if (getInvocationType() == InvocationType.BLOCKING && !isDone())
+                throw new IllegalStateException("Must be NON_BLOCKING or completed");
+            return super.get();
+        }
+
+        @Override
+        public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+        {
+            if (getInvocationType() == InvocationType.BLOCKING && !isDone())
+                throw new IllegalStateException("Must be NON_BLOCKING or completed");
+            return super.get(timeout, unit);
+        }
+
+        @Override
+        public V join()
+        {
+            if (!isDone() && getInvocationType() == InvocationType.BLOCKING && !isDone())
+                throw new IllegalStateException("Must be NON_BLOCKING or completed");
+            return super.join();
         }
 
         @Override
         public java.util.concurrent.CompletableFuture<Void> acceptEither(CompletionStage<? extends V> other, Consumer<? super V> action)
         {
-            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(action)));
+            if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(action)))
+                throw new IllegalStateException("Bad invocation type when not completed");
+
             return super.acceptEither(other, action);
         }
 
         @Override
         public <U> java.util.concurrent.CompletableFuture<U> applyToEither(CompletionStage<? extends V> other, Function<? super V, U> fn)
         {
-            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(fn)));
+            if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(fn)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.applyToEither(other, fn);
         }
 
         @Override
         public <U> java.util.concurrent.CompletableFuture<U> handle(BiFunction<? super V, Throwable, ? extends U> fn)
         {
-            _invocationType.set(Invocable.getInvocationType(fn));
+            if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(fn)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.handle(fn);
         }
 
         @Override
         public java.util.concurrent.CompletableFuture<Void> runAfterBoth(CompletionStage<?> other, Runnable action)
         {
-            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(action)));
+            if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(action)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.runAfterBoth(other, action);
         }
 
         @Override
         public java.util.concurrent.CompletableFuture<Void> runAfterEither(CompletionStage<?> other, Runnable action)
         {
-            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(action)));
+            if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(action)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.runAfterEither(other, action);
         }
 
         @Override
         public java.util.concurrent.CompletableFuture<Void> thenAccept(Consumer<? super V> action)
         {
-            _invocationType.set(Invocable.getInvocationType(action));
+            if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(action)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.thenAccept(action);
         }
 
         @Override
         public <U> java.util.concurrent.CompletableFuture<Void> thenAcceptBoth(CompletionStage<? extends U> other, BiConsumer<? super V, ? super U> action)
         {
-            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(action)));
+            if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(action)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.thenAcceptBoth(other, action);
         }
 
         @Override
         public <U> java.util.concurrent.CompletableFuture<U> thenApply(Function<? super V, ? extends U> fn)
         {
-            _invocationType.set(Invocable.getInvocationType(fn));
+            if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(fn)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.thenApply(fn);
         }
 
         @Override
         public <U, V1> java.util.concurrent.CompletableFuture<V1> thenCombine(CompletionStage<? extends U> other, BiFunction<? super V, ? super U, ? extends V1> fn)
         {
-            _invocationType.set(Invocable.combine(Invocable.getInvocationType(other), Invocable.getInvocationType(fn)));
+            if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(fn)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.thenCombine(other, fn);
         }
 
         @Override
         public <U> java.util.concurrent.CompletableFuture<U> thenCompose(Function<? super V, ? extends CompletionStage<U>> fn)
         {
-            _invocationType.set(Invocable.getInvocationType(fn));
+            if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(fn)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.thenCompose(fn);
         }
 
         @Override
         public java.util.concurrent.CompletableFuture<Void> thenRun(Runnable action)
         {
-            _invocationType.set(Invocable.getInvocationType(action));
+            if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(action)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.thenRun(action);
         }
 
         @Override
         public java.util.concurrent.CompletableFuture<V> whenComplete(BiConsumer<? super V, ? super Throwable> action)
         {
-            _invocationType.set(Invocable.getInvocationType(action));
+            if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(action)))
+                throw new IllegalStateException("Bad invocation type when not completed");
             return super.whenComplete(action);
         }
     }

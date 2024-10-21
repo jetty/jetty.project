@@ -59,6 +59,12 @@ public abstract class ContentSourceCompletableFuture<X> extends Invocable.Invoca
 
     public ContentSourceCompletableFuture(Content.Source content)
     {
+        this(content, InvocationType.NON_BLOCKING);
+    }
+
+    public ContentSourceCompletableFuture(Content.Source content, InvocationType invocationType)
+    {
+        super(invocationType);
         _content = content;
     }
 

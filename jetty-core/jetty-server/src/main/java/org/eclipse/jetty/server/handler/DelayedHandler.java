@@ -241,12 +241,13 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
-            CompletableFuture<Fields> futureFormFields = FormFields.from(getRequest(), _charset);
+            CompletableFuture<Fields> futureFormFields = FormFields.from(getRequest(), InvocationType.BLOCKING, _charset);
 
             // if we are done already, then we are still in the scope of the original process call and can
             // process directly, otherwise we must execute a call to process as we are within a serialized
             // demand callback.
-            futureFormFields.whenComplete(futureFormFields.isDone() ? this::process : this::executeProcess);
+            boolean done = futureFormFields.isDone();
+            futureFormFields.whenComplete(done ? this::process : this::executeProcess);
         }
 
         private void process(Fields fields, Throwable x)
