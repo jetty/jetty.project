@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -189,7 +190,7 @@ public class DelayedHandlerTest
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
                 assertThat(stack, not(containsString("%s.%s".formatted(
                     DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
-                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
+                    DelayedHandler.UntilContentDelayedProcess.class.getDeclaredMethod("onContentAvailable").getName()))));
 
                 processing.countDown();
                 return super.handle(request, response, callback);
@@ -246,7 +247,11 @@ public class DelayedHandlerTest
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
                 assertThat(stack, not(containsString("%s.%s".formatted(
                     DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
-                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
+                    DelayedHandler.UntilContentDelayedProcess.class.getDeclaredMethod("onContentAvailable").getName()))));
+
+                // Check content
+                String body = Content.Source.asString(request, StandardCharsets.ISO_8859_1);
+                assertThat(body, is("0123456789"));
 
                 // Check the thread is in the context
                 assertThat(ContextHandler.getCurrentContext(), sameInstance(context.getContext()));
@@ -274,7 +279,12 @@ public class DelayedHandlerTest
 
             assertFalse(processing.await(250, TimeUnit.MILLISECONDS));
 
-            output.write("01234567\r\n".getBytes(StandardCharsets.UTF_8));
+            output.write("0123456".getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            assertFalse(processing.await(250, TimeUnit.MILLISECONDS));
+
+            output.write("789".getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             assertTrue(processing.await(10, TimeUnit.SECONDS));
@@ -323,6 +333,62 @@ public class DelayedHandlerTest
                 Content-Length: 10\r
                 \r
                 1234567890\r
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("Hello"));
+        }
+    }
+
+    @Test
+    public void testNoDelayWithChunkedContent() throws Exception
+    {
+        DelayedHandler delayedHandler = new DelayedHandler();
+
+        _server.setHandler(delayedHandler);
+        delayedHandler.setHandler(new HelloHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Check that we are called directly from HttpConnection.onFillable
+                ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
+                new Throwable().printStackTrace(new PrintStream(out));
+                String stack = out.toString(StandardCharsets.ISO_8859_1);
+                assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
+                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.handle"));
+
+                // Check the content is available
+                String content = Content.Source.asString(request);
+                assertThat(content, equalTo("1234567890"));
+
+                return super.handle(request, response, callback);
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                \r
+                3;\r
+                123\r
+                4;\r
+                4567\r
+                3;\r
+                890\r
+                0;\r
+                \r
                 """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));

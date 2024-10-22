@@ -15,9 +15,10 @@ package org.eclipse.jetty.server.handler;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -182,60 +184,121 @@ public class DelayedHandler extends Handler.Wrapper
         protected abstract void delay() throws Exception;
     }
 
-    protected static class UntilContentDelayedProcess extends DelayedProcess
+    /**
+     * Delay dispatch until all content or 75% of an input buffer is received.
+     */
+    protected static class UntilContentDelayedProcess extends DelayedProcess implements Runnable
     {
+        private final Deque<Content.Chunk> _chunks = new ArrayDeque<>();
+        private final int _maxBuffered;
+        private int _size;
+
         public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
         {
             super(handler, request, response, callback);
+            _maxBuffered = 3 * request.getConnectionMetaData().getConnector().getConnectionFactory(HttpConnectionFactory.class).getInputBufferSize() / 4;
         }
 
         @Override
         protected void delay()
         {
-            Content.Chunk chunk = super.getRequest().read();
-            if (chunk == null)
+            read(false);
+        }
+
+        protected void onContentAvailable()
+        {
+            read(true);
+        }
+
+        protected void read(boolean execute)
+        {
+            while (true)
             {
-                getRequest().demand(this::onContent);
-            }
-            else
-            {
-                RewindChunkRequest request = new RewindChunkRequest(getRequest(), chunk);
-                try
+                Content.Chunk chunk = super.getRequest().read();
+                if (chunk == null)
                 {
-                    getHandler().handle(request, getResponse(), getCallback());
+                    getRequest().demand(this::onContentAvailable);
+                    break;
                 }
-                catch (Throwable x)
+
+                if (!_chunks.add(chunk))
                 {
-                    // Use the wrapped request so that the error handling can
-                    // consume the request content and release the already read chunk.
-                    Response.writeError(request, getResponse(), getCallback(), x);
+                    getCallback().failed(new IllegalStateException());
+                    break;
+                }
+
+                _size += chunk.remaining();
+
+                if (chunk.isLast() || _size >= _maxBuffered)
+                {
+                    if (execute)
+                        getRequest().getContext().execute(this);
+                    else
+                        run();
+                    break;
                 }
             }
         }
 
-        public void onContent()
+        /**
+         * This is run when enough content has been received to dispatch to the next handler.
+         */
+        public void run()
         {
-            // We must execute here, because demand callbacks are serialized and process may block on a demand callback
-            getRequest().getContext().execute(this::process);
+            RewindChunksRequest request = new RewindChunksRequest(getRequest(), getCallback(), _chunks);
+            try
+            {
+                if (!getHandler().handle(request, getResponse(), request))
+                {
+                    request.release();
+                    Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
+                }
+            }
+            catch (Throwable t)
+            {
+                request.release();
+                Response.writeError(getRequest(), getResponse(), getCallback(), t);
+            }
         }
 
-        private static class RewindChunkRequest extends Request.Wrapper
+        private static class RewindChunksRequest extends Request.Wrapper implements Callback
         {
-            private final AtomicReference<Content.Chunk> _chunk;
+            private final Deque<Content.Chunk> _chunks;
+            private final Callback _callback;
 
-            public RewindChunkRequest(Request wrapped, Content.Chunk chunk)
+            public RewindChunksRequest(Request wrapped, Callback callback, Deque<Content.Chunk> chunks)
             {
                 super(wrapped);
-                _chunk = new AtomicReference<>(chunk);
+                _chunks = chunks;
+                _callback = callback;
             }
 
             @Override
             public Content.Chunk read()
             {
-                Content.Chunk chunk = _chunk.getAndSet(null);
-                if (chunk != null)
-                    return chunk;
-                return super.read();
+                if (_chunks.isEmpty())
+                    return super.read();
+                return _chunks.removeFirst();
+            }
+
+            private void release()
+            {
+                _chunks.forEach(Content.Chunk::release);
+                _chunks.clear();
+            }
+
+            @Override
+            public void fail(Throwable failure, boolean last)
+            {
+                release();
+                _callback.failed(failure);
+            }
+
+            @Override
+            public void succeeded()
+            {
+                release();
+                _callback.succeeded();
             }
         }
     }
