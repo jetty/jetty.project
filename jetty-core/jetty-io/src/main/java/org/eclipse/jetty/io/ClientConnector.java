@@ -108,6 +108,7 @@ public class ClientConnector extends ContainerLifeCycle
     private boolean reusePort;
     private int receiveBufferSize = -1;
     private int sendBufferSize = -1;
+    private ClientConnectionListener listener;
 
     public ClientConnector()
     {
@@ -476,6 +477,7 @@ public class ClientConnector extends ContainerLifeCycle
                 selectorManager.accept(channel, context);
             else
                 selectorManager.connect(channel, context);
+                listener.onConnectBegin((SocketChannel)channel);
         }
         // Must catch all exceptions, since some like
         // UnresolvedAddressException are not IOExceptions.
@@ -511,6 +513,13 @@ public class ClientConnector extends ContainerLifeCycle
             IO.close(selectable);
             acceptFailed(failure, selectable, context);
         }
+    }
+
+    public void onClientConnection(ClientConnectionListener listener)
+    {
+        if (this.listener != null)
+            return;
+        this.listener = listener;
     }
 
     private void bind(NetworkChannel channel, SocketAddress bindAddress) throws IOException
@@ -593,6 +602,7 @@ public class ClientConnector extends ContainerLifeCycle
         {
             EndPoint endPoint = ClientConnector.this.newEndPoint(channel, selector, selectionKey);
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
+            listener.onConnectSuccess((SocketChannel)channel);
             return endPoint;
         }
 
@@ -629,6 +639,7 @@ public class ClientConnector extends ContainerLifeCycle
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
+            listener.onConnectFailure((SocketChannel)channel, failure);
             connectFailed(failure, context);
         }
     }
@@ -752,5 +763,12 @@ public class ClientConnector extends ContainerLifeCycle
                 }
             };
         }
+    }
+
+    public interface ClientConnectionListener
+    {
+        public void onConnectBegin(SocketChannel s);
+        public void onConnectSuccess(SocketChannel s);
+        public void onConnectFailure(SocketChannel s, Throwable x);
     }
 }
