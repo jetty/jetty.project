@@ -896,7 +896,7 @@ public class ContextHandlerTest
         assertThat(_contextHandler.getServletContext().getResource("/subdir/data.txt"), notNullValue());
         assertThat(_contextHandler.getServletContext().getResource("/subdir/data.txt%00"), nullValue()); //encoded null
         assertThat(_contextHandler.getServletContext().getResource("/subdir%5Cdata.txt"), nullValue()); //encoded slosh
-        //TODO these tests return a URL, whereas in previous versions of jetty they did not
+        //TODO these tests return a value, whereas in previous versions of jetty they did not
         //assertThat(_contextHandler.getServletContext().getResource("//subdir/data.txt"), nullValue());
         //assertThat(_contextHandler.getServletContext().getResource("/subdir//data.txt"), nullValue());
         //assertThat(_contextHandler.getServletContext().getResource("/subdir%2Fdata.txt"), nullValue()); //encoded slash

@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -84,6 +88,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
@@ -94,6 +100,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -117,6 +124,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
 
 public class ServletContextHandlerTest
 {
@@ -2661,5 +2670,41 @@ public class ServletContextHandlerTest
         String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("OK2"));
+    }
+
+    @Test
+    @EnabledOnOs({LINUX, MAC})
+    public void testGetResource() throws Exception
+    {
+        File baseDir = MavenTestingUtils.getTargetTestingDir(ServletContextHandlerTest.class.getSimpleName());
+        FS.ensureEmpty(baseDir);
+        File index = new File(baseDir, "index.html");
+        index.createNewFile();
+        File sub = new File(baseDir, "subdir");
+        sub.mkdir();
+        File data = new File(sub, "data.txt");
+        data.createNewFile();
+
+        ServletContextHandler context = new ServletContextHandler("/c1", ServletContextHandler.NO_SESSIONS);
+        context.setBaseResourceAsPath(baseDir.toPath());
+        _server.setHandler(context);
+
+        assertThat(context.getServletContext().getResource("/"), notNullValue());
+        assertThat(context.getServletContext().getResource("/index.html"), notNullValue());
+        assertThat(context.getServletContext().getResource("/doesnotexist.html"), nullValue());
+        assertThat(context.getServletContext().getResource("/unknowndir/"), nullValue());
+        assertThat(context.getServletContext().getResource("/subdir/data.txt"), notNullValue());
+        assertThat(context.getServletContext().getResource("/subdir%5Cdata.txt"), nullValue()); //encoded slosh
+        //TODO these tests return a value, whereas in previous versions of jetty they did not
+        assertThat(context.getServletContext().getResource("/subdir/data.txt%00"), nullValue()); //encoded null - works in ee9
+        //assertThat(context.getServletContext().getResource("//subdir/data.txt"), nullValue());
+        //assertThat(context.getServletContext().getResource("/subdir//data.txt"), nullValue());
+        //assertThat(context.getServletContext().getResource("/subdir%2Fdata.txt"), nullValue()); //encoded slash
+        URL subdir = context.getServletContext().getResource("/subdir/");
+        assertThat(subdir, notNullValue());
+        assertEquals(baseDir, new File(subdir.toURI()).getParentFile());
+        assertThrows(MalformedURLException.class, () -> context.getResource("badpath"));
+        assertThat(context.getServletContext().getResource("/../down/"), nullValue());
+        assertThat(context.getServletContext().getResource("/down/.././../"), nullValue());
     }
 }
