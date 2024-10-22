@@ -18,7 +18,6 @@ module org.eclipse.jetty.server
 
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
-    requires java.desktop;
 
     exports org.eclipse.jetty.server;
     exports org.eclipse.jetty.server.handler;
