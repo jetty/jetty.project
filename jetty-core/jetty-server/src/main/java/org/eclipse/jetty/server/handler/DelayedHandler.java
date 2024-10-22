@@ -170,15 +170,23 @@ public class DelayedHandler extends Handler.Wrapper
 
         protected void process()
         {
+            process(getRequest(), getResponse(), getCallback());
+        }
+
+        protected boolean process(Request request, Response response, Callback callback)
+        {
             try
             {
-                if (!getHandler().handle(getRequest(), getResponse(), getCallback()))
-                    Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
+                if (getHandler().handle(request, response, callback))
+                    return true;
+
+                Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
             {
                 Response.writeError(getRequest(), getResponse(), getCallback(), t);
             }
+            return false;
         }
 
         protected abstract void delay() throws Exception;
@@ -246,19 +254,8 @@ public class DelayedHandler extends Handler.Wrapper
         public void run()
         {
             RewindChunksRequest request = new RewindChunksRequest(getRequest(), getCallback(), _chunks);
-            try
-            {
-                if (!getHandler().handle(request, getResponse(), request))
-                {
-                    request.release();
-                    Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
-                }
-            }
-            catch (Throwable t)
-            {
+            if (!process(request, getResponse(), request))
                 request.release();
-                Response.writeError(getRequest(), getResponse(), getCallback(), t);
-            }
         }
 
         private static class RewindChunksRequest extends Request.Wrapper implements Callback
