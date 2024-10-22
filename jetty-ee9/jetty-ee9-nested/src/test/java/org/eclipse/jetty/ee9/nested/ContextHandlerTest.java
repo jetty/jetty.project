@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -37,11 +40,14 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -51,22 +57,38 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
 
 public class ContextHandlerTest
 {
     Server _server;
     ContextHandler _contextHandler;
     LocalConnector _connector;
+    File _testRoot;
 
     @BeforeEach
     public void before() throws Exception
     {
+        _testRoot = MavenTestingUtils.getTargetTestingDir(ContextHandlerTest.class.getSimpleName());
+        FS.ensureEmpty(_testRoot);
+        File index = new File(_testRoot, "index.html");
+        index.createNewFile();
+        File sub = new File(_testRoot, "subdir");
+        sub.mkdir();
+        File data = new File(sub, "data.txt");
+        data.createNewFile();
+
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
         _contextHandler = new ContextHandler();
+        _contextHandler.setBaseResourceAsPath(_testRoot.toPath());
         _server.setHandler(_contextHandler);
     }
 
@@ -864,9 +886,26 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testGetResourceExists() throws Exception
+    @EnabledOnOs({LINUX, MAC})
+    public void testGetResource() throws Exception
     {
-
+        assertThat(_contextHandler.getServletContext().getResource("/"), notNullValue());
+        assertThat(_contextHandler.getServletContext().getResource("/index.html"), notNullValue());
+        assertThat(_contextHandler.getServletContext().getResource("/doesnotexist.html"), nullValue());
+        assertThat(_contextHandler.getServletContext().getResource("/unknowndir/"), nullValue());
+        assertThat(_contextHandler.getServletContext().getResource("/subdir/data.txt"), notNullValue());
+        assertThat(_contextHandler.getServletContext().getResource("/subdir/data.txt%00"), nullValue()); //encoded null
+        assertThat(_contextHandler.getServletContext().getResource("/subdir%5Cdata.txt"), nullValue()); //encoded slosh
+        //TODO these tests return a URL, whereas in previous versions of jetty they did not
+        //assertThat(_contextHandler.getServletContext().getResource("//subdir/data.txt"), nullValue());
+        //assertThat(_contextHandler.getServletContext().getResource("/subdir//data.txt"), nullValue());
+        //assertThat(_contextHandler.getServletContext().getResource("/subdir%2Fdata.txt"), nullValue()); //encoded slash
+        URL subdir = _contextHandler.getServletContext().getResource("/subdir/");
+        assertThat(subdir, notNullValue());
+        assertEquals(_testRoot, new File(subdir.toURI()).getParentFile());
+        assertThrows(MalformedURLException.class, () -> _contextHandler.getResource("badpath"));
+        assertThat(_contextHandler.getServletContext().getResource("/../down/"), nullValue());
+        assertThat(_contextHandler.getServletContext().getResource("/down/.././../"), nullValue());
     }
 
     private static class TestErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
