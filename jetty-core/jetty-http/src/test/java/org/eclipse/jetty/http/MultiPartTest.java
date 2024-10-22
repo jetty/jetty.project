@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -32,6 +34,7 @@ import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartTest
@@ -614,6 +617,22 @@ public class MultiPartTest
 
         assertNotNull(listener.failure);
         assertThat(listener.failure.getMessage(), containsStringIgnoringCase("invalid header name"));
+    }
+
+    @Test
+    public void testEncodeContentDispositionFilename()
+    {
+        assertThat(MultiPart.encodeContentDispositionFileName("test.xml"), is("filename=\"test.xml\""));
+        assertThat(MultiPart.encodeContentDispositionFileName("test ✓.xml"), is("filename=\"test _.xml\"; filename*=UTF-8''test%20%E2%9C%93.xml"));
+        assertThat(MultiPart.encodeContentDispositionFileName("test ✓.xml", StandardCharsets.UTF_16), is("filename=\"test _.xml\"; filename*=UTF-16''╆䔥䙆┰ぴ┰づ┰び┰ぴ┰〫┲㜥ㄳ┰〮┰へ┰ね┰ぬ"));
+    }
+
+    @Test
+    public void testDecodeContentDispositionFilename()
+    {
+        assertThat(MultiPart.decodeContentDispositionFileName("UTF-8''test%20%E2%9C%93.xml"), is("test ✓.xml"));
+        assertThat(MultiPart.decodeContentDispositionFileName("utf-8''test%20%E2%9C%93.xml"), is("test ✓.xml"));
+        assertThrows(UnsupportedCharsetException.class, () -> MultiPart.decodeContentDispositionFileName("unknown-42''test.xml"));
     }
 
     private static byte[] randomBytes(int length)

@@ -20,6 +20,8 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -33,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
@@ -43,6 +46,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.SearchPattern;
 import org.eclipse.jetty.util.StaticException;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -75,9 +79,57 @@ public class MultiPart
         .allowEscapeOnlyForQuotes()
         .build();
     private static final int MAX_BOUNDARY_LENGTH = 70;
+    private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x20-\\x7E]");
+    private static final Pattern WINDOWS_FILENAME = Pattern.compile(".??[a-zA-Z]:\\\\[^\\\\].*");
 
     private MultiPart()
     {
+    }
+
+    /**
+     * Encode a {@code Content-Disposition} file name according to RFC8187 using {@link java.nio.charset.StandardCharsets#UTF_8}
+     * @param fileName The filename to encode
+     * @return The encoding of the filename suitable for a {@code Content-Disposition} header
+     */
+    public static String encodeContentDispositionFileName(String fileName)
+    {
+        return encodeContentDispositionFileName(fileName, UTF_8);
+    }
+
+    /**
+     * Encode a {@code Content-Disposition} file name according to RFC8187
+     * @param fileName The filename to encode
+     * @param charset The charset to encode with
+     * @return The encoding of the filename suitable for a {@code Content-Disposition} header
+     */
+    static String encodeContentDispositionFileName(String fileName, Charset charset)
+    {
+        String encodedFileName = UrlEncoded.encodeString(fileName, charset);
+        if (encodedFileName.equals(fileName))
+            return "filename=\"" + fileName + "\"";
+
+        encodedFileName = encodedFileName.replace("+", "%20");
+        String asciiFilename = NON_ASCII_PATTERN.matcher(fileName).replaceAll("_");
+        return String.format("filename=\"%s\"; filename*=%s''%s", asciiFilename, charset.name(), encodedFileName);
+    }
+
+    /**
+     * Decode a {@code Content-Disposition} file name according to RFC8187
+     * @param encoded The encoded filename
+     * @return The decoded filename
+     * @throws IllegalArgumentException If the encoded string is of the wrong format
+     * @throws IllegalCharsetNameException If the charset name is illegal
+     * @throws UnsupportedCharsetException If the charset is unsupported
+     */
+    static String decodeContentDispositionFileName(String encoded) throws IllegalArgumentException,
+        IllegalCharsetNameException,
+        UnsupportedCharsetException
+    {
+        int i = encoded.indexOf("''");
+        if (i == -1)
+            throw new IllegalArgumentException("invalid encoding");
+        Charset charset = Charset.forName(encoded.substring(0, i));
+        return UrlEncoded.decodeString(encoded, i + 2, encoded.length() - i - 2, charset);
     }
 
     /**
@@ -1746,6 +1798,8 @@ public class MultiPart
             {
                 String namePrefix = "name=";
                 String fileNamePrefix = "filename=";
+                String encodedFileNamePrefix = "filename*=";
+                boolean encoded = false;
                 for (Iterator<String> tokens = CONTENT_DISPOSITION_TOKENIZER.tokenize(headerValue); tokens.hasNext();)
                 {
                     String token = tokens.next();
@@ -1758,19 +1812,30 @@ public class MultiPart
                     }
                     else if (lowerToken.startsWith(fileNamePrefix))
                     {
-                        fileName = fileNameValue(token);
+                        if (!encoded)
+                            fileName = fileNameValue(token.substring(fileNamePrefix.length()).trim());
+                    }
+                    else if (lowerToken.startsWith(encodedFileNamePrefix))
+                    {
+                        try
+                        {
+                            fileName = fileNameValue(decodeContentDispositionFileName(token.substring(encodedFileNamePrefix.length()).trim()));
+                            encoded = true;
+                        }
+                        catch (Exception x)
+                        {
+                            if (LOG.isTraceEnabled())
+                                LOG.trace("ignored", x);
+                        }
                     }
                 }
             }
             fields.add(new HttpField(headerName, headerValue));
         }
 
-        private String fileNameValue(String token)
+        private String fileNameValue(String value)
         {
-            int idx = token.indexOf('=');
-            String value = token.substring(idx + 1).trim();
-
-            if (value.matches(".??[a-zA-Z]:\\\\[^\\\\].*"))
+            if (WINDOWS_FILENAME.matcher(value).matches())
             {
                 // Matched incorrectly escaped IE filenames that have the whole
                 // path, as in C:\foo, just strip any leading & trailing quotes.
