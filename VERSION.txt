@@ -71,13 +71,16 @@ jetty-12.0.13 - 03 September 2024
  + 12212 ShutdownOutput for non-persistent HTTP/1 connections
 
 jetty-10.0.24 - 26 August 2024
- + 12201 backport ThreadLimitHandler improvements from Jetty 12
+ + 12201 backport ThreadLimitHandler improvements from Jetty 12 (CVE-2024-8184)
 
 jetty-11.0.24 - 26 August 2024
- + 12201 backport ThreadLimitHandler improvements from Jetty 12
+ + 12201 backport ThreadLimitHandler improvements from Jetty 12 (CVE-2024-8184)
+
+jetty-10.0.24 - 26 August 2024
+ + 12201 backport ThreadLimitHandler improvements from Jetty 12 (CVE-2024-8184)
 
 jetty-9.4.56.v20240826 - 26 August 2024
- + 12200 Backport ThreadLimitHandler improvements from Jetty 12
+ + 12200 Backport ThreadLimitHandler improvements from Jetty 12 (CVE-2024-8184)
 
 jetty-11.0.23 - 13 August 2024
  + 12041 backport tracking retainable pool from Jetty 12
@@ -93,6 +96,7 @@ jetty-12.0.12 - 25 July 2024
  + 11965 Client: Some HTTP/2 requests are never sent
  + 11996 mTLS: client cert verification for QUIC/HTTP3
  + 12000 Cannot use Paths that have spaces with `jetty-ee10-maven-plugin`
+ + 12012 Added a UriCompliance.Violation.USER_INFO to deprecate user info in HttpURI (CVE-2024-6763)
  + 12018 NPE when passing null value to Request.param
  + 12019 External property file not being read
  + 12022 Intermittent NPE in OutputStream.close with GzipHandler
@@ -183,6 +187,7 @@ jetty-10.0.21 - 14 May 2024
  + 11782 HttpExchange retained by HttpSenderOverHTTP which caused memory leak
 
 jetty-12.0.9 - 03 May 2024
+ + 1256 DoSFilter leaks USER_AUTH entries (CVE-2024-9823)
  + 5944 Introduce alias --files for --download
  + 5945 Introduce alias --skip-create-files to replace --skip-file-validation
  + 5946 Introduce alias for --include-jetty-dir
@@ -278,7 +283,7 @@ jetty-12.0.7 - 29 February 2024
  + 11465 HttpURI.toURI() sets userInfo to null
 
 jetty-9.4.54.v20240208 - 08 February 2024
- + 1256 DoSFilter leaks USER_AUTH entries
+ + 1256 DoSFilter leaks USER_AUTH entries (CVE-2024-9823)
  + 11259 HTTP/2 connection not closed after idle timeout when TCP congested
    (CVE-2024-22201)
  + 11389 Strip default ports on ws/wss scheme uris too
@@ -373,7 +378,7 @@ jetty-11.0.19 - 15 December 2023
  + 11014 RedirectRegexRule and RewritePatternRule should consider
    relativeRedirectAllowed
  + 11031 HttpClient should expose Connection/EndPoint used by HTTP requests
- + 11039 Memory leak and multiple (Http|Servlet)*Listener invokations after
+ + 11039 Memory leak and multiple (Http|Servlet)*Listener invocations after
    restart
  + 11044 Update jetty-11 to apache jasper 10.0.27
 
@@ -385,12 +390,13 @@ jetty-10.0.19 - 15 December 2023
  + 11014 RedirectRegexRule and RewritePatternRule should consider
    relativeRedirectAllowed
  + 11031 HttpClient should expose Connection/EndPoint used by HTTP requests
- + 11039 Memory leak and multiple (Http|Servlet)*Listener invokations after
+ + 11039 Memory leak and multiple (Http|Servlet)*Listener invocations after
    restart
  + 11043 Update to apache jasper 9.0.83
 
 jetty-12.0.4 - 30 November 2023
  + 9502 Produce SBOM and deploy to Maven Central
+ + 9715 Remove PushCacheFilter / PushSessionCacheFilter (CVE-2024-6762)
  + 9900 Improve `Request.getBeginNanoTime()` accuracy
  + 10234 Make idle timeouts transient
  + 10384 ServletChannel now using proper state changes for calls to
@@ -412,7 +418,7 @@ jetty-12.0.4 - 30 November 2023
  + 10926 AttributeNormalizer does not support combined resources
 
 jetty-12.0.3 - 26 October 2023
- + 1256 DoSFilter leaks USER_AUTH entries
+ + 1256 DoSFilter leaks USER_AUTH entries (CVE-2024-9823)
  + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
  + 10477 Jetty 12: Review MBeans for Handlers
  + 10519 java.lang.IllegalStateException: Flusher when using HTTP/3 with Spring
@@ -446,7 +452,8 @@ jetty-12.0.3 - 26 October 2023
  + 10794 301 Moved Permanently produces query with `;` instead of `?`
 
 jetty-11.0.18 - 26 October 2023
- + 1256 DoSFilter leaks USER_AUTH entries
+ + 1256 DoSFilter leaks USER_AUTH entries (CVE-2024-9823)
+ + 9715 Deprecate PushSessionCacheFilter (CVE-2024-6762)
  + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
  + 10519 java.lang.IllegalStateException: Flusher when using HTTP/3 with Spring
    Boot 3.2
@@ -461,7 +468,8 @@ jetty-11.0.18 - 26 October 2023
  + 10786 TLS handshake failures leak HttpConnection.RequestTimeouts tasks
 
 jetty-10.0.18 - 26 October 2023
- + 1256 DoSFilter leaks USER_AUTH entries
+ + 1256 DoSFilter leaks USER_AUTH entries (CVE-2024-9823)
+ + 9715 Deprecate PushSessionCacheFilter (CVE-2024-6762)
  + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
  + 10519 java.lang.IllegalStateException: Flusher when using HTTP/3 with Spring
    Boot 3.2

@@ -88,6 +88,9 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <systemPropertyVariables>
+            <STOP.EXIT>FALSE</STOP.EXIT>
+          </systemPropertyVariables>
           <argLine>@{argLine} ${jetty.surefire.argLine}
             --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging
             --add-reads org.eclipse.jetty.server=java.xml</argLine>

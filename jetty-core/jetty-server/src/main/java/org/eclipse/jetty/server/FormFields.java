@@ -19,6 +19,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
@@ -27,7 +28,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.StringUtil;
 
 import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
 
@@ -51,30 +51,29 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (!config.getFormEncodedMethods().contains(request.getMethod()))
             return null;
 
-        String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-        if (request.getLength() == 0 || StringUtil.isBlank(contentType))
+        HttpField contentTypeField = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+        if (contentTypeField == null)
             return null;
 
-        String contentTypeWithoutCharset = MimeTypes.getContentTypeWithoutCharset(contentType);
-        MimeTypes.Type type = MimeTypes.CACHE.get(contentTypeWithoutCharset);
+        MimeTypes.Type type = MimeTypes.getMimeTypeFromContentType(contentTypeField);
         if (type != null)
         {
-            if (type != MimeTypes.Type.FORM_ENCODED)
+            if (type.getBaseType() != MimeTypes.Type.FORM_ENCODED)
                 return null;
-        }
-        else
-        {
-            // Could be a non-cached Content-Type with other parameters such as "application/x-www-form-urlencoded; p=v".
-            // Verify that it is actually application/x-www-form-urlencoded.
-            int semi = contentTypeWithoutCharset.indexOf(';');
-            if (semi > 0)
-                contentTypeWithoutCharset = contentTypeWithoutCharset.substring(0, semi);
-            if (!MimeTypes.Type.FORM_ENCODED.is(contentTypeWithoutCharset.trim()))
-                return null;
+
+            return type.getCharset() == null ? StandardCharsets.UTF_8 : type.getCharset();
         }
 
-        String cs = MimeTypes.getCharsetFromContentType(contentType);
-        return StringUtil.isEmpty(cs) ? StandardCharsets.UTF_8 : Charset.forName(cs);
+        String contentType = contentTypeField.getValue();
+        int semicolon = contentType.indexOf(';');
+        if (semicolon >= 0)
+            contentType = contentType.substring(0, semicolon).trim();
+        if (!MimeTypes.Type.FORM_ENCODED.is(contentType))
+            return null;
+
+        Charset charset = MimeTypes.getCharsetFromContentType(contentTypeField);
+
+        return charset == null ? StandardCharsets.UTF_8 : charset;
     }
 
     /**

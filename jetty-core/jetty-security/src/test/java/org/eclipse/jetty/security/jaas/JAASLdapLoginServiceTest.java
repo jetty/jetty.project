@@ -164,7 +164,7 @@ public class JAASLdapLoginServiceTest extends AbstractLdapTestUnit
             options.put("port", Integer.toString(ldapServer.getTransports()[0].getPort()));
             options.put("contextFactory", "com.sun.jndi.ldap.LdapCtxFactory");
             options.put("bindDn", "uid=admin,ou=system");
-            options.put("bindPassword", "secret");
+            options.put("bindPassword", "OBF:1yta1t331v8w1v9q1t331ytc");
             options.put("userBaseDn", "ou=people,dc=jetty,dc=org");
             options.put("roleBaseDn", "ou=groups,dc=jetty,dc=org");
             options.put("roleNameAttribute", "cn");

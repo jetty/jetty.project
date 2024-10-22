@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -272,6 +274,12 @@ public class WebSocketSession implements Session, Dumpable
     public boolean isSecure()
     {
         return upgradeRequest.isSecure();
+    }
+
+    @Override
+    public void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout)
+    {
+        coreSession.addIdleTimeoutListener(t -> onIdleTimeout.test(new WebSocketTimeoutException(t)));
     }
 
     @Override
