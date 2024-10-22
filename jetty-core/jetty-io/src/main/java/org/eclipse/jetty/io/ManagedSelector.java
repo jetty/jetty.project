@@ -350,6 +350,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             {
                 if (connect.timeout.cancel())
                 {
+                    _selectorManager.connectSuccess(channel);
                     key.interestOps(0);
                     execute(new CreateEndPoint(connect, key));
                 }
