@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletRequest;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>Servlet specific class for multipart content support.</p>
@@ -59,7 +61,18 @@ public class ServletMultiPartFormData
      */
     public static CompletableFuture<Parts> from(ServletRequest servletRequest)
     {
-        return from(servletRequest, servletRequest.getContentType());
+        return from(servletRequest, Invocable.InvocationType.NON_BLOCKING, servletRequest.getContentType());
+    }
+
+    /**
+     * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
+     * @param servletRequest A servlet request
+     * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
+     * @see #from(ServletRequest, String)
+     */
+    public static CompletableFuture<Parts> from(ServletRequest servletRequest, Invocable.InvocationType invocationType)
+    {
+        return from(servletRequest, invocationType, servletRequest.getContentType());
     }
 
     /**
@@ -69,6 +82,17 @@ public class ServletMultiPartFormData
      * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
      */
     public static CompletableFuture<Parts> from(ServletRequest servletRequest, String contentType)
+    {
+        return from(servletRequest, Invocable.InvocationType.NON_BLOCKING, contentType);
+    }
+
+    /**
+     * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
+     * @param servletRequest A servlet request
+     * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
+     * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
+     */
+    public static CompletableFuture<Parts> from(ServletRequest servletRequest, Invocable.InvocationType invocationType, String contentType)
     {
         // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
         @SuppressWarnings("unchecked")
@@ -102,11 +126,11 @@ public class ServletMultiPartFormData
                 ? servletContextRequest.getContext().getTempDirectory().toPath()
                 : new File(config.getLocation()).toPath();
 
-            // Look for an existing future MultiPartFormData.Parts
-            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.get(servletContextRequest);
-            if (futureFormData == null)
+            try
             {
-                try
+                // Look for an existing future MultiPartFormData.Parts
+                CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.get(servletContextRequest);
+                if (futureFormData == null)
                 {
                     // No existing core parts, so we need to configure the parser.
                     ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
@@ -135,21 +159,50 @@ public class ServletMultiPartFormData
                         .maxSize(config.getMaxRequestSize())
                         .build();
 
-                    futureFormData = MultiPartFormData.from(source, servletContextRequest, contentType, multiPartConfig);
+                    futureFormData = MultiPartFormData.from(source, invocationType, servletContextRequest, contentType, multiPartConfig);
+
                 }
-                catch (Throwable failure)
-                {
-                    return CompletableFuture.failedFuture(failure);
-                }
+
+                // If we are already completed, ...
+                futureServletParts = (futureFormData.isDone())
+                    // we can just convert here
+                    ? CompletableFuture.completedFuture(new Parts(filesDirectory, futureFormData.join()))
+                    // Otherwise, when available, convert the core parts to servlet parts
+                    : futureFormData.thenApply(new PartsFunction(invocationType, filesDirectory));
+
+                // cache the result in attributes.
+                servletRequest.setAttribute(ServletMultiPartFormData.class.getName(), futureServletParts);
             }
-
-            // When available, convert the core parts to servlet parts
-            futureServletParts = futureFormData.thenApply(formDataParts -> new Parts(filesDirectory, formDataParts));
-
-            // cache the result in attributes.
-            servletRequest.setAttribute(ServletMultiPartFormData.class.getName(), futureServletParts);
+            catch (Throwable failure)
+            {
+                return CompletableFuture.failedFuture(failure);
+            }
         }
         return futureServletParts;
+    }
+
+    private static class PartsFunction implements Function<MultiPartFormData.Parts, Parts>, Invocable
+    {
+        private final InvocationType _invocationType;
+        private final Path _filesDirectory;
+
+        PartsFunction(InvocationType invocationType, Path filesDirectory)
+        {
+            _invocationType = invocationType;
+            _filesDirectory = filesDirectory;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _invocationType;
+        }
+
+        @Override
+        public Parts apply(MultiPartFormData.Parts parts)
+        {
+            return new Parts(_filesDirectory, parts);
+        }
     }
 
     /**

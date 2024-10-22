@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +90,20 @@ public class MultiPartFormData
      */
     public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config)
     {
+        return from(content, InvocationType.NON_BLOCKING, attributes, contentType, config);
+    }
+
+    /**
+     * Returns {@code multipart/form-data} parts using the given {@link Content.Source} and {@link MultiPartConfig}.
+     *
+     * @param content the source of the multipart content.
+     * @param attributes the attributes where the futureParts are tracked.
+     * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
+     * @param config the multipart configuration.
+     * @return the future parts
+     */
+    public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, InvocationType invocationType, Attributes attributes, String contentType, MultiPartConfig config)
+    {
         // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
         CompletableFuture<MultiPartFormData.Parts> futureParts = MultiPartFormData.get(attributes);
         if (futureParts == null)
@@ -106,7 +121,7 @@ public class MultiPartFormData
 
             Parser parser = new Parser(boundary);
             parser.configure(config);
-            futureParts = parser.parse(content);
+            futureParts = parser.parse(content, invocationType);
             attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
             return futureParts;
         }
@@ -297,7 +312,12 @@ public class MultiPartFormData
 
         public CompletableFuture<Parts> parse(Content.Source content)
         {
-            ContentSourceCompletableFuture<Parts> futureParts = new ContentSourceCompletableFuture<>(content)
+            return parse(content, InvocationType.NON_BLOCKING);
+        }
+
+        public CompletableFuture<Parts> parse(Content.Source content, InvocationType invocationType)
+        {
+            ContentSourceCompletableFuture<Parts> futureParts = new ContentSourceCompletableFuture<>(content, invocationType)
             {
                 @Override
                 protected Parts parse(Content.Chunk chunk) throws Throwable

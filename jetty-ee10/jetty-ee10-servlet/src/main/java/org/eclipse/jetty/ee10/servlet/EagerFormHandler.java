@@ -55,29 +55,37 @@ public class EagerFormHandler extends Handler.Wrapper
 
         CompletableFuture<?> future =  switch (mimeType)
         {
-            case FORM_ENCODED -> FormFields.from(request);
-            case MULTIPART_FORM_DATA -> ServletMultiPartFormData.from(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType);
+            case FORM_ENCODED -> FormFields.from(request, InvocationType.BLOCKING);
+            case MULTIPART_FORM_DATA -> ServletMultiPartFormData.from(Request.as(request, ServletContextRequest.class).getServletApiRequest(), InvocationType.BLOCKING, contentType);
             default -> null;
         };
 
         if (future == null)
             return super.handle(request, response, callback);
 
-        future.whenComplete((result, failure) ->
+        if (future.isDone())
         {
-            // The result and failure are not handled here. Rather we call the next handler
-            // to allow the normal processing to handle the result or failure, which will be
-            // provided via the attribute to ServletApiRequest#getParts()
-            try
+            if (!super.handle(request, response, callback))
+                callback.failed(new IllegalStateException("Not Handled"));
+        }
+        else
+        {
+            future.whenComplete((result, failure) ->
             {
-                if (!super.handle(request, response, callback))
-                    callback.failed(new IllegalStateException("Not Handled"));
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
-        });
+                // The result and failure are not handled here. Rather we call the next handler
+                // to allow the normal processing to handle the result or failure, which will be
+                // provided via the attribute to ServletApiRequest#getParts()
+                try
+                {
+                    if (!super.handle(request, response, callback))
+                        callback.failed(new IllegalStateException("Not Handled"));
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
+            });
+        }
         return true;
     }
 }
