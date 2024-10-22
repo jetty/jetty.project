@@ -95,11 +95,24 @@ public interface Invocable
         void call() throws Exception;
     }
 
-    // TODO javadoc
+    /**
+     * An {@link Invocable} {@link BiConsumer} that provides the
+     * {@link InvocationType} of calls to {@link BiConsumer#accept(Object, Object)}.
+     * @param <T> The first argument
+     * @param <U> The second argument
+     */
     interface InvocableBiConsumer<T, U> extends Invocable, BiConsumer<T, U>
     {
     }
 
+    /**
+     * Create an {@link InvocableBiConsumer}
+     * @param invocationType The {@link InvocationType} of calls to {@link BiConsumer#accept(Object, Object)}
+     * @param biConsumer The consumer on which to delegate calls to {@link BiConsumer#accept(Object, Object)}
+     * @param <T> The first argument
+     * @param <U> The second argument
+     * @return An {@link Invocable} {@link BiConsumer}.
+     */
     static <T, U> InvocableBiConsumer<T, U> from(InvocationType invocationType, BiConsumer<T, U> biConsumer)
     {
         return new InvocableBiConsumer<T, U>()
