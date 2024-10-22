@@ -95,6 +95,29 @@ public interface Invocable
         void call() throws Exception;
     }
 
+    // TODO javadoc
+    interface InvocableBiConsumer<T, U> extends Invocable, BiConsumer<T, U>
+    {
+    }
+
+    static <T, U> InvocableBiConsumer<T, U> from(InvocationType invocationType, BiConsumer<T, U> biConsumer)
+    {
+        return new InvocableBiConsumer<T, U>()
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            @Override
+            public void accept(T t, U u)
+            {
+                biConsumer.accept(t, u);
+            }
+        };
+    }
+
     /**
      * <p>A {@link Runnable} decorated with an {@link InvocationType}.</p>
      */
@@ -274,7 +297,9 @@ public interface Invocable
      * should be {@link InvocationType#NON_BLOCKING}, as the wake-up callbacks used will not block.
      *
      * @param <V> The type of the result
+     * @deprecated This class in only used for deprecated usages of CompletableFuture
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     class InvocableCompletableFuture<V> extends java.util.concurrent.CompletableFuture<V> implements Invocable
     {
         private final InvocationType _invocationType;

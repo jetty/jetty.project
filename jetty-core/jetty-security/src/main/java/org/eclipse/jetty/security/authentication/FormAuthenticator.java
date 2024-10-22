@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.security.authentication;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -202,8 +201,8 @@ public class FormAuthenticator extends LoginAuthenticator
                 session.removeAttribute(__J_URI);
 
                 Object post = session.removeAttribute(__J_POST);
-                if (post instanceof CompletableFuture<?> futureFields)
-                    FormFields.set(request, (CompletableFuture<Fields>)futureFields);
+                if (post instanceof Fields futureFields)
+                    FormFields.set(request, futureFields);
 
                 String method = (String)session.removeAttribute(__J_METHOD);
                 if (method != null && request.getMethod().equals(method))
@@ -225,16 +224,9 @@ public class FormAuthenticator extends LoginAuthenticator
 
     protected Fields getParameters(Request request)
     {
-        try
-        {
-            Fields queryFields = Request.extractQueryParameters(request);
-            Fields formFields = FormFields.from(request).get();
-            return Fields.combine(queryFields, formFields);
-        }
-        catch (InterruptedException | ExecutionException e)
-        {
-            throw new RuntimeException(e);
-        }
+        Fields queryFields = Request.extractQueryParameters(request);
+        Fields formFields = FormFields.getFields(request);
+        return Fields.combine(queryFields, formFields);
     }
 
     protected String encodeURL(String url, Request request)
@@ -334,15 +326,14 @@ public class FormAuthenticator extends LoginAuthenticator
                 {
                     try
                     {
-                        CompletableFuture<Fields> futureFields = FormFields.from(request);
-                        futureFields.get();
+                        Fields futureFields = FormFields.getFields(request);
                         session.setAttribute(__J_POST, futureFields);
                     }
-                    catch (ExecutionException e)
+                    catch (CompletionException e)
                     {
                         throw new ServerAuthException(e.getCause());
                     }
-                    catch (InterruptedException e)
+                    catch (Exception e)
                     {
                         throw new ServerAuthException(e);
                     }

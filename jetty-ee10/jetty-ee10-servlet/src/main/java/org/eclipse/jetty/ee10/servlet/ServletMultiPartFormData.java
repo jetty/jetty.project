@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -54,11 +56,57 @@ import org.eclipse.jetty.util.thread.Invocable;
 public class ServletMultiPartFormData
 {
     /**
+     * Get {@link ServletMultiPartFormData.Parts} from a servlet request, blocking if necessary.
+     * @param servletRequest A servlet request
+     */
+    static Parts getParts(ServletRequest servletRequest)
+    {
+        CompletableFuture<Parts> futureParts = from(servletRequest, Invocable.InvocationType.NON_BLOCKING);
+        return futureParts.join();
+    }
+
+    /**
+     * Actions to take when {@link ServletMultiPartFormData.Parts} are completely read.
+     * @param servletRequest A servlet request
+     * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
+     * @param immediate The action to take if the Parts are available immediately (from within the scope of the call to this method).
+     * @param future The action to take when the Parts are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
+     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
+     */
+    static void onParts(ServletRequest servletRequest, String contentType, BiConsumer<Parts, Throwable> immediate, Invocable.InvocableBiConsumer<Parts, Throwable> future)
+    {
+        CompletableFuture<Parts> futureParts = from(servletRequest, future.getInvocationType(), contentType);
+        if (futureParts.isDone())
+        {
+            Parts parts = null;
+            Throwable error = null;
+            try
+            {
+                parts = futureParts.get();
+            }
+            catch (ExecutionException e)
+            {
+                error = e.getCause();
+            }
+            catch (Throwable t)
+            {
+                error = t;
+            }
+            immediate.accept(parts, error);
+        }
+        else
+        {
+            futureParts.whenComplete(future);
+        }
+    }
+
+    /**
      * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
      * @param servletRequest A servlet request
      * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
      * @see #from(ServletRequest, String)
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(ServletRequest servletRequest)
     {
         return from(servletRequest, Invocable.InvocationType.NON_BLOCKING, servletRequest.getContentType());
@@ -71,7 +119,8 @@ public class ServletMultiPartFormData
      * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
      * @see #from(ServletRequest, String)
      */
-    public static CompletableFuture<Parts> from(ServletRequest servletRequest, Invocable.InvocationType invocationType)
+    @Deprecated(forRemoval = true, since = "12.0.15")
+    static CompletableFuture<Parts> from(ServletRequest servletRequest, Invocable.InvocationType invocationType)
     {
         return from(servletRequest, invocationType, servletRequest.getContentType());
     }
@@ -82,6 +131,7 @@ public class ServletMultiPartFormData
      * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
      * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(ServletRequest servletRequest, String contentType)
     {
         return from(servletRequest, Invocable.InvocationType.NON_BLOCKING, contentType);
@@ -94,7 +144,8 @@ public class ServletMultiPartFormData
      * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
      * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
      */
-    public static CompletableFuture<Parts> from(ServletRequest servletRequest, Invocable.InvocationType invocationType, String contentType)
+    @Deprecated(forRemoval = true, since = "12.0.15")
+    static CompletableFuture<Parts> from(ServletRequest servletRequest, Invocable.InvocationType invocationType, String contentType)
     {
         // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
         @SuppressWarnings("unchecked")

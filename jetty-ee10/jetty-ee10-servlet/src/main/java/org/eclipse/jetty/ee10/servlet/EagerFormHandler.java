@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 
 import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.http.HttpHeader;
@@ -21,7 +21,9 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 
 /**
  * Handler to eagerly and asynchronously read and parse {@link MimeTypes.Type#FORM_ENCODED} and
@@ -29,10 +31,11 @@ import org.eclipse.jetty.util.Callback;
  * which can then consume them with blocking APIs but without blocking.
  * @see FormFields#from(Request)
  * @see ServletMultiPartFormData#from(ServletRequest)
+ * @deprecated use {@link DelayedHandler}
  */
-public class EagerFormHandler extends Handler.Wrapper
+@Deprecated(forRemoval = true, since = "12.0.15")
+public class EagerFormHandler extends DelayedHandler
 {
-    // TODO replace with DelayedDispatchHandler
     public EagerFormHandler()
     {
         this(null);
@@ -54,39 +57,85 @@ public class EagerFormHandler extends Handler.Wrapper
         if (mimeType == null)
             return super.handle(request, response, callback);
 
-        CompletableFuture<?> future =  switch (mimeType)
+        return switch (mimeType)
         {
-            case FORM_ENCODED -> FormFields.from(request, InvocationType.BLOCKING);
-            case MULTIPART_FORM_DATA -> ServletMultiPartFormData.from(Request.as(request, ServletContextRequest.class).getServletApiRequest(), InvocationType.BLOCKING, contentType);
-            default -> null;
+            case FORM_ENCODED -> handleFormFields(request, contentType, response, callback);
+            case MULTIPART_FORM_DATA -> handleMultiPartFormData(request, contentType, response, callback);
+            default -> super.handle(request, response, callback);
+        };
+    }
+
+    protected boolean  handleFormFields(Request request, String contentType, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+    {
+        BiConsumer<Fields, Throwable> onFields = (fields, error) ->
+        {
+            try
+            {
+                if (!super.handle(request, response, callback))
+                    callback.failed(new IllegalStateException("Not Handled"));
+            }
+            catch (Throwable t)
+            {
+                callback.failed(t);
+            }
         };
 
-        if (future == null)
-            return super.handle(request, response, callback);
-
-        if (future.isDone())
+        InvocableBiConsumer<Fields, Throwable> executeOnFields = new InvocableBiConsumer<>()
         {
-            if (!super.handle(request, response, callback))
-                callback.failed(new IllegalStateException("Not Handled"));
-        }
-        else
-        {
-            future.whenComplete((result, failure) ->
+            @Override
+            public void accept(Fields fields, Throwable error)
             {
-                // The result and failure are not handled here. Rather we call the next handler
-                // to allow the normal processing to handle the result or failure, which will be
-                // provided via the attribute to ServletApiRequest#getParts()
-                try
+                request.getContext().execute(() ->
                 {
-                    if (!super.handle(request, response, callback))
-                        callback.failed(new IllegalStateException("Not Handled"));
-                }
-                catch (Throwable x)
+                    onFields.accept(fields, error);
+                });
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+        };
+
+        FormFields.onFields(request, onFields, executeOnFields);
+        return true;
+    }
+
+    protected boolean handleMultiPartFormData(Request request, String contentType, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+    {
+        BiConsumer<ServletMultiPartFormData.Parts, Throwable> onParts = (fields, error) ->
+        {
+            try
+            {
+                if (!super.handle(request, response, callback))
+                    callback.failed(new IllegalStateException("Not Handled"));
+            }
+            catch (Throwable t)
+            {
+                callback.failed(t);
+            }
+        };
+
+        InvocableBiConsumer<ServletMultiPartFormData.Parts, Throwable> executeOnParts = new InvocableBiConsumer<>()
+        {
+            @Override
+            public void accept(ServletMultiPartFormData.Parts fields, Throwable error)
+            {
+                request.getContext().execute(() ->
                 {
-                    callback.failed(x);
-                }
-            });
-        }
+                    onParts.accept(fields, error);
+                });
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+        };
+
+        ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts, executeOnParts);
         return true;
     }
 }
