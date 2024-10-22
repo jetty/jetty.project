@@ -67,6 +67,7 @@ public class ServletMultiPartFormData
     /**
      * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
      * @param servletRequest A servlet request
+     * @param invocationType The invocation type of the resulting CompletableFuture.
      * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
      * @see #from(ServletRequest, String)
      */
@@ -89,6 +90,7 @@ public class ServletMultiPartFormData
     /**
      * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
      * @param servletRequest A servlet request
+     * @param invocationType The invocation type of the resulting CompletableFuture.
      * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
      * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
      */

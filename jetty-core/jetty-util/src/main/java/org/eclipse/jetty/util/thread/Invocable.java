@@ -269,6 +269,10 @@ public interface Invocable
      * The {@link InvocationType} is the type passed in construction (default NON_BLOCKING).
      * Methods on {@link java.util.concurrent.CompletableFuture} that may act in contradiction to the passed
      * {@link InvocationType} are extended to throw {@link IllegalStateException} in those circumstances.
+     * <p>
+     * Counterintuitively, if the blocking APIs like {@link #get()} are to be used, the {@link InvocationType}
+     * should be {@link InvocationType#NON_BLOCKING}, as the wake-up callbacks used will not block.
+     *
      * @param <V> The type of the result
      */
     class InvocableCompletableFuture<V> extends java.util.concurrent.CompletableFuture<V> implements Invocable
