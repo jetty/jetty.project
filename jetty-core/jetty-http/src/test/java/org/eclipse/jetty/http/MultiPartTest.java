@@ -22,7 +22,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -353,48 +352,6 @@ public class MultiPartTest
             secondary\r
             content\r
             --BOUNDARY--epi\r
-            logue\r
-            """);
-
-        parser.parse(Content.Chunk.from(data, true));
-
-        assertEquals(2, listener.parts.size());
-
-        MultiPart.Part part1 = listener.parts.get(0);
-        assertEquals("value", part1.getHeaders().get("name"));
-        assertEquals("Hello", Content.Source.asString(part1.getContentSource()));
-
-        MultiPart.Part part2 = listener.parts.get(1);
-        assertEquals("9001", part2.getHeaders().get("powerLevel"));
-        assertEquals("secondary\r\ncontent", Content.Source.asString(part2.getContentSource()));
-
-        assertEquals(0, data.remaining());
-    }
-
-    /**
-     * Whitespace before boundaries.
-     *
-     * @see MultiPartCompliance.Violation#WHITESPACE_BEFORE_BOUNDARY
-     */
-    @Test
-    @Disabled
-    public void testWhitespaceBeforeBoundary() throws Exception
-    {
-        TestPartsListener listener = new TestPartsListener();
-        MultiPart.Parser parser = new MultiPart.Parser("BOUNDARY", listener);
-
-        ByteBuffer data = BufferUtil.toBuffer("""
-            preamble\r
-             --BOUNDARY\r
-            name: value\r
-            \r
-            Hello\r
-             --BOUNDARY\r
-            powerLevel: 9001\r
-            \r
-            secondary\r
-            content\r
-             --BOUNDARY--epi\r
             logue\r
             """);
 
