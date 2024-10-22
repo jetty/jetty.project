@@ -26,7 +26,7 @@ import org.eclipse.jetty.io.content.OutputStreamContentSource;
  * <p>Content must be provided by writing to the {@link #getOutputStream() output stream}
  * that must be {@link OutputStream#close() closed} when all content has been provided.</p>
  * <p>Example usage:</p>
- * <pre>
+ * <pre>{@code
  * HttpClient httpClient = ...;
  *
  * // Use try-with-resources to autoclose the output stream.
@@ -37,7 +37,7 @@ import org.eclipse.jetty.io.content.OutputStreamContentSource;
  *             .body(content)
  *             .send(new Response.CompleteListener()
  *             {
- *                 &#64;Override
+ *                 @Override
  *                 public void onComplete(Result result)
  *                 {
  *                     // Your logic here
@@ -50,7 +50,7 @@ import org.eclipse.jetty.io.content.OutputStreamContentSource;
  *     // Even later...
  *     output.write("more content".getBytes());
  * } // Implicit call to output.close().
- * </pre>
+ * }</pre>
  */
 public class OutputStreamRequestContent extends OutputStreamContentSource implements Request.Content
 {

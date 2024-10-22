@@ -35,7 +35,7 @@ public class MongodbSessionDistributionTests extends AbstractSessionDistribution
 
     private static final int MONGO_PORT = 27017;
 
-    final String imageName = "mongo:" + System.getProperty("mongo.docker.version", "3.2.20");
+    final String imageName = "mongo:" + System.getProperty("mongo.docker.version", "5.0.26");
 
     final MongoDBContainer mongoDBContainer =
             new MongoDBContainer(DockerImageName.parse(imageName))

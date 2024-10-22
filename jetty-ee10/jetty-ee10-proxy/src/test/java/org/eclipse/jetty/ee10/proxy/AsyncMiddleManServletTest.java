@@ -61,6 +61,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
@@ -79,6 +80,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -163,11 +165,32 @@ public class AsyncMiddleManServletTest
     }
 
     @AfterEach
-    public void dispose() throws Exception
+    public void dispose()
     {
-        client.stop();
-        proxy.stop();
-        server.stop();
+        LifeCycle.stop(client);
+        LifeCycle.stop(proxy);
+        LifeCycle.stop(server);
+    }
+
+    @Test
+    public void testExpect100WithBody() throws Exception
+    {
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet());
+        startClient();
+
+        for (int i = 0; i < 100; i++)
+        {
+            String body = Character.toString('a' + (i % 26)); // only use 'a' to 'z'
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .path("/" + body)
+                .headers(h -> h.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
+                .timeout(5, TimeUnit.SECONDS)
+                .body(new StringRequestContent(body))
+                .send();
+            assertEquals(200, response.getStatus());
+            assertEquals(body, response.getContentAsString());
+        }
     }
 
     @Test

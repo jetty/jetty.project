@@ -76,20 +76,20 @@ public class Response implements HttpServletResponse
      * String used in the {@code Comment} attribute of {@link Cookie}
      * to support the {@code HttpOnly} attribute.
      **/
-    private static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
+    protected static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
     /**
      * String used in the {@code Comment} attribute of {@link Cookie}
      * to support the {@code Partitioned} attribute.
      **/
-    private static final String PARTITIONED_COMMENT = "__PARTITIONED__";
+    protected static final String PARTITIONED_COMMENT = "__PARTITIONED__";
     /**
      * The strings used in the {@code Comment} attribute of {@link Cookie}
      * to support the {@code SameSite} attribute.
      **/
-    private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
-    private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
-    private static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
-    private static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
+    protected static final String SAME_SITE_COMMENT = "__SAME_SITE_";
+    protected static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
+    protected static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
+    protected static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
 
     public enum OutputType
     {
@@ -488,7 +488,7 @@ public class Response implements HttpServletResponse
 
         switch (code)
         {
-            case -1 -> _channel.abort(new IOException(message));
+            case -1 -> _channel.abort(new org.eclipse.jetty.server.Request.Handler.AbortException(message));
             case HttpStatus.PROCESSING_102 -> sendProcessing();
             case HttpStatus.EARLY_HINTS_103 -> sendEarlyHint();
             default -> _channel.getState().sendError(code, message);
@@ -1494,7 +1494,7 @@ public class Response implements HttpServletResponse
         }
     }
 
-    private static class HttpCookieFacade implements HttpCookie
+    protected static class HttpCookieFacade implements HttpCookie
     {
         private final Cookie _cookie;
         private final String _comment;
@@ -1622,12 +1622,12 @@ public class Response implements HttpServletResponse
             return comment != null && comment.contains(HTTP_ONLY_COMMENT);
         }
 
-        private static boolean isPartitionedInComment(String comment)
+        protected static boolean isPartitionedInComment(String comment)
         {
             return comment != null && comment.contains(PARTITIONED_COMMENT);
         }
 
-        private static SameSite getSameSiteFromComment(String comment)
+        protected static SameSite getSameSiteFromComment(String comment)
         {
             if (comment == null)
                 return null;
@@ -1640,7 +1640,7 @@ public class Response implements HttpServletResponse
             return null;
         }
 
-        private static String getCommentWithoutAttributes(String comment)
+        protected static String getCommentWithoutAttributes(String comment)
         {
             if (comment == null)
                 return null;

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.0.12-SNAPSHOT</version>
+    <version>12.0.15-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-http-spi</artifactId>
   <name>Core :: HTTP SPI</name>
@@ -12,7 +12,7 @@
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
     <jacoco.skip>true</jacoco.skip>
     <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
-    <jakarta.xml.jaxws.impl.version>4.0.2</jakarta.xml.jaxws.impl.version>
+    <jakarta.xml.jaxws.impl.version>4.0.3</jakarta.xml.jaxws.impl.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.http.spi.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>

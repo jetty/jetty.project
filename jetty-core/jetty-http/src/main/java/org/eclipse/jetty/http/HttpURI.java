@@ -994,6 +994,9 @@ public interface HttpURI
                 throw new IllegalArgumentException("Relative path with authority");
             if (!URIUtil.isPathValid(path))
                 throw new IllegalArgumentException("Path not correctly encoded: " + path);
+            // since we are resetting the path, lets clear out the path specific violations.
+            if (_violations != null)
+                _violations.removeIf(UriCompliance::isPathViolation);
             _uri = null;
             _path = null;
             _canonicalPath = null;
@@ -1016,6 +1019,9 @@ public interface HttpURI
         {
             if (hasAuthority() && !isPathValidForAuthority(pathQuery))
                 throw new IllegalArgumentException("Relative path with authority");
+            // since we are resetting the path, lets clear out the path specific violations.
+            if (_violations != null)
+                _violations.removeIf(UriCompliance::isPathViolation);
             _uri = null;
             _path = null;
             _canonicalPath = null;

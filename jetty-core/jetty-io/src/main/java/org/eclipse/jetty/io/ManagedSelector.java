@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -865,14 +866,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public void close()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("closed accept of {}", channel);
-            IO.close(channel);
-        }
-
-        @Override
         public void update(Selector selector)
         {
             try
@@ -882,10 +875,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                IO.close(channel);
-                _selectorManager.onAcceptFailed(channel, x);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not register channel after accept {}", channel, x);
+                failed(x);
             }
         }
 
@@ -894,22 +886,28 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             try
             {
-                createEndPoint(channel, key);
                 _selectorManager.onAccepted(channel);
+                createEndPoint(channel, key);
             }
             catch (Throwable x)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not process accepted channel {}", channel, x);
                 failed(x);
             }
         }
 
-        protected void failed(Throwable failure)
+        @Override
+        public void close()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closed accept of {}", channel);
+            failed(new ClosedChannelException());
+        }
+
+        private void failed(Throwable failure)
         {
             IO.close(channel);
-            if (LOG.isDebugEnabled())
-                LOG.warn("Could not accept {}", channel, failure);
-            else
-                LOG.warn("Could not accept {}: {}", channel, String.valueOf(failure));
             _selectorManager.onAcceptFailed(channel, failure);
         }
 
@@ -1028,6 +1026,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         IO.close((Closeable)attachment);
                 }
                 _selector = null;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Closing {} on {}", selector, ManagedSelector.this);
                 IO.close(selector);
             }
             finally

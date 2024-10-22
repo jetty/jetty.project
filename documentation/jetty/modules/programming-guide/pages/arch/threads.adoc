@@ -235,11 +235,14 @@ Virtual threads have been introduced in Java 19 and Java 20 as a preview feature
 
 NOTE: In Java versions where virtual threads are a preview feature, remember to add `+--enable-preview+` to the JVM command line options to use virtual threads.
 
+[[thread-pool-virtual-threads-queued]]
+==== Virtual Threads Support with `QueuedThreadPool`
+
 `QueuedThreadPool` can be configured to use virtual threads by specifying the virtual threads `Executor`:
 
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=virtual]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=queuedVirtual]
 ----
 
 [CAUTION]
@@ -254,4 +257,47 @@ Jetty cannot enforce that the `Executor` passed to `setVirtualThreadsExecutor(Ex
 Enabling virtual threads in `QueuedThreadPool` will default the number of reserved threads to zero, unless the number of reserved threads is explicitly configured to a positive value.
 
 Defaulting the number of reserved threads to zero ensures that the <<execution-strategy-pec,Produce-Execute-Consume mode>> is always used, which means that virtual threads will always be used for blocking tasks.
+====
+
+[[thread-pool-virtual-threads-virtual]]
+==== Virtual Threads Support with `VirtualThreadPool`
+
+`VirtualThreadPool`  is an alternative to `QueuedThreadPool` that creates only virtual threads (no platform threads).
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=virtualVirtual]
+----
+
+Despite the name, `VirtualThreadPool` does not pool virtual threads, but allows you to impose a limit on the maximum number of current virtual threads, using a `Semaphore`.
+
+Limiting the number of current virtual threads helps to limit resource usage in applications, especially in case of load spikes.
+When an unlimited number of virtual threads is allowed, the server might be brought down due to resource (typically memory) exhaustion.
+
+Furthermore, you can configure it to track virtual threads so that a xref:troubleshooting/component-dump.adoc[Jetty component dump] will show all virtual threads currently in use, including those that are unmounted.
+
+[[thread-pool-virtual-threads-pinning]]
+==== Virtual Threads Pinning
+
+Even when using virtual threads, Jetty uses non-blocking I/O, and dedicates a thread to each `java.nio.channels.Selector` to perform the `Selector.select()` operation.
+
+Currently (up to Java 22), calling `Selector.select()` from a virtual thread *pins* the carrier thread.
+
+If you configure a server-side `Connector`, or Jetty's `HttpClient` with `N` selectors, then `N` carrier threads will be pinned by the virtual threads calling `Selector.select()`.
+
+If you have less than `N` CPU cores in your system, then by default all carriers will be pinned in the `Selector.select()` call, leaving no carrier to execute virtual threads, and therefore completely locking up your system, which will become completely unresponsive.
+
+If you have more than `N` CPU cores in your system, then by default your system may be less efficient, since the carrier threads may be pinned in the `Selector.select()` call, and therefore not available to run virtual threads.
+
+[WARNING]
+====
+The number of CPU cores of your system determines, by default, the number of carrier threads.
+The number of carrier threads may be explicitly configured by setting the system property `-Djdk.virtualThreadScheduler.parallelism=N`, where `N` is your desired number of carrier threads.
+
+Selector threads used by Jetty pin carrier threads.
+
+Choose the number of selectors wisely when using virtual threads: the number of selectors must always be less than the number of carrier threads, to leave some of the carrier threads free to run virtual threads.
+
+As an extreme example, if your system only has `1` CPU core, then `1` selector is enough to pin the only carrier thread, and your system will eventually lock up.
+In this case, you must explicitly configure the number of carrier threads by setting the system property `-Djdk.virtualThreadScheduler.parallelism=2` (or to a larger value).
 ====

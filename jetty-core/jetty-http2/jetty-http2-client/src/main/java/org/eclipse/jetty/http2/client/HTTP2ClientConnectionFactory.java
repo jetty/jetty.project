@@ -95,8 +95,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         public void onOpen()
         {
             Map<Integer, Integer> settings = listener.onPreface(getSession());
-            if (settings == null)
-                settings = new HashMap<>();
+            settings = settings == null ? new HashMap<>() : new HashMap<>(settings);
 
             // Below we want to populate any settings to send to the server
             // that have a different default than what prescribed by the RFC.

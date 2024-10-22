@@ -30,6 +30,8 @@ import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.common.QuicSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +64,13 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     public SocketAddress getRemoteSocketAddress()
     {
         return session.getRemoteSocketAddress();
+    }
+
+    @Override
+    public EndPoint.SslSessionData getSslSessionData()
+    {
+        QuicSession quicSession = getSession().getProtocolSession().getQuicSession();
+        return EndPoint.SslSessionData.from(null, null, null, quicSession.getPeerCertificates());
     }
 
     @Override

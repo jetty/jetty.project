@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests</artifactId>
-    <version>12.0.12-SNAPSHOT</version>
+    <version>12.0.15-SNAPSHOT</version>
   </parent>
   <artifactId>test-distribution</artifactId>
   <packaging>pom</packaging>
@@ -13,8 +13,6 @@
 
   <modules>
     <module>test-distribution-common</module>
-    <module>test-ee10-distribution</module>
-    <module>test-ee9-distribution</module>
   </modules>
 
   <properties>

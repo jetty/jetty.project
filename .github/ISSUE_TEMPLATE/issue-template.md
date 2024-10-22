@@ -18,7 +18,7 @@ labels: Bug
 **OS type/version**
 
 **Description**
-<!-- Do not report security issues here! See [Jetty Security Reports](https://eclipse.dev/jetty/security_reports.php) -->
+<!-- Do not report security issues here! See [Jetty Security Reports](https://jetty.org/security.html) -->
 
 **How to reproduce?**
 

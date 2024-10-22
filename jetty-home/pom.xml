@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.12-SNAPSHOT</version>
+    <version>12.0.15-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-home</artifactId>
@@ -157,6 +157,10 @@
       <groupId>org.eclipse.jetty.gcloud</groupId>
       <artifactId>jetty-gcloud-session-manager</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-client-transport</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>

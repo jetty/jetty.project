@@ -20,6 +20,7 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.DuplicateInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
+import org.eclipse.jetty.http3.qpack.util.QpackTestUtil;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

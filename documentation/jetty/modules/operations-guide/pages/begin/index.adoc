@@ -66,7 +66,7 @@ The Jetty distribution is available in both `zip` and `gzip` formats; download t
 == Installing Jetty
 
 After the download, unpacking Jetty will extract the files into a directory called `jetty-home-<version>`, where `<version>` is the version of Jetty that you downloaded.
-For example, installing Jetty {version} will create a directory called `jetty-home-{version}`.
+For example, installing Jetty {jetty-version} will create a directory called `jetty-home-{jetty-version}`.
 
 IMPORTANT: It is important that *only* stable release versions are used in production environments.
 Versions that have been deprecated or are released as Milestones (M), Alpha, Beta or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.

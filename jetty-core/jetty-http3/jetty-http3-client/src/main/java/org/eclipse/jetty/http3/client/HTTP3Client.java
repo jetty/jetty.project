@@ -125,7 +125,7 @@ import org.slf4j.LoggerFactory;
  * <p>HTTP/3+QUIC support is experimental and not suited for production use.
  * APIs may change incompatibly between releases.</p>
  */
-public class HTTP3Client extends ContainerLifeCycle
+public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
 {
     public static final String CLIENT_CONTEXT_KEY = HTTP3Client.class.getName();
     public static final String SESSION_LISTENER_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".listener";
@@ -216,5 +216,11 @@ public class HTTP3Client extends ContainerLifeCycle
     public CompletableFuture<Void> shutdown()
     {
         return container.shutdown();
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        stop();
     }
 }

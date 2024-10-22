@@ -33,6 +33,7 @@ import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
@@ -1024,8 +1026,18 @@ public class HttpClientTest extends AbstractTest
         ContentResponse response = client.newRequest(newURI(transport))
             .onRequestBegin(r ->
             {
-                if (r.getConnection() == null)
+                Connection connection = r.getConnection();
+                if (connection == null)
                     r.abort(new IllegalStateException());
+            })
+            .onRequestHeaders(r ->
+            {
+                if (transport.isSecure())
+                {
+                    EndPoint.SslSessionData sslSessionData = r.getConnection().getSslSessionData();
+                    if (sslSessionData == null)
+                        r.abort(new IllegalStateException());
+                }
             })
             .send();
 

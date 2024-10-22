@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-distribution</artifactId>
-    <version>12.0.12-SNAPSHOT</version>
+    <version>12.0.15-SNAPSHOT</version>
   </parent>
   <artifactId>test-distribution-common</artifactId>
   <packaging>jar</packaging>
@@ -15,9 +15,21 @@
     <bundle-symbolic-name>${project.groupId}.tests.distribution.common</bundle-symbolic-name>
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
+    <testcontainers-keycloak.version>3.4.0</testcontainers-keycloak.version>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.github.dasniko</groupId>
+      <artifactId>testcontainers-keycloak</artifactId>
+      <version>${testcontainers-keycloak.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-junit4-mock</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
@@ -138,6 +150,12 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-infinispan-common</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>io.smallrye</groupId>
+          <artifactId>jandex</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -153,6 +171,20 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-test-log4j2-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-test-openid-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -244,18 +276,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>${maven.jar.plugin.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>

@@ -5,11 +5,15 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation</artifactId>
-    <version>12.0.12-SNAPSHOT</version>
+    <version>12.0.15-SNAPSHOT</version>
   </parent>
   <artifactId>jetty</artifactId>
   <packaging>pom</packaging>
-  <name>Documentation :: Content Root</name>
+  <name>Documentation :: Asciidoc</name>
+
+  <modules>
+    <module>modules/code/examples</module>
+  </modules>
 
   <properties>
     <!-- build cache must be disabled for antora goal to work and for run.jetty.classpath value to be computed properly -->
@@ -26,6 +30,7 @@
         <configuration>
           <options>
             <option>attribute[] jetty-home=${project.build.directory}/jetty-home-${project.version}</option>
+            <option>attribute[] jetty-version=${project.version}</option>
           </options>
           <playbookProvider>
             <repository>jetty/jetty.website</repository>
@@ -147,17 +152,6 @@
         <jetty.home>${env.ANTORA_CACHE_DIR}/jetty/jetty-home-${project.version}</jetty.home>
         <jetty.home.output.directory>${env.ANTORA_CACHE_DIR}/jetty</jetty.home.output.directory>
       </properties>
-    </profile>
-    <profile>
-      <id>examples</id>
-      <activation>
-        <property>
-          <name>!collector</name>
-        </property>
-      </activation>
-      <modules>
-        <module>modules/code/examples</module>
-      </modules>
     </profile>
   </profiles>
 </project>

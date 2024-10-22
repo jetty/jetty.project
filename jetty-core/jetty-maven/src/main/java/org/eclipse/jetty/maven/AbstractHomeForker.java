@@ -198,6 +198,15 @@ public abstract class AbstractHomeForker extends AbstractForker
         if (stopKey != null)
             cmd.add("-DSTOP.KEY=" + stopKey);
 
+        //put any jetty properties onto the command line
+        if (jettyProperties != null)
+        {
+            for (Map.Entry<String, String> e : jettyProperties.entrySet())
+            {
+                cmd.add(e.getKey() + "=" + e.getValue());
+            }
+        }
+
         //set up enabled jetty modules
         StringBuilder tmp = new StringBuilder();
         tmp.append("--module=");
@@ -214,21 +223,13 @@ public abstract class AbstractHomeForker extends AbstractForker
         if (libExtJarFiles != null && !libExtJarFiles.isEmpty() && tmp.indexOf("ext") < 0)
             tmp.append(",ext");
         tmp.append("," + environment + "-maven");
+
         cmd.add(tmp.toString());
  
         //put any other jetty options onto the command line
         if (StringUtil.isNotBlank(jettyOptions))
         {
             Arrays.stream(jettyOptions.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
-        }
-
-        //put any jetty properties onto the command line
-        if (jettyProperties != null)
-        {
-            for (Map.Entry<String, String> e : jettyProperties.entrySet())
-            {
-                cmd.add(e.getKey() + "=" + e.getValue());
-            }
         }
 
         //existence of this file signals process started

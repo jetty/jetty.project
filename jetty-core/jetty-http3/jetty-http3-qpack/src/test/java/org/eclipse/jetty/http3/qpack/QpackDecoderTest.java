@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
+import org.eclipse.jetty.http3.qpack.util.TestDecoderHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;

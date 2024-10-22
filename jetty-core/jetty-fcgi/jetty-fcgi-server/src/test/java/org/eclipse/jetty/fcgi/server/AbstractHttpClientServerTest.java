@@ -15,7 +15,6 @@ package org.eclipse.jetty.fcgi.server;
 
 import java.util.concurrent.TimeUnit;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
@@ -29,10 +28,11 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractHttpClientServerTest
 {
@@ -75,26 +75,14 @@ public abstract class AbstractHttpClientServerTest
         try
         {
             if (serverBufferPool != null)
-                assertNoLeaks(serverBufferPool, "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
+                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server Leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0)));
             if (clientBufferPool != null)
-                assertNoLeaks(clientBufferPool, "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
+                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Client Leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0)));
         }
         finally
         {
             LifeCycle.stop(client);
             LifeCycle.stop(server);
-        }
-    }
-
-    private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, String msg)
-    {
-        try
-        {
-            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
-        }
-        catch (Exception e)
-        {
-            fail(e.getMessage() + msg);
         }
     }
 }

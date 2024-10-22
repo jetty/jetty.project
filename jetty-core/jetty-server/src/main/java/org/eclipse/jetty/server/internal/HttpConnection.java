@@ -19,6 +19,7 @@ import java.nio.channels.WritePendingException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,6 +72,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +105,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
     private final HttpFields.Mutable _headerBuilder = HttpFields.build();
-    private volatile RetainableByteBuffer _retainableByteBuffer;
+    private volatile RetainableByteBuffer _requestBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
     private long _requests;
@@ -318,68 +320,67 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public ByteBuffer onUpgradeFrom()
     {
-        if (!isRequestBufferEmpty())
-        {
-            ByteBuffer unconsumed = ByteBuffer.allocateDirect(_retainableByteBuffer.remaining());
-            unconsumed.put(_retainableByteBuffer.getByteBuffer());
-            unconsumed.flip();
-            releaseRequestBuffer();
-            return unconsumed;
-        }
-        return null;
+        if (isRequestBufferEmpty())
+            return null;
+        ByteBuffer unconsumed = ByteBuffer.allocateDirect(_requestBuffer.remaining());
+        unconsumed.put(_requestBuffer.getByteBuffer());
+        unconsumed.flip();
+        return unconsumed;
     }
 
     @Override
     public void onUpgradeTo(ByteBuffer buffer)
     {
-        BufferUtil.append(getRequestBuffer(), buffer);
+        ensureRequestBuffer();
+        BufferUtil.append(_requestBuffer.getByteBuffer(), buffer);
     }
 
-    void releaseRequestBuffer()
+    private void releaseRequestBuffer()
     {
-        if (_retainableByteBuffer != null && !_retainableByteBuffer.hasRemaining())
+        if (LOG.isDebugEnabled())
+            LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
+        if (_requestBuffer != null)
+            _requestBuffer.release();
+        _requestBuffer = null;
+    }
+
+    private void ensureRequestBuffer()
+    {
+        if (_requestBuffer == null)
         {
+            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
-                LOG.debug("releaseRequestBuffer {}", this);
-            if (_retainableByteBuffer.release())
-                _retainableByteBuffer = null;
-            else
-                throw new IllegalStateException("unreleased buffer " + _retainableByteBuffer);
+                LOG.debug("request buffer acquired {} {}", _requestBuffer, this);
         }
-    }
-
-    private ByteBuffer getRequestBuffer()
-    {
-        if (_retainableByteBuffer == null)
-            _retainableByteBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-        return _retainableByteBuffer.getByteBuffer();
     }
 
     public boolean isRequestBufferEmpty()
     {
-        return _retainableByteBuffer == null || !_retainableByteBuffer.hasRemaining();
+        return _requestBuffer == null || !_requestBuffer.hasRemaining();
     }
 
     @Override
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(">>onFillable enter {} {} {}", this, _httpChannel, _retainableByteBuffer);
+            LOG.debug("onFillable enter {} {} {}", _httpChannel, _requestBuffer, this);
 
         HttpConnection last = setCurrentConnection(this);
         try
         {
-            while (getEndPoint().isOpen())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("onFillable fill and parse {} {} {}", this, _httpChannel, _retainableByteBuffer);
+            ensureRequestBuffer();
 
-                // Fill the request buffer (if needed).
+            // We must loop until we fill -1 or there is an async pause in handling.
+            // Note that the endpoint might already be closed in some special circumstances.
+            while (true)
+            {
                 int filled = fillRequestBuffer();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onFillable filled {} {} {} {}", filled, _httpChannel, _requestBuffer, this);
+
                 if (filled < 0 && getEndPoint().isOutputShutdown())
                     close();
 
-                // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
 
                 // There could be a connection upgrade before handling
@@ -387,52 +388,83 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 // If there was a connection upgrade, the other
                 // connection took over, nothing more to do here.
                 if (getEndPoint().getConnection() != this)
+                {
+                    releaseRequestBuffer();
                     break;
+                }
 
-                // Handle channel event. This will only be true when the headers of a request have been received.
+                // The headers of a request have been received.
                 if (handle)
                 {
                     Request request = _httpChannel.getRequest();
                     if (LOG.isDebugEnabled())
                         LOG.debug("HANDLE {} {}", request, this);
 
-                    // handle the request by running the task obtained from onRequest
+                    // If the buffer is empty and no body is expected, then release the buffer
+                    if (isRequestBufferEmpty() && !_parser.hasContent())
+                    {
+                        // try parsing now to the end of the message
+                        parseRequestBuffer();
+                        if (_parser.isComplete())
+                            releaseRequestBuffer();
+                    }
+
+                    // Handle the request by running the task.
                     _handling.set(true);
                     Runnable onRequest = _onRequest;
                     _onRequest = null;
                     onRequest.run();
 
-                    // If the _handling boolean has already been CaS'd to false, then stream is completed and we are no longer
-                    // handling, so the caller can continue to fill and parse more connections.  If it is still true, then some
-                    // thread is still handling the request and they will need to organize more filling and parsing once complete.
+                    // If the CaS succeeds, then some thread is still handling the request.
+                    // If the CaS fails, then stream is completed, we are no longer handling,
+                    // so the caller can continue to fill and parse more connections.
                     if (_handling.compareAndSet(true, false))
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("request !complete {} {}", request, this);
+                            LOG.debug("request !complete {} {} {}", request, _requestBuffer, this);
+                        // Cannot release the request buffer here, because the
+                        // application may read concurrently from another thread.
+                        // The request buffer will be released by the application
+                        // reading the request content, or by the implementation
+                        // trying to consume the request content.
                         break;
                     }
 
-                    // If the request is complete, but has been upgraded, then break
+                    // If there was an upgrade, release and return.
                     if (getEndPoint().getConnection() != this)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("upgraded {} -> {}", this, getEndPoint().getConnection());
+                        if (_requestBuffer != null)
+                            releaseRequestBuffer();
+                        break;
+                    }
+
+                    // If we have already released the request buffer, then use fill interest before allocating another
+                    if (_requestBuffer == null)
+                    {
+                        fillInterested();
                         break;
                     }
                 }
+                else if (filled == 0)
+                {
+                    assert isRequestBufferEmpty();
+                    releaseRequestBuffer();
+                    fillInterested();
+                    break;
+                }
                 else if (filled < 0)
                 {
+                    assert isRequestBufferEmpty();
+                    releaseRequestBuffer();
                     getEndPoint().shutdownOutput();
                     break;
                 }
                 else if (_requestHandler._failure != null)
                 {
                     // There was an error, don't fill more.
-                    break;
-                }
-                else if (filled == 0)
-                {
-                    fillInterested();
+                    releaseRequestBuffer();
                     break;
                 }
             }
@@ -443,11 +475,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("caught exception {} {}", this, _httpChannel, x);
-                if (_retainableByteBuffer != null)
-                {
-                    _retainableByteBuffer.clear();
+                if (_requestBuffer != null)
                     releaseRequestBuffer();
-                }
             }
             finally
             {
@@ -458,7 +487,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             setCurrentConnection(last);
             if (LOG.isDebugEnabled())
-                LOG.debug("<<onFillable exit {} {} {}", this, _httpChannel, _retainableByteBuffer);
+                LOG.debug("onFillable exit {} {} {}", _httpChannel, _requestBuffer, this);
         }
     }
 
@@ -468,70 +497,63 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
      */
     void parseAndFillForContent()
     {
-        // Defensive check to avoid an infinite select/wakeup/fillAndParseForContent/wait loop
-        // in case the parser was mistakenly closed and the connection was not aborted.
-        if (_parser.isTerminated())
-        {
-            _requestHandler.messageComplete();
-            return;
-        }
+        ensureRequestBuffer();
 
-        // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
-        // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
-
-        // This loop was designed by a committee and voted by a majority.
         while (_parser.inContentState())
         {
             if (parseRequestBuffer())
                 break;
-            // Re-check the parser state after parsing to avoid filling,
-            // otherwise fillRequestBuffer() would acquire a ByteBuffer
-            // that may be leaked.
-            if (_parser.inContentState() && fillRequestBuffer() <= 0)
+
+            if (!_parser.inContentState())
+            {
+                // The request is complete, and we are going to re-enter onFillable(),
+                // because either A: the request/response was completed synchronously
+                // so the onFillable() thread will loop, or B: the request/response
+                // was completed asynchronously, and the HttpStreamOverHTTP1 dispatches
+                // a call to onFillable() to process the next request.
+                // Therefore, there is no need to release the request buffer here,
+                // also because the buffer may contain pipelined requests.
                 break;
+            }
+
+            assert !_requestBuffer.hasRemaining();
+
+            if (_requestBuffer.isRetained())
+            {
+                // The application has retained the content chunks,
+                // reacquire the buffer to avoid overwriting the content.
+                releaseRequestBuffer();
+                ensureRequestBuffer();
+            }
+
+            int filled = fillRequestBuffer();
+            if (filled <= 0)
+            {
+                releaseRequestBuffer();
+                break;
+            }
         }
     }
 
     private int fillRequestBuffer()
     {
-        if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
-        {
-            // TODO this is almost certainly wrong
-            RetainableByteBuffer newBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("replace buffer {} <- {} in {}", _retainableByteBuffer, newBuffer, this);
-            _retainableByteBuffer.release();
-            _retainableByteBuffer = newBuffer;
-        }
-
         if (!isRequestBufferEmpty())
-            return _retainableByteBuffer.remaining();
+            return _requestBuffer.remaining();
 
-        // Get a buffer
-        // We are not in a race here for the request buffer as we have not yet received a request,
-        // so there are not any possible legal threads calling #parseContent or #completed.
-        ByteBuffer requestBuffer = getRequestBuffer();
-
-        // fill
         try
         {
+            ByteBuffer requestBuffer = _requestBuffer.getByteBuffer();
             int filled = getEndPoint().fill(requestBuffer);
             if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
                 filled = getEndPoint().fill(requestBuffer);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
+                LOG.debug("filled {} {} {}", filled, _requestBuffer, this);
 
             if (filled > 0)
-            {
                 bytesIn.add(filled);
-            }
-            else
-            {
-                if (filled < 0)
-                    _parser.atEOF();
-                releaseRequestBuffer();
-            }
+            else if (filled < 0)
+                _parser.atEOF();
 
             return filled;
         }
@@ -540,11 +562,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
             _parser.atEOF();
-            if (_retainableByteBuffer != null)
-            {
-                _retainableByteBuffer.clear();
-                releaseRequestBuffer();
-            }
             return -1;
         }
     }
@@ -552,19 +569,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private boolean parseRequestBuffer()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parse {}", this, _retainableByteBuffer);
+            LOG.debug("parse {} {}", _requestBuffer, this);
 
         if (_parser.isTerminated())
             throw new RuntimeIOException("Parser is terminated");
 
-        boolean handle = _parser.parseNext(_retainableByteBuffer == null ? BufferUtil.EMPTY_BUFFER : _retainableByteBuffer.getByteBuffer());
+        boolean handle = _parser.parseNext(_requestBuffer.getByteBuffer());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} parsed {} {}", this, handle, _parser);
-
-        // recycle buffer ?
-        if (_retainableByteBuffer != null && !_retainableByteBuffer.isRetained())
-            releaseRequestBuffer();
+            LOG.debug("parsed {} {} {} {}", handle, _parser, _requestBuffer, this);
 
         return handle;
     }
@@ -596,10 +609,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        Runnable task = _httpChannel.onIdleTimeout(timeout);
-        if (task != null)
-            getExecutor().execute(task);
-        return false; // We've handle the exception
+        ThreadPool.executeImmediately(getExecutor(), _httpChannel.onIdleTimeout(timeout));
+        return false;
     }
 
     @Override
@@ -619,19 +630,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             fillInterested();
         else
             getExecutor().execute(this);
-    }
-
-    @Override
-    public void onClose(Throwable cause)
-    {
-        // TODO: do we really need to do this?
-        //  This event is fired really late, sendCallback should already be failed at this point.
-        //  Revisit whether we still need IteratingCallback.close().
-        if (cause == null)
-            _sendCallback.close();
-        else
-            _sendCallback.abort(cause);
-        super.onClose(cause);
     }
 
     @Override
@@ -686,9 +684,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
                 LOG.debug("demand failed {}", task, x);
-            if (task != null)
-                // Execute error path as invocation type is probably wrong.
-                getConnector().getExecutor().execute(task);
+            ThreadPool.executeImmediately(getConnector().getExecutor(), task);
         }
 
         @Override
@@ -906,6 +902,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         protected void onCompleteSuccess()
         {
+            // If we are a non-persistent connection and have succeeded the last write...
+            if (_shutdownOut && !(_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection))
+            {
+                // then we shutdown the output here so that the client sees the body termination ASAP and
+                // cannot be delayed by any further server handling before the stream callback is completed.
+                getEndPoint().shutdownOutput();
+            }
             release().succeeded();
         }
 
@@ -959,14 +962,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public boolean content(ByteBuffer buffer)
         {
             HttpStreamOverHTTP1 stream = _stream.get();
-            if (stream == null || stream._chunk != null || _retainableByteBuffer == null)
+            if (stream == null || stream._chunk != null || _requestBuffer == null)
                 throw new IllegalStateException();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
+                LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _requestBuffer, HttpConnection.this);
 
-            _retainableByteBuffer.retain();
-            stream._chunk = Content.Chunk.asChunk(buffer, false, _retainableByteBuffer);
+            _requestBuffer.retain();
+            stream._chunk = Content.Chunk.asChunk(buffer, false, _requestBuffer);
             return true;
         }
 
@@ -1035,9 +1038,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
-            Runnable task = _httpChannel.onFailure(_failure);
-            if (task != null)
-                getServer().getThreadPool().execute(task);
+            ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(_failure));
         }
 
         @Override
@@ -1249,7 +1250,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
-                _httpChannel.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
+                _httpChannel.getRequest().setAttribute(ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY, _complianceViolations);
                 _complianceViolations = null;
             }
 
@@ -1510,25 +1511,31 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 if (LOG.isDebugEnabled())
                     LOG.debug("abort due to pending read {} {} ", this, getEndPoint());
                 abort(new IOException("Pending read in onCompleted"));
+                _httpChannel.recycle();
+                _parser.reset();
+                _generator.reset();
+                if (!_handling.compareAndSet(true, false))
+                    resume();
                 return;
             }
 
-            Connection upgradeConnection = (Connection)_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE);
-            if (upgradeConnection != null)
+            if (_httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) instanceof Connection upgradeConnection)
             {
                 getEndPoint().upgrade(upgradeConnection);
                 _httpChannel.recycle();
                 _parser.close();
                 _generator.reset();
+                if (!_handling.compareAndSet(true, false))
+                    releaseRequestBuffer();
                 return;
             }
 
             _httpChannel.recycle();
 
+            // If a 100 Continue is still expected to be sent, but no content was read, then
+            // close the parser so that seeks EOF below, not the next request.
             if (_expects100Continue)
             {
-                // No content was read, and no 100 Continue response was sent.
-                // Close the parser so that below it seeks EOF, not the next request.
                 _expects100Continue = false;
                 _parser.close();
             }
@@ -1541,7 +1548,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 else
                     _parser.close();
             }
-
             _generator.reset();
 
             // Can the onFillable thread continue processing
@@ -1552,43 +1558,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("non-current completion {}", this);
 
-            if (_sendCallback._shutdownOut)
-                getEndPoint().shutdownOutput();
-
-            // If we are looking for the next request
-            if (_parser.isStart())
-            {
-                // if the buffer is empty
-                if (isRequestBufferEmpty())
-                {
-                    // look for more data
-                    fillInterested();
-                }
-                // else if we are still running
-                else if (getConnector().isRunning())
-                {
-                    // Dispatched to handle a pipelined request
-                    try
-                    {
-                        getExecutor().execute(HttpConnection.this);
-                    }
-                    catch (RejectedExecutionException e)
-                    {
-                        if (getConnector().isRunning())
-                            LOG.warn("Failed dispatch of {}", this, e);
-                        else
-                            LOG.trace("IGNORED", e);
-                        getEndPoint().close();
-                    }
-                }
-                else
-                {
-                    getEndPoint().close();
-                }
-            }
-            // else the parser must be closed, so seek the EOF if we are still open
-            else if (getEndPoint().isOpen())
-                fillInterested();
+            resume();
         }
 
         @Override
@@ -1604,17 +1574,35 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (LOG.isDebugEnabled())
                 LOG.debug("aborting", x);
             abort(x);
+            _httpChannel.recycle();
+            _parser.reset();
+            _generator.reset();
+            if (!_handling.compareAndSet(true, false))
+                resume();
+        }
+
+        private void resume()
+        {
+            try
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Resuming onFillable() {}", HttpConnection.this);
+                // Dispatch to handle pipelined requests.
+                Request request = _httpChannel.getRequest();
+                Executor executor = request == null ? getExecutor() : request.getComponents().getExecutor();
+                executor.execute(HttpConnection.this);
+            }
+            catch (RejectedExecutionException x)
+            {
+                getEndPoint().close(x);
+                // Resume by running, to release the request buffer.
+                run();
+            }
         }
 
         private void abort(Throwable failure)
         {
             getEndPoint().close(failure);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return HttpStream.super.getInvocationType();
         }
     }
 

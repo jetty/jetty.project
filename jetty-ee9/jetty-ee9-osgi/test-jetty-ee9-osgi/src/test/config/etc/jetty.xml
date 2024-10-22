@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
 <!--                                                                 -->
 <!-- Documentation of this file format can be found at:              -->
-<!-- https://eclipse.dev/jetty/documentation/                    -->
+<!-- https://jetty.org/docs/                    -->
 <!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">

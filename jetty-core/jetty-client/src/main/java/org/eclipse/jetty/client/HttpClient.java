@@ -104,7 +104,7 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @ManagedObject("The HTTP client")
-public class HttpClient extends ContainerLifeCycle
+public class HttpClient extends ContainerLifeCycle implements AutoCloseable
 {
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
@@ -218,7 +218,7 @@ public class HttpClient extends ContainerLifeCycle
         if (cookieStore == null)
             cookieStore = new HttpCookieStore.Default();
 
-        transport.setHttpClient(this);
+        getContainedBeans(Aware.class).forEach(bean -> bean.setHttpClient(this));
 
         super.doStart();
 
@@ -1140,5 +1140,20 @@ public class HttpClient extends ContainerLifeCycle
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
         return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        stop();
+    }
+
+    /**
+     * <p>Descendant beans of {@code HttpClient} that implement this interface
+     * are made aware of the {@code HttpClient} instance while it is starting.</p>
+     */
+    public interface Aware
+    {
+        void setHttpClient(HttpClient httpClient);
     }
 }

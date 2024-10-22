@@ -16,30 +16,35 @@ package org.eclipse.jetty.start;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Enumeration;
+import java.util.Collections;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.function.Predicate;
 
 public class PropertyDump
 {
     public static void main(String[] args)
     {
         System.out.printf("PropertyDump%n");
+
+        Predicate<String> nameSelectionPredicate =
+            (name) ->
+                name.startsWith("test.") ||
+                    name.startsWith("jetty.");
+
         // As System Properties
         Properties props = System.getProperties();
-        Enumeration<?> names = props.propertyNames();
-        while (names.hasMoreElements())
-        {
-            String name = (String)names.nextElement();
-            // only interested in "test." prefixed properties
-            if (name.startsWith("test."))
-            {
-                System.out.printf("System %s=%s%n", name, props.getProperty(name));
-            }
-        }
+        props.stringPropertyNames()
+            .stream()
+            .filter(nameSelectionPredicate)
+            .sorted()
+            .forEach((name) ->
+                System.out.printf("System %s=%s%n", name, props.getProperty(name)));
 
         // As File Argument
         for (String arg : args)
         {
+            System.out.printf("Arg [%s]%n", arg);
             if (arg.endsWith(".properties"))
             {
                 Properties aprops = new Properties();
@@ -47,15 +52,13 @@ public class PropertyDump
                 try (FileReader reader = new FileReader(propFile))
                 {
                     aprops.load(reader);
-                    Enumeration<?> anames = aprops.propertyNames();
-                    while (anames.hasMoreElements())
-                    {
-                        String name = (String)anames.nextElement();
-                        if (name.startsWith("test."))
-                        {
-                            System.out.printf("%s %s=%s%n", propFile.getName(), name, aprops.getProperty(name));
-                        }
-                    }
+                    Collections.list(aprops.propertyNames())
+                        .stream()
+                        .map(Objects::toString)
+                        .filter(nameSelectionPredicate)
+                        .sorted()
+                        .forEach((name) ->
+                            System.out.printf("%s %s=%s%n", propFile.getName(), name, aprops.getProperty(name)));
                 }
                 catch (IOException e)
                 {

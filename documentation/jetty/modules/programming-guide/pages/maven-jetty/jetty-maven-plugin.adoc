@@ -57,7 +57,7 @@ First, add `jetty-{ee-all}-maven-plugin` to your `pom.xml` definition. Here's an
 <plugin>
   <groupId>org.eclipse.jetty.{ee-current}</groupId>
   <artifactId>jetty-{ee-current}-maven-plugin</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
 </plugin>
 ----
 
@@ -256,6 +256,7 @@ Usually, only `war` projects are suitable, however, you may configure other type
 The plugin will refuse to start if the &lt;packaging&gt; type in the pom is not in list of `supportedPackagings`.
 systemProperties::
 Optional.
+A map of property name, value pairs.
 Allows you to configure System properties for the execution of the plugin.
 For more information, see <<setting-system-properties,Setting System Properties>>.
 systemPropertiesFile::
@@ -316,7 +317,7 @@ Here is an example, which turns on scanning for changes every ten seconds, and s
 <plugin>
   <groupId>org.eclipse.jetty.{ee-current}</groupId>
   <artifactId>jetty-{ee-current}-maven-plugin</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
   <configuration>
     <scan>10</scan>
     <webApp>
@@ -414,7 +415,7 @@ Here is an example of a pom configuration for the plugin with the `run` goal:
     <plugin>
       <groupId>org.eclipse.jetty.{ee-current}</groupId>
       <artifactId>jetty-{ee-current}-maven-plugin</artifactId>
-      <version>{version}</version>
+      <version>{jetty-version}</version>
       <configuration>
         <webApp>
           <contextPath>/</contextPath>
@@ -524,7 +525,7 @@ Here's an example of using the `pre-integration-test` and `post-integration-test
 <plugin>
   <groupId>org.eclipse.jetty.{ee-current}</groupId>
   <artifactId>jetty-{ee-current}-maven-plugin</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
   <configuration>
     <stopKey>foo</stopKey>
     <stopPort>9999</stopPort>
@@ -715,7 +716,7 @@ Here's a configuration example:
 <plugin>
   <groupId>org.eclipse.jetty.{ee-current}</groupId>
   <artifactId>jetty-{ee-current}-maven-plugin</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
   <configuration>
     <stopPort>9966</stopPort>
     <stopKey>foo</stopKey>
@@ -853,7 +854,7 @@ They are configured for the http://maven.apache.org/plugins/maven-war-plugin/ove
 <plugin>
   <groupId>org.apache.maven.plugins</groupId>
   <artifactId>maven-war-plugin</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
   <configuration>
     <overlays>
       <overlay>
@@ -944,7 +945,7 @@ Here's an example of setting up the `HashLoginService` for a webapp:
 <plugin>
   <groupId>org.eclipse.jetty.{ee-current}</groupId>
   <artifactId>jetty-{ee-current}-maven-plugin</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
   <configuration>
     <scan>10</scan>
     <webApp>
@@ -1000,7 +1001,7 @@ Putting the configuration in webapp A's `pom.xml`:
 <plugin>
   <groupId>org.eclipse.jetty.{ee-current}</groupId>
   <artifactId>jetty-{ee-current}-maven-plugin</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
   <configuration>
     <scan>10</scan>
     <webApp>
@@ -1058,7 +1059,7 @@ Then configure the location of this `jetty.xml` file into webapp A's Jetty plugi
 <plugin>
   <groupId>org.eclipse.jetty.{ee-current}</groupId>
   <artifactId>jetty-{ee-current}-maven-plugin</artifactId>
-  <version>{version}</version>
+  <version>{jetty-version}</version>
   <configuration>
     <scan>10</scan>
     <webApp>

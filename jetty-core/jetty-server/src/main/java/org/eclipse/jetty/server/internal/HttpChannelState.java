@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
@@ -63,6 +64,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -128,8 +130,8 @@ public class HttpChannelState implements HttpChannel, Components
     {
         _connectionMetaData = connectionMetaData;
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
-        _readInvoker = new HttpChannelSerializedInvoker();
-        _writeInvoker = new HttpChannelSerializedInvoker();
+        _readInvoker = new HttpChannelSerializedInvoker(HttpChannelState.class.getSimpleName() + "_readInvoker");
+        _writeInvoker = new HttpChannelSerializedInvoker(HttpChannelState.class.getSimpleName() + "_writeInvoker");
     }
 
     @Override
@@ -231,7 +233,18 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public ThreadPool getThreadPool()
     {
-        return getServer().getThreadPool();
+        Executor executor = getExecutor();
+        if (executor instanceof ThreadPool threadPool)
+            return threadPool;
+        return new ThreadPoolWrapper(executor);
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        Executor executor = getServer().getThreadPool();
+        Executor virtualExecutor = VirtualThreads.getVirtualThreadsExecutor(executor);
+        return virtualExecutor != null ? virtualExecutor : executor;
     }
 
     @Override
@@ -469,7 +482,8 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
-        // Consume content as soon as possible to open any flow control window.
+        // Consume content as soon as possible to open any
+        // flow control window and release any request buffer.
         Throwable unconsumed = stream.consumeAvailable();
         if (unconsumed != null && LOG.isDebugEnabled())
             LOG.debug("consuming content during error {}", unconsumed.toString());
@@ -994,9 +1008,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void fail(Throwable failure)
         {
-            Runnable runnable = _httpChannelState.onFailure(failure);
-            if (runnable != null)
-                getContext().execute(runnable);
+            ThreadPool.executeImmediately(getContext(), _httpChannelState.onFailure(failure));
         }
 
         @Override
@@ -1117,8 +1129,6 @@ public class HttpChannelState implements HttpChannel, Components
      */
     public static class ChannelResponse implements Response, Callback
     {
-        private static final CompletableFuture<Void> UNEXPECTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
-        private static final CompletableFuture<Void> COMMITTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("Committed"));
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
         protected int _status;
@@ -1156,10 +1166,7 @@ public class HttpChannelState implements HttpChannel, Components
             _writeCallback = null;
             if (writeCallback == null)
                 return null;
-            if (_writeFailure == null)
-                _writeFailure = x;
-            else
-                ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
+            _writeFailure = ExceptionUtil.combine(_writeFailure, x);
             return () -> HttpChannelState.failed(writeCallback, x);
         }
 
@@ -1408,12 +1415,14 @@ public class HttpChannelState implements HttpChannel, Components
                 if (status == HttpStatus.CONTINUE_100)
                 {
                     if (!httpChannelState._expects100Continue)
-                        return UNEXPECTED_100_CONTINUE;
+                        return CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
+                    if (_request.getLength() == 0)
+                        return CompletableFuture.completedFuture(null);
                     httpChannelState._expects100Continue = false;
                 }
 
                 if (_httpFields.isCommitted())
-                    return status == HttpStatus.CONTINUE_100 ? COMMITTED_100_CONTINUE : CompletableFuture.failedFuture(new IllegalStateException("Committed"));
+                    return CompletableFuture.failedFuture(new IllegalStateException("Committed"));
                 if (_writeCallback != null)
                     return CompletableFuture.failedFuture(new WritePendingException());
 
@@ -1577,18 +1586,18 @@ public class HttpChannelState implements HttpChannel, Components
 
                     httpChannelState._callbackFailure = failure;
 
-                    // Consume any input.
-                    Throwable unconsumed = stream.consumeAvailable();
-                    ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
+                    if (!stream.isCommitted() && !(failure instanceof Request.Handler.AbortException))
+                    {
+                        // Consume any input.
+                        Throwable unconsumed = stream.consumeAvailable();
+                        ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
 
-                    ChannelResponse response = httpChannelState._response;
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
+                        ChannelResponse response = httpChannelState._response;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
 
-                    // There may have been an attempt to write an error response that failed.
-                    // Do not try to write again an error response if already committed.
-                    if (!stream.isCommitted())
                         errorResponse = new ErrorResponse(request);
+                    }
                 }
 
                 if (errorResponse != null)
@@ -1636,7 +1645,6 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public InvocationType getInvocationType()
         {
-            // TODO review this as it is probably not correct
             return _request.getHttpStream().getInvocationType();
         }
     }
@@ -1813,6 +1821,11 @@ public class HttpChannelState implements HttpChannel, Components
 
     private class HttpChannelSerializedInvoker extends SerializedInvoker
     {
+        public HttpChannelSerializedInvoker(String name)
+        {
+            super(name);
+        }
+
         @Override
         protected void onError(Runnable task, Throwable failure)
         {
@@ -1947,6 +1960,45 @@ public class HttpChannelState implements HttpChannel, Components
         {
             ExceptionUtil.addSuppressedIfNotAssociated(t, failure);
             throw t;
+        }
+    }
+
+    private static class ThreadPoolWrapper implements ThreadPool
+    {
+        private final Executor _executor;
+
+        private ThreadPoolWrapper(Executor executor)
+        {
+            _executor = executor;
+        }
+
+        @Override
+        public void execute(Runnable command)
+        {
+            _executor.execute(command);
+        }
+
+        @Override
+        public void join()
+        {
+        }
+
+        @Override
+        public int getThreads()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getIdleThreads()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean isLowOnThreads()
+        {
+            return false;
         }
     }
 }

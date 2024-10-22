@@ -127,7 +127,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
         if (exchange == null)
             return;
 
-        responseContentAvailable();
+        responseContentAvailable(exchange);
     }
 
     @Override

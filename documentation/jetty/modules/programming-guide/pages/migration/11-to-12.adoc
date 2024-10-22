@@ -99,6 +99,15 @@
 | `org.eclipse.jetty.websocket.api.**WebSocketPolicy**` | `org.eclipse.jetty.websocket.api.**Configurable**`
 |===
 
+== Server-Side Web Application APIs Changes
+
+Jetty 12 introduced redesigned server-side APIs for web applications.
+In Jetty 11, these APIs were based on a mix of Jakarta Servlet APIs and Jetty Handler APIs, while in Jetty 12 they are solely based on Jetty Handler APIs.
+
+In Jetty 12 you can now write web applications independently of the Servlet APIs, so you can migrate Jakarta Servlets to Jetty Handlers as explained in xref:servlet-to-handler[this section].
+
+If you were already using the Jetty 11 Handler APIs, you can migrate them to the Jetty 12 Handler APIs as explained in xref:api-changes-handler[this section].
+
 [[servlet-to-handler]]
 == Migrate Servlets to Jetty Handlers
 
@@ -126,6 +135,8 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-source]
 ----
 
+Refer also to the `Content.Source` APIs detailed in xref:arch/io.adoc#content-source[this section].
+
 === Handler Response APIs
 [,java,indent=0]
 ----
@@ -150,8 +161,61 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-trailers]
 ----
 
+Refer also to the `Content.Sink` APIs detailed in xref:arch/io.adoc#content-sink[this section].
+
 [[api-changes]]
 == APIs Changes
+
+[[api-changes-handler]]
+=== `Handler`
+
+The server-side `Handler` class, and the APIs to use for request/response processing, have been redesigned in Jetty 12.
+
+The Jetty 11 `Handler` method:
+
+`Handler.handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)`
+
+has been changed in Jetty 12 to:
+
+`Handler.handle(Request request, Response response, Callback callback)`
+
+The Jetty 11 `target` parameter has been removed, and in Jetty 12 it has been replaced by the information present in `Request.getHttpURI()`.
+
+In Jetty 11, ``Handler``s would mark the fact that they handled the request, and therefore are producing a response, by calling `Request.setHandled(true)`.
+In Jetty 12, this is performed by returning `true` from the `Handler.handle(\...)` method, which also requires that the `Callback` parameter must be completed, either by succeeding it or failing it.
+
+In Jetty 11, the `Handler.handle(\...)` method has a blocking semantic, while in Jetty 12 the `Handler.handle(\...)` method has an asynchronous semantic, thanks to the `Callback` parameter.
+This means that you can return from the `Handler.handle(\...)` method _before_ the response has been sent, similarly to what you can do with the Servlet APIs when you call `HttpServletRequest.startAsync()`.
+Similarly, in Jetty 11 after a call to `startAsync()` you must call `AsyncContext.complete()`, while in Jetty 12 you must complete the `Callback` parameter, either by succeeding it or failing it.
+
+In Jetty 11, `AbstractHandler` provides a utility class to implement `Handler`.
+In Jetty 12, use `Handler.Abstract`.
+
+In Jetty 11, the APIs to deal with request or response HTTP headers are based on either Jetty's `HttpFields`, or the Servlet APIs.
+In Jetty 12, the HTTP headers API are only based on `HttpFields`.
+Please refer to the `HttpFields` link:{javadoc-url}/org/eclipse/jetty/http/HttpFields.html[javadocs] for details.
+
+In Jetty 11, the request content is accessed via `Request.getInputStream()` or `HttpServletRequest.getInputStream()`.
+In Jetty 12, the `Request` object itself _is-a_ `Content.Source` that can be read as explained in xref:arch/io.adoc#content-source[this section].
+In Jetty 12, you can use `Content.Source.asInputStream(request)` to obtain an `InputStream` and minimize the changes to your code, but remember that `InputStream` only provides blocking APIs, while `Content.Source` provides non-blocking APIs.
+
+In Jetty 11, the response content is accessed via `Response.getOutputStream()` or `HttpServletResponse.getOutputStream()`.
+In Jetty 12, the `Response` object itself _is-a_ `Content.Sink` that can be written as explained in xref:arch/io.adoc#content-sink[this section].
+In Jetty 12, you can use `Content.Sink.asOutputStream(response)` to obtain an `OutputStream` and minimize the changes to your code, but remember that `OutputStream` only provides blocking APIs, while `Content.Sink` provides non-blocking APIs.
+
+[[api-changes-handler-sequence]]
+=== `HandlerCollection` and `HandlerList`
+
+Jetty 11's `org.eclipse.jetty.server.handler.HandlerCollection` and `org.eclipse.jetty.server.handler.HandlerList` have been replaced by Jetty 12's `org.eclipse.jetty.server.handler.Handler.Sequence`.
+
+Note that class `org.eclipse.jetty.server.handler.ContextHandlerCollection` has been retained (with the updates introduced by `Handler` as described <<api-changes-handler,here>>), and it is typically a better choice: where `Handler.Sequence` just iterates all its children ``Handler``s until one return `true` from the `handle(Request, Response, Callback)` method, `ContextHandlerCollection` more efficiently selects the child `ContextHandler` based on context path and virtual hosts.
+
+[[api-changes-handler-requestlog]]
+=== `RequestLogHandler`
+
+Jetty 11's `org.eclipse.jetty.server.handler.RequestLogHandler` has been removed with no replacement.
+
+In Jetty 12, request logging is achieved by calling `Server.setRequestLog(RequestLog requestLog)`, as described in xref:server/http.adoc#request-logging[this section].
 
 === `HttpClient`
 
@@ -164,6 +228,8 @@ The Jetty 11 model was a "demand+push" model: the application was demanding cont
 The Jetty 12 model is a "demand+pull" model: when the content is available, the implementation calls once `Response.ContentSourceListener.onContentSource(Content.Source)`; the application can then pull the content chunks from the `Content.Source`.
 
 For more information about the new model, see xref:arch/io.adoc#content-source[this section].
+
+Jetty 12 introduced the concept of low-level transport for high-level protocols, described in xref:client/io-arch.adoc#transport[this section].
 
 === WebSocket
 

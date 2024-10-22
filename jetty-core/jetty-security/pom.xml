@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.0.12-SNAPSHOT</version>
+    <version>12.0.15-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-security</artifactId>
   <name>Core :: Security</name>
   <description>The common Jetty security implementation</description>
 
   <properties>
-    <apache.directory.api.version>2.1.6</apache.directory.api.version>
+    <apache.directory.api.version>2.1.7</apache.directory.api.version>
     <apacheds.version>2.0.0.AM27</apacheds.version>
     <bundle-symbolic-name>${project.groupId}.security</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.security.*</spotbugs.onlyAnalyze>

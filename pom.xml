@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.12-SNAPSHOT</version>
+  <version>12.0.15-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -160,22 +160,19 @@
 
   <properties>
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.14</ant.version>
+    <ant.version>1.10.15</ant.version>
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctor.maven.plugin.version>3.0.0</asciidoctor.maven.plugin.version>
-    <asciidoctor.skip>false</asciidoctor.skip>
-    <asciidoctorj-diagram.version>2.3.1</asciidoctorj-diagram.version>
-    <asciidoctorj.version>3.0.0-alpha.2</asciidoctorj.version>
-    <asm.version>9.7</asm.version>
-    <awaitility.version>4.2.1</awaitility.version>
+    <asm.version>9.7.1</asm.version>
+    <awaitility.version>4.2.2</awaitility.version>
     <bndlib.version>7.0.0</bndlib.version>
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
     <checkstyle.version>10.17.0</checkstyle.version>
-    <commons-codec.version>1.17.0</commons-codec.version>
+    <commons-codec.version>1.17.1</commons-codec.version>
+    <commons-io.version>2.16.1</commons-io.version>
     <commons-lang3.version>3.14.0</commons-lang3.version>
     <commons.compress.version>1.26.2</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
@@ -196,42 +193,41 @@
     <gson.version>2.11.0</gson.version>
     <guava.version>33.2.1-jre</guava.version>
     <guice.version>7.0.0</guice.version>
-    <h2spec.maven.plugin.version>1.0.12</h2spec.maven.plugin.version>
-    <hamcrest.version>2.2</hamcrest.version>
-    <hazelcast.version>5.4.0</hazelcast.version>
-    <hibernate.search.version>7.1.1.Final</hibernate.search.version>
+    <hamcrest.version>3.0</hamcrest.version>
+    <hazelcast.version>5.5.0</hazelcast.version>
+    <hibernate.search.version>7.1.2.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.0.5.Final</infinispan.docker.image.version>
-    <infinispan.protostream.version>5.0.5.Final</infinispan.protostream.version>
-    <infinispan.version>15.0.5.Final</infinispan.version>
+    <infinispan.protostream.version>5.0.12.Final</infinispan.protostream.version>
+    <infinispan.version>15.0.10.Final</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
-    <jackson.version>2.17.1</jackson.version>
+    <jackson.version>2.18.0</jackson.version>
     <jacoco.maven.plugin.version>0.8.12</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
     <jboss-threads.version>3.6.1.Final</jboss-threads.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
-    <jboss.logging.version>3.6.0.Final</jboss.logging.version>
+    <jboss.logging.version>3.6.1.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty-quiche-native.version>0.22.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
-    <jetty.test.version>6.2</jetty.test.version>
+    <jetty.test.version>6.3</jetty.test.version>
     <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
-    <jetty.url>https://eclipse.dev/jetty/</jetty.url>
+    <jetty.url>https://jetty.org/</jetty.url>
     <jetty.xhtml.schemas-version>1.4</jetty.xhtml.schemas-version>
     <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
     <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
     <jffi.version>1.3.13</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
-    <jna.version>5.14.0</jna.version>
+    <jna.version>5.15.0</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.5.1</json-smart.version>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
@@ -240,15 +236,15 @@
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
-    <junit.version>5.10.3</junit.version>
-    <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
+    <junit.version>5.11.2</junit.version>
+    <kerb-simplekdc.version>2.1.0</kerb-simplekdc.version>
     <license.maven.plugin.version>4.5</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.23.1</log4j2.version>
+    <log4j2.version>2.24.1</log4j2.version>
     <logback.version>1.5.6</logback.version>
     <lucene.version>9.9.2</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.4.0</mariadb.version>
+    <mariadb.version>3.4.1</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.0</maven-build-cache.version>
     <maven-plugin.plugin.version>3.13.1</maven-plugin.plugin.version>
@@ -281,8 +277,8 @@
     <maven.version>3.9.0</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
     <mina.core.version>2.2.3</mina.core.version>
-    <mongo.docker.version>3.2.20</mongo.docker.version>
-    <mongodb.version>3.12.14</mongodb.version>
+    <mongo.docker.version>5.0.26</mongo.docker.version>
+    <mongodb.version>5.1.3</mongodb.version>
     <netty.version>4.1.109.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -301,31 +297,31 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-version>3.7.300</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.20.0</osgi-version>
+    <osgi-version>3.21.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.13.5</pax.exam.version>
     <pax.url.version>2.6.14</pax.url.version>
     <plexus-classworlds.version>2.8.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
-    <plexus-utils.version>4.0.1</plexus-utils.version>
+    <plexus-utils.version>4.0.2</plexus-utils.version>
     <plexus-xml.version>4.0.4</plexus-xml.version>
     <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settingsPath>src/it/settings.xml</settingsPath>
     <sisu.plexus.version>0.9.0.M3</sisu.plexus.version>
-    <slf4j.version>2.0.13</slf4j.version>
+    <slf4j.version>2.0.16</slf4j.version>
     <spifly.version>1.3.7</spifly.version>
     <spotbugs.maven.plugin.version>4.8.6.0</spotbugs.maven.plugin.version>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <swissbox.version>1.8.3</swissbox.version>
-    <testcontainers.version>1.19.8</testcontainers.version>
+    <testcontainers.version>1.20.2</testcontainers.version>
     <testng.version>7.10.2</testng.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <versions.maven.plugin.version>2.16.2</versions.maven.plugin.version>
     <wildfly.common.version>1.7.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.4.2.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.6.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.8</xmemcached.version>
   </properties>
 
@@ -441,6 +437,11 @@
         <version>${commons-codec.version}</version>
       </dependency>
       <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>${grpc.version}</version>
@@ -474,11 +475,6 @@
         <groupId>org.apache.aries.spifly</groupId>
         <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
         <version>${spifly.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.avro</groupId>
-        <artifactId>avro</artifactId>
-        <version>${apache.avro.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -603,16 +599,6 @@
         <groupId>org.apache.maven.resolver</groupId>
         <artifactId>maven-resolver-supplier</artifactId>
         <version>${maven.resolver.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>${asciidoctor.maven.plugin.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctorj</artifactId>
-        <version>${asciidoctorj.version}</version>
       </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
@@ -1089,6 +1075,11 @@
         <version>${mariadb.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.mongodb</groupId>
+        <artifactId>mongodb-driver-sync</artifactId>
+        <version>${mongodb.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.mortbay.jetty.quiche</groupId>
         <artifactId>jetty-quiche-native</artifactId>
         <version>${jetty-quiche-native.version}</version>
@@ -1440,6 +1431,7 @@
             <timeoutInSeconds>300</timeoutInSeconds>
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
+            <scope>test</scope>
             <settingsFile>${settingsPath}</settingsFile>
             <skipInvocation>${skipTests}</skipInvocation>
             <streamLogsOnFailures>true</streamLogsOnFailures>
@@ -1615,49 +1607,6 @@
           <version>${depends.maven.plugin.version}</version>
         </plugin>
         <plugin>
-          <groupId>org.asciidoctor</groupId>
-          <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>${asciidoctor.maven.plugin.version}</version>
-          <configuration>
-            <backend>html5</backend>
-            <requires>
-              <require>asciidoctor-diagram</require>
-            </requires>
-            <attributes>
-              <JDURL>https://eclipse.dev/jetty/javadoc/jetty-12</JDURL>
-              <SRCDIR>${basedir}/..</SRCDIR>
-              <GITBROWSEURL>https://github.com/jetty/jetty.project/tree/jetty-12.0.x</GITBROWSEURL>
-              <GITDOCURL>https://github.com/jetty/jetty.project/tree/jetty-12.0.x/documentation/jetty-documentation/src/main/asciidoc</GITDOCURL>
-              <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
-              <VERSION>${project.version}</VERSION>
-              <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
-              <toc>left</toc>
-              <icons>font</icons>
-            </attributes>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.asciidoctor</groupId>
-              <artifactId>asciidoctorj-diagram</artifactId>
-              <version>${asciidoctorj-diagram.version}</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <id>index</id>
-              <goals>
-                <goal>process-asciidoc</goal>
-              </goals>
-              <phase>generate-resources</phase>
-              <configuration>
-                <sourceDirectory>src/main/asciidoc</sourceDirectory>
-                <sourceDocumentName>index.adoc</sourceDocumentName>
-                <outputDirectory>${project.build.directory}/html</outputDirectory>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>${build-helper.maven.plugin.version}</version>
@@ -1720,11 +1669,6 @@
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>${jacoco.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.mortbay.jetty</groupId>
-          <artifactId>h2spec-maven-plugin</artifactId>
-          <version>${h2spec.maven.plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -2244,18 +2188,6 @@
     <profile>
       <id>eclipse-release</id>
       <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.asciidoctor</groupId>
-              <artifactId>asciidoctor-maven-plugin</artifactId>
-              <configuration>
-                <!-- do not skip documentation generation during release -->
-                <skip>false</skip>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -2440,6 +2372,57 @@
                     -->
                     <ignoredClassPattern>org.infinispan.commons.util.CloseableIterator</ignoredClassPattern>
                   </ignoredClassPatterns>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>eclipse-dash</id>
+      <pluginRepositories>
+        <pluginRepository>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>dash-licenses-releases</id>
+          <url>https://repo.eclipse.org/content/repositories/dash-licenses-releases/</url>
+        </pluginRepository>
+        <pluginRepository>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+          <id>dash-licenses-snapshots</id>
+          <url>https://repo.eclipse.org/content/repositories/dash-licenses-snapshots/</url>
+        </pluginRepository>
+      </pluginRepositories>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.dash</groupId>
+            <artifactId>license-tool-plugin</artifactId>
+            <version>1.1.0</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>license-check</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <!-- safe to ignore org.apache -->
+                  <!-- Works with approval for Hazelcast https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/15797 -->
+                  <!-- infinispan protostream https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/16633 -->
+                  <!-- https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/16634 -> https://gitlab.eclipse.org/eclipsefdn/emo-team/iplab/-/issues/16665 -->
+                  <excludeGroupIds>org.apache,com.hazelcast,org.testcontainers,org.infinispan.protostream</excludeGroupIds>
+                  <excludeScope>test</excludeScope>
+                  <failWhenReviewNeeded>true</failWhenReviewNeeded>
                 </configuration>
               </execution>
             </executions>
@@ -2687,7 +2670,6 @@
     <profile>
       <id>fast</id>
       <properties>
-        <asciidoctor.skip>true</asciidoctor.skip>
         <checkstyle.skip>true</checkstyle.skip>
         <enforcer.skip>true</enforcer.skip>
         <license.skip>true</license.skip>

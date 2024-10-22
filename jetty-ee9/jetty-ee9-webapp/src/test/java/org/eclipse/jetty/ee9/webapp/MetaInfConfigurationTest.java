@@ -20,14 +20,11 @@ import java.util.List;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -153,13 +150,14 @@ public class MetaInfConfigurationTest
             assertEquals(2, containerResources.size());
             for (Resource r : containerResources)
             {
-                String s = r.toString();
+                String s = URIUtil.unwrapContainer(r.getURI()).toASCIIString();
                 assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("servlet-api"));
             }
         }
         finally
         {
             config.postConfigure(context);
+            LifeCycle.stop(context.getResourceFactory());
         }
     }
 }

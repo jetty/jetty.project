@@ -55,7 +55,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -65,6 +64,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -139,7 +139,7 @@ public class HttpInputIntegrationTest
     {
         try
         {
-            assertThat("Server leaks: " + __bufferPool.dumpLeaks(), __bufferPool.getLeaks().size(), Matchers.is(0));
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + __bufferPool.dumpLeaks(), __bufferPool.getLeaks().size(), is(0)));
         }
         finally
         {

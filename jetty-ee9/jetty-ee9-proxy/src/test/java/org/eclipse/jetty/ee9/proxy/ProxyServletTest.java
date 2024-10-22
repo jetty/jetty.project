@@ -20,7 +20,9 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,6 +81,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -1699,6 +1702,82 @@ public class ProxyServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testExpect100ContinueContentLengthZero(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        testExpect100ContinueNoRequestContent(proxyServletClass, false);
+    }
+
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testExpect100ContinueEmptyChunkedContent(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        testExpect100ContinueNoRequestContent(proxyServletClass, true);
+    }
+
+    private void testExpect100ContinueNoRequestContent(Class<? extends ProxyServlet> proxyServletClass, boolean chunked) throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                // Send the 100 Continue.
+                ServletInputStream input = request.getInputStream();
+                // Echo the content.
+                IO.copy(input, response.getOutputStream());
+            }
+        });
+        startProxy(proxyServletClass);
+
+        String authority = "localhost:" + serverConnector.getLocalPort();
+        for (int i = 0; i < 50; i++)
+        {
+            try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", proxyConnector.getLocalPort())))
+            {
+                String request;
+                if (chunked)
+                {
+                    request = """
+                        POST http://$A/ HTTP/1.1
+                        Host: $A
+                        Expect: 100-Continue
+                        Transfer-Encoding: chunked
+
+                        0
+
+                        """;
+                }
+                else
+                {
+                    request = """
+                        POST http://$A/ HTTP/1.1
+                        Host: $A
+                        Expect: 100-Continue
+                        Content-Length: 0
+                        
+                        """;
+                }
+                request = request.replace("$A", authority);
+                client.write(StandardCharsets.UTF_8.encode(request));
+
+                HttpTester.Input input = HttpTester.from(client);
+                HttpTester.Response response1 = HttpTester.parseResponse(input);
+                if (chunked)
+                {
+                    assertEquals(HttpStatus.CONTINUE_100, response1.getStatus());
+                    HttpTester.Response response2 = HttpTester.parseResponse(input);
+                    assertEquals(HttpStatus.OK_200, response2.getStatus());
+                }
+                else
+                {
+                    assertEquals(HttpStatus.OK_200, response1.getStatus());
+                }
+            }
         }
     }
 }

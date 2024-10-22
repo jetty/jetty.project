@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.12-SNAPSHOT</version>
+    <version>12.0.15-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-runner</artifactId>
   <name>EE9 :: Runner</name>
@@ -133,15 +133,7 @@
         <configuration>
           <debug>${it.debug}</debug>
           <addTestClassPath>true</addTestClassPath>
-          <extraArtifacts>
-            <extraArtifact>org.eclipse.jetty:jetty-client:${project.version}</extraArtifact>
-          </extraArtifacts>
           <junitPackageName>org.eclipse.jetty.maven.its.ee9.runner</junitPackageName>
-          <scriptVariables>
-            <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
-            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
-            <hamcrest.version>${hamcrest.version}</hamcrest.version>
-          </scriptVariables>
           <goals>
             <goal>clean</goal>
           </goals>

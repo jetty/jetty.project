@@ -75,6 +75,7 @@ public class ErrorHandler implements Request.Handler
     boolean _showStacks = false;
     boolean _showCauses = false;
     boolean _showMessageInTitle = true;
+    int _bufferSize = -1;
     String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
@@ -198,8 +199,7 @@ public class ErrorHandler implements Request.Handler
                 return false;
         }
 
-        int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        bufferSize = Math.min(8192, bufferSize); // TODO ?
+        int bufferSize = getBufferSize() <= 0 ? computeBufferSize(request) : getBufferSize();
         ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
         RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
 
@@ -264,6 +264,13 @@ public class ErrorHandler implements Request.Handler
                 byteBufferPool.removeAndRelease(buffer);
             throw x;
         }
+    }
+
+    protected int computeBufferSize(Request request)
+    {
+        int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+        bufferSize = Math.min(8192, bufferSize);
+        return bufferSize;
     }
 
     protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks) throws IOException
@@ -528,6 +535,25 @@ public class ErrorHandler implements Request.Handler
         if (errorHandler == null && server != null)
             errorHandler = server.getErrorHandler();
         return errorHandler;
+    }
+
+    /**
+     * @return Buffer size for entire error response. If error page is bigger than buffer size, it will be truncated.
+     * With a -1 meaning that a heuristic will be used (e.g. min(8K, httpConfig.bufferSize))
+     */
+    @ManagedAttribute("Buffer size for entire error response")
+    public int getBufferSize()
+    {
+        return _bufferSize;
+    }
+
+    /**
+     * @param bufferSize Buffer size for entire error response. If error page is bigger than buffer size, it will be truncated.
+     * With a -1 meaning that a heuristic will be used (e.g. min(8K, httpConfig.bufferSize))
+     */
+    public void setBufferSize(int bufferSize)
+    {
+        this._bufferSize = bufferSize;
     }
 
     public static class ErrorRequest extends Request.AttributesWrapper

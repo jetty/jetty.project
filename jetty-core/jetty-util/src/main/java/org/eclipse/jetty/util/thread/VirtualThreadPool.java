@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.thread;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.VirtualThreads;
@@ -27,7 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of {@link ThreadPool} interface that does not pool, but instead uses {@link VirtualThreads}.
+ * <p>An implementation of {@link ThreadPool} interface that does not pool, but instead uses {@link VirtualThreads}.</p>
+ * <p>It is possible to specify the max number of concurrent virtual threads that can be spawned, to help limiting
+ * resource usage in applications, especially in case of load spikes, where an unlimited number of virtual threads
+ * may be spawned, compete for resources, and eventually bring the system down due to memory exhaustion.</p>
  */
 @ManagedObject("A thread non-pool for virtual threads")
 public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
@@ -35,17 +39,25 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     private static final Logger LOG = LoggerFactory.getLogger(VirtualThreadPool.class);
 
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
-    private String _name = null;
-    private Executor _virtualExecutor;
-    private Thread _main;
-    private boolean _externalExecutor;
+    private String _name;
+    private int _maxThreads;
     private boolean _tracking;
     private boolean _detailedDump;
+    private Thread _keepAlive;
+    private Executor _virtualExecutor;
+    private boolean _externalExecutor;
+    private volatile Semaphore _semaphore;
 
     public VirtualThreadPool()
     {
+        this(200);
+    }
+
+    public VirtualThreadPool(int maxThreads)
+    {
         if (!VirtualThreads.areSupported())
             throw new IllegalStateException("Virtual Threads not supported");
+        _maxThreads = maxThreads;
     }
 
     /**
@@ -72,11 +84,31 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     }
 
     /**
+     * @return the maximum number of concurrent virtual threads
+     */
+    @ManagedAttribute("The max number of concurrent virtual threads")
+    public int getMaxThreads()
+    {
+        return _maxThreads;
+    }
+
+    /**
+     * @param maxThreads the maximum number of concurrent virtual threads
+     */
+    public void setMaxThreads(int maxThreads)
+    {
+        if (isRunning())
+            throw new IllegalStateException(getState());
+        _maxThreads = maxThreads;
+    }
+
+    /**
      * Get if this pool is tracking virtual threads.
+     *
      * @return {@code true} if the virtual threads will be tracked.
      * @see TrackingExecutor
      */
-    @ManagedAttribute("virtual threads are tracked")
+    @ManagedAttribute("Whether virtual threads are tracked")
     public boolean isTracking()
     {
         return _tracking;
@@ -89,7 +121,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
         _tracking = tracking;
     }
 
-    @ManagedAttribute("reports additional details in the dump")
+    @ManagedAttribute("Whether to report additional details in the dump")
     public boolean isDetailedDump()
     {
         return _detailedDump;
@@ -101,11 +133,11 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
         if (_virtualExecutor instanceof TrackingExecutor trackingExecutor)
             trackingExecutor.setDetailedDump(detailedDump);
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
-        _main = new Thread("jetty-virtual-thread-pool-keepalive")
+        _keepAlive = new Thread("jetty-virtual-thread-pool-keepalive")
         {
             @Override
             public void run()
@@ -123,18 +155,24 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
                 }
             }
         };
-        _main.start();
+        _keepAlive.start();
 
         if (_virtualExecutor == null)
         {
-            _externalExecutor = false;
             _virtualExecutor = Objects.requireNonNull(StringUtil.isBlank(_name)
                 ? VirtualThreads.getDefaultVirtualThreadsExecutor()
                 : VirtualThreads.getNamedVirtualThreadsExecutor(_name));
         }
         if (_tracking && !(_virtualExecutor instanceof TrackingExecutor))
-            _virtualExecutor = new TrackingExecutor(_virtualExecutor, _detailedDump);
+            _virtualExecutor = new TrackingExecutor(_virtualExecutor, isDetailedDump());
         addBean(_virtualExecutor);
+
+        if (_maxThreads > 0)
+        {
+            _semaphore = new Semaphore(_maxThreads);
+            addBean(_semaphore);
+        }
+
         super.doStart();
     }
 
@@ -142,11 +180,12 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     protected void doStop() throws Exception
     {
         super.doStop();
+        removeBean(_semaphore);
+        _semaphore = null;
         removeBean(_virtualExecutor);
         if (!_externalExecutor)
             _virtualExecutor = null;
-        _main = null;
-
+        _keepAlive = null;
         try (AutoLock.WithCondition l = _joinLock.lock())
         {
             l.signalAll();
@@ -208,7 +247,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     {
         try
         {
-            _virtualExecutor.execute(task);
+            execute(task);
             return true;
         }
         catch (RejectedExecutionException e)
@@ -221,6 +260,33 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     @Override
     public void execute(Runnable task)
     {
-        _virtualExecutor.execute(task);
+        Runnable job = task;
+        Semaphore semaphore = _semaphore;
+        if (semaphore != null)
+        {
+            job = () ->
+            {
+                try
+                {
+                    // The caller of execute(Runnable) cannot be blocked,
+                    // as it is unknown whether it is a virtual thread.
+                    // But this is a virtual thread, so acquiring a permit here
+                    // blocks the virtual thread, but does not pin the carrier.
+                    semaphore.acquire();
+                    task.run();
+                }
+                catch (InterruptedException x)
+                {
+                    // Likely stopping this component, exit.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("interrupted while waiting for permit {}", task, x);
+                }
+                finally
+                {
+                    semaphore.release();
+                }
+            };
+        }
+        _virtualExecutor.execute(job);
     }
 }

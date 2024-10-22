@@ -73,10 +73,9 @@ public class ResponseTrailerTest extends AbstractTest
             }
         });
 
-        HTTP2Client http2Client = new HTTP2Client();
-        http2Client.start();
-        try
+        try (HTTP2Client http2Client = new HTTP2Client())
         {
+            http2Client.start();
             String host = "localhost";
             int port = connector.getLocalPort();
             InetSocketAddress address = new InetSocketAddress(host, port);
@@ -115,10 +114,6 @@ public class ResponseTrailerTest extends AbstractTest
             frame = headers.poll();
             assertNotNull(frame);
             assertTrue(frame.getMetaData().isResponse());
-        }
-        finally
-        {
-            http2Client.stop();
         }
     }
 }

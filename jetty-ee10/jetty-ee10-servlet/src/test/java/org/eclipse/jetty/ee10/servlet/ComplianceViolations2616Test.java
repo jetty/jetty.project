@@ -32,6 +32,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -87,8 +88,8 @@ public class ComplianceViolations2616Test
         {
             resp.setContentType("text/plain");
             PrintWriter out = resp.getWriter();
-            List<String> headerNames = new ArrayList<>();
-            headerNames.addAll(Collections.list(req.getHeaderNames()));
+            out.printf("%s %s%s%s\n", req.getMethod(), req.getContextPath(), req.getServletPath(), req.getPathInfo());
+            List<String> headerNames = new ArrayList<>(Collections.list(req.getHeaderNames()));
             Collections.sort(headerNames);
             for (String name : headerNames)
             {
@@ -182,5 +183,26 @@ public class ComplianceViolations2616Test
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
         assertThat("Response headers", response, containsString("X-Http-Violation-0: Line Folding not supported"));
         assertThat("Response body", response, containsString("[Name] = [Some Value]"));
+    }
+
+    @Test
+    public void testAmbiguousSlash() throws Exception
+    {
+        String request = """
+            GET /dump/foo//bar HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """;
+
+        String response = connector.getResponse(request);
+        assertThat(response, containsString("HTTP/1.1 400 Bad"));
+
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986.with("test", UriCompliance.Violation.AMBIGUOUS_EMPTY_SEGMENT));
+        server.getContainedBeans(ServletHandler.class).stream().findFirst().get().setDecodeAmbiguousURIs(true);
+
+        response = connector.getResponse(request);
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("GET /dump/foo//bar"));
     }
 }

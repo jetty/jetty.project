@@ -43,7 +43,7 @@ public class SessionAuthentication extends LoginAuthenticator.UserAuthentication
 
     private final String _name;
     private final Object _credentials;
-    private Session _session;
+    private transient Session _session;
 
     public SessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
     {

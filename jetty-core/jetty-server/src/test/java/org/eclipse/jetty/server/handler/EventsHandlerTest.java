@@ -111,7 +111,7 @@ public class EventsHandlerTest
 
         String response = connector.getResponse(rawRequest);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        await().atMost(3, TimeUnit.SECONDS).until(attribute::get, is("testModifyRequestAttributes-123"));
+        await().atMost(5, TimeUnit.SECONDS).until(attribute::get, is("testModifyRequestAttributes-123"));
     }
 
     @Test
@@ -233,6 +233,8 @@ public class EventsHandlerTest
 
         String response = connector.getResponse(rawRequest);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(events, equalTo(Arrays.asList("onBeforeHandling", "onAfterHandling", "onResponseBegin", "onComplete")));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+            assertThat(events, equalTo(Arrays.asList("onBeforeHandling", "onAfterHandling", "onResponseBegin", "onComplete"))
+        ));
     }
 }

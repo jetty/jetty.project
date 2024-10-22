@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.proxy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
@@ -144,12 +143,11 @@ public class ProxyServlet extends AbstractProxyServlet
     }
 
     @Override
-    protected void onContinue(HttpServletRequest clientRequest, Request proxyRequest)
+    protected Runnable onContinue(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        super.onContinue(clientRequest, proxyRequest);
-        Runnable action = (Runnable)proxyRequest.getAttributes().get(CONTINUE_ACTION_ATTRIBUTE);
-        Executor executor = getHttpClient().getExecutor();
-        executor.execute(action);
+        if (_log.isDebugEnabled())
+            _log.debug("{} handling 100 Continue", getRequestId(clientRequest));
+        return (Runnable)proxyRequest.getAttributes().get(CONTINUE_ACTION_ATTRIBUTE);
     }
 
     /**

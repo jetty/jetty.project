@@ -564,7 +564,7 @@ public class MultiPart
     public abstract static class AbstractContentSource implements Content.Source, Closeable
     {
         private final AutoLock lock = new AutoLock();
-        private final SerializedInvoker invoker = new SerializedInvoker();
+        private final SerializedInvoker invoker = new SerializedInvoker(AbstractContentSource.class);
         private final Queue<Part> parts = new ArrayDeque<>();
         private final String boundary;
         private final ByteBuffer firstBoundary;

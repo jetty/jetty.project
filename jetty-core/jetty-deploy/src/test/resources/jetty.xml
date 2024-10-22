@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_9_3.dtd">
 
 <!-- =============================================================== -->
 <!-- Documentation of this file format can be found at:              -->
-<!-- https://eclipse.dev/jetty/documentation/                        -->
+<!-- https://jetty.org/docs/                        -->
 <!--                                                                 -->
 <!-- Additional configuration files are available in $JETTY_HOME/etc -->
 <!-- and can be mixed in. See start.ini file for the default         -->

@@ -146,9 +146,9 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
 
     public abstract void release();
 
-    public void proceed(HttpExchange exchange, Throwable failure)
+    public void proceed(HttpExchange exchange, Runnable proceedAction, Throwable failure)
     {
-        getHttpSender().proceed(exchange, failure);
+        getHttpSender().proceed(exchange, proceedAction, failure);
     }
 
     public void abort(HttpExchange exchange, Throwable requestFailure, Throwable responseFailure, Promise<Boolean> promise)

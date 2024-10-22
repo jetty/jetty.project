@@ -14,13 +14,8 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
@@ -29,7 +24,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -152,25 +146,13 @@ public class TempDirTest
     {
         // Create war on the fly
         Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        Path warFile = workDir.getEmptyPathDir().resolve("test.war");
-
-        Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-
-        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
-        // Use ZipFS so that we can create paths that are just "/"
-        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
-        {
-            Path root = zipfs.getPath("/");
-            IO.copyDir(testWebappDir, root);
-        }
 
         //Test that if jetty is creating a tmp dir for the webapp, it is different on
         //restart
         _server = new Server();
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setContextPath("/");
-        webAppContext.setWarResource(webAppContext.getResourceFactory().newResource(warFile));
+        webAppContext.setWar(testWebappDir.toFile().getAbsolutePath());
         _server.setHandler(webAppContext);
         _server.start();
         File tempDirectory = webAppContext.getTempDirectory();
@@ -185,26 +167,14 @@ public class TempDirTest
     {
         // Create war on the fly
         Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        Path warFile = workDir.getEmptyPathDir().resolve("test.war");
-
-        Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-
-        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
-        // Use ZipFS so that we can create paths that are just "/"
-        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
-        {
-            Path root = zipfs.getPath("/");
-            IO.copyDir(testWebappDir, root);
-        }
 
         //Test that if we explicitly configure the temp dir, it is the same after restart
         _server = new Server();
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setContextPath("/");
-        Path configuredTmpDir = workDir.getPath().resolve("tmp");
+        Path configuredTmpDir = workDir.getEmptyPathDir().resolve("tmp");
         webAppContext.setTempDirectory(configuredTmpDir.toFile());
-        webAppContext.setWarResource(webAppContext.getResourceFactory().newResource(warFile));
+        webAppContext.setWar(testWebappDir.toFile().getAbsolutePath());
         _server.setHandler(webAppContext);
         _server.start();
         File tempDirectory = webAppContext.getTempDirectory();
@@ -213,6 +183,7 @@ public class TempDirTest
         assertNotNull(webAppContext.getTempDirectory());
         webAppContext.start();
         assertThat(tempDirectory.toPath(), PathMatchers.isSame(webAppContext.getTempDirectory().toPath()));
+        _server.stop();
     }
 
     @Test
@@ -220,28 +191,36 @@ public class TempDirTest
     {
         // Create war on the fly
         Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        Path warFile = workDir.getEmptyPathDir().resolve("test.war");
-
-        Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-
-        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
-        // Use ZipFS so that we can create paths that are just "/"
-        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
-        {
-            Path root = zipfs.getPath("/");
-            IO.copyDir(testWebappDir, root);
-        }
 
          _server = new Server();
         WebAppContext webAppContext = new WebAppContext();
         webAppContext.setContextPath("/");
-        webAppContext.setWarResource(webAppContext.getResourceFactory().newResource(warFile));
+        webAppContext.setWar(testWebappDir.toFile().getAbsolutePath());
         _server.setHandler(webAppContext);
         _server.start();
         File tempDirectory = webAppContext.getTempDirectory();
         _server.stop();
         assertThat("Temp dir exists", !Files.exists(tempDirectory.toPath()));
         assertNull(webAppContext.getTempDirectory());
+    }
+
+    @Test
+    public void testExplicitTempDir(WorkDir workDir) throws Exception
+    {
+        Path testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Path myTempDir = workDir.getEmptyPathDir().resolve("my-temp-dir");
+        FS.ensureDirExists(myTempDir);
+
+        //Tell jetty what the temp dir is for the webapp
+        _server = new Server();
+        WebAppContext webAppContext = new WebAppContext();
+        webAppContext.setContextPath("/");
+        webAppContext.setWar(testWebappDir.toFile().getAbsolutePath());
+        webAppContext.setTempDirectory(myTempDir.toFile());
+        _server.setHandler(webAppContext);
+        _server.start();
+        File tempDirectory = webAppContext.getTempDirectory();
+        assertThat(webAppContext.getAttribute(ServletContext.TEMPDIR), is(tempDirectory));
+        assertThat(tempDirectory.toPath(), is(myTempDir));
     }
  }

@@ -5,16 +5,16 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation</artifactId>
-    <version>12.0.12-SNAPSHOT</version>
+    <version>12.0.15-SNAPSHOT</version>
     <relativePath>../../../../pom.xml</relativePath>
   </parent>
   <artifactId>code-examples</artifactId>
-  <packaging>pom</packaging>
   <name>Documentation :: Code Examples</name>
 
   <properties>
     <jacoco.skip>true</jacoco.skip>
     <javadoc.skip>true</javadoc.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <dependencies>
@@ -119,19 +119,6 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>compile-code-examples</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <phase>compile</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <configuration>
           <fail>false</fail>
@@ -194,9 +181,9 @@
           <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
-              <source>${java.specification.version}</source>
-              <target>${java.specification.version}</target>
-              <release>${java.specification.version}</release>
+              <source>21</source>
+              <target>21</target>
+              <release>21</release>
             </configuration>
           </plugin>
         </plugins>

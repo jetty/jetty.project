@@ -15,6 +15,8 @@ package org.eclipse.jetty.test.client.transport;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
@@ -26,6 +28,8 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -38,17 +42,17 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     public void testClientIdleTimeout(Transport transport) throws Exception
     {
         long serverIdleTimeout = idleTimeout * 2;
-        CountDownLatch serverIdleTimeoutLatch = new CountDownLatch(1);
+        AtomicReference<Callback> serverCallbackRef = new AtomicReference<>();
         start(transport, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
                 // Do not succeed the callback if it's a timeout request.
-                if (!Request.getPathInContext(request).equals("/timeout"))
-                    callback.succeeded();
+                if (Request.getPathInContext(request).equals("/timeout"))
+                    request.addFailureListener(x -> serverCallbackRef.set(callback));
                 else
-                    request.addFailureListener(x -> serverIdleTimeoutLatch.countDown());
+                    callback.succeeded();
                 return true;
             }
         });
@@ -75,7 +79,8 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // Wait for the server's idle timeout to trigger to give it a chance to clean up its resources.
-        assertTrue(serverIdleTimeoutLatch.await(2 * serverIdleTimeout, TimeUnit.MILLISECONDS));
+        Callback callback = await().atMost(2 * serverIdleTimeout, TimeUnit.MILLISECONDS).until(serverCallbackRef::get, notNullValue());
+        callback.failed(new TimeoutException());
     }
 
     @ParameterizedTest
@@ -83,17 +88,17 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     public void testRequestIdleTimeout(Transport transport) throws Exception
     {
         long serverIdleTimeout = idleTimeout * 2;
-        CountDownLatch serverIdleTimeoutLatch = new CountDownLatch(1);
+        AtomicReference<Callback> serverCallbackRef = new AtomicReference<>();
         start(transport, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Do not succeed the callback if it's a timeout request.
-                if (!Request.getPathInContext(request).equals("/timeout"))
-                    callback.succeeded();
+                if (Request.getPathInContext(request).equals("/timeout"))
+                    request.addFailureListener(x -> serverCallbackRef.set(callback));
                 else
-                    request.addFailureListener(x -> serverIdleTimeoutLatch.countDown());
+                    callback.succeeded();
                 return true;
             }
         });
@@ -120,7 +125,8 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // Wait for the server's idle timeout to trigger to give it a chance to clean up its resources.
-        assertTrue(serverIdleTimeoutLatch.await(2 * serverIdleTimeout, TimeUnit.MILLISECONDS));
+        Callback callback = await().atMost(2 * serverIdleTimeout, TimeUnit.MILLISECONDS).until(serverCallbackRef::get, notNullValue());
+        callback.failed(new TimeoutException());
     }
 
     @ParameterizedTest

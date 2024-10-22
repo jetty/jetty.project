@@ -1248,6 +1248,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             this.stream = stream;
         }
 
+        public Frame frame()
+        {
+            return frame;
+        }
+
         public abstract int getFrameBytesGenerated();
 
         public int getDataBytesRemaining()

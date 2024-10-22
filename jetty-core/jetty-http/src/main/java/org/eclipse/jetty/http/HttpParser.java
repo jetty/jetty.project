@@ -422,6 +422,11 @@ public class HttpParser
         return _state;
     }
 
+    public boolean hasContent()
+    {
+        return _endOfContent != EndOfContent.NO_CONTENT;
+    }
+
     public boolean inContentState()
     {
         return _state.ordinal() >= State.CONTENT.ordinal() && _state.ordinal() < State.END.ordinal();

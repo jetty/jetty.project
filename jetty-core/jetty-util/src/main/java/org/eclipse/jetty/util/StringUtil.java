@@ -657,21 +657,7 @@ public class StringUtil
      */
     public static boolean isBlank(String str)
     {
-        if (str == null)
-        {
-            return true;
-        }
-        int len = str.length();
-        for (int i = 0; i < len; i++)
-        {
-            if (!Character.isWhitespace(str.codePointAt(i)))
-            {
-                // found a non-whitespace, we can stop searching  now
-                return false;
-            }
-        }
-        // only whitespace
-        return true;
+        return str == null || str.isBlank();
     }
 
     /**
@@ -727,21 +713,7 @@ public class StringUtil
      */
     public static boolean isNotBlank(String str)
     {
-        if (str == null)
-        {
-            return false;
-        }
-        int len = str.length();
-        for (int i = 0; i < len; i++)
-        {
-            if (!Character.isWhitespace(str.codePointAt(i)))
-            {
-                // found a non-whitespace, we can stop searching  now
-                return true;
-            }
-        }
-        // only whitespace
-        return false;
+        return !isBlank(str);
     }
 
     public static boolean isHex(String str, int offset, int length)

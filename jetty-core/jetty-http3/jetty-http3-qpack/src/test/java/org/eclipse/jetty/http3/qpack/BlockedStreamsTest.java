@@ -23,14 +23,17 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementIn
 import org.eclipse.jetty.http3.qpack.internal.instruction.LiteralNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
+import org.eclipse.jetty.http3.qpack.util.QpackTestUtil;
+import org.eclipse.jetty.http3.qpack.util.TestDecoderHandler;
+import org.eclipse.jetty.http3.qpack.util.TestEncoderHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.http3.qpack.QpackTestUtil.encode;
-import static org.eclipse.jetty.http3.qpack.QpackTestUtil.toBuffer;
-import static org.eclipse.jetty.http3.qpack.QpackTestUtil.toMetaData;
+import static org.eclipse.jetty.http3.qpack.util.QpackTestUtil.encode;
+import static org.eclipse.jetty.http3.qpack.util.QpackTestUtil.toBuffer;
+import static org.eclipse.jetty.http3.qpack.util.QpackTestUtil.toMetaData;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;

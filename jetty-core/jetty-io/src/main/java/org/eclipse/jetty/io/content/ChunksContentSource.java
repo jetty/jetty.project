@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 public class ChunksContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker = new SerializedInvoker(ChunksContentSource.class);
     private final long length;
     private final Collection<Content.Chunk> chunks;
     private Iterator<Content.Chunk> iterator;

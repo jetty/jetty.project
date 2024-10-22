@@ -125,28 +125,19 @@ public class WebSocketClientTest
     @ValueSource(booleans = {false, true})
     public void testCustomizeExecutorDirectly(boolean startHttpClient) throws Exception
     {
-        Executor executor = Executors.newFixedThreadPool(50);
-        HttpClient httpClient = new HttpClient();
-        httpClient.setExecutor(executor);
-        try
+        try (HttpClient httpClient = new HttpClient())
         {
+            Executor executor = Executors.newFixedThreadPool(50);
+            httpClient.setExecutor(executor);
             if (startHttpClient)
                 httpClient.start();
-            WebSocketClient webSocketClient = new WebSocketClient(httpClient);
-            try
+
+            try (WebSocketClient webSocketClient = new WebSocketClient(httpClient))
             {
                 webSocketClient.start();
                 Executor wsExecutor = webSocketClient.getExecutor();
                 assertSame(executor, wsExecutor);
             }
-            finally
-            {
-                webSocketClient.stop();
-            }
-        }
-        finally
-        {
-            httpClient.stop();
         }
     }
 
@@ -158,25 +149,15 @@ public class WebSocketClientTest
         Executor executor = Executors.newFixedThreadPool(50);
         clientConnector.setExecutor(executor);
         HttpClientTransport transport = new HttpClientTransportOverHTTP(clientConnector);
-        HttpClient httpClient = new HttpClient(transport);
-        try
+        try (HttpClient httpClient = new HttpClient(transport))
         {
             httpClient.start();
-            WebSocketClient webSocketClient = new WebSocketClient(httpClient);
-            try
+            try (WebSocketClient webSocketClient = new WebSocketClient(httpClient))
             {
                 webSocketClient.start();
                 Executor inuseExecutor = webSocketClient.getExecutor();
                 assertSame(executor, inuseExecutor);
             }
-            finally
-            {
-                webSocketClient.stop();
-            }
-        }
-        finally
-        {
-            httpClient.stop();
         }
     }
 

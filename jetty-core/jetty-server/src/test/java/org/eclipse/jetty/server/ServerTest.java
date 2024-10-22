@@ -91,7 +91,7 @@ public class ServerTest
                                     {
                                         Runnable after = _afterHandle.getAndSet(null);
                                         if (after != null)
-                                            getThreadPool().execute(after);
+                                            getExecutor().execute(after);
                                     }
                                 };
                             }

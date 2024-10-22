@@ -39,7 +39,7 @@ public abstract class ContentSourceTransformer implements Content.Source
 
     protected ContentSourceTransformer(Content.Source rawSource)
     {
-        this(rawSource, new SerializedInvoker());
+        this(rawSource, new SerializedInvoker(ContentSourceTransformer.class));
     }
 
     protected ContentSourceTransformer(Content.Source rawSource, SerializedInvoker invoker)

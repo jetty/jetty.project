@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 public class ByteBufferContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker = new SerializedInvoker(ByteBufferContentSource.class);
     private final long length;
     private final Collection<ByteBuffer> byteBuffers;
     private Iterator<ByteBuffer> iterator;

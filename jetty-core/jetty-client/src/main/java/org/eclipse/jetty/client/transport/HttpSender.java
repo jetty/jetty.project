@@ -317,12 +317,15 @@ public abstract class HttpSender
     {
     }
 
-    public void proceed(HttpExchange exchange, Throwable failure)
+    public void proceed(HttpExchange exchange, Runnable proceedAction, Throwable failure)
     {
-        // Received a 100 Continue, although Expect header was not sent.
+        // Received a 100 Continue, although the Expect header was not sent.
         if (!contentSender.expect100)
             return;
 
+        // Write the fields in this order, since the reader of
+        // these fields will read them in the opposite order.
+        contentSender.proceedAction = proceedAction;
         contentSender.expect100 = false;
         if (failure == null)
         {
@@ -383,8 +386,11 @@ public abstract class HttpSender
         }
     }
 
-    private void internalAbort(HttpExchange exchange, Throwable failure)
+    private void internalAbort(Throwable failure)
     {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
         anyToFailure(failure);
         abortRequest(exchange);
     }
@@ -462,32 +468,39 @@ public abstract class HttpSender
 
     private class ContentSender extends IteratingCallback
     {
-        private HttpExchange exchange;
+        // Fields that are set externally.
+        private volatile HttpExchange exchange;
+        private volatile Runnable proceedAction;
+        private volatile boolean expect100;
+        // Fields only used internally.
         private Content.Chunk chunk;
         private ByteBuffer contentBuffer;
-        private boolean expect100;
         private boolean committed;
         private boolean success;
         private boolean complete;
         private Promise<Boolean> abort;
+        private boolean demanded;
 
         @Override
         public boolean reset()
         {
             exchange = null;
+            proceedAction = null;
+            expect100 = false;
             chunk = null;
             contentBuffer = null;
-            expect100 = false;
             committed = false;
             success = false;
             complete = false;
             abort = null;
+            demanded = false;
             return super.reset();
         }
 
         @Override
         protected Action process() throws Throwable
         {
+            HttpExchange exchange = this.exchange;
             if (complete)
             {
                 if (success)
@@ -498,16 +511,27 @@ public abstract class HttpSender
             HttpRequest request = exchange.getRequest();
             Content.Source content = request.getBody();
 
+            boolean expect100 = this.expect100;
             if (expect100)
             {
+                // If the request was sent already, wait for
+                // the 100 response before sending the content.
                 if (committed)
                     return Action.IDLE;
-                else
-                    chunk = null;
+                // Do not send any content yet.
+                chunk = null;
             }
             else
             {
-                chunk = content.read();
+                // Run the proceed action first, which likely will provide
+                // content after having received the 100 Continue response.
+                Runnable action = proceedAction;
+                proceedAction = null;
+                if (action != null)
+                    action.run();
+
+                // Read the request content.
+                chunk = content != null ? content.read() : Content.Chunk.EOF;
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Content {} for {}", chunk, request);
@@ -516,11 +540,15 @@ public abstract class HttpSender
             {
                 if (committed)
                 {
-                    content.demand(this::iterate);
-                    return Action.IDLE;
+                    // No content after the headers, demand.
+                    demanded = true;
+                    assert content != null;
+                    content.demand(this::succeeded);
+                    return Action.SCHEDULED;
                 }
                 else
                 {
+                    // Normalize to avoid null checks.
                     chunk = Content.Chunk.EMPTY;
                 }
             }
@@ -545,48 +573,49 @@ public abstract class HttpSender
         @Override
         protected void onSuccess()
         {
-            boolean proceed = true;
-            if (committed)
+            if (demanded)
             {
-                if (contentBuffer.hasRemaining())
-                    proceed = someToContent(exchange, contentBuffer);
+                // Content is now available, reset
+                // the demand and iterate again.
+                demanded = false;
             }
             else
             {
-                committed = true;
-                if (headersToCommit(exchange))
+                boolean proceed = true;
+                if (committed)
                 {
-                    // Was any content sent while committing?
                     if (contentBuffer.hasRemaining())
                         proceed = someToContent(exchange, contentBuffer);
                 }
                 else
                 {
-                    proceed = false;
+                    committed = true;
+                    proceed = headersToCommit(exchange);
+                    if (proceed)
+                    {
+                        // Was any content sent while committing?
+                        if (contentBuffer.hasRemaining())
+                            proceed = someToContent(exchange, contentBuffer);
+                    }
                 }
-            }
 
-            boolean last = chunk.isLast();
-            chunk.release();
-            chunk = null;
+                boolean last = chunk.isLast();
+                chunk.release();
+                chunk = null;
 
-            if (proceed)
-            {
-                if (last)
+                if (proceed)
                 {
-                    success = true;
+                    if (last)
+                    {
+                        success = true;
+                        complete = true;
+                    }
+                }
+                else
+                {
+                    // There was some concurrent error, terminate.
                     complete = true;
                 }
-                else if (expect100)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Expecting 100 Continue for {}", exchange.getRequest());
-                }
-            }
-            else
-            {
-                // There was some concurrent error, terminate.
-                complete = true;
             }
         }
 
@@ -600,7 +629,7 @@ public abstract class HttpSender
             }
 
             failRequest(x);
-            internalAbort(exchange, x);
+            internalAbort(x);
 
             Promise<Boolean> promise = abort;
             if (promise != null)

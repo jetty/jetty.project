@@ -26,20 +26,49 @@ public class HttpClientConnectionFactory implements ClientConnectionFactory
     /**
      * <p>Representation of the {@code HTTP/1.1} application protocol used by {@link HttpClientTransportDynamic}.</p>
      */
-    public static final Info HTTP11 = new HTTP11(new HttpClientConnectionFactory());
+    public static final Info HTTP11 = new HTTP11();
+
+    private boolean initializeConnections;
+
+    /**
+     * @return whether newly created connections should be initialized with an {@code OPTIONS * HTTP/1.1} request
+     */
+    public boolean isInitializeConnections()
+    {
+        return initializeConnections;
+    }
+
+    /**
+     * @param initialize whether newly created connections should be initialized with an {@code OPTIONS * HTTP/1.1} request
+     */
+    public void setInitializeConnections(boolean initialize)
+    {
+        this.initializeConnections = initialize;
+    }
 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, context);
+        connection.setInitialize(isInitializeConnections());
         return customize(connection, context);
     }
 
-    private static class HTTP11 extends Info
+    /**
+     * <p>Representation of the {@code HTTP/1.1} application protocol used by {@link HttpClientTransportDynamic}.</p>
+     * <p>Applications should prefer using the constant {@link HttpClientConnectionFactory#HTTP11}, unless they
+     * need to customize the associated {@link HttpClientConnectionFactory}.</p>
+     */
+    public static class HTTP11 extends Info
     {
         private static final List<String> protocols = List.of("http/1.1");
 
-        private HTTP11(ClientConnectionFactory factory)
+        public HTTP11()
+        {
+            this(new HttpClientConnectionFactory());
+        }
+
+        public HTTP11(ClientConnectionFactory factory)
         {
             super(factory);
         }

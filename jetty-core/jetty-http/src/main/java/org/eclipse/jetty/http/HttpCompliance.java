@@ -402,9 +402,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
                     for (String hostValue: hostValues)
                         if (StringUtil.isBlank(hostValue))
                             assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
-                    String authority = request.getHttpURI().getHost();
-                    if (StringUtil.isBlank(authority))
-                        assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
                     seenHostHeader = true;
                 }
             }

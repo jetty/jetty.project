@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
@@ -45,6 +47,7 @@ import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.PathRequestContent;
+import org.eclipse.jetty.client.PathResponseListener;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -72,6 +75,7 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
@@ -489,6 +493,30 @@ public class HTTPClientDocs
             response.abort(new IOException("Unexpected HTTP response"));
         }
         // end::inputStreamResponseListener[]
+    }
+
+    public void pathResponseListener() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::pathResponseListener[]
+        Path savePath = Path.of("/path/to/save/file.bin");
+
+        // Typical usage as a response listener.
+        PathResponseListener listener = new PathResponseListener(savePath, true);
+        httpClient.newRequest("http://domain.com/path")
+            .send(listener);
+        // Wait for the response content to be saved.
+        var result = listener.get(5, TimeUnit.SECONDS);
+
+        // Alternative usage with CompletableFuture.
+        var completable = PathResponseListener.write(httpClient.newRequest("http://domain.com/path"), savePath, true);
+        completable.whenComplete((pathResponse, failure) ->
+        {
+            // Your logic here.
+        });
+        // end::pathResponseListener[]
     }
 
     public void forwardContent() throws Exception
@@ -1049,6 +1077,31 @@ public class HTTPClientDocs
         // end::setConnectionPool[]
     }
 
+    public void preCreateConnections() throws Exception
+    {
+        // tag::preCreateConnections[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // For HTTP/1.1, you need to explicitly configure to initialize connections.
+        if (httpClient.getTransport() instanceof HttpClientTransportOverHTTP http1)
+            http1.setInitializeConnections(true);
+
+        // Create a dummy request to the server you want to pre-create connections to.
+        Request request = httpClient.newRequest("https://host/");
+
+        // Resolve the destination for that request.
+        Destination destination = httpClient.resolveDestination(request);
+
+        // Pre-create, for example, half of the connections.
+        int preCreate = httpClient.getMaxConnectionsPerDestination() / 2;
+        CompletableFuture<Void> completable = destination.getConnectionPool().preCreateConnections(preCreate);
+
+        // Wait for the connections to be created.
+        completable.get(5, TimeUnit.SECONDS);
+        // end::preCreateConnections[]
+    }
+
     public void unixDomain() throws Exception
     {
         // tag::unixDomain[]
@@ -1154,5 +1207,30 @@ public class HTTPClientDocs
             .body(new BytesRequestContent(validatedResponse.getContent()))
             .send();
         // end::mixedTransports[]
+    }
+
+    public void connectionInformation() throws Exception
+    {
+        // tag::connectionInformation[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        ContentResponse response = httpClient.newRequest("http://domain.com/path")
+            // The connection information is only available starting from the request begin event.
+            .onRequestBegin(request ->
+            {
+                Connection connection = request.getConnection();
+
+                // Obtain the address of the server.
+                SocketAddress remoteAddress = connection.getRemoteSocketAddress();
+                System.getLogger("connection").log(INFO, "Server address: %s", remoteAddress);
+
+                // Obtain the SslSessionData.
+                EndPoint.SslSessionData sslSessionData = connection.getSslSessionData();
+                if (sslSessionData != null)
+                    System.getLogger("connection").log(INFO, "SslSessionData: %s", sslSessionData);
+            })
+            .send();
+        // end::connectionInformation[]
     }
 }

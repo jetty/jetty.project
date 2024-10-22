@@ -41,13 +41,12 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // TODO
 public class ThreadStarvationTest
 {
     private Server _server;
@@ -60,6 +59,7 @@ public class ThreadStarvationTest
     }
 
     @Test
+    @Tag("flaky")
     public void testDefaultServletSuccess() throws Exception
     {
         int maxThreads = 6;

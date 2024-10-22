@@ -86,6 +86,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final AutoLock _dateLock = new AutoLock();
     private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private String _serverInfo = __serverInfo;
+    private boolean _openEarly = true;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
@@ -274,6 +275,22 @@ public class Server extends Handler.Wrapper implements Attributes
             type = Invocable.combine(type, handler.getInvocationType());
 
         return type;
+    }
+
+    public boolean isOpenEarly()
+    {
+        return _openEarly;
+    }
+
+    /**
+     * Allows to disable early opening of network sockets. Network sockets are opened early by default.
+     * @param openEarly If {@code openEarly} is {@code true} (default), network sockets are opened before
+     * starting other components. If {@code openEarly} is {@code false}, network connectors open sockets
+     * when they're started.
+     */
+    public void setOpenEarly(boolean openEarly)
+    {
+        _openEarly = openEarly;
     }
 
     public boolean isDryRun()
@@ -543,7 +560,7 @@ public class Server extends Handler.Wrapper implements Attributes
             final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
             // Open network connector to ensure ports are available
-            if (!_dryRun)
+            if (!_dryRun && _openEarly)
             {
                 _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector ->
                 {

@@ -51,8 +51,12 @@ import org.slf4j.LoggerFactory;
  * to the number configured via {@link #setMaxRequestCount(int)}.
  * If more requests are received, they are suspended (that is, not
  * forwarded to the child {@code Handler}) and stored in a priority
- * queue.
- * Priorities are determined via {@link #getPriority(Request)},
+ * queue.</p>
+ * <p>The maximum number of suspended request can be set with
+ * {@link #setMaxSuspendedRequestCount(int)} to avoid out of memory errors.
+ * When this limit is reached, the request will fail fast
+ * with status code {@code 503} (not available).</p>
+ * <p>Priorities are determined via {@link #getPriority(Request)},
  * that should return values between {@code 0} (the lowest priority)
  * and positive numbers, typically in the range {@code 0-10}.</p>
  * <p>When a request that is being processed completes, the suspended
@@ -82,6 +86,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     private final Set<Integer> priorities = new ConcurrentSkipListSet<>(Comparator.reverseOrder());
     private CyclicTimeouts<Entry> timeouts;
     private int maxRequests;
+    private int maxSuspendedRequests = 1024;
     private Duration maxSuspend = Duration.ZERO;
 
     public QoSHandler()
@@ -120,6 +125,32 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     /**
+     * @return the max number of suspended requests
+     */
+    @ManagedAttribute(value = "The maximum number of suspended requests", readonly = true)
+    public int getMaxSuspendedRequestCount()
+    {
+        return maxSuspendedRequests;
+    }
+
+    /**
+     * <p>Sets the max number of suspended requests.</p>
+     * <p>Once the max suspended request limit is reached,
+     * the request is failed with a HTTP status of
+     * {@code 503 Service unavailable}.</p>
+     * <p>A negative value indicate an unlimited number
+     * of suspended requests.</p>
+     *
+     * @param maxSuspendedRequests the max number of suspended requests
+     */
+    public void setMaxSuspendedRequestCount(int maxSuspendedRequests)
+    {
+        if (isStarted())
+            throw new IllegalStateException("Cannot change maxSuspendedRequests: " + this);
+        this.maxSuspendedRequests = maxSuspendedRequests;
+    }
+
+    /**
      * Get the max duration of time a request may stay suspended.
      * @return the max duration of time a request may stay suspended
      */
@@ -144,7 +175,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     @ManagedAttribute("The number of suspended requests")
-    public long getSuspendedRequestCount()
+    public int getSuspendedRequestCount()
     {
         int permits = state.get();
         return Math.max(0, -permits);
@@ -194,6 +225,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             LOG.debug("{} processing {}", this, request);
 
         boolean expired = false;
+        boolean tooManyRequests = false;
 
         // The read lock allows concurrency with resume(),
         // which is the common case, but not with expire().
@@ -203,7 +235,15 @@ public class QoSHandler extends ConditionalHandler.Abstract
             int permits = state.decrementAndGet();
             if (permits < 0)
             {
-                if (request.getAttribute(EXPIRED_ATTRIBUTE_NAME) == null)
+                int maxSuspended = getMaxSuspendedRequestCount();
+                if (maxSuspended >= 0 && Math.abs(permits) > maxSuspended)
+                {
+                    // Reached the limit of suspended requests,
+                    // complete the request with 503 unavailable.
+                    state.incrementAndGet();
+                    tooManyRequests = true;
+                }
+                else if (request.getAttribute(EXPIRED_ATTRIBUTE_NAME) == null)
                 {
                     // Cover this race condition:
                     // T1 in this method may find no permits, so it will suspend the request.
@@ -228,11 +268,13 @@ public class QoSHandler extends ConditionalHandler.Abstract
             lock.readLock().unlock();
         }
 
-        if (!expired)
-            return handleWithPermit(request, response, callback);
+        if (expired || tooManyRequests)
+        {
+            notAvailable(response, callback);
+            return true;
+        }
 
-        notAvailable(response, callback);
-        return true;
+        return handleWithPermit(request, response, callback);
     }
 
     @Override
@@ -241,8 +283,10 @@ public class QoSHandler extends ConditionalHandler.Abstract
         return nextHandler(request, response, callback);
     }
 
-    private static void notAvailable(Response response, Callback callback)
+    private void notAvailable(Response response, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} rejecting {}", this, response.getRequest());
         response.setStatus(HttpStatus.SERVICE_UNAVAILABLE_503);
         if (response.isCommitted())
             callback.failed(new IllegalStateException("Response already committed"));
@@ -353,11 +397,16 @@ public class QoSHandler extends ConditionalHandler.Abstract
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} resuming {}", this, entry.request);
                 // Always dispatch to avoid StackOverflowError.
-                getServer().getThreadPool().execute(entry);
+                execute(entry.request, entry);
                 return true;
             }
         }
         return false;
+    }
+
+    private void execute(Request request, Runnable task)
+    {
+        request.getComponents().getExecutor().execute(task);
     }
 
     private class Entry implements CyclicTimeouts.Expirable, Runnable
@@ -414,7 +463,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
             }
 
             if (removed)
-                failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
+                execute(request, () -> failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException()));
         }
 
         @Override

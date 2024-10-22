@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,6 +54,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
@@ -70,6 +75,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -778,6 +784,220 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
         assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
+    }
+
+    @Test
+    public void testAbortWithSendError() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.sendError(-1);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/abort");
+        startServer(contextHandler);
+
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(0);
+        _server.addConnector(connector);
+        connector.start();
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String request = """
+            GET /abort HTTP/1.1\r
+            Host: test\r
+            \r
+            """;
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String line = in.readLine();
+            assertNull(line);
+        }
+    }
+
+    @Test
+    public void testAbortWithSendErrorChunked() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.getOutputStream().write("test".getBytes(StandardCharsets.UTF_8));
+                response.flushBuffer();
+                response.sendError(-1);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/abort");
+        startServer(contextHandler);
+
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(0);
+        _server.addConnector(connector);
+        connector.start();
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String request = """
+            GET /abort HTTP/1.1\r
+            Host: test\r
+            \r
+            """;
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String line = in.readLine();
+            assertThat(line, is("HTTP/1.1 200 OK"));
+
+            boolean chunked = false;
+            while (!line.isEmpty())
+            {
+                line = in.readLine();
+                assertNotNull(line);
+                chunked |= line.equals("Transfer-Encoding: chunked");
+            }
+            assertTrue(chunked);
+
+            line = in.readLine();
+            assertThat(line, is("4"));
+            line = in.readLine();
+            assertThat(line, is("test"));
+
+            line = in.readLine();
+            assertNull(line);
+        }
+    }
+
+    @Test
+    public void testAbortWithSendErrorContent() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentLength(10);
+                response.getOutputStream().write("test\r\n".getBytes(StandardCharsets.UTF_8));
+                response.flushBuffer();
+                response.sendError(-1);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/abort");
+        startServer(contextHandler);
+
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(0);
+        _server.addConnector(connector);
+        connector.start();
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String request = """
+            GET /abort HTTP/1.1\r
+            Host: test\r
+            \r
+            """;
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String line = in.readLine();
+            assertThat(line, is("HTTP/1.1 200 OK"));
+
+            boolean chunked = false;
+            while (!line.isEmpty())
+            {
+                line = in.readLine();
+                assertNotNull(line);
+                chunked |= line.equals("Transfer-Encoding: chunked");
+            }
+            assertFalse(chunked);
+
+            line = in.readLine();
+            assertThat(line, is("test"));
+
+            line = in.readLine();
+            assertNull(line);
+        }
+    }
+
+    @Test
+    public void testAbortWithSendErrorComplete() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentLength(6);
+                response.getOutputStream().write("test\r\n".getBytes(StandardCharsets.UTF_8));
+                response.sendError(-1);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/abort");
+        startServer(contextHandler);
+
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(0);
+        _server.addConnector(connector);
+        connector.start();
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String request = """
+            GET /abort HTTP/1.1\r
+            Host: test\r
+            \r
+            """;
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String line = in.readLine();
+            assertThat(line, is("HTTP/1.1 200 OK"));
+
+            boolean chunked = false;
+            while (!line.isEmpty())
+            {
+                line = in.readLine();
+                assertNotNull(line);
+                chunked |= line.equals("Transfer-Encoding: chunked");
+            }
+            assertFalse(chunked);
+
+            line = in.readLine();
+            assertThat(line, is("test"));
+
+            line = in.readLine();
+            assertNull(line);
+        }
     }
 
     @Test

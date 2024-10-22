@@ -121,7 +121,7 @@ public class HTTP3ClientDocs
 
         // Configure the request headers.
         HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
 
         // The request metadata with method, URI and headers.
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
@@ -189,7 +189,7 @@ public class HTTP3ClientDocs
         Session.Client session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
@@ -248,7 +248,7 @@ public class HTTP3ClientDocs
         Session.Client session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
-            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 

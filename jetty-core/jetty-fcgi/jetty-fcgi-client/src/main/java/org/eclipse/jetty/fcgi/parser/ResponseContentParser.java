@@ -15,8 +15,6 @@ package org.eclipse.jetty.fcgi.parser;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -43,13 +41,12 @@ public class ResponseContentParser extends StreamContentParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseContentParser.class);
 
-    private final Map<Integer, ResponseParser> parsers = new ConcurrentHashMap<>();
-    private final ClientParser.Listener listener;
+    private final ResponseParser parser;
 
     public ResponseContentParser(HeaderParser headerParser, ClientParser.Listener listener)
     {
         super(headerParser, FCGI.StreamType.STD_OUT, listener);
-        this.listener = listener;
+        this.parser = new ResponseParser(listener);
     }
 
     @Override
@@ -63,13 +60,6 @@ public class ResponseContentParser extends StreamContentParser
     @Override
     protected boolean onContent(ByteBuffer buffer)
     {
-        int request = getRequest();
-        ResponseParser parser = parsers.get(request);
-        if (parser == null)
-        {
-            parser = new ResponseParser(listener, request);
-            parsers.put(request, parser);
-        }
         return parser.parse(buffer);
     }
 
@@ -77,24 +67,31 @@ public class ResponseContentParser extends StreamContentParser
     protected void end(int request)
     {
         super.end(request);
-        parsers.remove(request);
+        parser.reset();
     }
 
-    private static class ResponseParser implements HttpParser.ResponseHandler
+    private class ResponseParser implements HttpParser.ResponseHandler
     {
         private final HttpFields.Mutable fields = HttpFields.build();
         private final ClientParser.Listener listener;
-        private final int request;
         private final FCGIHttpParser httpParser;
         private State state = State.HEADERS;
         private boolean seenResponseCode;
         private boolean stalled;
 
-        private ResponseParser(ClientParser.Listener listener, int request)
+        private ResponseParser(ClientParser.Listener listener)
         {
             this.listener = listener;
-            this.request = request;
             this.httpParser = new FCGIHttpParser(this);
+        }
+
+        private void reset()
+        {
+            fields.clear();
+            httpParser.reset();
+            state = State.HEADERS;
+            seenResponseCode = false;
+            stalled = false;
         }
 
         public boolean parse(ByteBuffer buffer)
@@ -103,11 +100,11 @@ public class ResponseContentParser extends StreamContentParser
             while (remaining > 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Response {} {}, state {} {}", request, FCGI.StreamType.STD_OUT, state, BufferUtil.toDetailString(buffer));
+                    LOG.debug("Response {} {}, state {} {}", getRequest(), FCGI.StreamType.STD_OUT, state, BufferUtil.toDetailString(buffer));
 
                 switch (state)
                 {
-                    case HEADERS:
+                    case HEADERS ->
                     {
                         if (httpParser.parseNext(buffer))
                         {
@@ -116,40 +113,33 @@ public class ResponseContentParser extends StreamContentParser
                                 return true;
                         }
                         remaining = buffer.remaining();
-                        break;
                     }
-                    case CONTENT_MODE:
+                    case CONTENT_MODE ->
                     {
                         // If we have no indication of the content, then
                         // the HTTP parser will assume there is no content
                         // and will not parse it even if it is provided,
                         // so we have to parse it raw ourselves here.
                         boolean rawContent = fields.size() == 0 ||
-                            (fields.get(HttpHeader.CONTENT_LENGTH) == null &&
-                                fields.get(HttpHeader.TRANSFER_ENCODING) == null);
+                                             (fields.get(HttpHeader.CONTENT_LENGTH) == null &&
+                                              fields.get(HttpHeader.TRANSFER_ENCODING) == null);
                         state = rawContent ? State.RAW_CONTENT : State.HTTP_CONTENT;
-                        break;
                     }
-                    case RAW_CONTENT:
+                    case RAW_CONTENT ->
                     {
                         ByteBuffer content = buffer.asReadOnlyBuffer();
                         buffer.position(buffer.limit());
                         if (notifyContent(content))
                             return true;
                         remaining = 0;
-                        break;
                     }
-                    case HTTP_CONTENT:
+                    case HTTP_CONTENT ->
                     {
                         if (httpParser.parseNext(buffer))
                             return true;
                         remaining = buffer.remaining();
-                        break;
                     }
-                    default:
-                    {
-                        throw new IllegalStateException();
-                    }
+                    default -> throw new IllegalStateException();
                 }
             }
             return false;
@@ -205,7 +195,7 @@ public class ResponseContentParser extends StreamContentParser
         {
             try
             {
-                listener.onBegin(request, code, reason);
+                listener.onBegin(getRequest(), code, reason);
             }
             catch (Throwable x)
             {
@@ -218,7 +208,7 @@ public class ResponseContentParser extends StreamContentParser
         {
             try
             {
-                listener.onHeader(request, httpField);
+                listener.onHeader(getRequest(), httpField);
             }
             catch (Throwable x)
             {
@@ -242,7 +232,7 @@ public class ResponseContentParser extends StreamContentParser
         {
             try
             {
-                return listener.onHeaders(request);
+                return listener.onHeaders(getRequest());
             }
             catch (Throwable x)
             {
@@ -278,7 +268,7 @@ public class ResponseContentParser extends StreamContentParser
         {
             try
             {
-                return listener.onContent(request, FCGI.StreamType.STD_OUT, buffer);
+                return listener.onContent(getRequest(), FCGI.StreamType.STD_OUT, buffer);
             }
             catch (Throwable x)
             {
@@ -318,7 +308,7 @@ public class ResponseContentParser extends StreamContentParser
         {
             try
             {
-                listener.onFailure(request, failure);
+                listener.onFailure(getRequest(), failure);
             }
             catch (Throwable x)
             {

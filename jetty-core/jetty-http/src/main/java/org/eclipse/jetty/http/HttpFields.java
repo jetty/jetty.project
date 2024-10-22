@@ -699,7 +699,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * @return the value of the field as a {@code long},
      * or -1 if no such field is present
      * @throws NumberFormatException if the value of the field
-     * cannot be converted to a {@link long}
+     * cannot be converted to a {@code long}
      */
     default long getLongField(String name) throws NumberFormatException
     {
@@ -715,7 +715,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      * @return the value of the field as a {@code long},
      * or -1 if no such field is present
      * @throws NumberFormatException if the value of the field
-     * cannot be converted to a {@link long}
+     * cannot be converted to a {@code long}
      */
     default long getLongField(HttpHeader header) throws NumberFormatException
     {

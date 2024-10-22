@@ -168,7 +168,7 @@ public class SessionHandlerTest
     }
     
     @Test
-    public void testSessionCookie() throws Exception
+    public void testSessionCookieConfig() throws Exception
     {
         Server server = new Server();
         MockSessionIdManager idMgr = new MockSessionIdManager(server);
@@ -190,12 +190,51 @@ public class SessionHandlerTest
         sessionCookieConfig.setSecure(false);
         sessionCookieConfig.setPath("/foo");
         sessionCookieConfig.setMaxAge(99);
+
+        //test setting SameSite and Partitioned the old way in the comment
+        sessionCookieConfig.setComment(Response.PARTITIONED_COMMENT + " " + Response.SAME_SITE_STRICT_COMMENT);
         
-        //for < ee10, SameSite cannot be set on the SessionCookieConfig, only on the SessionManager, or 
-        //a default value on the context attribute org.eclipse.jetty.cookie.sameSiteDefault
+        HttpCookie cookie = mgr.getSessionManager().getSessionCookie(session, false);
+        assertEquals("SPECIAL", cookie.getName());
+        assertEquals("universe", cookie.getDomain());
+        assertEquals("/foo", cookie.getPath());
+        assertFalse(cookie.isHttpOnly());
+        assertFalse(cookie.isSecure());
+        assertTrue(cookie.isPartitioned());
+        assertEquals(99, cookie.getMaxAge());
+        assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
+
+        String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
+        assertThat(cookieStr, containsString("; Partitioned; SameSite=Strict"));
+    }
+
+    @Test
+    public void testSessionCookieViaSetters() throws Exception
+    {
+        Server server = new Server();
+        MockSessionIdManager idMgr = new MockSessionIdManager(server);
+        idMgr.setWorkerName("node1");
+        SessionHandler mgr = new SessionHandler();
+        MockSessionCache cache = new MockSessionCache(mgr.getSessionManager());
+        cache.setSessionDataStore(new NullSessionDataStore());
+        mgr.setSessionCache(cache);
+        mgr.setSessionIdManager(idMgr);
+
+        long now = System.currentTimeMillis();
+
+        ManagedSession session = new ManagedSession(mgr.getSessionManager(), new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
+        session.setExtendedId("123.node1");
+
+        //test setting up session cookie via setters on SessionHandler
+        mgr.setSessionCookie("SPECIAL");
+        mgr.setSessionDomain("universe");
+        mgr.setHttpOnly(false);
+        mgr.setSecureCookies(false);
+        mgr.setSessionPath("/foo");
+        mgr.setMaxCookieAge(99);
         mgr.setSameSite(HttpCookie.SameSite.STRICT);
         mgr.setPartitioned(true);
-        
+
         HttpCookie cookie = mgr.getSessionManager().getSessionCookie(session, false);
         assertEquals("SPECIAL", cookie.getName());
         assertEquals("universe", cookie.getDomain());

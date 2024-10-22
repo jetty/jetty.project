@@ -66,7 +66,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             return false;
 
         SessionRequest sessionRequest = new SessionRequest(request);
-        addSessionStreamWrapper(request);
+        addSessionStreamWrapper(sessionRequest);
         return sessionRequest.process(next, response, callback);
     }
 

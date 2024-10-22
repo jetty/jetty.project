@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.CompletionStreamWrapper;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
@@ -716,6 +717,7 @@ public interface Request extends Attributes, Content.Source
          *         is returned, then this method must not generate a response, nor complete the callback.
          * @throws Exception if there is a failure during the handling. Catchers cannot assume that the callback will be
          *                   called and thus should attempt to complete the request as if a false had been returned.
+         * @see AbortException
          */
         boolean handle(Request request, Response response, Callback callback) throws Exception;
 
@@ -724,6 +726,34 @@ public interface Request extends Attributes, Content.Source
         default InvocationType getInvocationType()
         {
             return InvocationType.BLOCKING;
+        }
+
+        /**
+         * A marker {@link Exception} that can be passed the {@link Callback#failed(Throwable)} of the {@link Callback}
+         * passed in {@link #handle(Request, Response, Callback)}, to cause request handling to be aborted.  For HTTP/1
+         * an abort is handled with a {@link EndPoint#close()}, for later versions of HTTP, a reset message will be sent.
+         */
+        class AbortException extends Exception
+        {
+            public AbortException()
+            {
+                super();
+            }
+
+            public AbortException(String message)
+            {
+                super(message);
+            }
+
+            public AbortException(String message, Throwable cause)
+            {
+                super(message, cause);
+            }
+
+            public AbortException(Throwable cause)
+            {
+                super(cause);
+            }
         }
     }
 

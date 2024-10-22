@@ -332,7 +332,10 @@ public class NetworkTrafficListenerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Response.sendRedirect(request, response, callback, location);
+                Content.Source.consumeAll(request, Callback.from(
+                    () -> Response.sendRedirect(request, response, callback, location),
+                    callback::failed
+                ));
                 return true;
             }
         });
