@@ -82,11 +82,31 @@ public class MultiPartFormData
     }
 
     /**
-     * Returns {@code multipart/form-data} parts using the given {@link Content.Source} and {@link MultiPartConfig},
-     * blocking if necessary.
+     * Get {@code multipart/form-data} {@link Parts} from an {@link Attributes}, typically
+     * cached there by calls to {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
+     * or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, BiConsumer, Invocable.InvocableBiConsumer)}
      *
+     * @param attributes the attributes where the futureParts are cahced
+     * @return the parts or null
+     */
+    public static Parts getParts(Attributes attributes)
+    {
+        Object attribute = attributes.getAttribute(MultiPartFormData.class.getName());
+        if (attribute instanceof Parts parts)
+            return parts;
+        if (attribute instanceof CompletableFuture<?> futureParts && futureParts.isDone())
+            return (Parts)futureParts.join();
+        return null;
+    }
+
+    /**
+     * Get {@code multipart/form-data} {@link Parts} from a {@link Content.Source}, caching the results in an
+     * {@link Attributes}.  If not already available, the {@code Parts} are read and parsed, blocking if necessary.
+     * <p>
+     * Calls to {@code onParts} and {@code getParts} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param content the source of the multipart content.
-     * @param attributes the attributes where the futureParts are tracked.
+     * @param attributes the attributes where the Parts are cached.
      * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
      * @param config the multipart configuration.
      * @return the parts
@@ -97,6 +117,11 @@ public class MultiPartFormData
     }
 
     /**
+     * Asynchronously get {@code multipart/form-data} {@link Parts} from a {@link Content.Source}, caching the results in an
+     * {@link Attributes}.  If not already available, the {@code Parts} are read and parsed.
+     * <p>
+     * Calls to {@code onParts} and {@code getParts} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param content the source of the multipart content.
      * @param attributes the attributes where the futureParts are tracked.
      * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.

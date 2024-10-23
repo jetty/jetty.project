@@ -59,13 +59,13 @@ public class EagerFormHandler extends DelayedHandler
 
         return switch (mimeType)
         {
-            case FORM_ENCODED -> handleFormFields(request, contentType, response, callback);
+            case FORM_ENCODED -> handleFormFields(request, response, callback);
             case MULTIPART_FORM_DATA -> handleMultiPartFormData(request, contentType, response, callback);
             default -> super.handle(request, response, callback);
         };
     }
 
-    protected boolean  handleFormFields(Request request, String contentType, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+    protected boolean handleFormFields(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
     {
         BiConsumer<Fields, Throwable> onFields = (fields, error) ->
         {

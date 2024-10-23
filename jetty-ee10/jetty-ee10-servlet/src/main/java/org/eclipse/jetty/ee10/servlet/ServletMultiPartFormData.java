@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletRequest;
@@ -56,8 +55,14 @@ import org.eclipse.jetty.util.thread.Invocable;
 public class ServletMultiPartFormData
 {
     /**
-     * Get {@link ServletMultiPartFormData.Parts} from a servlet request, blocking if necessary.
+     * Get {@code multipart/form-data} {@link ServletMultiPartFormData.Parts} from a {@link ServletRequest}, caching the
+     * results in the request {@link ServletRequest#getAttribute(String) Attributes}.  If not already available,
+     * the {@code Parts} are read and parsed, blocking if necessary.
+     * <p>
+     * Calls to {@code onParts} and {@code getParts} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param servletRequest A servlet request
+     * @return the parts
      */
     static Parts getParts(ServletRequest servletRequest)
     {
@@ -66,7 +71,12 @@ public class ServletMultiPartFormData
     }
 
     /**
-     * Actions to take when {@link ServletMultiPartFormData.Parts} are completely read.
+     * Asynchronously get {@code multipart/form-data} {@link ServletMultiPartFormData.Parts} from a {@link ServletRequest},
+     * caching the results in the request {@link ServletRequest#getAttribute(String) Attributes}.  If not already available,
+     * the {@code Parts} are read and parsed.
+     * <p>
+     * Calls to {@code onParts} and {@code getParts} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param servletRequest A servlet request
      * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
      * @param immediate The action to take if the Parts are available immediately (from within the scope of the call to this method).
@@ -75,6 +85,7 @@ public class ServletMultiPartFormData
      */
     static void onParts(ServletRequest servletRequest, String contentType, BiConsumer<Parts, Throwable> immediate, Invocable.InvocableBiConsumer<Parts, Throwable> future)
     {
+        // TODO inline the from method to avoid the CF
         CompletableFuture<Parts> futureParts = from(servletRequest, future.getInvocationType(), contentType);
         if (futureParts.isDone())
         {
@@ -182,8 +193,12 @@ public class ServletMultiPartFormData
             try
             {
                 // Look for an existing future MultiPartFormData.Parts
-                CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.get(servletContextRequest);
-                if (futureFormData == null)
+                MultiPartFormData.Parts formParts = MultiPartFormData.getParts(servletContextRequest);
+                if (formParts != null)
+                {
+                    futureServletParts = CompletableFuture.completedFuture(new Parts(filesDirectory, formParts));
+                }
+                else
                 {
                     // No existing core parts, so we need to configure the parser.
                     ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
@@ -199,9 +214,7 @@ public class ServletMultiPartFormData
                     else
                     {
                         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-                        InputStreamContentSource iscs = new InputStreamContentSource(servletRequest.getInputStream(), byteBufferPool);
-                        iscs.setBufferSize(bufferSize);
-                        source = iscs;
+                        source = new InputStreamContentSource(servletRequest.getInputStream(), new ByteBufferPool.Sized(byteBufferPool, false, bufferSize));
                     }
 
                     MultiPartConfig multiPartConfig = Request.getMultiPartConfig(servletContextRequest, filesDirectory)
@@ -212,19 +225,31 @@ public class ServletMultiPartFormData
                         .maxSize(config.getMaxRequestSize())
                         .build();
 
-                    futureFormData = MultiPartFormData.from(source, invocationType, servletContextRequest, contentType, multiPartConfig);
+                    futureServletParts = new CompletableFuture<>();
+                    CompletableFuture<Parts> futureConvertParts = futureServletParts;
+                    Invocable.InvocableBiConsumer<MultiPartFormData.Parts, Throwable> onParts = new Invocable.InvocableBiConsumer<>()
+                    {
+                        @Override
+                        public void accept(MultiPartFormData.Parts parts, Throwable throwable)
+                        {
+                            if (throwable != null)
+                                futureConvertParts.completeExceptionally(throwable);
+                            else
+                                futureConvertParts.complete(new Parts(filesDirectory, parts));
+                        }
 
+                        @Override
+                        public InvocationType getInvocationType()
+                        {
+                            return invocationType;
+                        }
+                    };
+
+                    MultiPartFormData.onParts(source, servletContextRequest, contentType, multiPartConfig, onParts, onParts);
                 }
-
-                // If we are already completed, ...
-                futureServletParts = (futureFormData.isDone())
-                    // we can just convert here
-                    ? CompletableFuture.completedFuture(new Parts(filesDirectory, futureFormData.join()))
-                    // Otherwise, when available, convert the core parts to servlet parts
-                    : futureFormData.thenApply(new PartsFunction(invocationType, filesDirectory));
-
                 // cache the result in attributes.
                 servletRequest.setAttribute(ServletMultiPartFormData.class.getName(), futureServletParts);
+
             }
             catch (Throwable failure)
             {
@@ -232,30 +257,6 @@ public class ServletMultiPartFormData
             }
         }
         return futureServletParts;
-    }
-
-    private static class PartsFunction implements Function<MultiPartFormData.Parts, Parts>, Invocable
-    {
-        private final InvocationType _invocationType;
-        private final Path _filesDirectory;
-
-        PartsFunction(InvocationType invocationType, Path filesDirectory)
-        {
-            _invocationType = invocationType;
-            _filesDirectory = filesDirectory;
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return _invocationType;
-        }
-
-        @Override
-        public Parts apply(MultiPartFormData.Parts parts)
-        {
-            return new Parts(_filesDirectory, parts);
-        }
     }
 
     /**

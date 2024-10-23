@@ -202,7 +202,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
                 Object post = session.removeAttribute(__J_POST);
                 if (post instanceof Fields futureFields)
-                    FormFields.set(request, futureFields);
+                    FormFields.setFields(request, futureFields);
 
                 String method = (String)session.removeAttribute(__J_METHOD);
                 if (method != null && request.getMethod().equals(method))
