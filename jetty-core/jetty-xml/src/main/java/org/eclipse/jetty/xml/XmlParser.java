@@ -31,6 +31,7 @@ import javax.xml.catalog.Catalog;
 import javax.xml.catalog.CatalogFeatures;
 import javax.xml.catalog.CatalogManager;
 import javax.xml.catalog.CatalogResolver;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
@@ -43,6 +44,8 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
@@ -66,6 +69,7 @@ public class XmlParser
     private Object _xpaths;
     private String _dtd;
     private List<EntityResolver> _entityResolvers = new ArrayList<>();
+    private SAXParserFactory factory;
 
     /**
      * Construct XmlParser
@@ -109,13 +113,47 @@ public class XmlParser
         return SAXParserFactory.newInstance();
     }
 
+    protected SAXParser newSAXParser() throws ParserConfigurationException, SAXException
+    {
+        return factory.newSAXParser();
+    }
+
+    protected void configure(SAXParser saxParser)
+    {
+        /* override to configure sax parser at the right time */
+    }
+
+    protected static void setFeature(SAXParserFactory factory, String name, boolean value)
+    {
+        try
+        {
+            factory.setFeature(name, value);
+        }
+        catch (SAXNotSupportedException | SAXNotRecognizedException | ParserConfigurationException e)
+        {
+            LOG.warn("Unable to setFeature({}, {})", name, value, e);
+        }
+    }
+
+    protected static void setFeature(XMLReader xmlReader, String name, boolean value)
+    {
+        try
+        {
+            xmlReader.setFeature(name, value);
+        }
+        catch (SAXNotSupportedException | SAXNotRecognizedException e)
+        {
+            LOG.warn("Unable to setFeature({}, {})", name, value, e);
+        }
+    }
+
     public void setValidating(boolean validating)
     {
         try
         {
-            SAXParserFactory factory = newSAXParserFactory();
+            factory = newSAXParserFactory();
             factory.setValidating(validating);
-            _parser = factory.newSAXParser();
+            _parser = newSAXParser();
 
             try
             {
@@ -147,6 +185,10 @@ public class XmlParser
         {
             LOG.warn("Unable to set validating on XML Parser", e);
             throw new Error(e.toString());
+        }
+        finally
+        {
+            configure(_parser);
         }
     }
 
