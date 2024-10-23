@@ -36,7 +36,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -77,7 +77,7 @@ public class DebugHandlerTest
         httpConnector.setPort(0);
         server.addConnector(httpConnector);
 
-        Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Path keystorePath = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath.toAbsolutePath().toString());
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -117,7 +117,7 @@ public class DebugHandlerTest
     @BeforeEach
     public void trustAllHttpsUrlConnection() throws Exception
     {
-        Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Path keystorePath = MavenPaths.findTestResourceFile("keystore.p12");
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
         try (InputStream stream = Files.newInputStream(keystorePath))
