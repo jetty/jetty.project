@@ -521,7 +521,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 // If there is more than 1K space available, we can top up the buffer rather than allocate a new one
                 ByteBuffer backing = _requestBuffer.getByteBuffer();
                 int limit = backing.limit();
-                if (backing.capacity() - limit < 1024)
+                if (backing.capacity() - limit >= 1024)
                 {
                     // Move the position back to 0, leaving limit to cover the retained content and prevent it be overwritten
                     backing.position(0);
