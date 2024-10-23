@@ -2292,7 +2292,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                                 }
                                 else
                                 {
-                                    failure = new IllegalArgumentException("invalid stream id " + streamId);
+                                    reservedStreamId = streamId;
+                                    slots.offer(slot);
                                     break;
                                 }
                             }
