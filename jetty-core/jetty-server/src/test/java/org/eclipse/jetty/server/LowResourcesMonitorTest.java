@@ -26,12 +26,9 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -159,29 +156,6 @@ public class LowResourcesMonitorTest
         {
             assertThat(c.isAccepting(), Matchers.is(true));
         }
-    }
-
-    @Disabled("not reliable")
-    @Test
-    public void testLowOnMemory() throws Exception
-    {
-        _lowResourcesMonitor.setMaxMemory(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory() + (100 * 1024 * 1024));
-        Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
-
-        byte[] data = new byte[100 * 1024 * 1024];
-        Arrays.fill(data, (byte)1);
-        int hash = Arrays.hashCode(data);
-        assertThat(hash, not(equalTo(0)));
-
-        Thread.sleep(1200);
-        assertTrue(_lowResourcesMonitor.isLowOnResources());
-        data = null;
-        System.gc();
-        System.gc();
-
-        Thread.sleep(1200);
-        assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());
     }
 
     @Test
