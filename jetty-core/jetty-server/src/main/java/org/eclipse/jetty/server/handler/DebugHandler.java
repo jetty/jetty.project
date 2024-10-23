@@ -147,7 +147,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         Thread thread = Thread.currentThread();
-        String name = thread.getName() + ":" + request.getHttpURI();
+        String name = thread.getName() + ":" + request.getHttpURI().getPathQuery();
         boolean willHandle = false;
         Throwable ex = null;
         String rname = findRequestName(request);
@@ -155,6 +155,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 
         try
         {
+            thread.setName(name);
             String headers = _showHeaders ? ("\n" + request.getHeaders().toString()) : "";
 
             log(">> r=%s %s %s %s %s %s",
@@ -164,7 +165,6 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
                 request.getConnectionMetaData().getProtocol(),
                 request.getConnectionMetaData(),
                 headers);
-            thread.setName(name);
 
             willHandle = getHandler().handle(request, response, handlingCallback);
             return willHandle;
@@ -195,10 +195,11 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 
         String s = String.format(format, arg);
 
+        String threadName = Thread.currentThread().getName();
         long now = System.currentTimeMillis();
         long ms = now % 1000;
         if (_print != null)
-            _print.printf("%s.%03d:%s%n", __date.format(now), ms, s);
+            _print.printf("%s.%03d:%s:%s%n", __date.format(now), ms, threadName, s);
     }
 
     protected String findRequestName(Request request)
@@ -218,7 +219,6 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         }
         catch (IllegalStateException e)
         {
-            // TODO can we avoid creating and catching this exception? see #8024
             // Handle the case when the request has already been completed
             return String.format("%s@%x", request.getHttpURI(), request.hashCode());
         }
@@ -234,7 +234,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         for (Connector connector : getServer().getConnectors())
         {
             if (connector instanceof AbstractConnector)
-                ((AbstractConnector)connector).addBean(this, false);
+                connector.addBean(this, false);
         }
 
         super.doStart();
@@ -248,7 +248,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
         for (Connector connector : getServer().getConnectors())
         {
             if (connector instanceof AbstractConnector)
-                ((AbstractConnector)connector).removeBean(this);
+                connector.removeBean(this);
         }
     }
 
