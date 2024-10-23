@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -250,25 +251,24 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
-            FormFields.onFields(getRequest(), _charset, this::process, Invocable.from(InvocationType.NON_BLOCKING, this::executeProcess));
-        }
+            Promise<Fields> onFields = new Promise<>()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                }
 
-        private void process(Fields fields, Throwable x)
-        {
-            if (x == null)
-                super.process();
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
-        }
+                @Override
+                public void succeeded(Fields result)
+                {
+                    process();
+                }
+            };
 
-        private void executeProcess(Fields fields, Throwable x)
-        {
-            if (x == null)
-                // We must execute here as even though we have consumed all the input, we are probably
-                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(super::process);
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+            InvocablePromise<Fields> executeOnFields = Invocable.from(getRequest().getContext(), onFields);
+
+            FormFields.onFields(getRequest(), _charset, onFields, executeOnFields);
         }
     }
 

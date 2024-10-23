@@ -16,12 +16,15 @@ package org.eclipse.jetty.util.thread;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
@@ -93,6 +96,87 @@ public interface Invocable
     interface Callable extends Invocable
     {
         void call() throws Exception;
+    }
+
+    /**
+     * An {@link Invocable} {@link Promise} that provides the
+     * {@link InvocationType} of calls to {@link Promise#succeeded(Object)}.
+     * Also provides the {@link InvocableBiConsumer} interface as a convenient for working
+     * with {@link java.util.concurrent.CompletableFuture}.
+     * @param <R> The result type
+     */
+    interface InvocablePromise<R> extends Invocable, Promise<R>, InvocableBiConsumer<R, Throwable>
+    {
+        @Override
+        default void accept(R result, Throwable error)
+        {
+            if (error != null)
+                failed(error);
+            else
+                succeeded(result);
+        }
+    }
+
+    /**
+     * Create an {@link InvocablePromise}
+     * @param invocationType The {@link InvocationType} of calls to the {@link InvocablePromise}
+     * @param promise The promise on which to delegate calls to.
+     * @param <C> The type
+     * @return An {@link Invocable} {@link Promise}.
+     */
+    static <C> Promise<C> from(InvocationType invocationType, Promise<C> promise)
+    {
+        return new InvocablePromise<C>()
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            @Override
+            public void succeeded(C result)
+            {
+                promise.succeeded(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                promise.failed(x);
+            }
+        };
+    }
+
+    /**
+     * Create an {@link InvocablePromise} that is {@link InvocationType#NON_BLOCKING} because
+     * it executes the callbacks
+     * @param promise The promise on which to delegate calls to.
+     * @param <C> The type
+     * @return An {@link Invocable} {@link Promise}.
+     */
+    static <C> InvocablePromise<C> from(Executor executor, Promise<C> promise)
+    {
+        return new InvocablePromise<C>()
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+
+            @Override
+            public void succeeded(C result)
+            {
+                executor.execute(() -> promise.succeeded(result));
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                executor.execute(() -> promise.failed(x));
+            }
+        };
     }
 
     /**
