@@ -2101,10 +2101,6 @@ public interface RetainableByteBuffer extends Retainable
 
             if (_minRetainSize == -1)
             {
-                // If it is a chunk, then retain
-                if (buffer instanceof Content.Chunk)
-                    return false;
-
                 // If we are already aggregating and the size is small
                 if (_aggregate != null && size < 128)
                     return true;

@@ -198,13 +198,12 @@ public class DelayedHandler extends Handler.Wrapper
     protected static class UntilContentDelayedProcess extends DelayedProcess implements Runnable
     {
         private final Deque<Content.Chunk> _chunks = new ArrayDeque<>();
-        private final int _maxBuffered;
-        private int _size;
+        private int _space;
 
         public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
         {
             super(handler, request, response, callback);
-            _maxBuffered = 3 * request.getConnectionMetaData().getConnector().getConnectionFactory(HttpConnectionFactory.class).getInputBufferSize() / 4;
+            _space = request.getConnectionMetaData().getConnector().getConnectionFactory(HttpConnectionFactory.class).getInputBufferSize();
         }
 
         @Override
@@ -229,15 +228,17 @@ public class DelayedHandler extends Handler.Wrapper
                     break;
                 }
 
+                // retain the chunk in the queue
                 if (!_chunks.add(chunk))
                 {
                     getCallback().failed(new IllegalStateException());
                     break;
                 }
 
-                _size += chunk.remaining();
+                // reduce the buffer space by a guessed 8 byte framing overhead and the chunk size
+                _space -= 8 + chunk.remaining();
 
-                if (chunk.isLast() || _size >= _maxBuffered)
+                if (chunk.isLast() || _space <= 0)
                 {
                     if (execute)
                         getRequest().getContext().execute(this);
