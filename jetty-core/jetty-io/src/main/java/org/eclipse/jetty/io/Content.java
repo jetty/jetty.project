@@ -43,8 +43,6 @@ import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -310,9 +308,11 @@ public class Content
         {
             try
             {
-                FuturePromise<ByteBuffer> promise = new FuturePromise<>();
-                asByteBuffer(source, promise);
-                return promise.get();
+                try (Blocker.Promise<ByteBuffer> promise = Blocker.promise())
+                {
+                    asByteBuffer(source, promise);
+                    return promise.block();
+                }
             }
             catch (Throwable x)
             {
@@ -483,9 +483,11 @@ public class Content
         {
             try
             {
-                FutureCallback callback = new FutureCallback();
-                consumeAll(source, callback);
-                callback.get();
+                try (Blocker.Callback callback = Blocker.callback())
+                {
+                    consumeAll(source, callback);
+                    callback.block();
+                }
             }
             catch (Throwable x)
             {
