@@ -47,6 +47,7 @@ import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -623,7 +624,7 @@ public class ResourceService
         }
 
         String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), "/");
-        String listing = ResourceListing.getAsXHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
+        String listing = ResourceListing.getAsXHTML(getSendDirectoryResource(httpContent), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (listing == null)
         {
             writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -638,7 +639,18 @@ public class ResourceService
         response.write(true, ByteBuffer.wrap(data), callback);
     }
 
-    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges) throws IOException
+    /**
+     * Allows a subclass to customize a resource used for XHTML directory listings.
+     *
+     * @param httpContent the source HttpContent.
+     * @return By default, {@link HttpContent#getResource()}, may be null.
+     */
+    protected Resource getSendDirectoryResource(final HttpContent httpContent)
+    {
+        return httpContent.getResource();
+    }
+
+    protected void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
     {
         if (LOG.isDebugEnabled())
         {
