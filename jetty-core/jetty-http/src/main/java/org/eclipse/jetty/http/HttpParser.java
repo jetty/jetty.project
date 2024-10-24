@@ -676,7 +676,10 @@ public class HttpParser
             if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
             {
                 LOG.warn("padding is too large >{}", _maxHeaderBytes);
-                throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
+                if (_requestParser)
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
+                else
+                    throw new HttpException.RuntimeException(_responseStatus, "Bad Response");
             }
         }
     }
@@ -740,10 +743,15 @@ public class HttpParser
                 else
                 {
                     if (_requestParser)
+                    {
                         LOG.warn("request is too large >{}", _maxHeaderBytes);
+                        throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431);
+                    }
                     else
+                    {
                         LOG.warn("response is too large >{}", _maxHeaderBytes);
-                    throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431);
+                        throw new HttpException.RuntimeException(_responseStatus, "Response Header Bytes Too Large");
+                    }
                 }
             }
 
@@ -865,7 +873,10 @@ public class HttpParser
                             break;
 
                         default:
-                            throw new BadMessageException(_requestParser ? "No URI" : "No Status");
+                            if (_requestParser)
+                                throw new BadMessageException("No URI");
+                            else
+                                throw new HttpException.RuntimeException(_responseStatus, "No Status");
                     }
                     break;
 
@@ -1261,10 +1272,12 @@ public class HttpParser
             if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
             {
                 boolean header = _state == State.HEADER;
-                LOG.warn("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
-                throw new BadMessageException(header
-                    ? HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431
-                    : HttpStatus.PAYLOAD_TOO_LARGE_413);
+                if (debugEnabled)
+                    LOG.debug("{} is too large {}>{}", header ? "Header" : "Trailer", _headerBytes, _maxHeaderBytes);
+                if (_requestParser)
+                    throw new BadMessageException(header ? HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431 : HttpStatus.PAYLOAD_TOO_LARGE_413);
+                // There is no equivalent of 431 for response headers.
+                throw new HttpException.RuntimeException(_responseStatus, "Response Header Fields Too Large");
             }
 
             switch (_fieldState)
@@ -1744,7 +1757,10 @@ public class HttpParser
                         if (debugEnabled)
                             LOG.debug("{} EOF in {}", this, _state);
                         setState(State.CLOSED);
-                        _handler.badMessage(new BadMessageException(HttpStatus.BAD_REQUEST_400));
+                        if (_requestParser)
+                            _handler.badMessage(new BadMessageException(HttpStatus.BAD_REQUEST_400, "Early EOF"));
+                        else
+                            _handler.badMessage(new HttpException.RuntimeException(_responseStatus, "Early EOF"));
                         break;
                 }
             }
@@ -1752,9 +1768,18 @@ public class HttpParser
         catch (Throwable x)
         {
             BufferUtil.clear(buffer);
-            HttpException bad = x instanceof HttpException http
-                ? http
-                : new BadMessageException(_requestParser ? "Bad Request" : "Bad Response", x);
+            HttpException bad;
+            if (x instanceof HttpException http)
+            {
+                bad = http;
+            }
+            else
+            {
+                if (_requestParser)
+                    bad = new BadMessageException("Bad Request", x);
+                else
+                    bad = new HttpException.RuntimeException(_responseStatus, "Bad Response", x);
+            }
             badMessage(bad);
         }
         return false;

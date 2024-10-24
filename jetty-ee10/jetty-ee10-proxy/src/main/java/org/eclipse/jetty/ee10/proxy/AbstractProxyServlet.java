@@ -255,6 +255,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * <td>The response buffer size, see {@link HttpClient#setResponseBufferSize(int)}</td>
      * </tr>
      * <tr>
+     * <td>maxResponseHeadersSize</td>
+     * <td>HttpClient's default</td>
+     * <td>The maximum response headers size, see {@link HttpClient#setMaxResponseHeadersSize(int)}</td>
+     * </tr>
+     * <tr>
      * <td>selectors</td>
      * <td>cores / 2</td>
      * <td>The number of NIO selectors used by {@link HttpClient}</td>
@@ -321,6 +326,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
         value = config.getInitParameter("responseBufferSize");
         if (value != null)
             client.setResponseBufferSize(Integer.parseInt(value));
+
+        value = config.getInitParameter("maxResponseHeadersSize");
+        if (value != null)
+            client.setMaxResponseHeadersSize(Integer.parseInt(value));
 
         try
         {
@@ -715,7 +724,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     protected void onProxyResponseFailure(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse, Throwable failure)
     {
         if (_log.isDebugEnabled())
-            _log.debug(getRequestId(clientRequest) + " proxying failed", failure);
+            _log.debug("{} proxying failed", getRequestId(clientRequest), failure);
 
         int status = proxyResponseStatus(failure);
         int serverStatus = serverResponse == null ? status : serverResponse.getStatus();
@@ -812,7 +821,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
 
             if (proxyServlet._log.isDebugEnabled())
-                proxyServlet._log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+                proxyServlet._log.debug("{} @ {} to {}", config.getServletName(), _prefix, _proxyTo);
         }
 
         protected String rewriteTarget(HttpServletRequest request)
