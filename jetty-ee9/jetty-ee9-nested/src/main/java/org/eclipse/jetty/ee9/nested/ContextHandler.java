@@ -94,6 +94,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -302,7 +303,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        dumpObjects(out, indent, new DumpableCollection("initparams " + this, getInitParams().entrySet()));
+        dumpObjects(out, indent,
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
+            new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
     public APIContext getServletContext()
@@ -2868,6 +2872,44 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             public APIContext getAPIContext()
             {
                 return _apiContext;
+            }
+
+            @Override
+            public Object getAttribute(String name)
+            {
+                return switch (name)
+                {
+                    case FormFields.MAX_FIELDS_ATTRIBUTE -> getMaxFormKeys();
+                    case FormFields.MAX_LENGTH_ATTRIBUTE -> getMaxFormContentSize();
+                    default -> super.getAttribute(name);
+                };
+            }
+
+            @Override
+            public Object setAttribute(String name, Object attribute)
+            {
+                return switch (name)
+                {
+                    case FormFields.MAX_FIELDS_ATTRIBUTE ->
+                    {
+                        int oldValue = getMaxFormKeys();
+                        if (attribute == null)
+                            setMaxFormKeys(DEFAULT_MAX_FORM_KEYS);
+                        else
+                            setMaxFormKeys(Integer.parseInt(attribute.toString()));
+                        yield oldValue;
+                    }
+                    case FormFields.MAX_LENGTH_ATTRIBUTE ->
+                    {
+                        int oldValue = getMaxFormContentSize();
+                        if (attribute == null)
+                            setMaxFormContentSize(DEFAULT_MAX_FORM_CONTENT_SIZE);
+                        else
+                            setMaxFormContentSize(Integer.parseInt(attribute.toString()));
+                        yield oldValue;
+                    }
+                    default -> super.setAttribute(name, attribute);
+                };
             }
         }
 

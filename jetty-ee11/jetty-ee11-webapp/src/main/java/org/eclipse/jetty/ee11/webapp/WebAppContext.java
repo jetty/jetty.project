@@ -60,6 +60,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -882,6 +883,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         name = String.format("%s@%x", name, hashCode());
 
         dumpObjects(out, indent,
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Protected classes " + name, protectedClasses),
             new DumpableCollection("Hidden classes " + name, hiddenClasses),

@@ -44,6 +44,7 @@
 ** xref:troubleshooting/component-dump.adoc[]
 ** xref:troubleshooting/debugging.adoc[]
 * Jetty Security
+** xref:security/configuring-form-size.adoc[]
 ** xref:security/siwe-support.adoc[]
 * Migration Guides
 ** xref:migration/94-to-10.adoc[]
