@@ -288,25 +288,25 @@ public class DelayedHandler extends Handler.Wrapper
         protected void delay()
         {
             Request request = getRequest();
-            MultiPartFormData.onParts(request, request, _contentType, _config, this::process, Invocable.from(InvocationType.NON_BLOCKING, this::executeProcess));
-        }
 
-        private void process(MultiPartFormData.Parts fields, Throwable x)
-        {
-            if (x == null)
-                super.process();
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
-        }
+            Promise<MultiPartFormData.Parts> onParts = new Promise<>()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                }
 
-        private void executeProcess(MultiPartFormData.Parts fields, Throwable x)
-        {
-            if (x == null)
-                // We must execute here as even though we have consumed all the input, we are probably
-                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(super::process);
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                @Override
+                public void succeeded(MultiPartFormData.Parts result)
+                {
+                    process();
+                }
+            };
+
+            InvocablePromise<MultiPartFormData.Parts> executeOnParts = Invocable.from(getRequest().getContext(), onParts);
+
+            MultiPartFormData.onParts(request, request, _contentType, _config, onParts, executeOnParts);
         }
     }
 }

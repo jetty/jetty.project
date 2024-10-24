@@ -105,7 +105,7 @@ public interface Invocable
      * with {@link java.util.concurrent.CompletableFuture}.
      * @param <R> The result type
      */
-    interface InvocablePromise<R> extends Invocable, Promise<R>, InvocableBiConsumer<R, Throwable>
+    interface InvocablePromise<R> extends Invocable, Promise<R>, BiConsumer<R, Throwable>
     {
         @Override
         default void accept(R result, Throwable error)

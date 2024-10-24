@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletRequest;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -83,9 +83,8 @@ public class ServletMultiPartFormData
      * @param future The action to take when the Parts are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
      *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
      */
-    static void onParts(ServletRequest servletRequest, String contentType, BiConsumer<Parts, Throwable> immediate, Invocable.InvocableBiConsumer<Parts, Throwable> future)
+    static void onParts(ServletRequest servletRequest, String contentType, Promise<Parts> immediate, Invocable.InvocablePromise<Parts> future)
     {
-        // TODO inline the from method to avoid the CF
         CompletableFuture<Parts> futureParts = from(servletRequest, future.getInvocationType(), contentType);
         if (futureParts.isDone())
         {
@@ -103,7 +102,10 @@ public class ServletMultiPartFormData
             {
                 error = t;
             }
-            immediate.accept(parts, error);
+            if (error == null)
+                immediate.succeeded(parts);
+            else
+                immediate.failed(error);
         }
         else
         {
@@ -225,17 +227,21 @@ public class ServletMultiPartFormData
                         .maxSize(config.getMaxRequestSize())
                         .build();
 
-                    futureServletParts = new CompletableFuture<>();
+                    futureServletParts = new Invocable.InvocableCompletableFuture<>(invocationType);
                     CompletableFuture<Parts> futureConvertParts = futureServletParts;
-                    Invocable.InvocableBiConsumer<MultiPartFormData.Parts, Throwable> onParts = new Invocable.InvocableBiConsumer<>()
+
+                    Invocable.InvocablePromise<MultiPartFormData.Parts> onParts = new Invocable.InvocablePromise<>()
                     {
                         @Override
-                        public void accept(MultiPartFormData.Parts parts, Throwable throwable)
+                        public void failed(Throwable x)
                         {
-                            if (throwable != null)
-                                futureConvertParts.completeExceptionally(throwable);
-                            else
-                                futureConvertParts.complete(new Parts(filesDirectory, parts));
+                            futureConvertParts.completeExceptionally(x);
+                        }
+
+                        @Override
+                        public void succeeded(MultiPartFormData.Parts parts)
+                        {
+                            futureConvertParts.complete(new Parts(filesDirectory, parts));
                         }
 
                         @Override

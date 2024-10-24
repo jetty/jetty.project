@@ -26,13 +26,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -84,7 +85,7 @@ public class MultiPartFormData
     /**
      * Get {@code multipart/form-data} {@link Parts} from an {@link Attributes}, typically
      * cached there by calls to {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     * or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, BiConsumer, Invocable.InvocableBiConsumer)}
+     * or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Invocable.InvocablePromise)}
      *
      * @param attributes the attributes where the futureParts are cahced
      * @return the parts or null
@@ -130,9 +131,10 @@ public class MultiPartFormData
      * @param future The action to take when the FormFields are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
      *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
      */
-    public static void onParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config, BiConsumer<Parts, Throwable> immediate, Invocable.InvocableBiConsumer<Parts, Throwable> future)
+    public static void onParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config, Promise<Parts> immediate, Invocable.InvocablePromise<Parts> future)
     {
         CompletableFuture<Parts> futureParts = from(content, future.getInvocationType(), attributes, contentType, config);
+
         if (futureParts.isDone())
         {
             Parts parts = null;
@@ -145,7 +147,10 @@ public class MultiPartFormData
             {
                 error = t;
             }
-            immediate.accept(parts, error);
+            if (error != null)
+                immediate.failed(error);
+            else
+                immediate.succeeded(parts);
         }
         else
         {
@@ -162,7 +167,7 @@ public class MultiPartFormData
      * @param config the multipart configuration.
      * @return the future parts
      * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, BiConsumer, Invocable.InvocableBiConsumer)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Invocable.InvocablePromise)}
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config)
@@ -179,10 +184,10 @@ public class MultiPartFormData
      * @param config the multipart configuration.
      * @return the future parts
      * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, BiConsumer, Invocable.InvocableBiConsumer)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Invocable.InvocablePromise)}
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
-    public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, InvocationType invocationType, Attributes attributes, String contentType, MultiPartConfig config)
+    private static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, InvocationType invocationType, Attributes attributes, String contentType, MultiPartConfig config)
     {
         // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
         CompletableFuture<MultiPartFormData.Parts> futureParts = MultiPartFormData.get(attributes);
@@ -211,7 +216,7 @@ public class MultiPartFormData
     /**
      * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
      * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, BiConsumer, Invocable.InvocableBiConsumer)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Invocable.InvocablePromise)}
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
@@ -229,7 +234,7 @@ public class MultiPartFormData
      * @param parse the parser completable future
      * @return the future parts
      * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, BiConsumer, Invocable.InvocableBiConsumer)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Invocable.InvocablePromise)}
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
@@ -253,7 +258,12 @@ public class MultiPartFormData
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> get(Attributes attributes)
     {
-        return (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
+        Object value = attributes.getAttribute(MultiPartFormData.class.getName());
+        if (value instanceof CompletableFuture<?> cfp)
+            return (CompletableFuture<Parts>)cfp;
+        if (value instanceof Parts parts)
+            return CompletableFuture.completedFuture(parts);
+        return null;
     }
 
     /**
@@ -393,11 +403,44 @@ public class MultiPartFormData
             parser = new MultiPart.Parser(Objects.requireNonNull(boundary), compliance, listener);
         }
 
+        public void parse(Content.Source content, Promise<Parts> immediate, Invocable.InvocablePromise<Parts> future)
+        {
+            // TODO implement without CF
+            CompletableFuture<Parts> cf = parse(content, future.getInvocationType());
+            if (cf.isDone())
+            {
+                Parts parts = null;
+                Throwable failure = null;
+                try
+                {
+                    parts = cf.get();
+                }
+                catch (ExecutionException e)
+                {
+                    failure = e.getCause();
+                }
+                catch (Throwable t)
+                {
+                    failure = t;
+                }
+                if (failure == null)
+                    immediate.succeeded(parts);
+                else
+                    immediate.failed(failure);
+            }
+            else
+            {
+                cf.whenComplete(future);
+            }
+        }
+
+        @Deprecated(forRemoval = true, since = "12.0.15")
         public CompletableFuture<Parts> parse(Content.Source content)
         {
             return parse(content, InvocationType.NON_BLOCKING);
         }
 
+        @Deprecated(forRemoval = true, since = "12.0.15")
         public CompletableFuture<Parts> parse(Content.Source content, InvocationType invocationType)
         {
             ContentSourceCompletableFuture<Parts> futureParts = new ContentSourceCompletableFuture<>(content, invocationType)

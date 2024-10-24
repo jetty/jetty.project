@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.function.BiConsumer;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.FormFields;
@@ -70,7 +68,7 @@ public class EagerFormHandler extends DelayedHandler
             @Override
             public void failed(Throwable x)
             {
-                callback.failed(x);
+                succeeded(null);
             }
 
             @Override
@@ -93,38 +91,33 @@ public class EagerFormHandler extends DelayedHandler
         return true;
     }
 
-    protected boolean handleMultiPartFormData(Request request, String contentType, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+    protected boolean handleMultiPartFormData(Request request, String contentType, org.eclipse.jetty.server.Response response, Callback callback)
     {
-        BiConsumer<ServletMultiPartFormData.Parts, Throwable> onParts = (fields, error) ->
-        {
-            try
-            {
-                if (!super.handle(request, response, callback))
-                    callback.failed(new IllegalStateException("Not Handled"));
-            }
-            catch (Throwable t)
-            {
-                callback.failed(t);
-            }
-        };
-
-        InvocableBiConsumer<ServletMultiPartFormData.Parts, Throwable> executeOnParts = new InvocableBiConsumer<>()
+        Request.Handler handler = super::handle;
+        Promise<ServletMultiPartFormData.Parts> onParts = new Promise<>()
         {
             @Override
-            public void accept(ServletMultiPartFormData.Parts fields, Throwable error)
+            public void failed(Throwable x)
             {
-                request.getContext().execute(() ->
+                succeeded(null);
+            }
+
+            @Override
+            public void succeeded(ServletMultiPartFormData.Parts result)
+            {
+                try
                 {
-                    onParts.accept(fields, error);
-                });
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return InvocationType.NON_BLOCKING;
+                    if (!handler.handle(request, response, callback))
+                        callback.failed(new IllegalStateException("Not Handled"));
+                }
+                catch (Throwable t)
+                {
+                    callback.failed(t);
+                }
             }
         };
+
+        InvocablePromise<ServletMultiPartFormData.Parts> executeOnParts = Invocable.from(request.getContext(), onParts);
 
         ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts, executeOnParts);
         return true;
