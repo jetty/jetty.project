@@ -2695,11 +2695,11 @@ public class ServletContextHandlerTest
         assertThat(context.getServletContext().getResource("/unknowndir/"), nullValue());
         assertThat(context.getServletContext().getResource("/subdir/data.txt"), notNullValue());
         assertThat(context.getServletContext().getResource("/subdir%5Cdata.txt"), nullValue()); //encoded slosh
-        //TODO these tests return a value, whereas in previous versions of jetty they did not
-        assertThat(context.getServletContext().getResource("/subdir/data.txt%00"), nullValue()); //encoded null - works in ee9
-        //assertThat(context.getServletContext().getResource("//subdir/data.txt"), nullValue());
-        //assertThat(context.getServletContext().getResource("/subdir//data.txt"), nullValue());
-        //assertThat(context.getServletContext().getResource("/subdir%2Fdata.txt"), nullValue()); //encoded slash
+        assertThat(context.getServletContext().getResource("/subdir/data.txt%00"), nullValue()); //encoded null
+        //NOTE that these tests return a resource whereas major versions of jetty before 12 did not
+        assertThat(context.getServletContext().getResource("//subdir/data.txt"), notNullValue());
+        assertThat(context.getServletContext().getResource("/subdir//data.txt"), notNullValue());
+        assertThat(context.getServletContext().getResource("/subdir%2Fdata.txt"), notNullValue()); //encoded slash
         URL subdir = context.getServletContext().getResource("/subdir/");
         assertThat(subdir, notNullValue());
         assertEquals(baseDir, new File(subdir.toURI()).getParentFile());
