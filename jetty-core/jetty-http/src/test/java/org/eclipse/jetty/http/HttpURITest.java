@@ -820,6 +820,16 @@ public class HttpURITest
             Arguments.of("http://localhost:8080/", "http", "localhost", "8080", "/", null, null, null),
             Arguments.of("http://localhost/?x=y", "http", "localhost", null, "/", null, "x=y", null),
 
+            // Empty Paths
+            Arguments.of("http://localhost", "http", "localhost", null, "", null, null, null),
+            Arguments.of("http://localhost;param", "http", "localhost", null, ";param", "param", null, null),
+            Arguments.of("http://localhost?x=y", "http", "localhost", null, "", null, "x=y", null),
+            Arguments.of("http://localhost#frag", "http", "localhost", null, "", null, null, "frag"),
+            Arguments.of("http://localhost:8080", "http", "localhost", "8080", "", null, null, null),
+            Arguments.of("http://localhost:8080;param", "http", "localhost", "8080", ";param", "param", null, null),
+            Arguments.of("http://localhost:8080?x=y", "http", "localhost", "8080", "", null, "x=y", null),
+            Arguments.of("http://localhost:8080#frag", "http", "localhost", "8080", "", null, null, "frag"),
+
             // Simple path with parameter
             Arguments.of("/;param", null, null, null, "/;param", "param", null, null),
             Arguments.of(";param", null, null, null, ";param", "param", null, null),
@@ -1204,7 +1214,6 @@ public class HttpURITest
     public static Stream<String> badAuthorities()
     {
         return Stream.of(
-            "http://#host/path",
             "https:// host/path",
             "https://h st/path",
             "https://h\000st/path",
@@ -1220,7 +1229,7 @@ public class HttpURITest
             "https://user@host:notport/path",
             "https://user:password@host:notport/path",
             "https://user @host.com/",
-            "https://user#@host.com/",
+            // "https://user#@host.com/", TODO this might cause WhatWG compatibility issues
             "https://[notIpv6]/",
             "https://bad[0::1::2::3::4]/"
         );
