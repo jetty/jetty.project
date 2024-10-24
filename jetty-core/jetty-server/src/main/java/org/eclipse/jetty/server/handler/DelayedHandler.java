@@ -180,12 +180,15 @@ public class DelayedHandler extends Handler.Wrapper
                 if (getHandler().handle(request, response, callback))
                     return true;
 
+                // The handle was rejected, so write the error using the original potentially unwrapped request/response/callback
                 Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
             {
+                // The handle failed, so write the error using the original potentially unwrapped request/response/callback
                 Response.writeError(getRequest(), getResponse(), getCallback(), t);
             }
+            // return false to indicate the passed request/response/callback were not used.
             return false;
         }
 
