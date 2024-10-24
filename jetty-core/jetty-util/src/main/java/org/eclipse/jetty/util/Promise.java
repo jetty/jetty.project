@@ -15,6 +15,8 @@ package org.eclipse.jetty.util;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.slf4j.LoggerFactory;
@@ -219,4 +221,86 @@ public interface Promise<C>
             return result;
         }
     }
+
+    /**
+     * An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise} that provides the
+     * {@link InvocationType} of calls to {@link Promise#succeeded(Object)}.
+     * Also provides the {@link BiConsumer} interface as a convenient for working
+     * with {@link CompletableFuture}.
+     * @param <R> The result type
+     */
+    interface Invocable<R> extends org.eclipse.jetty.util.thread.Invocable, Promise<R>, BiConsumer<R, Throwable>
+    {
+        @Override
+        default void accept(R result, Throwable error)
+        {
+            if (error != null)
+                failed(error);
+            else
+                succeeded(result);
+        }
+    }
+
+    /**
+     * Create an {@link Promise.Invocable}
+     * @param invocationType The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType} of calls to the {@link Invocable}
+     * @param promise The promise on which to delegate calls to.
+     * @param <C> The type
+     * @return An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise}.
+     */
+    static <C> Invocable<C> from(org.eclipse.jetty.util.thread.Invocable.InvocationType invocationType, Promise<C> promise)
+    {
+        return new Invocable<C>()
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            @Override
+            public void succeeded(C result)
+            {
+                promise.succeeded(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                promise.failed(x);
+            }
+        };
+    }
+
+    /**
+     * Create an {@link Invocable} that is {@link org.eclipse.jetty.util.thread.Invocable.InvocationType#NON_BLOCKING} because
+     * it executes the callbacks
+     * @param promise The promise on which to delegate calls to.
+     * @param <C> The type
+     * @return An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise}.
+     */
+    static <C> Invocable<C> from(Executor executor, Promise<C> promise)
+    {
+        return new Invocable<C>()
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+
+            @Override
+            public void succeeded(C result)
+            {
+                executor.execute(() -> promise.succeeded(result));
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                executor.execute(() -> promise.failed(x));
+            }
+        };
+    }
+
 }

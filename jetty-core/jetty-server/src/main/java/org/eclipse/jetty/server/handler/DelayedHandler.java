@@ -34,7 +34,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.thread.Invocable;
 
 public class DelayedHandler extends Handler.Wrapper
 {
@@ -191,7 +190,7 @@ public class DelayedHandler extends Handler.Wrapper
             Content.Chunk chunk = super.getRequest().read();
             if (chunk == null)
             {
-                getRequest().demand(Invocable.from(InvocationType.NON_BLOCKING, this::onContent));
+                getRequest().demand(org.eclipse.jetty.util.thread.Invocable.from(InvocationType.NON_BLOCKING, this::onContent));
             }
             else
             {
@@ -266,7 +265,7 @@ public class DelayedHandler extends Handler.Wrapper
                 }
             };
 
-            InvocablePromise<Fields> executeOnFields = Invocable.from(getRequest().getContext(), onFields);
+            Promise.Invocable<Fields> executeOnFields = Promise.from(getRequest().getContext(), onFields);
 
             FormFields.onFields(getRequest(), _charset, onFields, executeOnFields);
         }
@@ -304,7 +303,7 @@ public class DelayedHandler extends Handler.Wrapper
                 }
             };
 
-            InvocablePromise<MultiPartFormData.Parts> executeOnParts = Invocable.from(getRequest().getContext(), onParts);
+            Promise.Invocable<MultiPartFormData.Parts> executeOnParts = Promise.from(getRequest().getContext(), onParts);
 
             MultiPartFormData.onParts(request, request, _contentType, _config, onParts, executeOnParts);
         }

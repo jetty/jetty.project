@@ -66,7 +66,7 @@ public class ServletMultiPartFormData
      */
     static Parts getParts(ServletRequest servletRequest)
     {
-        CompletableFuture<Parts> futureParts = from(servletRequest, Invocable.InvocationType.NON_BLOCKING);
+        CompletableFuture<Parts> futureParts = from(servletRequest, org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING);
         return futureParts.join();
     }
 
@@ -83,7 +83,7 @@ public class ServletMultiPartFormData
      * @param future The action to take when the Parts are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
      *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
      */
-    static void onParts(ServletRequest servletRequest, String contentType, Promise<Parts> immediate, Invocable.InvocablePromise<Parts> future)
+    static void onParts(ServletRequest servletRequest, String contentType, Promise<Parts> immediate, Promise.Invocable<Parts> future)
     {
         CompletableFuture<Parts> futureParts = from(servletRequest, future.getInvocationType(), contentType);
         if (futureParts.isDone())
@@ -122,7 +122,7 @@ public class ServletMultiPartFormData
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(ServletRequest servletRequest)
     {
-        return from(servletRequest, Invocable.InvocationType.NON_BLOCKING, servletRequest.getContentType());
+        return from(servletRequest, org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING, servletRequest.getContentType());
     }
 
     /**
@@ -147,7 +147,7 @@ public class ServletMultiPartFormData
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(ServletRequest servletRequest, String contentType)
     {
-        return from(servletRequest, Invocable.InvocationType.NON_BLOCKING, contentType);
+        return from(servletRequest, org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING, contentType);
     }
 
     /**
@@ -230,7 +230,7 @@ public class ServletMultiPartFormData
                     futureServletParts = new Invocable.InvocableCompletableFuture<>(invocationType);
                     CompletableFuture<Parts> futureConvertParts = futureServletParts;
 
-                    Invocable.InvocablePromise<MultiPartFormData.Parts> onParts = new Invocable.InvocablePromise<>()
+                    Promise.Invocable<MultiPartFormData.Parts> onParts = new Promise.Invocable<>()
                     {
                         @Override
                         public void failed(Throwable x)

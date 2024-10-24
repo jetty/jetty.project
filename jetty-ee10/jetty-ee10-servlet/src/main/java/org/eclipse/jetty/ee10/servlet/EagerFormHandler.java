@@ -22,7 +22,6 @@ import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * Handler to eagerly and asynchronously read and parse {@link MimeTypes.Type#FORM_ENCODED} and
@@ -86,7 +85,7 @@ public class EagerFormHandler extends DelayedHandler
             }
         };
 
-        InvocablePromise<Fields> executeOnFields = Invocable.from(request.getContext(), onFields);
+        Promise.Invocable<Fields> executeOnFields = Promise.from(request.getContext(), onFields);
         FormFields.onFields(request, onFields, executeOnFields);
         return true;
     }
@@ -117,7 +116,7 @@ public class EagerFormHandler extends DelayedHandler
             }
         };
 
-        InvocablePromise<ServletMultiPartFormData.Parts> executeOnParts = Invocable.from(request.getContext(), onParts);
+        Promise.Invocable<ServletMultiPartFormData.Parts> executeOnParts = Promise.from(request.getContext(), onParts);
 
         ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts, executeOnParts);
         return true;
