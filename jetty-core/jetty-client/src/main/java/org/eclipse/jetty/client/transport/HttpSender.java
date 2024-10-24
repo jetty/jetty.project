@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -543,7 +544,7 @@ public abstract class HttpSender
                     // No content after the headers, demand.
                     demanded = true;
                     assert content != null;
-                    content.demand(this::succeeded);
+                    content.demand(Invocable.from(getInvocationType(), this::succeeded));
                     return Action.SCHEDULED;
                 }
                 else

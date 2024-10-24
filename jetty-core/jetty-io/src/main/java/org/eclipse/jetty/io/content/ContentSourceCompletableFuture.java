@@ -14,13 +14,13 @@
 package org.eclipse.jetty.io.content;
 
 import java.io.EOFException;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>A utility class to convert content from a {@link Content.Source} to an instance
- * available via a {@link CompletableFuture}.</p>
+ * available via a {@link java.util.concurrent.CompletableFuture}.</p>
  * <p>An example usage to asynchronously read UTF-8 content is:</p>
  * <pre>{@code
  * public static class CompletableUTF8String extends ContentSourceCompletableFuture<String>;
@@ -53,12 +53,18 @@ import org.eclipse.jetty.io.Content;
  * String s = cs.get();
  * }</pre>
  */
-public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X>
+public abstract class ContentSourceCompletableFuture<X> extends Invocable.InvocableCompletableFuture<X> implements Runnable
 {
     private final Content.Source _content;
 
     public ContentSourceCompletableFuture(Content.Source content)
     {
+        this(content, InvocationType.NON_BLOCKING);
+    }
+
+    public ContentSourceCompletableFuture(Content.Source content, InvocationType invocationType)
+    {
+        super(invocationType);
         _content = content;
     }
 
@@ -66,12 +72,12 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
      * <p>Initiates the parsing of the {@link Content.Source}.</p>
      * <p>For every valid chunk that is read, {@link #parse(Content.Chunk)}
      * is called, until a result is produced that is used to
-     * complete this {@link CompletableFuture}.</p>
+     * complete this {@link java.util.concurrent.CompletableFuture}.</p>
      * <p>Internally, this method is called multiple times to progress
      * the parsing in response to {@link Content.Source#demand(Runnable)}
      * calls.</p>
      * <p>Exceptions thrown during parsing result in this
-     * {@link CompletableFuture} to be completed exceptionally.</p>
+     * {@link java.util.concurrent.CompletableFuture} to be completed exceptionally.</p>
      */
     public void parse()
     {
@@ -80,7 +86,7 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
             Content.Chunk chunk = _content.read();
             if (chunk == null)
             {
-                _content.demand(this::parse);
+                _content.demand(this);
                 return;
             }
             if (Content.Chunk.isFailure(chunk))
@@ -124,6 +130,12 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
                 return;
             }
         }
+    }
+
+    @Override
+    public void run()
+    {
+        parse();
     }
 
     /**

@@ -14,7 +14,11 @@
 package org.eclipse.jetty.util.thread;
 
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +30,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InvocableTest
 {
@@ -51,6 +57,41 @@ public class InvocableTest
         assertThat(Invocable.combine(EITHER, BLOCKING), is(BLOCKING));
         assertThat(Invocable.combine(EITHER, NON_BLOCKING), is(NON_BLOCKING));
         assertThat(Invocable.combine(EITHER, EITHER), is(EITHER));
+
+        assertThat(Invocable.combineTypes(null, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(null, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(null, NON_BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(null, EITHER), is(BLOCKING));
+
+        assertThat(Invocable.combineTypes(BLOCKING, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, NON_BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER), is(BLOCKING));
+
+        assertThat(Invocable.combineTypes(NON_BLOCKING, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, NON_BLOCKING), is(NON_BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER), is(NON_BLOCKING));
+
+        assertThat(Invocable.combineTypes(EITHER, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, NON_BLOCKING), is(NON_BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, EITHER), is(EITHER));
+
+        assertThat(Invocable.combineTypes(EITHER, EITHER, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, EITHER, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, EITHER, NON_BLOCKING), is(NON_BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, EITHER, EITHER), is(EITHER));
+
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER, NON_BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER, EITHER), is(BLOCKING));
+
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER, NON_BLOCKING), is(NON_BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER, EITHER), is(NON_BLOCKING));
     }
 
     @Test
@@ -79,5 +120,84 @@ public class InvocableTest
         history.clear();
         r123.run();
         assertThat(history, contains("R1", "R2", "R3"));
+    }
+
+    @Test
+    public void testBlockingInvocableCompletableFuture() throws Exception
+    {
+        CompletableFuture<String> future = new Invocable.InvocableCompletableFuture<>(BLOCKING);
+
+        // We can block in a passed function
+        CountDownLatch inFunction = new CountDownLatch(1);
+        CountDownLatch blockInFunction = new CountDownLatch(1);
+        future.thenRun(() ->
+        {
+            try
+            {
+                inFunction.countDown();
+                assertTrue(blockInFunction.await(5, TimeUnit.SECONDS));
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // We can use the functional APIs with blocking and unblocking callbacks
+        CountDownLatch thenRun = new CountDownLatch(2);
+        future.thenRun(thenRun::countDown);
+        future.thenRun(Invocable.from(NON_BLOCKING, thenRun::countDown));
+
+        // Since the future is blocking, we cannot use the blocking APIs else we risk deadlock
+        assertThrows(IllegalStateException.class, future::get);
+        assertThrows(IllegalStateException.class, future::join);
+
+        // The invocation type is blocking
+        assertThat(Invocable.getInvocationType(future), is(BLOCKING));
+
+        // Completion thread calls functions and blocks there
+        Thread completionThread = new Thread(() -> future.complete("result"));
+        completionThread.start();
+        assertTrue(inFunction.await(1, TimeUnit.SECONDS));
+        completionThread.join(100);
+        assertTrue(completionThread.isAlive());
+        assertTrue(future.isDone());
+
+        // let functions run to completion
+        blockInFunction.countDown();
+        assertTrue(thenRun.await(5, TimeUnit.SECONDS));
+
+        // We can now use the blocking APIs, as we know they will not actually block
+        assertThat(future.get(), is("result"));
+    }
+
+    @Test
+    public void testNonBlockingInvocableCompletableFuture() throws Exception
+    {
+        CompletableFuture<String> future = new Invocable.InvocableCompletableFuture<>(NON_BLOCKING);
+
+        // We cannot pass blocking functions
+        CountDownLatch thenRun = new CountDownLatch(2);
+        assertThrows(IllegalStateException.class, () -> future.thenRun(thenRun::countDown));
+
+        // But we can pass non-blocking functions
+        future.thenRun(Invocable.from(NON_BLOCKING, thenRun::countDown));
+
+        // We can use the blocking APIs, as any wake ups are non blocking.
+        assertThrows(TimeoutException.class, () -> future.get(10, TimeUnit.MILLISECONDS));
+
+        // The invocation type is non blocking
+        assertThat(Invocable.getInvocationType(future), is(NON_BLOCKING));
+
+        // completion does not block
+        future.complete("result");
+        assertTrue(future.isDone());
+
+        // We can still use the blocking APIs
+        assertThat(future.get(), is("result"));
+
+        // And we can now pass a blocking function
+        future.thenRun(thenRun::countDown);
+        assertTrue(thenRun.await(5, TimeUnit.SECONDS));
     }
 }

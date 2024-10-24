@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpField;
@@ -24,6 +23,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartConfig;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 
 public class DelayedHandler extends Handler.Wrapper
@@ -112,6 +114,14 @@ public class DelayedHandler extends Handler.Wrapper
         return switch (mimeType)
         {
             case FORM_ENCODED -> new UntilFormDelayedProcess(handler, request, response, callback, contentType);
+            case MULTIPART_FORM_DATA ->
+            {
+                if (request.getContext().getAttribute(MultiPartConfig.class.getName()) instanceof MultiPartConfig mpc)
+                    yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, mpc);
+                if (getServer().getAttribute(MultiPartConfig.class.getName()) instanceof MultiPartConfig mpc)
+                    yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, mpc);
+                yield null;
+            }
             default -> new UntilContentDelayedProcess(handler, request, response, callback);
         };
     }
@@ -180,7 +190,7 @@ public class DelayedHandler extends Handler.Wrapper
             Content.Chunk chunk = super.getRequest().read();
             if (chunk == null)
             {
-                getRequest().demand(this::onContent);
+                getRequest().demand(org.eclipse.jetty.util.thread.Invocable.from(InvocationType.NON_BLOCKING, this::onContent));
             }
             else
             {
@@ -240,30 +250,62 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
-            CompletableFuture<Fields> futureFormFields = FormFields.from(getRequest(), _charset);
+            Promise<Fields> onFields = new Promise<>()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                }
 
-            // if we are done already, then we are still in the scope of the original process call and can
-            // process directly, otherwise we must execute a call to process as we are within a serialized
-            // demand callback.
-            futureFormFields.whenComplete(futureFormFields.isDone() ? this::process : this::executeProcess);
+                @Override
+                public void succeeded(Fields result)
+                {
+                    process();
+                }
+            };
+
+            Promise.Invocable<Fields> executeOnFields = Promise.from(getRequest().getContext(), onFields);
+
+            FormFields.onFields(getRequest(), _charset, onFields, executeOnFields);
+        }
+    }
+
+    protected static class UntilMultipartDelayedProcess extends DelayedProcess
+    {
+        private final String _contentType;
+        private final MultiPartConfig _config;
+
+        public UntilMultipartDelayedProcess(Handler handler, Request request, Response response, Callback callback, String contentType, MultiPartConfig config)
+        {
+            super(handler, request, response, callback);
+            _contentType = contentType;
+            _config = config;
         }
 
-        private void process(Fields fields, Throwable x)
+        @Override
+        protected void delay()
         {
-            if (x == null)
-                super.process();
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
-        }
+            Request request = getRequest();
 
-        private void executeProcess(Fields fields, Throwable x)
-        {
-            if (x == null)
-                // We must execute here as even though we have consumed all the input, we are probably
-                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(super::process);
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+            Promise<MultiPartFormData.Parts> onParts = new Promise<>()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                }
+
+                @Override
+                public void succeeded(MultiPartFormData.Parts result)
+                {
+                    process();
+                }
+            };
+
+            Promise.Invocable<MultiPartFormData.Parts> executeOnParts = Promise.from(getRequest().getContext(), onParts);
+
+            MultiPartFormData.onParts(request, request, _contentType, _config, onParts, executeOnParts);
         }
     }
 }

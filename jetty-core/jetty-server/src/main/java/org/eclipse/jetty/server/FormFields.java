@@ -18,6 +18,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 
 import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
@@ -82,9 +84,156 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param request The request to which to associate the fields with
      * @param fields A {@link CompletableFuture} that will provide either the fields or a failure.
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static void set(Request request, CompletableFuture<Fields> fields)
     {
         request.setAttribute(FormFields.class.getName(), fields);
+    }
+
+    /**
+     * Set a {@link Fields} or related failure for the request
+     * @param request The request to which to associate the fields with
+     * @param fields A {@link CompletableFuture} that will provide either the fields or a failure.
+     */
+    public static void setFields(Request request, Fields fields)
+    {
+        request.setAttribute(FormFields.class.getName(), fields);
+    }
+
+    /**
+     * Get the Fields from a request. If the Fields have not been set, then attempt to parse them
+     * from the Request content, blocking if necessary.   If the Fields have previously been read asynchronously
+     * by {@link #onFields(Request, Promise, Promise.Invocable)} or similar, then those field will return
+     * and this method will not block.
+     * <p>
+     * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * @param request The request to get or read the Fields from
+     * @return the Fields
+     * @see #onFields(Request, Promise, Promise.Invocable)
+     * @see #onFields(Request, Charset, Promise, Promise.Invocable)
+     * @see #getFields(Request, int, int)
+     */
+    public static Fields getFields(Request request)
+    {
+        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
+        Charset charset = getFormEncodedCharset(request);
+        CompletableFuture<Fields> fields = from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength);
+        return fields.join();
+    }
+
+    /**
+     * Get the Fields from a request. If the Fields have not been set, then attempt to parse them
+     * from the Request content, blocking if necessary.   If the Fields have previously been read asynchronously
+     * by {@link #onFields(Request, Promise, Promise.Invocable)} or similar, then those field will return
+     * and this method will not block.
+     * <p>
+     * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * @param request The request to get or read the Fields from
+     * @param maxFields The maximum number of fields to accept
+     * @param maxLength The maximum length of fields
+     * @return the Fields
+     * @see #onFields(Request, Promise, Promise.Invocable)
+     * @see #onFields(Request, Charset, Promise, Promise.Invocable)
+     * @see #getFields(Request)
+     */
+    public static Fields getFields(Request request, int maxFields, int maxLength)
+    {
+        Charset charset = getFormEncodedCharset(request);
+        CompletableFuture<Fields> fields = from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength);
+        return fields.join();
+    }
+
+    /**
+     * Asynchronously read and parse FormFields from a {@link Request}.
+     * <p>
+     * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * @param request The request to get or read the Fields from
+     * @param future The action to take when the FormFields are available. The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
+     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
+     * @see #onFields(Request, Charset, Promise, Promise.Invocable)
+     * @see #getFields(Request)
+     * @see #getFields(Request, int, int)
+     */
+    public static void onFields(Request request, Promise.Invocable<Fields> future)
+    {
+        onFields(request, future, future);
+    }
+
+    /**
+     * Asynchronously read and parse FormFields from a {@link Request}.
+     * <p>
+     * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * @param request The request to get or read the Fields from
+     * @param immediate The action to take if the FormFields are available immediately (from within the scope of the call to this method).
+     * @param future The action to take when the FormFields are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
+     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
+     * @see #onFields(Request, Charset, Promise, Promise.Invocable)
+     * @see #getFields(Request)
+     * @see #getFields(Request, int, int)
+     */
+    public static void onFields(Request request, Promise<Fields> immediate, Promise.Invocable<Fields> future)
+    {
+        InvocationType invocationType = future.getInvocationType();
+        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
+        Charset charset = getFormEncodedCharset(request);
+        onFields(from(request, invocationType, request, charset, maxFields, maxLength), immediate, future);
+    }
+
+    /**
+     * Actions to take when parsing FormFields asynchronously from a request is complete
+     * <p>
+     * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * @param request The request to get or read the Fields from
+     * @param charset The charset of the form.
+     * @param immediate The action to take if the FormFields are available immediately (from within the scope of the call to this method).
+     * @param future The action to take when the FormFields are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
+     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
+     * @see #onFields(Request, Promise, Promise.Invocable)
+     * @see #getFields(Request)
+     * @see #getFields(Request, int, int)
+     */
+    public static void onFields(Request request, Charset charset, Promise<Fields> immediate, Promise.Invocable<Fields> future)
+    {
+        InvocationType invocationType = future.getInvocationType();
+        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        onFields(from(request, invocationType, request, charset, maxFields, maxLength), immediate, future);
+    }
+
+    private static void onFields(CompletableFuture<Fields> futureFields, Promise<Fields> immediate, Promise.Invocable<Fields> future)
+    {
+        if (futureFields.isDone())
+        {
+            Fields fields = null;
+            Throwable error = null;
+            try
+            {
+                fields = futureFields.get();
+            }
+            catch (ExecutionException t)
+            {
+                error = t.getCause();
+            }
+            catch (Throwable t)
+            {
+                error = t;
+            }
+            if (error != null)
+                immediate.failed(error);
+            else
+                immediate.succeeded(fields);
+        }
+        else
+        {
+            futureFields.whenComplete(future);
+        }
     }
 
     /**
@@ -93,6 +242,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @see #from(Request)
      *
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> get(Request request)
     {
         Object attr = request.getAttribute(FormFields.class.getName());
@@ -109,8 +259,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      *                using the classname as the attribute name, else the request is used
      *                as a {@link Content.Source} from which to read the fields and set the attribute.
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
-     * @see #from(Content.Source, Attributes, Charset, int, int)
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> from(Request request)
     {
         int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
@@ -125,8 +275,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      *                as a {@link Content.Source} from which to read the fields and set the attribute.
      * @param charset the {@link Charset} to use for byte to string conversion.
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
-     * @see #from(Content.Source, Attributes, Charset, int, int)
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> from(Request request, Charset charset)
     {
         int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
@@ -142,8 +292,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param maxFields The maximum number of fields to be parsed
      * @param maxLength The maximum total size of the fields
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
-     * @see #from(Content.Source, Attributes, Charset, int, int)
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> from(Request request, int maxFields, int maxLength)
     {
         return from(request, getFormEncodedCharset(request), maxFields, maxLength);
@@ -158,25 +308,14 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param maxFields The maximum number of fields to be parsed
      * @param maxLength The maximum total size of the fields
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
-     * @see #from(Content.Source, Attributes, Charset, int, int)
      */
+    @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> from(Request request, Charset charset, int maxFields, int maxLength)
     {
-        return from(request, request, charset, maxFields, maxLength);
+        return from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength);
     }
 
-    /**
-     * Find or create a {@link FormFields} from a {@link Content.Source}.
-     * @param source The {@link Content.Source} from which to read the fields.
-     * @param attributes The {@link Attributes} in which to look for an existing {@link CompletableFuture} of
-     *                   {@link FormFields}, using the classname as the attribute name.  If not found the attribute
-     *                   is set with the created {@link CompletableFuture} of {@link FormFields}.
-     * @param charset the {@link Charset} to use for byte to string conversion.
-     * @param maxFields The maximum number of fields to be parsed
-     * @param maxLength The maximum total size of the fields
-     * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
-     */
-    static CompletableFuture<Fields> from(Content.Source source, Attributes attributes, Charset charset, int maxFields, int maxLength)
+    static CompletableFuture<Fields> from(Content.Source source, InvocationType invocationType, Attributes attributes, Charset charset, int maxFields, int maxLength)
     {
         Object attr = attributes.getAttribute(FormFields.class.getName());
         if (attr instanceof FormFields futureFormFields)
@@ -187,7 +326,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         if (charset == null)
             return EMPTY;
 
-        FormFields futureFormFields = new FormFields(source, charset, maxFields, maxLength);
+        FormFields futureFormFields = new FormFields(source, invocationType, charset, maxFields, maxLength);
         attributes.setAttribute(FormFields.class.getName(), futureFormFields);
         futureFormFields.parse();
         return futureFormFields;
@@ -217,9 +356,9 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     private int _percent = 0;
     private byte _percentCode;
 
-    private FormFields(Content.Source source, Charset charset, int maxFields, int maxSize)
+    private FormFields(Content.Source source, InvocationType invocationType, Charset charset, int maxFields, int maxSize)
     {
-        super(source);
+        super(source, invocationType);
         _maxFields = maxFields;
         _maxLength = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);

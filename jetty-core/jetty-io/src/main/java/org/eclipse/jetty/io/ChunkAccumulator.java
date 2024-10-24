@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CompletableTask;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * An accumulator of {@link Content.Chunk}s used to facilitate minimal copy
@@ -164,7 +165,7 @@ public class ChunkAccumulator
         return task.start();
     }
 
-    private abstract static class AccumulatorTask<T> extends CompletableTask<T>
+    private abstract static class AccumulatorTask<T> extends CompletableTask<T> implements Invocable
     {
         private final Content.Source _source;
         private final ChunkAccumulator _accumulator = new ChunkAccumulator();
@@ -222,6 +223,16 @@ public class ChunkAccumulator
             }
         }
 
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        /**
+         * Implementations must be {@link InvocationType#NON_BLOCKING non-blocking},
+         * or {@link #getInvocationType()} must be overridden accordingly.
+         */
         protected abstract T take(ChunkAccumulator accumulator);
     }
 }
