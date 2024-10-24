@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.compression</groupId>
+    <artifactId>jetty-compression</artifactId>
+    <version>12.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-compression-brotli</artifactId>
+  <packaging>jar</packaging>
+  <name>Core :: Compression :: Brotli Support</name>
+  <description>Jetty Core Compression :: Brotli Support</description>
+
+  <properties>
+    <brotli4j.version>1.17.0</brotli4j.version>
+    <bundle-symbolic-name>${project.groupId}.brotli</bundle-symbolic-name>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.aayushatharva.brotli4j</groupId>
+      <artifactId>brotli4j</artifactId>
+      <version>${brotli4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-buffer</artifactId>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.compression</groupId>
+      <artifactId>jetty-compression-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>
