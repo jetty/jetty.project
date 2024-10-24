@@ -347,10 +347,18 @@ public class WebSocketProxyTest
         {
             switch (frame.getOpCode())
             {
-                case OpCode.PING -> pingMessages.add(BufferUtil.copy(frame.getPayload()));
-                case OpCode.PONG -> pongMessages.add(BufferUtil.copy(frame.getPayload()));
+                case OpCode.PING ->
+                {
+                    pingMessages.add(BufferUtil.copy(frame.getPayload()));
+                    session.sendPong(frame.getPayload(), callback);
+                }
+                case OpCode.PONG ->
+                {
+                    pongMessages.add(BufferUtil.copy(frame.getPayload()));
+                    callback.succeed();
+                }
+                default -> callback.succeed();
             }
-            callback.succeed();
         }
     }
 

@@ -20,10 +20,18 @@ import org.eclipse.jetty.websocket.core.Frame;
 public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Frame
 {
     private final Frame frame;
+    private final byte effectiveOpCode;
 
+    @Deprecated
     public JettyWebSocketFrame(Frame frame)
     {
+        this(frame, frame.getOpCode());
+    }
+
+    JettyWebSocketFrame(Frame frame, byte effectiveOpCode)
+    {
         this.frame = frame;
+        this.effectiveOpCode = effectiveOpCode;
     }
 
     @Override
@@ -90,6 +98,12 @@ public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Fram
     public boolean isRsv3()
     {
         return frame.isRsv3();
+    }
+
+    @Override
+    public byte getEffectiveOpCode()
+    {
+        return effectiveOpCode;
     }
 
     @Override
