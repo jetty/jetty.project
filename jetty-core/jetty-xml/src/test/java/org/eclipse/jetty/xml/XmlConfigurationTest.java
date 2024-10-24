@@ -218,6 +218,11 @@ public class XmlConfigurationTest
         Map<String, String> concurrentMap = (Map<String, String>)configuration.getIdMap().get("concurrentMap");
         assertThat(concurrentMap, instanceOf(ConcurrentMap.class));
         assertEquals(concurrentMap.get("KEY"), "ITEM");
+
+        if ("org/eclipse/jetty/xml/configureWithElements.xml".equals(configure))
+        {
+            System.err.println("Static call with TestImpl: " + ExampleConfiguration.calledWithClass);
+        }
     }
 
     @ParameterizedTest
@@ -811,11 +816,11 @@ public class XmlConfigurationTest
         assertThat(methods, Matchers.contains(
             TestOrder.class.getMethod("call"),
             TestOrder.class.getMethod("call", int.class),
-            TestOrder.class.getMethod("call", Abc.class),
-            TestOrder.class.getMethod("call", Aaa.class),
             TestOrder.class.getMethod("call", String.class),
             TestOrder.class.getMethod("call", Bbb.class),
             TestOrder.class.getMethod("call", Ccc.class),
+            TestOrder.class.getMethod("call", Abc.class),
+            TestOrder.class.getMethod("call", Aaa.class),
             TestOrder.class.getMethod("call", Object.class),
             TestOrder.class.getMethod("call", String[].class),
             TestOrder.class.getMethod("call", String.class, String[].class)
@@ -2112,21 +2117,29 @@ public class XmlConfigurationTest
         aaa(null);
         bbb(null);
         ccc(null);
-
-        Stream.of(XmlConfigurationTest.class.getMethods())
-            .filter(m -> m.getName().length() == 3)
-            .filter(m -> !m.getName().equals("foo"))
-            .sorted(EXECUTABLE_COMPARATOR)
-            .map(Executable::toGenericString)
-            .forEach(System.out::println);
+        Logger slf4jLogger = LoggerFactory.getLogger(XmlConfiguration.class);
+        if (slf4jLogger.isDebugEnabled())
+        {
+            Stream.of(XmlConfigurationTest.class.getMethods())
+                .filter(m -> m.getName().length() == 3)
+                .filter(m -> !m.getName().equals("foo"))
+                .sorted(EXECUTABLE_COMPARATOR)
+                .map(Executable::toGenericString)
+                .forEach(System.out::println);
+        }
 
         List<Method> methods = Arrays.asList(Arrays.stream(XmlConfigurationTest.class.getMethods())
             .filter(m -> m.getName().length() == 3)
+            .sorted(EXECUTABLE_COMPARATOR)
             .toArray(Method[]::new));
 
         // The implementor must also ensure that the relation is transitive: ((compare(x, y)>0) && (compare(y, z)>0)) implies compare(x, z)>0
         assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(2))));
         assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(2))));
+        // Test that it is als reflexive
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(-EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(0))));
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(2)), is(-EXECUTABLE_COMPARATOR.compare(methods.get(2), methods.get(0))));
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(2)), is(-EXECUTABLE_COMPARATOR.compare(methods.get(2), methods.get(1))));
     }
 
     public void aaa(Aaa ignored)
@@ -2165,15 +2178,21 @@ public class XmlConfigurationTest
             .sorted(EXECUTABLE_COMPARATOR)
             .map(Executable::toGenericString)
             .collect(Collectors.toList());
-        orderedMethodIds.forEach(System.out::println);
+
+        Logger slf4jLogger = LoggerFactory.getLogger(XmlConfiguration.class);
+        if (slf4jLogger.isDebugEnabled())
+        {
+            orderedMethodIds.forEach(System.out::println);
+        }
+
         String[] expectedOrder = {
-            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo()", // favor fewer args
-            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int)", // favor primitives over non-primitives
-            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.temporal.Temporal)", // favor over Instant
-            "public int org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.String)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo()", // favour fewer args
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int)", // favour primitives over non-primitives
+            "public int org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.String)", //favour classes over interfaces
             "public java.util.Locale org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.nio.charset.Charset)",
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.Instant)",
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.util.Locale)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.temporal.Temporal)",
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int,java.lang.String)",
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.String,int)",
             "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int,java.lang.String,java.lang.String)",

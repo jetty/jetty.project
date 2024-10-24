@@ -110,6 +110,32 @@ public class XmlConfiguration
         .toList();
     private static final Pool<ConfigurationParser> __parsers =
         new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, Math.min(8, Runtime.getRuntime().availableProcessors()));
+
+    /**
+     * Order two classes to prefer a non Object type as the highest ranking, followed by
+     * an interface type. Where both are the Object type, or both are an interface they
+     * are considered equal.
+     *
+     * @param t1 the first class to compare
+     * @param t2 the second class to compare
+     * @return 1 if t1 is a non Object class or an interface type, return 0 if both are
+     * interfaces or the Object class, return -1 if only t2 is the Object class or an
+     * interface.
+     */
+    public static int compare(Class<?> t1, Class<?> t2)
+    {
+        if (t1 == Object.class)
+        {
+            if (t2 == Object.class)
+                return 0;
+            return 1;
+        }
+        if (t2 == Object.class)
+            return -1;
+
+        return Boolean.compare(t1.isInterface(), t2.isInterface());
+    }
+
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
         // Favour methods with less parameters
@@ -135,8 +161,8 @@ public class XmlConfiguration
                         compare = Boolean.compare(t2.isPrimitive(), t1.isPrimitive());
                         if (compare == 0)
                         {
-                            // prefer interfaces
-                            compare = Boolean.compare(t2.isInterface(), t1.isInterface());
+                            // prefer (non Object.class) classes over interfaces
+                            compare = compare(t1, t2);
 
                             if (compare == 0)
                             {
@@ -1007,6 +1033,7 @@ public class XmlConfiguration
 
                 try
                 {
+                    System.err.println("Invoking: " + method);
                     return invokeMethod(method, obj, arguments);
                 }
                 catch (IllegalAccessException | IllegalArgumentException e)
