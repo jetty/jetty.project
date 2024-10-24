@@ -212,7 +212,7 @@ public class SerializedInvoker
         @Override
         public InvocationType getInvocationType()
         {
-            return InvocationType.BLOCKING;
+            return Invocable.getInvocationType(_task);
         }
 
         Link next()
@@ -269,7 +269,7 @@ public class SerializedInvoker
         }
     }
 
-    private class NamedRunnable implements Runnable
+    private class NamedRunnable implements Runnable, Invocable
     {
         private static final Logger LOG = LoggerFactory.getLogger(NamedRunnable.class);
 
@@ -302,6 +302,12 @@ public class SerializedInvoker
         public void run()
         {
             delegate.run();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return Invocable.getInvocationType(delegate);
         }
 
         @Override
