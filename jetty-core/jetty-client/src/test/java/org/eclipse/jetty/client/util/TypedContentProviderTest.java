@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Fields;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -96,7 +97,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             protected void service(Request request, Response response) throws Throwable
             {
                 assertEquals("POST", request.getMethod());
-                assertEquals(contentType, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                assertThat(request.getHeaders().get(HttpHeader.CONTENT_TYPE), Matchers.equalToIgnoringCase(contentType));
                 assertEquals(content, Content.Source.asString(request));
             }
         });

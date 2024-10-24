@@ -202,18 +202,26 @@ $ java -jar $JETTY_HOME/start.jar -Dmyapps.dir=/opt/myapps
 [[env-context-xml]]
 == Deploying Environment Specific Context XML Files
 
-A xref:xml/index.adoc[Jetty context XML file] file can be applied to _all_ webapps deployed to a particular `environment` by adding a file named `{ee-all}.properties` containing the location of the file.
+xref:xml/index.adoc[Jetty context XML file] files can be applied to _all_ webapps deployed to a particular `environment`.
 
-This environment-specific Jetty context XML file will be applied to the webapps _before_ any context XML file associated with the webapp.
-Thus, it can be used to configure general defaults to all webapps for a given `environment`, allowing a webapp-specific context XML file to further refine or override that configuration.
+Add a properties file to the deployment directory that contains a property naming the location of the xml file to apply.
+The properties file name must be prefixed by the name of the `environment`.
+For example `ee8.properties, ee8-more.properties ee8-other.properties` would all apply to all contexts deployed in the `ee8` environment.
+
+If the property file(s) contain one or more properties whose names are prefixed with `org.eclipse.jetty.deploy.environmentXml`, then their values are used as additional context XML files to apply to all contexts deployed in the corresponding environment.
+So for example `org.eclipse.jetty.deploy.environmentXml, org.eclipse.jetty.deploy.environmentXml.more, org.eclipse.jetty.deploy.environmentXml.other` are all acceptable as names.
+Each property configures the location of a context XML file to apply to a context when it is being created and deployed.
+The location may be either absolute or relative to _the parent of the deployment directory_.
+So if your webapp deployment directory is `$JETTY_BASE/webapps`, then `$JETTY_BASE` will be used to resolve any relative filenames.
+
+All environment-specific Jetty context XML files will be applied to the webapp _before_ any context XML file associated with the webapp.
+The order in which they are applied is determined by _the name of the properties that define them_.
 
 IMPORTANT: The contents of the environment specific context XML file may only contain references to classes appropriate for that environment.
 
-The `{ee-all}.properties` file must be in the same directory as the webapp being deployed.
-It must contain the property `jetty.deploy.environmentXml` set to the location of the context XML file.
-The location may be either absolute or relative to the parent of the deployment directory (usually `$JETTY_BASE`).
+For example, given the previous example of a `$JETTY_BASE/webapps/wiki.xml` and its accompanying `$JETTY_BASE/webapps/wiki.properties` file that declares the `wiki` webapp should be deployed to environment `{ee-current}`, files called `$JETTY_BASE/webapps/{ee-current}.properties` and `$JETTY_BASE/webapps/{ee-current}-feature.properties` can be defined to further configure the webapp.
 
-For example, given the previous example of a `$JETTY_BASE/webapps/wiki.xml` and its accompanying `$JETTY_BASE/webapps/wiki.properties` file that declares the `wiki` webapp should be deployed to environment `{ee-current}`, a file called `$JETTY_BASE/webapps/{ee-current}.properties` can be defined containing the following:
+The `{ee-current}.properties` file contains:
 
 .{ee-current}.properties
 [,properties,subs=attributes+]
@@ -221,21 +229,65 @@ For example, given the previous example of a `$JETTY_BASE/webapps/wiki.xml` and 
 jetty.deploy.environmentXml=etc/{ee-current}-context.xml
 ----
 
+The `{ee-current}-feature.properties` file contains:
+
+.{ee-current}-feature.properties
+[,properties,subs=attributes+]
+----
+jetty.deploy.environmentXml.feature=etc/{ee-current}-feature.xml
+----
+
+The `{ee-current}-context.xml` file contains:
+
+.{ee-current}-context.xml
+[,xml,subs="attributes+,+quotes"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
+  <Call name="setAttribute">
+    <Arg>common</Arg>
+    <Arg>value</Arg>
+  </Call>
+</Configure>
+----
+
+The `{ee-current}-feature.xml` file contains:
+
+.{ee-current}-feature.xml
+[,xml,subs="attributes+,+quotes"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
+  <Call name="addEventListener">
+    <Arg>
+      <New class="com.example.MyListenerFeature"/>
+    </Arg>
+  </Call>
+</Configure>
+----
+
+
 The directory structure would look like this:
 
 .directory structure
 [,properties,subs=attributes+]
 ----
 $JETTY_BASE
-├── etc
-│   └── {ee-current}-context.xml
-└── webapps
-    ├── {ee-current}.properties
-    ├── wiki.properties
-    └── wiki.xml
+|- etc
+│  |-{ee-current}-context.xml
+|  |-{ee-current}-feature.xml
+|- webapps
+    |-{ee-current}.properties
+    |-{ee-current}-feature.properties
+    |-wiki.properties
+    |- wiki.xml
 ----
 
-The contents of the `$JETTY_BASE/etc/{ee-current}-context.xml` file will be applied to the `wiki` webapp instance _before_ the `wiki.xml`, allowing the contents of the latter to override the contents of the former.
+The contents of the `$JETTY_BASE/etc/{ee-current}-context.xml` then `$JETTY_BASE/etc/{ee-current}-feature.xml` files will be applied to the `wiki` webapp instance _before_ `wiki.xml`, allowing the contents of the latter to override the contents of the former.
 
 == WEB-INF/jetty-{ee-all}-web.xml
 
@@ -264,7 +316,7 @@ The JNDI entry must be _defined_ in a xref:jndi/index.adoc#xml[Jetty XML file], 
 <Configure id="wac" class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
-    #<New class="org.eclipse.jetty.plus.jndi.Resource">
+    <New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>jdbc/myds</Arg>
      <Arg>
@@ -274,7 +326,7 @@ The JNDI entry must be _defined_ in a xref:jndi/index.adoc#xml[Jetty XML file], 
            <Set name="password">password</Set>
         </New>
      </Arg>
-  </New>#
+  </New>
 </Configure>
 ----
 

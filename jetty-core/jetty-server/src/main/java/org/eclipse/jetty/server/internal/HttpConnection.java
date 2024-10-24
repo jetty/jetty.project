@@ -345,7 +345,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (LOG.isDebugEnabled())
             LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
-        _requestBuffer.release();
+        if (_requestBuffer != null)
+            _requestBuffer.release();
         _requestBuffer = null;
     }
 
@@ -931,7 +932,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public void onFailure(final Throwable x)
         {
             Callback callback = resetCallback();
-            failedCallback(callback, x);
+            callback.failed(x);
         }
 
         @Override
@@ -1044,7 +1045,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream == null)
             {
-                stream = newHttpStream("GET", "/badMessage", HttpVersion.HTTP_1_0);
+                stream = newHttpStream("BAD", "/badMessage", HttpVersion.HTTP_1_0);
                 _stream.set(stream);
                 _httpChannel.setHttpStream(stream);
             }
@@ -1053,12 +1054,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // This is also done by HttpChannel.onFailure(), but here we can build
             // a request with more information, such as the method, the URI, etc.
             if (_httpChannel.getRequest() == null)
-            {
-                HttpURI uri = stream._uri;
-                if (uri.hasViolations())
-                    uri = HttpURI.from("/badURI");
-                _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
-            }
+                _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, stream._uri, stream._version, HttpFields.EMPTY));
 
             Runnable task = _httpChannel.onFailure(_failure);
             if (task != null)
@@ -1274,7 +1270,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
-                _httpChannel.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
+                _httpChannel.getRequest().setAttribute(ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY, _complianceViolations);
                 _complianceViolations = null;
             }
 

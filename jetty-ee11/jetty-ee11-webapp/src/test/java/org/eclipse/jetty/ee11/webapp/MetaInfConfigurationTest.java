@@ -557,6 +557,7 @@ public class MetaInfConfigurationTest
                 .stream()
                 .sorted(ResourceCollators.byName(true))
                 .map(Resource::getURI)
+                .map(URIUtil::unwrapContainer)
                 .map(URI::toASCIIString)
                 .toList();
             // we "correct" the bad file URLs that come from the ClassLoader

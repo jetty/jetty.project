@@ -190,7 +190,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
          *
          * @return the expiration time in nanoseconds, or {@link Long#MAX_VALUE} if this entity does not expire
          */
-        public long getExpireNanoTime();
+        long getExpireNanoTime();
     }
 
     private class Timeouts extends CyclicTimeout

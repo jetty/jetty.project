@@ -17,21 +17,16 @@ import java.net.Socket;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -40,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Disabled // TODO
 public class NotAcceptingTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(NotAcceptingTest.class);
     private final long idleTimeout = 2000;
     Server server;
     LocalConnector localConnector;
@@ -361,94 +355,5 @@ public class NotAcceptingTest
         assertThat(localConnector.isAccepting(), is(true));
         assertThat(blockingConnector.isAccepting(), is(true));
         assertThat(asyncConnector.isAccepting(), is(true));
-    }
-
-    @Test
-    public void testConnectionLimit() throws Exception
-    {
-        server.addBean(new ConnectionLimit(9, server));
-        server.setHandler(new HelloHandler());
-
-        server.start();
-
-        LOG.debug("CONNECT:");
-        try (
-            LocalEndPoint local0 = localConnector.connect();
-            LocalEndPoint local1 = localConnector.connect();
-            LocalEndPoint local2 = localConnector.connect();
-            Socket blocking0 = new Socket("localhost", blockingConnector.getLocalPort());
-            Socket blocking1 = new Socket("localhost", blockingConnector.getLocalPort());
-            Socket blocking2 = new Socket("localhost", blockingConnector.getLocalPort());
-            Socket async0 = new Socket("localhost", asyncConnector.getLocalPort());
-            Socket async1 = new Socket("localhost", asyncConnector.getLocalPort());
-            Socket async2 = new Socket("localhost", asyncConnector.getLocalPort());
-        )
-        {
-            String expectedContent = "Hello" + System.lineSeparator();
-
-            LOG.debug("LOCAL:");
-            for (LocalEndPoint client : new LocalEndPoint[]{local0, local1, local2})
-            {
-                client.addInputAndExecute(BufferUtil.toBuffer("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-                HttpTester.Response response = HttpTester.parseResponse(client.getResponse());
-                assertThat(response.getStatus(), is(200));
-                assertThat(response.getContent(), is(expectedContent));
-            }
-
-            LOG.debug("NETWORK:");
-            for (Socket client : new Socket[]{blocking0, blocking1, blocking2, async0, async1, async2})
-            {
-                HttpTester.Input in = HttpTester.from(client.getInputStream());
-                client.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\n\r\n".getBytes());
-                HttpTester.Response response = HttpTester.parseResponse(in);
-                assertThat(response.getStatus(), is(200));
-                assertThat(response.getContent(), is(expectedContent));
-            }
-
-            assertThat(localConnector.isAccepting(), is(false));
-            assertThat(blockingConnector.isAccepting(), is(false));
-            assertThat(asyncConnector.isAccepting(), is(false));
-
-            {
-                // Close a async connection
-                HttpTester.Input in = HttpTester.from(async1.getInputStream());
-                async1.getOutputStream().write("GET /test HTTP/1.1\r\nHost:localhost\r\nConnection: close\r\n\r\n".getBytes());
-                HttpTester.Response response = HttpTester.parseResponse(in);
-                assertThat(response.getStatus(), is(200));
-                assertThat(response.getContent(), is(expectedContent));
-            }
-        }
-
-        waitFor(localConnector::isAccepting, is(true), 2 * idleTimeout, TimeUnit.MILLISECONDS);
-        waitFor(blockingConnector::isAccepting, is(true), 2 * idleTimeout, TimeUnit.MILLISECONDS);
-        waitFor(asyncConnector::isAccepting, is(true), 2 * idleTimeout, TimeUnit.MILLISECONDS);
-    }
-
-    public static <T> void waitFor(Supplier<T> value, Matcher<T> matcher, long wait, TimeUnit units)
-    {
-        long start = NanoTime.now();
-
-        while (true)
-        {
-            try
-            {
-                matcher.matches(value.get());
-                return;
-            }
-            catch (Throwable e)
-            {
-                if (NanoTime.since(start) > units.toNanos(wait))
-                    throw e;
-            }
-
-            try
-            {
-                TimeUnit.MILLISECONDS.sleep(50);
-            }
-            catch (InterruptedException e)
-            {
-                // no op
-            }
-        }
     }
 }

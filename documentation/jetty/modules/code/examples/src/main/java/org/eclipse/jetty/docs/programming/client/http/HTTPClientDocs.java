@@ -47,6 +47,7 @@ import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.PathRequestContent;
+import org.eclipse.jetty.client.PathResponseListener;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -492,6 +493,30 @@ public class HTTPClientDocs
             response.abort(new IOException("Unexpected HTTP response"));
         }
         // end::inputStreamResponseListener[]
+    }
+
+    public void pathResponseListener() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::pathResponseListener[]
+        Path savePath = Path.of("/path/to/save/file.bin");
+
+        // Typical usage as a response listener.
+        PathResponseListener listener = new PathResponseListener(savePath, true);
+        httpClient.newRequest("http://domain.com/path")
+            .send(listener);
+        // Wait for the response content to be saved.
+        var result = listener.get(5, TimeUnit.SECONDS);
+
+        // Alternative usage with CompletableFuture.
+        var completable = PathResponseListener.write(httpClient.newRequest("http://domain.com/path"), savePath, true);
+        completable.whenComplete((pathResponse, failure) ->
+        {
+            // Your logic here.
+        });
+        // end::pathResponseListener[]
     }
 
     public void forwardContent() throws Exception

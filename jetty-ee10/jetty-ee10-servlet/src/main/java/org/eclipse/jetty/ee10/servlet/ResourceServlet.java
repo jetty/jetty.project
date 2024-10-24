@@ -47,6 +47,8 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.AliasCheck;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
@@ -103,6 +105,12 @@ import org.slf4j.LoggerFactory;
  *   <dd>
  *     Use {@code true} to generate ETags in responses.
  *     Defaults to {@code false}.
+ *   </dd>
+ *   <dt>installAllowedResourceAliasChecker</dt>
+ *   <dd>
+ *     Whether to add an {@link AllowedResourceAliasChecker} to the context if one
+ *     does not already exist for this baseResource.
+ *     Defaults to {@code true}.
  *   </dd>
  *   <dt>maxCachedFiles</dt>
  *   <dd>
@@ -217,6 +225,23 @@ public class ResourceServlet extends HttpServlet
         }
         if (baseResource != null && !(baseResource.isDirectory() && baseResource.isReadable()))
             LOG.warn("baseResource {} is not a readable directory", baseResource);
+
+        if (getInitBoolean("installAllowedResourceAliasChecker", true))
+        {
+            // Add a new aliasCheck to the ContextHandler if one does not exist for this baseResource.
+            boolean addAliasCheck = true;
+            for (AliasCheck aliasCheck : contextHandler.getAliasChecks())
+            {
+                if (aliasCheck instanceof AllowedResourceAliasChecker allowedResourceAliasChecker &&
+                    Objects.equals(baseResource, allowedResourceAliasChecker.getBaseResource()))
+                {
+                    addAliasCheck = false;
+                    break;
+                }
+            }
+            if (addAliasCheck)
+                contextHandler.addAliasCheck(new AllowedResourceAliasChecker(contextHandler, baseResource));
+        }
 
         List<CompressedContentFormat> precompressedFormats = parsePrecompressedFormats(getInitParameter("precompressed"),
             getInitBoolean("gzip"), _resourceService.getPrecompressedFormats());

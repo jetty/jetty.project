@@ -40,7 +40,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
 
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
     private String _name;
-    private int _maxThreads = 200;
+    private int _maxThreads;
     private boolean _tracking;
     private boolean _detailedDump;
     private Thread _keepAlive;
@@ -50,8 +50,14 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
 
     public VirtualThreadPool()
     {
+        this(200);
+    }
+
+    public VirtualThreadPool(int maxThreads)
+    {
         if (!VirtualThreads.areSupported())
             throw new IllegalStateException("Virtual Threads not supported");
+        _maxThreads = maxThreads;
     }
 
     /**

@@ -24,12 +24,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.App;
@@ -302,7 +305,10 @@ public class ContextProvider extends ScanningAppProvider
         initializeContextPath(contextHandler, path);
 
         if (Files.isDirectory(path))
+        {
             contextHandler.setBaseResource(ResourceFactory.of(this).newResource(path));
+            System.err.println("SET BASE RESOURCE to " + path);
+        }
 
         //TODO think of better way of doing this
         //pass through properties as attributes directly
@@ -356,25 +362,79 @@ public class ContextProvider extends ScanningAppProvider
             if (contextHandlerClassName != null)
                 context = Class.forName(contextHandlerClassName).getDeclaredConstructor().newInstance();
 
-            //add in environment-specific properties
+            //Add in environment-specific properties:
+            // allow multiple eeXX[-zzz].properties files, ordered lexically
+            // allow each to contain jetty.deploy.environmentXml[.zzzz] properties
+            // accumulate all properties for substitution purposes
+            // order all jetty.deploy.environmentXml[.zzzz] properties lexically
+            // apply the context xml files named by the ordered jetty.deploy.environmentXml[.zzzz] properties
             String env = app.getEnvironmentName() == null ? "" : app.getEnvironmentName();
-            Path envProperties = app.getPath().getParent().resolve(env + ".properties");
-            if (Files.exists(envProperties))
+
+            if (StringUtil.isNotBlank(env))
             {
-                try (InputStream stream = Files.newInputStream(envProperties))
+                List<Path> envPropertyFiles = new ArrayList<>();
+                Path parent = app.getPath().getParent();
+
+                //Get all environment specific properties files for this environment,
+                //order them according to the lexical ordering of the filenames
+                try (Stream<Path> paths = Files.list(parent))
                 {
-                    Properties p = new Properties();
-                    p.load(stream);
-                    p.stringPropertyNames().forEach(k -> properties.put(k, p.getProperty(k)));
+                    envPropertyFiles = paths.filter(Files::isRegularFile)
+                        .map(p -> parent.relativize(p))
+                        .filter(p ->
+                        {
+                            String name = p.getName(0).toString();
+                            if (!name.endsWith(".properties"))
+                                return false;
+                            if (!name.startsWith(env))
+                                return false;
+                            return true;
+                        }).sorted().collect(Collectors.toList());
                 }
 
-                String str = properties.get(Deployable.ENVIRONMENT_XML);
-                if (!StringUtil.isEmpty(str))
-                {
-                    Path envXmlPath = Paths.get(str);
-                    if (!envXmlPath.isAbsolute())
-                        envXmlPath = getMonitoredDirResource().getPath().getParent().resolve(envXmlPath);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Environment property files {}", envPropertyFiles);
 
+                Map<String, Path> envXmlFilenameMap = new HashMap<>();
+                for (Path file : envPropertyFiles)
+                {
+                    Path resolvedFile = parent.resolve(file);
+                    if (Files.exists(resolvedFile))
+                    {
+                        Properties tmp = new Properties();
+                        try (InputStream stream = Files.newInputStream(resolvedFile))
+                        {
+                            tmp.load(stream);
+                            //put each property into our substitution pool
+                            tmp.stringPropertyNames().forEach(k -> properties.put(k, tmp.getProperty(k)));
+                        }
+                    }
+                }
+
+                //extract any properties that name environment context xml files
+                for (Map.Entry<String, String> entry : properties.entrySet())
+                {
+                    String name = Objects.toString(entry.getKey(), "");
+                    if (name.startsWith(Deployable.ENVIRONMENT_XML))
+                    {
+                        //ensure all environment context xml files are absolute paths
+                        Path envXmlPath = Paths.get(entry.getValue().toString());
+                        if (!envXmlPath.isAbsolute())
+                            envXmlPath = getMonitoredDirResource().getPath().getParent().resolve(envXmlPath);
+                        //accumulate all properties that name environment xml files so they can be ordered
+                        envXmlFilenameMap.put(name, envXmlPath);
+                    }
+                }
+
+                //order the environment context xml files according to the name of their properties
+                List<String> sortedEnvXmlProperties = envXmlFilenameMap.keySet().stream().sorted().toList();
+
+                //apply each environment context xml file
+                for (String property : sortedEnvXmlProperties)
+                {
+                    Path envXmlPath = envXmlFilenameMap.get(property);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Applying environment specific context file {}", envXmlPath);
                     context = applyXml(context, envXmlPath, env, properties);
                 }
             }
@@ -427,9 +487,10 @@ public class ContextProvider extends ScanningAppProvider
                     throw new IllegalStateException("Unknown ContextHandler class " + contextHandlerClassName + " for " + app);
 
                 context = contextHandlerClass.getDeclaredConstructor().newInstance();
-                properties.put(Deployable.WAR, path.toString());
             }
 
+            //set a backup value for the path to the war in case it hasn't already been set
+            properties.put(Deployable.WAR, path.toString());
             return initializeContextHandler(context, path, properties);
         }
         finally

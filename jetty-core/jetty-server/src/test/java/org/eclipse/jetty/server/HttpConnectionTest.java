@@ -965,7 +965,7 @@ public class HttpConnectionTest
         checkNotContained(response, offset, "56789");
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "pathInContext=/R2");
-        offset = checkContains(response, offset, "charset=UTF-8");
+        offset = checkContains(response, offset, "charset=utf-8");
         checkContains(response, offset, "abcdefghij");
     }
 
@@ -1061,7 +1061,7 @@ public class HttpConnectionTest
         offset = checkContains(response, offset, "HTTP/1.1 599");
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "/R2");
-        offset = checkContains(response, offset, "text/plain; charset=UTF-8");
+        offset = checkContains(response, offset, "text/plain; charset=utf-8");
         checkContains(response, offset, "abcdefghij");
     }
 
@@ -1683,7 +1683,7 @@ public class HttpConnectionTest
         cases.add(Arguments.of(HttpVersion.HTTP_1_1, null, "Other, close, Fields", "Other, close, Fields"));
         cases.add(Arguments.of(HttpVersion.HTTP_1_1, null, "Other, keep-alive, Fields", "Other, Fields"));
         cases.add(Arguments.of(HttpVersion.HTTP_1_1, null, "Other, close, keep-alive, Fields", "Other, close, Fields"));
-        cases.add(Arguments.of(HttpVersion.HTTP_1_1, "close", "Other, Fields", "Other, Fields|close"));
+        cases.add(Arguments.of(HttpVersion.HTTP_1_1, "close", "Other, Fields", "Other, Fields,close"));
 
         return cases.stream();
     }
@@ -1722,10 +1722,6 @@ public class HttpConnectionTest
         if (expectedConnectionHeader == null)
             assertFalse(response.getMetaData().getHttpFields().contains(HttpHeader.CONNECTION));
         else
-        {
-            List<String> actual = response.getValuesList(HttpHeader.CONNECTION);
-            for (String expected : expectedConnectionHeader.split("\\|"))
-                assertThat(actual.remove(0), is(expected));
-        }
+            assertThat(response.get(HttpHeader.CONNECTION), is(expectedConnectionHeader));
     }
 }

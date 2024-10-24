@@ -801,6 +801,7 @@ public class HttpGeneratorServerTest
     public void testConnectionKeepAliveWithAdditionalCustomValue() throws Exception
     {
         HttpGenerator generator = new HttpGenerator();
+        generator.setPersistent(true);
 
         HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
@@ -813,6 +814,23 @@ public class HttpGeneratorServerTest
         String headers = BufferUtil.toString(header);
         assertThat(headers, containsString(HttpHeaderValue.KEEP_ALIVE.asString()));
         assertThat(headers, containsString(customValue));
+    }
+
+    @Test
+    public void testKeepAliveWithFlush() throws Exception
+    {
+        HttpGenerator generator = new HttpGenerator();
+        generator.setPersistent(true);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add(HttpHeader.CONTENT_TYPE, "text/plain");
+        // fields.put(HttpHeader.CONNECTION, "keep-alive");
+        MetaData.Response info = new MetaData.Response(200, "OK", HttpVersion.HTTP_1_0, fields);
+        ByteBuffer header = BufferUtil.allocate(4096);
+        HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, false);
+        assertSame(HttpGenerator.Result.FLUSH, result);
+        String headers = BufferUtil.toString(header);
+        System.err.println(headers);
+        assertThat(headers, not(containsString("keep-alive")));
     }
 
     @Test

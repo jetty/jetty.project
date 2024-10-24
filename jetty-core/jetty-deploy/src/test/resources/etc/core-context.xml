@@ -19,4 +19,8 @@
     <Arg>somename</Arg>
     <Arg>somevalue</Arg>
   </Call>
+  <Call name="setAttribute">
+    <Arg>core-context-0</Arg>
+    <Arg>core-context-0</Arg>
+  </Call>
 </Configure>

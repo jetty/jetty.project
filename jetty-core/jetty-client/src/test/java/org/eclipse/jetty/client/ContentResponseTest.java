@@ -23,9 +23,11 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -114,7 +116,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());
         assertEquals(mediaType, response.getMediaType());
-        assertEquals(encoding, response.getEncoding());
+        assertThat(response.getEncoding(), Matchers.equalToIgnoringCase(encoding));
     }
 
     @ParameterizedTest
@@ -144,6 +146,6 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         assertEquals(200, response.getStatus());
         assertEquals(content, response.getContentAsString());
         assertEquals(mediaType, response.getMediaType());
-        assertEquals(encoding, response.getEncoding());
+        assertThat(response.getEncoding(), Matchers.equalToIgnoringCase(encoding));
     }
 }

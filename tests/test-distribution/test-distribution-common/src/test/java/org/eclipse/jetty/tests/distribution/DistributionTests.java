@@ -1558,9 +1558,10 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    @Test
     @DisabledForJreRange(max = JRE.JAVA_20)
-    public void testVirtualThreadPool() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {"threadpool-virtual", "threadpool-all-virtual"})
+    public void testVirtualThreadPool(String threadPoolModule) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -1569,7 +1570,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=threadpool-virtual,http"))
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + threadPoolModule))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
