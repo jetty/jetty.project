@@ -818,8 +818,8 @@ public class HttpParser
                         case COLON:
                             if (!_requestParser)
                             {
-                                if (t.getType() != HttpTokens.Type.DIGIT)
-                                    throw new IllegalCharacterException(_state, t, buffer);
+                                if (t.getType() != HttpTokens.Type.DIGIT || t.getByte() == '0')
+                                    throw new BadMessageException("Bad status");
                                 setState(State.STATUS);
                                 setResponseStatus(t.getByte() - '0');
                             }
@@ -865,6 +865,8 @@ public class HttpParser
                     switch (t.getType())
                     {
                         case SPACE:
+                            if (_responseStatus < 100)
+                                throw new BadMessageException("Bad status");
                             setState(State.SPACE2);
                             break;
 
@@ -881,7 +883,7 @@ public class HttpParser
                             break;
 
                         default:
-                            throw new IllegalCharacterException(_state, t, buffer);
+                            throw new BadMessageException("Bad status");
                     }
                     break;
 
