@@ -377,8 +377,16 @@ public class HttpURITest
                 // Scheme & host containing unusual valid characters
                 {"ht..tp://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
                 {"ht1.2+..-3.4tp://127.0.0.1:8080/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                // - not allowed to pct-encode a scheme
+                {"ht%74p://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                // - not allowed to pct-encode a host
                 {"http://h%2est/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
                 {"http://h..est/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                // - scheme only allowed to contain US-ASCII characters
+                {"hඞtp://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"hmm\uD83E\uDD14://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"h€tp://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"hτtp://host/path/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
 
                 // legal non ambiguous relative paths
                 {"http://host/../path/info", null, null, EnumSet.noneOf(Violation.class)},
@@ -786,11 +794,21 @@ public class HttpURITest
             Arguments.of("http:/path/info;param?query#fragment", "http", null, null, "/path/info;param", "param", "query", "fragment"),
 
             // Everything and the kitchen sink
-            Arguments.of("http://user@host:8080/path/info;param?query#fragment", "http", "host", "8080", "/path/info;param", "param", "query", "fragment"),
-            Arguments.of("xxxxx://user@host:8080/path/info;param?query#fragment", "xxxxx", "host", "8080", "/path/info;param", "param", "query", "fragment"),
+            Arguments.of("http://user:pass@host:8080/path/info;param?query#fragment", "http", "host", "8080", "/path/info;param", "param", "query", "fragment"),
+            Arguments.of("xxxxx://user:pass@host:8080/path/info;param?query#fragment", "xxxxx", "host", "8080", "/path/info;param", "param", "query", "fragment"),
+            // - with encoding in the mix
+            Arguments.of("http://u%53er:pa%53%53@host:8080/p%41th/info;p%41r%41m?query#fragment", "http", "host", "8080", "/pAth/info;pArAm", "pArAm", "query", "fragment"),
 
             // No host, parameter with no content
             Arguments.of("http:///;?#", "http", null, null, "/;", "", "", ""),
+
+            // No authority, no path, just a query
+            Arguments.of("http:?a=b", "http", null, null, null, "", "a=b", ""),
+
+            // Path, relative, no scheme.
+            Arguments.of("index.html", null, null, null, "index.html", null, null, null),
+            // - path name that just happens to also be a scheme name
+            Arguments.of("http", null, null, null, "http", null, null, null),
 
             // Path with query that has no value
             Arguments.of("/path/info?a=?query", null, null, null, "/path/info", null, "a=?query", null),
@@ -812,8 +830,19 @@ public class HttpURITest
             Arguments.of("file:///path/info", "file", null, null, "/path/info", null, null, null),
             Arguments.of("file:/path/info", "file", null, null, "/path/info", null, null, null),
 
-            // Bad URI (no scheme, no host, no path)
+            // Bad URI? (no scheme, no host, no path)
+            // java.net.URI throws "java.net.URISyntaxException: Expected authority at index 2: //" for this one
             Arguments.of("//", null, null, null, null, null, null, null),
+
+            // Empty (unspecified) port corner case
+            Arguments.of("https://@host:/", "https", "host", null, "/", null, null, null),
+
+            // Empty scheme, nothing else
+            Arguments.of(":", "", null, null, null, null, null, null),
+
+            // Authority only
+            Arguments.of("//example.org:9090", null, "example.org", "9090", null, null, null, null),
+            Arguments.of("//u:p@host:9090", null, "host", "9090", null, null, null, null),
 
             // Simple localhost references
             Arguments.of("http://localhost/", "http", "localhost", null, "/", null, null, null),
@@ -837,18 +866,34 @@ public class HttpURITest
             // Simple IPv4 host with port (default path)
             Arguments.of("http://192.0.0.1:8080/", "http", "192.0.0.1", "8080", "/", null, null, null),
 
-            // Simple IPv6 host with port (default path)
-
+            // IPv6 specific (seen in RFC2732, RFC2373,
             Arguments.of("http://[2001:db8::1]:8080/", "http", "[2001:db8::1]", "8080", "/", null, null, null),
-            // IPv6 authenticated host with port (default path)
-
+            Arguments.of("https://[1080:0:0:0:8:800:200C:417A]/index.html", "https", "[1080:0:0:0:8:800:200C:417A]", null, "/index.html", null, null, null),
             Arguments.of("http://user@[2001:db8::1]:8080/", "http", "[2001:db8::1]", "8080", "/", null, null, null),
-
-            // Simple IPv6 host no port (default path)
+            Arguments.of("http://user:pass@[2001:db8::1]:8080/", "http", "[2001:db8::1]", "8080", "/", null, null, null),
+            Arguments.of("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:10%12]:80/index.html", "http", "[FEDC:BA98:7654:3210:FEDC:BA98:7654:10%12]", "80", "/index.html", null, null, null),
+            Arguments.of("http://[::192.10.6.6]/iztd", "http", "[::192.10.6.6]", null, "/iztd", null, null, null),
+            Arguments.of("http://[::192.10.6.6%interface]/iztd", "http", "[::192.10.6.6%interface]", null, "/iztd", null, null, null),
+            Arguments.of("http://[::FFFF:129.154.53.39]:80/index.html", "http", "[::FFFF:129.154.53.39]", "80", "/index.html", null, null, null),
+            Arguments.of("https://[fdc7:2df6:7735:25ed:89ca:7a65:ca5e:3120]", "https", "[fdc7:2df6:7735:25ed:89ca:7a65:ca5e:3120]", null, null, null, null, null),
             Arguments.of("http://[2001:db8::1]/", "http", "[2001:db8::1]", null, "/", null, null, null),
-
-            // Scheme-less IPv6, host with port (default path)
+            Arguments.of("http://[0:0:0:0:0:FFFF:129.144.52.38]", "http", "[0:0:0:0:0:FFFF:129.144.52.38]", null, null, null, null, null),
+            Arguments.of("http://[0:0:0:0:0:FFFF:129.144.52.38%33]", "http", "[0:0:0:0:0:FFFF:129.144.52.38%33]", null, null, null, null, null),
+            Arguments.of("http://[0:0:0:0:0:ffff:1.2.3.4]", "http", "[0:0:0:0:0:ffff:1.2.3.4]", null, null, null, null, null),
+            // - scheme-less
             Arguments.of("//[2001:db8::1]:8080/", null, "[2001:db8::1]", "8080", "/", null, null, null),
+
+            // Odd authorities that start with a number, and sometimes look like a bad IP address, but are not.
+            Arguments.of("https://1.2.3.org", "https", "1.2.3.org", null, null, null, null, null),
+            Arguments.of("https://1.2.3.4us.net", "https", "1.2.3.4us.net", null, null, null, null, null),
+            Arguments.of("https://1.2.3.4.us.net", "https", "1.2.3.4.us.net", null, null, null, null, null),
+            Arguments.of("https://314159.com", "https", "314159.com", null, null, null, null, null),
+            Arguments.of("https://4more.io", "https", "4more.io", null, null, null, null, null),
+            Arguments.of("https://4more.io/p", "https", "4more.io", null, "/p", null, null, null),
+            Arguments.of("https://4more", "https", "4more", null, null, null, null, null),
+            Arguments.of("https://4more/p", "https", "4more", null, "/p", null, null, null),
+            Arguments.of("https://4more.", "https", "4more.", null, null, null, null, null),
+            Arguments.of("https://4more./p", "https", "4more.", null, "/p", null, null, null),
 
             // Interpreted as relative path of "*" (no host/port/scheme/query/fragment)
             Arguments.of("*", null, null, null, "*", null, null, null),
@@ -1222,7 +1267,30 @@ public class HttpURITest
             "https://user @host.com/",
             "https://user#@host.com/",
             "https://[notIpv6]/",
-            "https://bad[0::1::2::3::4]/"
+            "https://bad[0::1::2::3::4]/",
+            "http://[ff01:234/foo",
+            "http://[ff01:234:zzz]/foo",
+            "http://[foo]",
+            "http://[]",
+            "http://[129.33.44.55]",
+            "http://[ff:ee:dd:cc:bb::aa:9:8]",
+            "http://[fffff::1]",
+            "http://[ff::ee::8]",
+            "http://[1:2:3:4::5:6:7:8]",
+            "http://[1:2]",
+            "http://[1:2:3:4:5:6:7:8:9]",
+            "http://[1:2:3:4:5:6:7:8%]",
+            "http://[1:2:3:4:5:6:7:8%!/]",
+            "http://[::1.2.3.300]",
+            "http://1.2.3",
+            "http://1.2.3.300",
+            "http://1.2.3.4.5",
+            "http://[1.2.3.4:5]",
+            "http://1:2:3:4:5:6:7:8",
+            "http://[1.2.3.4]/",
+            "http://[1.2.3.4/",
+            "http://[foo]/",
+            "http://[foo/"
         );
     }
 
