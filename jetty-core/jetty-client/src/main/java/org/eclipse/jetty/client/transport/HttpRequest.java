@@ -799,6 +799,16 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public void abort(Throwable cause, Promise<Boolean> promise)
+    {
+        if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
+        {
+            conversation.abort(cause, promise);
+        }
+        promise.succeeded(false);
+    }
+
+    @Override
     public Throwable getAbortCause()
     {
         return aborted.get();

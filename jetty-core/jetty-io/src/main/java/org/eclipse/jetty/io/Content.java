@@ -327,7 +327,9 @@ public class Content
          * @param maxSize The maximum size to read, or -1 for no limit
          * @return A {@link CompletableFuture} that will be completed when the complete content is read or
          * failed if the max size is exceeded or there is a read error.
+         * @deprecated no replacement
          */
+        @Deprecated(forRemoval = true, since = "12.0.15")
         static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
         {
             return new ChunkAccumulator().readAll(source, maxSize);
@@ -338,7 +340,9 @@ public class Content
          *
          * @param source the source to read
          * @return the {@link CompletableFuture} to notify when the whole content has been read
+         * @deprecated use {@link #asByteBuffer(Source, Promise)} instead
          */
+        @Deprecated(forRemoval = true, since = "12.0.15")
         static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source)
         {
             return asByteBufferAsync(source, -1);
@@ -350,7 +354,9 @@ public class Content
          * @param source the source to read
          * @param maxSize The maximum size to read, or -1 for no limit
          * @return the {@link CompletableFuture} to notify when the whole content has been read
+         * @deprecated no replacement
          */
+        @Deprecated(forRemoval = true, since = "12.0.15")
         static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
         {
             return asByteArrayAsync(source, maxSize).thenApply(ByteBuffer::wrap);
@@ -365,7 +371,9 @@ public class Content
          * @param maxSize The maximum size to read, or -1 for no limit
          * @return A {@link CompletableFuture} that will be completed when the complete content is read or
          * failed if the max size is exceeded or there is a read error.
+         * @deprecated no replacement
          */
+        @Deprecated(forRemoval = true, since = "12.0.15")
         static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
         {
             return new ChunkAccumulator().readAll(source, pool, direct, maxSize);
@@ -429,7 +437,9 @@ public class Content
          * @param source the source to read
          * @param charset the charset to use to decode bytes
          * @return the {@link CompletableFuture} to notify when the whole content has been read
+         * @deprecated use {@link #asString(Source, Charset, Promise)} instead
          */
+        @Deprecated(forRemoval = true, since = "12.0.15")
         static CompletableFuture<String> asStringAsync(Source source, Charset charset)
         {
             Promise.Completable<String> completable = new Promise.Completable<>();
