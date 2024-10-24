@@ -204,4 +204,21 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         assertFalse(store.exists("1234"));
         assertFalse(cache.contains("1234"));
     }
+
+    @Test
+    public void testFlushOnResponseCommitDefault() throws Exception
+    {
+        //test factory defaults to flushOnResponseCommit==true
+        NullSessionCacheFactory sessionCacheFactory = new NullSessionCacheFactory();
+        assertTrue(sessionCacheFactory.isFlushOnResponseCommit());
+
+        //test cache produced by factory defaults to flushOnResponseCommit==true
+        NullSessionCache cacheFromFactory = (NullSessionCache)sessionCacheFactory.newSessionCache(new TestableSessionManager());
+        assertTrue(cacheFromFactory.isFlushOnResponseCommit());
+
+        //test cache defaults to flushOnResponseCommit==true
+        NullSessionCache sessionCache = new NullSessionCache(new TestableSessionManager());
+        assertTrue(sessionCache.isFlushOnResponseCommit());
+    }
+
 }

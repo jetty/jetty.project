@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -71,6 +72,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
     private ClassLoader classLoader;
+    private Predicate<WebSocketTimeoutException> _onIdleTimeout;
 
     public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
     {
@@ -304,24 +306,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         else
             code = CloseStatus.NO_CLOSE;
 
-        CloseStatus closeStatus = new CloseStatus(code, cause);
-        if (CloseStatus.isTransmittableStatusCode(code))
-        {
-            close(closeStatus, callback);
-        }
-        else
-        {
-            if (sessionState.onClosed(closeStatus))
-            {
-                closeConnection(closeStatus, callback);
-            }
-            else
-            {
-                // We are already closed because of a previous failure.
-                // Succeed because failing might re-enter this branch if it's the Frame callback.
-                callback.succeeded();
-            }
-        }
+        processError(new CloseStatus(code, cause), callback);
     }
 
     /**
@@ -348,8 +333,12 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         else
             code = CloseStatus.SERVER_ERROR;
 
-        CloseStatus closeStatus = new CloseStatus(code, cause);
-        if (CloseStatus.isTransmittableStatusCode(code))
+        processError(new CloseStatus(code, cause), callback);
+    }
+
+    private void processError(CloseStatus closeStatus, Callback callback)
+    {
+        if (CloseStatus.isTransmittableStatusCode(closeStatus.getCode()))
         {
             close(closeStatus, callback);
         }
@@ -403,7 +392,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         {
             openCallback.failed(t);
 
-            /* This is double handling of the exception but we need to do this because we have two separate
+            /* This is double handling of the exception, but we need to do this because we have two separate
             mechanisms for returning the CoreSession, onOpen and the CompletableFuture and both the onOpen callback
             and the CompletableFuture require the exception. */
             throw new RuntimeException(t);
@@ -432,6 +421,36 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public boolean isRsv3Used()
     {
         return getExtensionStack().isRsv3Used();
+    }
+
+    @Override
+    public void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout)
+    {
+        if (_onIdleTimeout == null)
+        {
+            _onIdleTimeout = onIdleTimeout;
+        }
+        else
+        {
+            Predicate<WebSocketTimeoutException> previous = _onIdleTimeout;
+            _onIdleTimeout = throwable ->
+            {
+                if (!previous.test(throwable))
+                    return onIdleTimeout.test(throwable);
+                return true;
+            };
+        }
+    }
+
+    /**
+     * @return true to let the EndPoint handle the timeout, false to tell the EndPoint to halt the handling of the timeout.
+     **/
+    boolean onIdleTimeout(WebSocketTimeoutException timeoutException)
+    {
+        if (_onIdleTimeout == null)
+            return true;
+        else
+            return _onIdleTimeout.test(timeoutException);
     }
 
     public WebSocketConnection getConnection()

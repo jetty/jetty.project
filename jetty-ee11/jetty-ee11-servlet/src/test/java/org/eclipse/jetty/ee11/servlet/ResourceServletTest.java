@@ -555,7 +555,7 @@ public class ResourceServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getField("content-type").getValue(), is("text/html;charset=UTF-8"));
+        assertThat(response.getField("content-type").getValue(), is("text/html;charset=utf-8"));
         String body = response.getContent();
         assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
     }

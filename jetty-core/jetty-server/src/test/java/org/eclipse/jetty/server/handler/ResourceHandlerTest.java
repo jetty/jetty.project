@@ -71,7 +71,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -461,7 +460,6 @@ public class ResourceHandlerTest
                     String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -489,7 +487,6 @@ public class ResourceHandlerTest
                     String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -519,7 +516,6 @@ public class ResourceHandlerTest
                     String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                     HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                     String boundary = getContentTypeBoundary(contentType);
@@ -537,7 +533,6 @@ public class ResourceHandlerTest
         );
 
         // test a range request with a file with no suffix, therefore no mimetype
-
         scenarios.addScenario(
                 "No mimetype resource - no range requested",
                 """
@@ -574,57 +569,55 @@ public class ResourceHandlerTest
                     Range: bytes=0-9,20-29,40-49\r
                     \r
                     """,
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) ->
-                {
-                    String body = response.getContent();
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         scenarios.addScenario(
-                "No mimetype resource - multiple ranges (x5) with empty range request",
-                """
-                    GET /context/nofilesuffix HTTP/1.1\r
-                    Host: localhost\r
-                    Range: bytes=0-9,20-29,40-49,60-60,70-79\r
-                    \r
-                    """,
-                HttpStatus.PARTIAL_CONTENT_206,
-                (response) ->
-                {
-                    String body = response.getContent();
+            "No mimetype resource - multiple ranges (x5) with empty range request",
+            """
+                GET /context/nofilesuffix HTTP/1.1\r
+                Host: localhost\r
+                Range: bytes=0-9,20-29,40-49,60-60,70-79\r
+                \r
+                """,
+            HttpStatus.PARTIAL_CONTENT_206,
+            (response) ->
+            {
+                String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
-                    HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-                    String boundary = getContentTypeBoundary(contentType);
+                HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
+                String boundary = getContentTypeBoundary(contentType);
 
-                    assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
+                assertThat("Boundary expected: " + contentType.getValue(), boundary, notNullValue());
 
-                    assertThat(body, containsString("Content-Range: bytes 0-9/80"));
-                    assertThat(body, containsString("Content-Range: bytes 20-29/80"));
-                    assertThat(body, containsString("Content-Range: bytes 40-49/80"));
-                    assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range
-                    assertThat(body, containsString("Content-Range: bytes 70-79/80"));
+                assertThat(body, containsString("Content-Range: bytes 0-9/80"));
+                assertThat(body, containsString("Content-Range: bytes 20-29/80"));
+                assertThat(body, containsString("Content-Range: bytes 40-49/80"));
+                assertThat(body, containsString("Content-Range: bytes 60-60/80")); // empty range
+                assertThat(body, containsString("Content-Range: bytes 70-79/80"));
 
-                    assertThat(response.getContent(), startsWith("--" + boundary));
-                    assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
-                }
+                assertThat(response.getContent(), startsWith("--" + boundary));
+                assertThat(response.getContent(), endsWith(boundary + "--\r\n"));
+            }
         );
 
         return scenarios.stream();
@@ -3115,7 +3108,6 @@ public class ResourceHandlerTest
 
     @ParameterizedTest
     @MethodSource("rangeScenarios")
-    @Disabled
     public void testRangeRequests(ResourceHandlerTest.Scenario scenario) throws Exception
     {
         FS.ensureDirExists(docRoot);

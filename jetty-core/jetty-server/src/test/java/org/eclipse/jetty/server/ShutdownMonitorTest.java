@@ -23,8 +23,10 @@ import java.net.Socket;
 
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,6 +35,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ShutdownMonitorTest
 {
+    /**
+     * Throw away the current ShutdownMonitor singleton and
+     * create a new one. Note that this will read the System
+     * properties in the constructor, thus you cannot set these
+     * System properties inside any of these tests and expect
+     * them to take effect.
+     */
     @AfterEach
     public void dispose()
     {
@@ -40,7 +49,6 @@ public class ShutdownMonitorTest
     }
     
     @Test
-    @Disabled // TODO
     public void testPid() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
@@ -134,20 +142,16 @@ public class ShutdownMonitorTest
         assertTrue(!monitor.isAlive());
     }
 
-    /*
-     * Disable these config tests because ShutdownMonitor is a 
-     * static singleton that cannot be unset, and thus would
-     * need each of these methods executed it its own jvm -
-     * current surefire settings only fork for a single test 
-     * class.
-     * 
-     * Undisable to test individually as needed.
+    /**
+     * This test can only be run if the System property
+     * STOP.EXIT has been set. This can either be done in
+     * the IDE, or via the surefire plugin in the pom.
+     * This test expects STOP.EXIT to be FALSE.
      */
-    @Disabled
     @Test
+    @EnabledIfSystemProperty(named = "STOP.EXIT", matches = "[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
     public void testNoExitSystemProperty() throws Exception
     {
-        System.setProperty("STOP.EXIT", "false");
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertFalse(monitor.isExitVm());
@@ -175,40 +179,29 @@ public class ShutdownMonitorTest
             assertTrue(!ShutdownMonitor.isRegistered(server));
         }
     }
-    
-    @Disabled
+
     @Test
+    @DisabledIfSystemProperty(named = "STOP.EXIT", matches = "[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
     public void testExitVmDefault() throws Exception
     {
-        //Test that the default is to exit
+        //If the STOP.EXIT system property is set, then this will
+        //overwrite the default, so this test would be meaningless
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
         assertTrue(monitor.isExitVm());
     }
 
-    @Disabled
     @Test
     public void testExitVmTrue() throws Exception
     {
-        //Test setting exit true
-        System.setProperty("STOP.EXIT", "true");
+        //Note that this cannot be tested via the System property STOP.EXIT=true
+        //because it would have to be set for the whole jvm (eg via surefire plugin config)
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         monitor.setPort(0);
+        monitor.setExitVm(true);
         assertTrue(monitor.isExitVm());
     }
-    
-    @Disabled
-    @Test
-    public void testExitVmFalse() throws Exception
-    {
-        //Test setting exit false
-        System.setProperty("STOP.EXIT", "false");
-        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        monitor.setPort(0);
-        assertFalse(monitor.isExitVm());
-    }
-    
-    @Disabled
+
     @Test
     public void testForceStopCommand() throws Exception
     {

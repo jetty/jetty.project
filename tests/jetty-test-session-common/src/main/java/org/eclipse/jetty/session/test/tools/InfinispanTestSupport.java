@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.session.test.tools;
 
-import java.lang.annotation.ElementType;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Properties;
 
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;

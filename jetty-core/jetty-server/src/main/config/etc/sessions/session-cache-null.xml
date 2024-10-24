@@ -11,7 +11,7 @@
       <New class="org.eclipse.jetty.session.NullSessionCacheFactory">
         <Set name="saveOnCreate"><Property name="jetty.session.saveOnCreate" default="false" /></Set>
         <Set name="removeUnloadableSessions"><Property name="jetty.session.removeUnloadableSessions" default="false" /></Set>
-        <Set name="flushOnResponseCommit"><Property name="jetty.session.flushOnResponseCommit" default="false" /></Set>
+        <Set name="flushOnResponseCommit"><Property name="jetty.session.flushOnResponseCommit" default="true" /></Set>
       </New>
     </Arg>
   </Call>

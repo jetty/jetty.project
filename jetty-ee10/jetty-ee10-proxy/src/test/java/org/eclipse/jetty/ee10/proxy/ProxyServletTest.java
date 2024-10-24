@@ -572,7 +572,7 @@ public class ProxyServletTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 PrintWriter writer = resp.getWriter();
-                writer.write(req.getHeader("X-Forwarded-Host"));
+                writer.write(req.getHeader(HttpHeader.FORWARDED.asString()));
                 writer.flush();
             }
         });
@@ -580,9 +580,9 @@ public class ProxyServletTest
         startClient();
 
         ContentResponse response = client.GET("http://localhost:" + serverConnector.getLocalPort());
-        assertThat("Response expected to contain content of X-Forwarded-Host Header from the request",
+        assertThat("Response expected to contain content of Forwarded header from the request",
             response.getContentAsString(),
-            equalTo("localhost:" + serverConnector.getLocalPort()));
+            containsString("localhost:" + serverConnector.getLocalPort()));
     }
 
     @ParameterizedTest

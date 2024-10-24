@@ -17,7 +17,6 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Callback;
@@ -88,47 +87,6 @@ public abstract class AbstractConnection implements Connection, Invocable
     protected Executor getExecutor()
     {
         return _executor;
-    }
-
-    protected void failedCallback(final Callback callback, final Throwable x)
-    {
-        Runnable failCallback = () ->
-        {
-            try
-            {
-                callback.failed(x);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Failed callback", x);
-            }
-        };
-
-        switch (Invocable.getInvocationType(callback))
-        {
-            case BLOCKING:
-                try
-                {
-                    getExecutor().execute(failCallback);
-                }
-                catch (RejectedExecutionException e)
-                {
-                    LOG.debug("Rejected", e);
-                    callback.failed(x);
-                }
-                break;
-
-            case NON_BLOCKING:
-                failCallback.run();
-                break;
-
-            case EITHER:
-                Invocable.invokeNonBlocking(failCallback);
-                break;
-
-            default:
-                throw new IllegalStateException();
-        }
     }
 
     /**
