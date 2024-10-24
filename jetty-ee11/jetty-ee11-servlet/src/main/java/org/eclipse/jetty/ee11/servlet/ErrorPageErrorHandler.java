@@ -67,7 +67,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         PageLookupTechnique pageSource = null;
 
         Class<?> matchedThrowable = null;
-        Throwable error = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable error = (Throwable)request.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION);
         Throwable cause = error;
 
         // Walk the cause hierarchy
@@ -98,7 +98,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             Throwable unwrapped = unwrapServletException(error, matchedThrowable);
             if (unwrapped != null)
             {
-                request.setAttribute(Dispatcher.ERROR_EXCEPTION, unwrapped);
+                request.setAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION, unwrapped);
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE, unwrapped.getClass());
             }
         }

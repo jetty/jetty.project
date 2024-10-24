@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -160,10 +161,10 @@ public class AsyncListenerTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
+            protected void writeErrorHtmlMessage(Request request, Writer writer, int code, String message, Throwable cause, String uri) throws IOException
             {
                 writer.write("CUSTOM\n");
-                super.writeErrorPageMessage(request, writer, code, message, uri);
+                super.writeErrorHtmlMessage(request, writer, code, message, cause, uri);
             }
         };
         server.setErrorHandler(errorHandler);
@@ -314,10 +315,10 @@ public class AsyncListenerTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
+            protected void writeErrorHtmlMessage(Request request, Writer writer, int code, String message, Throwable cause, String uri) throws IOException
             {
                 writer.write("CUSTOM\n");
-                super.writeErrorPageMessage(request, writer, code, message, uri);
+                super.writeErrorHtmlMessage(request, writer, code, message, cause, uri);
             }
         };
         server.setErrorHandler(errorHandler);

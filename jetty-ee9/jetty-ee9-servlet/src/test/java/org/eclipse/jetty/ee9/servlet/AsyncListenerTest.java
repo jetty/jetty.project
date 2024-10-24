@@ -15,6 +15,8 @@ package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
@@ -166,10 +168,10 @@ public class AsyncListenerTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+            protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause) throws IOException
             {
                 writer.write("CUSTOM\n");
-                super.writeErrorPlain(request, writer, code, message, cause, showStacks);
+                super.writeErrorHtml(request, writer, charset, code, message, cause);
             }
         };
         server.setErrorHandler(errorHandler);
@@ -321,7 +323,7 @@ public class AsyncListenerTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+            protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause)
             {
                 writer.write("CUSTOM\n");
             }

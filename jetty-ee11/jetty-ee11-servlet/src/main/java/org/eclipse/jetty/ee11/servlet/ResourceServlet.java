@@ -780,7 +780,7 @@ public class ResourceServlet extends HttpServlet
                 if (isIncluded(request))
                     return;
                 if (cause != null)
-                    request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, cause);
+                    request.setAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION, cause);
                 response.sendError(statusCode, reason);
             }
             catch (IOException e)

@@ -34,9 +34,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
-import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION;
+import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_ORIGIN;
 
 /**
  * holder of the state of request-response cycle.
@@ -1008,9 +1007,6 @@ public class ServletChannelState
 
         // No ISE, so good to modify request/state
         request.setAttribute(ERROR_EXCEPTION, th);
-        request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
-
-        // Set Jetty specific attributes.
         request.setAttribute(ErrorHandler.ERROR_EXCEPTION, th);
 
         // Ensure any async lifecycle is ended!
@@ -1055,10 +1051,7 @@ public class ServletChannelState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
-            // Additional servlet error attributes are provided in org.eclipse.jetty.ee11.servlet.Dispatcher.ErrorRequest
-
-            // Set Jetty Specific Attributes.
+            request.setAttribute(ERROR_ORIGIN, servletContextRequest.getServletName());
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
             request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
             request.setAttribute(ErrorHandler.ERROR_STATUS, code);
