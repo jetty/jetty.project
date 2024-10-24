@@ -2120,6 +2120,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 })));
                 flush();
             }
+            else if (streamId < 0)
+            {
+                close(ErrorCode.NO_ERROR.code, "max_streams_exceeded", Callback.NOOP);
+            }
             return streamId;
         }
 
@@ -2140,6 +2144,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 if (createLocalStream(slot, frames, promise, listener, streamId))
                     return;
                 freeSlot(slot, streamId);
+            }
+            else if (streamId < 0)
+            {
+                close(ErrorCode.NO_ERROR.code, "max_streams_exceeded", Callback.NOOP);
             }
         }
 
@@ -2183,13 +2191,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         private void push(PushPromiseFrame frame, Promise<Stream> promise, Stream.Listener listener)
         {
             Slot slot = new Slot();
-            int streamId = reserveSlot(slot, 0, promise::failed);
+            int streamId = reserveSlot(slot, frame.getPromisedStreamId(), promise::failed);
             if (streamId > 0)
             {
                 frame = frame.withStreamId(streamId);
                 if (createLocalStream(slot, Collections.singletonList(frame), promise, listener, streamId))
                     return;
                 freeSlot(slot, streamId);
+            }
+            else if (streamId < 0)
+            {
+                close(ErrorCode.NO_ERROR.code, "max_streams_exceeded", Callback.NOOP);
             }
         }
 
@@ -2237,19 +2249,62 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         private int reserveSlot(Slot slot, int streamId, Consumer<Throwable> fail)
         {
+            if (streamId < 0 || (streamId > 0 && !isLocalStream(streamId)))
+            {
+                fail.accept(new IllegalArgumentException("invalid stream id " + streamId));
+                return 0;
+            }
+
+            int reservedStreamId = 0;
             Throwable failure = null;
-            boolean reserved = false;
             try (AutoLock ignored = lock.lock())
             {
                 // SPEC: cannot create new streams after receiving a GOAWAY.
                 if (closed == CloseState.NOT_CLOSED)
                 {
-                    if (streamId <= 0)
+                    if (streamId == 0)
                     {
-                        streamId = localStreamIds.getAndAdd(2);
-                        reserved = true;
+                        // Stream id generated internally.
+                        reservedStreamId = localStreamIds.getAndAdd(2);
+                        // Check for overflow.
+                        if (reservedStreamId > 0)
+                            slots.offer(slot);
+                        else
+                            failure = new IllegalStateException("max streams exceeded");
                     }
-                    slots.offer(slot);
+                    else
+                    {
+                        // Stream id is given.
+                        while (true)
+                        {
+                            int nextStreamId = localStreamIds.get();
+                            if (nextStreamId > 0)
+                            {
+                                if (streamId >= nextStreamId)
+                                {
+                                    int newNextStreamId = streamId + 2;
+                                    if (localStreamIds.compareAndSet(nextStreamId, newNextStreamId))
+                                    {
+                                        reservedStreamId = streamId;
+                                        slots.offer(slot);
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    reservedStreamId = streamId;
+                                    slots.offer(slot);
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                reservedStreamId = nextStreamId;
+                                failure = new IllegalStateException("max streams exceeded");
+                                break;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -2259,16 +2314,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 }
             }
             if (failure == null)
-            {
-                if (reserved)
-                    HTTP2Session.this.onStreamCreated(streamId);
-                return streamId;
-            }
+                HTTP2Session.this.onStreamCreated(streamId);
             else
-            {
                 fail.accept(failure);
-                return 0;
-            }
+            return reservedStreamId;
         }
 
         private void freeSlot(Slot slot, int streamId)
