@@ -386,7 +386,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Registering as fill interested in {}", this);
-        getHttpConnection().fillInterested();
+        getHttpConnection().setFillInterest();
     }
 
     private void shutdown()

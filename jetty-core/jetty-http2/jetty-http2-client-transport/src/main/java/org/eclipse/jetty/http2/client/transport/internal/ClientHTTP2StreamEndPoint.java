@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,32 +37,26 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     }
 
     @Override
-    public Runnable onDataAvailable()
+    public void onDataAvailable()
     {
-        // The InvocationType may change depending on the read callback.
-        return new Invocable.ReadyTask(getInvocationType(), this::processDataAvailable);
+        processDataAvailable();
     }
 
     @Override
-    public Runnable onReset(ResetFrame frame, Callback callback)
+    public void onReset(ResetFrame frame, Callback callback)
     {
         int error = frame.getError();
         EofException failure = new EofException(ErrorCode.toString(error, "error_code_" + error));
-        return onFailure(failure, callback);
+        onFailure(failure, callback);
     }
 
     @Override
-    public Runnable onTimeout(TimeoutException timeout, Promise<Boolean> promise)
+    public void onTimeout(TimeoutException timeout, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout on {}", this, timeout);
         Connection connection = getConnection();
-        if (connection == null)
-        {
-            promise.succeeded(true);
-            return null;
-        }
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
+        if (connection != null)
         {
             boolean expire = connection.onIdleExpired(timeout);
             if (expire)
@@ -72,17 +65,18 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
                 close(timeout);
             }
             promise.succeeded(expire);
-        });
+        }
+        else
+        {
+            promise.succeeded(true);
+        }
     }
 
     @Override
-    public Runnable onFailure(Throwable failure, Callback callback)
+    public void onFailure(Throwable failure, Callback callback)
     {
-        return new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
-        {
-            processFailure(failure);
-            close(failure);
-            callback.failed(failure);
-        });
+        processFailure(failure);
+        close(failure);
+        callback.failed(failure);
     }
 }

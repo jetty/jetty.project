@@ -24,12 +24,15 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class InstructionStreamConnection extends AbstractConnection implements Connection.UpgradeTo
 {
     private static final Logger LOG = LoggerFactory.getLogger(InstructionStreamConnection.class);
+
+    private final Callback fillableCallback = new FillableCallback();
     private final ByteBufferPool bufferPool;
     private final ParserListener listener;
     private boolean useInputDirectByteBuffers = true;
@@ -70,7 +73,7 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
         if (buffer != null && buffer.hasRemaining())
             onFillable();
         else
-            fillInterested();
+            setFillInterest();
     }
 
     @Override
@@ -95,7 +98,7 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
                 {
                     buffer.release();
                     buffer = null;
-                    fillInterested();
+                    setFillInterest();
                     break;
                 }
                 else if (filled < 0)
@@ -115,6 +118,11 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
         {
             fail(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error", x);
         }
+    }
+
+    private void setFillInterest()
+    {
+        fillInterested(fillableCallback);
     }
 
     private void fail(long errorCode, String message, Throwable failure)
@@ -139,4 +147,25 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
     }
 
     protected abstract void parseInstruction(ByteBuffer buffer) throws QpackException;
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+    }
 }

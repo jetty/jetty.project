@@ -46,6 +46,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Attachable;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP.class);
 
+    private final Callback fillableCallback = new FillableCallback();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Promise<Connection> promise;
@@ -188,7 +190,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        setFillInterest();
         boolean initialize = isInitialize();
         if (initialize)
         {
@@ -208,6 +210,11 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         {
             promise.succeeded(this);
         }
+    }
+
+    void setFillInterest()
+    {
+        fillInterested(fillableCallback);
     }
 
     @Override
@@ -430,6 +437,28 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         public String toString()
         {
             return HttpConnectionOverHTTP.this.toString();
+        }
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            HttpClientTransport transport = getHttpDestination().getHttpClient().getTransport();
+            return transport.getInvocationType(delegate);
         }
     }
 }

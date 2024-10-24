@@ -44,29 +44,38 @@ public interface Invocable
     enum InvocationType
     {
         /**
-         * <p>Invoking the {@link Invocable} may block the invoker thread,
+         * <p>Invoking the task may block the invoker thread,
          * and the invocation may be performed immediately (possibly blocking
          * the invoker thread) or deferred to a later time, for example
-         * by submitting the {@code Invocable} to a thread pool.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
+         * by submitting the task to a thread pool.</p>
+         * <p>This invocation type is suitable for tasks that
          * call application code, for example to process an HTTP request.</p>
          */
         BLOCKING,
         /**
-         * <p>Invoking the {@link Invocable} does not block the invoker thread,
+         * <p>Invoking the task does not block the invoker thread,
          * and the invocation may be performed immediately in the invoker thread.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
+         * <p>This invocation type is suitable for tasks that
          * call implementation code that is guaranteed to never block the
          * invoker thread.</p>
          */
         NON_BLOCKING,
         /**
-         * <p>Invoking the {@link Invocable} may block the invoker thread,
-         * but the invocation cannot be deferred to a later time, differently
+         * <p>Invoking the task does not block the invoker thread,
+         * and the invocation may be performed immediately in the invoker thread.</p>
+         * <p>The thread that produced the task may dispatch another
+         * thread to resume production, and then invoke the task, differently
+         * from {@link #NON_BLOCKING} which does not dispatch production to
+         * another thread.</p>
+         * <p>The invocation cannot be deferred to a later time, differently
          * from {@link #BLOCKING}.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
-         * themselves perform the non-deferrable action in a non-blocking way,
-         * thus advancing a possibly stalled system.</p>
+         * <p>A series of {@code NON_BLOCKING} tasks is run sequentially,
+         * while a series of {@code EITHER} tasks may be run in parallel,
+         * if there are threads available to resume task production.</p>
+         * <p>This invocation type is suitable for tasks that
+         * perform the non-deferrable action in a non-blocking way,
+         * hinting that may be run in parallel, for example when each task
+         * processes a different connection or a different stream.</p>
          */
         EITHER
     }

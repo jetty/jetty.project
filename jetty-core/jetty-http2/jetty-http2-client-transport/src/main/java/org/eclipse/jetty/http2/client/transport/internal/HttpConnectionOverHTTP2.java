@@ -46,6 +46,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -287,10 +288,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return sweeps.incrementAndGet() >= 4;
     }
 
-    void offerTask(Runnable task, boolean dispatch)
+    Invocable.InvocationType getInvocationType()
     {
-        if (task != null)
-            connection.offerTask(task, dispatch);
+        return getHttpClient().getTransport().getInvocationType(this);
     }
 
     @Override

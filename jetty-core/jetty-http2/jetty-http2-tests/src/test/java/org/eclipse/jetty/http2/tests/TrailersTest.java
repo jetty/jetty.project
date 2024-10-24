@@ -230,18 +230,18 @@ public class TrailersTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener()
         {
-            private boolean responded;
+            private boolean seenResponse;
 
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                if (!responded)
+                if (!seenResponse)
                 {
                     MetaData.Response response = (MetaData.Response)frame.getMetaData();
                     assertEquals(HttpStatus.OK_200, response.getStatus());
                     assertTrue(response.getHttpFields().contains("X-Response"));
                     assertFalse(frame.isEndStream());
-                    responded = true;
+                    seenResponse = true;
                 }
                 else
                 {
@@ -286,21 +286,31 @@ public class TrailersTest extends AbstractTest
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
+                System.err.println("SIMON: frame = " + frame);
                 frames.add(frame);
                 if (frame.isEndStream())
                     latch.countDown();
-                stream.demand();
+                else
+                    stream.demand();
             }
 
             @Override
             public void onDataAvailable(Stream stream)
             {
                 Stream.Data data = stream.readData();
+                System.err.println("SIMON: data = " + data);
+                if (data == null)
+                {
+                    stream.demand();
+                    return;
+                }
                 DataFrame frame = data.frame();
                 frames.add(frame);
                 data.release();
                 if (frame.isEndStream())
                     latch.countDown();
+                else
+                    stream.demand();
             }
         });
 

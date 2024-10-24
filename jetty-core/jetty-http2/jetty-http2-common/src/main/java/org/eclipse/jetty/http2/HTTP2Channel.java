@@ -34,13 +34,13 @@ public interface HTTP2Channel
      */
     public interface Client
     {
-        public Runnable onDataAvailable();
+        public void onDataAvailable();
 
-        public Runnable onReset(ResetFrame frame, Callback callback);
+        public void onReset(ResetFrame frame, Callback callback);
 
-        public Runnable onTimeout(TimeoutException failure, Promise<Boolean> promise);
+        public void onTimeout(TimeoutException failure, Promise<Boolean> promise);
 
-        public Runnable onFailure(Throwable failure, Callback callback);
+        public void onFailure(Throwable failure, Callback callback);
     }
 
     /**
