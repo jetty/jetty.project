@@ -281,4 +281,13 @@ public class ComponentDocs
         parent.addBean(younger);
         // end::containerSiblings[]
     }
+
+    public void dumpExample()
+    {
+        Server server = new Server();
+        // tag::dumpExample[]
+        server.setDumpAfterStart(true);
+        server.setDumpBeforeStop(true);
+        // end::dumpExample[]
+    }
 }
