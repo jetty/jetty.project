@@ -765,7 +765,16 @@ public class ServletContextHandler extends ContextHandler
         if (baseResource == null)
             return null;
 
-        return baseResource.resolve(pathInContext);
+        try
+        {
+            return baseResource.resolve(pathInContext);
+        }
+        catch (Exception e)
+        {
+            LOG.trace("IGNORED", e);
+        }
+
+        return null;
     }
 
     /**

@@ -1520,9 +1520,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
         try
         {
-            // addPath with accept non-canonical paths that don't go above the root,
-            // but will treat them as aliases. So unless allowed by an AliasChecker
-            // they will be rejected below.
             return baseResource.resolve(pathInContext);
         }
         catch (Exception e)
