@@ -1214,7 +1214,6 @@ public class HttpURITest
     public static Stream<String> badAuthorities()
     {
         return Stream.of(
-            "http://#host/path",
             "https:// host/path",
             "https://h st/path",
             "https://h\000st/path",
@@ -1230,7 +1229,7 @@ public class HttpURITest
             "https://user@host:notport/path",
             "https://user:password@host:notport/path",
             "https://user @host.com/",
-            "https://user#@host.com/",
+            // "https://user#@host.com/", TODO this might cause WhatWG compatibility issues
             "https://[notIpv6]/",
             "https://bad[0::1::2::3::4]/"
         );

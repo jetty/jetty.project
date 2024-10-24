@@ -1095,6 +1095,9 @@ public interface HttpURI
             {
                 clear();
                 parse(State.HOST, uri);
+                _path = null;
+                _query = null;
+                _param = null;
             }
             else if (uri.startsWith("/"))
             {
@@ -1287,11 +1290,11 @@ public interface HttpURI
                                 if (encodedCharacters > 0 || password)
                                     throw new IllegalArgumentException("Bad authority");
                                 _host = uri.substring(mark, i);
-                                segment = mark + 1;
                                 encoded = false;
                                 if (c == '/')
                                 {
                                     pathMark = mark = i;
+                                    segment = mark + 1;
                                     state = State.PATH;
                                 }
                                 else
@@ -1401,7 +1404,7 @@ public interface HttpURI
                             {
                                 _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
                                 pathMark = mark = i;
-                                segment = i + 1;
+                                segment = mark + 1;
                                 state = State.PATH;
                             }
                             case ';', '?', '#' ->
