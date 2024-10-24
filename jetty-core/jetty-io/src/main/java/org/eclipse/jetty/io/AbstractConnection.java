@@ -142,7 +142,7 @@ public abstract class AbstractConnection implements Connection, Invocable
     protected void onFillInterestedFailed(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillInterestedFailed {}", this, cause);
+            LOG.debug("onFillInterestedFailed {}", this, cause);
         if (_endPoint.isOpen())
         {
             boolean close = true;
