@@ -30,26 +30,29 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
-@Disabled // TODO
 public class DebugHandlerTest
 {
+    public static final String INBOUND_STARTS_WITH = ">> r=";
+    public static final String OUTBOUND_STARTS_WITH = "<< r=";
     public static final HostnameVerifier __hostnameverifier = (hostname, session) -> true;
 
     private SSLContext sslContext;
@@ -85,19 +88,18 @@ public class DebugHandlerTest
         debugHandler = new DebugHandler();
         capturedLog = new ByteArrayOutputStream();
         debugHandler.setOutputStream(capturedLog);
-        /* TODO
-        debugHandler.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                response.setStatus(HttpStatus.OK_200);
+                response.setStatus(200);
+                callback.succeeded();
+                return true;
             }
         });
-        server.setHandler(debugHandler);
+        server.insertHandler(debugHandler);
 
-         */
         server.start();
 
         String host = httpConnector.getHost();
@@ -146,30 +148,27 @@ public class DebugHandlerTest
     }
 
     @Test
-    public void testThreadName() throws IOException
+    public void testDebugInboundOutboundMessages() throws IOException
     {
         HttpURLConnection http = (HttpURLConnection)serverURI.resolve("/foo/bar?a=b").toURL().openConnection();
         assertThat("Response Code", http.getResponseCode(), is(200));
 
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
-        String expectedThreadName = ":/foo/bar?a=b";
-        assertThat("ThreadName", log, containsString(expectedThreadName));
-        // Look for bad/mangled/duplicated schemes
-        assertThat("ThreadName", log, not(containsString("http:" + expectedThreadName)));
-        assertThat("ThreadName", log, not(containsString("https:" + expectedThreadName)));
+
+        assertThat("Inbound", log, containsString(INBOUND_STARTS_WITH));
+        assertThat("Outbound", log, containsString(OUTBOUND_STARTS_WITH));
     }
 
     @Test
-    public void testSecureThreadName() throws IOException
+    public void testSecureInboundOutboundMessages() throws IOException
     {
         HttpURLConnection http = (HttpURLConnection)secureServerURI.resolve("/foo/bar?a=b").toURL().openConnection();
         assertThat("Response Code", http.getResponseCode(), is(200));
 
         String log = capturedLog.toString(StandardCharsets.UTF_8.name());
-        String expectedThreadName = ":/foo/bar?a=b";
-        assertThat("ThreadName", log, containsString(expectedThreadName));
-        // Look for bad/mangled/duplicated schemes
-        assertThat("ThreadName", log, not(containsString("http:" + expectedThreadName)));
-        assertThat("ThreadName", log, not(containsString("https:" + expectedThreadName)));
+        System.err.println("****" + log + "******");
+
+        assertThat("Inbound", log, containsString(INBOUND_STARTS_WITH));
+        assertThat("Outbound", log, containsString(OUTBOUND_STARTS_WITH));
     }
 }

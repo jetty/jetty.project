@@ -37,7 +37,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
@@ -1326,10 +1325,32 @@ public class MultiPartFormDataTest
         }
     }
 
-    // TODO We need to implement RFC8187 to lookfor the filename*= attribute. Meanwhile, it appears
-    //      that escaping is only done for quote in these filenames.
     @Test
-    @Disabled
+    public void testCorrectlyEncodedFilename() throws Exception
+    {
+        AsyncContent source = new TestContent();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
+        formData.setFilesDirectory(_tmpDir);
+        formData.setMaxMemoryFileSize(-1);
+
+        String contents = """
+            --AaB03x\r
+            Content-Disposition: form-data; name="stuff"; filename="file.txt"; filename*=UTF-8''file%20%E2%9C%93.txt\r
+            Content-Type: text/plain\r
+            \r
+            stuffaaa\r
+            --AaB03x--\r
+            """;
+        Content.Sink.write(source, true, contents, Callback.NOOP);
+        try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+            MultiPart.Part part = parts.get(0);
+            assertThat(part.getFileName(), is("file ✓.txt"));
+        }
+    }
+
+    @Test
     public void testCorrectlyEncodedMSFilename() throws Exception
     {
         AsyncContent source = new TestContent();
@@ -1339,7 +1360,7 @@ public class MultiPartFormDataTest
 
         String contents = """
             --AaB03x\r
-            content-disposition: form-data; name="stuff"; filename="c:\\\\this\\\\really\\\\is\\\\some\\\\path\\\\to\\\\a\\\\file.txt"\r
+            Content-Disposition: form-data; name="stuff"; filename="c:\\this\\really\\is\\some\\path\\to\\a\\file.txt"\r
             Content-Type: text/plain\r
             \r
             stuffaaa\r

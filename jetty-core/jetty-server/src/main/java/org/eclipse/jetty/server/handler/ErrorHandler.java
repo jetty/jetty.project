@@ -72,7 +72,7 @@ public class ErrorHandler implements Request.Handler
     public static final String ERROR_EXCEPTION = "org.eclipse.jetty.server.error_exception";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
     public static final String ERROR_ORIGIN = "org.eclipse.jetty.server.error_origin";
-    public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD");
+    public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD", "BAD");
     public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     boolean _showStacks = false;
