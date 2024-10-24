@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.File;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.MimeTypes;
@@ -164,5 +165,111 @@ public interface Context extends Attributes, Decorator, Executor
         if (encodedPath.charAt(encodedContextPath.length()) != '/')
             return null;
         return encodedPath.substring(encodedContextPath.length());
+    }
+
+    public static class Wrapper implements Context
+    {
+        private final Context _wrapped;
+
+        public Wrapper(Context context)
+        {
+            _wrapped = context;
+        }
+
+        @Override
+        public <T> T decorate(T o)
+        {
+            return _wrapped.decorate(o);
+        }
+
+        @Override
+        public void destroy(Object o)
+        {
+            _wrapped.destroy(o);
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            return _wrapped.getContextPath();
+        }
+
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            return _wrapped.getClassLoader();
+        }
+
+        @Override
+        public Resource getBaseResource()
+        {
+            return _wrapped.getBaseResource();
+        }
+
+        @Override
+        public Request.Handler getErrorHandler()
+        {
+            return _wrapped.getErrorHandler();
+        }
+
+        @Override
+        public List<String> getVirtualHosts()
+        {
+            return _wrapped.getVirtualHosts();
+        }
+
+        @Override
+        public MimeTypes getMimeTypes()
+        {
+            return _wrapped.getMimeTypes();
+        }
+
+        @Override
+        public void execute(Runnable task)
+        {
+            _wrapped.execute(task);
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return _wrapped.removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return _wrapped.setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _wrapped.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return _wrapped.getAttributeNameSet();
+        }
+
+        @Override
+        public void run(Runnable task)
+        {
+            _wrapped.run(task);
+        }
+
+        @Override
+        public void run(Runnable task, Request request)
+        {
+            _wrapped.run(task, request);
+        }
+
+        @Override
+        public File getTempDirectory()
+        {
+            return _wrapped.getTempDirectory();
+        }
     }
 }
