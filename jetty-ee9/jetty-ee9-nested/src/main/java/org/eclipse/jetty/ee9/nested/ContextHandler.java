@@ -64,6 +64,7 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -2817,6 +2818,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
             CoreContextRequest coreContextRequest = new CoreContextRequest(request, this.getContext(), httpChannel);
             httpChannel.onRequest(coreContextRequest);
+            HttpChannel channel = httpChannel;
+            org.eclipse.jetty.server.Request.addCompletionListener(coreContextRequest, x ->
+            {
+                // WebSocket needs a reference to the HttpServletRequest,
+                // so do not recycle the HttpChannel if it's a WebSocket
+                // request, no matter if the response is successful or not.
+                if (!request.getHeaders().contains(HttpHeader.SEC_WEBSOCKET_VERSION))
+                    channel.recycle();
+            });
             return coreContextRequest;
         }
 

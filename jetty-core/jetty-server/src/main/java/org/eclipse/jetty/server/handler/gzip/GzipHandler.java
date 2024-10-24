@@ -85,13 +85,27 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
                 type.startsWith("video/"))
                 _mimeTypes.exclude(type);
         }
+
         _mimeTypes.exclude("application/compress");
+        _paths.exclude("*.z");
         _mimeTypes.exclude("application/zip");
+        _paths.exclude("*.zip");
+        _mimeTypes.exclude("application/x-gtar");
+        _paths.exclude("*.tgz");
+        _mimeTypes.exclude("application/java-archive");
+        _paths.exclude("*.jar");
         _mimeTypes.exclude("application/gzip");
+        _paths.exclude("*.gz", "*.gzip");
         _mimeTypes.exclude("application/x-bzip2");
+        _paths.exclude("*.bz2", "*.bzip", "*.bz");
         _mimeTypes.exclude("application/brotli");
+        _paths.exclude("*.br", "*.brotli");
         _mimeTypes.exclude("application/x-xz");
+        _paths.exclude("*.xz");
         _mimeTypes.exclude("application/x-rar-compressed");
+        _paths.exclude("*.rar");
+        _mimeTypes.exclude("application/zstd");
+        _paths.exclude("*.zst", "*.zstd");
 
         // It is possible to use SSE with GzipHandler but you will need to set _synFlush to true which will impact performance.
         _mimeTypes.exclude("text/event-stream");

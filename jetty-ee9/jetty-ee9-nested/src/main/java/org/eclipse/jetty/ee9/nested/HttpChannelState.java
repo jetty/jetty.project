@@ -146,6 +146,7 @@ public class HttpChannelState
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
     private Thread _onTimeoutThread;
+    private Throwable _failure;
     private boolean _failureListener;
 
     protected HttpChannelState(HttpChannel channel)
@@ -310,20 +311,13 @@ public class HttpChannelState
         }
     }
 
-    public boolean completeResponse()
+    public Throwable completeResponse()
     {
         try (AutoLock l = lock())
         {
-            switch (_outputState)
-            {
-                case OPEN:
-                case COMMITTED:
-                    _outputState = OutputState.COMPLETED;
-                    return true;
-
-                default:
-                    return false;
-            }
+            if (_outputState == OutputState.OPEN || _outputState == OutputState.COMMITTED)
+                _outputState = OutputState.COMPLETED;
+            return _failure;
         }
     }
 
@@ -349,22 +343,48 @@ public class HttpChannelState
         }
     }
 
-    public boolean abortResponse()
+    /**
+     * <p>Aborts the {@link HttpChannel}, eventually
+     * resulting in the completion of its state machine.</p>
+     *
+     * @param failure the cause of the abort
+     * @return {@code null} when no abort happened because it was already aborted;
+     * {@code false} when abort happened, but there is no need to call {@link HttpChannel#handle()};
+     * {@code true} when abort happened, and {@link HttpChannel#handle()} must be called.
+     */
+    Boolean abort(Throwable failure)
+    {
+        boolean handle;
+        try (AutoLock ignored = lock())
+        {
+            boolean aborted = abortResponse(failure);
+            if (LOG.isDebugEnabled())
+                LOG.debug("abort={} {}", aborted, this, failure);
+            if (aborted)
+            {
+                handle = _state == State.WAITING;
+                if (handle)
+                    _state = State.WOKEN;
+                _requestState = RequestState.COMPLETED;
+                return handle;
+            }
+            return null;
+        }
+    }
+
+    public boolean abortResponse(Throwable failure)
     {
         try (AutoLock l = lock())
         {
             switch (_outputState)
             {
+                case COMPLETED:
                 case ABORTED:
                     return false;
 
-                case OPEN:
-                    _channel.getResponse().setStatus(500);
-                    _outputState = OutputState.ABORTED;
-                    return true;
-
                 default:
                     _outputState = OutputState.ABORTED;
+                    _failure = failure;
                     return true;
             }
         }
@@ -719,7 +739,7 @@ public class HttpChannelState
             {
                 case EXPIRING:
                     if (Thread.currentThread() != _onTimeoutThread)
-                        throw new IllegalStateException(this.getStatusStringLocked());
+                        throw new IllegalStateException(getStatusStringLocked());
                     _requestState = _sendError ? RequestState.BLOCKING : RequestState.COMPLETE;
                     break;
 
@@ -730,7 +750,7 @@ public class HttpChannelState
                 case COMPLETE:
                     return;
                 default:
-                    throw new IllegalStateException(this.getStatusStringLocked());
+                    throw new IllegalStateException(getStatusStringLocked());
             }
             if (_state == State.WAITING)
             {
@@ -779,14 +799,15 @@ public class HttpChannelState
         }
     }
 
-    protected void onError(Throwable th)
+    protected boolean onError(Throwable th)
     {
+        boolean committed = _channel.isCommitted();
         final AsyncContextEvent asyncEvent;
         final List<AsyncListener> asyncListeners;
         try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("thrownException {}", getStatusStringLocked(), th);
+                LOG.debug("onError {}", getStatusStringLocked(), th);
 
             // This can only be called from within the handle loop
             if (_state != State.HANDLING)
@@ -795,34 +816,42 @@ public class HttpChannelState
             // If sendError has already been called, we can only handle one failure at a time!
             if (_sendError)
             {
-                LOG.warn("unhandled due to prior sendError", th);
-                return;
+                LOG.warn("onError not handled due to prior sendError() {}", getStatusStringLocked(), th);
+                return true;
             }
 
             // Check async state to determine type of handling
             switch (_requestState)
             {
                 case BLOCKING:
-                    // handle the exception with a sendError
+                {
+                    // Handle the exception with a sendError.
+                    if (committed)
+                        return true;
                     sendError(th);
-                    return;
-
+                    return false;
+                }
                 case DISPATCH: // Dispatch has already been called but we ignore and handle exception below
                 case COMPLETE: // Complete has already been called but we ignore and handle exception below
                 case ASYNC:
+                {
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
                     {
+                        if (committed)
+                            return true;
                         sendError(th);
-                        return;
+                        return false;
                     }
                     asyncEvent = _event;
                     asyncEvent.addThrowable(th);
                     asyncListeners = _asyncListeners;
                     break;
-
+                }
                 default:
-                    LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
-                    return;
+                {
+                    LOG.warn("onError not handled due to invalid requestState {}", getStatusStringLocked(), th);
+                    return true;
+                }
             }
         }
 
@@ -839,9 +868,9 @@ public class HttpChannelState
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.warn("{} while invoking onError listener {}", x.toString(), listener, x);
+                        LOG.debug("{} while invoking onError listener {}", x, listener, x);
                     else
-                        LOG.warn("{} while invoking onError listener {}", x.toString(), listener);
+                        LOG.warn("{} while invoking onError listener {}", x, listener);
                 }
             }
         });
@@ -853,7 +882,10 @@ public class HttpChannelState
             {
                 // The listeners did not invoke API methods and the
                 // container must provide a default error dispatch.
+                if (committed)
+                    return true;
                 sendError(th);
+                return false;
             }
             else if (_requestState != RequestState.COMPLETE)
             {
@@ -862,12 +894,14 @@ public class HttpChannelState
                 else
                     LOG.warn("unhandled in state {}", _requestState, th);
             }
+            return committed;
         }
     }
 
     private void sendError(Throwable th)
     {
         // No sync as this is always called with lock held
+        assert _lock.isHeldByCurrentThread();
 
         // Determine the actual details of the exception
         final Request request = _channel.getRequest();
