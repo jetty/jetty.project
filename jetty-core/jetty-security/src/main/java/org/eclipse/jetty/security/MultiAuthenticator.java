@@ -9,6 +9,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -18,6 +19,14 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>An {@link Authenticator} which maps different {@link Authenticator}s to {@link PathSpec}s.</p>
+ * <p>This can be used to support multiple different authentication methods for a single application such as
+ * FORM, OPENID and SIWE.</p>
+ * <p>The {@link #setLoginPath(String)} can be used to set a login page where unauthenticated users are
+ * redirected in the case that no {@link Authenticator}s were matched. This can be used as a page to
+ * link to other paths where {@link Authenticator}s are mapped to so that users can choose their login method.</p>
+ */
 public class MultiAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiAuthenticator.class);
@@ -29,6 +38,11 @@ public class MultiAuthenticator extends LoginAuthenticator
     private String _loginPath;
     private boolean _dispatch;
 
+    /**
+     * Adds an authenticator which maps to the given pathSpec.
+     * @param pathSpec the pathSpec.
+     * @param authenticator the authenticator.
+     */
     public void addAuthenticator(String pathSpec, Authenticator authenticator)
     {
         _authenticatorsMappings.put(pathSpec, authenticator);
@@ -47,6 +61,10 @@ public class MultiAuthenticator extends LoginAuthenticator
         }
     }
 
+    /**
+     * If a user is unauthenticated, a request which does not map to any of the {@link Authenticator}s will redirect to this path.
+     * @param loginPath the loginPath.
+     */
     public void setLoginPath(String loginPath)
     {
         if (loginPath != null)

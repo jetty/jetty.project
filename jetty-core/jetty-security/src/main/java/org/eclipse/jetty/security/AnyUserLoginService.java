@@ -26,6 +26,8 @@ import org.eclipse.jetty.server.Session;
  * with the nested {@link LoginService} and only create a new {@link UserIdentity} if none was found with
  * {@link LoginService#login(String, Object, Request, Function)}.
  * </p>
+ * <p>This {@link LoginService} does not check credentials, a {@link UserIdentity} will be produced for any
+ * username provided in {@link #login(String, Object, Request, Function)}.</p>
  */
 public class AnyUserLoginService implements LoginService
 {
