@@ -1284,7 +1284,6 @@ public interface HttpURI
                         switch (c)
                         {
                             case '/':
-                            case ';':
                             case '?':
                             case '#':
                                 if (encodedCharacters > 0 || password)
@@ -1303,17 +1302,14 @@ public interface HttpURI
                                     _path = "";
                                     state = switch (c)
                                     {
-                                        case ';' ->
-                                        {
-                                            pathMark = i;
-                                            yield State.PARAM;
-                                        }
                                         case '?' -> State.QUERY;
                                         case '#' -> State.FRAGMENT;
                                         default -> throw new IllegalArgumentException("Bad authority");
                                     };
                                 }
                                 break;
+                            case ';':
+                                throw new IllegalArgumentException("Bad authority");
                             case ':':
                                 if (encodedCharacters > 0 || password)
                                     throw new IllegalArgumentException("Bad authority");
@@ -1407,22 +1403,21 @@ public interface HttpURI
                                 segment = mark + 1;
                                 state = State.PATH;
                             }
-                            case ';', '?', '#' ->
+                            case '?', '#' ->
                             {
                                 _port = TypeUtil.parseInt(uri, mark, i - mark, 10);
                                 mark = i + 1;
                                 _path = "";
                                 state = switch (c)
                                 {
-                                    case ';' ->
-                                    {
-                                        pathMark = i;
-                                        yield State.PARAM;
-                                    }
                                     case '?' -> State.QUERY;
                                     case '#' -> State.FRAGMENT;
                                     default -> throw new IllegalStateException();
                                 };
+                            }
+                            case ';' ->
+                            {
+                                throw new IllegalArgumentException("Bad authority");
                             }
                             default ->
                             {
