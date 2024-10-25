@@ -433,12 +433,12 @@ public class Response implements HttpServletResponse
         if (suffix < 0)
         {
             return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
+                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && StringUtil.isEmpty(uri.getPath()) ? "/" : "") + //if no path, insert the root path
                 sessionURLPrefix + id;
         }
 
         return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
+            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && StringUtil.isEmpty(uri.getPath()) ? "/" : "") + //if no path so insert the root path
             sessionURLPrefix + id + url.substring(suffix);
     }
 
