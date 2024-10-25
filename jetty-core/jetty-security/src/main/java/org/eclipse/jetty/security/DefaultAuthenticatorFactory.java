@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.jetty.security.Authenticator.Configuration;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.security.authentication.SslClientCertAuthenticator;
 import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
@@ -53,27 +55,74 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
     @Override
     public Authenticator getAuthenticator(Server server, Context context, Configuration configuration)
     {
-        String auth = configuration.getAuthenticationType();
-        Authenticator authenticator = null;
+        String auth = StringUtil.asciiToUpperCase(configuration.getAuthenticationType());
+        if (auth == null)
+            return null;
 
-        if (Authenticator.BASIC_AUTH.equalsIgnoreCase(auth))
-            authenticator = new BasicAuthenticator();
-        else if (Authenticator.DIGEST_AUTH.equalsIgnoreCase(auth))
-            authenticator = new DigestAuthenticator();
-        else if (Authenticator.FORM_AUTH.equalsIgnoreCase(auth))
-            authenticator = new FormAuthenticator();
-        else if (Authenticator.SPNEGO_AUTH.equalsIgnoreCase(auth))
-            authenticator = new SPNEGOAuthenticator();
-        else if (Authenticator.NEGOTIATE_AUTH.equalsIgnoreCase(auth)) // see Bug #377076
-            authenticator = new SPNEGOAuthenticator(Authenticator.NEGOTIATE_AUTH);
-        if (Authenticator.CERT_AUTH2.equalsIgnoreCase(auth))
+        return switch (auth)
         {
-            Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);
-            if (sslContextFactories.size() != 1)
-                throw new IllegalStateException("SslClientCertAuthenticator requires a single SslContextFactory instances.");
-            authenticator = new SslClientCertAuthenticator(sslContextFactories.iterator().next());
-        }
+            case Authenticator.BASIC_AUTH -> new BasicAuthenticator();
+            case Authenticator.DIGEST_AUTH -> new DigestAuthenticator();
+            case Authenticator.FORM_AUTH -> new FormAuthenticator();
+            case Authenticator.SPNEGO_AUTH -> new SPNEGOAuthenticator();
+            case Authenticator.NEGOTIATE_AUTH -> new SPNEGOAuthenticator(Authenticator.NEGOTIATE_AUTH);  // see Bug #377076
+            case Authenticator.MULTI_AUTH -> getMultiAuthenticator(server, context, configuration);
+            case Authenticator.CERT_AUTH, Authenticator.CERT_AUTH2 ->
+            {
+                Collection<SslContextFactory> sslContextFactories = server.getBeans(SslContextFactory.class);
+                if (sslContextFactories.size() != 1)
+                    throw new IllegalStateException("SslClientCertAuthenticator requires a single SslContextFactory instances.");
+                yield new SslClientCertAuthenticator(sslContextFactories.iterator().next());
+            }
+            default -> null;
+        };
+    }
 
-        return authenticator;
+    private Authenticator getMultiAuthenticator(Server server, Context context, Authenticator.Configuration configuration)
+    {
+        SecurityHandler securityHandler = SecurityHandler.getCurrentSecurityHandler();
+        if (securityHandler == null)
+            return null;
+
+        String auth = configuration.getAuthenticationType();
+        if (Authenticator.MULTI_AUTH.equalsIgnoreCase(auth))
+        {
+            MultiAuthenticator multiAuthenticator = new MultiAuthenticator();
+
+            String authenticatorConfig = configuration.getParameter("org.eclipse.jetty.security.multi.authenticators");
+            for (String config : StringUtil.csvSplit(authenticatorConfig))
+            {
+                String[] parts = config.split(":");
+                if (parts.length != 2)
+                    throw new IllegalArgumentException();
+
+                String authType = parts[0].trim();
+                String pathSpec = parts[1].trim();
+
+                Authenticator.Configuration.Wrapper authConfig = new Authenticator.Configuration.Wrapper(configuration)
+                {
+                    @Override
+                    public String getAuthenticationType()
+                    {
+                        return authType;
+                    }
+                };
+
+                Authenticator authenticator = null;
+                List<Authenticator.Factory> authenticatorFactories = securityHandler.getKnownAuthenticatorFactories();
+                for (Authenticator.Factory factory : authenticatorFactories)
+                {
+                    authenticator = factory.getAuthenticator(server, context, authConfig);
+                    if (authenticator != null)
+                        break;
+                }
+
+                if (authenticator == null)
+                    throw new IllegalStateException();
+                multiAuthenticator.addAuthenticator(pathSpec, authenticator);
+            }
+            return multiAuthenticator;
+        }
+        return null;
     }
 }

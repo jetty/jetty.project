@@ -109,7 +109,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param issuer The URL of the OpenID provider.
      * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
      * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
-     * @param endSessionEndpoint the URL of the OpdnID provider's end session endpoint if configured.
+     * @param endSessionEndpoint the URL of the OpenID provider's end session endpoint if configured.
      * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
      * @param authenticationMethod Authentication method to use with the Token Endpoint.
