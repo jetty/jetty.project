@@ -1104,7 +1104,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             _uri = uri == null ? null : HttpURI.build(method, uri);
             _version = Objects.requireNonNull(version);
 
-            if (_uri != null && _uri.getPath() == null && _uri.getScheme() != null && _uri.hasAuthority())
+            if (_uri != null && StringUtil.isEmpty(_uri.getPath()) && _uri.getScheme() != null && _uri.hasAuthority())
                 _uri.path("/");
         }
 
