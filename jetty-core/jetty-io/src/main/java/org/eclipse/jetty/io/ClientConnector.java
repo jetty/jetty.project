@@ -28,6 +28,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.EventListener;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -108,7 +109,6 @@ public class ClientConnector extends ContainerLifeCycle
     private boolean reusePort;
     private int receiveBufferSize = -1;
     private int sendBufferSize = -1;
-    private ClientConnectionListener listener;
 
     public ClientConnector()
     {
@@ -454,17 +454,20 @@ public class ClientConnector extends ContainerLifeCycle
             boolean connected = true;
             if (channel instanceof SocketChannel socketChannel)
             {
+                final SocketAddress socketAddress = address; 
                 boolean blocking = isConnectBlocking() && address instanceof InetSocketAddress;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connecting {} to {}", blocking ? "blocking" : "non-blocking", address);
                 if (blocking)
                 {
+                    this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectBegin(socketChannel, socketAddress));
                     socketChannel.socket().connect(address, (int)getConnectTimeout().toMillis());
                     socketChannel.configureBlocking(false);
                 }
                 else
                 {
                     socketChannel.configureBlocking(false);
+                    this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectBegin(socketChannel, socketAddress));
                     connected = socketChannel.connect(address);
                 }
             }
@@ -477,7 +480,6 @@ public class ClientConnector extends ContainerLifeCycle
                 selectorManager.accept(channel, context);
             else
                 selectorManager.connect(channel, context);
-                listener.onConnectBegin((SocketChannel)channel);
         }
         // Must catch all exceptions, since some like
         // UnresolvedAddressException are not IOExceptions.
@@ -513,13 +515,6 @@ public class ClientConnector extends ContainerLifeCycle
             IO.close(selectable);
             acceptFailed(failure, selectable, context);
         }
-    }
-
-    public void onClientConnection(ClientConnectionListener listener)
-    {
-        if (this.listener != null)
-            return;
-        this.listener = listener;
     }
 
     private void bind(NetworkChannel channel, SocketAddress bindAddress) throws IOException
@@ -601,8 +596,8 @@ public class ClientConnector extends ContainerLifeCycle
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
             EndPoint endPoint = ClientConnector.this.newEndPoint(channel, selector, selectionKey);
+            ClientConnector.this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectSuccess((SocketChannel)channel));
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
-            listener.onConnectSuccess((SocketChannel)channel);
             return endPoint;
         }
 
@@ -639,7 +634,7 @@ public class ClientConnector extends ContainerLifeCycle
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
-            listener.onConnectFailure((SocketChannel)channel, failure);
+            ClientConnector.this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectFailure((SocketChannel)channel, failure));
             connectFailed(failure, context);
         }
     }
@@ -765,9 +760,9 @@ public class ClientConnector extends ContainerLifeCycle
         }
     }
 
-    public interface ClientConnectionListener
+    public interface ConnectListener extends EventListener
     {
-        public void onConnectBegin(SocketChannel s);
+        public void onConnectBegin(SocketChannel s, SocketAddress a);
         public void onConnectSuccess(SocketChannel s);
         public void onConnectFailure(SocketChannel s, Throwable x);
     }
