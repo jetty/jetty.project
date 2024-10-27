@@ -1,4 +1,4 @@
-jetty-12.0.15-SNAPSHOT
+jetty-12.1.0-SNAPSHOT
 
 jetty-12.0.14 - 30 September 2024
  + 929 Implement a utility class to save large downloads to a file (@arsenalzp)
@@ -91,7 +91,7 @@ jetty-10.0.23 - 13 August 2024
  + 12156 Improvements to HttpConnection when reading 0 bytes
 
 jetty-12.0.12 - 25 July 2024
- + 265 list-config license enhancement
+ + 265 --list-config license enhancement
  + 10904 jetty.sh reports FAILED too early
  + 11965 Client: Some HTTP/2 requests are never sent
  + 11996 mTLS: client cert verification for QUIC/HTTP3

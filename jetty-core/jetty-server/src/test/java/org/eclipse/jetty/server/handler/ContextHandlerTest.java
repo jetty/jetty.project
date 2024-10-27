@@ -602,12 +602,12 @@ public class ContextHandlerTest
         _contextHandler.setErrorHandler(new ErrorHandler()
         {
             @Override
-            protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
+            protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause) throws IOException
             {
                 Context context = request.getContext();
                 if (context != null)
                     writer.write("<h1>Context: " + context.getContextPath() + "</h1>");
-                super.writeErrorHtmlBody(request, writer, code, message, cause, showStacks);
+                super.writeErrorHtmlBody(request, writer, code, message, cause);
             }
         });
         _server.start();

@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -22,7 +24,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,6 +34,7 @@ import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPartTest
@@ -371,48 +373,6 @@ public class MultiPartTest
         assertEquals(0, data.remaining());
     }
 
-    /**
-     * Whitespace before boundaries.
-     *
-     * @see MultiPartCompliance.Violation#WHITESPACE_BEFORE_BOUNDARY
-     */
-    @Test
-    @Disabled
-    public void testWhitespaceBeforeBoundary() throws Exception
-    {
-        TestPartsListener listener = new TestPartsListener();
-        MultiPart.Parser parser = new MultiPart.Parser("BOUNDARY", listener);
-
-        ByteBuffer data = BufferUtil.toBuffer("""
-            preamble\r
-             --BOUNDARY\r
-            name: value\r
-            \r
-            Hello\r
-             --BOUNDARY\r
-            powerLevel: 9001\r
-            \r
-            secondary\r
-            content\r
-             --BOUNDARY--epi\r
-            logue\r
-            """);
-
-        parser.parse(Content.Chunk.from(data, true));
-
-        assertEquals(2, listener.parts.size());
-
-        MultiPart.Part part1 = listener.parts.get(0);
-        assertEquals("value", part1.getHeaders().get("name"));
-        assertEquals("Hello", Content.Source.asString(part1.getContentSource()));
-
-        MultiPart.Part part2 = listener.parts.get(1);
-        assertEquals("9001", part2.getHeaders().get("powerLevel"));
-        assertEquals("secondary\r\ncontent", Content.Source.asString(part2.getContentSource()));
-
-        assertEquals(0, data.remaining());
-    }
-
     @Test
     public void testLineFeed() throws Exception
     {
@@ -657,6 +617,22 @@ public class MultiPartTest
 
         assertNotNull(listener.failure);
         assertThat(listener.failure.getMessage(), containsStringIgnoringCase("invalid header name"));
+    }
+
+    @Test
+    public void testEncodeContentDispositionFilename()
+    {
+        assertThat(MultiPart.encodeContentDispositionFileName("test.xml"), is("filename=\"test.xml\""));
+        assertThat(MultiPart.encodeContentDispositionFileName("test ✓.xml"), is("filename=\"test _.xml\"; filename*=UTF-8''test%20%E2%9C%93.xml"));
+        assertThat(MultiPart.encodeContentDispositionFileName("test ✓.xml", StandardCharsets.UTF_16), is("filename=\"test _.xml\"; filename*=UTF-16''╆䔥䙆┰ぴ┰づ┰び┰ぴ┰〫┲㜥ㄳ┰〮┰へ┰ね┰ぬ"));
+    }
+
+    @Test
+    public void testDecodeContentDispositionFilename()
+    {
+        assertThat(MultiPart.decodeContentDispositionFileName("UTF-8''test%20%E2%9C%93.xml"), is("test ✓.xml"));
+        assertThat(MultiPart.decodeContentDispositionFileName("utf-8''test%20%E2%9C%93.xml"), is("test ✓.xml"));
+        assertThrows(UnsupportedCharsetException.class, () -> MultiPart.decodeContentDispositionFileName("unknown-42''test.xml"));
     }
 
     private static byte[] randomBytes(int length)

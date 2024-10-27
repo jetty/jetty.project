@@ -260,7 +260,8 @@ public class MultiPartFormData
                 value += "; name=" + QuotedCSV.quote(name);
             String fileName = part.getFileName();
             if (fileName != null)
-                value += "; filename=" + QuotedCSV.quote(fileName);
+                value += "; " + MultiPart.encodeContentDispositionFileName(fileName);
+
             return HttpFields.build(headers).put(HttpHeader.CONTENT_DISPOSITION, value);
         }
     }
