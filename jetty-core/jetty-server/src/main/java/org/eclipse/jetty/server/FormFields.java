@@ -117,9 +117,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     {
         int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
-        Charset charset = getFormEncodedCharset(request);
-        CompletableFuture<Fields> fields = from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength);
-        return fields.join();
+        return getFields(request, maxFields, maxLength);
     }
 
     /**
@@ -151,7 +149,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param request The request to get or read the Fields from
-     * @param promise The action to take when the FormFields are available.
+     * @param promise The action to take when the {@link FormFields} are available.
      *                If the {@link InvocationType} of the promise is not {@link InvocationType#NON_BLOCKING},
      *                then any calls to the promise may be executed via the {@link Request#getContext()} so that
      *                the implementation can pass a {@link InvocationType#NON_BLOCKING} {@link Runnable} to

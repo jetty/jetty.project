@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletRequest;
@@ -79,38 +79,20 @@ public class ServletMultiPartFormData
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param servletRequest A servlet request
      * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
-     * @param immediate The action to take if the Parts are available immediately (from within the scope of the call to this method).
-     * @param future The action to take when the Parts are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
-     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
+     * @param promise The action to take when the {@link Parts} are available.
+     *                If the {@link Invocable.InvocationType} of the promise is not {@link Invocable.InvocationType#NON_BLOCKING},
+     *                then any calls to the promise may be executed via the {@link Executor} so that
+     *                the implementation can pass a {@link Invocable.InvocationType#NON_BLOCKING} {@link Runnable} to
+     *                {@link Content.Source#demand(Runnable)}.  If the fields are available immediately, then the promise
+     *                will always be called directly from within the onFields call.
      */
-    static void onParts(ServletRequest servletRequest, String contentType, Promise<Parts> immediate, Promise.Invocable<Parts> future)
+    static void onParts(ServletRequest servletRequest, String contentType, Promise.Invocable<Parts> promise, Executor executor)
     {
-        CompletableFuture<Parts> futureParts = from(servletRequest, future.getInvocationType(), contentType);
-        if (futureParts.isDone())
-        {
-            Parts parts = null;
-            Throwable error = null;
-            try
-            {
-                parts = futureParts.get();
-            }
-            catch (ExecutionException e)
-            {
-                error = e.getCause();
-            }
-            catch (Throwable t)
-            {
-                error = t;
-            }
-            if (error == null)
-                immediate.succeeded(parts);
-            else
-                immediate.failed(error);
-        }
+        CompletableFuture<Parts> futureParts = from(servletRequest, Invocable.InvocationType.NON_BLOCKING, contentType);
+        if (futureParts.isDone() || promise.getInvocationType() == Invocable.InvocationType.NON_BLOCKING)
+            futureParts.whenComplete(promise);
         else
-        {
-            futureParts.whenComplete(future);
-        }
+            futureParts.whenComplete(Promise.from(executor, promise));
     }
 
     /**
@@ -251,7 +233,7 @@ public class ServletMultiPartFormData
                         }
                     };
 
-                    MultiPartFormData.onParts(source, servletContextRequest, contentType, multiPartConfig, onParts, onParts);
+                    MultiPartFormData.onParts(source, servletContextRequest, contentType, multiPartConfig, onParts, servletContextRequest.getContext());
                 }
                 // cache the result in attributes.
                 servletRequest.setAttribute(ServletMultiPartFormData.class.getName(), futureServletParts);

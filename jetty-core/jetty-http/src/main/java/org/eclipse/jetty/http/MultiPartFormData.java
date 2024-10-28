@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import org.eclipse.jetty.io.Content;
@@ -84,7 +85,7 @@ public class MultiPartFormData
     /**
      * Get {@code multipart/form-data} {@link Parts} from an {@link Attributes}, typically
      * cached there by calls to {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     * or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Promise.Invocable)}
+     * or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable, Executor)}
      *
      * @param attributes the attributes where the futureParts are cahced
      * @return the parts or null
@@ -126,35 +127,22 @@ public class MultiPartFormData
      * @param attributes the attributes where the futureParts are tracked.
      * @param contentType the value of the {@link HttpHeader#CONTENT_TYPE} header.
      * @param config the multipart configuration.
-     * @param immediate The action to take if the FormFields are available immediately (from within the scope of the call to this method).
-     * @param future The action to take when the FormFields are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
-     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
+     * @param promise The action to take when the {@link Parts} are available.
+     *                If the {@link InvocationType} of the promise is not {@link InvocationType#NON_BLOCKING},
+     *                then any calls to the promise may be executed via the {@link Executor} so that
+     *                the implementation can pass a {@link InvocationType#NON_BLOCKING} {@link Runnable} to
+     *                {@link Content.Source#demand(Runnable)}.  If the fields are available immediately, then the promise
+     *                will always be called directly from within the onFields call.
+     * @param executor An executor to use if necessary.
      */
-    public static void onParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config, Promise<Parts> immediate, Promise.Invocable<Parts> future)
+    public static void onParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config, Promise.Invocable<Parts> promise, Executor executor)
     {
-        CompletableFuture<Parts> futureParts = from(content, future.getInvocationType(), attributes, contentType, config);
+        CompletableFuture<Parts> futureParts = from(content, InvocationType.NON_BLOCKING, attributes, contentType, config);
 
-        if (futureParts.isDone())
-        {
-            Parts parts = null;
-            Throwable error = null;
-            try
-            {
-                parts = futureParts.get();
-            }
-            catch (Throwable t)
-            {
-                error = t;
-            }
-            if (error != null)
-                immediate.failed(error);
-            else
-                immediate.succeeded(parts);
-        }
+        if (futureParts.isDone() || promise.getInvocationType() == InvocationType.NON_BLOCKING)
+            futureParts.whenComplete(promise);
         else
-        {
-            futureParts.whenComplete(future);
-        }
+            futureParts.whenComplete(Promise.from(executor, promise));
     }
 
     /**
@@ -166,7 +154,7 @@ public class MultiPartFormData
      * @param config the multipart configuration.
      * @return the future parts
      * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Promise.Invocable)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable, Executor)}
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config)
@@ -183,7 +171,7 @@ public class MultiPartFormData
      * @param config the multipart configuration.
      * @return the future parts
      * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Promise.Invocable)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable, Executor)}
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     private static CompletableFuture<MultiPartFormData.Parts> from(Content.Source content, InvocationType invocationType, Attributes attributes, String contentType, MultiPartConfig config)
@@ -215,7 +203,7 @@ public class MultiPartFormData
     /**
      * Returns {@code multipart/form-data} parts using {@link MultiPartCompliance#RFC7578}.
      * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Promise.Invocable)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable, Executor)}
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
@@ -233,7 +221,7 @@ public class MultiPartFormData
      * @param parse the parser completable future
      * @return the future parts
      * @deprecated use {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Promise.Invocable)}
+     *             and/or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable, Executor)}
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Parts> from(Attributes attributes, MultiPartCompliance compliance, ComplianceViolation.Listener listener, String boundary, Function<Parser, CompletableFuture<Parts>> parse)

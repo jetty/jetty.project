@@ -250,6 +250,7 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
+            InvocationType invocationType = getHandler().getInvocationType();
             Promise.Invocable<Fields> onFields = new Promise.Invocable<>()
             {
                 @Override
@@ -267,7 +268,7 @@ public class DelayedHandler extends Handler.Wrapper
                 @Override
                 public InvocationType getInvocationType()
                 {
-                    return getHandler().getInvocationType();
+                    return invocationType;
                 }
             };
 
@@ -291,8 +292,9 @@ public class DelayedHandler extends Handler.Wrapper
         protected void delay()
         {
             Request request = getRequest();
+            InvocationType invocationType = getHandler().getInvocationType();
 
-            Promise<MultiPartFormData.Parts> onParts = new Promise<>()
+            Promise.Invocable<MultiPartFormData.Parts> onParts = new Promise.Invocable<>()
             {
                 @Override
                 public void failed(Throwable x)
@@ -305,11 +307,15 @@ public class DelayedHandler extends Handler.Wrapper
                 {
                     process();
                 }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return invocationType;
+                }
             };
 
-            Promise.Invocable<MultiPartFormData.Parts> executeOnParts = Promise.from(getRequest().getContext(), onParts);
-
-            MultiPartFormData.onParts(request, request, _contentType, _config, onParts, executeOnParts);
+            MultiPartFormData.onParts(request, request, _contentType, _config, onParts, request.getContext());
         }
     }
 }

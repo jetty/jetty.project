@@ -281,6 +281,7 @@ public interface Promise<C>
      */
     static <C> Invocable<C> from(Executor executor, Promise<C> promise)
     {
+        Objects.requireNonNull(executor);
         return new Invocable<C>()
         {
             @Override

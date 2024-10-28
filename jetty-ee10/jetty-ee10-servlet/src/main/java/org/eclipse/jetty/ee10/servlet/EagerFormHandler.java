@@ -18,7 +18,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
@@ -28,7 +27,7 @@ import org.eclipse.jetty.util.Promise;
  * {@link MimeTypes.Type#MULTIPART_FORM_DATA} content prior to invoking the {@link ServletHandler},
  * which can then consume them with blocking APIs but without blocking.
  */
-public class EagerFormHandler extends DelayedHandler
+public class EagerFormHandler extends Handler.Wrapper
 {
     public EagerFormHandler()
     {
@@ -61,7 +60,8 @@ public class EagerFormHandler extends DelayedHandler
 
     protected boolean handleFormFields(Request request, org.eclipse.jetty.server.Response response, Callback callback)
     {
-        Request.Handler handler = super::handle;
+        Request.Handler handler = getHandler();
+        InvocationType invocationType = handler.getInvocationType();
         Promise.Invocable<Fields> onFields = new Promise.Invocable<>()
         {
             @Override
@@ -87,7 +87,7 @@ public class EagerFormHandler extends DelayedHandler
             @Override
             public InvocationType getInvocationType()
             {
-                return handler.getInvocationType();
+                return invocationType;
             }
         };
 
@@ -97,8 +97,9 @@ public class EagerFormHandler extends DelayedHandler
 
     protected boolean handleMultiPartFormData(Request request, String contentType, org.eclipse.jetty.server.Response response, Callback callback)
     {
-        Request.Handler handler = super::handle;
-        Promise<ServletMultiPartFormData.Parts> onParts = new Promise<>()
+        Request.Handler handler = getHandler();
+        InvocationType invocationType = handler.getInvocationType();
+        Promise.Invocable<ServletMultiPartFormData.Parts> onParts = new Promise.Invocable<>()
         {
             @Override
             public void failed(Throwable x)
@@ -119,11 +120,15 @@ public class EagerFormHandler extends DelayedHandler
                     callback.failed(t);
                 }
             }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
         };
 
-        Promise.Invocable<ServletMultiPartFormData.Parts> executeOnParts = Promise.from(request.getContext(), onParts);
-
-        ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts, executeOnParts);
+        ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts, request.getContext());
         return true;
     }
 }
