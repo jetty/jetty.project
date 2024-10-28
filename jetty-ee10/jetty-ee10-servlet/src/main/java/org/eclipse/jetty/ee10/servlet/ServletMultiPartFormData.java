@@ -83,8 +83,9 @@ public class ServletMultiPartFormData
      *                If the {@link Invocable.InvocationType} of the promise is not {@link Invocable.InvocationType#NON_BLOCKING},
      *                then any calls to the promise may be executed via the {@link Executor} so that
      *                the implementation can pass a {@link Invocable.InvocationType#NON_BLOCKING} {@link Runnable} to
-     *                {@link Content.Source#demand(Runnable)}.  If the fields are available immediately, then the promise
-     *                will always be called directly from within the onFields call.
+     *                {@link Content.Source#demand(Runnable)}.  If the parts are available immediately, then the promise
+     *                will always be called directly from within the onParts call.
+     * @param executor The executor that may be used to invoke the promise.
      */
     static void onParts(ServletRequest servletRequest, String contentType, Promise.Invocable<Parts> promise, Executor executor)
     {

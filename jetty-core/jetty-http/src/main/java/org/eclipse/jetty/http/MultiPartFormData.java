@@ -131,8 +131,8 @@ public class MultiPartFormData
      *                If the {@link InvocationType} of the promise is not {@link InvocationType#NON_BLOCKING},
      *                then any calls to the promise may be executed via the {@link Executor} so that
      *                the implementation can pass a {@link InvocationType#NON_BLOCKING} {@link Runnable} to
-     *                {@link Content.Source#demand(Runnable)}.  If the fields are available immediately, then the promise
-     *                will always be called directly from within the onFields call.
+     *                {@link Content.Source#demand(Runnable)}.  If the parts are available immediately, then the promise
+     *                will always be called directly from within the onParts call.
      * @param executor An executor to use if necessary.
      */
     public static void onParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config, Promise.Invocable<Parts> promise, Executor executor)
