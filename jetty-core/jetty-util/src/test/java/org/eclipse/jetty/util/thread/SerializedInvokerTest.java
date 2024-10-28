@@ -27,14 +27,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SerializedInvokerTest
 {
-    private SerializedInvoker _serializedInvoker;
     private ExecutorService _executor;
+    private SerializedInvoker _serializedInvoker;
 
     @BeforeEach
     public void beforeEach()
     {
-        _serializedInvoker = new SerializedInvoker(SerializedInvokerTest.class);
         _executor = Executors.newSingleThreadExecutor();
+        _serializedInvoker = new SerializedInvoker(SerializedInvokerTest.class.getSimpleName(), _executor);
     }
 
     @AfterEach

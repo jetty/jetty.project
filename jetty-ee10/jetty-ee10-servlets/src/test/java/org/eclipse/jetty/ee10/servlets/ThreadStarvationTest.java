@@ -127,12 +127,12 @@ public class ThreadStarvationTest
                 {
                     client.setSoTimeout(10000);
 
-                    String request =
-                        "PUT / HTTP/1.0\r\n" +
-                            "host: localhost\r\n" +
-                            "content-length: 10\r\n" +
-                            "\r\n" +
-                            "1";
+                    String request = """
+                        PUT / HTTP/1.0\r
+                        host: localhost\r
+                        content-length: 10\r
+                        \r
+                        1""";
 
                     // Write partial request
                     out.write(request.getBytes(StandardCharsets.UTF_8));
@@ -185,7 +185,7 @@ public class ThreadStarvationTest
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             {
                 resp.setStatus(200);
                 req.getParameterMap().forEach((key, value) ->
@@ -330,8 +330,8 @@ public class ThreadStarvationTest
             OutputStream output = socket.getOutputStream();
             String request =
                 "GET /" + resourceName + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "\r\n";
+                "Host: localhost\r\n" +
+                "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
         }
@@ -348,75 +348,71 @@ public class ThreadStarvationTest
             totals.add(x);
             final InputStream input = socket.getInputStream();
 
-            new Thread()
+            new Thread(() ->
             {
-                @Override
-                public void run()
+                long total = 0;
+                try
                 {
-                    long total = 0;
-                    try
+                    // look for CRLFCRLF
+                    StringBuilder header = new StringBuilder();
+                    int state = 0;
+                    while (state < 4 && header.length() < 2048)
                     {
-                        // look for CRLFCRLF
-                        StringBuilder header = new StringBuilder();
-                        int state = 0;
-                        while (state < 4 && header.length() < 2048)
+                        int ch = input.read();
+                        if (ch < 0)
+                            break;
+                        header.append((char)ch);
+                        switch (state)
                         {
-                            int ch = input.read();
-                            if (ch < 0)
+                            case 0:
+                                if (ch == '\r')
+                                    state = 1;
                                 break;
-                            header.append((char)ch);
-                            switch (state)
-                            {
-                                case 0:
-                                    if (ch == '\r')
-                                        state = 1;
-                                    break;
-                                case 1:
-                                    if (ch == '\n')
-                                        state = 2;
-                                    else
-                                        state = 0;
-                                    break;
-                                case 2:
-                                    if (ch == '\r')
-                                        state = 3;
-                                    else
-                                        state = 0;
-                                    break;
-                                case 3:
-                                    if (ch == '\n')
-                                        state = 4;
-                                    else
-                                        state = 0;
-                                    break;
-                            }
-                        }
-
-                        while (total < expected)
-                        {
-                            int read = input.read(buffer);
-                            if (read < 0)
+                            case 1:
+                                if (ch == '\n')
+                                    state = 2;
+                                else
+                                    state = 0;
                                 break;
-                            total += read;
+                            case 2:
+                                if (ch == '\r')
+                                    state = 3;
+                                else
+                                    state = 0;
+                                break;
+                            case 3:
+                                if (ch == '\n')
+                                    state = 4;
+                                else
+                                    state = 0;
+                                break;
                         }
                     }
-                    catch (IOException e)
+
+                    while (total < expected)
+                    {
+                        int read = input.read(buffer);
+                        if (read < 0)
+                            break;
+                        total += read;
+                    }
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+                finally
+                {
+                    try
+                    {
+                        x.exchange(total);
+                    }
+                    catch (InterruptedException e)
                     {
                         e.printStackTrace();
                     }
-                    finally
-                    {
-                        try
-                        {
-                            x.exchange(total);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            e.printStackTrace();
-                        }
-                    }
                 }
-            }.start();
+            }).start();
         }
 
         for (Exchanger<Long> x : totals)
@@ -502,9 +498,9 @@ public class ThreadStarvationTest
             OutputStream output = socket.getOutputStream();
             String request =
                 "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    //                    "Connection: close\r\n" +
-                    "\r\n";
+                "Host: localhost\r\n" +
+                //                    "Connection: close\r\n" +
+                "\r\n";
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
         }
@@ -517,69 +513,65 @@ public class ThreadStarvationTest
             totals.add(x);
             final InputStream input = socket.getInputStream();
 
-            new Thread()
+            new Thread(() ->
             {
-                @Override
-                public void run()
+                int read = 0;
+                try
                 {
-                    int read = 0;
+                    // look for CRLFCRLF
+                    StringBuilder header = new StringBuilder();
+                    int state = 0;
+                    while (state < 4 && header.length() < 2048)
+                    {
+                        int ch = input.read();
+                        if (ch < 0)
+                            break;
+                        header.append((char)ch);
+                        switch (state)
+                        {
+                            case 0:
+                                if (ch == '\r')
+                                    state = 1;
+                                break;
+                            case 1:
+                                if (ch == '\n')
+                                    state = 2;
+                                else
+                                    state = 0;
+                                break;
+                            case 2:
+                                if (ch == '\r')
+                                    state = 3;
+                                else
+                                    state = 0;
+                                break;
+                            case 3:
+                                if (ch == '\n')
+                                    state = 4;
+                                else
+                                    state = 0;
+                                break;
+                        }
+                    }
+
+                    read = input.read(buffer);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+                finally
+                {
                     try
                     {
-                        // look for CRLFCRLF
-                        StringBuilder header = new StringBuilder();
-                        int state = 0;
-                        while (state < 4 && header.length() < 2048)
-                        {
-                            int ch = input.read();
-                            if (ch < 0)
-                                break;
-                            header.append((char)ch);
-                            switch (state)
-                            {
-                                case 0:
-                                    if (ch == '\r')
-                                        state = 1;
-                                    break;
-                                case 1:
-                                    if (ch == '\n')
-                                        state = 2;
-                                    else
-                                        state = 0;
-                                    break;
-                                case 2:
-                                    if (ch == '\r')
-                                        state = 3;
-                                    else
-                                        state = 0;
-                                    break;
-                                case 3:
-                                    if (ch == '\n')
-                                        state = 4;
-                                    else
-                                        state = 0;
-                                    break;
-                            }
-                        }
-
-                        read = input.read(buffer);
+                        x.exchange(read);
                     }
-                    catch (IOException e)
+                    catch (InterruptedException e)
                     {
                         e.printStackTrace();
                     }
-                    finally
-                    {
-                        try
-                        {
-                            x.exchange(read);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            e.printStackTrace();
-                        }
-                    }
                 }
-            }.start();
+            }).start();
         }
 
         for (Exchanger<Integer> x : totals)

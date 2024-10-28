@@ -100,7 +100,7 @@ public class ThreadStarvationTest
         };
         ClientSocketProvider httpsClient = new ClientSocketProvider()
         {
-            private SSLContext sslContext;
+            private final SSLContext sslContext;
 
             {
                 try
@@ -128,23 +128,21 @@ public class ThreadStarvationTest
         return params.stream().map(Arguments::of);
     }
 
-    private QueuedThreadPool _threadPool;
     private Server _server;
     private ServerConnector _connector;
 
-    private Server prepareServer(Scenario scenario, Handler handler)
+    private void prepareServer(Scenario scenario, Handler handler)
     {
-        _threadPool = new QueuedThreadPool();
-        _threadPool.setMinThreads(THREADS);
-        _threadPool.setMaxThreads(THREADS);
-        _threadPool.setDetailedDump(true);
-        _server = new Server(_threadPool);
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setMinThreads(THREADS);
+        threadPool.setMaxThreads(THREADS);
+        threadPool.setDetailedDump(true);
+        _server = new Server(threadPool);
         int acceptors = 1;
         int selectors = 1;
         _connector = scenario.connectorProvider.newConnector(_server, acceptors, selectors);
         _server.addConnector(_connector);
         _server.setHandler(handler);
-        return _server;
     }
 
     @AfterEach
@@ -169,45 +167,44 @@ public class ThreadStarvationTest
         _server.start();
 
         ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
-
-        List<Callable<String>> clientTasks = new ArrayList<>();
-
-        for (int i = 0; i < CLIENTS; i++)
-        {
-            clientTasks.add(() ->
-            {
-                try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
-                     OutputStream out = client.getOutputStream();
-                     InputStream in = client.getInputStream())
-                {
-                    client.setSoTimeout(10000);
-
-                    String request =
-                        "PUT / HTTP/1.0\r\n" +
-                            "host: localhost\r\n" +
-                            "content-length: 10\r\n" +
-                            "\r\n" +
-                            "1";
-
-                    // Write partial request
-                    out.write(request.getBytes(StandardCharsets.UTF_8));
-                    out.flush();
-
-                    // Finish Request
-                    Thread.sleep(1500);
-                    out.write(("234567890\r\n").getBytes(StandardCharsets.UTF_8));
-                    out.flush();
-
-                    // Read Response
-                    String response = IO.toString(in);
-                    assertEquals(-1, in.read());
-                    return response;
-                }
-            });
-        }
-
         try
         {
+            List<Callable<String>> clientTasks = new ArrayList<>();
+
+            for (int i = 0; i < CLIENTS; i++)
+            {
+                clientTasks.add(() ->
+                {
+                    try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                         OutputStream out = client.getOutputStream();
+                         InputStream in = client.getInputStream())
+                    {
+                        client.setSoTimeout(10000);
+
+                        String request = """
+                            PUT / HTTP/1.0\r
+                            host: localhost\r
+                            content-length: 10\r
+                            \r
+                            1""";
+
+                        // Write partial request
+                        out.write(request.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Finish Request
+                        Thread.sleep(1500);
+                        out.write(("234567890").getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Read Response
+                        String response = IO.toString(in);
+                        assertEquals(-1, in.read());
+                        return response;
+                    }
+                });
+            }
+
             List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
 
             for (Future<String> responseFut : responses)
@@ -243,59 +240,59 @@ public class ThreadStarvationTest
         _server.start();
 
         ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
-
-        List<Callable<Long>> clientTasks = new ArrayList<>();
-
-        for (int i = 0; i < CLIENTS; i++)
-        {
-            clientTasks.add(() ->
-            {
-                try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
-                     OutputStream out = client.getOutputStream();
-                     InputStream in = client.getInputStream())
-                {
-                    client.setSoTimeout(30000);
-
-                    String request =
-                        "GET / HTTP/1.0\r\n" +
-                            "host: localhost\r\n" +
-                            "\r\n";
-
-                    // Write GET request
-                    out.write(request.getBytes(StandardCharsets.UTF_8));
-                    out.flush();
-
-                    TimeUnit.MILLISECONDS.sleep(1500);
-
-                    // Read Response
-                    long bodyCount = 0;
-                    long len;
-
-                    byte[] buf = new byte[1024];
-
-                    try
-                    {
-                        while ((len = in.read(buf, 0, buf.length)) != -1)
-                        {
-                            for (int x = 0; x < len; x++)
-                            {
-                                if (buf[x] == '!')
-                                    bodyCount++;
-                            }
-                        }
-                    }
-                    catch (Throwable th)
-                    {
-                        _server.dumpStdErr();
-                        throw th;
-                    }
-                    return bodyCount;
-                }
-            });
-        }
-
         try
         {
+            List<Callable<Long>> clientTasks = new ArrayList<>();
+
+            for (int i = 0; i < CLIENTS; i++)
+            {
+                clientTasks.add(() ->
+                {
+                    try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                         OutputStream out = client.getOutputStream();
+                         InputStream in = client.getInputStream())
+                    {
+                        client.setSoTimeout(30000);
+
+                        String request = """
+                            GET / HTTP/1.0\r
+                            host: localhost\r
+                            \r
+                            """;
+
+                        // Write GET request
+                        out.write(request.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        TimeUnit.MILLISECONDS.sleep(1500);
+
+                        // Read Response
+                        long bodyCount = 0;
+                        long len;
+
+                        byte[] buf = new byte[1024];
+
+                        try
+                        {
+                            while ((len = in.read(buf, 0, buf.length)) != -1)
+                            {
+                                for (int x = 0; x < len; x++)
+                                {
+                                    if (buf[x] == '!')
+                                        bodyCount++;
+                                }
+                            }
+                        }
+                        catch (Throwable th)
+                        {
+                            _server.dumpStdErr();
+                            throw th;
+                        }
+                        return bodyCount;
+                    }
+                });
+            }
+
             List<Future<Long>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
 
             long expected = BUFFERS * BUFFER_SIZE;
@@ -340,11 +337,11 @@ public class ThreadStarvationTest
 
     public static class Scenario
     {
-        public final String testType;
-        public final ConnectorProvider connectorProvider;
-        public final ClientSocketProvider clientSocketProvider;
+        private final String testType;
+        private final ConnectorProvider connectorProvider;
+        private final ClientSocketProvider clientSocketProvider;
 
-        public Scenario(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
+        private Scenario(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
         {
             this.testType = testType;
             this.connectorProvider = connectorProvider;

@@ -109,6 +109,11 @@ public interface Invocable
             this.task = task;
         }
 
+        public Runnable getTask()
+        {
+            return task;
+        }
+
         @Override
         public void run()
         {

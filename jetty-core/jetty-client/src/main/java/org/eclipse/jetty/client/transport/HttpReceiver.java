@@ -15,6 +15,7 @@ package org.eclipse.jetty.client.transport;
 
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.ContentDecoder;
@@ -67,8 +68,8 @@ public abstract class HttpReceiver
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiver.class);
 
-    private final SerializedInvoker invoker = new SerializedInvoker(HttpReceiver.class);
     private final HttpChannel channel;
+    private final SerializedInvoker invoker;
     private ResponseState responseState = ResponseState.IDLE;
     private NotifiableContentSource contentSource;
     private Throwable failure;
@@ -76,6 +77,8 @@ public abstract class HttpReceiver
     protected HttpReceiver(HttpChannel channel)
     {
         this.channel = channel;
+        Executor executor = channel.getHttpDestination().getHttpClient().getExecutor();
+        invoker = new SerializedInvoker(HttpReceiver.class.getSimpleName(), executor);
     }
 
     /**
