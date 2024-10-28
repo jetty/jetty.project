@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
@@ -64,7 +64,7 @@ public class EagerFormHandler extends Handler.Wrapper
     {
         Request.Handler handler = getHandler();
         InvocationType invocationType = handler.getInvocationType();
-        AtomicBoolean immediate = new AtomicBoolean(true);
+        AtomicInteger done = new AtomicInteger(2);
         var onFields = new Promise.Invocable<Fields>()
         {
             @Override
@@ -76,7 +76,7 @@ public class EagerFormHandler extends Handler.Wrapper
             @Override
             public void succeeded(Fields result)
             {
-                if (!immediate.compareAndSet(true, false))
+                if (done.decrementAndGet() == 0)
                 {
                     if (invocationType == InvocationType.NON_BLOCKING)
                         handle();
@@ -106,7 +106,7 @@ public class EagerFormHandler extends Handler.Wrapper
         };
 
         FormFields.onFields(request, onFields);
-        if (!immediate.compareAndSet(true, false))
+        if (done.decrementAndGet() == 0)
             onFields.handle();
 
         return true;
@@ -116,7 +116,7 @@ public class EagerFormHandler extends Handler.Wrapper
     {
         Request.Handler handler = getHandler();
         InvocationType invocationType = handler.getInvocationType();
-        AtomicBoolean immediate = new AtomicBoolean(true);
+        AtomicInteger done = new AtomicInteger(2);
         var onParts = new Promise.Invocable<ServletMultiPartFormData.Parts>()
         {
             @Override
@@ -128,7 +128,7 @@ public class EagerFormHandler extends Handler.Wrapper
             @Override
             public void succeeded(ServletMultiPartFormData.Parts result)
             {
-                if (!immediate.compareAndSet(true, false))
+                if (done.decrementAndGet() == 0)
                 {
                     if (invocationType == InvocationType.NON_BLOCKING)
                         handle();
@@ -158,7 +158,7 @@ public class EagerFormHandler extends Handler.Wrapper
         };
 
         ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts);
-        if (!immediate.compareAndSet(true, false))
+        if (done.decrementAndGet() == 0)
             onParts.handle();
         return true;
     }
