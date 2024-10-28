@@ -369,11 +369,11 @@ public class HttpRequest implements Request
         StringBuilder result = new StringBuilder();
         for (String accept : accepts)
         {
-            if (result.length() > 0)
+            if (!result.isEmpty())
                 result.append(", ");
             result.append(accept);
         }
-        if (result.length() > 0)
+        if (!result.isEmpty())
             headers.put(HttpHeader.ACCEPT, result.toString());
         return this;
     }
@@ -799,16 +799,6 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public void abort(Throwable cause, Promise<Boolean> promise)
-    {
-        if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
-        {
-            conversation.abort(cause, promise);
-        }
-        promise.succeeded(false);
-    }
-
-    @Override
     public Throwable getAbortCause()
     {
         return aborted.get();
@@ -869,7 +859,7 @@ public class HttpRequest implements Request
                 if (parts.length > 0)
                 {
                     String name = urlDecode(parts[0]);
-                    if (name.trim().length() == 0)
+                    if (name.trim().isEmpty())
                         continue;
                     param(name, parts.length < 2 ? "" : urlDecode(parts[1]), true);
                 }
