@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletRequest;
@@ -80,20 +79,11 @@ public class ServletMultiPartFormData
      * @param servletRequest A servlet request
      * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
      * @param promise The action to take when the {@link Parts} are available.
-     *                If the {@link Invocable.InvocationType} of the promise is not {@link Invocable.InvocationType#NON_BLOCKING},
-     *                then any calls to the promise may be executed via the {@link Executor} so that
-     *                the implementation can pass a {@link Invocable.InvocationType#NON_BLOCKING} {@link Runnable} to
-     *                {@link Content.Source#demand(Runnable)}.  If the parts are available immediately, then the promise
-     *                will always be called directly from within the onParts call.
-     * @param executor The executor that may be used to invoke the promise.
      */
-    static void onParts(ServletRequest servletRequest, String contentType, Promise.Invocable<Parts> promise, Executor executor)
+    static void onParts(ServletRequest servletRequest, String contentType, Promise.Invocable<Parts> promise)
     {
-        CompletableFuture<Parts> futureParts = from(servletRequest, Invocable.InvocationType.NON_BLOCKING, contentType);
-        if (futureParts.isDone() || promise.getInvocationType() == Invocable.InvocationType.NON_BLOCKING)
-            futureParts.whenComplete(promise);
-        else
-            futureParts.whenComplete(Promise.from(executor, promise));
+        CompletableFuture<Parts> futureParts = from(servletRequest, promise.getInvocationType(), contentType);
+        futureParts.whenComplete(promise);
     }
 
     /**
@@ -234,7 +224,7 @@ public class ServletMultiPartFormData
                         }
                     };
 
-                    MultiPartFormData.onParts(source, servletContextRequest, contentType, multiPartConfig, onParts, servletContextRequest.getContext());
+                    MultiPartFormData.onParts(source, servletContextRequest, contentType, multiPartConfig, onParts);
                 }
                 // cache the result in attributes.
                 servletRequest.setAttribute(ServletMultiPartFormData.class.getName(), futureServletParts);

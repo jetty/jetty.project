@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpField;
@@ -251,7 +252,8 @@ public class DelayedHandler extends Handler.Wrapper
         protected void delay()
         {
             InvocationType invocationType = getHandler().getInvocationType();
-            Promise.Invocable<Fields> onFields = new Promise.Invocable<>()
+            AtomicBoolean immediate = new AtomicBoolean(true);
+            var onFields = new Promise.Invocable<Fields>()
             {
                 @Override
                 public void failed(Throwable x)
@@ -262,7 +264,13 @@ public class DelayedHandler extends Handler.Wrapper
                 @Override
                 public void succeeded(Fields result)
                 {
-                    process();
+                    if (!immediate.compareAndSet(true, false))
+                    {
+                        if (invocationType == InvocationType.NON_BLOCKING)
+                            process();
+                        else
+                            getRequest().getContext().execute(() -> process());
+                    }
                 }
 
                 @Override
@@ -273,6 +281,8 @@ public class DelayedHandler extends Handler.Wrapper
             };
 
             FormFields.onFields(getRequest(), _charset, onFields);
+            if (!immediate.compareAndSet(true, false))
+                process();
         }
     }
 
@@ -293,19 +303,26 @@ public class DelayedHandler extends Handler.Wrapper
         {
             Request request = getRequest();
             InvocationType invocationType = getHandler().getInvocationType();
+            AtomicBoolean immediate = new AtomicBoolean(true);
 
             Promise.Invocable<MultiPartFormData.Parts> onParts = new Promise.Invocable<>()
             {
                 @Override
                 public void failed(Throwable x)
                 {
-                    Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                    succeeded(null);
                 }
 
                 @Override
                 public void succeeded(MultiPartFormData.Parts result)
                 {
-                    process();
+                    if (!immediate.compareAndSet(true, false))
+                    {
+                        if (invocationType == InvocationType.NON_BLOCKING)
+                            process();
+                        else
+                            getRequest().getContext().execute(() -> process());
+                    }
                 }
 
                 @Override
@@ -315,7 +332,9 @@ public class DelayedHandler extends Handler.Wrapper
                 }
             };
 
-            MultiPartFormData.onParts(request, request, _contentType, _config, onParts, request.getContext());
+            MultiPartFormData.onParts(request, request, _contentType, _config, onParts);
+            if (!immediate.compareAndSet(true, false))
+                process();
         }
     }
 }

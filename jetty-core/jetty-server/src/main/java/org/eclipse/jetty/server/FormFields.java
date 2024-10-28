@@ -150,11 +150,6 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param request The request to get or read the Fields from
      * @param promise The action to take when the {@link FormFields} are available.
-     *                If the {@link InvocationType} of the promise is not {@link InvocationType#NON_BLOCKING},
-     *                then any calls to the promise may be executed via the {@link Request#getContext()} so that
-     *                the implementation can pass a {@link InvocationType#NON_BLOCKING} {@link Runnable} to
-     *                {@link Content.Source#demand(Runnable)}.  If the fields are available immediately, then the promise
-     *                will always be called directly from within the onFields call.
      * @see #onFields(Request, Charset, Promise.Invocable)
      * @see #getFields(Request)
      * @see #getFields(Request, int, int)
@@ -172,26 +167,16 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param request The request to get or read the Fields from
      * @param charset The {@link Charset} of the request content, if previously extracted.
      * @param promise The action to take when the FormFields are available.
-     *                If the {@link InvocationType} of the promise is not {@link InvocationType#NON_BLOCKING},
-     *                then any calls to the promise may be executed via the {@link Request#getContext()} so that
-     *                the implementation can pass a {@link InvocationType#NON_BLOCKING} {@link Runnable} to
-     *                {@link Content.Source#demand(Runnable)}.  If the fields are available immediately, then the promise
-     *                will always be called directly from within the onFields call.
      * @see #onFields(Request, Charset, Promise.Invocable)
      * @see #getFields(Request)
      * @see #getFields(Request, int, int)
      */
     public static void onFields(Request request, Charset charset, Promise.Invocable<Fields> promise)
     {
-        InvocationType invocationType = promise.getInvocationType();
         int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
-        CompletableFuture<Fields> futureFields = from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength);
-
-        if (futureFields.isDone() || invocationType == InvocationType.NON_BLOCKING)
-            futureFields.whenComplete(promise);
-        else
-            futureFields.whenComplete(Promise.from(request.getContext(), promise));
+        CompletableFuture<Fields> futureFields = from(request, promise.getInvocationType(), request, charset, maxFields, maxLength);
+        futureFields.whenComplete(promise);
     }
 
     /**

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.FormFields;
@@ -62,7 +64,8 @@ public class EagerFormHandler extends Handler.Wrapper
     {
         Request.Handler handler = getHandler();
         InvocationType invocationType = handler.getInvocationType();
-        Promise.Invocable<Fields> onFields = new Promise.Invocable<>()
+        AtomicBoolean immediate = new AtomicBoolean(true);
+        var onFields = new Promise.Invocable<Fields>()
         {
             @Override
             public void failed(Throwable x)
@@ -73,6 +76,23 @@ public class EagerFormHandler extends Handler.Wrapper
             @Override
             public void succeeded(Fields result)
             {
+                if (!immediate.compareAndSet(true, false))
+                {
+                    if (invocationType == InvocationType.NON_BLOCKING)
+                        handle();
+                    else
+                        request.getContext().execute(this::handle);
+                }
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            void handle()
+            {
                 try
                 {
                     if (!handler.handle(request, response, callback))
@@ -83,15 +103,12 @@ public class EagerFormHandler extends Handler.Wrapper
                     callback.failed(t);
                 }
             }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return invocationType;
-            }
         };
 
         FormFields.onFields(request, onFields);
+        if (!immediate.compareAndSet(true, false))
+            onFields.handle();
+
         return true;
     }
 
@@ -99,7 +116,8 @@ public class EagerFormHandler extends Handler.Wrapper
     {
         Request.Handler handler = getHandler();
         InvocationType invocationType = handler.getInvocationType();
-        Promise.Invocable<ServletMultiPartFormData.Parts> onParts = new Promise.Invocable<>()
+        AtomicBoolean immediate = new AtomicBoolean(true);
+        var onParts = new Promise.Invocable<ServletMultiPartFormData.Parts>()
         {
             @Override
             public void failed(Throwable x)
@@ -110,6 +128,17 @@ public class EagerFormHandler extends Handler.Wrapper
             @Override
             public void succeeded(ServletMultiPartFormData.Parts result)
             {
+                if (!immediate.compareAndSet(true, false))
+                {
+                    if (invocationType == InvocationType.NON_BLOCKING)
+                        handle();
+                    else
+                        request.getContext().execute(this::handle);
+                }
+            }
+
+            void handle()
+            {
                 try
                 {
                     if (!handler.handle(request, response, callback))
@@ -128,7 +157,9 @@ public class EagerFormHandler extends Handler.Wrapper
             }
         };
 
-        ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts, request.getContext());
+        ServletMultiPartFormData.onParts(Request.as(request, ServletContextRequest.class).getServletApiRequest(), contentType, onParts);
+        if (!immediate.compareAndSet(true, false))
+            onParts.handle();
         return true;
     }
 }
