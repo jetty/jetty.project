@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -61,6 +62,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -157,9 +160,9 @@ public class ThreadStarvationTest
             clientExecutors.shutdownNow();
         }
     }
-
-    @Test
-    public void testFormStarvation() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testFormStarvation(boolean delayed) throws Exception
     {
         int maxThreads = 5;
         int clients = maxThreads + 2;
@@ -191,6 +194,9 @@ public class ThreadStarvationTest
             }
         }), "/*");
         _server.setHandler(context);
+
+        if (delayed)
+            _server.insertHandler(new DelayedHandler());
 
         _server.start();
 

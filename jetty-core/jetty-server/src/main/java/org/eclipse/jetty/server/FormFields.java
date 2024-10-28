@@ -18,7 +18,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
@@ -184,34 +183,11 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
         CompletableFuture<Fields> futureFields = from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength);
-        if (futureFields.isDone())
-        {
-            Fields fields = null;
-            Throwable error = null;
-            try
-            {
-                fields = futureFields.get();
-            }
-            catch (ExecutionException t)
-            {
-                error = t.getCause();
-            }
-            catch (Throwable t)
-            {
-                error = t;
-            }
-            if (error != null)
-                promise.failed(error);
-            else
-                promise.succeeded(fields);
-        }
+
+        if (futureFields.isDone() || invocationType == InvocationType.NON_BLOCKING)
+            futureFields.whenComplete(promise);
         else
-        {
-            if (invocationType == InvocationType.NON_BLOCKING)
-                futureFields.whenComplete(promise);
-            else
-                futureFields.whenComplete(Promise.from(request.getContext(), promise));
-        }
+            futureFields.whenComplete(Promise.from(request.getContext(), promise));
     }
 
     /**
