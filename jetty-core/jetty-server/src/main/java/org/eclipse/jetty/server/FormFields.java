@@ -103,15 +103,15 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     /**
      * Get the Fields from a request. If the Fields have not been set, then attempt to parse them
      * from the Request content, blocking if necessary.   If the Fields have previously been read asynchronously
-     * by {@link #onFields(Request, Promise, Promise.Invocable)} or similar, then those field will return
+     * by {@link #onFields(Request, Promise.Invocable)} or similar, then those field will return
      * and this method will not block.
      * <p>
      * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param request The request to get or read the Fields from
      * @return the Fields
-     * @see #onFields(Request, Promise, Promise.Invocable)
-     * @see #onFields(Request, Charset, Promise, Promise.Invocable)
+     * @see #onFields(Request, Promise.Invocable)
+     * @see #onFields(Request, Charset, Promise.Invocable)
      * @see #getFields(Request, int, int)
      */
     public static Fields getFields(Request request)
@@ -126,7 +126,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     /**
      * Get the Fields from a request. If the Fields have not been set, then attempt to parse them
      * from the Request content, blocking if necessary.   If the Fields have previously been read asynchronously
-     * by {@link #onFields(Request, Promise, Promise.Invocable)} or similar, then those field will return
+     * by {@link #onFields(Request, Promise.Invocable)} or similar, then those field will return
      * and this method will not block.
      * <p>
      * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
@@ -135,8 +135,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param maxFields The maximum number of fields to accept
      * @param maxLength The maximum length of fields
      * @return the Fields
-     * @see #onFields(Request, Promise, Promise.Invocable)
-     * @see #onFields(Request, Charset, Promise, Promise.Invocable)
+     * @see #onFields(Request, Promise.Invocable)
+     * @see #onFields(Request, Charset, Promise.Invocable)
      * @see #getFields(Request)
      */
     public static Fields getFields(Request request, int maxFields, int maxLength)
@@ -152,15 +152,15 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param request The request to get or read the Fields from
-     * @param future The action to take when the FormFields are available. The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
+     * @param promise The action to take when the FormFields are available. The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
      *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
-     * @see #onFields(Request, Charset, Promise, Promise.Invocable)
+     * @see #onFields(Request, Charset, Promise.Invocable)
      * @see #getFields(Request)
      * @see #getFields(Request, int, int)
      */
-    public static void onFields(Request request, Promise.Invocable<Fields> future)
+    public static void onFields(Request request, Promise.Invocable<Fields> promise)
     {
-        onFields(request, future, future);
+        onFields(request, getFormEncodedCharset(request), promise);
     }
 
     /**
@@ -169,46 +169,21 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param request The request to get or read the Fields from
-     * @param immediate The action to take if the FormFields are available immediately (from within the scope of the call to this method).
-     * @param future The action to take when the FormFields are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
-     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
-     * @see #onFields(Request, Charset, Promise, Promise.Invocable)
+     * @param promise The action to take when the FormFields are available.
+     *                If the {@link InvocationType} of the promise is not {@link InvocationType#NON_BLOCKING},
+     *                then any calls to the promise may be executed via the {@link Request#getContext()} so that
+     *                the implementation can pass a {@link InvocationType#NON_BLOCKING} {@link Runnable} to
+     *                {@link Content.Source#demand(Runnable)}.
+     * @see #onFields(Request, Charset, Promise.Invocable)
      * @see #getFields(Request)
      * @see #getFields(Request, int, int)
      */
-    public static void onFields(Request request, Promise<Fields> immediate, Promise.Invocable<Fields> future)
+    public static void onFields(Request request, Charset charset, Promise.Invocable<Fields> promise)
     {
-        InvocationType invocationType = future.getInvocationType();
+        InvocationType invocationType = promise.getInvocationType();
         int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
-        Charset charset = getFormEncodedCharset(request);
-        onFields(from(request, invocationType, request, charset, maxFields, maxLength), immediate, future);
-    }
-
-    /**
-     * Actions to take when parsing FormFields asynchronously from a request is complete
-     * <p>
-     * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
-     * can be called multiple times, with subsequent calls returning the results of the first call.
-     * @param request The request to get or read the Fields from
-     * @param charset The charset of the form.
-     * @param immediate The action to take if the FormFields are available immediately (from within the scope of the call to this method).
-     * @param future The action to take when the FormFields are available, if they are not available immediately.  The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
-     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
-     * @see #onFields(Request, Promise, Promise.Invocable)
-     * @see #getFields(Request)
-     * @see #getFields(Request, int, int)
-     */
-    public static void onFields(Request request, Charset charset, Promise<Fields> immediate, Promise.Invocable<Fields> future)
-    {
-        InvocationType invocationType = future.getInvocationType();
-        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
-        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
-        onFields(from(request, invocationType, request, charset, maxFields, maxLength), immediate, future);
-    }
-
-    private static void onFields(CompletableFuture<Fields> futureFields, Promise<Fields> immediate, Promise.Invocable<Fields> future)
-    {
+        CompletableFuture<Fields> futureFields = from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength);
         if (futureFields.isDone())
         {
             Fields fields = null;
@@ -226,13 +201,16 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                 error = t;
             }
             if (error != null)
-                immediate.failed(error);
+                promise.failed(error);
             else
-                immediate.succeeded(fields);
+                promise.succeeded(fields);
         }
         else
         {
-            futureFields.whenComplete(future);
+            if (invocationType == InvocationType.NON_BLOCKING)
+                futureFields.whenComplete(promise);
+            else
+                futureFields.whenComplete(Promise.from(request.getContext(), promise));
         }
     }
 

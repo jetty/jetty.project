@@ -62,7 +62,7 @@ public class EagerFormHandler extends DelayedHandler
     protected boolean handleFormFields(Request request, org.eclipse.jetty.server.Response response, Callback callback)
     {
         Request.Handler handler = super::handle;
-        Promise<Fields> onFields = new Promise<>()
+        Promise.Invocable<Fields> onFields = new Promise.Invocable<>()
         {
             @Override
             public void failed(Throwable x)
@@ -83,10 +83,15 @@ public class EagerFormHandler extends DelayedHandler
                     callback.failed(t);
                 }
             }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return handler.getInvocationType();
+            }
         };
 
-        Promise.Invocable<Fields> executeOnFields = Promise.from(request.getContext(), onFields);
-        FormFields.onFields(request, onFields, executeOnFields);
+        FormFields.onFields(request, onFields);
         return true;
     }
 

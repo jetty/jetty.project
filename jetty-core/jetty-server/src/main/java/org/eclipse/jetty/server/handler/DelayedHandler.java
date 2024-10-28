@@ -250,7 +250,7 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
-            Promise<Fields> onFields = new Promise<>()
+            Promise.Invocable<Fields> onFields = new Promise.Invocable<>()
             {
                 @Override
                 public void failed(Throwable x)
@@ -263,11 +263,15 @@ public class DelayedHandler extends Handler.Wrapper
                 {
                     process();
                 }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return getHandler().getInvocationType();
+                }
             };
 
-            Promise.Invocable<Fields> executeOnFields = Promise.from(getRequest().getContext(), onFields);
-
-            FormFields.onFields(getRequest(), _charset, onFields, executeOnFields);
+            FormFields.onFields(getRequest(), _charset, onFields);
         }
     }
 
