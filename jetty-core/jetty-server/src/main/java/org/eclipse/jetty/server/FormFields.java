@@ -139,8 +139,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     public static Fields getFields(Request request, int maxFields, int maxLength)
     {
         Charset charset = getFormEncodedCharset(request);
-        CompletableFuture<Fields> fields = from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength);
-        return fields.join();
+        return from(request, InvocationType.NON_BLOCKING, request, charset, maxFields, maxLength).join();
     }
 
     /**
@@ -175,8 +174,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     {
         int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
         int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
-        CompletableFuture<Fields> futureFields = from(request, promise.getInvocationType(), request, charset, maxFields, maxLength);
-        futureFields.whenComplete(promise);
+        from(request, promise.getInvocationType(), request, charset, maxFields, maxLength).whenComplete(promise);
     }
 
     /**

@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import org.eclipse.jetty.io.Content;
@@ -85,7 +84,7 @@ public class MultiPartFormData
     /**
      * Get {@code multipart/form-data} {@link Parts} from an {@link Attributes}, typically
      * cached there by calls to {@link #getParts(Content.Source, Attributes, String, MultiPartConfig)}
-     * or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable, Executor)}
+     * or {@link #onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)}
      *
      * @param attributes the attributes where the futureParts are cahced
      * @return the parts or null
@@ -131,8 +130,7 @@ public class MultiPartFormData
      */
     public static void onParts(Content.Source content, Attributes attributes, String contentType, MultiPartConfig config, Promise.Invocable<Parts> promise)
     {
-        CompletableFuture<Parts> futureParts = from(content, promise.getInvocationType(), attributes, contentType, config);
-        futureParts.whenComplete(promise);
+        from(content, promise.getInvocationType(), attributes, contentType, config).whenComplete(promise);
     }
 
     /**
