@@ -160,7 +160,7 @@ public class HttpInput extends ServletInputStream
         return _readListener != null;
     }
 
-    public Invocable.InvocationType getReadListenerInvocationType()
+    public Invocable.InvocationType getInvocationType()
     {
         // This is the invocation type used for demand callbacks.
         // If we are blocking mode, then we implement the callbacks, which just wake up the blocked application thread

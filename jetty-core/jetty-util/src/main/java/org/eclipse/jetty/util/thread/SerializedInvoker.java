@@ -269,17 +269,16 @@ public class SerializedInvoker
         }
     }
 
-    private class NamedRunnable implements Runnable
+    private class NamedRunnable extends Invocable.ReadyTask
     {
         private static final Logger LOG = LoggerFactory.getLogger(NamedRunnable.class);
 
-        private final Runnable delegate;
         private final String name;
         private final Throwable stack;
 
         private NamedRunnable(Runnable delegate)
         {
-            this.delegate = delegate;
+            super(Invocable.getInvocationType(delegate), delegate);
             this.stack = new Throwable();
             this.name = deriveTaskName(delegate, stack);
         }
@@ -296,12 +295,6 @@ public class SerializedInvoker
                     return "Queued by " + Thread.currentThread().getName() + " at " + stackTraceElement;
             }
             return task.toString();
-        }
-
-        @Override
-        public void run()
-        {
-            delegate.run();
         }
 
         @Override

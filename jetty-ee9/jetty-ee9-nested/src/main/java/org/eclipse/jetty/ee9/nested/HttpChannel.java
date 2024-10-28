@@ -1615,7 +1615,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         @Override
         public InvocationType getInvocationType()
         {
-            return getRequest().getHttpInput().getReadListenerInvocationType();
+            return getRequest().getHttpInput().getInvocationType();
         }
     }
 }

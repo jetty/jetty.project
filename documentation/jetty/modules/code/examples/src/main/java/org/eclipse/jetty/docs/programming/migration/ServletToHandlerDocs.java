@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -36,8 +35,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -211,18 +210,19 @@ public class ServletToHandlerDocs
         {
             // Non-blocking read the request content as a String.
             // Use with caution as the request content may be large.
-            CompletableFuture<String> completable = Content.Source.asStringAsync(request, UTF_8);
-
-            completable.whenComplete((requestContent, failure) ->
+            Content.Source.asString(request, UTF_8, new Promise<>()
             {
-                if (failure == null)
+                @Override
+                public void succeeded(String result)
                 {
                     // Process the request content here.
 
                     // Implicitly respond with status code 200 and no content.
                     callback.succeeded();
                 }
-                else
+
+                @Override
+                public void failed(Throwable failure)
                 {
                     // Implicitly respond with status code 500.
                     callback.failed(failure);
@@ -243,18 +243,19 @@ public class ServletToHandlerDocs
         {
             // Non-blocking read the request content as a ByteBuffer.
             // Use with caution as the request content may be large.
-            CompletableFuture<ByteBuffer> completable = Content.Source.asByteBufferAsync(request);
-
-            completable.whenComplete((requestContent, failure) ->
+            Content.Source.asByteBuffer(request, new Promise<>()
             {
-                if (failure == null)
+                @Override
+                public void succeeded(ByteBuffer result)
                 {
                     // Process the request content here.
 
                     // Implicitly respond with status code 200 and no content.
                     callback.succeeded();
                 }
-                else
+
+                @Override
+                public void failed(Throwable failure)
                 {
                     // Implicitly respond with status code 500.
                     callback.failed(failure);
@@ -303,7 +304,8 @@ public class ServletToHandlerDocs
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            CompletableTask<Void> reader = new CompletableTask<>()
+            // When the read is complete, complete the Handler callback.
+            Promise.Task<Void> reader = new Promise.Task<>(callback::succeeded, callback::failed)
             {
                 @Override
                 public void run()
@@ -326,7 +328,7 @@ public class ServletToHandlerDocs
                         if (Content.Chunk.isFailure(chunk))
                         {
                             Throwable failure = chunk.getFailure();
-                            completeExceptionally(failure);
+                            failed(failure);
                             return;
                         }
 
@@ -343,7 +345,7 @@ public class ServletToHandlerDocs
                         // If the last chunk is read, complete normally.
                         if (chunk.isLast())
                         {
-                            complete(null);
+                            succeeded(null);
                             return;
                         }
 
@@ -353,10 +355,7 @@ public class ServletToHandlerDocs
             };
 
             // Initiate the read of the request content.
-            reader.start();
-
-            // When the read is complete, complete the Handler callback.
-            callback.completeWith(reader);
+            reader.run();
 
             return true;
         }
@@ -440,7 +439,7 @@ public class ServletToHandlerDocs
             // Replaces:
             //   - servletResponse.encodeRedirectURL(location)
             //   - servletResponse.sendRedirect(location)
-            String location = Request.toRedirectURI(request, "/redirect");
+            String location = Response.toRedirectURI(request, "/redirect");
             Response.sendRedirect(request, response, callback, location);
 
             // Sends an error response.

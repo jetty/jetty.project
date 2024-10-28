@@ -420,7 +420,7 @@ class AsyncContentProducer implements ContentProducer
         public InvocationType getInvocationType()
         {
             // This is the invocation type when the producer is passed as demand, so ask the HttpInput.
-            return _servletChannel.getHttpInput().getReadListenerInvocationType();
+            return _servletChannel.getHttpInput().getInvocationType();
         }
     }
 }

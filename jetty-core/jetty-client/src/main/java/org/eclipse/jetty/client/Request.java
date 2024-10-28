@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>{@link Request} represents an HTTP request, and offers a fluent interface to customize
@@ -514,18 +513,8 @@ public interface Request
      *
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
-     * @deprecated use {@link #abort(Throwable, Promise)} instead
      */
-    @Deprecated(forRemoval = true, since = "12.0.15")
     CompletableFuture<Boolean> abort(Throwable cause);
-
-    /**
-     * Attempts to abort the send of this request.
-     *
-     * @param cause the abort cause, must not be null
-     * @param promise the promise to call back with the success of the abort
-     */
-    void abort(Throwable cause, Promise<Boolean> promise);
 
     /**
      * @return the abort cause passed to {@link #abort(Throwable)},

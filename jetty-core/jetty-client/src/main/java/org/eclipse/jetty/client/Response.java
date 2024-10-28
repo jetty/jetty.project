@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>{@link Response} represents an HTTP response and offers methods to retrieve status code, HTTP version
@@ -187,9 +188,8 @@ public interface Response
         @Override
         default void onContentSource(Response response, Content.Source contentSource)
         {
+            Runnable demandCallback = Invocable.from(Invocable.InvocationType.NON_BLOCKING, () -> onContentSource(response, contentSource));
             Content.Chunk chunk = contentSource.read();
-            // demandCallback eventually calls onContent() which calls end-user code, so its InvocationType must be BLOCKING.
-            Runnable demandCallback = () -> onContentSource(response, contentSource);
             if (chunk == null)
             {
                 contentSource.demand(demandCallback);

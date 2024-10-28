@@ -304,4 +304,70 @@ public interface Promise<C>
         };
     }
 
+    /**
+     * <p>A {@link Promise} that implements {@link Runnable} to perform
+     * a one-shot task that eventually completes this {@link Promise}.</p>
+     * <p>Subclasses override {@link #run()} to implement the task.</p>
+     * <p>Users of this class start the task execution via {@link #run()}.</p>
+     * <p>Typical usage:</p>
+     * <pre>{@code
+     * // Specify what to do in case of success and failure.
+     * Promise.Task<T> task = new Promise.Task<>(() -> onSuccess(), x -> onFailure(x))
+     * {
+     *     @Override
+     *     public void run()
+     *     {
+     *         try
+     *         {
+     *             // Perform some task.
+     *             T result = performTask();
+     *
+     *             // Eventually succeed this Promise.
+     *             succeeded(result);
+     *         }
+     *         catch (Throwable x)
+     *         {
+     *             // Fail this Promise.
+     *             failed(x);
+     *         }
+     *     }
+     * }
+     *
+     * // Start the task.
+     * task.run();
+     * }</pre>
+     *
+     * @param <T> the type of the result of the task
+     */
+    abstract class Task<T> implements Promise<T>, Runnable
+    {
+        private final Runnable onSuccess;
+        private final Consumer<Throwable> onFailure;
+
+        public Task()
+        {
+            onSuccess = null;
+            onFailure = null;
+        }
+
+        public Task(Runnable onSuccess, Consumer<Throwable> onFailure)
+        {
+            this.onSuccess = Objects.requireNonNull(onSuccess);
+            this.onFailure = Objects.requireNonNull(onFailure);
+        }
+
+        @Override
+        public void succeeded(T result)
+        {
+            if (onSuccess != null)
+                onSuccess.run();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (onFailure != null)
+                onFailure.accept(x);
+        }
+    }
 }
