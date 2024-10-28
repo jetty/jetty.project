@@ -617,17 +617,23 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public void close()
     {
         Runnable task = _httpChannel.onClose();
-        ThreadPool.executeImmediately(getExecutor(), () ->
+        if (task != null)
         {
-            try
+            ThreadPool.executeImmediately(getExecutor(), () ->
             {
-                task.run();
-            }
-            finally
-            {
-                super.close();
-            }
-        });    }
+                try
+                {
+                    task.run();
+                }
+                finally
+                {
+                    super.close();
+                }
+            });
+            return;
+        }
+        super.close();
+    }
 
     @Override
     public void onOpen()

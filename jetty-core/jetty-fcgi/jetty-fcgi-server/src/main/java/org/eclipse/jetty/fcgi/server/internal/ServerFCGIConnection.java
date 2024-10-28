@@ -411,21 +411,22 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         if (stream != null)
         {
             Runnable task = stream.getHttpChannel().onClose();
-            ThreadPool.executeImmediately(getExecutor(), () ->
+            if (task != null)
             {
-                try
+                ThreadPool.executeImmediately(getExecutor(), () ->
                 {
-                    task.run();
-                }
-                finally
-                {
-                    super.close();
-                }
-            });
+                    try
+                    {
+                        task.run();
+                    }
+                    finally
+                    {
+                        super.close();
+                    }
+                });
+                return;
+            }
         }
-        else
-        {
-            super.close();
-        }
+        super.close();
     }
 }
