@@ -32,10 +32,15 @@ import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
+import org.eclipse.jetty.http.MultiPartConfig;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -72,58 +77,61 @@ public class ThreadStarvationTest
     {
         List<Scenario> params = new ArrayList<>();
 
-        // HTTP
-        ConnectorProvider http = (server, acceptors, selectors) ->
+        for (boolean delayed : new boolean[]{false, true})
         {
-            ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
-            HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-            return new ServerConnector(server, null, null, pool, acceptors, selectors, httpConnectionFactory);
-        };
-        ClientSocketProvider httpClient = Socket::new;
-        params.add(new Scenario("http", http, httpClient));
-
-        // HTTPS/SSL/TLS
-        ConnectorProvider https = (server, acceptors, selectors) ->
-        {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-            SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(keystorePath.toString());
-            sslContextFactory.setKeyStorePassword("storepwd");
-            ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
-
-            HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-            ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
-                AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
-            SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
-            httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
-            return connector;
-        };
-        ClientSocketProvider httpsClient = new ClientSocketProvider()
-        {
-            private final SSLContext sslContext;
-
+            // HTTP
+            ConnectorProvider http = (server, acceptors, selectors) ->
             {
-                try
-                {
-                    HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-                    sslContext = SSLContext.getInstance("TLS");
-                    sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
-                    HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            }
+                ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+                HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+                return new ServerConnector(server, null, null, pool, acceptors, selectors, httpConnectionFactory);
+            };
+            ClientSocketProvider httpClient = Socket::new;
+            params.add(new Scenario("http", http, httpClient, delayed));
 
-            @Override
-            public Socket newSocket(String host, int port) throws IOException
+            // HTTPS/SSL/TLS
+            ConnectorProvider https = (server, acceptors, selectors) ->
             {
-                return sslContext.getSocketFactory().createSocket(host, port);
-            }
-        };
-        params.add(new Scenario("https/ssl/tls", https, httpsClient));
+                Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+                SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+                sslContextFactory.setKeyStorePath(keystorePath.toString());
+                sslContextFactory.setKeyStorePassword("storepwd");
+                ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+
+                HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+                ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
+                    AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
+                SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
+                httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
+                return connector;
+            };
+            ClientSocketProvider httpsClient = new ClientSocketProvider()
+            {
+                private final SSLContext sslContext;
+
+                {
+                    try
+                    {
+                        HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+                        sslContext = SSLContext.getInstance("TLS");
+                        sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
+                        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                @Override
+                public Socket newSocket(String host, int port) throws IOException
+                {
+                    return sslContext.getSocketFactory().createSocket(host, port);
+                }
+            };
+            params.add(new Scenario("https/ssl/tls", https, httpsClient, delayed));
+        }
 
         return params.stream().map(Arguments::of);
     }
@@ -143,6 +151,12 @@ public class ThreadStarvationTest
         _connector = scenario.connectorProvider.newConnector(_server, acceptors, selectors);
         _server.addConnector(_connector);
         _server.setHandler(handler);
+
+        if (scenario.delayed)
+        {
+            _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
+            _server.insertHandler(new DelayedHandler());
+        }
     }
 
     @AfterEach
@@ -219,6 +233,181 @@ public class ThreadStarvationTest
             clientExecutors.shutdownNow();
         }
     }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testFormStarvation(Scenario scenario) throws Exception
+    {
+        prepareServer(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Fields fields = FormFields.getFields(request);
+                StringBuilder builder = new StringBuilder();
+                fields.forEach(field -> builder.append(field.getName()).append('=').append(field.getValue()).append('\n'));
+                response.write(true, BufferUtil.toBuffer(builder.toString()), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
+        try
+        {
+            List<Callable<String>> clientTasks = new ArrayList<>();
+
+            for (int i = 0; i < CLIENTS; i++)
+            {
+                clientTasks.add(() ->
+                {
+                    try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                         OutputStream out = client.getOutputStream();
+                         InputStream in = client.getInputStream())
+                    {
+                        client.setSoTimeout(10000);
+
+                        String request = """
+                            POST / HTTP/1.0\r
+                            host: localhost\r
+                            content-type: application/x-www-form-urlencoded\r
+                            content-length: 11\r
+                            \r
+                            a=1&b""";
+
+                        // Write partial request
+                        out.write(request.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Finish Request
+                        Thread.sleep(1500);
+                        out.write(("=2&c=3").getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Read Response
+                        String response = IO.toString(in);
+                        assertEquals(-1, in.read());
+                        return response;
+                    }
+                });
+            }
+
+            List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
+
+            for (Future<String> responseFut : responses)
+            {
+                String response = responseFut.get();
+                assertThat(response, containsString("200 OK"));
+                assertThat(response, containsString("a=1"));
+                assertThat(response, containsString("b=2"));
+                assertThat(response, containsString("c=3"));
+            }
+        }
+        finally
+        {
+            clientExecutors.shutdownNow();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testMultiPartStarvation(Scenario scenario) throws Exception
+    {
+        MultiPartConfig config = new MultiPartConfig.Builder()
+            .maxParts(10)
+            .maxMemoryPartSize(Long.MAX_VALUE)
+            .maxSize(Long.MAX_VALUE)
+            .useFilesForPartsWithoutFileName(false)
+            .build();
+
+        prepareServer(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                MultiPartFormData.Parts parts = MultiPartFormData.getParts(request, request, "multipart/form-data; boundary=\"A1B2C3\"", config);
+                StringBuilder builder = new StringBuilder();
+                parts.forEach(part -> builder.append(part.getName()).append('=').append(part.getContentAsString(StandardCharsets.UTF_8)).append('\n'));
+                parts.close();
+                response.write(true, BufferUtil.toBuffer(builder.toString()), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
+        try
+        {
+            List<Callable<String>> clientTasks = new ArrayList<>();
+
+            for (int i = 0; i < CLIENTS; i++)
+            {
+                clientTasks.add(() ->
+                {
+                    try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                         OutputStream out = client.getOutputStream();
+                         InputStream in = client.getInputStream())
+                    {
+                        client.setSoTimeout(10000);
+                        String content = """
+                            --A1B2C3
+                            Content-Disposition: form-data; name="part1"
+                            Content-Type: text/plain; charset="UTF-8"
+                            
+                            content1
+                            --A1B2C3
+                            Content-Disposition: form-data; name="part2"
+                            Content-Type: text/plain; charset="UTF-8"
+                            
+                            content2
+                            --A1B2C3--
+                            """;
+                        String header = """
+                           POST / HTTP/1.0
+                           Host: localhost
+                           Content-Type: multipart/form-data; boundary="A1B2C3"
+                           Content-Length: %d
+                           
+                           """.formatted(content.length());
+
+                        // Write partial request
+                        out.write(header.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Finish Request
+                        Thread.sleep(750);
+                        out.write(content.substring(0, 20).getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Finish Request
+                        Thread.sleep(750);
+                        out.write(content.substring(20).getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Read Response
+                        String response = IO.toString(in);
+                        assertEquals(-1, in.read());
+                        return response;
+                    }
+                });
+            }
+
+            List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
+
+            for (Future<String> responseFut : responses)
+            {
+                String response = responseFut.get();
+                assertThat(response, containsString("200 OK"));
+                assertThat(response, containsString("part1=content1"));
+                assertThat(response, containsString("part2=content2"));
+            }
+        }
+        finally
+        {
+            clientExecutors.shutdownNow();
+        }
+    }
+
 
     protected static class ReadHandler extends Handler.Abstract
     {
@@ -340,18 +529,20 @@ public class ThreadStarvationTest
         private final String testType;
         private final ConnectorProvider connectorProvider;
         private final ClientSocketProvider clientSocketProvider;
+        private final boolean delayed;
 
-        private Scenario(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
+        private Scenario(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider, boolean delayed)
         {
             this.testType = testType;
             this.connectorProvider = connectorProvider;
             this.clientSocketProvider = clientSocketProvider;
+            this.delayed = delayed;
         }
 
         @Override
         public String toString()
         {
-            return this.testType;
+            return "%s|%b".formatted(testType, delayed);
         }
     }
 }
