@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -81,8 +82,9 @@ public class ThreadStarvationTest
             _server.stop();
     }
 
-    @Test
-    public void testReadStarvation() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testReadStarvation(boolean delayed) throws Exception
     {
         int maxThreads = 5;
         int clients = maxThreads + 2;
@@ -104,6 +106,11 @@ public class ThreadStarvationTest
         }), "/*");
         _server.setHandler(context);
 
+        if (delayed)
+        {
+            _server.insertHandler(new DelayedHandler());
+            connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
+        }
         _server.start();
 
         ExecutorService clientExecutors = Executors.newFixedThreadPool(clients);
@@ -160,6 +167,7 @@ public class ThreadStarvationTest
             clientExecutors.shutdownNow();
         }
     }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     public void testFormStarvation(boolean delayed) throws Exception
@@ -196,8 +204,10 @@ public class ThreadStarvationTest
         _server.setHandler(context);
 
         if (delayed)
+        {
             _server.insertHandler(new DelayedHandler());
-
+            connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
+        }
         _server.start();
 
         ExecutorService clientExecutors = Executors.newFixedThreadPool(clients);
