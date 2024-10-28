@@ -24,7 +24,7 @@ import static org.eclipse.jetty.http.ComplianceViolation.Listener.NOOP;
 /**
  * The Configuration needed to parse multipart/form-data.
  * @see MultiPartFormData#getParts(Content.Source, Attributes, String, MultiPartConfig)
- * @see MultiPartFormData#onParts(Content.Source, Attributes, String, MultiPartConfig, Promise, Promise.Invocable)
+ * @see MultiPartFormData#onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)
  */
 public class MultiPartConfig
 {
