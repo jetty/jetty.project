@@ -151,8 +151,12 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param request The request to get or read the Fields from
-     * @param promise The action to take when the FormFields are available. The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType}
-     *               of this parameter will be used as the type for any implementation calls to {@link Content.Source#demand(Runnable)}.
+     * @param promise The action to take when the FormFields are available.
+     *                If the {@link InvocationType} of the promise is not {@link InvocationType#NON_BLOCKING},
+     *                then any calls to the promise may be executed via the {@link Request#getContext()} so that
+     *                the implementation can pass a {@link InvocationType#NON_BLOCKING} {@link Runnable} to
+     *                {@link Content.Source#demand(Runnable)}.  If the fields are available immediately, then the promise
+     *                will always be called directly from within the onFields call.
      * @see #onFields(Request, Charset, Promise.Invocable)
      * @see #getFields(Request)
      * @see #getFields(Request, int, int)
@@ -168,11 +172,13 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param request The request to get or read the Fields from
+     * @param charset The {@link Charset} of the request content, if previously extracted.
      * @param promise The action to take when the FormFields are available.
      *                If the {@link InvocationType} of the promise is not {@link InvocationType#NON_BLOCKING},
      *                then any calls to the promise may be executed via the {@link Request#getContext()} so that
      *                the implementation can pass a {@link InvocationType#NON_BLOCKING} {@link Runnable} to
-     *                {@link Content.Source#demand(Runnable)}.
+     *                {@link Content.Source#demand(Runnable)}.  If the fields are available immediately, then the promise
+     *                will always be called directly from within the onFields call.
      * @see #onFields(Request, Charset, Promise.Invocable)
      * @see #getFields(Request)
      * @see #getFields(Request, int, int)
