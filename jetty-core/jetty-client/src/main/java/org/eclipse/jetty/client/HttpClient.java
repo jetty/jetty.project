@@ -1149,6 +1149,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
 
     public void setMaxRequestHeadersSize(int maxRequestHeadersSize) {
         this.maxRequestHeadersSize = maxRequestHeadersSize;
+    }
 
     @Override
     public void close() throws Exception
