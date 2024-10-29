@@ -513,15 +513,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             int filled;
 
-            // The application has retained the content chunks
+            // The application has retained the content chunks then we must not overwrite content.
             if (_requestBuffer.isRetained())
             {
-                // then we must be careful to not overwrite content.
-
                 // If there is more than 1K space available, we can top up the buffer rather than allocate a new one
                 ByteBuffer backing = _requestBuffer.getByteBuffer();
                 int limit = backing.limit();
-                if (backing.capacity() - limit >= 1024)
+                if (backing.capacity() - limit >= getHttpConfiguration().getMinInputBufferSpace())
                 {
                     // Move the position back to 0, leaving limit to cover the retained content and prevent it be overwritten
                     backing.position(0);

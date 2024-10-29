@@ -89,6 +89,7 @@ public class HttpConfiguration implements Dumpable
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
+    private int _minInputBufferSpace = 1024;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -166,6 +167,7 @@ public class HttpConfiguration implements Dumpable
         _serverAuthority = config._serverAuthority;
         _localAddress = config._localAddress;
         _maxUnconsumedRequestContentReads = config._maxUnconsumedRequestContentReads;
+        _minInputBufferSpace = config._minInputBufferSpace;
     }
 
     /**
@@ -548,6 +550,22 @@ public class HttpConfiguration implements Dumpable
     public void setMaxErrorDispatches(int max)
     {
         _maxErrorDispatches = max;
+    }
+
+    /**
+     * @return The minimum space available in a retained input buffer before allocating a new one.
+     */
+    public int getMinInputBufferSpace()
+    {
+        return _minInputBufferSpace;
+    }
+
+    /**
+     * @param minInputBufferSpace The minimum space available in a retained input buffer before allocating a new one.
+     */
+    public void setMinInputBufferSpace(int minInputBufferSpace)
+    {
+        _minInputBufferSpace = minInputBufferSpace;
     }
 
     /**
