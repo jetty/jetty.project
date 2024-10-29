@@ -15,6 +15,7 @@ package org.eclipse.jetty.test.client.transport;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
@@ -42,11 +43,13 @@ public class ThreadStarvationTest extends AbstractTest
         // Leave only 1 thread available to handle requests.
         // 1 acceptor (0 for H3), 1 selector, 1 available.
         int maxThreads = transport == Transport.H3 ? 2 : 3;
+        AtomicReference<Thread> handlerThreadRef = new AtomicReference<>();
         prepareServer(transport, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
+                handlerThreadRef.set(Thread.currentThread());
                 // Perform a blocking read.
                 String content = Content.Source.asString(request);
                 Content.Sink.write(response, true, content, callback);
@@ -79,7 +82,13 @@ public class ThreadStarvationTest extends AbstractTest
             });
 
         // Wait for the request to block on the server.
-        Thread.sleep(1000);
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = handlerThreadRef.get();
+            if (thread == null)
+                return false;
+            return thread.getState() == Thread.State.WAITING;
+        });
 
         // Finish the request, the server should be able to process it.
         content.write(false, UTF_8.encode("123456789"), Callback.NOOP);

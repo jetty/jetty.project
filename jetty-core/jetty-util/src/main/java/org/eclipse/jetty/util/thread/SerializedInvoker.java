@@ -243,7 +243,7 @@ public class SerializedInvoker
         public void run()
         {
             Link link = this;
-            InvocationType previousInvocationType = link.getInvocationType();
+            InvocationType firstInvocationType = link.getInvocationType();
             while (link != null)
             {
                 if (LOG.isDebugEnabled())
@@ -251,13 +251,13 @@ public class SerializedInvoker
 
                 Runnable task = link.getTask();
                 InvocationType currentInvocationType = link.getInvocationType();
-                if (currentInvocationType == InvocationType.BLOCKING && previousInvocationType != InvocationType.BLOCKING)
+                if (currentInvocationType == InvocationType.BLOCKING && firstInvocationType != InvocationType.BLOCKING)
                 {
                     // Cannot run a BLOCKING task after a NON_BLOCKING one,
                     // dispatch the current task and exit the iteration.
                     if (_executor != null)
                     {
-                        _executor.execute(task);
+                        _executor.execute(link);
                         return;
                     }
                 }
