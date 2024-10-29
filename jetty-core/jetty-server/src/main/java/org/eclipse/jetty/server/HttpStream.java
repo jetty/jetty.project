@@ -135,6 +135,12 @@ public interface HttpStream extends Callback
         return CONTENT_NOT_CONSUMED;
     }
 
+    @Override
+    default InvocationType getInvocationType()
+    {
+        return InvocationType.NON_BLOCKING;
+    }
+
     class Wrapper implements HttpStream
     {
         private final HttpStream _wrapped;

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
@@ -275,7 +274,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
-    private MessageParser.Result parseAndFill(boolean setFillInterest)
+    private MessageParser.Result parseAndFill(boolean setFillInterest) throws IOException
     {
         try
         {
@@ -336,16 +335,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
-    private int fill(ByteBuffer byteBuffer)
+    private int fill(ByteBuffer byteBuffer) throws IOException
     {
-        try
-        {
-            return getEndPoint().fill(byteBuffer);
-        }
-        catch (IOException x)
-        {
-            throw new UncheckedIOException(x.getMessage(), x);
-        }
+        return getEndPoint().fill(byteBuffer);
     }
 
     private void processHeaders(HeadersFrame frame, boolean wasBlocked, Runnable delegate)

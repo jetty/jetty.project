@@ -82,6 +82,14 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         return _contextHandler.getProtectedTargets();
     }
 
+    public Resource getBaseResource()
+    {
+        if (_baseResource != null)
+            return _baseResource;
+        _baseResource = _resourceBaseSupplier.get();
+        return _baseResource;
+    }
+
     private void extractBaseResourceFromContext()
     {
         _baseResource = _resourceBaseSupplier.get();
@@ -123,6 +131,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     {
         _contextHandler.removeEventListener(_listener);
         _baseResource = null;
+        _initialized = false;
         _protected.clear();
     }
 

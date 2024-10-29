@@ -14,7 +14,7 @@
 module org.eclipse.jetty.util
 {
     // Standard Jetty Logging now.
-    requires org.slf4j;
+    requires transitive org.slf4j;
 
     // Required by SSL code (for X509).
     requires transitive java.naming;

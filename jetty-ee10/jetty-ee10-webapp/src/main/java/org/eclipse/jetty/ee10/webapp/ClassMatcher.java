@@ -61,4 +61,16 @@ public class ClassMatcher extends org.eclipse.jetty.util.ClassMatcher
             _patterns.asImmutable(),
             _locations.asImmutable());
     }
+
+    /**
+     * Create a {@link ClassMatcher webapp ClassMatcher} that wraps a {@link org.eclipse.jetty.util.ClassMatcher util ClassMatcher}
+     * for deprecated API usage.
+     * @param matcher The util {@link org.eclipse.jetty.util.ClassMatcher} to wrap
+     * @return A {@link ClassMatcher webapp ClassMatcher}
+     */
+    static ClassMatcher wrap(org.eclipse.jetty.util.ClassMatcher matcher)
+    {
+        Constructor<ClassMatcher> constructor = ClassMatcher::new;
+        return wrap(matcher, constructor);
+    }
 }

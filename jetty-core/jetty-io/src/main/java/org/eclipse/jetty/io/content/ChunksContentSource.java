@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -32,7 +33,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 public class ChunksContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
-    private final SerializedInvoker invoker = new SerializedInvoker();
+    private final SerializedInvoker invoker = new SerializedInvoker(ChunksContentSource.class);
     private final long length;
     private final Collection<Content.Chunk> chunks;
     private Iterator<Content.Chunk> iterator;
@@ -111,19 +112,7 @@ public class ChunksContentSource implements Content.Source
             this.demandCallback = null;
         }
         if (demandCallback != null)
-            runDemandCallback(demandCallback);
-    }
-
-    private void runDemandCallback(Runnable demandCallback)
-    {
-        try
-        {
-            demandCallback.run();
-        }
-        catch (Throwable x)
-        {
-            fail(x);
-        }
+            ExceptionUtil.run(demandCallback, this::fail);
     }
 
     @Override

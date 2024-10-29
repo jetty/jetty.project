@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public abstract class SelectorManager extends ContainerLifeCycle implements Dumpable
 {
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
-    protected static final Logger LOG = LoggerFactory.getLogger(SelectorManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SelectorManager.class);
 
     private final Executor executor;
     private final Scheduler scheduler;

@@ -1,0 +1,12 @@
+REQUEST|GET|/ccd-ee10/redispatch/ee10
+STEP|REQUEST_FORWARD|/dump/ee10
+EXPECTED_EVENT|Initial plan: ee10-request-forward-dump.txt
+EXPECTED_EVENT|DispatchPlanHandler.handle() method=GET path-query=/ccd-ee10/redispatch/ee10
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee10.CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee10/redispatch/ee10
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee10.DumpServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee10/dump/ee10
+EXPECTED_PROP|request.dispatcherType|FORWARD
+EXPECTED_PROP|request.requestURI|/ccd-ee10/dump/ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.forward.context_path]|/ccd-ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.forward.path_info]|/ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.forward.request_uri]|/ccd-ee10/redispatch/ee10
+EXPECTED_PROP|req.attr[jakarta.servlet.forward.servlet_path]|/redispatch

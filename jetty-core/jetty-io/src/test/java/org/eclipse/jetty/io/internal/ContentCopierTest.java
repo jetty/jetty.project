@@ -16,21 +16,50 @@ package org.eclipse.jetty.io.internal;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.TestSink;
 import org.eclipse.jetty.io.TestSource;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentCopierTest
 {
+    @Test
+    public void testSimpleCopy() throws Exception
+    {
+        TimeoutException originalFailure = new TimeoutException("timeout");
+        TestSource originalSource = new TestSource(
+            Content.Chunk.from(BufferUtil.toBuffer("How "), false),
+            null,
+            Content.Chunk.from(BufferUtil.toBuffer("now "), false),
+            null,
+            Content.Chunk.from(BufferUtil.toBuffer("brown "), false),
+            Content.Chunk.from(BufferUtil.toBuffer("cow."), true)
+        );
+
+        Callback.Completable callback = new Callback.Completable();
+        TestSink resultSink = new TestSink();
+        ContentCopier contentCopier = new ContentCopier(originalSource, resultSink, null, callback);
+        contentCopier.iterate();
+
+        callback.get(5, TimeUnit.SECONDS);
+
+        StringBuilder result = new StringBuilder();
+        for (Content.Chunk chunk : resultSink.takeAccumulatedChunks())
+            result.append(BufferUtil.toString(chunk.getByteBuffer()));
+        assertThat(result.toString(), equalTo("How now brown cow."));
+    }
+
     @Test
     public void testTransientErrorsBecomeTerminalErrors() throws Exception
     {

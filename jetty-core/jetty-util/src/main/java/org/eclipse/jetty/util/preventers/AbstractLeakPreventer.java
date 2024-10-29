@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractLeakPreventer extends AbstractLifeCycle
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(AbstractLeakPreventer.class);
+    static final Logger LOG = LoggerFactory.getLogger(AbstractLeakPreventer.class);
 
     public abstract void prevent(ClassLoader loader);
 

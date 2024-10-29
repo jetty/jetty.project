@@ -260,12 +260,6 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     }
 
     @Override
-    public V getBest(String s)
-    {
-        return getBest(0, s, 0, s.length());
-    }
-
-    @Override
     public V getBest(String s, int offset, int length)
     {
         return getBest(0, s, offset, length);

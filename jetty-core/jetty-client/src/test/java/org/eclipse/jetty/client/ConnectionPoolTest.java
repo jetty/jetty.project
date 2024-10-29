@@ -703,7 +703,7 @@ public class ConnectionPoolTest
         assertThat(connectionPool.toString(), not(nullValue()));
     }
 
-    private static class ConnectionPoolFactory
+    public static class ConnectionPoolFactory
     {
         private final String name;
         private final ConnectionPool.Factory factory;

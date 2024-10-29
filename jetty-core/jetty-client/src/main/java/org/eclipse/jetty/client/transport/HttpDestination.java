@@ -188,7 +188,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     protected void doStop() throws Exception
     {
         requestTimeouts.destroy();
-        abort(new AsynchronousCloseException());
+        abortExchanges(new AsynchronousCloseException());
         Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
         if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
             connectionPoolSweeper.remove((Sweeper.Sweepable)connectionPool);
@@ -294,7 +294,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     @Override
     public void failed(Throwable x)
     {
-        abort(x);
+        abortExchanges(x);
     }
 
     @Override
@@ -513,7 +513,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
      *
      * @param cause the abort cause
      */
-    public void abort(Throwable cause)
+    private void abortExchanges(Throwable cause)
     {
         // Copy the queue of exchanges and fail only those that are queued at this moment.
         // The application may queue another request from the failure/complete listener

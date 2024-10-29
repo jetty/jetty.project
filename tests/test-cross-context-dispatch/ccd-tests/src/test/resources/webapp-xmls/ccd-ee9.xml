@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+  <Set name="contextPath">/ccd-ee9</Set>
+  <Set name="war"><Property name="jetty.webapps" default="." />/ccd-ee9</Set>
+  <Set name="crossContextDispatchSupported">true</Set>
+
+  <Get name="sessionHandler">
+    <Get id="sessMan" name="sessionManager">
+      <Set name="sessionCache">
+        <New class="org.eclipse.jetty.tests.ccd.common.PlanSessionCache">
+          <Arg>
+            <Ref refid="sessMan"/>
+          </Arg>
+        </New>
+      </Set>
+    </Get>
+  </Get>
+</Configure>
+

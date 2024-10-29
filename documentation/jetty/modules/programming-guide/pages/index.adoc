@@ -1,0 +1,46 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[reftext=Programming Guide]
+= Jetty {page-version} Programming Guide
+
+The Eclipse Jetty Programming Guide targets developers who want to use the Jetty libraries in their applications.
+
+The Jetty libraries provide the client-side and server-side APIs to work with various web protocols such as HTTP/1.1, HTTP/2, HTTP/3, WebSocket and FastCGI.
+
+You may use the xref:client/index.adoc[Jetty client-side library] in your application to make calls to third party REST services, or to other REST microservices in your system.
+
+Likewise, you may use the xref:server/index.adoc[Jetty server-side library] to quickly create an HTTP or REST service without having to create a web application archive file (a `+*.war+` file) and without having to deploy it to a Jetty standalone server that you would have to download and install.
+
+This guide will walk you through the design of the Jetty libraries and how to use its classes to write your applications.
+
+== Code Deprecation Policy
+
+As the Jetty code evolves, classes and/or methods are deprecated using the `@Deprecated` annotation and will be removed in a future Jetty release.
+
+The Jetty release numbering follows this scheme: `<major>.<minor>.<micro>`. For example, 12.0.5 has `major=12`, `minor=0` and `micro=5`.
+
+As much as possible, deprecated code is not removed in micro releases.
+Deprecated code may be removed in major releases.
+Deprecated code may be removed in minor releases, but only if it has been deprecated for at least 6 micro releases.
+
+For example, let's assume that Jetty 12.1.0 (a new minor release) is released after the release of Jetty 12.0.11.
+
+Then, code that was deprecated in Jetty 12.0.5 or earlier may be removed from Jetty 12.1.0 (because it has been deprecated for more than 6 micro releases).
+
+On the other hand, code that was deprecated in Jetty 12.0.8 may be removed in Jetty 12.1.3 (because it has been deprecated for 3 micro releases in Jetty 12.0.x, and for 3 micro releases in Jetty 12.1.x -- 12.1.0, 12.1.1 and 12.1.2).
+
+[NOTE]
+====
+There could be rare cases where code (possibly not even deprecated) must be removed earlier than specified above to address security vulnerabilities.
+====

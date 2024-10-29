@@ -154,58 +154,6 @@ public class AsyncServletTest extends AbstractTest
 //        assertTrue(clientLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 //    }
 //
-//    @Test
-//    public void testStartAsyncThenClientResetWithoutRemoteErrorNotification() throws Exception
-//    {
-//        HttpConfiguration httpConfiguration = new HttpConfiguration();
-//        httpConfiguration.setNotifyRemoteAsyncErrors(false);
-//        prepareServer(new HTTP2ServerConnectionFactory(httpConfiguration));
-//        ServletContextHandler context = new ServletContextHandler(server, "/");
-//        AtomicReference<AsyncContext> asyncContextRef = new AtomicReference<>();
-//        CountDownLatch latch = new CountDownLatch(1);
-//        context.addServlet(new ServletHolder(new HttpServlet()
-//        {
-//            @Override
-//            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-//            {
-//                AsyncContext asyncContext = request.startAsync();
-//                asyncContext.setTimeout(0);
-//                asyncContextRef.set(asyncContext);
-//                latch.countDown();
-//            }
-//        }), servletPath + "/*");
-//        server.start();
-//
-//        prepareClient();
-//        client.start();
-//        Session session = newClient(new Session.Listener() {});
-//        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-//        HeadersFrame frame = new HeadersFrame(metaData, null, true);
-//        FuturePromise<Stream> promise = new FuturePromise<>();
-//        session.newStream(frame, promise, null);
-//        Stream stream = promise.get(5, TimeUnit.SECONDS);
-//
-//        // Wait for the server to be in ASYNC_WAIT.
-//        assertTrue(latch.await(5, TimeUnit.SECONDS));
-//        sleep(500);
-//
-//        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-//
-//        // Wait for the reset to be processed by the server.
-//        sleep(500);
-//
-//        AsyncContext asyncContext = asyncContextRef.get();
-//        ServletResponse response = asyncContext.getResponse();
-//        ServletOutputStream output = response.getOutputStream();
-//
-//        assertThrows(IOException.class,
-//            () ->
-//            {
-//                // Large writes or explicit flush() must
-//                // fail because the stream has been reset.
-//                output.flush();
-//            });
-//    }
 //
 //    @Test
 //    public void testStartAsyncThenServerSessionIdleTimeout() throws Exception

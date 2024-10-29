@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- // -->
+<!-- // ======================================================================== -->
+<!-- // Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others. -->
+<!-- // -->
+<!-- // This program and the accompanying materials are made available under the -->
+<!-- // terms of the Eclipse Public License v. 2.0 which is available at -->
+<!-- // https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0 -->
+<!-- // which is available at https://www.apache.org/licenses/LICENSE-2.0. -->
+<!-- // -->
+<!-- // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 -->
+<!-- // ======================================================================== -->
+<!-- // -->
+
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+         http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+  version="3.1">
+
+
+</web-app>

@@ -80,6 +80,9 @@ public class PemExporter
         try (OutputStream os = Files.newOutputStream(paths[1]))
         {
             Certificate[] certChain = keyStore.getCertificateChain(alias);
+            if (certChain == null)
+                throw new IllegalArgumentException("Alias does not exist in key store: " + alias);
+
             for (Certificate cert : certChain)
                 writeAsPEM(os, cert);
             Files.setPosixFilePermissions(paths[1], Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));

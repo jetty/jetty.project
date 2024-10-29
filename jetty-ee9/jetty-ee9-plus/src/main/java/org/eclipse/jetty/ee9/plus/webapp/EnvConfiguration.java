@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.plus.webapp;
 
 import java.net.URL;
-import java.util.Map;
 import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.IO;
@@ -50,6 +50,8 @@ public class EnvConfiguration extends AbstractConfiguration
     private static final Logger LOG = LoggerFactory.getLogger(EnvConfiguration.class);
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
+    private static final String JETTY_ENV_XML = "jetty-env.xml";
+    private static final String JETTY_EE_ENV_XML = "jetty-ee9-env.xml";
     private Resource jettyEnvXmlResource;
     private NamingDump _dumper;
     private ResourceFactory.Closeable _resourceFactory;
@@ -89,19 +91,8 @@ public class EnvConfiguration extends AbstractConfiguration
         //look in WEB-INF/jetty-env.xml
         if (jettyEnvXmlResource == null)
         {
-            //look for a file called WEB-INF/jetty-env.xml
-            //and process it if it exists
-            org.eclipse.jetty.util.resource.Resource webInf = context.getWebInf();
-            if (webInf != null && webInf.isDirectory())
-            {
-                // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/jetty-env.xml
-                // TODO: should also never return from a META-INF/versions/#/WEB-INF/jetty-env.xml location
-                org.eclipse.jetty.util.resource.Resource jettyEnv = webInf.resolve("jetty-env.xml");
-                if (Resources.isReadableFile(jettyEnv))
-                {
-                    jettyEnvXmlResource = jettyEnv;
-                }
-            }
+            //look for a configuration file
+            jettyEnvXmlResource = resolveJettyEnvXml(context.getWebInf());
         }
 
         if (jettyEnvXmlResource != null)
@@ -149,6 +140,7 @@ public class EnvConfiguration extends AbstractConfiguration
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        ContextFactory.associateClassLoader(context.getClassLoader());
         try
         {
             Context ic = new InitialContext();
@@ -173,6 +165,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
+            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
             IO.close(_resourceFactory);
             _resourceFactory = null;
@@ -246,15 +239,62 @@ public class EnvConfiguration extends AbstractConfiguration
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+        //ensure that we create a unique comp/env context for this webapp based off
+        //its classloader
+        ContextFactory.associateClassLoader(wac.getClassLoader());
+
         try
         {
-            Context context = new InitialContext();
-            Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.createSubcontext("env");
+            WebAppClassLoader.runWithServerClassAccess(() ->
+            {
+                Context context = new InitialContext();
+                Context compCtx = (Context)context.lookup("java:comp");
+                compCtx.createSubcontext("env");
+                return null;
+            });
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
         }
         finally
         {
+            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
+        }
+    }
+
+    /**
+     * Obtain a WEB-INF/jetty-ee9-env.xml, falling back to
+     * looking for WEB-INF/jetty-env.xml.
+     *
+     * @param webInf the WEB-INF of the context to search
+     * @return the file if it exists or null otherwise
+     */
+    private Resource resolveJettyEnvXml(Resource webInf)
+    {
+        try
+        {
+            if (webInf == null || !webInf.isDirectory())
+                return null;
+
+            //try to find jetty-ee9-env.xml
+            Resource xmlResource = webInf.resolve(JETTY_EE_ENV_XML);
+            if (!Resources.missing(xmlResource))
+                return xmlResource;
+
+            //failing that, look for jetty-env.xml
+            xmlResource = webInf.resolve(JETTY_ENV_XML);
+            if (!Resources.missing(xmlResource))
+                return xmlResource;
+
+            return null;
+        }
+        catch (Exception e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Error resolving", e);
+            return null;
         }
     }
 }

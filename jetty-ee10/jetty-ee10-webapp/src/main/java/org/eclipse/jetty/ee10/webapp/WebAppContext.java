@@ -100,14 +100,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Deprecated (forRemoval = true, since = "12.0.9")
     public static final org.eclipse.jetty.ee10.webapp.ClassMatcher __dftSystemClasses =
-        new org.eclipse.jetty.ee10.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_PROTECTED_CLASSES);
+        org.eclipse.jetty.ee10.webapp.ClassMatcher.wrap(WebAppClassLoading.DEFAULT_PROTECTED_CLASSES);
 
     /**
      * @deprecated use {@link WebAppClassLoading#DEFAULT_HIDDEN_CLASSES}
      */
     @Deprecated (forRemoval = true, since = "12.0.9")
     public static final org.eclipse.jetty.ee10.webapp.ClassMatcher __dftServerClasses =
-        new org.eclipse.jetty.ee10.webapp.ClassMatcher(WebAppClassLoading.DEFAULT_HIDDEN_CLASSES);
+        org.eclipse.jetty.ee10.webapp.ClassMatcher.wrap(WebAppClassLoading.DEFAULT_HIDDEN_CLASSES);
 
     private final ClassMatcher _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
     private final ClassMatcher _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
@@ -214,7 +214,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
             switch (property)
             {
-                case Deployable.WAR -> setWar(value);
+                case Deployable.WAR ->
+                {
+                    if (getWar() == null)
+                        setWar(value);
+                }
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses(value == null ? null : value.split(","));
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
@@ -765,7 +769,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Deprecated(since = "12.0.8", forRemoval = true)
     public org.eclipse.jetty.ee10.webapp.ClassMatcher getSystemClassMatcher()
     {
-        return new org.eclipse.jetty.ee10.webapp.ClassMatcher(getProtectedClassMatcher());
+        return org.eclipse.jetty.ee10.webapp.ClassMatcher.wrap(getProtectedClassMatcher());
     }
 
     /**
@@ -774,7 +778,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Deprecated(since = "12.0.8", forRemoval = true)
     public org.eclipse.jetty.ee10.webapp.ClassMatcher getServerClassMatcher()
     {
-        return new org.eclipse.jetty.ee10.webapp.ClassMatcher(getHiddenClassMatcher());
+        return org.eclipse.jetty.ee10.webapp.ClassMatcher.wrap(getHiddenClassMatcher());
     }
 
     /**
@@ -1491,8 +1495,42 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _metadata;
     }
 
+    @Override
+    protected void makeTempDirectory() throws Exception
+    {
+        super.makeTempDirectory();
+    }
+
+    @Override
+    protected String getCanonicalNameForTmpDir()
+    {
+        return super.getCanonicalNameForTmpDir();
+    }
+
     /**
-     * Add a Server Class pattern to use for all ee9 WebAppContexts.
+     * If the webapp has no baseresource yet, use
+     * the war to make the temp directory name.
+     *
+     * @return the baseresource if non null, or the war
+     */
+    @Override
+    protected Resource getResourceForTempDirName()
+    {
+        Resource resource = super.getResourceForTempDirName();
+
+        if (resource == null)
+        {
+            if (getWar() == null || getWar().length() == 0)
+                throw new IllegalStateException("No resourceBase or war set for context");
+
+            // Use name of given resource in the temporary dirname
+            resource = newResource(getWar());
+        }
+        return resource;
+    }
+
+    /**
+     * Add a Server Class pattern to use for all WebAppContexts.
      * @param server The {@link Server} instance to add classes to
      * @param patterns the patterns to use
      * @see #getHiddenClassMatcher()
@@ -1506,7 +1544,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * Add a System Class pattern to use for all ee9 WebAppContexts.
+     * Add a System Class pattern to use for all WebAppContexts.
      * @param server The {@link Server} instance to add classes to
      * @param patterns the patterns to use
      * @see #getProtectedClassMatcher()

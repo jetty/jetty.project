@@ -21,6 +21,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -35,12 +36,12 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -135,8 +136,8 @@ public class DebugHandlerTest
     {
         try
         {
-            assertThat("Server HTTP Leaks: " + httpTrackingBufferPool.dumpLeaks(), httpTrackingBufferPool.getLeaks().size(), Matchers.is(0));
-            assertThat("Server SSL Leaks: " + sslTrackingBufferPool.dumpLeaks(), sslTrackingBufferPool.getLeaks().size(), Matchers.is(0));
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server HTTP Leaks: " + httpTrackingBufferPool.dumpLeaks(), httpTrackingBufferPool.getLeaks().size(), is(0)));
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server SSL Leaks: " + sslTrackingBufferPool.dumpLeaks(), sslTrackingBufferPool.getLeaks().size(), is(0)));
         }
         finally
         {

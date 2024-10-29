@@ -506,6 +506,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         private final Callback _incompleteWriteCallback = new IncompleteWriteCallback();
         private Throwable _failure;
+        private SslSessionData _sslSessionData;
 
         public SslEndPoint()
         {
@@ -1572,6 +1573,28 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
 
         @Override
+        public SslSessionData getSslSessionData()
+        {
+            SSLSession sslSession = _sslEngine.getSession();
+            SslSessionData sslSessionData = _sslSessionData;
+            if (sslSessionData == null)
+            {
+                String cipherSuite = sslSession.getCipherSuite();
+
+                X509Certificate[] peerCertificates = _sslContextFactory != null
+                    ? _sslContextFactory.getX509CertChain(sslSession)
+                    : SslContextFactory.getCertChain(sslSession);
+
+                byte[] bytes = sslSession.getId();
+                String idStr = StringUtil.toHexString(bytes);
+
+                sslSessionData = SslSessionData.from(sslSession, idStr, cipherSuite, peerCertificates);
+                _sslSessionData = sslSessionData;
+            }
+            return sslSessionData;
+        }
+
+        @Override
         public String toString()
         {
             return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), toEndPointString());
@@ -1642,28 +1665,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 return String.format("SSL@%h.DEP.writeCallback", SslConnection.this);
             }
-        }
-
-        @Override
-        public SslSessionData getSslSessionData()
-        {
-            SSLSession sslSession = _sslEngine.getSession();
-            SslSessionData sslSessionData = (SslSessionData)sslSession.getValue(SslSessionData.ATTRIBUTE);
-            if (sslSessionData == null)
-            {
-                String cipherSuite = sslSession.getCipherSuite();
-
-                X509Certificate[] peerCertificates = _sslContextFactory != null
-                    ? _sslContextFactory.getX509CertChain(sslSession)
-                    : SslContextFactory.getCertChain(sslSession);
-
-                byte[] bytes = sslSession.getId();
-                String idStr = StringUtil.toHexString(bytes);
-
-                sslSessionData = SslSessionData.from(sslSession, idStr, cipherSuite, peerCertificates);
-                sslSession.putValue(SslSessionData.ATTRIBUTE, sslSessionData);
-            }
-            return sslSessionData;
         }
     }
 

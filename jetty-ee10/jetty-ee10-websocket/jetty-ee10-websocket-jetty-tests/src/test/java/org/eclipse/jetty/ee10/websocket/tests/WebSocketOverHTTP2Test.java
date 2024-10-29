@@ -69,6 +69,7 @@ import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -169,6 +170,7 @@ public class WebSocketOverHTTP2Test
     }
 
     @Test
+    @Tag("flaky") // See analysis in #12235.
     public void testWebSocketOverDynamicHTTP2() throws Exception
     {
         testWebSocketOverDynamicTransport(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
@@ -264,8 +266,11 @@ public class WebSocketOverHTTP2Test
         startServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
+        // Port 293 is not assigned by IANA, so
+        // it should be impossible to connect.
+        int nonExistingPort = 293;
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + (connector.getLocalPort() + 1) + "/ws/echo");
+        URI uri = URI.create("ws://localhost:" + nonExistingPort + "/ws/echo");
 
         ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
             wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));

@@ -8,6 +8,8 @@
   <public publicId="configure.dtd" uri="configure_9_3.dtd"/>
 
   <!-- new version-less references, always refers to latest -->
+  <system systemId="http://jetty.org/configure.dtd" uri="configure_10_0.dtd"/>
+  <system systemId="https://jetty.org/configure.dtd" uri="configure_10_0.dtd"/>
   <system systemId="http://www.eclipse.org/jetty/configure.dtd" uri="configure_10_0.dtd"/>
   <system systemId="https://www.eclipse.org/jetty/configure.dtd" uri="configure_10_0.dtd"/>
   <system systemId="http://eclipse.org/jetty/configure.dtd" uri="configure_10_0.dtd"/>
@@ -40,6 +42,8 @@
   <system systemId="https://www.eclipse.dev/jetty/configure_9_0.dtd" uri="configure_9_0.dtd"/>
   <system systemId="http://eclipse.dev/jetty/configure_9_0.dtd" uri="configure_9_0.dtd"/>
   <system systemId="https://eclipse.dev/jetty/configure_9_0.dtd" uri="configure_9_0.dtd"/>
+  <system systemId="http://jetty.org/configure_9_0.dtd" uri="configure_9_0.dtd"/>
+  <system systemId="https://jetty.org/configure_9_0.dtd" uri="configure_9_0.dtd"/>
 
   <!-- 9.3 -->
   <public publicId="configure_9_3.dtd" uri="configure_9_3.dtd"/>
@@ -55,6 +59,8 @@
   <system systemId="https://eclipse.dev/jetty/configure_9_3.dtd" uri="configure_9_3.dtd"/>
   <system systemId="http://www.eclipse.dev/jetty/configure_9_3.dtd" uri="configure_9_3.dtd"/>
   <system systemId="https://www.eclipse.dev/jetty/configure_9_3.dtd" uri="configure_9_3.dtd"/>
+  <system systemId="http://jetty.org/configure_9_3.dtd" uri="configure_9_3.dtd"/>
+  <system systemId="https://jetty.org/configure_9_3.dtd" uri="configure_9_3.dtd"/>
 
   <!-- 10.0 -->
   <public publicId="configure_10_0.dtd" uri="configure_10_0.dtd"/>
@@ -68,4 +74,6 @@
   <system systemId="https://www.eclipse.dev/jetty/configure_10_0.dtd" uri="configure_10_0.dtd"/>
   <system systemId="http://eclipse.dev/jetty/configure_10_0.dtd" uri="configure_10_0.dtd"/>
   <system systemId="https://eclipse.dev/jetty/configure_10_0.dtd" uri="configure_10_0.dtd"/>
+  <system systemId="http://jetty.org/configure_10_0.dtd" uri="configure_10_0.dtd"/>
+  <system systemId="https://jetty.org/configure_10_0.dtd" uri="configure_10_0.dtd"/>
 </catalog>

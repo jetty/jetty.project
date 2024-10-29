@@ -7,7 +7,7 @@
     <Arg><Property name="jetty.quickstart.mode"/></Arg>
   </Call>
 
-  <Ref refid="WebAppProvider">
+  <Ref refid="WebAppProvider-ee10">
       <Get name="properties">
         <Put name="jetty.deploy.attribute.org.eclipse.jetty.quickstart.mode"><Property name="jetty.quickstart.mode"/></Put>
         <Put name="jetty.deploy.attribute.org.eclipse.jetty.quickstart.origin"><Property name="jetty.quickstart.origin"/></Put>

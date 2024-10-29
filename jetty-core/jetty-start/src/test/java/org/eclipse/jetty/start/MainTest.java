@@ -14,7 +14,6 @@
 package org.eclipse.jetty.start;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,12 +23,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,7 +65,7 @@ public class MainTest
     public void testListConfig() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
+        Path testJettyHome = MavenPaths.findTestResourceDir("dist-home");
         cmdLineArgs.add("user.dir=" + testJettyHome);
         cmdLineArgs.add("-Duser.dir=foo"); // used to test "source" display on "Java Environment"
         cmdLineArgs.add("jetty.home=" + testJettyHome);
@@ -98,8 +97,8 @@ public class MainTest
     public void testUnknownDistroCommand() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
-        Path testJettyBase = MavenTestingUtils.getTargetTestingPath("base-example-unknown");
+        Path testJettyHome = MavenPaths.findTestResourceDir("dist-home");
+        Path testJettyBase = MavenPaths.targetTestDir("base-example-unknown");
         FS.ensureDirectoryExists(testJettyBase);
         Path zedIni = testJettyBase.resolve("start.d/zed.ini");
         FS.ensureDirectoryExists(zedIni.getParent());
@@ -158,7 +157,7 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        Path homePath = MavenTestingUtils.getTestResourcePathDir("dist-home").toRealPath();
+        Path homePath = MavenPaths.findTestResourceDir("dist-home");
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
 
@@ -182,5 +181,28 @@ public class MainTest
             baseHome.getBase(), System.getProperty("java.version")
         );
         assertThat(commandLine, containsString(expectedExpansion));
+    }
+
+    @Test
+    public void testModulesDeclaredTwice() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+
+        Path homePath = MavenPaths.findTestResourceDir("dist-home");
+        Path basePath = MavenPaths.findTestResourceDir("overdeclared-modules");
+        cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("user.dir=" + basePath);
+
+        Main main = new Main();
+
+        cmdLineArgs.add("--module=main");
+
+        // The "main" module is enabled in both ...
+        // 1) overdeclared-modules/start.d/config.ini
+        // 2) command-line
+        // This shouldn't result in an error
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
+
+        assertThat(args.getSelectedModules(), hasItem("main"));
     }
 }

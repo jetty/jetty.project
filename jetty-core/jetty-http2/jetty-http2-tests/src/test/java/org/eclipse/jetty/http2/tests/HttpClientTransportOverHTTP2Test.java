@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -33,16 +34,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -56,6 +62,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2;
@@ -88,6 +95,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,30 +108,44 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HttpClientTransportOverHTTP2Test extends AbstractTest
 {
     @Test
-    public void testPropertiesAreForwarded() throws Exception
+    public void testPropertiesAreForwardedOverHTTP2() throws Exception
     {
-        HTTP2Client http2Client = new HTTP2Client();
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
-        Executor executor = new QueuedThreadPool();
-        httpClient.setExecutor(executor);
-        httpClient.setConnectTimeout(13);
-        httpClient.setIdleTimeout(17);
-        httpClient.setUseInputDirectByteBuffers(false);
-        httpClient.setUseOutputDirectByteBuffers(false);
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        testPropertiesAreForwarded(http2Client, new HttpClientTransportOverHTTP2(http2Client));
+    }
 
-        httpClient.start();
+    @Test
+    public void testPropertiesAreForwardedDynamic() throws Exception
+    {
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        testPropertiesAreForwarded(http2Client, new HttpClientTransportDynamic(clientConnector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client)));
+    }
 
-        assertTrue(http2Client.isStarted());
-        assertSame(httpClient.getExecutor(), http2Client.getExecutor());
-        assertSame(httpClient.getScheduler(), http2Client.getScheduler());
-        assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
-        assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
-        assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
-        assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
-        assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
+    private void testPropertiesAreForwarded(HTTP2Client http2Client, HttpClientTransport httpClientTransport) throws Exception
+    {
+        try (HttpClient httpClient = new HttpClient(httpClientTransport))
+        {
+            Executor executor = new QueuedThreadPool();
+            httpClient.setExecutor(executor);
+            httpClient.setConnectTimeout(13);
+            httpClient.setIdleTimeout(17);
+            httpClient.setUseInputDirectByteBuffers(false);
+            httpClient.setUseOutputDirectByteBuffers(false);
 
-        httpClient.stop();
+            httpClient.start();
 
+            assertTrue(http2Client.isStarted());
+            assertSame(httpClient.getExecutor(), http2Client.getExecutor());
+            assertSame(httpClient.getScheduler(), http2Client.getScheduler());
+            assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
+            assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
+            assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
+            assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
+            assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
+            assertEquals(httpClient.getMaxResponseHeadersSize(), http2Client.getMaxResponseHeadersSize());
+        }
         assertTrue(http2Client.isStopped());
     }
 
@@ -794,21 +816,100 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     }
 
     @Test
+    public void testRequestContentResponseContent() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Content.copy(request, response, callback);
+                return true;
+            }
+        });
+
+        AsyncRequestContent content = new AsyncRequestContent();
+        var request = httpClient.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .body(content);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
+
+        for (int i = 0; i < 16; ++i)
+        {
+            content.write(false, ByteBuffer.allocate(512), Callback.NOOP);
+            Thread.sleep(10);
+        }
+        content.close();
+
+        ContentResponse response = completable.get(15, TimeUnit.SECONDS);
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testUnreadRequestContentDrainsResponseContent() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                // Do not read the request content,
+                // the server will reset the stream,
+                // then send a response with content.
+                ByteBuffer content = ByteBuffer.allocate(1024);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.remaining());
+                response.write(true, content, callback);
+                return true;
+            }
+        });
+
+        AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
+        AtomicReference<Content.Chunk> chunkRef = new AtomicReference<>();
+        CountDownLatch responseFailureLatch = new CountDownLatch(1);
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+        httpClient.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .body(new AsyncRequestContent(ByteBuffer.allocate(1024)))
+            .onResponseContentSource((response, contentSource) -> contentSourceRef.set(contentSource))
+            // The request is failed before the response, verify that
+            // reading at the request failure event yields a failure chunk.
+            .onRequestFailure((request, failure) -> chunkRef.set(contentSourceRef.get().read()))
+            .onResponseFailure((response, failure) -> responseFailureLatch.countDown())
+            .send(resultRef::set);
+
+        // Wait for the RST_STREAM to arrive and drain the response content.
+        assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
+
+        // Verify that the chunk read at the request failure event is a failure chunk.
+        Content.Chunk chunk = chunkRef.get();
+        assertTrue(Content.Chunk.isFailure(chunk, true));
+        // Reading more also yields a failure chunk.
+        chunk = contentSourceRef.get().read();
+        assertTrue(Content.Chunk.isFailure(chunk, true));
+
+        Result result = await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, notNullValue());
+        assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+        assertNotNull(result.getRequestFailure());
+        assertNotNull(result.getResponseFailure());
+    }
+
+    @Test
     @Tag("external")
     public void testExternalServer() throws Exception
     {
         ClientConnector clientConnector = new ClientConnector();
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        clientConnector.setSslContextFactory(sslContextFactory);
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
-        Executor executor = new QueuedThreadPool();
-        clientConnector.setExecutor(executor);
-        httpClient.start();
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)))
+        {
+            Executor executor = new QueuedThreadPool();
+            clientConnector.setExecutor(executor);
+            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+            clientConnector.setSslContextFactory(sslContextFactory);
+            httpClient.start();
 
-        ContentResponse response = httpClient.GET("https://webtide.com/");
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-
-        httpClient.stop();
+            ContentResponse response = httpClient.GET("https://webtide.com/");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
     }
 }

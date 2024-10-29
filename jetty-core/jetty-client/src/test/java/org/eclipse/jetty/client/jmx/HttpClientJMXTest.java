@@ -31,12 +31,11 @@ public class HttpClientJMXTest
     @Test
     public void testHttpClientName() throws Exception
     {
-        String name = "foo";
-        HttpClient httpClient = new HttpClient();
-        httpClient.setName(name);
-
-        try
+        try (HttpClient httpClient = new HttpClient())
         {
+            String name = "foo";
+            httpClient.setName(name);
+
             MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
             MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
             // Adding MBeanContainer as a bean will trigger the registration of MBeans.
@@ -58,10 +57,6 @@ public class HttpClientJMXTest
             {
                 assertEquals(name, oName.getKeyProperty("context"));
             }
-        }
-        finally
-        {
-            httpClient.stop();
         }
     }
 }

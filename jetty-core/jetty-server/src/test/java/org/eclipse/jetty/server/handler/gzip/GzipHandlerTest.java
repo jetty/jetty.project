@@ -49,6 +49,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -59,6 +60,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -79,6 +81,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -192,6 +195,64 @@ public class GzipHandlerTest
 
         _contextHandler = new ContextHandler("/ctx");
         _gzipHandler.setHandler(_contextHandler);
+    }
+
+    @Test
+    public void testFailureDuringGzipWrite() throws Exception
+    {
+        Handler leafHandler = new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                try (var out = Content.Sink.asOutputStream(response))
+                {
+                    out.write("Hello, Jetty".getBytes(StandardCharsets.UTF_8));
+                }
+                return true;
+            }
+        };
+        Handler rootHandler = new Handler.Wrapper(new GzipHandler(leafHandler))
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                return super.handle(request, new Response.Wrapper(request, response)
+                {
+                    @Override
+                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    {
+                        throw new ArithmeticException("expected");
+                    }
+                }, callback);
+            }
+        };
+        _server.setHandler(rootHandler);
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowStacks(true);
+        errorHandler.setShowCauses(true);
+        _server.setErrorHandler(errorHandler);
+        _server.start();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
+        {
+            response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        }
+
+        assertThat(response.getStatus(), is(500));
+        String content = response.getContent();
+        assertThat(content, containsString("ArithmeticException: expected"));
+        assertThat(content, not(containsString("Suppressed: ")));
     }
 
     @Test
@@ -1687,6 +1748,68 @@ public class GzipHandlerTest
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
         assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
+        assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
+    }
+
+    /**
+     * Test of default GzipHandler configuration against requests to already compressed content-types.
+     * @param filename
+     */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', textBlock = """
+        # Filename      | Content-Type
+        example.tar.gz  | application/gzip
+        example.tgz     | application/x-gtar
+        example.zip     | application/zip
+        example.jar     | application/java-archive
+        example.gz      | application/gzip
+        example.bz2     | application/x-bzip2
+        example.rar     | application/x-rar-compressed
+        example.zst     | application/zstd
+        """)
+    public void testDoNotRecompressDefault(String filename, String contentType, WorkDir workDir) throws Exception
+    {
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path contextDir = tmpPath.resolve("context");
+        FS.ensureDirExists(contextDir);
+
+        _contextHandler.setBaseResourceAsPath(contextDir);
+        ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setEtags(true);
+        _contextHandler.setHandler(resourceHandler);
+
+        int filesize = 2048;
+
+        // Prepare Server File
+        Path file = Files.write(contextDir.resolve(filename), generateContent(filesize));
+        String expectedSha1Sum = Sha1Sum.calculate(file);
+
+        _server.start();
+
+        // Setup request
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "tester");
+        request.setHeader("Connection", "close");
+        request.setHeader("Accept-Encoding", "gzip");
+        request.setURI("/ctx/" + filename);
+
+        // Issue request
+        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+
+        // Parse response
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
+
+        // Response Content-Encoding check
+        assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), nullValue());
+        assertThat("Response[Vary]", response.get("Vary"), nullValue());
+
+        // Response Content checks
+        UncompressedMetadata metadata = parseResponseContent(response);
+        assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(filesize));
         assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
     }
 

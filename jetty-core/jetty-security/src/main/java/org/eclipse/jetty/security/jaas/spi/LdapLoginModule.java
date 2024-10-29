@@ -41,7 +41,6 @@ import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.jaas.callback.ObjectCallback;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -240,7 +239,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     protected String doRFC2254Encoding(String inputString)
     {
-        StringBuffer buf = new StringBuffer(inputString.length());
+        StringBuilder buf = new StringBuilder(inputString.length());
         for (int i = 0; i < inputString.length(); i++)
         {
             char c = inputString.charAt(i);
@@ -279,11 +278,10 @@ public class LdapLoginModule extends AbstractLoginModule
     private Attributes getUserAttributes(String username) throws LoginException
     {
         SearchResult result = findUser(username);
-        Attributes attributes = result.getAttributes();
-        return attributes;
+        return result.getAttributes();
     }
 
-    private String getUserCredentials(Attributes attributes) throws LoginException
+    private String getUserCredentials(Attributes attributes)
     {
         String ldapCredential = null;
 
@@ -421,7 +419,7 @@ public class LdapLoginModule extends AbstractLoginModule
                 return isAuthenticated();
             }
 
-            boolean authed = false;
+            boolean authed;
 
             if (_forceBindingLogin)
             {
@@ -514,7 +512,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         Hashtable<Object, Object> environment = getEnvironment();
 
-        if (userDn == null || "".equals(userDn))
+        if (userDn == null || userDn.isEmpty())
         {
             throw new FailedLoginException("username may not be empty");
         }
@@ -533,10 +531,6 @@ public class LdapLoginModule extends AbstractLoginModule
             setAuthenticated(true);
             return true;
         }
-        catch (AuthenticationException e)
-        {
-            throw new FailedLoginException(e.getMessage());
-        }
         catch (NamingException e)
         {
             throw new FailedLoginException(e.getMessage());
@@ -548,7 +542,7 @@ public class LdapLoginModule extends AbstractLoginModule
         String filter = "(&(objectClass={0})({1}={2}))";
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Searching for user {} with filter: \'{}\' from base dn: {}", username, filter, _userBaseDn);
+            LOG.debug("Searching for user {} with filter: '{}' from base dn: {}", username, filter, _userBaseDn);
 
         Object[] filterArguments = new Object[]{
             _userObjectClass,
@@ -581,7 +575,7 @@ public class LdapLoginModule extends AbstractLoginModule
         if (!results.hasMoreElements())
             throw new FailedLoginException("User not found.");
 
-        SearchResult searchResult = (SearchResult)results.nextElement();
+        SearchResult searchResult = results.nextElement();
         if (results.hasMoreElements())
             throw new FailedLoginException("Search result contains ambiguous entries");
 
@@ -610,7 +604,8 @@ public class LdapLoginModule extends AbstractLoginModule
         _port = Integer.parseInt((String)options.get("port"));
         _contextFactory = (String)options.get("contextFactory");
         _bindDn = (String)options.get("bindDn");
-        _bindPassword = (String)options.get("bindPassword");
+        String bindPassword = (String)options.get("bindPassword");
+        _bindPassword = bindPassword == null ? null : Credential.getCredential(bindPassword).toString();
         _authenticationMethod = (String)options.get("authenticationMethod");
 
         _userBaseDn = (String)options.get("userBaseDn");
@@ -731,13 +726,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{MD5}"))
         {
-            String src = encryptedPassword.substring("{MD5}".length(), encryptedPassword.length());
+            String src = encryptedPassword.substring("{MD5}".length());
             return "MD5:" + base64ToHex(src);
         }
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{CRYPT}"))
         {
-            return "CRYPT:" + encryptedPassword.substring("{CRYPT}".length(), encryptedPassword.length());
+            return "CRYPT:" + encryptedPassword.substring("{CRYPT}".length());
         }
 
         return encryptedPassword;
@@ -747,11 +742,5 @@ public class LdapLoginModule extends AbstractLoginModule
     {
         byte[] bytes = Base64.getDecoder().decode(src);
         return TypeUtil.toString(bytes, 16);
-    }
-
-    private static String hexToBase64(String src)
-    {
-        byte[] bytes = StringUtil.fromHexString(src);
-        return Base64.getEncoder().encodeToString(bytes);
     }
 }

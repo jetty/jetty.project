@@ -1433,6 +1433,12 @@ public class ServletApiRequest implements HttpServletRequest
         return trailersMap;
     }
 
+    @Override
+    public String toString()
+    {
+        return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), _servletContextRequest);
+    }
+
     static class AmbiguousURI extends ServletApiRequest
     {
         private final String msg;

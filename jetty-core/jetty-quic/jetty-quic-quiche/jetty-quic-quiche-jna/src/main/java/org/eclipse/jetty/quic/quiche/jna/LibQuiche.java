@@ -31,7 +31,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.21.0";
+    String EXPECTED_QUICHE_VERSION = "0.22.0";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
@@ -540,10 +540,18 @@ public interface LibQuiche extends Library
     void quiche_stream_iter_free(quiche_stream_iter iter);
 
     // Reads contiguous data from a stream.
-    ssize_t quiche_conn_stream_recv(quiche_conn conn, uint64_t stream_id, ByteBuffer out, size_t buf_len, bool_pointer fin);
+    // out_error_code is only set when STREAM_STOPPED or STREAM_RESET are returned.
+    // Set to the reported error code associated with STOP_SENDING or STREAM_RESET.
+    ssize_t quiche_conn_stream_recv(quiche_conn conn, uint64_t stream_id,
+                                    ByteBuffer out, size_t buf_len, bool_pointer fin,
+                                    uint64_t_pointer out_error_code);
 
     // Writes data to a stream.
-    ssize_t quiche_conn_stream_send(quiche_conn conn, uint64_t stream_id, ByteBuffer buf, size_t buf_len, boolean fin);
+    // out_error_code is only set when STREAM_STOPPED or STREAM_RESET are returned.
+    // Set to the reported error code associated with STOP_SENDING or STREAM_RESET.
+    ssize_t quiche_conn_stream_send(quiche_conn conn, uint64_t stream_id,
+                                    ByteBuffer buf, size_t buf_len, boolean fin,
+                                    uint64_t_pointer out_error_code);
 
     // Frees the connection object.
     void quiche_conn_free(quiche_conn conn);

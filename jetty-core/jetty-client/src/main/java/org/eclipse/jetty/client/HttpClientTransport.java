@@ -31,7 +31,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
  * but the HTTP exchange may also be carried using the FCGI protocol, the HTTP/2 protocol or,
  * in future, other protocols.
  */
-public interface HttpClientTransport extends ClientConnectionFactory
+public interface HttpClientTransport extends ClientConnectionFactory, HttpClient.Aware
 {
     public static final String HTTP_DESTINATION_CONTEXT_KEY = "org.eclipse.jetty.client.destination";
     public static final String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.connection.promise";
@@ -45,6 +45,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
      *
      * @param client the {@link HttpClient} that uses this transport.
      */
+    @Override
     public void setHttpClient(HttpClient client);
 
     /**

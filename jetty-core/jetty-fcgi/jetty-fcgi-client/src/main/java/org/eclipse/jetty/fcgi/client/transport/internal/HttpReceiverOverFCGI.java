@@ -34,13 +34,15 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         if (!hasContent())
         {
             HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
-            boolean setFillInterest = httpConnection.parseAndFill();
+            boolean setFillInterest = httpConnection.parseAndFill(true);
             if (!hasContent() && setFillInterest)
                 httpConnection.fillInterested();
         }
         else
         {
-            responseContentAvailable();
+            HttpExchange exchange = getHttpExchange();
+            if (exchange != null)
+                responseContentAvailable(exchange);
         }
     }
 
@@ -79,7 +81,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         if (chunk != null)
             return chunk;
         HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
-        boolean needFillInterest = httpConnection.parseAndFill();
+        boolean needFillInterest = httpConnection.parseAndFill(false);
         chunk = consumeChunk();
         if (chunk != null)
             return chunk;
@@ -112,15 +114,18 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         // Retain the chunk because it is stored for later reads.
         chunk.retain();
         this.chunk = chunk;
-        responseContentAvailable();
     }
 
-    void end(HttpExchange exchange)
+    void end()
     {
         if (chunk != null)
             throw new IllegalStateException();
         chunk = Content.Chunk.EOF;
-        responseSuccess(exchange, this::receiveNext);
+    }
+
+    void responseSuccess(HttpExchange exchange)
+    {
+        super.responseSuccess(exchange, this::receiveNext);
     }
 
     private void receiveNext()
@@ -131,7 +136,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
             throw new IllegalStateException();
 
         HttpConnectionOverFCGI httpConnection = getHttpChannel().getHttpConnection();
-        boolean setFillInterest = httpConnection.parseAndFill();
+        boolean setFillInterest = httpConnection.parseAndFill(true);
         if (!hasContent() && setFillInterest)
             httpConnection.fillInterested();
     }
@@ -158,6 +163,12 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     protected void responseHeaders(HttpExchange exchange)
     {
         super.responseHeaders(exchange);
+    }
+
+    @Override
+    protected void responseContentAvailable(HttpExchange exchange)
+    {
+        super.responseContentAvailable(exchange);
     }
 
     @Override

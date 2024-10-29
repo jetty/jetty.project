@@ -101,7 +101,6 @@ public class VirtualThreads
         }
         catch (Throwable x)
         {
-            warn();
             return false;
         }
     }

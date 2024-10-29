@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -316,9 +317,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         HttpStreamOverFCGI stream = this.stream;
         if (stream == null)
             return true;
-        Runnable task = stream.getHttpChannel().onIdleTimeout(timeoutException);
-        if (task != null)
-            getExecutor().execute(task);
+        ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onIdleTimeout(timeoutException));
         return false;
     }
 
@@ -400,9 +399,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 LOG.debug("Request {} failure on {}", request, stream, failure);
             if (stream != null)
             {
-                Runnable runnable = stream.getHttpChannel().onFailure(new BadMessageException(null, failure));
-                if (runnable != null)
-                    getExecutor().execute(runnable);
+                ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onFailure(new BadMessageException(null, failure)));
             }
             stream = null;
         }

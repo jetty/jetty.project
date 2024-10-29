@@ -460,4 +460,13 @@ public abstract class Resource implements Iterable<Resource>
         }
         return false;
     }
+
+    public String toString()
+    {
+        String str = getName();
+        URI uri = getURI();
+        if (uri != null)
+            str = getURI().toASCIIString();
+        return "(" + this.getClass().getSimpleName() + ") " + str;
+    }
 }

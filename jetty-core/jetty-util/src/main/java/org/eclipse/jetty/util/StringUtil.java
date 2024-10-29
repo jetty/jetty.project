@@ -540,6 +540,23 @@ public class StringUtil
         return s;
     }
 
+    /**
+     * Convert an array of strings to a list of non-null strings.
+     *
+     * @param strings the array
+     * @return The list of non-null strings.
+     * @see #nonNull(String)
+     */
+    public static List<String> toListNonNull(String... strings)
+    {
+        List<String> result = new ArrayList<>(strings.length);
+        for (String s : strings)
+        {
+            result.add(nonNull(s));
+        }
+        return result;
+    }
+
     public static boolean equals(String s, char[] buf, int offset, int length)
     {
         if (s.length() != length)
@@ -640,21 +657,7 @@ public class StringUtil
      */
     public static boolean isBlank(String str)
     {
-        if (str == null)
-        {
-            return true;
-        }
-        int len = str.length();
-        for (int i = 0; i < len; i++)
-        {
-            if (!Character.isWhitespace(str.codePointAt(i)))
-            {
-                // found a non-whitespace, we can stop searching  now
-                return false;
-            }
-        }
-        // only whitespace
-        return true;
+        return str == null || str.isBlank();
     }
 
     /**
@@ -710,21 +713,7 @@ public class StringUtil
      */
     public static boolean isNotBlank(String str)
     {
-        if (str == null)
-        {
-            return false;
-        }
-        int len = str.length();
-        for (int i = 0; i < len; i++)
-        {
-            if (!Character.isWhitespace(str.codePointAt(i)))
-            {
-                // found a non-whitespace, we can stop searching  now
-                return true;
-            }
-        }
-        // only whitespace
-        return false;
+        return !isBlank(str);
     }
 
     public static boolean isHex(String str, int offset, int length)

@@ -1,0 +1,337 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Getting Started
+
+If you are new to Eclipse Jetty, read on to download, install, start and deploy web applications to Jetty.
+
+== Quick Setup
+
+Jetty is distributed in an artifact that expands in a directory called `$JETTY_HOME`, which should not be modified.
+
+Configuration for Jetty is typically done in a directory called `$JETTY_BASE`.
+There may be more than one `$JETTY_BASE` directories with different configurations.
+
+Jetty supports the deployment of EE8, EE9 and EE10 standard web applications, as well as the deployment of Jetty-specific web applications.
+
+For example, the following commands can be used to set up a `$JETTY_BASE` directory that supports deployment of EE10 `+*.war+` files and a clear-text HTTP connector:
+
+----
+$ export JETTY_HOME=/path/to/jetty-home
+$ mkdir /path/to/jetty-base
+$ cd /path/to/jetty-base
+$ java -jar $JETTY_HOME/start.jar --add-modules=server,http,ee10-deploy
+----
+
+The last command creates a `$JETTY_BASE/start.d/` directory and other directories that contain the configuration of the server, including the `$JETTY_BASE/webapps/` directory, in which standard EE10 `+*.war+` files can be deployed.
+
+To deploy Jetty's demo web applications, run this command:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-module=demos
+----
+
+Now you can start the Jetty server with:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+Point your browser at `+http://localhost:8080+` to see the demo web applications deployed in Jetty.
+
+The Jetty server can be stopped with `ctrl+c` in the terminal window.
+
+The following sections will guide you in details about <<download,downloading>>, <<install,installing>> and <<start,starting>> Jetty, and <<deploy,deploying>> your web applications to Jetty.
+
+Read the xref:arch/index.adoc[Jetty architecture section] for more information about Jetty modules, `$JETTY_HOME`, `$JETTY_BASE` and how to customize and start Jetty.
+
+[[download]]
+== Downloading Jetty
+
+The Jetty distribution is a file of the form `jetty-home-<version>.<ext>`, available for download from https://jetty.org/download.html[]
+
+The Jetty distribution is available in both `zip` and `gzip` formats; download the one most appropriate for your system, typically `zip` for Windows and `gzip` for other operating systems.
+
+[[install]]
+== Installing Jetty
+
+After the download, unpacking Jetty will extract the files into a directory called `jetty-home-<version>`, where `<version>` is the version of Jetty that you downloaded.
+For example, installing Jetty {jetty-version} will create a directory called `jetty-home-{jetty-version}`.
+
+IMPORTANT: It is important that *only* stable release versions are used in production environments.
+Versions that have been deprecated or are released as Milestones (M), Alpha, Beta or Release Candidates (RC) are *not* suitable for production as they may contain security flaws or incomplete/non-functioning feature sets.
+
+Unpack Jetty file into a convenient location, such as `/opt`.
+The rest of the instructions in this documentation will refer to this location as `$JETTY_HOME`, or `${jetty.home}`.
+
+CAUTION: For Windows users, you should unpack Jetty to a path that does not contain spaces.
+
+If you are new to Jetty, you should read the xref:arch/index.adoc[Jetty architecture section] to become familiar with the terms used in this documentation.
+Otherwise, you can jump to the <<start,section on starting Jetty>>.
+
+[[start]]
+== Starting Jetty
+
+Jetty as a standalone server has no graphical user interface; configuring and running the server is done from the command line.
+
+First, create a `$JETTY_BASE` directory.
+
+----
+$ JETTY_BASE=/path/to/jetty.base
+$ mkdir $JETTY_BASE
+$ cd $JETTY_BASE
+----
+
+You will typically start Jetty by executing `$JETTY_HOME/start.jar` from this directory.
+However, if you try to start Jetty from an empty `$JETTY_BASE`, it will complain that you haven't enabled any modules:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+....
+
+Jetty uses a xref:modules/index.adoc[module system] to configure and assemble the server; these modules are enabled and configured in xref:arch/index.adoc#jetty-base[`$JETTY_BASE`].
+Since the `$JETTY_BASE` directory you just created is empty, Jetty has no configuration it can use to assemble the server.
+
+NOTE: See the xref:arch/index.adoc[architecture section] of this document for more information on the design of Jetty's module system.
+
+You can explore what modules are available with the `--list-modules` flag:
+
+----
+$ java -jar $JETTY_HOME/start.jar --list-modules=*
+----
+
+Now try to enable the xref:protocols/index.adoc#http[`http`] module.
+
+NOTE: If you want to enable support for protocols like secure HTTP/1.1 or HTTP/2 or HTTP/3, or want to configure Jetty behind a load balancer, read xref:protocols/index.adoc[this section].
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
+----
+
+[jetty%nowrap]
+....
+[jetty]
+args=--add-modules=http
+highlight=([a-z\-]+ *transitively enabled)
+....
+
+When Jetty enables the `http` module, it also automatically enables a number of transitive dependencies of the `http` module, such as the `server` module, the `logging-jetty` module, and so on.
+
+You can now start Jetty:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+args=--module=http
+highlight=(\{.*:8080})
+....
+
+Jetty is listening on port `8080` for clear-text HTTP/1.1 connections.
+But since it has no web applications deployed, it will just reply with `404 Not Found` to every request.
+
+Before you <<deploy,deploy your first web application>>, take a moment to see what happened to the `$JETTY_BASE` directory once you enabled the `http` module:
+
+[source]
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties <1>
+└── start.d <2>
+    └── http.ini <3>
+----
+
+<1> The `resources/jetty-logging.properties` file configures the server's logging level; this file was auto-generated when the `jetty-logging` module was activated as a transitive dependency of the `http` module.
+<2> The `start.d/` directory contains the `+*.ini+` configuration files for any modules you have explicitly activated.
+<3> The `start.d/http.ini` file is the `http` module configuration file, where you can specify values for the xref:modules/standard.adoc#http[`http` module properties].
+
+[NOTE]
+====
+By default, Jetty does *not* generate `+*.ini+` configuration files in `start.d/` for modules activated as transitive dependencies.
+To manually configure such modules, you should activate them directly via Jetty's `--add-modules` flag.
+====
+
+In the `http.ini` file you can find the following (among other contents):
+
+.http.ini
+[source]
+----
+--module=http <1>
+# jetty.http.port=8080 <2>
+...
+----
+
+<1> This line enables the `http` module and should not be modified.
+<2> This commented line specifies the default value for the `jetty.http.port` property, which is the network port that Jetty uses to listen for clear-text HTTP connections.
+
+Try changing the default port.
+Open `http.ini`, uncomment the line containing `jetty.http.port=`, and change its value to `9999`:
+
+.http.ini
+----
+--module=http
+jetty.http.port=9999
+...
+----
+
+If you restart Jetty, it will use this new value:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+args=--module=http jetty.http.port=9999
+highlight=(\{.*:9999})
+....
+
+You can also specify the value of a module property when you start up Jetty.
+A property value specified on the command-line in this way will *override* the value configured in a module's `+*.ini+` file.
+
+----
+$ java -jar $JETTY_HOME/start.jar jetty.http.port=8080
+----
+
+[jetty%nowrap]
+....
+[jetty]
+args=--module=http jetty.http.port=8080
+highlight=(\{.*:8080})
+....
+
+For more detailed information about the Jetty start mechanism, you can read the xref:arch/index.adoc#start[Jetty start mechanism] section.
+
+[[deploy]]
+== Deploying Web Applications
+
+You can deploy two types of web application resources with Jetty:
+
+* *Standard Web Application Archives*, in the form of `+*.war+` files or web application directories, defined by the https://jakarta.ee/specifications/servlet/[Servlet specification].
+Their deployment is described in <<deploy-war,this section>>.
+* *Jetty context XML files*, that allow you to customize the deployment of standard web applications, and also allow you to use Jetty components -- and possibly custom components written by you -- to assemble and deploy your web applications.
+Their deployment is described in xref:deploy/index.adoc[this section].
+
+Jetty supports the deployment of both standard web applications and Jetty context XML files in a specific EE _environment_, such as the old Java EE 8, or Jakarta EE 9, or Jakarta {ee-current-caps}.
+
+Jetty supports _simultaneous_ deployment of web applications each to a possibly different environment, for example an old Java EE 8 web application alongside a new Jakarta {ee-current-caps} web application.
+
+Refer to the section about xref:deploy/index.adoc[deployment] for further information about how to deploy to different environments.
+
+In the following sections you can find simple examples of deployments of Jakarta {ee-current-caps} web applications.
+
+[[deploy-war]]
+=== Deploying +*.war+ Files
+
+A standard Servlet web application is packaged in either a `+*.war+` file or in a directory with the structure of a `+*.war+` file.
+
+[NOTE]
+====
+Recall that the structure of a `+*.war+` file is as follows:
+
+[source]
+----
+mywebapp.war
+├── index.html <1>
+└── WEB-INF <2>
+    ├── classes/ <3>
+    ├── lib/ <4>
+    └── web.xml <5>
+----
+<1> Publicly accessible resources such as `+*.html+`, `+*.jsp+`, `+*.css+`, `+*.js+` files, etc. are placed in `+*.war+` or in sub-directories of the `+*.war+`.
+<2> `WEB-INF` is a special directory used to store anything related to the web application that must not be publicly accessible, but may be accessed by other resources.
+<3> `WEB-INF/classes` stores the web application's compiled `+*.class+` files
+<4> `WEB-INF/lib` stores the web application's `+*.jar+` files
+<5> `WEB-INF/web.xml` is the web application deployment descriptor, which defines the components and the configuration of your web application.
+====
+
+To deploy a standard web application, you need to enable the xref:modules/standard.adoc#eeN-deploy[`{ee-current}-deploy` module].
+
+[NOTE]
+====
+The following examples assume you're deploying a Jakarta {ee-current-caps} application; for other versions of Jakarta EE, make sure to activate the corresponding `{ee-all}-deploy` module.
+
+Refer to the section about xref:deploy/index.adoc[deployment] for further information about how to deploy to different environments.
+====
+
+[source,subs=attributes+]
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-deploy
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=http
+args=--add-modules={ee-current}-deploy
+....
+
+The `{ee-current}-deploy` module creates `$JETTY_BASE/webapps`, which is the directory where Jetty looks for any `+*.war+` files or web application directories to deploy.
+
+Activating one of Jetty's `{ee-all}-deploy` modules enables web application deployment.
+Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on whether the correspondent Jetty protocol modules have been enabled.
+Refer to the xref:protocols/index.adoc[section about protocols] for further information.
+
+Now you're ready to copy a web application to the `$JETTY_BASE/webapps` directory.
+You can use one of the demos shipped with Jetty:
+
+[source,subs=attributes+]
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-demo-simple
+----
+
+The `$JETTY_BASE` directory is now:
+
+[source,subs=attributes+]
+----
+$JETTY_BASE
+├── resources
+│   └── jetty-logging.properties
+├── start.d
+│   ├── deploy.ini
+│   ├── {ee-current}-demo-simple.ini
+│   └── http.ini
+└── webapps
+    └── {ee-current}-demo-simple.war
+----
+
+Now start Jetty:
+
+----
+$ java -jar $JETTY_HOME/start.jar
+----
+
+[jetty%nowrap]
+....
+[jetty]
+setupArgs=--add-modules=http,deploy,{ee-current}-demo-simple
+highlight=WebAppContext
+....
+
+Note the highlighted line that logs the deployment of `{ee-current}-demo-simple.war`.
+
+Now you can access the web application by pointing your browser to `pass:a[http://localhost:8080/{ee-current}-demo-simple]`.
+
+[[deploy-war-advanced]]
+=== Advanced Deployment
+
+If you want to customize the deployment of your web application -- for example, by specifying a `contextPath` different from the file/directory name, or by specifying JNDI entries, or by specifying virtual hosts -- read xref:deploy/index.adoc[this section].

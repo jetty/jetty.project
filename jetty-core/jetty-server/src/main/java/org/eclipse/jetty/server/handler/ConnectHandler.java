@@ -760,17 +760,11 @@ public class ConnectHandler extends Handler.Wrapper
             }
 
             @Override
-            public void succeeded()
+            protected void onSuccess()
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Wrote {} bytes {}", filled, TunnelConnection.this);
                 buffer.release();
-                super.succeeded();
-            }
-
-            @Override
-            protected void onCompleteSuccess()
-            {
             }
 
             @Override

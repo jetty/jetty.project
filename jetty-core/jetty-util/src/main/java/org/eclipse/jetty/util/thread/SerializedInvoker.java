@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +39,51 @@ public class SerializedInvoker
     private static final Logger LOG = LoggerFactory.getLogger(SerializedInvoker.class);
 
     private final AtomicReference<Link> _tail = new AtomicReference<>();
+    private final String _name;
+    private volatile Thread _invokerThread;
+
+    /**
+     * Create a new instance whose name is {@code anonymous}.
+     */
+    public SerializedInvoker()
+    {
+        this("anonymous");
+    }
+
+    /**
+     * Create a new instance whose name is derived from the given class.
+     * @param nameFrom the class to use as a name.
+     */
+    public SerializedInvoker(Class<?> nameFrom)
+    {
+        this(nameFrom.getSimpleName());
+    }
+
+    /**
+     * Create a new instance with the given name.
+     * @param name the name.
+     */
+    public SerializedInvoker(String name)
+    {
+        _name = name;
+    }
+
+    /**
+     * @return whether the current thread is currently executing a task using this invoker
+     */
+    boolean isCurrentThreadInvoking()
+    {
+        return _invokerThread == Thread.currentThread();
+    }
+
+    /**
+     * @throws IllegalStateException when the current thread is not currently executing a task using this invoker
+     */
+    public void assertCurrentThreadInvoking() throws IllegalStateException
+    {
+        if (!isCurrentThreadInvoking())
+            throw new IllegalStateException();
+    }
 
     /**
      * Arrange for a task to be invoked, mutually excluded from other tasks.
@@ -59,7 +108,7 @@ public class SerializedInvoker
             {
                 // Wrap the given task with another one that's going to delegate run() to the wrapped task while the
                 // wrapper's toString() returns a description of the place in code where SerializedInvoker.run() was called.
-                task = new NamedRunnable(task, deriveTaskName(task));
+                task = new NamedRunnable(task);
             }
         }
         Link link = new Link(task);
@@ -70,18 +119,6 @@ public class SerializedInvoker
             return link;
         penultimate._next.lazySet(link);
         return null;
-    }
-
-    protected String deriveTaskName(Runnable task)
-    {
-        StackTraceElement[] stackTrace = new Exception().getStackTrace();
-        for (StackTraceElement stackTraceElement : stackTrace)
-        {
-            String className = stackTraceElement.getClassName();
-            if (!className.equals(SerializedInvoker.class.getName()) && !className.equals(getClass().getName()))
-                return "Queued at " + stackTraceElement;
-        }
-        return task.toString();
     }
 
     /**
@@ -115,9 +152,8 @@ public class SerializedInvoker
         Runnable todo = offer(task);
         if (todo != null)
             todo.run();
-        else
-            if (LOG.isDebugEnabled())
-                LOG.debug("Queued link in {}", this);
+        else if (LOG.isDebugEnabled())
+            LOG.debug("Queued link in {}", this);
     }
 
     /**
@@ -130,15 +166,14 @@ public class SerializedInvoker
         Runnable todo = offer(tasks);
         if (todo != null)
             todo.run();
-        else
-            if (LOG.isDebugEnabled())
-                LOG.debug("Queued links in {}", this);
+        else if (LOG.isDebugEnabled())
+            LOG.debug("Queued links in {}", this);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{tail=%s}", getClass().getSimpleName(), hashCode(), _tail);
+        return String.format("%s@%x{name=%s,tail=%s,invoker=%s}", getClass().getSimpleName(), hashCode(), _name, _tail, _invokerThread);
     }
 
     protected void onError(Runnable task, Throwable t)
@@ -146,7 +181,7 @@ public class SerializedInvoker
         LOG.warn("Serialized invocation error", t);
     }
 
-    private class Link implements Runnable, Invocable
+    private class Link implements Runnable, Invocable, Dumpable
     {
         private final Runnable _task;
         private final AtomicReference<Link> _next = new AtomicReference<>();
@@ -154,6 +189,24 @@ public class SerializedInvoker
         public Link(Runnable task)
         {
             _task = task;
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            if (_task instanceof NamedRunnable nr)
+            {
+                StringWriter sw = new StringWriter();
+                nr.stack.printStackTrace(new PrintWriter(sw));
+                Dumpable.dumpObjects(out, indent, nr.toString(), sw.toString());
+            }
+            else
+            {
+                Dumpable.dumpObjects(out, indent, _task);
+            }
+            Link link = _next.get();
+            if (link != null)
+                link.dump(out, indent);
         }
 
         @Override
@@ -186,6 +239,7 @@ public class SerializedInvoker
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Running link {} of {}", link, SerializedInvoker.this);
+                _invokerThread = Thread.currentThread();
                 try
                 {
                     link._task.run();
@@ -195,6 +249,12 @@ public class SerializedInvoker
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failed while running link {} of {}", link, SerializedInvoker.this, t);
                     onError(link._task, t);
+                }
+                finally
+                {
+                    // _invokerThread must be nulled before calling link.next() as
+                    // once the latter has executed, another thread can enter Link.run().
+                    _invokerThread = null;
                 }
                 link = link.next();
                 if (link == null && LOG.isDebugEnabled())
@@ -209,9 +269,34 @@ public class SerializedInvoker
         }
     }
 
-    private record NamedRunnable(Runnable delegate, String name) implements Runnable
+    private class NamedRunnable implements Runnable
     {
         private static final Logger LOG = LoggerFactory.getLogger(NamedRunnable.class);
+
+        private final Runnable delegate;
+        private final String name;
+        private final Throwable stack;
+
+        private NamedRunnable(Runnable delegate)
+        {
+            this.delegate = delegate;
+            this.stack = new Throwable();
+            this.name = deriveTaskName(delegate, stack);
+        }
+
+        private String deriveTaskName(Runnable task, Throwable stack)
+        {
+            StackTraceElement[] stackTrace = stack.getStackTrace();
+            for (StackTraceElement stackTraceElement : stackTrace)
+            {
+                String className = stackTraceElement.getClassName();
+                if (!className.equals(SerializedInvoker.class.getName()) &&
+                    !className.equals(SerializedInvoker.this.getClass().getName()) &&
+                    !className.equals(getClass().getName()))
+                    return "Queued by " + Thread.currentThread().getName() + " at " + stackTraceElement;
+            }
+            return task.toString();
+        }
 
         @Override
         public void run()

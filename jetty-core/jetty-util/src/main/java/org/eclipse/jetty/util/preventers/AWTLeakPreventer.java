@@ -26,7 +26,6 @@ import java.awt.Toolkit;
  */
 public class AWTLeakPreventer extends AbstractLeakPreventer
 {
-
     @Override
     public void prevent(ClassLoader loader)
     {

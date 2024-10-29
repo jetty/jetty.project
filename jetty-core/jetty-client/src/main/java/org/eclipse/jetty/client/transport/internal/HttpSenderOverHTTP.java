@@ -156,6 +156,7 @@ public class HttpSenderOverHTTP extends HttpSender
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             HttpExchange exchange = getHttpChannel().getHttpExchange();
+
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
@@ -247,17 +248,9 @@ public class HttpSenderOverHTTP extends HttpSender
         }
 
         @Override
-        public void succeeded()
+        protected void onSuccess()
         {
             release();
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            release();
-            super.failed(x);
         }
 
         @Override
@@ -271,6 +264,7 @@ public class HttpSenderOverHTTP extends HttpSender
         protected void onCompleteFailure(Throwable cause)
         {
             super.onCompleteFailure(cause);
+            release();
             callback.failed(cause);
         }
 

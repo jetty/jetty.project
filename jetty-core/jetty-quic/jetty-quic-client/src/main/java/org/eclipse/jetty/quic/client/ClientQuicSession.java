@@ -75,6 +75,12 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
+    protected boolean validateNewlyEstablishedConnection()
+    {
+        return true;
+    }
+
+    @Override
     public Connection newConnection(QuicStreamEndPoint endPoint)
     {
         try

@@ -37,6 +37,10 @@ etc/jetty-threadpool-virtual.xml
 ## Virtual threads name prefix.
 #jetty.threadPool.virtual.namePrefix=qtp<hashCode>-virtual-
 
-## Whether virtual threads inherits the values of inheritable thread locals.
-#jetty.threadPool.virtual.inheritInheritableThreadLocals=true
+## Max number of current virtual threads.
+#jetty.threadPool.virtual.maxThreads=200
+
+## Whether to track virtual threads so they appear
+## in the dump even if they are unmounted.
+#jetty.threadPool.virtual.tracking=false
 # end::documentation[]

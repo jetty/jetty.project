@@ -20,7 +20,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.Authentication;
 import org.eclipse.jetty.client.AuthenticationStore;
-import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRequestException;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -146,7 +146,7 @@ public abstract class HttpConnection implements IConnection, Attachable
 
         // Make sure the path is there
         String path = request.getPath();
-        if (path.trim().length() == 0)
+        if (StringUtil.isBlank(path))
         {
             path = "/";
             request.path(path);
@@ -191,11 +191,7 @@ public abstract class HttpConnection implements IConnection, Attachable
 
         // Add content headers.
         Request.Content content = request.getBody();
-        if (content == null)
-        {
-            request.body(new BytesRequestContent());
-        }
-        else
+        if (content != null)
         {
             if (!headers.contains(HttpHeader.CONTENT_TYPE))
             {
@@ -203,10 +199,7 @@ public abstract class HttpConnection implements IConnection, Attachable
                 if (contentType == null)
                     contentType = getHttpClient().getDefaultRequestContentType();
                 if (contentType != null)
-                {
-                    HttpField field = new HttpField(HttpHeader.CONTENT_TYPE, contentType);
-                    request.addHeader(field);
-                }
+                    request.addHeader(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
             }
             long contentLength = content.getLength();
             if (contentLength >= 0)
@@ -215,6 +208,9 @@ public abstract class HttpConnection implements IConnection, Attachable
                     request.addHeader(new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, contentLength));
             }
         }
+        // RFC 9110, section 10.1.1.
+        if (content == null || content.getLength() == 0)
+            request.headers(h -> h.remove(HttpHeader.EXPECT));
 
         // Cookies.
         StringBuilder cookies = convertCookies(request.getCookies(), null);
@@ -243,7 +239,7 @@ public abstract class HttpConnection implements IConnection, Attachable
         {
             if (builder == null)
                 builder = new StringBuilder();
-            if (builder.length() > 0)
+            if (!builder.isEmpty())
                 builder.append("; ");
             builder.append(cookie.getName()).append("=").append(cookie.getValue());
         }

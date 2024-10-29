@@ -16,7 +16,9 @@ package org.eclipse.jetty.http2.tests;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,8 +39,16 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Assertions;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SettingsTest extends AbstractTest
 {
@@ -107,11 +117,11 @@ public class SettingsTest extends AbstractTest
             .flip();
         ((HTTP2Session)clientSession).getEndPoint().write(Callback.NOOP, byteBuffer);
 
-        Assertions.assertFalse(serverSettingsLatch.get().await(1, TimeUnit.SECONDS));
-        Assertions.assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(serverSettingsLatch.get().await(1, TimeUnit.SECONDS));
+        assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -181,11 +191,11 @@ public class SettingsTest extends AbstractTest
             .flip();
         ((HTTP2Session)clientSession).getEndPoint().write(Callback.NOOP, byteBuffer);
 
-        Assertions.assertFalse(serverSettingsLatch.get().await(1, TimeUnit.SECONDS));
-        Assertions.assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(serverSettingsLatch.get().await(1, TimeUnit.SECONDS));
+        assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -213,7 +223,7 @@ public class SettingsTest extends AbstractTest
             }
         });
 
-        Assertions.assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -242,7 +252,7 @@ public class SettingsTest extends AbstractTest
             }
         });
 
-        Assertions.assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -304,9 +314,9 @@ public class SettingsTest extends AbstractTest
             }
         });
 
-        Assertions.assertTrue(serverPushFailureLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
-        Assertions.assertFalse(clientPushLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(serverPushFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(clientPushLatch.await(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -361,6 +371,122 @@ public class SettingsTest extends AbstractTest
         HeadersFrame frame = new HeadersFrame(request, null, true);
         clientSession.newStream(frame, Stream.Listener.AUTO_DISCARD);
 
-        Assertions.assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testMaxHeaderListSizeExceededServerSendsGoAway() throws Exception
+    {
+        int maxHeadersSize = 512;
+        start(new ServerSessionListener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                ((HTTP2Session)session).getParser().getHpackDecoder().setMaxHeaderListSize(maxHeadersSize);
+            }
+        });
+
+        CountDownLatch goAwayLatch = new CountDownLatch(1);
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                goAwayLatch.countDown();
+            }
+        });
+        HttpFields requestHeaders = HttpFields.build()
+            .put("X-Large", "x".repeat(maxHeadersSize * 2));
+        MetaData.Request request = newRequest("GET", requestHeaders);
+        HeadersFrame frame = new HeadersFrame(request, null, true);
+        Stream stream = clientSession.newStream(frame, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+
+        // The request can be sent by the client, the server will reject it.
+        // The spec suggests to send 431, but we do not want to "taint" the
+        // HPACK context with large headers.
+        assertNotNull(stream);
+
+        // The server should send a GOAWAY.
+        assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testMaxHeaderListSizeExceededByClient() throws Exception
+    {
+        int maxHeadersSize = 512;
+        CountDownLatch goAwayLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                return Map.of(SettingsFrame.MAX_HEADER_LIST_SIZE, maxHeadersSize);
+            }
+
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                goAwayLatch.countDown();
+            }
+        });
+
+        Session clientSession = newClientSession(new Session.Listener() {});
+        HttpFields requestHeaders = HttpFields.build()
+            .put("X-Large", "x".repeat(maxHeadersSize * 2));
+        MetaData.Request request = newRequest("GET", requestHeaders);
+        HeadersFrame frame = new HeadersFrame(request, null, true);
+
+        Throwable failure = assertThrows(ExecutionException.class,
+            () -> clientSession.newStream(frame, new Stream.Listener() {}).get(5, TimeUnit.SECONDS))
+            .getCause();
+        // The HPACK context is compromised trying to encode the large header.
+        assertThat(failure, Matchers.instanceOf(HpackException.SessionException.class));
+
+        assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testMaxHeaderListSizeExceededByServer() throws Exception
+    {
+        int maxHeadersSize = 512;
+        AtomicReference<CompletableFuture<Stream>> responseRef = new AtomicReference<>();
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                HttpFields responseHeaders = HttpFields.build()
+                    .put("X-Large", "x".repeat(maxHeadersSize * 2));
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, responseHeaders);
+                responseRef.set(stream.headers(new HeadersFrame(stream.getId(), response, null, true)));
+                return null;
+            }
+        });
+
+        CountDownLatch goAwayLatch = new CountDownLatch(1);
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                return Map.of(SettingsFrame.MAX_HEADER_LIST_SIZE, maxHeadersSize);
+            }
+
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                goAwayLatch.countDown();
+            }
+        });
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+        HeadersFrame frame = new HeadersFrame(request, null, true);
+        clientSession.newStream(frame, new Stream.Listener() {});
+
+        CompletableFuture<Stream> completable = await().atMost(5, TimeUnit.SECONDS).until(responseRef::get, notNullValue());
+        Throwable failure = assertThrows(ExecutionException.class, () -> completable.get(5, TimeUnit.SECONDS)).getCause();
+        assertThat(failure, Matchers.instanceOf(HpackException.SessionException.class));
+
+        assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
     }
 }

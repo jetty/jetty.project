@@ -1,0 +1,12 @@
+REQUEST|GET|/ccd-ee8/redispatch/ee8
+STEP|CONTEXT_FORWARD|/ccd-ee8|/dump/ee8
+EXPECTED_EVENT|Initial plan: context-ee8-forward-dump.txt
+EXPECTED_EVENT|DispatchPlanHandler.handle() method=GET path-query=/ccd-ee8/redispatch/ee8
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee8.CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee8/redispatch/ee8
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee8.DumpServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee8/dump/ee8
+EXPECTED_PROP|request.dispatcherType|FORWARD
+EXPECTED_PROP|request.requestURI|/ccd-ee8/dump/ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.context_path]|/ccd-ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.path_info]|/ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.request_uri]|/ccd-ee8/redispatch/ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.servlet_path]|/redispatch

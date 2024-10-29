@@ -61,7 +61,8 @@ public class RedirectProtocolHandler implements ProtocolHandler, Response.Listen
     {
         // The request may still be sending content, stop it.
         Request request = response.getRequest();
-        request.abort(new HttpRequestException("Aborting request after receiving a %d response".formatted(response.getStatus()), request));
+        if (request.getBody() != null)
+            request.abort(new HttpRequestException("Aborting request after receiving a %d response".formatted(response.getStatus()), request));
     }
 
     @Override

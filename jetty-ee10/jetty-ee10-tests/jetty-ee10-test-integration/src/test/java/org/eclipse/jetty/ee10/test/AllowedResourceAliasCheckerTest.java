@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -25,6 +24,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AllowedResourceAliasCheckerTest
@@ -67,7 +66,8 @@ public class AllowedResourceAliasCheckerTest
 
         _context = new ServletContextHandler();
         _context.setContextPath("/");
-        _context.addServlet(DefaultServlet.class, "/");
+        ServletHolder servletHolder = _context.addServlet(DefaultServlet.class, "/");
+        servletHolder.setInitOrder(1);
         _server.setHandler(_context);
 
         _baseDir = MavenTestingUtils.getTargetTestingPath(AllowedResourceAliasCheckerTest.class.getName());
@@ -134,6 +134,23 @@ public class AllowedResourceAliasCheckerTest
         _context.addAliasCheck(new AllowedResourceAliasChecker(_context));
         start();
         createBaseDirFile();
+        assertThat(_context.getAliasChecks().size(), equalTo(1));
+
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/symlink");
+        ContentResponse response = _client.GET(uri);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), is("this is a file in the baseDir"));
+    }
+
+    @Test
+    public void testAutoAddAliasCheck() throws Exception
+    {
+        _context.clearAliasChecks();
+        createBaseDirFile();
+
+        // The AliasCheck is created on initialization.
+        assertThat(_context.getAliasChecks().size(), equalTo(0));
+        start();
         assertThat(_context.getAliasChecks().size(), equalTo(1));
 
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + "/symlink");

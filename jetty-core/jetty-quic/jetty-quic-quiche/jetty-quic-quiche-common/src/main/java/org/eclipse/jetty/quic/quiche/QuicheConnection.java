@@ -152,6 +152,8 @@ public abstract class QuicheConnection
 
     public abstract CloseInfo getLocalCloseInfo();
 
+    public abstract byte[] getPeerCertificate();
+
     public static class CloseInfo
     {
         private final long error;

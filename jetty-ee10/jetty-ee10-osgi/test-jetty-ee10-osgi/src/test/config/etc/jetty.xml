@@ -6,7 +6,7 @@
 <!-- Configure the Jetty Server                                      -->
 <!--                                                                 -->
 <!-- Documentation of this file format can be found at:              -->
-<!-- https://eclipse.dev/jetty/documentation/                        -->
+<!-- https://jetty.org/docs/                        -->
 <!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">

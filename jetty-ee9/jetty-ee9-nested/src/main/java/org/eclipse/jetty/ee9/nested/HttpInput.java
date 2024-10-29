@@ -61,6 +61,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("recycle {}", this);
             _blockingContentProducer.recycle();
+            _readListener = null;
         }
     }
 

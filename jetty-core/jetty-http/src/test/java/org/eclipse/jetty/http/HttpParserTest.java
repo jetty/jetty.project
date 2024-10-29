@@ -358,6 +358,20 @@ public class HttpParserTest
         assertEquals(1, _headers);
     }
 
+    @Test
+    public void testHeaderCache()
+    {
+        assertThat(HttpParser.CACHE.getBest("Content-Type: text/plain\r\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("Content-Type: text/plain\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("content-type: text/plain\r\n").toString(), is("Content-Type: text/plain"));
+        assertThat(HttpParser.CACHE.getBest("content-type: text/plain\n").toString(), is("Content-Type: text/plain"));
+
+        assertThat(HttpParser.CACHE.getBest("Content-Type: unknown\r\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("Content-Type: unknown\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("content-type: unknown\r\n").toString(), is("Content-Type: \u0000"));
+        assertThat(HttpParser.CACHE.getBest("content-type: unknown\n").toString(), is("Content-Type: \u0000"));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testHeaderCacheNearMiss(String eoln)
@@ -1699,6 +1713,22 @@ public class HttpParserTest
         assertNull(_content);
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"xxx", "0", "00", "50", "050", "0200", "1000", "2xx"})
+    public void testBadResponseStatus(String status)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer("""
+                HTTP/1.1 %s %s\r
+                Content-Length:0\r
+                \r
+                """.formatted(status, status), StandardCharsets.ISO_8859_1);
+
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parser.parseNext(buffer);
+        assertThat(_bad, is("Bad status"));
     }
 
     @ParameterizedTest

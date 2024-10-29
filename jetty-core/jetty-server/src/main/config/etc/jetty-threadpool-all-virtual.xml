@@ -3,7 +3,10 @@
 
 <Configure>
   <New id="threadPool" class="org.eclipse.jetty.util.thread.VirtualThreadPool">
+    <Arg type="int"><Property name="jetty.threadPool.maxThreads" default="200" /></Arg>
     <Set name="name" property="jetty.threadPool.namePrefix" />
+    <Set name="tracking" property="jetty.threadPool.tracking" />
+    <Set name="detailedDump" property="jetty.threadPool.detailedDump" />
   </New>
 
   <Call class="org.slf4j.LoggerFactory" name="getLogger">

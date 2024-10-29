@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -343,9 +344,7 @@ public class HttpStreamOverFCGI implements HttpStream
 
     public boolean onIdleTimeout(TimeoutException timeout)
     {
-        Runnable task = _httpChannel.onIdleTimeout(timeout);
-        if (task != null)
-            execute(task);
+        ThreadPool.executeImmediately(_connection.getConnector().getExecutor(), _httpChannel.onIdleTimeout(timeout));
         return false;
     }
 
@@ -365,9 +364,7 @@ public class HttpStreamOverFCGI implements HttpStream
         @Override
         public void failed(Throwable x)
         {
-            Runnable task = _httpChannel.onFailure(x);
-            if (task != null)
-                _connection.getConnector().getExecutor().execute(task);
+            ThreadPool.executeImmediately(_connection.getConnector().getExecutor(), _httpChannel.onFailure(x));
         }
 
         @Override

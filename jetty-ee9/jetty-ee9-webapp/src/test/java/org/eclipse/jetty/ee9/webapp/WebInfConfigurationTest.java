@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee9.webapp;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -45,9 +47,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -241,6 +246,30 @@ public class WebInfConfigurationTest
         assertTrue(Files.exists(unpackedDir)); //should have unpacked whole war
         assertTrue(Files.exists(unpackedWebInfDir)); //should have re-unpacked WEB-INF
         assertTrue(Files.exists(unpackedWebInfDir.resolve("WEB-INF").resolve("lib").resolve("alpha.jar")));
+    }
+
+    @Test
+    public void testResolveTempDirectory(WorkDir workDir) throws Exception
+    {
+        Path testPath = MavenPaths.targetTestDir("testSimple");
+        FS.ensureDirExists(testPath);
+        FS.ensureEmpty(testPath);
+
+        _server = new Server();
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        Path warPath = createWar(testPath, "test.war");
+        context.setExtractWAR(true);
+        context.setWar(warPath.toUri().toURL().toString());
+        _server.setHandler(context);
+        _server.start();
+        File tmpDir = context.getTempDirectory();
+        assertNotNull(tmpDir);
+
+        Path tmpPath = tmpDir.toPath();
+        Path lastName = tmpPath.getName(tmpPath.getNameCount() - 1);
+        assertThat(lastName.toString(), startsWith("jetty-test_war-_-any-"));
+        assertThat(context.getAttribute(ServletContext.TEMPDIR), is(tmpDir));
     }
 
     /**

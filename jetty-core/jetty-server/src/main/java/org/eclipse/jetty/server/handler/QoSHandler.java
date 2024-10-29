@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -49,8 +51,12 @@ import org.slf4j.LoggerFactory;
  * to the number configured via {@link #setMaxRequestCount(int)}.
  * If more requests are received, they are suspended (that is, not
  * forwarded to the child {@code Handler}) and stored in a priority
- * queue.
- * Priorities are determined via {@link #getPriority(Request)},
+ * queue.</p>
+ * <p>The maximum number of suspended request can be set with
+ * {@link #setMaxSuspendedRequestCount(int)} to avoid out of memory errors.
+ * When this limit is reached, the request will fail fast
+ * with status code {@code 503} (not available).</p>
+ * <p>Priorities are determined via {@link #getPriority(Request)},
  * that should return values between {@code 0} (the lowest priority)
  * and positive numbers, typically in the range {@code 0-10}.</p>
  * <p>When a request that is being processed completes, the suspended
@@ -74,11 +80,13 @@ public class QoSHandler extends ConditionalHandler.Abstract
     private static final Logger LOG = LoggerFactory.getLogger(QoSHandler.class);
     private static final String EXPIRED_ATTRIBUTE_NAME = QoSHandler.class.getName() + ".expired";
 
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final AtomicInteger state = new AtomicInteger();
     private final Map<Integer, Queue<Entry>> queues = new ConcurrentHashMap<>();
     private final Set<Integer> priorities = new ConcurrentSkipListSet<>(Comparator.reverseOrder());
     private CyclicTimeouts<Entry> timeouts;
     private int maxRequests;
+    private int maxSuspendedRequests = 1024;
     private Duration maxSuspend = Duration.ZERO;
 
     public QoSHandler()
@@ -117,6 +125,32 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     /**
+     * @return the max number of suspended requests
+     */
+    @ManagedAttribute(value = "The maximum number of suspended requests", readonly = true)
+    public int getMaxSuspendedRequestCount()
+    {
+        return maxSuspendedRequests;
+    }
+
+    /**
+     * <p>Sets the max number of suspended requests.</p>
+     * <p>Once the max suspended request limit is reached,
+     * the request is failed with a HTTP status of
+     * {@code 503 Service unavailable}.</p>
+     * <p>A negative value indicate an unlimited number
+     * of suspended requests.</p>
+     *
+     * @param maxSuspendedRequests the max number of suspended requests
+     */
+    public void setMaxSuspendedRequestCount(int maxSuspendedRequests)
+    {
+        if (isStarted())
+            throw new IllegalStateException("Cannot change maxSuspendedRequests: " + this);
+        this.maxSuspendedRequests = maxSuspendedRequests;
+    }
+
+    /**
      * Get the max duration of time a request may stay suspended.
      * @return the max duration of time a request may stay suspended
      */
@@ -141,7 +175,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     @ManagedAttribute("The number of suspended requests")
-    public long getSuspendedRequestCount()
+    public int getSuspendedRequestCount()
     {
         int permits = state.get();
         return Math.max(0, -permits);
@@ -182,34 +216,65 @@ public class QoSHandler extends ConditionalHandler.Abstract
     @Override
     public boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} handling {}", this, request);
+        return process(request, response, callback);
+    }
 
-        int permits = state.getAndDecrement();
-        if (permits > 0)
+    private boolean process(Request request, Response response, Callback callback) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} processing {}", this, request);
+
+        boolean expired = false;
+        boolean tooManyRequests = false;
+
+        // The read lock allows concurrency with resume(),
+        // which is the common case, but not with expire().
+        lock.readLock().lock();
+        try
         {
-            return handleWithPermit(request, response, callback);
+            int permits = state.decrementAndGet();
+            if (permits < 0)
+            {
+                int maxSuspended = getMaxSuspendedRequestCount();
+                if (maxSuspended >= 0 && Math.abs(permits) > maxSuspended)
+                {
+                    // Reached the limit of suspended requests,
+                    // complete the request with 503 unavailable.
+                    state.incrementAndGet();
+                    tooManyRequests = true;
+                }
+                else if (request.getAttribute(EXPIRED_ATTRIBUTE_NAME) == null)
+                {
+                    // Cover this race condition:
+                    // T1 in this method may find no permits, so it will suspend the request.
+                    // T2 in resume() finds no suspended request yet and increments the permits.
+                    // T1 suspends the request, despite permits are available.
+                    // This is avoided in resume() using a spin loop to wait for the request to be suspended.
+                    // See correspondent state machine logic in resume() and expire().
+                    suspend(request, response, callback);
+                    return true;
+                }
+                else
+                {
+                    // This is a request that was suspended, it expired, and was re-handled.
+                    // Do not suspend it again, just complete it with 503 unavailable.
+                    state.incrementAndGet();
+                    expired = true;
+                }
+            }
         }
-        else
+        finally
         {
-            if (request.getAttribute(EXPIRED_ATTRIBUTE_NAME) != null)
-            {
-                // This is a request that was suspended, and it expired.
-                // Do not suspend it again, just complete it with 503.
-                state.getAndIncrement();
-                notAvailable(response, callback);
-            }
-            else
-            {
-                // Avoid this race condition:
-                // T1 in handle() may find no permits, so it will suspend the request.
-                // T2 in resume() finds no suspended requests and increments the permits.
-                // T1 suspends the request, which will remain suspended despite permits are available.
-                // See correspondent state machine logic in resume() and expire().
-                suspend(request, response, callback);
-            }
+            lock.readLock().unlock();
+        }
+
+        if (expired || tooManyRequests)
+        {
+            notAvailable(response, callback);
             return true;
         }
+
+        return handleWithPermit(request, response, callback);
     }
 
     @Override
@@ -218,8 +283,10 @@ public class QoSHandler extends ConditionalHandler.Abstract
         return nextHandler(request, response, callback);
     }
 
-    private static void notAvailable(Response response, Callback callback)
+    private void notAvailable(Response response, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} rejecting {}", this, response.getRequest());
         response.setStatus(HttpStatus.SERVICE_UNAVAILABLE_503);
         if (response.isCommitted())
             callback.failed(new IllegalStateException("Response already committed"));
@@ -287,24 +354,33 @@ public class QoSHandler extends ConditionalHandler.Abstract
 
     private void resume(Throwable x)
     {
-        // See correspondent state machine logic in handle() and expire().
-        int permits = state.getAndIncrement();
-        if (permits >= 0)
+        // Allows concurrency with process(), but not with expire().
+        lock.readLock().lock();
+        try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} no suspended requests to resume", this, x);
-            return;
-        }
-
-        while (true)
-        {
-            if (resumeSuspended())
+            // See correspondent state machine logic in process() and expire().
+            int permits = state.incrementAndGet();
+            if (permits > 0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} no suspended requests to resume", this, x);
                 return;
+            }
 
-            // Found no suspended requests yet, but there will be.
-            // This covers the small race window in handle(), where
-            // the state is updated and then the request suspended.
-            Thread.onSpinWait();
+            while (true)
+            {
+                if (resumeSuspended())
+                    return;
+
+                // Found no suspended requests yet, but there will be.
+                // This covers the small race window in process(), where
+                // the state is updated and then the request suspended.
+                Thread.onSpinWait();
+            }
+        }
+        finally
+        {
+            lock.readLock().unlock();
         }
     }
 
@@ -321,11 +397,16 @@ public class QoSHandler extends ConditionalHandler.Abstract
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} resuming {}", this, entry.request);
                 // Always dispatch to avoid StackOverflowError.
-                getServer().getThreadPool().execute(entry);
+                execute(entry.request, entry);
                 return true;
             }
         }
         return false;
+    }
+
+    private void execute(Request request, Runnable task)
+    {
+        request.getComponents().getExecutor().execute(task);
     }
 
     private class Entry implements CyclicTimeouts.Expirable, Runnable
@@ -357,17 +438,32 @@ public class QoSHandler extends ConditionalHandler.Abstract
 
         private void expire()
         {
-            // The request timed out, therefore it never acquired a permit.
-            boolean removed = queues.get(priority).remove(this);
-            if (removed)
+            boolean removed;
+            // It should be rare that requests expire.
+            // Grab the write lock to atomically operate on the queue and
+            // the state, avoiding concurrency with process() and resume().
+            lock.writeLock().lock();
+            try
             {
-                // See correspondent state machine logic in handle() and resume().
-                state.getAndIncrement();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} timeout {}", QoSHandler.this, request);
-                request.setAttribute(EXPIRED_ATTRIBUTE_NAME, true);
-                failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
+                // The request timed out, therefore it was not handled.
+                removed = queues.get(priority).remove(this);
+                // The remove() may fail to a concurrent resume().
+                if (removed)
+                {
+                    // See correspondent state machine logic in process() and resume().
+                    state.incrementAndGet();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} timeout {}", QoSHandler.this, request);
+                    request.setAttribute(EXPIRED_ATTRIBUTE_NAME, true);
+                }
             }
+            finally
+            {
+                lock.writeLock().unlock();
+            }
+
+            if (removed)
+                execute(request, () -> failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException()));
         }
 
         @Override

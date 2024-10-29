@@ -212,6 +212,7 @@ updates:
         versions: [ ">=12" ]
       - dependency-name: "com.hazelcast:*"
       - dependency-name: "org.apache.directory*"
+      - dependency-name: "org.apache.maven.plugin-tools:*"
       - dependency-name: "org.apache.felix:*"
         versions: [ ">=4" ]
       - dependency-name: "org.jboss.weld.servlet:*"

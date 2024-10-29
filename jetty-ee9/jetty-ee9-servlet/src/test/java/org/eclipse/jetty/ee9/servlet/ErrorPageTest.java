@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.ee9.servlet;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +33,6 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -49,10 +52,10 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +65,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 //@Disabled // TODO
@@ -105,6 +109,7 @@ public class ErrorPageTest
         _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
         _context.addServlet(ExceptionServlet.class, "/exception-servlet");
+        _context.addServlet(AbortServlet.class, "/abort");
 
         HandlerWrapper noopHandler = new HandlerWrapper()
         {
@@ -298,6 +303,34 @@ public class ErrorPageTest
         assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
         assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
         assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/code"));
+    }
+
+    @Test
+    public void testAbortWithSendError() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(0);
+        _server.addConnector(connector);
+        connector.start();
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String request = """
+            GET /abort HTTP/1.1\r
+            Host: test\r
+            \r
+            """;
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String line = in.readLine();
+            assertNull(line);
+        }
     }
 
     @Test
@@ -869,6 +902,15 @@ public class ErrorPageTest
         public TestServletException(Throwable rootCause)
         {
             super(rootCause);
+        }
+    }
+
+    public static class AbortServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.sendError(-1);
         }
     }
 }

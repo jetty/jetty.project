@@ -88,8 +88,7 @@ public interface HttpChannel extends Invocable
 
     /**
      * <p>Notifies this {@code HttpChannel} that an asynchronous failure happened.</p>
-     * <p>Typical failure examples could be HTTP/2 resets or
-     * protocol failures (for example, invalid request bytes).</p>
+     * <p>Typical failure examples could be protocol failures (for example, invalid request bytes).</p>
      *
      * @param failure the failure cause.
      * @return a {@code Runnable} that performs the failure action, or {@code null}
@@ -97,6 +96,18 @@ public interface HttpChannel extends Invocable
      * @see Request#addFailureListener(Consumer)
      */
     Runnable onFailure(Throwable failure);
+
+    /**
+     * <p>Notifies this {@code HttpChannel} that an asynchronous notification was received indicating
+     * a remote failure happened.</p>
+     * <p>Typical failure examples could be HTTP/2 resets.</p>
+     *
+     * @param failure the failure cause.
+     * @return a {@code Runnable} that performs the failure action, or {@code null}
+     * if no failure action needs be performed by the calling thread
+     * @see Request#addFailureListener(Consumer)
+     */
+    Runnable onRemoteFailure(Throwable failure);
 
     /**
      * <p>Notifies this {@code HttpChannel} that an asynchronous close happened.</p>

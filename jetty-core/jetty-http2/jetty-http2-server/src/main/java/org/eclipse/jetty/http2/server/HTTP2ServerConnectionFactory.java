@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.EOFException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -155,7 +156,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
-            EofException failure = new EofException("Reset " + ErrorCode.toString(frame.getError(), null));
+            EOFException failure = new EOFException("Reset " + ErrorCode.toString(frame.getError(), null));
             onFailure(stream, failure, callback);
         }
 

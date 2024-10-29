@@ -60,6 +60,7 @@ public class AsyncTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
@@ -102,9 +103,9 @@ public class AsyncTest
     public void testSessionWithAsyncComplete() throws Exception
     {
         // Test async write, which creates a session and completes outside of a dispatch
-
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
@@ -153,6 +154,7 @@ public class AsyncTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
@@ -198,9 +200,9 @@ public class AsyncTest
     @Test
     public void testSessionCreatedBeforeDispatch() throws Exception
     {
-
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
@@ -252,6 +254,7 @@ public class AsyncTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 

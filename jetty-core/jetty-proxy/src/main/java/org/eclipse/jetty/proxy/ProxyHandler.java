@@ -393,11 +393,12 @@ public abstract class ProxyHandler extends Handler.Abstract
 
     private boolean hasContent(Request clientToProxyRequest)
     {
-        if (clientToProxyRequest.getLength() > 0)
+        long contentLength = clientToProxyRequest.getLength();
+        if (contentLength == 0)
+            return false;
+        if (contentLength > 0)
             return true;
-        HttpFields headers = clientToProxyRequest.getHeaders();
-        return headers.get(HttpHeader.CONTENT_TYPE) != null ||
-               headers.get(HttpHeader.TRANSFER_ENCODING) != null;
+        return clientToProxyRequest.getHeaders().get(HttpHeader.TRANSFER_ENCODING) != null;
     }
 
     private boolean expects100Continue(Request clientToProxyRequest)
@@ -444,12 +445,11 @@ public abstract class ProxyHandler extends Handler.Abstract
         Response.writeError(clientToProxyRequest, proxyToClientResponse, callback, status);
     }
 
-    protected void onServerToProxyResponse100Continue(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
+    protected Runnable onServerToProxyResponse100Continue(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} P2C 100 continue response", requestId(clientToProxyRequest));
-        Runnable action = (Runnable)proxyToServerRequest.getAttributes().get(PROXY_TO_SERVER_CONTINUE_ATTRIBUTE);
-        action.run();
+        return (Runnable)proxyToServerRequest.getAttributes().get(PROXY_TO_SERVER_CONTINUE_ATTRIBUTE);
     }
 
     protected void onServerToProxyResponse102Processing(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, HttpFields serverToProxyResponseHeaders, Response proxyToClientResponse)
@@ -776,13 +776,12 @@ public abstract class ProxyHandler extends Handler.Abstract
     private class ProxyContinueProtocolHandler extends ContinueProtocolHandler
     {
         @Override
-        protected void onContinue(org.eclipse.jetty.client.Request proxyToServerRequest)
+        protected Runnable onContinue(org.eclipse.jetty.client.Request proxyToServerRequest)
         {
-            super.onContinue(proxyToServerRequest);
             var clientToProxyRequest = (Request)proxyToServerRequest.getAttributes().get(CLIENT_TO_PROXY_REQUEST_ATTRIBUTE);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} S2P received 100 Continue", requestId(clientToProxyRequest));
-            onServerToProxyResponse100Continue(clientToProxyRequest, proxyToServerRequest);
+            return onServerToProxyResponse100Continue(clientToProxyRequest, proxyToServerRequest);
         }
     }
 

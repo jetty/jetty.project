@@ -1,0 +1,41 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= JavaServer Faces TagLibs
+
+If you want to use JSF with your webapp, you should copy the relevant jars from your implementation of choice into your `$JETTY_BASE` directory, ideally into `$JETTY_BASE/lib/ext`.
+If that directory does not exist, enable the `ext` module, which will create the directory and ensure all jars within it are put onto the container classpath.
+
+
+Then you will need to tell Jetty which of those jars contains the `+*.tld+` files.
+To accomplish that, you need to specify either the name of the file or a pattern that matches the name/s of the file/s as the `org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern` context attribute.
+You will need to preserve the existing value of the attribute, and add in your extra pattern.
+
+Here's an example of using a context xml file to add in a pattern to match files starting with `jsf-`, which contain the `+*.tld+` files:
+
+[,xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <!--1-->
+    <Call name="setAttribute"> <!--2-->
+      <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg> <!--3-->
+      <Arg>.*/jetty-servlet-api-[^/]*\.jar$|.*/javax.servlet.jsp.jstl-.*\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\.jar$|.*/jsf-[^/]*\.jar$</Arg> <!--4-->
+    </Call>
+</Configure>
+----
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<2> Specifies a context attribute.
+<3> Specifies the name of the context attribute.
+<4> Adds the additional pattern `+.*/jsf-[^/]*\.jar$+` to those already existing.

@@ -308,7 +308,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public String toString()
         {
-            return String.format("URLResource@%X(%s)", this.uri.hashCode(), this.uri.toASCIIString());
+            return "(URL) " + this.uri.toASCIIString();
         }
 
         private static class InputStreamReference extends AtomicReference<InputStream> implements Runnable

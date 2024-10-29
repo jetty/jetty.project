@@ -1,0 +1,22 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= `StateTrackingHandler`
+
+`StateTrackingHandler` (described xref:server/http.adoc#handler-use-state-tracking[here]) is a troubleshooting `Handler` that can be inserted in the `Handler` chain to track usages of `Handler`/`Request`/`Response` asynchronous APIs.
+
+xref:troubleshooting/component-dump.adoc[Dumping the Jetty component tree] will dump the `StateTrackingHandler`, which will dump the state of the current requests.
+
+This will help detecting whether requests are not completed due to callbacks not being completed, or whether callback code is stuck while invoking blocking APIs, etc.
+
+Thread stack traces (including virtual threads) of operations that have been started but not completed, or are stuck in blocking code are provided in the component tree dump.

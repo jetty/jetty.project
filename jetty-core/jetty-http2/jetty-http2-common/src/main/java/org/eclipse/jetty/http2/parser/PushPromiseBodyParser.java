@@ -73,16 +73,18 @@ public class PushPromiseBodyParser extends BodyParser
                 }
                 case PADDING_LENGTH:
                 {
+                    if (length < 1)
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_push_promise_frame");
                     paddingLength = buffer.get() & 0xFF;
                     --length;
                     length -= paddingLength;
                     state = State.STREAM_ID;
-                    if (length < 4)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_push_promise_frame");
                     break;
                 }
                 case STREAM_ID:
                 {
+                    if (length < 4)
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_push_promise_frame");
                     if (buffer.remaining() >= 4)
                     {
                         streamId = buffer.getInt();
@@ -104,8 +106,6 @@ public class PushPromiseBodyParser extends BodyParser
                     --cursor;
                     streamId += currByte << (8 * cursor);
                     --length;
-                    if (cursor > 0 && length <= 0)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_push_promise_frame");
                     if (cursor == 0)
                     {
                         streamId &= 0x7F_FF_FF_FF;

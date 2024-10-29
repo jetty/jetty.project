@@ -100,7 +100,7 @@ public class ServletCoreRequest implements Request
             .authority(request.getServerName(), request.getServerPort());
 
         if (included)
-            builder.path(addEncodedPaths(request.getContextPath(), encodePath(DefaultServlet.getIncludedPathInContext(request, includedServletPath, false))));
+            builder.path(addEncodedPaths(request.getContextPath(), encodePath(ResourceServlet.getIncludedPathInContext(request, includedServletPath))));
         else if (request.getDispatcherType() != DispatcherType.REQUEST)
             builder.path(addEncodedPaths(request.getContextPath(), encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()))));
         else

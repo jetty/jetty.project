@@ -87,20 +87,23 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     protected void doStart() throws Exception
     {
         if (!http2Client.isStarted())
-        {
-            HttpClient httpClient = getHttpClient();
-            http2Client.setExecutor(httpClient.getExecutor());
-            http2Client.setScheduler(httpClient.getScheduler());
-            http2Client.setByteBufferPool(httpClient.getByteBufferPool());
-            http2Client.setConnectTimeout(httpClient.getConnectTimeout());
-            http2Client.setIdleTimeout(httpClient.getIdleTimeout());
-            http2Client.setInputBufferSize(httpClient.getResponseBufferSize());
-            http2Client.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
-            http2Client.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
-            http2Client.setConnectBlocking(httpClient.isConnectBlocking());
-            http2Client.setBindAddress(httpClient.getBindAddress());
-        }
+            configure(getHttpClient(), getHTTP2Client());
         super.doStart();
+    }
+
+    static void configure(HttpClient httpClient, HTTP2Client http2Client)
+    {
+        http2Client.setExecutor(httpClient.getExecutor());
+        http2Client.setScheduler(httpClient.getScheduler());
+        http2Client.setByteBufferPool(httpClient.getByteBufferPool());
+        http2Client.setConnectTimeout(httpClient.getConnectTimeout());
+        http2Client.setIdleTimeout(httpClient.getIdleTimeout());
+        http2Client.setInputBufferSize(httpClient.getResponseBufferSize());
+        http2Client.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
+        http2Client.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
+        http2Client.setConnectBlocking(httpClient.isConnectBlocking());
+        http2Client.setBindAddress(httpClient.getBindAddress());
+        http2Client.setMaxResponseHeadersSize(httpClient.getMaxResponseHeadersSize());
     }
 
     @Override

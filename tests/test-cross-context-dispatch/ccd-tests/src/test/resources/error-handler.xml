@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Set name="errorHandler">
+    <New class="org.eclipse.jetty.server.handler.ErrorHandler">
+      <Set name="showStacks">true</Set>
+    </New>
+  </Set>
+</Configure>

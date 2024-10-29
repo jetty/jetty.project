@@ -93,9 +93,31 @@ public class ContextFactory implements ObjectFactory
     {
         Context ctx = null;
 
-        //If the thread context classloader is set, then try its hierarchy to find a matching context
+        //See if there is a classloader already set to use for finding the comp
+        //naming Context
+        ClassLoader loader = (ClassLoader)__threadClassLoader.get();
+        if (loader != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Using threadlocal classloader");
+            try (AutoLock l = __lock.lock())
+            {
+                ctx = getContextForClassLoader(loader);
+                if (ctx == null)
+                {
+                    ctx = newNamingContext(obj, loader, env, name, nameCtx);
+                    __contextMap.put(loader, ctx);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Made context {} for classloader {}", name.get(0), loader);
+                }
+                return ctx;
+            }
+        }
+
+        //If the thread context classloader is set, then try it and its
+        //classloader hierarchy to find a matching naming Context
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        ClassLoader loader = tccl;
+        loader = tccl;
         if (loader != null)
         {
             if (LOG.isDebugEnabled())
@@ -121,7 +143,7 @@ public class ContextFactory implements ObjectFactory
         }
 
         //If trying thread context classloader hierarchy failed, try the
-        //classloader associated with the current context
+        //classloader associated with the current ContextHandler
         if (ContextHandler.getCurrentContext() != null)
         {
             if (LOG.isDebugEnabled())
@@ -187,6 +209,18 @@ public class ContextFactory implements ObjectFactory
         {
             return __contextMap.get(loader);
         }
+    }
+
+    public static ClassLoader associateClassLoader(final ClassLoader loader)
+    {
+        ClassLoader prev = (ClassLoader)__threadClassLoader.get();
+        __threadClassLoader.set(loader);
+        return prev;
+    }
+
+    public static void disassociateClassLoader()
+    {
+        __threadClassLoader.set(null);
     }
 
     public static void dump(Appendable out, String indent) throws IOException

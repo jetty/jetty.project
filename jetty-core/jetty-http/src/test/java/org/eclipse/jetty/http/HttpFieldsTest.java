@@ -25,6 +25,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -333,6 +334,68 @@ public class HttpFieldsTest
         assertEquals("value0", header.getField(0).getValue());
         assertEquals("value1", header.getField(1).getValue());
         assertThrows(NoSuchElementException.class, () -> header.getField(2));
+    }
+
+    @Test
+    public void testCaseInsensitive()
+    {
+        HttpFields header = HttpFields.build()
+            .add("expect", "100")
+            .add("RaNdOm", "value")
+            .add("Accept-Charset", "UTF-8")
+            .add("accept-charset", "UTF-16")
+            .add("foo-bar", "one")
+            .add("Foo-Bar", "two")
+            .asImmutable();
+
+        assertThat(header.get("expect"), is("100"));
+        assertThat(header.get("Expect"), is("100"));
+        assertThat(header.get("EXPECT"), is("100"));
+        assertThat(header.get("eXpEcT"), is("100"));
+        assertThat(header.get(HttpHeader.EXPECT), is("100"));
+        assertTrue(header.contains("expect"));
+        assertTrue(header.contains("Expect"));
+        assertTrue(header.contains("EXPECT"));
+        assertTrue(header.contains("eXpEcT"));
+
+        assertThat(header.get("random"), is("value"));
+        assertThat(header.get("Random"), is("value"));
+        assertThat(header.get("RANDOM"), is("value"));
+        assertThat(header.get("rAnDoM"), is("value"));
+        assertThat(header.get("RaNdOm"), is("value"));
+        assertTrue(header.contains("random"));
+        assertTrue(header.contains("Random"));
+        assertTrue(header.contains("RANDOM"));
+        assertTrue(header.contains("rAnDoM"));
+        assertTrue(header.contains("RaNdOm"));
+
+        assertThat(header.get("Accept-Charset"), is("UTF-8"));
+        assertThat(header.get("accept-charset"), is("UTF-8"));
+        assertThat(header.get(HttpHeader.ACCEPT_CHARSET), is("UTF-8"));
+        assertTrue(header.contains("Accept-Charset"));
+        assertTrue(header.contains("accept-charset"));
+
+        assertThat(header.getValuesList("Accept-Charset"), contains("UTF-8", "UTF-16"));
+        assertThat(header.getValuesList("accept-charset"), contains("UTF-8", "UTF-16"));
+        assertThat(header.getValuesList(HttpHeader.ACCEPT_CHARSET), contains("UTF-8", "UTF-16"));
+
+        assertThat(header.get("foo-bar"), is("one"));
+        assertThat(header.get("Foo-Bar"), is("one"));
+        assertThat(header.getValuesList("foo-bar"), contains("one", "two"));
+        assertThat(header.getValuesList("Foo-Bar"), contains("one", "two"));
+        assertTrue(header.contains("foo-bar"));
+        assertTrue(header.contains("Foo-Bar"));
+
+        // We know the order of the set is deterministic
+        Set<String> names = header.getFieldNamesCollection();
+        assertThat(names, contains("expect", "RaNdOm", "Accept-Charset", "foo-bar"));
+        assertTrue(names.contains("expect"));
+        assertTrue(names.contains("Expect"));
+        assertTrue(names.contains("random"));
+        assertTrue(names.contains("accept-charset"));
+        assertTrue(names.contains("Accept-Charset"));
+        assertTrue(names.contains("foo-bar"));
+        assertTrue(names.contains("Foo-Bar"));
     }
 
     @ParameterizedTest

@@ -2,7 +2,7 @@ Notices for Eclipse Jetty
 =========================
 This content is produced and maintained by the Eclipse Jetty project.
 
-Project home: https://eclipse.dev/jetty/
+Project home: https://jetty.org/
 
 Trademarks
 ----------

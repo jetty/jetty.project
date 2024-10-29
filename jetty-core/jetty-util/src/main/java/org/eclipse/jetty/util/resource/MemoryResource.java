@@ -155,6 +155,6 @@ public class MemoryResource extends Resource
     @Override
     public String toString()
     {
-        return getName();
+        return "(Memory) " + _uri.toASCIIString();
     }
 }

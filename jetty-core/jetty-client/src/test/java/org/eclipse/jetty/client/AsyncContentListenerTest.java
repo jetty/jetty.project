@@ -34,6 +34,31 @@ import static org.hamcrest.Matchers.is;
 public class AsyncContentListenerTest
 {
     @Test
+    public void testOnContentThrowingException()
+    {
+        TestSource originalSource = new TestSource(
+            Content.Chunk.from(ByteBuffer.wrap(new byte[] {1}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[] {2}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[] {3}), true)
+        );
+        Response.AsyncContentListener asyncContentListener = (response, chunk, demander) ->
+        {
+            throw new NumberFormatException();
+        };
+
+        HttpResponse response = new HttpResponse(new HttpRequest(new HttpClient(), new HttpConversation(), URI.create("http://localhost")));
+        asyncContentListener.onContentSource(response, originalSource);
+
+        // Assert that the source was failed.
+        Content.Chunk lastChunk = originalSource.read();
+        assertThat(Content.Chunk.isFailure(lastChunk, true), is(true));
+        assertThat(lastChunk.getFailure(), instanceOf(NumberFormatException.class));
+
+        // Assert that the response was aborted.
+        assertThat(response.getRequest().getAbortCause(), instanceOf(NumberFormatException.class));
+    }
+
+    @Test
     public void testTransientFailureBecomesTerminal()
     {
         TestSource originalSource = new TestSource(
@@ -70,7 +95,7 @@ public class AsyncContentListenerTest
         originalSource.close();
     }
 
-    private static class TestSource extends ChunksContentSource implements Closeable
+    static class TestSource extends ChunksContentSource implements Closeable
     {
         private Content.Chunk[] chunks;
 

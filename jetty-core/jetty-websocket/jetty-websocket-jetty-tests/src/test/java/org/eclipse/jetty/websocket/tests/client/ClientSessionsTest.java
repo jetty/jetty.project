@@ -83,22 +83,18 @@ public class ClientSessionsTest
     @Test
     public void testBasicEchoFromClient() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-
-        CountDownLatch onSessionCloseLatch = new CountDownLatch(1);
-
-        client.addSessionListener(new WebSocketSessionListener()
+        try (WebSocketClient client = new WebSocketClient())
         {
-            @Override
-            public void onWebSocketSessionClosed(Session session)
+            CountDownLatch onSessionCloseLatch = new CountDownLatch(1);
+            client.addSessionListener(new WebSocketSessionListener()
             {
-                onSessionCloseLatch.countDown();
-            }
-        });
-
-        client.start();
-        try
-        {
+                @Override
+                public void onWebSocketSessionClosed(Session session)
+                {
+                    onSessionCloseLatch.countDown();
+                }
+            });
+            client.start();
             CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
             client.setIdleTimeout(Duration.ofSeconds(10));
 
@@ -135,10 +131,6 @@ public class ClientSessionsTest
 
             Collection<Session> open = client.getOpenSessions();
             assertThat("(After Close) Open Sessions.size", open.size(), is(0));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }

@@ -30,7 +30,7 @@ import static org.eclipse.jetty.quic.quiche.foreign.NativeHelper.C_POINTER;
 
 public class quiche_h
 {
-    private static final String EXPECTED_QUICHE_VERSION = "0.21.0";
+    private static final String EXPECTED_QUICHE_VERSION = "0.22.0";
     private static final Logger LOG = LoggerFactory.getLogger(quiche_h.class);
 
     private static class LoggingCallback
@@ -485,6 +485,7 @@ public class quiche_h
                 C_LONG,
                 C_POINTER,
                 C_LONG,
+                C_POINTER,
                 C_POINTER
             ));
         private static final MethodHandle quiche_conn_stream_send = NativeHelper.downcallHandle(
@@ -495,7 +496,8 @@ public class quiche_h
                 C_LONG,
                 C_POINTER,
                 C_LONG,
-                C_BOOL
+                C_BOOL,
+                C_POINTER
             ));
         private static final MethodHandle quiche_conn_stream_priority = NativeHelper.downcallHandle(
             "quiche_conn_stream_priority",
@@ -1662,11 +1664,11 @@ public class quiche_h
         }
     }
 
-    public static long quiche_conn_stream_recv(MemorySegment conn, long stream_id, MemorySegment out, long buf_len, MemorySegment fin)
+    public static long quiche_conn_stream_recv(MemorySegment conn, long stream_id, MemorySegment out, long buf_len, MemorySegment fin, MemorySegment out_error_code)
     {
         try
         {
-            return (long)DowncallHandles.quiche_conn_stream_recv.invokeExact(conn, stream_id, out, buf_len, fin);
+            return (long)DowncallHandles.quiche_conn_stream_recv.invokeExact(conn, stream_id, out, buf_len, fin, out_error_code);
         }
         catch (Throwable x)
         {
@@ -1674,11 +1676,11 @@ public class quiche_h
         }
     }
 
-    public static long quiche_conn_stream_send(MemorySegment conn, long stream_id, MemorySegment buf, long buf_len, boolean fin)
+    public static long quiche_conn_stream_send(MemorySegment conn, long stream_id, MemorySegment buf, long buf_len, boolean fin, MemorySegment out_error_code)
     {
         try
         {
-            return (long)DowncallHandles.quiche_conn_stream_send.invokeExact(conn, stream_id, buf, buf_len, fin);
+            return (long)DowncallHandles.quiche_conn_stream_send.invokeExact(conn, stream_id, buf, buf_len, fin, out_error_code);
         }
         catch (Throwable x)
         {

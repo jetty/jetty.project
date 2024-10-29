@@ -459,9 +459,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected boolean hasContent(HttpServletRequest clientRequest)
     {
-        return clientRequest.getContentLength() > 0 ||
-            clientRequest.getContentType() != null ||
-            clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
+        long contentLength = clientRequest.getContentLengthLong();
+        if (contentLength == 0)
+            return false;
+        if (contentLength > 0)
+            return true;
+        return clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
     }
 
     protected boolean expects100Continue(HttpServletRequest request)
@@ -768,10 +771,17 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
     }
 
-    protected void onContinue(HttpServletRequest clientRequest, Request proxyRequest)
+    /**
+     * <p>Returns the action to perform when the proxy receives
+     * a 100 Continue response from the server.</p>
+     *
+     * @param clientRequest the client request
+     * @param proxyRequest the request being proxied
+     * @return the 100 Continue action to run
+     */
+    protected Runnable onContinue(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        if (_log.isDebugEnabled())
-            _log.debug("{} handling 100 Continue", getRequestId(clientRequest));
+        return null;
     }
 
     /**
@@ -856,10 +866,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
     class ProxyContinueProtocolHandler extends ContinueProtocolHandler
     {
         @Override
-        protected void onContinue(Request request)
+        protected Runnable onContinue(Request request)
         {
             HttpServletRequest clientRequest = (HttpServletRequest)request.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
-            AbstractProxyServlet.this.onContinue(clientRequest, request);
+            return AbstractProxyServlet.this.onContinue(clientRequest, request);
         }
     }
 }

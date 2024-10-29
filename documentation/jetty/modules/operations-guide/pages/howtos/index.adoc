@@ -1,0 +1,24 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Eclipse Jetty How-Tos
+
+* xref:protocols/index.adoc#http[Configure Clear-Text HTTP/1.1]
+* xref:protocols/index.adoc#https[Configure Secure HTTP/1.1 (https)]
+* xref:protocols/index.adoc#http2c[Configure Clear-Text HTTP/2]
+* xref:protocols/index.adoc#http2s[Configure Secure HTTP/2]
+* xref:protocols/index.adoc#http3[Configure HTTP/3]
+* xref:protocols/index.adoc#proxy[Configure Jetty Behind a Load Balancer or Reverse Proxy]
+* xref:server/index.adoc#logging[Configure Jetty Logging]
+* xref:server/index.adoc#threadpool[Configure Jetty Thread Pool and Virtual Threads]
+* xref:troubleshooting/index.adoc[Troubleshooting]

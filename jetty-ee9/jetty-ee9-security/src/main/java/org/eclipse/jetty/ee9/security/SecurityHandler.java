@@ -46,12 +46,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract SecurityHandler.
- * <p>
  * Select and apply an {@link Authenticator} to a request.
  * <p>
  * The Authenticator may either be directly set on the handler
- * or will be create during {@link #start()} with a call to
+ * or will be created during {@link #start()} with a call to
  * either the default or set AuthenticatorFactory.
  * <p>
  * SecurityHandler has a set of initparameters that are used by the

@@ -62,7 +62,7 @@ public abstract class NoSqlSessionDataStore extends ObjectStreamSessionDataStore
 
         public Set<String> getAllAttributeNames()
         {
-            return new HashSet<String>(_attributes.keySet());
+            return new HashSet<>(_attributes.keySet());
         }
     }
 

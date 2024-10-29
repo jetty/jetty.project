@@ -29,7 +29,7 @@ public interface Index<V>
     /**
      * Get an exact match from a String key
      *
-     * @param s The key
+     * @param s The key, possibly null
      * @return the value for the string key
      */
     V get(String s);
@@ -45,7 +45,7 @@ public interface Index<V>
     /**
      * Get an exact match from a String key
      *
-     * @param s The key
+     * @param s The key, possibly null
      * @param offset The offset within the string of the key
      * @param len the length of the key
      * @return the value for the string / offset / length
@@ -65,7 +65,7 @@ public interface Index<V>
     /**
      * Check if there is an exact match from a String key
      *
-     * @param s The key
+     * @param s The key, possibly null
      * @return true if there is a match, false otherwise
      */
     default boolean contains(String s)
@@ -76,7 +76,7 @@ public interface Index<V>
     /**
      * Get the best match from key in a String.
      *
-     * @param s The string
+     * @param s The string, possibly null
      * @param offset The offset within the string of the key
      * @param len the length of the key
      * @return The value or null if not found
@@ -87,7 +87,7 @@ public interface Index<V>
      * Get the best match from key in a String, which may be
      * a prefix match or an exact match.
      *
-     * @param s The string
+     * @param s The string, possibly null
      * @return The value or null if not found
      */
     V getBest(String s);

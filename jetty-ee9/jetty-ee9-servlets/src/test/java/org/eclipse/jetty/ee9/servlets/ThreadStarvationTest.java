@@ -54,7 +54,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +75,7 @@ public class ThreadStarvationTest
     }
 
     @Test
-    @Disabled // TODO
+    @Tag("flaky")
     public void testDefaultServletSuccess() throws Exception
     {
         int maxThreads = 6;
@@ -189,6 +189,7 @@ public class ThreadStarvationTest
     }
 
     @Test
+    @Tag("flaky")
     public void testFailureStarvation() throws Exception
     {
         Logger serverInternalLogger = LoggerFactory.getLogger("org.eclipse.jetty.server.internal");

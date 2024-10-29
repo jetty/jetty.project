@@ -27,9 +27,10 @@ module org.eclipse.jetty.websocket.core.common
         org.eclipse.jetty.util; // Export to DecoratedObjectFactory.
 
     uses org.eclipse.jetty.websocket.core.Extension;
-    
+
     provides org.eclipse.jetty.websocket.core.Extension with
         org.eclipse.jetty.websocket.core.internal.FragmentExtension,
+        org.eclipse.jetty.websocket.core.internal.FrameCaptureExtension,
         org.eclipse.jetty.websocket.core.internal.IdentityExtension,
         org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension,
         org.eclipse.jetty.websocket.core.internal.ValidationExtension;

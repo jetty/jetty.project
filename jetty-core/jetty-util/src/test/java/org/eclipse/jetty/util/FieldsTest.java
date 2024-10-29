@@ -82,4 +82,18 @@ public class FieldsTest
 
         assertThat(set, containsInAnyOrder("x", "y", "z"));
     }
+
+    @Test
+    public void testNullValues()
+    {
+        Fields fields = new Fields();
+        fields.add("x", (String)null);
+        fields.add("y", "1", null, "2");
+        fields.put("z", null);
+
+        assertThat(fields.getSize(), equalTo(3));
+        assertThat(fields.getValues("x"), contains(""));
+        assertThat(fields.getValues("y"), contains("1", "", "2"));
+        assertThat(fields.getValues("z"), contains(""));
+    }
 }

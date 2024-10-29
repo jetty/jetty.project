@@ -867,6 +867,9 @@ public class WebAppContextTest
         Path warPath = createWar(testPath, "test.war");
         context.setBaseResource(context.getResourceFactory().newResource(warPath));
 
+        // Add test for old/original API (replaced with getHiddenClassMatcher() in ee10)
+        context.getServerClassMatcher().add("org.deprecated.api.");
+
         server.setHandler(context);
         server.start();
 
@@ -876,6 +879,7 @@ public class WebAppContextTest
         assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
         for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
             assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
+        assertThat("deprecated API", serverClasses, hasItem("org.deprecated.api."));
     }
 
     @Test
@@ -895,6 +899,9 @@ public class WebAppContextTest
         Path warPath = createWar(testPath, "test.war");
         context.setBaseResource(context.getResourceFactory().newResource(warPath));
 
+        // Add test for old/original API (replaced with getProtectedClassMatcher() in ee10)
+        context.getSystemClassMatcher().add("org.deprecated.api.");
+
         server.setHandler(context);
         server.start();
 
@@ -904,8 +911,7 @@ public class WebAppContextTest
         assertThat("Should have pattern from defaults", systemClasses, hasItem("jakarta."));
         assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
         for (String defaultSystemClass : WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
-        {
             assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
-        }
+        assertThat("deprecated API", systemClasses, hasItem("org.deprecated.api."));
     }
 }

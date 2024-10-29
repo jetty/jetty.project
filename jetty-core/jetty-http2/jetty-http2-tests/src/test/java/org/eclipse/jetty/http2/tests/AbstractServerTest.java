@@ -41,6 +41,7 @@ import org.junit.jupiter.api.AfterEach;
 
 public class AbstractServerTest
 {
+    protected HttpConfiguration httpConfig = new HttpConfiguration();
     protected ServerConnector connector;
     protected ByteBufferPool bufferPool;
     protected Generator generator;
@@ -49,14 +50,14 @@ public class AbstractServerTest
 
     protected void startServer(Handler handler) throws Exception
     {
-        prepareServer(new HTTP2ServerConnectionFactory(new HttpConfiguration()));
+        prepareServer(new HTTP2ServerConnectionFactory(httpConfig));
         server.setHandler(handler);
         server.start();
     }
 
     protected void startServer(ServerSessionListener listener) throws Exception
     {
-        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener));
+        prepareServer(new RawHTTP2ServerConnectionFactory(httpConfig, listener));
         server.start();
     }
 

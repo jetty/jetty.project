@@ -13,34 +13,55 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * Common components made available via a {@link Request}
+ * Common components made available via a {@link Request}.
  */
 public interface Components
 {
+    /**
+     * @return the {@link ByteBufferPool} associated with the {@link Request}
+     */
     ByteBufferPool getByteBufferPool();
 
+    /**
+     * @return the {@link Scheduler} associated with the {@link Request}
+     */
     Scheduler getScheduler();
 
+    /**
+     * @return the {@link ThreadPool} associated with the {@link Request}
+     * @deprecated use {@link #getExecutor()} instead
+     */
+    @Deprecated(since = "12.0.13", forRemoval = true)
     ThreadPool getThreadPool();
 
     /**
-     * A Map which can be used as a cache for object (e.g. Cookie cache).
-     * The cache will have a life cycle limited by the connection, i.e. no cache map will live
+     * @return the {@link Executor} associated with the {@link Request}
+     */
+    default Executor getExecutor()
+    {
+        return getThreadPool();
+    }
+
+    /**
+     * <p>A map-like object that can be used as a cache (for example, as a cookie cache).</p>
+     * <p>The cache will have a life cycle limited by the connection, i.e. no cache map will live
      * longer that the connection associated with it.  However, a cache may have a shorter life
      * than a connection (e.g. it may be discarded for implementation reasons).  A cache map is
      * guaranteed to be given to only a single request concurrently (scoped by
      * {@link org.eclipse.jetty.server.internal.HttpChannelState}), so objects saved there do not
      * need to be made safe from access by simultaneous request.
-     * If the connection is known to be none-persistent then the cache may be a noop
-     * cache and discard all items set on it.
+     * If the connection is known to be non-persistent then the cache may be a noop
+     * cache and discard all items set on it.</p>
      *
-     * @return A Map, which may be an empty map that discards all items.
+     * @return A map-like object, which may be an empty implementation that discards all items.
      */
     Attributes getCache();
 }

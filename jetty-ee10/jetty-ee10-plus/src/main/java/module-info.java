@@ -16,13 +16,14 @@ import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 
 module org.eclipse.jetty.ee10.plus
 {
-    requires org.eclipse.jetty.plus;
+    requires transitive org.eclipse.jetty.plus;
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.ee10.webapp;
 
     // Only required if using Transaction.
-    requires static jakarta.transaction;
+    requires static transitive jakarta.transaction;
+    requires org.eclipse.jetty.jndi;
 
     exports org.eclipse.jetty.ee10.plus.jndi;
     exports org.eclipse.jetty.ee10.plus.webapp;

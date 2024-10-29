@@ -217,4 +217,10 @@ public class MavenResource extends Resource
             return null;
         return _resource.resolve(subUriPath);
     }
+
+    @Override
+    public String toString()
+    {
+        return "(Maven) " + _resource.toString();
+    }
 }

@@ -34,6 +34,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,6 +60,7 @@ public class HttpURITest
 
         assertThat(uri.getScheme(), is("http"));
         assertThat(uri.getUser(), is("user:password"));
+        assertTrue(uri.hasViolation(Violation.USER_INFO));
         assertThat(uri.getHost(), is("host"));
         assertThat(uri.getPort(), is(8888));
         assertThat(uri.getPath(), is("/ignored/../p%61th;ignored/info;param"));
@@ -81,6 +83,7 @@ public class HttpURITest
 
         assertThat(uri.getScheme(), is("https"));
         assertThat(uri.getUser(), nullValue());
+        assertFalse(uri.hasViolation(Violation.USER_INFO));
         assertThat(uri.getHost(), is("[::1]"));
         assertThat(uri.getPort(), is(8080));
         assertThat(uri.getPath(), is("/some%20encoded/evening;id=12345"));
@@ -98,6 +101,7 @@ public class HttpURITest
 
         assertThat(uri.getScheme(), is("http"));
         assertThat(uri.getUser(), is("user:password"));
+        assertTrue(uri.hasViolation(Violation.USER_INFO));
         assertThat(uri.getHost(), is("host"));
         assertThat(uri.getPort(), is(8888));
         assertThat(uri.getPath(), is("/ignored/../p%61th;ignored/info;param"));
@@ -155,11 +159,8 @@ public class HttpURITest
         assertThat(uri.getHost(), is("foo"));
         assertThat(uri.getPath(), is("/bar"));
 
-        // We do allow nulls if not encoded.  This can be used for testing 2nd line of defence.
-        builder.uri("http://fo\000/bar");
-        uri = builder.asImmutable();
-        assertThat(uri.getHost(), is("fo\000"));
-        assertThat(uri.getPath(), is("/bar"));
+        // We do not allow nulls if not encoded.
+        assertThrows(IllegalArgumentException.class, () -> builder.uri("http://fo\000/bar").asImmutable());
     }
 
     @Test
@@ -327,6 +328,7 @@ public class HttpURITest
         assertEquals("http://user:password@example.com:8888/blah", uri.toString());
         assertEquals(uri.getAuthority(), "example.com:8888");
         assertEquals(uri.getUser(), "user:password");
+        assertTrue(uri.hasViolation(Violation.USER_INFO));
     }
 
     @Test
@@ -818,6 +820,15 @@ public class HttpURITest
             Arguments.of("http://localhost:8080/", "http", "localhost", "8080", "/", null, null, null),
             Arguments.of("http://localhost/?x=y", "http", "localhost", null, "/", null, "x=y", null),
 
+            // Empty Paths
+            Arguments.of("//localhost", null, "localhost", null, "", null, null, null),
+            Arguments.of("http://localhost", "http", "localhost", null, "", null, null, null),
+            Arguments.of("http://localhost?x=y", "http", "localhost", null, "", null, "x=y", null),
+            Arguments.of("http://localhost#frag", "http", "localhost", null, "", null, null, "frag"),
+            Arguments.of("http://localhost:8080", "http", "localhost", "8080", "", null, null, null),
+            Arguments.of("http://localhost:8080?x=y", "http", "localhost", "8080", "", null, "x=y", null),
+            Arguments.of("http://localhost:8080#frag", "http", "localhost", "8080", "", null, null, "frag"),
+
             // Simple path with parameter
             Arguments.of("/;param", null, null, null, "/;param", "param", null, null),
             Arguments.of(";param", null, null, null, ";param", "param", null, null),
@@ -1109,6 +1120,8 @@ public class HttpURITest
             Arguments.of("hTTps", "example.org", 443, "/", null, null, "https://example.org/"),
             Arguments.of("WS", "example.org", 8282, "/", null, null, "ws://example.org:8282/"),
             Arguments.of("wsS", "example.org", 8383, "/", null, null, "wss://example.org:8383/"),
+            // Undefined scheme
+            Arguments.of(null, "example.org", 8181, "/", null, null, "//example.org:8181/"),
             // Undefined Ports
             Arguments.of("http", "example.org", 0, "/", null, null, "http://example.org/"),
             Arguments.of("https", "example.org", -1, "/", null, null, "https://example.org/"),
@@ -1195,5 +1208,40 @@ public class HttpURITest
     {
         HttpURI httpURI = HttpURI.from(scheme, server, port, null);
         assertThat(httpURI.asString(), is(expectedStr));
+    }
+
+    public static Stream<String> badAuthorities()
+    {
+        return Stream.of(
+            "https:// host/path",
+            "https://h st/path",
+            "https://h\000st/path",
+            "https://h%GGst/path",
+            "https://host%/path",
+            "https://host%0/path",
+            "https://host%u001f/path",
+            "https://host%:8080/path",
+            "https://host%0:8080/path",
+            "https://user%@host/path",
+            "https://user%0@host/path",
+            "https://host:notport/path",
+            "https://user@host:notport/path",
+            "https://user:password@host:notport/path",
+            "https://user @host.com/",
+            // "https://user#@host.com/", TODO this might cause WhatWG compatibility issues
+            "https://[notIpv6]/",
+            "https://bad[0::1::2::3::4]/",
+
+            // Ambiguous empty path
+            "http://localhost;param",
+            "http://localhost:8080;param"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("badAuthorities")
+    public void testBadAuthority(String uri)
+    {
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.from(uri));
     }
 }

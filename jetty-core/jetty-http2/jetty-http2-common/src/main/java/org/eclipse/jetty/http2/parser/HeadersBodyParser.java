@@ -113,17 +113,19 @@ public class HeadersBodyParser extends BodyParser
                 }
                 case PADDING_LENGTH:
                 {
+                    if (length < 1)
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame_padding");
                     paddingLength = buffer.get() & 0xFF;
                     --length;
                     length -= paddingLength;
                     state = hasFlag(Flags.PRIORITY) ? State.EXCLUSIVE : State.HEADERS;
                     loop = length == 0;
-                    if (length < 0)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame_padding");
                     break;
                 }
                 case EXCLUSIVE:
                 {
+                    if (length < 5)
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     // We must only peek the first byte and not advance the buffer
                     // because the 31 least significant bits represent the stream id.
                     int currByte = buffer.get(buffer.position());
@@ -139,8 +141,6 @@ public class HeadersBodyParser extends BodyParser
                         parentStreamId &= 0x7F_FF_FF_FF;
                         length -= 4;
                         state = State.WEIGHT;
-                        if (length < 1)
-                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     }
                     else
                     {
@@ -155,14 +155,10 @@ public class HeadersBodyParser extends BodyParser
                     --cursor;
                     parentStreamId += currByte << (8 * cursor);
                     --length;
-                    if (cursor > 0 && length <= 0)
-                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     if (cursor == 0)
                     {
                         parentStreamId &= 0x7F_FF_FF_FF;
                         state = State.WEIGHT;
-                        if (length < 1)
-                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     }
                     break;
                 }
@@ -171,6 +167,7 @@ public class HeadersBodyParser extends BodyParser
                     // SPEC: stream cannot depend on itself.
                     if (getStreamId() == parentStreamId)
                         return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_priority_frame");
+                    // SPEC: for RFC 7540 weight is 1..256, for RFC 9113 is an unused value.
                     weight = (buffer.get() & 0xFF) + 1;
                     --length;
                     state = State.HEADERS;

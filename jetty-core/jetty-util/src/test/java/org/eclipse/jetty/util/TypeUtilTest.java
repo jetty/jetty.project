@@ -267,4 +267,34 @@ public class TypeUtilTest
         assertThat(TypeUtil.ceilToNextPowerOfTwo(5), is(8));
         assertThat(TypeUtil.ceilToNextPowerOfTwo(Integer.MAX_VALUE - 1), is(Integer.MAX_VALUE));
     }
+
+    public static class Base
+    {
+        protected String methodA(String arg)
+        {
+            return "a" + arg.length();
+        }
+
+        protected String methodB(String arg)
+        {
+            return "b" + arg.length();
+        }
+    }
+
+    public static class Example extends Base
+    {
+        @Override
+        protected String methodB(String arg)
+        {
+            return "B" + arg;
+        }
+    }
+
+    @Test
+    public void testIsMethodDeclaredOn()
+    {
+        Example example = new Example();
+        assertFalse(TypeUtil.isDeclaredMethodOn(example, "methodA", String.class));
+        assertTrue(TypeUtil.isDeclaredMethodOn(example, "methodB", String.class));
+    }
 }

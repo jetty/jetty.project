@@ -57,8 +57,7 @@ public class ConscryptHTTP2ClientTest
         sslContextFactory.setProvider("Conscrypt");
         Conscrypt.setDefaultHostnameVerifier((certs, hostname, session) -> true);
 
-        HTTP2Client client = new HTTP2Client();
-        try
+        try (HTTP2Client client = new HTTP2Client())
         {
             client.addBean(sslContextFactory);
             client.start();
@@ -96,10 +95,6 @@ public class ConscryptHTTP2ClientTest
             });
 
             assertTrue(latch.await(15, TimeUnit.SECONDS));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 

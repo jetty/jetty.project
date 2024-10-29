@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -46,6 +47,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public interface ByteBufferPool
 {
     ByteBufferPool NON_POOLING = new NonPooling();
+    ByteBufferPool.Sized SIZED_NON_POOLING = new Sized(ByteBufferPool.NON_POOLING);
 
     /**
      * <p>Acquires a {@link RetainableByteBuffer} from this pool.</p>
@@ -55,6 +57,20 @@ public interface ByteBufferPool
      * @return a {@link RetainableByteBuffer} with position and limit set to 0.
      */
     RetainableByteBuffer acquire(int size, boolean direct);
+
+    /**
+     * {@link RetainableByteBuffer#release() Release} the buffer in a way that will remove it from any pool that it may be in.
+     * If the buffer is not in a pool, calling this method is equivalent to calling {@link RetainableByteBuffer#release()}.
+     * Calling this method satisfies any contract that requires a call to {@link RetainableByteBuffer#release()}.
+     * @return {@code true} if a call to {@link RetainableByteBuffer#release()} would have returned {@code true}.
+     * @see RetainableByteBuffer#release()
+     * @deprecated This API is experimental and may be removed in future releases
+     */
+    @Deprecated
+    default boolean removeAndRelease(RetainableByteBuffer buffer)
+    {
+        return buffer != null && buffer.release();
+    }
 
     /**
      * <p>Removes all {@link RetainableByteBuffer#isRetained() non-retained}
@@ -89,6 +105,56 @@ public interface ByteBufferPool
         public void clear()
         {
             getWrapped().clear();
+        }
+    }
+
+    /**
+     * A ByteBufferPool with an additional no-args {@link #acquire()} method to obtain a buffer of a
+     * preconfigured specific size and type.
+     */
+    class Sized extends Wrapper
+    {
+        private final boolean _direct;
+        private final int _size;
+
+        /**
+         * Create a sized pool for non direct buffers of a default size from a wrapped pool.
+         * @param wrapped The actual {@link ByteBufferPool}
+         */
+        public Sized(ByteBufferPool wrapped)
+        {
+            this(wrapped, false, -1);
+        }
+
+        /**
+         * Create a sized pool for a give directness and size from a wrapped pool.
+         * @param wrapped The actual {@link ByteBufferPool}
+         * @param direct {@code true} for direct buffers.
+         * @param size The specified size in bytes of the buffer, or -1 for a default
+         */
+        public Sized(ByteBufferPool wrapped, boolean direct, int size)
+        {
+            super(Objects.requireNonNullElse(wrapped, NON_POOLING));
+            _direct = direct;
+            _size = size > 0 ? size : 4096;
+        }
+
+        public boolean isDirect()
+        {
+            return _direct;
+        }
+
+        public int getSize()
+        {
+            return _size;
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured size and type.
+         */
+        public RetainableByteBuffer acquire()
+        {
+            return getWrapped().acquire(_size, _direct);
         }
     }
 
