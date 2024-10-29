@@ -16,7 +16,10 @@ package org.eclipse.jetty.client.http;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +32,7 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.hamcrest.Matchers;
@@ -39,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.wildfly.common.Assert.assertFalse;
 
 public class HttpSenderOverHTTPTest
 {
@@ -301,5 +306,188 @@ public class HttpSenderOverHTTPTest
         assertTrue(requestString.endsWith("\r\n\r\n" + content));
         assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
         assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    private static Random rnd = new Random();
+    private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
+
+    public static final int CHARS_LENGTH = CHARS.length();
+
+    protected static String getRandomString(int size) {
+        StringBuilder sb = new StringBuilder(size);
+        while (sb.length() < size) { // length of the random string.
+            int index = rnd.nextInt(CHARS_LENGTH);
+            sb.append(CHARS.charAt(index));
+        }
+        return sb.toString();
+    }
+
+    @Test
+    public void testSmallHeadersSize() throws Exception
+    {
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
+        destination.start();
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        Request request = client.newRequest(URI.create("http://localhost/"));
+        request.agent(getRandomString(888)); //More than the request buffer size, but less than the default max request headers size
+        final CountDownLatch headersLatch = new CountDownLatch(1);
+        final CountDownLatch successLatch = new CountDownLatch(1);
+        final CountDownLatch failureLatch = new CountDownLatch(1);
+        request.listener(new Request.Listener()
+        {
+            @Override
+            public void onHeaders(Request request)
+            {
+                headersLatch.countDown();
+            }
+
+            @Override
+            public void onSuccess(Request request)
+            {
+                successLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Request request, Throwable failure) {
+                failureLatch.countDown();
+            }
+        });
+        connection.send(request, null);
+
+        String requestString = endPoint.takeOutputString();
+        assertTrue(requestString.startsWith("GET / HTTP/1.1\r\nAccept-Encoding: gzip\r\n"));
+        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testMaxRequestHeadersSize() throws Exception
+    {
+        byte[] buffer = new byte[32 * 1024];
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(buffer, buffer.length);
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
+        destination.start();
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        Request request = client.newRequest(URI.create("http://localhost/"));
+        //More than the request buffer size, but less than the default max request headers size
+
+        int desiredHeadersSize = 20 * 1024;
+        int currentHeadersSize = 0;
+        int i = 0;
+        while(currentHeadersSize < desiredHeadersSize) {
+            final int index = i ++;
+            final String headerValue = getRandomString(800);
+            final int headerSize = headerValue.length();
+            currentHeadersSize += headerSize;
+            request.cookie(new HttpCookie() {
+                @Override
+                public String getName() {
+                    return "large" + index;
+                }
+
+                @Override
+                public String getValue() {
+                    return headerValue;
+                }
+
+                @Override
+                public int getVersion() {
+                    return 0;
+                }
+
+                @Override
+                public Map<String, String> getAttributes() {
+                    return new HashMap<>();
+                }
+            });
+        }
+
+        final CountDownLatch headersLatch = new CountDownLatch(1);
+        final CountDownLatch successLatch = new CountDownLatch(1);
+        request.listener(new Request.Listener()
+        {
+            @Override
+            public void onHeaders(Request request)
+            {
+                headersLatch.countDown();
+            }
+
+            @Override
+            public void onSuccess(Request request)
+            {
+                successLatch.countDown();
+            }
+        });
+        connection.send(request, null);
+
+        String requestString = endPoint.takeOutputString();
+        assertTrue(requestString.startsWith("GET / HTTP/1.1\r\nAccept-Encoding: gzip\r\n"));
+        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testMaxRequestHeadersSizeOverflow() throws Exception
+    {
+        byte[] buffer = new byte[32 * 1024];
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(buffer, buffer.length);
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
+        destination.start();
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        Request request = client.newRequest(URI.create("http://localhost/"));
+        //More than the request buffer size, but less than the default max request headers size
+
+        int desiredHeadersSize = 35 * 1024;
+        int currentHeadersSize = 0;
+        int i = 0;
+        while(currentHeadersSize < desiredHeadersSize) {
+            final int index = i ++;
+            final String headerValue = getRandomString(800);
+            final int headerSize = headerValue.length();
+            currentHeadersSize += headerSize;
+            request.cookie(new HttpCookie() {
+                @Override
+                public String getName() {
+                    return "large" + index;
+                }
+
+                @Override
+                public String getValue() {
+                    return headerValue;
+                }
+
+                @Override
+                public int getVersion() {
+                    return 0;
+                }
+
+                @Override
+                public Map<String, String> getAttributes() {
+                    return new HashMap<>();
+                }
+            });
+        }
+
+        final CountDownLatch headersLatch = new CountDownLatch(1);
+        final CountDownLatch failureLatch = new CountDownLatch(1);
+        request.listener(new Request.Listener()
+        {
+            @Override
+            public void onHeaders(Request request)
+            {
+                headersLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Request request, Throwable failure)
+            {
+                failureLatch.countDown();
+            }
+        });
+        connection.send(request, null);
+
+        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
     }
 }
