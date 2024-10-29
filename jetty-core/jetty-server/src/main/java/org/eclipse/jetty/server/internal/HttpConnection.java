@@ -770,16 +770,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(Math.min(getHttpConfiguration().getResponseHeaderSize(), getHttpConfiguration().getOutputBufferSize()), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        if (_header.capacity() >= getHttpConfiguration().getResponseHeaderSize())
-                            throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response Header Fields Too Large");
-                        releaseHeader();
-                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
-                        continue;
+                        throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response Header Fields Too Large");
                     }
                     case NEED_CHUNK:
                     {
@@ -915,7 +911,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void onCompleteFailure(final Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
             failedCallback(release(), x);
         }
