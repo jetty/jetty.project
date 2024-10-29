@@ -135,6 +135,7 @@ public class HttpClient extends ContainerLifeCycle
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
+    private int maxRequestHeadersSize = 32 * 1024;
     private int maxResponseHeadersSize = -1;
     private Sweeper destinationSweeper;
 
@@ -1140,5 +1141,13 @@ public class HttpClient extends ContainerLifeCycle
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
         return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
+    }
+
+    public int getMaxRequestHeadersSize() {
+        return maxRequestHeadersSize;
+    }
+
+    public void setMaxRequestHeadersSize(int maxRequestHeadersSize) {
+        this.maxRequestHeadersSize = maxRequestHeadersSize;
     }
 }

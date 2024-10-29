@@ -178,9 +178,21 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     case HEADER_OVERFLOW:
                     {
-                        headerBuffer.release();
-                        headerBuffer = null;
-                        throw new IllegalArgumentException("Request header too large");
+                        int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
+                        if (headerBuffer.capacity() < maxRequestHeadersSize) {
+                            RetainableByteBuffer newHeaderBuffer = bufferPool.acquire(maxRequestHeadersSize, useDirectByteBuffers);
+                            headerBuffer.getByteBuffer().flip();
+                            newHeaderBuffer.getByteBuffer().put(headerBuffer.getByteBuffer());
+                            RetainableByteBuffer toRelease = headerBuffer;
+                            headerBuffer  = newHeaderBuffer;
+                            toRelease.release();
+                            break;
+                        }
+                        else {
+                            headerBuffer.release();
+                            headerBuffer = null;
+                            throw new IllegalArgumentException("Request header too large");
+                        }
                     }
                     case NEED_CHUNK:
                     {
