@@ -130,7 +130,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     public static CompletableFuture<Fields> from(Request request, Charset charset)
     {
         int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
-        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
         return from(request, charset, maxFields, maxLength);
     }
 
