@@ -16,7 +16,9 @@ package org.eclipse.jetty.client.transport.internal;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpRequestException;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpSender;
@@ -179,9 +181,29 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     case HEADER_OVERFLOW:
                     {
-                        headerBuffer.release();
-                        headerBuffer = null;
-                        throw new IllegalArgumentException("Request header too large");
+                        int maxRequestHeadersSize = -1;
+                        //For HTTP1.1 only
+                        HttpClientTransport transport = httpClient.getTransport();
+                        if (transport instanceof HttpClientTransportOverHTTP httpTransport)
+                        {
+                            maxRequestHeadersSize = httpTransport.getMaxRequestHeadersSize();
+                        }
+                        if (headerBuffer.capacity() < maxRequestHeadersSize)
+                        {
+                            RetainableByteBuffer newHeaderBuffer = bufferPool.acquire(maxRequestHeadersSize, useDirectByteBuffers);
+                            headerBuffer.getByteBuffer().flip();
+                            newHeaderBuffer.getByteBuffer().put(headerBuffer.getByteBuffer());
+                            RetainableByteBuffer toRelease = headerBuffer;
+                            headerBuffer  = newHeaderBuffer;
+                            toRelease.release();
+                            break;
+                        }
+                        else
+                        {
+                            headerBuffer.release();
+                            headerBuffer = null;
+                            throw new IllegalArgumentException("Request header too large");
+                        }
                     }
                     case NEED_CHUNK:
                     {
