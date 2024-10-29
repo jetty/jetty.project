@@ -408,7 +408,6 @@ public class ThreadStarvationTest
         }
     }
 
-
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
