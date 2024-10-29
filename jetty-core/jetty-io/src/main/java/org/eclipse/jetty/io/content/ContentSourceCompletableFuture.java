@@ -14,9 +14,22 @@
 package org.eclipse.jetty.io.content;
 
 import java.io.EOFException;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.Invocable;
+
+import static org.eclipse.jetty.util.thread.Invocable.combine;
+import static org.eclipse.jetty.util.thread.Invocable.combineTypes;
 
 /**
  * <p>A utility class to convert content from a {@link Content.Source} to an instance
@@ -53,9 +66,10 @@ import org.eclipse.jetty.util.thread.Invocable;
  * String s = cs.get();
  * }</pre>
  */
-public abstract class ContentSourceCompletableFuture<X> extends Invocable.InvocableCompletableFuture<X> implements Runnable
+public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X> implements Runnable, Invocable
 {
     private final Content.Source _content;
+    private final InvocationType _invocationType;
 
     public ContentSourceCompletableFuture(Content.Source content)
     {
@@ -64,7 +78,9 @@ public abstract class ContentSourceCompletableFuture<X> extends Invocable.Invoca
 
     public ContentSourceCompletableFuture(Content.Source content, InvocationType invocationType)
     {
-        super(invocationType);
+        _invocationType = Objects.requireNonNull(invocationType);
+        if (_invocationType == InvocationType.EITHER)
+            throw new IllegalArgumentException("EITHER is not supported");
         _content = content;
     }
 
@@ -132,12 +148,6 @@ public abstract class ContentSourceCompletableFuture<X> extends Invocable.Invoca
         }
     }
 
-    @Override
-    public void run()
-    {
-        parse();
-    }
-
     /**
      * <p>Called by {@link #parse()} to parse a {@link org.eclipse.jetty.io.Content.Chunk}.</p>
      *
@@ -161,6 +171,139 @@ public abstract class ContentSourceCompletableFuture<X> extends Invocable.Invoca
     protected boolean onTransientFailure(Throwable cause)
     {
         return false;
+    }
+
+    @Override
+    public void run()
+    {
+        parse();
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<Void> acceptEither(CompletionStage<? extends X> other, Consumer<? super X> action)
+    {
+        if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(action)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+
+        return super.acceptEither(other, action);
+    }
+
+    @Override
+    public <U> java.util.concurrent.CompletableFuture<U> applyToEither(CompletionStage<? extends X> other, Function<? super X, U> fn)
+    {
+        if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(fn)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.applyToEither(other, fn);
+    }
+
+    @Override
+    public X get() throws InterruptedException, ExecutionException
+    {
+        if (getInvocationType() == InvocationType.BLOCKING && !isDone())
+            throw new IllegalStateException("Must be NON_BLOCKING or completed");
+        return super.get();
+    }
+
+    @Override
+    public X get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        if (getInvocationType() == InvocationType.BLOCKING && !isDone())
+            throw new IllegalStateException("Must be NON_BLOCKING or completed");
+        return super.get(timeout, unit);
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return _invocationType;
+    }
+
+    @Override
+    public <U> java.util.concurrent.CompletableFuture<U> handle(BiFunction<? super X, Throwable, ? extends U> fn)
+    {
+        if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(fn)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.handle(fn);
+    }
+
+    @Override
+    public X join()
+    {
+        if (!isDone() && getInvocationType() == InvocationType.BLOCKING && !isDone())
+            throw new IllegalStateException("Must be NON_BLOCKING or completed");
+        return super.join();
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<Void> runAfterBoth(CompletionStage<?> other, Runnable action)
+    {
+        if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(action)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.runAfterBoth(other, action);
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<Void> runAfterEither(CompletionStage<?> other, Runnable action)
+    {
+        if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(action)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.runAfterEither(other, action);
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<Void> thenAccept(Consumer<? super X> action)
+    {
+        if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(action)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.thenAccept(action);
+    }
+
+    @Override
+    public <U> java.util.concurrent.CompletableFuture<Void> thenAcceptBoth(CompletionStage<? extends U> other, BiConsumer<? super X, ? super U> action)
+    {
+        if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(action)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.thenAcceptBoth(other, action);
+    }
+
+    @Override
+    public <U> java.util.concurrent.CompletableFuture<U> thenApply(Function<? super X, ? extends U> fn)
+    {
+        if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(fn)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.thenApply(fn);
+    }
+
+    @Override
+    public <U, V1> java.util.concurrent.CompletableFuture<V1> thenCombine(CompletionStage<? extends U> other, BiFunction<? super X, ? super U, ? extends V1> fn)
+    {
+        if (!isDone() && getInvocationType() != combineTypes(getInvocationType(), Invocable.getInvocationType(other), Invocable.getInvocationType(fn)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.thenCombine(other, fn);
+    }
+
+    @Override
+    public <U> java.util.concurrent.CompletableFuture<U> thenCompose(Function<? super X, ? extends CompletionStage<U>> fn)
+    {
+        if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(fn)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.thenCompose(fn);
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<Void> thenRun(Runnable action)
+    {
+        if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(action)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.thenRun(action);
+    }
+
+    @Override
+    public java.util.concurrent.CompletableFuture<X> whenComplete(BiConsumer<? super X, ? super Throwable> action)
+    {
+        if (!isDone() && getInvocationType() != combine(getInvocationType(), Invocable.getInvocationType(action)))
+            throw new IllegalStateException("Bad invocation type when not completed");
+        return super.whenComplete(action);
     }
 }
 

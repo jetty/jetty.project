@@ -200,7 +200,7 @@ public class ServletMultiPartFormData
                         .maxSize(config.getMaxRequestSize())
                         .build();
 
-                    futureServletParts = new Invocable.InvocableCompletableFuture<>(invocationType);
+                    futureServletParts = new CompletableFuture<>();
                     CompletableFuture<Parts> futureConvertParts = futureServletParts;
 
                     Promise.Invocable<MultiPartFormData.Parts> onParts = new Promise.Invocable<>()
