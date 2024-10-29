@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpException;
@@ -69,6 +71,7 @@ public class ErrorHandler implements Request.Handler
     public static final String ERROR_MESSAGE = "org.eclipse.jetty.server.error_message";
     public static final String ERROR_EXCEPTION = "org.eclipse.jetty.server.error_exception";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
+    public static final String ERROR_ORIGIN = "org.eclipse.jetty.server.error_origin";
     public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD", "BAD");
     public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
@@ -76,6 +79,7 @@ public class ErrorHandler implements Request.Handler
     boolean _showCauses = false;
     boolean _showMessageInTitle = true;
     int _bufferSize = -1;
+    boolean _showOrigin = false;
     String _defaultResponseMimeType = Type.TEXT_HTML.asString();
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
@@ -93,8 +97,8 @@ public class ErrorHandler implements Request.Handler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("handle({}, {}, {})", request, response, callback);
-        if (_cacheControl != null)
-            response.getHeaders().put(_cacheControl);
+
+        generateCacheControl(response);
 
         int code = response.getStatus();
         String message = (String)request.getAttribute(ERROR_MESSAGE);
@@ -118,6 +122,12 @@ public class ErrorHandler implements Request.Handler
             generateResponse(request, response, code, message, cause, callback);
         }
         return true;
+    }
+
+    protected void generateCacheControl(Response response)
+    {
+        if (_cacheControl != null && response != null)
+            response.getHeaders().put(_cacheControl);
     }
 
     protected void generateResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
@@ -218,9 +228,9 @@ public class ErrorHandler implements Request.Handler
 
                     switch (type)
                     {
-                        case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
-                        case TEXT_JSON, APPLICATION_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
-                        case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause, showStacks);
+                        case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause);
+                        case TEXT_JSON, APPLICATION_JSON -> writeErrorJson(request, writer, code, message, cause);
+                        case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause);
                         default -> throw new IllegalStateException();
                     }
 
@@ -273,7 +283,7 @@ public class ErrorHandler implements Request.Handler
         return bufferSize;
     }
 
-    protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks) throws IOException
+    protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause) throws IOException
     {
         if (message == null)
             message = HttpStatus.getMessage(code);
@@ -282,7 +292,7 @@ public class ErrorHandler implements Request.Handler
         writeErrorHtmlMeta(request, writer, charset);
         writeErrorHtmlHead(request, writer, code, message);
         writer.write("</head>\n<body>\n");
-        writeErrorHtmlBody(request, writer, code, message, cause, showStacks);
+        writeErrorHtmlBody(request, writer, code, message, cause);
         writer.write("\n</body>\n</html>\n");
     }
 
@@ -306,12 +316,12 @@ public class ErrorHandler implements Request.Handler
         writer.write("</title>\n");
     }
 
-    protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
+    protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause) throws IOException
     {
         String uri = request.getHttpURI().toString();
 
         writeErrorHtmlMessage(request, writer, code, message, cause, uri);
-        if (showStacks)
+        if (isShowStacks())
             writeErrorHtmlStacks(request, writer);
 
         request.getConnectionMetaData().getHttpConfiguration()
@@ -333,6 +343,18 @@ public class ErrorHandler implements Request.Handler
         htmlRow(writer, "URI", uri);
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
+        writeErrorOrigin((String)request.getAttribute(ERROR_ORIGIN), (o) ->
+        {
+            try
+            {
+                htmlRow(writer, "ORIGIN", o);
+            }
+            catch (IOException x)
+            {
+                throw new UncheckedIOException(x);
+            }
+        });
+
         while (_showCauses && cause != null)
         {
             htmlRow(writer, "CAUSED BY", cause);
@@ -341,7 +363,7 @@ public class ErrorHandler implements Request.Handler
         writer.write("</table>\n");
     }
 
-    private void htmlRow(Writer writer, String tag, Object value) throws IOException
+    protected void htmlRow(Writer writer, String tag, Object value) throws IOException
     {
         writer.write("<tr><th>");
         writer.write(tag);
@@ -353,7 +375,7 @@ public class ErrorHandler implements Request.Handler
         writer.write("</td></tr>\n");
     }
 
-    protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause)
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
@@ -366,22 +388,32 @@ public class ErrorHandler implements Request.Handler
         writer.printf("URI: %s%n", request.getHttpURI());
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
+
+        writeErrorOrigin((String)request.getAttribute(ERROR_ORIGIN), (o) -> writer.printf("ORIGIN: %s%n", o));
+
         while (_showCauses && cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
-            if (showStacks)
+            if (isShowStacks())
                 cause.printStackTrace(writer);
             cause = cause.getCause();
         }
     }
 
-    protected void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorOrigin(String origin, Consumer<String> consumer)
+    {
+        if (_showOrigin && origin != null)
+            consumer.accept(origin);
+    }
+
+    protected void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause)
     {
         Map<String, String> json = new HashMap<>();
 
         json.put("url", request.getHttpURI().toString());
         json.put("status", Integer.toString(code));
         json.put("message", message);
+        writeErrorOrigin((String)request.getAttribute(ERROR_ORIGIN), (o) -> json.put("origin", o));
         int c = 0;
         while (_showCauses && cause != null)
         {
@@ -500,6 +532,16 @@ public class ErrorHandler implements Request.Handler
     public void setShowMessageInTitle(boolean showMessageInTitle)
     {
         _showMessageInTitle = showMessageInTitle;
+    }
+
+    public boolean isShowOrigin()
+    {
+        return _showOrigin;
+    }
+
+    public void setShowOrigin(boolean showOrigin)
+    {
+        _showOrigin = showOrigin;
     }
 
     /**

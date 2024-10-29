@@ -704,7 +704,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private void checkWritable() throws EofException
     {
         if (_softClose)
-                throw new EofException("Closed");
+            throw new EofException("Closed");
 
         switch (_state)
         {

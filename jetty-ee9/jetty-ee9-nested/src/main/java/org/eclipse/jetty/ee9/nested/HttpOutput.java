@@ -319,13 +319,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (LOG.isDebugEnabled())
             LOG.debug("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
-                last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
+                last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake, failure);
 
         try
         {
-            if (failure != null)
-                _channel.abort(failure);
-
             if (closedCallback != null)
             {
                 if (failure == null)
@@ -772,7 +769,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private void checkWritable() throws EofException
     {
         if (_softClose)
-                throw new EofException("Closed");
+            throw new EofException("Closed");
 
         switch (_state)
         {
@@ -1344,7 +1341,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to send resource {}", resource, x);
-            _channel.abort(x);
             callback.failed(x);
         }
     }
