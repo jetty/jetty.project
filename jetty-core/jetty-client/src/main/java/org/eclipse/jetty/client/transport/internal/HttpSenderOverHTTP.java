@@ -155,7 +155,7 @@ public class HttpSenderOverHTTP extends HttpSender
         protected Action process() throws Exception
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
-            HttpExchange exchange = getHttpChannel().getHttpExchange();
+            HttpExchange exchange = getHttpExchange();
 
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
