@@ -21,6 +21,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.internal.HttpConnection;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
@@ -1744,14 +1746,13 @@ public class HttpConnectionTest
                     Content.Chunk chunk = request.read();
                     if (chunk == null)
                     {
-                        try
+                        try (Blocker.Runnable blocker = Blocker.runnable())
                         {
                             blocked.countDown();
-                            CountDownLatch blocker = new CountDownLatch(1);
-                            request.demand(blocker::countDown);
-                            blocker.await();
+                            request.demand(blocker);
+                            blocker.block();
                         }
-                        catch (InterruptedException e)
+                        catch (IOException e)
                         {
                             // ignored
                         }

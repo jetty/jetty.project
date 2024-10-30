@@ -37,6 +37,15 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 
+/**
+ * A {@link Handler.Wrapper} that can delay calling {@link Handler#handle(Request, Response, Callback)} on the
+ * {@link #getHandler() next Handler} until content is available, either entirely or in part.  This handler is fully
+ * asynchronous and will not block waiting for content.   Furthermore, for known content types, the content may be
+ * parsed into {@link FormFields} or {@link MultiPartFormData.Parts} prior to handling.
+ * <p>
+ * This handler can allow a blocking application to run without blocking on input, as the content is asynchronously
+ * read before the application is called.
+ */
 public class DelayedHandler extends Handler.Wrapper
 {
     public DelayedHandler()
@@ -110,7 +119,7 @@ public class DelayedHandler extends Handler.Wrapper
 
         // if no known mimeType, then only delay until content if configured
         if (mimeType == null)
-            return delayDispatchUntilContent ? new UntilContentDelayedProcess(handler, request, response, callback) : null;
+            return delayDispatchUntilContent ? newUntilContentDelayedProcess(handler, request, response, callback) : null;
 
         // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
         return switch (mimeType)
@@ -129,8 +138,13 @@ public class DelayedHandler extends Handler.Wrapper
                 yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, config);
             }
             // if other mimeType, then only delay until content if configured
-            default -> delayDispatchUntilContent ? new UntilContentDelayedProcess(handler, request, response, callback) : null;
+            default -> delayDispatchUntilContent ? newUntilContentDelayedProcess(handler, request, response, callback) : null;
         };
+    }
+
+    protected DelayedProcess newUntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
+    {
+        return new UntilContentDelayedProcess(handler, request, response, callback, -1);
     }
 
     protected abstract static class DelayedProcess
@@ -196,17 +210,26 @@ public class DelayedHandler extends Handler.Wrapper
     }
 
     /**
-     * Delay dispatch until all content or 75% of an input buffer is received.
+     * Delay dispatch until all content or an effective buffer size is reached
      */
     protected static class UntilContentDelayedProcess extends DelayedProcess implements Runnable
     {
         private final Deque<Content.Chunk> _chunks = new ArrayDeque<>();
-        private int _space;
+        private final int _maxSize;
+        private int _estimatedSize;
 
-        public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
+        /**
+         * @param handler The next handler
+         * @param request The delayed request
+         * @param response The delayed response
+         * @param callback The delayed callback
+         * @param maxSize The maximum size to buffer before dispatching to the next handler;
+         *                or -1 to use {@link HttpConnectionFactory#getInputBufferSize()}
+         */
+        public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback, int maxSize)
         {
             super(handler, request, response, callback);
-            _space = request.getConnectionMetaData().getConnector().getConnectionFactory(HttpConnectionFactory.class).getInputBufferSize();
+            _maxSize = maxSize < 0 ? request.getConnectionMetaData().getConnector().getConnectionFactory(HttpConnectionFactory.class).getInputBufferSize() : maxSize;
         }
 
         @Override
@@ -238,10 +261,10 @@ public class DelayedHandler extends Handler.Wrapper
                     break;
                 }
 
-                // reduce the buffer space by a guessed 8 byte framing overhead and the chunk size
-                _space -= 8 + chunk.remaining();
+                // Estimated size is 8 byte framing overhead per chunk plus the chunk size
+                _estimatedSize += 8 + chunk.remaining();
 
-                if (chunk.isLast() || _space <= 0)
+                if (chunk.isLast() || _estimatedSize >= _maxSize)
                 {
                     if (execute)
                         getRequest().getContext().execute(this);

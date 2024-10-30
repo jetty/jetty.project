@@ -104,10 +104,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private volatile RetainableByteBuffer _requestBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
-    private long _requests;
-    private long _responses;
-    private long _bytesIn;
-    private long _bytesOut;
+    private final AtomicLong _requests = new AtomicLong();
+    private final AtomicLong _responses = new AtomicLong();
+    private final AtomicLong _bytesIn = new AtomicLong();
+    private final AtomicLong _bytesOut = new AtomicLong();
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -264,13 +264,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public long getMessagesIn()
     {
-        return _requests;
+        return _requests.get();
     }
 
     @Override
     public long getMessagesOut()
     {
-        return _responses;
+        return _responses.get();
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -569,7 +569,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 LOG.debug("filled {} {} {}", filled, _requestBuffer, this);
 
             if (filled > 0)
-                _bytesIn += filled;
+                _bytesIn.addAndGet(filled);
             else if (filled < 0)
                 _parser.atEOF();
 
@@ -661,13 +661,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public long getBytesIn()
     {
-        return _bytesIn;
+        return _bytesIn.get();
     }
 
     @Override
     public long getBytesOut()
     {
-        return _bytesOut;
+        return _bytesOut.get();
     }
 
     @Override
@@ -834,7 +834,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                             gatherWrite += 1;
                             bytes += _content.remaining();
                         }
-                        HttpConnection.this._bytesOut += bytes;
+                        _bytesOut.addAndGet(bytes);
                         switch (gatherWrite)
                         {
                             case 7:
@@ -1270,7 +1270,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             };
 
             Runnable handle = _httpChannel.onRequest(_request);
-            _requests++;
+            _requests.incrementAndGet();
 
             Request request = _httpChannel.getRequest();
             getHttpChannel().getComplianceViolationListener().onRequestBegin(request);
@@ -1434,7 +1434,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
             else
             {
-                _responses++;
+                _responses.incrementAndGet();
                 if (_expects100Continue)
                 {
                     if (response.getStatus() == HttpStatus.CONTINUE_100)
