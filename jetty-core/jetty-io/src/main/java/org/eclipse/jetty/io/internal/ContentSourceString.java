@@ -76,7 +76,7 @@ public class ContentSourceString
         }
     }
 
-    private class DemandTask extends Invocable.AbstractTask
+    private class DemandTask extends Invocable.Task.Abstract
     {
         DemandTask()
         {

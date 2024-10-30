@@ -883,7 +883,7 @@ public class MultiPart
             FIRST, MIDDLE, HEADERS, CONTENT, COMPLETE
         }
 
-        private class DemandTask extends Invocable.AbstractTask
+        private class DemandTask extends Invocable.Task.Abstract
         {
             private final Runnable demandCallback;
 

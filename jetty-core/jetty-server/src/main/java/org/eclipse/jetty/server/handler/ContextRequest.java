@@ -59,7 +59,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable
         return _context;
     }
 
-    private class DemandTask extends AbstractTask
+    private class DemandTask extends Task.Abstract
     {
         private final Runnable _demandCallback;
 

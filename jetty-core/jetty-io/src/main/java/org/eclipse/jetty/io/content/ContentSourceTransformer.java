@@ -160,7 +160,7 @@ public abstract class ContentSourceTransformer implements Content.Source
      */
     protected abstract Content.Chunk transform(Content.Chunk inputChunk);
 
-    private class DemandTask extends Invocable.AbstractTask
+    private class DemandTask extends Invocable.Task.Abstract
     {
         private final Runnable invokeDemandCallback;
 

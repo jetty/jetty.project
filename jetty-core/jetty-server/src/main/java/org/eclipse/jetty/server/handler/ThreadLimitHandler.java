@@ -368,7 +368,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             }
         }
 
-        private class DemandTask extends Invocable.AbstractTask
+        private class DemandTask extends Task.Abstract
         {
             private DemandTask(InvocationType invocationType)
             {

@@ -111,6 +111,30 @@ public interface Invocable
      */
     interface Task extends Invocable, Runnable
     {
+        /**
+         * An abstract partial implementation of Task
+         */
+        abstract class Abstract implements Task
+        {
+            private final InvocationType type;
+
+            public Abstract(InvocationType type)
+            {
+                this.type = type;
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return type;
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getInvocationType());
+            }
+        }
     }
 
     // TODO review.  Handy for lambdas that throw (eg LifeCycle#start())
@@ -120,32 +144,10 @@ public interface Invocable
         void call() throws Exception;
     }
 
-    abstract class AbstractTask implements Task
-    {
-        private final InvocationType type;
-
-        public AbstractTask(InvocationType type)
-        {
-            this.type = type;
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return type;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getInvocationType());
-        }
-    }
-
     /**
      * <p>A {@link Runnable} decorated with an {@link InvocationType}.</p>
      */
-    class ReadyTask extends AbstractTask
+    class ReadyTask extends Task.Abstract
     {
         private final Runnable task;
 
