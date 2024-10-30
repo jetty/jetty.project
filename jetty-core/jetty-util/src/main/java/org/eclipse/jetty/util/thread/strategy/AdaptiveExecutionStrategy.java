@@ -323,6 +323,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 // The produced task may be run either as blocking or non blocking.
 
                 // If the calling producing thread is already non-blocking, use PC.
+                // Since the task is EITHER, it must check Invocable#isNonBlockingInvocation, which is already set.
                 if (nonBlocking)
                     return SubStrategy.PRODUCE_CONSUME;
 
@@ -343,7 +344,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
 
                     if (pending > 0)
                     {
-                        // Use EPC: the producer directly consumes the task, which may block
+                        // Use EPC: this producer thread directly consumes the task, which may block
                         // and then races with the pending producer to resume production.
                         if (!_state.compareAndSet(biState, pending, IDLE))
                             continue;
@@ -355,8 +356,9 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     break;
                 }
 
-                // Otherwise use PIC: the producer consumes the task
+                // Otherwise use PIC: this producer thread consumes the task
                 // in non-blocking mode and then resumes production.
+                // Since the task is EITHER, it must check Invocable#isNonBlockingInvocation to know it cannot block.
                 return SubStrategy.PRODUCE_INVOKE_CONSUME;
             }
 
@@ -364,42 +366,42 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             {
                 // The produced task may block.
 
-                // If the calling producing thread may also block
-                if (!nonBlocking)
+                // If the calling thread may not block then we must use PEC: the task is consumed by the executor and
+                // this producer thread continues to produce (or returns to outer execution strategy)
+                if (nonBlocking)
+                    return SubStrategy.PRODUCE_EXECUTE_CONSUME;
+
+                // check if a pending producer is available.
+                boolean tryExecuted = false;
+                while (true)
                 {
-                    // check if a pending producer is available.
-                    boolean tryExecuted = false;
-                    while (true)
+                    long biState = _state.get();
+                    int state = AtomicBiInteger.getLo(biState);
+                    int pending = AtomicBiInteger.getHi(biState);
+
+                    // If a pending producer is available or one can be started
+                    if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(this))
                     {
-                        long biState = _state.get();
-                        int state = AtomicBiInteger.getLo(biState);
-                        int pending = AtomicBiInteger.getHi(biState);
-
-                        // If a pending producer is available or one can be started
-                        if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(this))
-                        {
-                            tryExecuted = true;
-                            pending++;
-                        }
-
-                        // If a pending producer is available or one can be started
-                        if (pending > 0)
-                        {
-                            // use EPC: The producer directly consumes the task, which may block
-                            // and then races with the pending producer to resume production.
-                            if (!_state.compareAndSet(biState, pending, IDLE))
-                                continue;
-                            return SubStrategy.EXECUTE_PRODUCE_CONSUME;
-                        }
-
-                        if (!_state.compareAndSet(biState, pending, state))
-                            continue;
-                        break;
+                        tryExecuted = true;
+                        pending++;
                     }
-                }
 
-                // Otherwise use PEC: the task is consumed by the executor and the producer continues to produce.
-                return SubStrategy.PRODUCE_EXECUTE_CONSUME;
+                    // If a pending producer is available or one can be started
+                    if (pending > 0)
+                    {
+                        // use EPC: This producer thread directly consumes the task, which may block
+                        // and then races with the pending producer to resume production.
+                        if (!_state.compareAndSet(biState, pending, IDLE))
+                            continue;
+                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
+                    }
+
+                    if (!_state.compareAndSet(biState, pending, state))
+                        continue;
+
+                    // Otherwise use PEC: the task is consumed by the executor and this producer thread continues to produce.
+                    return SubStrategy.PRODUCE_EXECUTE_CONSUME;
+                }
             }
 
             default:
