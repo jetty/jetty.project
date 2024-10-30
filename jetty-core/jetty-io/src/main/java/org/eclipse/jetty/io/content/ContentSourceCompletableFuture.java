@@ -66,7 +66,7 @@ import static org.eclipse.jetty.util.thread.Invocable.combineTypes;
  * String s = cs.get();
  * }</pre>
  */
-public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X> implements Runnable, Invocable
+public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X> implements Invocable.Task
 {
     private final Content.Source _content;
     private final InvocationType _invocationType;

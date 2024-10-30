@@ -37,6 +37,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     @Override
     public void demand(Runnable demandCallback)
     {
+        // Inner class used instead of lambda for clarity in stack traces.
         super.demand(new DemandTask(demandCallback));
     }
 
