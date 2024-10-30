@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class LargeHeaderTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(LargeHeaderTest.class);
-    private static final String EXPECTED_ERROR_TEXT = "<h2>HTTP ERROR 500 Response header too large</h2>";
+    private static final String EXPECTED_ERROR_TEXT = "<h2>HTTP ERROR 500 Response Header Fields Too Large</h2>";
     private Server server;
 
     @BeforeEach

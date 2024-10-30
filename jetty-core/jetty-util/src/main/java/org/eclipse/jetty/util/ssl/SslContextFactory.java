@@ -182,7 +182,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     private SSLContext _setContext;
     private String _endpointIdentificationAlgorithm = "HTTPS";
     private boolean _trustAll;
-    private boolean _renegotiationAllowed = true;
+    private boolean _renegotiationAllowed;
     private int _renegotiationLimit = 5;
     private Factory _factory;
     private PKIXCertPathChecker _pkixCertPathChecker;
@@ -993,7 +993,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
-     * @return whether TLS renegotiation is allowed (true by default)
+     * @return whether TLS renegotiation is allowed ({@code false} by default)
      */
     @ManagedAttribute("Whether renegotiation is allowed")
     public boolean isRenegotiationAllowed()

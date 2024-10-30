@@ -303,6 +303,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
+        generator.getHpackEncoder().setMaxHeaderListSize(getHttpConfiguration().getResponseHeaderSize());
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
 
         ServerParser parser = newServerParser(connector, getRateControlFactory().newRateControl(endPoint));
