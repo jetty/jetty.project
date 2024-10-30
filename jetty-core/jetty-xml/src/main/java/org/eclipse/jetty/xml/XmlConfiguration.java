@@ -122,7 +122,7 @@ public class XmlConfiguration
      * interfaces or the Object class, return -1 if only t2 is the Object class or an
      * interface.
      */
-    public static int compare(Class<?> t1, Class<?> t2)
+    private static int compare(Class<?> t1, Class<?> t2)
     {
         if (t1 == Object.class)
         {
@@ -1033,7 +1033,6 @@ public class XmlConfiguration
 
                 try
                 {
-                    System.err.println("Invoking: " + method);
                     return invokeMethod(method, obj, arguments);
                 }
                 catch (IllegalAccessException | IllegalArgumentException e)
