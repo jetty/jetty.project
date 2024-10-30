@@ -33,10 +33,6 @@ import org.eclipse.jetty.util.security.SecurityUtils;
  * For this reason, {@code Thread}s must be created in a privileged
  * action, which restricts the calling context to just the caller
  * frame, not all the frames in the stack.</p>
- * <p>Since Java 18 and the removal of the Java security manager
- * and related classes by JEP 411, {@code Thread}s do not retain
- * the calling context, so there is no need to create them in a
- * privileged action.</p>
  */
 class PrivilegedThreadFactory
 {
