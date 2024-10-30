@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -161,12 +162,14 @@ public class AsyncServletLongPollTest
     @Test
     public void testSuspendedRequestThenServerStop() throws Exception
     {
+        AtomicReference<Thread> threadRef = new AtomicReference<>();
         AtomicReference<AsyncContext> asyncContextRef = new AtomicReference<>();
         prepare(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
             {
+                threadRef.set(Thread.currentThread());
                 // Suspend the request.
                 // There is no AsyncListener, so when the server stops, an
                 // error response is sent by the implementation as per spec.
@@ -184,7 +187,11 @@ public class AsyncServletLongPollTest
             await().atMost(5, TimeUnit.SECONDS).until(asyncContextRef::get, Matchers.notNullValue());
 
             // Wait for the request on the server to become idle.
-            Thread.sleep(1000);
+            await().atMost(5, TimeUnit.SECONDS).until(() ->
+            {
+                Thread thread = threadRef.get();
+                return thread != null && EnumSet.of(Thread.State.WAITING, Thread.State.TIMED_WAITING).contains(thread.getState());
+            });
 
             server.stop();
 
