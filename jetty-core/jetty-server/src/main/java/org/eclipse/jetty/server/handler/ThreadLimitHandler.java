@@ -343,7 +343,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             if (!_onContent.compareAndSet(null, Objects.requireNonNull(onContent)))
                 throw new IllegalStateException("Pending demand");
             // Inner class used instead of lambda for clarity in stack traces.
-            super.demand(new OnContentInvocableTask(onContent));
+            super.demand(new DemandTask(Invocable.getInvocationType(onContent)));
         }
 
         private void onContent()
@@ -368,25 +368,17 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             }
         }
 
-        private class OnContentInvocableTask implements Invocable.Task
+        private class DemandTask extends Invocable.AbstractTask
         {
-            private final Runnable runnable;
-
-            private OnContentInvocableTask(Runnable runnable)
+            private DemandTask(InvocationType invocationType)
             {
-                this.runnable = runnable;
+                super(invocationType);
             }
 
             @Override
             public void run()
             {
                 onContent();
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return Invocable.getInvocationType(runnable);
             }
         }
     }

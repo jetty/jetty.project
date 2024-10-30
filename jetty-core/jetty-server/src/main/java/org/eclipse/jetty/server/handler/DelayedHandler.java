@@ -265,12 +265,12 @@ public class DelayedHandler extends Handler.Wrapper
                 public void succeeded(Fields result)
                 {
                     if (done.decrementAndGet() == 0)
-                    {
-                        if (invocationType == InvocationType.NON_BLOCKING)
-                            process();
-                        else
-                            getRequest().getContext().execute(() -> process());
-                    }
+                        invocationType.runWithoutBlocking(this::doProcess, getRequest().getContext());
+                }
+
+                private void doProcess()
+                {
+                    process();
                 }
 
                 @Override
@@ -317,12 +317,12 @@ public class DelayedHandler extends Handler.Wrapper
                 public void succeeded(MultiPartFormData.Parts result)
                 {
                     if (done.decrementAndGet() == 0)
-                    {
-                        if (invocationType == InvocationType.NON_BLOCKING)
-                            process();
-                        else
-                            getRequest().getContext().execute(() -> process());
-                    }
+                        invocationType.runWithoutBlocking(this::doProcess, getRequest().getContext());
+                }
+
+                private void doProcess()
+                {
+                    process();
                 }
 
                 @Override

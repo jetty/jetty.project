@@ -25,7 +25,7 @@ public class ContentSourceString
     private final Content.Source content;
     private final CharsetStringBuilder text;
     private final Promise<String> promise;
-    private final ConvertInvocableTask convertInvocableTask;
+    private final DemandTask _demandTask;
 
     public ContentSourceString(Content.Source content, Charset charset, Promise<String> promise)
     {
@@ -33,7 +33,7 @@ public class ContentSourceString
         this.text = CharsetStringBuilder.forCharset(charset);
         this.promise = promise;
         // Inner class used instead of lambda for clarity in stack traces.
-        this.convertInvocableTask = new ConvertInvocableTask();
+        this._demandTask = new DemandTask();
     }
 
     public void convert()
@@ -43,7 +43,7 @@ public class ContentSourceString
             Content.Chunk chunk = content.read();
             if (chunk == null)
             {
-                content.demand(convertInvocableTask);
+                content.demand(_demandTask);
                 return;
             }
             if (Content.Chunk.isFailure(chunk))
@@ -76,18 +76,17 @@ public class ContentSourceString
         }
     }
 
-    private class ConvertInvocableTask implements Invocable.Task
+    private class DemandTask extends Invocable.AbstractTask
     {
+        DemandTask()
+        {
+            super(Invocable.getInvocationType(promise));
+        }
+
         @Override
         public void run()
         {
             convert();
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return Invocable.getInvocationType(promise);
         }
     }
 }

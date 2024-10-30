@@ -38,7 +38,7 @@ class AsyncContentProducer implements ContentProducer
 
     final AutoLock _lock;
     private final ServletChannel _servletChannel;
-    private final IsReadyInvocableTask _isReadyInvocableTask;
+    private final DemandTask _demandTask;
     private Content.Chunk _chunk;
     private long _firstByteNanoTime = Long.MIN_VALUE;
     private long _bytesArrived;
@@ -52,7 +52,7 @@ class AsyncContentProducer implements ContentProducer
         _servletChannel = servletChannel;
         _lock = lock;
         // Inner class used instead of lambda for clarity in stack traces.
-        _isReadyInvocableTask = new IsReadyInvocableTask();
+        _demandTask = new DemandTask();
     }
 
     ServletChannel getServletChannel()
@@ -254,7 +254,7 @@ class AsyncContentProducer implements ContentProducer
         }
 
         state.onReadUnready();
-        _servletChannel.getRequest().demand(_isReadyInvocableTask);
+        _servletChannel.getRequest().demand(_demandTask);
 
         if (LOG.isDebugEnabled())
             LOG.debug("isReady(), no chunk {}", this);
@@ -402,7 +402,7 @@ class AsyncContentProducer implements ContentProducer
         }
     }
 
-    private class IsReadyInvocableTask implements Invocable.Task
+    private class DemandTask implements Invocable.Task
     {
         @Override
         public void run()

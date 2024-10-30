@@ -87,7 +87,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Listener _combinedListener;
     private final Dispatchable _requestDispatcher;
     private final Dispatchable _asyncDispatcher;
-    private final NeedContentInvocableTask _needContentTask;
+    private final DemandTask _needContentTask;
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
     private MetaData.Response _committedMetaData;
@@ -116,7 +116,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _requestDispatcher = new RequestDispatchable();
         _asyncDispatcher = new AsyncDispatchable();
         // Inner class used instead of lambda for clarity in stack traces.
-        _needContentTask = new NeedContentInvocableTask();
+        _needContentTask = new DemandTask();
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -1603,7 +1603,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private class NeedContentInvocableTask implements Invocable.Task
+    private class DemandTask implements Invocable.Task
     {
         @Override
         public void run()

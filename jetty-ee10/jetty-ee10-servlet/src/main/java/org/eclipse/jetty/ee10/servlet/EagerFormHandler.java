@@ -77,12 +77,7 @@ public class EagerFormHandler extends Handler.Wrapper
             public void succeeded(Fields result)
             {
                 if (done.decrementAndGet() == 0)
-                {
-                    if (invocationType == InvocationType.NON_BLOCKING)
-                        handle();
-                    else
-                        request.getContext().execute(this::handle);
-                }
+                    invocationType.runWithoutBlocking(this::handle, request.getContext());
             }
 
             @Override
@@ -129,12 +124,7 @@ public class EagerFormHandler extends Handler.Wrapper
             public void succeeded(ServletMultiPartFormData.Parts result)
             {
                 if (done.decrementAndGet() == 0)
-                {
-                    if (invocationType == InvocationType.NON_BLOCKING)
-                        handle();
-                    else
-                        request.getContext().execute(this::handle);
-                }
+                    invocationType.runWithoutBlocking(this::handle, request.getContext());
             }
 
             void handle()

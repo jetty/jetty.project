@@ -825,7 +825,7 @@ public class MultiPart
             if (part != null)
             {
                 // Inner class used instead of lambda for clarity in stack traces.
-                part.getContentSource().demand(new DemandInvocableTask(demandCallback));
+                part.getContentSource().demand(new DemandTask(demandCallback));
             }
             else if (invoke)
             {
@@ -883,12 +883,13 @@ public class MultiPart
             FIRST, MIDDLE, HEADERS, CONTENT, COMPLETE
         }
 
-        private class DemandInvocableTask implements Invocable.Task
+        private class DemandTask extends Invocable.AbstractTask
         {
             private final Runnable demandCallback;
 
-            private DemandInvocableTask(Runnable demandCallback)
+            private DemandTask(Runnable demandCallback)
             {
+                super(Invocable.getInvocationType(demandCallback));
                 this.demandCallback = demandCallback;
             }
 
@@ -900,12 +901,6 @@ public class MultiPart
                     AbstractContentSource.this.demand = null;
                 }
                 demandCallback.run();
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return Invocable.getInvocationType(demandCallback);
             }
         }
     }
