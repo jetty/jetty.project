@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.server;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -35,13 +36,13 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  * Configuration for a specific compression behavior per matching path from the {@link CompressionHandler}.
  *
  * <p>
- *    Configuration is split between compression (of responses) and decompression (of requests).
+ * Configuration is split between compression (of responses) and decompression (of requests).
  * </p>
  *
  * <p>
- *    Experimental Configuration, subject to change while the implementation is being settled.
- *    Please provide feedback at the <a href="https://github.com/jetty/jetty.project/issues">Jetty Issue tracker</a>
- *    to influence the direction / development of these experimental features.
+ * Experimental Configuration, subject to change while the implementation is being settled.
+ * Please provide feedback at the <a href="https://github.com/jetty/jetty.project/issues">Jetty Issue tracker</a>
+ * to influence the direction / development of these experimental features.
  * </p>
  */
 @ManagedObject("Compression Configuration")
@@ -79,11 +80,16 @@ public class CompressionConfig extends AbstractLifeCycle
      * Set of paths that support decompressing Request content.
      */
     private final IncludeExcludeSet<String, String> decompressPaths;
+    /**
+     * Optional preferred order of encoders for compressing Response content.
+     */
+    private final List<String> compressPreferredEncoderOrder;
 
     private final HttpField vary;
 
     private CompressionConfig(Builder builder)
     {
+        this.compressPreferredEncoderOrder = builder.compressPreferredEncoderOrder;
         this.compressEncodings = builder.compressEncodings.asImmutable();
         this.decompressEncodings = builder.decompressEncodings.asImmutable();
         this.compressMethods = builder.decompressMethods.asImmutable();
@@ -178,20 +184,40 @@ public class CompressionConfig extends AbstractLifeCycle
         return Collections.unmodifiableSet(includes);
     }
 
+    /**
+     * Get the preferred order of encoders for compressing response content.
+     *
+     * <p>
+     *     See {@link Builder#compressPreferredEncoderOrder(List)} for details
+     *     on how the {@code Accept-Encoding} request header interacts with
+     *     this configuration.
+     * </p>
+     *
+     * @return the preferred order of encoders.
+     * @see Builder#compressPreferredEncoderOrder(List)
+     */
+    @ManagedAttribute()
+    public List<String> getCompressPreferredEncoderOrder()
+    {
+        return Collections.unmodifiableList(compressPreferredEncoderOrder);
+    }
+
+    /**
+     * Return the encoder that best matches the provided details.
+     *
+     * @param requestAcceptEncoding the HTTP {@code Accept-Encoding} header list (includes only supported encodings,
+     *      and possibly the {@code *} glob value)
+     * @param request the request itself
+     * @param pathInContext the path in context
+     * @return the selected compression encoding
+     */
     public String getCompressionEncoding(List<String> requestAcceptEncoding, Request request, String pathInContext)
     {
         if (requestAcceptEncoding == null || requestAcceptEncoding.isEmpty())
             return null;
 
-        String matchedEncoding = null;
-
-        for (String encoding : requestAcceptEncoding)
-        {
-            if (compressEncodings.test(encoding))
-            {
-                matchedEncoding = encoding;
-            }
-        }
+        List<String> preferredEncoders = calcPreferredEncoders(requestAcceptEncoding);
+        String matchedEncoding = selectEncoderMatch(preferredEncoders);
 
         if (matchedEncoding == null)
             return null;
@@ -203,6 +229,44 @@ public class CompressionConfig extends AbstractLifeCycle
             return null;
 
         return matchedEncoding;
+    }
+
+    protected List<String> calcPreferredEncoders(List<String> requestAcceptEncoding)
+    {
+        if (compressPreferredEncoderOrder.isEmpty())
+        {
+            List<String> result = new ArrayList<>(requestAcceptEncoding);
+            result.removeIf((str) -> str.equals("*"));
+            return result;
+        }
+
+        if (requestAcceptEncoding.contains("*"))
+        {
+            // anything else in request Accept-Encoding is moot if glob exists.
+            return compressPreferredEncoderOrder;
+        }
+
+        List<String> preferredEncoderOrder = new ArrayList<>();
+        for (String preferredEncoder: compressPreferredEncoderOrder)
+        {
+            if (requestAcceptEncoding.contains(preferredEncoder))
+            {
+                preferredEncoderOrder.add(preferredEncoder);
+            }
+        }
+        return preferredEncoderOrder;
+    }
+
+    protected String selectEncoderMatch(List<String> preferredEncoders)
+    {
+        for (String encoding : preferredEncoders)
+        {
+            if (compressEncodings.test(encoding))
+            {
+                return encoding;
+            }
+        }
+        return null;
     }
 
     /**
@@ -362,6 +426,11 @@ public class CompressionConfig extends AbstractLifeCycle
          * Mime-Types that support compressing Response content.
          */
         private final IncludeExclude<String> decompressMimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
+        /**
+         * Optional preferred order of encoders for compressing Response content.
+         */
+        private final List<String> compressPreferredEncoderOrder = new ArrayList<>();
+
         private HttpField vary = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
         public CompressionConfig build()
@@ -482,6 +551,81 @@ public class CompressionConfig extends AbstractLifeCycle
         public Builder compressPathInclude(String pathSpecString)
         {
             this.compressPaths.include(pathSpecString);
+            return this;
+        }
+
+        /**
+         * Control the preferred order of encoders when compressing response content.
+         *
+         * <p>
+         *     If set to an empty List this preferred order is not considered
+         *     when selecting the encoder from the {@code Accept-Encoding} Request header.
+         * </p>
+         * <p>
+         *     If set, the union of matching encoders is the end result used to determine
+         *     what encoder should be used for compressing response content.
+         * </p>
+         * <p>
+         *     Of special note, the {@code Accept-Encoding: *} (glob) header value will
+         *     return the {@code compressPreferredEncoderOrder} if provided here, otherwise
+         *     the {@code *} (glob) header value will be ignored if this
+         *     {@code compressPreferredEncoderOrder} is not provided.
+         * </p>
+         * <table style="border: 1px solid black; border-collapse: separate; border-spacing: 0px;">
+         * <caption style="font-weight: bold; font-size: 1.2em">Encoder order resolution</caption>
+         * <colgroup>
+         *     <col><col><col>
+         * </colgroup>
+         * <thead style="background-color: lightgray">
+         * <tr>
+         *     <th>{@code compressPreferredEncoderOrder}</th>
+         *     <th>{@code Accept-Encoding} header</th>
+         *     <th>Resulting encoders considered</th>
+         * </tr>
+         * </thead>
+         * <tbody style="text-align: left; vertical-align: top;">
+         * <tr>
+         *     <td>{@code <empty>}</td>
+         *     <td>{@code gzip, br}</td>
+         *     <td>{@code gzip, br}</td>
+         * </tr>
+         * <tr>
+         *     <td>{@code <empty>}</td>
+         *     <td>{@code br, gzip}</td>
+         *     <td>{@code br, gzip}</td>
+         * </tr>
+         * <tr>
+         *     <td>{@code br, gzip}</td>
+         *     <td>{@code gzip, br, zstd}</td>
+         *     <td>{@code br, gzip}</td>
+         * </tr>
+         * <tr>
+         *     <td>{@code zstd, br}</td>
+         *     <td>{@code gzip, br}</td>
+         *     <td>{@code br}</td>
+         * </tr>
+         * <tr>
+         *     <td>{@code zstd, br, gzip}</td>
+         *     <td>{@code *}</td>
+         *     <td>{@code zstd, br, gzip}</td>
+         * </tr>
+         * <tr>
+         *     <td>{@code <empty>}</td>
+         *     <td>{@code *}</td>
+         *     <td>{@code <empty>}</td>
+         * </tr>
+         * </tbody>
+         * </table>
+         *
+         * @param encoders the encoders, in order, to use for compressing response content.
+         *   Will replace any previously set order.
+         * @return this builder.
+         */
+        public Builder compressPreferredEncoderOrder(List<String> encoders)
+        {
+            this.compressPreferredEncoderOrder.clear();
+            if (encoders != null)
+                this.compressPreferredEncoderOrder.addAll(encoders);
             return this;
         }
 
@@ -639,7 +783,7 @@ public class CompressionConfig extends AbstractLifeCycle
                 "application/zstd",
                 // It is possible to use SSE with CompressionHandler, but only if you use `gzip` encoding with syncFlush to true which will impact performance.
                 "text/event-stream"
-                ).forEach((type) ->
+            ).forEach((type) ->
             {
                 compressMimeTypeExclude(type);
                 decompressMimeTypeExclude(type);

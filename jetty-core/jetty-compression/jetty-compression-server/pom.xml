@@ -26,5 +26,10 @@
       <artifactId>jetty-compression-api</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>
