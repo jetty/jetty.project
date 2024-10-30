@@ -40,12 +40,6 @@ public class ContentCopier extends IteratingNestedCallback
     }
 
     @Override
-    public InvocationType getInvocationType()
-    {
-        return InvocationType.NON_BLOCKING;
-    }
-
-    @Override
     protected Action process() throws Throwable
     {
         if (current != null)
