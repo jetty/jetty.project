@@ -20,6 +20,7 @@ import java.net.URI;
 import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -261,9 +262,9 @@ public class JettyHomeTester
                 }
             }
         }
-        catch (FileAlreadyExistsException e)
+        catch (FileSystemAlreadyExistsException | FileAlreadyExistsException e)
         {
-            LOG.warn("ignore FileAlreadyExistsException: archiveURI {}, outputDir {}", archiveURI, outputDir);
+            LOG.warn("ignore {}: archiveURI {}, outputDir {}", e.getClass().getSimpleName(), archiveURI, outputDir);
         }
     }
 

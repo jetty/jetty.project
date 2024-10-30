@@ -1994,16 +1994,19 @@ public class XmlConfigurationTest
         assertThat(tc.testObject, instanceOf(ScheduledExecutorService.class));
     }
 
-    public static Stream<Arguments> xmlSystemIdSource()
+    private static List<String> systemIdVariants()
     {
-        List<Arguments> ids = new ArrayList<>();
-
-        String[] schemes = {"http", "https"};
-        String[] contexts = {"eclipse.org/jetty", "www.eclipse.org/jetty", "eclipse.dev/jetty", "www.eclipse.dev/jetty", "jetty.org"};
-        String[] paths = {"configure.dtd", // version-less
+        List<String> ids = new ArrayList<>();
+        List<String> schemes = List.of("http", "https");
+        List<String> contexts = List.of("eclipse.org/jetty",
+            "www.eclipse.org/jetty",
+            "eclipse.dev/jetty",
+            "www.eclipse.dev/jetty",
+            "jetty.org");
+        List<String> paths = List.of("configure.dtd", // version-less
                           "configure_9_0.dtd", // 9.0
                           "configure_9_3.dtd", // 9.3
-                          "configure_10_0.dtd"}; // 10.
+                          "configure_10_0.dtd"); // 10.0
 
         for (String scheme: schemes)
         {
@@ -2011,12 +2014,16 @@ public class XmlConfigurationTest
             {
                 for (String path: paths)
                 {
-                    ids.add(Arguments.of(String.format("%s://%s/%s", scheme, host, path)));
+                    ids.add(String.format("%s://%s/%s", scheme, host, path));
                 }
             }
         }
+        return ids;
+    }
 
-        return ids.stream();
+    public static Stream<Arguments> xmlSystemIdSource()
+    {
+        return systemIdVariants().stream().map(Arguments::of);
     }
 
     /**
@@ -2032,6 +2039,39 @@ public class XmlConfigurationTest
         XmlParser configurationProcessor = xmlConfiguration.getXmlParser();
         InputSource inputSource = configurationProcessor.resolveEntity(null, xmlSystemId);
         assertNotNull(inputSource, "SystemID: " + xmlSystemId + " does not exist");
+    }
+
+    public static Stream<Arguments> xmlPublicIdSource()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        // XML Public IDs seen in use with Jetty.
+        List<String> publicIds = List.of("-//Jetty//Configure//EN",
+            "-//Mort Bay Consulting//DTD Configure//EN");
+
+        for (String systemId: systemIdVariants())
+        {
+            for (String publicId: publicIds)
+            {
+                cases.add(Arguments.of(publicId, systemId));
+            }
+        }
+        return cases.stream();
+    }
+
+    /**
+     * Test to ensure that all required XML PUBLIC ID variants are covered in the
+     * {@link XmlConfiguration} internals.
+     */
+    @ParameterizedTest
+    @MethodSource("xmlPublicIdSource")
+    public void testPublicIdVariants(String xmlPublicId, String xmlSystemId) throws IOException, SAXException
+    {
+        // empty raw xml, just to instantiate XmlConfiguration, so we can access the XmlParser / ConfigurationParser.
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\" />");
+        XmlParser configurationProcessor = xmlConfiguration.getXmlParser();
+        InputSource inputSource = configurationProcessor.resolveEntity(xmlPublicId, xmlSystemId);
+        assertNotNull(inputSource, "reference: PUBLIC " + xmlPublicId + " SYSTEM " + xmlSystemId + " does not exist");
     }
 
     private ByteArrayOutputStream captureLoggingBytes(ThrowableAction action) throws Exception

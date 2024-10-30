@@ -1716,6 +1716,22 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"xxx", "0", "00", "50", "050", "0200", "1000", "2xx"})
+    public void testBadResponseStatus(String status)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer("""
+                HTTP/1.1 %s %s\r
+                Content-Length:0\r
+                \r
+                """.formatted(status, status), StandardCharsets.ISO_8859_1);
+
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parser.parseNext(buffer);
+        assertThat(_bad, is("Bad status"));
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testResponseReasonIso88591(String eoln)
     {

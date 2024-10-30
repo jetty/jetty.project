@@ -874,14 +874,15 @@ public class ServletChannelState
         }
     }
 
-    protected void onError(Throwable th)
+    protected boolean onError(Throwable th)
     {
+        boolean committed = _servletChannel.isCommitted();
         final AsyncContextEvent asyncEvent;
         final List<AsyncListener> asyncListeners;
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("thrownException {}", getStatusStringLocked(), th);
+                LOG.debug("onError {}", getStatusStringLocked(), th);
 
             // This can only be called from within the handle loop
             if (_state != State.HANDLING)
@@ -890,34 +891,42 @@ public class ServletChannelState
             // If sendError has already been called, we can only handle one failure at a time!
             if (_sendError)
             {
-                LOG.warn("unhandled due to prior sendError", th);
-                return;
+                LOG.warn("onError not handled due to prior sendError() {}", getStatusStringLocked(), th);
+                return false;
             }
 
             // Check async state to determine type of handling
             switch (_requestState)
             {
                 case BLOCKING:
-                    // handle the exception with a sendError
+                {
+                    // Handle the exception with a sendError.
+                    if (committed)
+                        return true;
                     sendError(th);
-                    return;
-
+                    return false;
+                }
                 case DISPATCH: // Dispatch has already been called, but we ignore and handle exception below
                 case COMPLETE: // Complete has already been called, but we ignore and handle exception below
                 case ASYNC:
+                {
                     if (_asyncListeners == null || _asyncListeners.isEmpty())
                     {
+                        if (committed)
+                            return true;
                         sendError(th);
-                        return;
+                        return false;
                     }
                     asyncEvent = _event;
                     asyncEvent.addThrowable(th);
                     asyncListeners = _asyncListeners;
                     break;
-
+                }
                 default:
-                    LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
-                    return;
+                {
+                    LOG.warn("onError not handled due to invalid requestState {}", getStatusStringLocked(), th);
+                    return false;
+                }
             }
         }
 
@@ -948,7 +957,10 @@ public class ServletChannelState
             {
                 // The listeners did not invoke API methods and the
                 // container must provide a default error dispatch.
+                if (committed)
+                    return true;
                 sendError(th);
+                return false;
             }
             else if (_requestState != RequestState.COMPLETE)
             {
@@ -957,12 +969,14 @@ public class ServletChannelState
                 else
                     LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
             }
+            return committed;
         }
     }
 
     private void sendError(Throwable th)
     {
         // No sync as this is always called with lock held
+        assert _lock.isHeldByCurrentThread();
 
         // Determine the actual details of the exception
         final Request request = _servletChannel.getServletContextRequest();
