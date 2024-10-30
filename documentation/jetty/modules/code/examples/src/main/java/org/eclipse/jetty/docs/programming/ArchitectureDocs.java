@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.docs.programming;
 
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.TryExecutor;
 import org.eclipse.jetty.util.thread.VirtualThreadPool;
 
 @SuppressWarnings("unused")
@@ -74,5 +78,61 @@ public class ArchitectureDocs
         clientConnector.setExecutor(threadPool);
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         // end::virtualVirtual[]
+    }
+
+    public static class EitherTask implements Invocable.Task
+    {
+        private final TryExecutor executor;
+        private final Deque<Invocable.Task> subTasks = new ConcurrentLinkedDeque<>();
+
+        public EitherTask(TryExecutor executor)
+        {
+            this.executor = executor;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.EITHER;
+        }
+
+        public void offer(Task task)
+        {
+            subTasks.add(task);
+        }
+
+        @Override
+        public void run()
+        {
+            if (Invocable.isNonBlockingInvocation())
+            {
+                for (Task subTask = subTasks.pollFirst(); subTask != null; subTask = subTasks.pollFirst())
+                {
+                    switch (Invocable.getInvocationType(subTask))
+                    {
+                        case NON_BLOCKING, EITHER -> subTask.run();
+                        case BLOCKING -> executor.execute(subTask);
+                    }
+                }
+            }
+            else
+            {
+                for (Task subTask = subTasks.pollFirst(); subTask != null; subTask = subTasks.pollFirst())
+                {
+                    switch (Invocable.getInvocationType(subTask))
+                    {
+                        case NON_BLOCKING -> subTask.run();
+                        case EITHER -> Invocable.invokeNonBlocking(subTask);
+                        case BLOCKING ->
+                        {
+                            if (executor.tryExecute(this))
+                                subTask.run();
+                            else
+                                executor.execute(subTask);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
