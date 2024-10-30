@@ -126,11 +126,13 @@ public class ChunkAccumulator
         _length = 0;
     }
 
+    @Deprecated (forRemoval = true, since = "12.0.15")
     public CompletableFuture<byte[]> readAll(Content.Source source)
     {
         return readAll(source, -1);
     }
 
+    @Deprecated (forRemoval = true, since = "12.0.15")
     public CompletableFuture<byte[]> readAll(Content.Source source, int maxSize)
     {
         CompletableTask<byte[]> task = new AccumulatorTask<>(source, maxSize)
@@ -152,6 +154,7 @@ public class ChunkAccumulator
      * @return A {@link CompletableFuture} that will be completed when the complete content is read or
      * failed if the max size is exceeded or there is a read error.
      */
+    @Deprecated (forRemoval = true, since = "12.0.15")
     public CompletableFuture<RetainableByteBuffer> readAll(Content.Source source, ByteBufferPool pool, boolean direct, int maxSize)
     {
         CompletableTask<RetainableByteBuffer> task = new AccumulatorTask<>(source, maxSize)
@@ -165,6 +168,7 @@ public class ChunkAccumulator
         return task.start();
     }
 
+    @Deprecated (forRemoval = true, since = "12.0.15")
     private abstract static class AccumulatorTask<T> extends CompletableTask<T> implements Invocable
     {
         private final Content.Source _source;
