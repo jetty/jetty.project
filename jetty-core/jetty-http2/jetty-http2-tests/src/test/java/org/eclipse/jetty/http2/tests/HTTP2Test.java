@@ -1141,6 +1141,50 @@ public class HTTP2Test extends AbstractTest
     }
 
     @Test
+    public void testClientExceedsConnectionMaxUsage() throws Exception
+    {
+        start(new ServerSessionListener() {});
+
+        Session session = newClientSession(new Session.Listener() {});
+        ((HTTP2Session)session).setMaxTotalLocalStreams(1);
+
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+        session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {});
+
+        // Must not be able to create more streams than allowed.
+        assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS));
+
+        // Must not be able to create more streams than allowed with an explicit streamId.
+        int explicitStreamId = Integer.MAX_VALUE;
+        assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(explicitStreamId, request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS));
+
+        // Session must still be valid.
+        assertFalse(session.isClosed());
+    }
+
+    @Test
+    public void testClientExceedsMaxStreamId() throws Exception
+    {
+        start(new ServerSessionListener() {});
+
+        Session session = newClientSession(new Session.Listener() {});
+
+        // Use the max possible streamId.
+        int explicitStreamId = Integer.MAX_VALUE;
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+        session.newStream(new HeadersFrame(explicitStreamId, request, null, true), new Stream.Listener() {});
+
+        // Must not be able to create more streams.
+        assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS));
+
+        // Session must still be valid.
+        assertFalse(session.isClosed());
+    }
+
+    @Test
     public void testClientCreatesStreamsWithExplicitStreamId() throws Exception
     {
         start(new ServerSessionListener() {});
@@ -1179,8 +1223,8 @@ public class HTTP2Test extends AbstractTest
         // After the stream with the max id, cannot create more streams on this connection.
         assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
             .get(5, TimeUnit.SECONDS));
-        // Session should be closed.
-        assertTrue(session.isClosed());
+        // Session must still be valid.
+        assertFalse(session.isClosed());
     }
 
     @Test
@@ -1225,8 +1269,8 @@ public class HTTP2Test extends AbstractTest
                     // After the stream with the max id, cannot push more streams on this connection.
                     assertThrows(ExecutionException.class, () -> stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Stream.Listener() {})
                         .get(5, TimeUnit.SECONDS));
-                    // Session should be closed.
-                    assertTrue(stream.getSession().isClosed());
+                    // Session must still be valid.
+                    assertFalse(stream.getSession().isClosed());
 
                     latch.countDown();
 
