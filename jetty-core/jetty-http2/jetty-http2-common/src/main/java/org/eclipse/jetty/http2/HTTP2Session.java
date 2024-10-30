@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
@@ -83,6 +84,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
 
     private final Map<Integer, HTTP2Stream> streams = new ConcurrentHashMap<>();
+    private final Set<Integer> priorityStreams = ConcurrentHashMap.newKeySet();
     private final AtomicLong streamsOpened = new AtomicLong();
     private final AtomicLong streamsClosed = new AtomicLong();
     private final StreamsState streamsState = new StreamsState();
@@ -836,21 +838,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }
 
         HTTP2Stream stream = newStream(streamId, request, true);
-
-        HTTP2Stream newStream = streams.compute(streamId, (k, v) ->
+        if (streams.putIfAbsent(streamId, stream) == null)
         {
-            if (v == null || v.isPlaceHolder())
-                return stream;
-            return null;
-        });
-
-        if (newStream != null)
-        {
-            newStream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onStreamCreated(newStream);
+            stream.setIdleTimeout(getStreamIdleTimeout());
+            flowControl.onStreamCreated(stream);
             if (LOG.isDebugEnabled())
-                LOG.debug("Created local {} for {}", newStream, this);
-            return newStream;
+                LOG.debug("Created local {} for {}", stream, this);
+            return stream;
         }
         else
         {
@@ -924,6 +918,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     public boolean removeStream(Stream stream)
     {
         int streamId = stream.getId();
+        priorityStreams.remove(streamId);
         HTTP2Stream removed = streams.remove(streamId);
         if (removed == null)
             return false;
@@ -2117,32 +2112,24 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             Slot slot = new Slot();
             int currentStreamId = frame.getStreamId();
             int streamId = reserveSlot(slot, currentStreamId, callback::failed);
-            if (streamId > 0)
-            {
-                HTTP2Stream stream;
-                if (currentStreamId > 0)
-                {
-                    stream = streams.get(streamId);
-                }
-                else
-                {
-                    frame = frame.withStreamId(streamId);
-                    // Create a placeholder stream, replaced when a follow-up HEADERS frame will be sent.
-                    stream = HTTP2Session.this.createLocalStream(streamId, null, callback::failed);
-                }
+            if (streamId <= 0)
+                return 0;
 
-                if (stream != null)
-                {
-                    slot.entries = List.of(newEntry(frame, stream, Callback.from(callback::succeeded, x ->
-                    {
-                        HTTP2Session.this.onStreamDestroyed(streamId);
-                        callback.failed(x);
-                    })));
-                    flush();
-                    return streamId;
-                }
+            if (!priorityStreams.add(streamId))
+            {
+                callback.failed(new IllegalStateException("Duplicate stream " + streamId));
+                return 0;
             }
-            return 0;
+
+            if (currentStreamId <= 0)
+                frame = frame.withStreamId(streamId);
+            slot.entries = List.of(newEntry(frame, null, Callback.from(callback::succeeded, x ->
+            {
+                HTTP2Session.this.onStreamDestroyed(streamId);
+                callback.failed(x);
+            })));
+            flush();
+            return streamId;
         }
 
         private void newLocalStream(HTTP2Stream.FrameList frameList, Promise<Stream> promise, Stream.Listener listener)
@@ -2309,7 +2296,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                                 }
                                 else
                                 {
-                                    if (streams.containsKey(streamId))
+                                    if (streams.containsKey(streamId) || priorityStreams.contains(streamId))
                                     {
                                         reservedStreamId = streamId;
                                         slots.offer(slot);

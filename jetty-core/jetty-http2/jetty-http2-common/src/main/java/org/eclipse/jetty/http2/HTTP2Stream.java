@@ -110,11 +110,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         return streamId;
     }
 
-    boolean isPlaceHolder()
-    {
-        return request == null;
-    }
-
     @Override
     public Object getAttachment()
     {
