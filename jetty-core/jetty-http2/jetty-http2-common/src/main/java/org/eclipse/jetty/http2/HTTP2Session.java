@@ -934,6 +934,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             remoteStreamCount.add(deltaStreams, deltaClosing);
     }
 
+    private boolean removeStream(int streamId)
+    {
+        HTTP2Stream removed = streams.get(streamId);
+        if (removed != null)
+            return removeStream(removed);
+        priorityStreams.remove(streamId);
+        onStreamClosed(streamId);
+        onStreamDestroyed(streamId);
+        return true;
+    }
+
     public boolean removeStream(Stream stream)
     {
         int streamId = stream.getId();
@@ -1095,6 +1106,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Closed stream {} for {}", stream, this);
+        onStreamClosed(stream.getId());
+    }
+
+    private void onStreamClosed(int streamId)
+    {
         streamsClosed.incrementAndGet();
     }
 
@@ -2144,7 +2160,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 frame = frame.withStreamId(streamId);
             slot.entries = List.of(newEntry(frame, null, Callback.from(callback::succeeded, x ->
             {
-                HTTP2Session.this.onStreamDestroyed(streamId);
+                removeStream(streamId);
                 callback.failed(x);
             })));
             flush();
@@ -2177,7 +2193,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             HTTP2Session.this.onStreamCreated(streamId);
             HTTP2Stream stream = HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)frame.getMetaData(), x ->
             {
-                HTTP2Session.this.onStreamDestroyed(streamId);
+                removeStream(streamId);
                 failFn.accept(x);
             });
             if (stream != null)
@@ -2235,7 +2251,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
             Callback streamCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), x ->
             {
-                HTTP2Session.this.onStreamDestroyed(streamId);
+                removeStream(stream);
                 promise.failed(x);
             });
             int count = frames.size();
@@ -2283,16 +2299,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 {
                     if (streamId == 0)
                     {
-                        int total = totalLocalStreams.updateAndGet(v ->
-                        {
-                            if (v <= maxTotal)
-                                return v + 1;
-                            return v;
-                        });
+                        int total = incrementTotalLocalStreams(maxTotal);
                         if (total <= maxTotal)
                         {
                             // Stream id generated internally.
-                            reservedStreamId = localStreamIds.getAndAdd(2);
+                            reservedStreamId = localStreamIds.getAndUpdate(v ->
+                            {
+                                if (v >= 0)
+                                    return v + 2;
+                                return v;
+                            });
                             if (reservedStreamId > 0)
                             {
                                 slots.offer(slot);
@@ -2300,14 +2316,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                             }
                             else
                             {
-                                totalLocalStreams.decrementAndGet();
-                                failure = new IllegalStateException("max stream id exceeded");
+                                failure = decrementTotalLocalStreams("max stream id exceeded");
                             }
                         }
                         else
                         {
-                            totalLocalStreams.decrementAndGet();
-                            failure = new IllegalStateException("max total streams exceeded");
+                            failure = decrementTotalLocalStreams("max total streams exceeded");
                         }
                     }
                     else
@@ -2320,12 +2334,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                             {
                                 if (streamId >= nextStreamId)
                                 {
-                                    int total = totalLocalStreams.updateAndGet(v ->
-                                    {
-                                        if (v <= maxTotal)
-                                            return v + 1;
-                                        return v;
-                                    });
+                                    int total = incrementTotalLocalStreams(maxTotal);
                                     if (total <= maxTotal)
                                     {
                                         // This may overflow, but it's ok as the current streamId
@@ -2345,8 +2354,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                                     }
                                     else
                                     {
-                                        totalLocalStreams.decrementAndGet();
-                                        failure = new IllegalStateException("max total streams exceeded");
+                                        failure = decrementTotalLocalStreams("max total streams exceeded");
                                         break;
                                     }
                                 }
@@ -2400,6 +2408,22 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             }
             HTTP2Session.this.onStreamDestroyed(streamId);
             flush();
+        }
+
+        private int incrementTotalLocalStreams(int maxTotal)
+        {
+            return totalLocalStreams.updateAndGet(v ->
+            {
+                if (v <= maxTotal)
+                    return v + 1;
+                return v;
+            });
+        }
+
+        private Throwable decrementTotalLocalStreams(String message)
+        {
+            totalLocalStreams.decrementAndGet();
+            return new IllegalStateException(message);
         }
 
         /**

@@ -1180,6 +1180,9 @@ public class HTTP2Test extends AbstractTest
         assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(request, null, true), new Stream.Listener() {})
             .get(5, TimeUnit.SECONDS));
 
+        assertThrows(ExecutionException.class, () -> session.newStream(new HeadersFrame(explicitStreamId, request, null, true), new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS));
+
         // Session must still be valid.
         assertFalse(session.isClosed());
     }
