@@ -139,6 +139,12 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
             _excludePredicate);
     }
 
+    public void addAll(IncludeExcludeSet<T, P> includeExcludeSet)
+    {
+        _includes.addAll(includeExcludeSet._includes);
+        _excludes.addAll(includeExcludeSet._excludes);
+    }
+
     public void include(T element)
     {
         _includes.add(element);

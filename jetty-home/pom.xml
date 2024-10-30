@@ -124,6 +124,16 @@
       <artifactId>jetty-util-ajax</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.compression</groupId>
+      <artifactId>jetty-compression-gzip</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.compression</groupId>
+      <artifactId>jetty-compression-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-core-demo-handler</artifactId>
       <version>${project.version}</version>
@@ -346,23 +356,6 @@
       <artifactId>jboss-logging</artifactId>
       <optional>true</optional>
     </dependency>
-    <!--    <dependency>-->
-    <!--      <groupId>jakarta.mail</groupId>-->
-    <!--      <artifactId>jakarta.mail-api</artifactId>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>jakarta.annotation</groupId>-->
-    <!--      <artifactId>jakarta.annotation-api</artifactId>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>jakarta.authentication</groupId>-->
-    <!--      <artifactId>jakarta.authentication-api</artifactId>-->
-    <!--    </dependency>-->
-    <!--    <dependency>-->
-    <!--      <groupId>jakarta.transaction</groupId>-->
-    <!--      <artifactId>jakarta.transaction-api</artifactId>-->
-    <!--    </dependency>-->
-
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
@@ -383,8 +376,6 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-
-    <!-- jetty deps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
@@ -515,6 +506,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-compression-deps</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.compression</includeGroupIds>
+              <includeArtifactIds>jetty-compression-api,jetty-compression-server,jetty-compression-gzip</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/compression</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-fcgi-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
@@ -628,7 +632,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <!-- useful for troubleshooting the source archive of a particular file: <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact> -->
-              <includeGroupIds>org.eclipse.jetty, org.eclipse.jetty.websocket, org.eclipse.jetty.toolchain.setuid</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty, org.eclipse.jetty.websocket, org.eclipse.jetty.toolchain.setuid, org.eclipse.jetty.compression</includeGroupIds>
               <excludeArtifactIds>jetty-infinispan-embedded,jetty-infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>

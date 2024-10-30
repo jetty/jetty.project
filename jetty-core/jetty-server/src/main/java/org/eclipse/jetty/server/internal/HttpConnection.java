@@ -150,7 +150,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     protected HttpGenerator newHttpGenerator()
     {
-        return new HttpGenerator();
+        HttpGenerator generator = new HttpGenerator();
+        generator.setMaxHeaderBytes(getHttpConfiguration().getResponseHeaderSize());
+        return generator;
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
@@ -785,16 +787,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(Math.min(getHttpConfiguration().getResponseHeaderSize(), getHttpConfiguration().getOutputBufferSize()), useDirectByteBuffers);
+                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        if (_header.capacity() >= getHttpConfiguration().getResponseHeaderSize())
-                            throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response header too large");
-                        releaseHeader();
-                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
-                        continue;
+                        throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response Header Fields Too Large");
                     }
                     case NEED_CHUNK:
                     {

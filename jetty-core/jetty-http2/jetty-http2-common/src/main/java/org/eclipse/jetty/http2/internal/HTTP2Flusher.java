@@ -100,7 +100,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 return true;
             }
         }
-        closed(entry, closed);
+        entry.closeAndFail(closed);
         return false;
     }
 
@@ -110,9 +110,13 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
-            // If it was not possible to HPACK encode, then allow to send a GOAWAY.
-            if (closed instanceof HpackException.SessionException && entry.frame().getType() == FrameType.GO_AWAY)
-                closed = null;
+            // If it was not possible to HPACK encode, then allow to send RST_STREAM and GOAWAY.
+            if (closed instanceof HpackException.SessionException)
+            {
+                FrameType frameType = entry.frame().getType();
+                if (frameType == FrameType.RST_STREAM || frameType == FrameType.GO_AWAY)
+                    closed = null;
+            }
             if (closed == null)
             {
                 entries.offer(entry);
@@ -121,7 +125,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 return true;
             }
         }
-        closed(entry, closed);
+        entry.closeAndFail(closed);
         return false;
     }
 
@@ -139,7 +143,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 return true;
             }
         }
-        list.forEach(entry -> closed(entry, closed));
+        list.forEach(entry -> entry.closeAndFail(closed));
         return false;
     }
 
@@ -173,11 +177,18 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 if (terminated instanceof HpackException.SessionException)
                  {
                      HTTP2Session.Entry entry = entries.peek();
-                     if (entry != null && entry.frame().getType() == FrameType.GO_AWAY)
+                     if (entry != null)
                      {
-                         // Allow a SessionException to be processed once to send a GOAWAY.
-                         terminated = new ClosedChannelException().initCause(terminated);
-                         rethrow = false;
+                         FrameType frameType = entry.frame().getType();
+                         if (frameType == FrameType.RST_STREAM || frameType == FrameType.GO_AWAY)
+                         {
+                             rethrow = false;
+                             if (frameType == FrameType.GO_AWAY)
+                             {
+                                 // Allow a SessionException to be processed once to send a GOAWAY.
+                                 terminated = new ClosedChannelException().initCause(terminated);
+                             }
+                         }
                      }
                  }
                  if (rethrow)
@@ -224,7 +235,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Dropped {}", entry);
-                    entry.failed(new EofException("dropped"));
+                    entry.closeAndFail(new EofException("dropped"));
                     pending.remove();
                     continue;
                 }
@@ -264,7 +275,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failure generating {}", entry, failure);
-                    entry.failed(failure);
+                    entry.resetAndFail(failure);
                     pending.remove();
                 }
                 catch (HpackException.SessionException failure)
@@ -362,29 +373,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     protected void onFailure(Throwable x)
     {
-        Throwable closed = fail(x);
-        // If the failure came from within the
-        // flusher, we need to close the connection.
-        if (closed == null)
-            session.onWriteFailure(x);
-    }
-
-    @Override
-    protected void onCompleteFailure(Throwable x)
-    {
-        accumulator.release();
-    }
-
-    private void onSessionFailure(Throwable x)
-    {
-        accumulator.clear();
-        Throwable closed = fail(x);
-        if (closed == null)
-            session.close(ErrorCode.COMPRESSION_ERROR.code, null, NOOP);
-    }
-
-    private Throwable fail(Throwable x)
-    {
         Throwable closed;
         Set<HTTP2Session.Entry> allEntries;
         try (AutoLock ignored = lock.lock())
@@ -400,13 +388,53 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             allEntries = new HashSet<>(entries);
             entries.clear();
         }
-
         allEntries.addAll(processedEntries);
         processedEntries.clear();
         allEntries.addAll(pendingEntries);
         pendingEntries.clear();
-        allEntries.forEach(entry -> entry.failed(x));
-        return closed;
+
+        // If the failure comes from within the flusher,
+        // fail the current streams and close the connection.
+        if (closed == null)
+            session.onWriteFailure(x);
+
+        allEntries.forEach(entry -> entry.closeAndFail(x));
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable x)
+    {
+        accumulator.release();
+    }
+
+    private void onSessionFailure(Throwable x)
+    {
+        accumulator.clear();
+
+        Throwable closed;
+        Set<HTTP2Session.Entry> allEntries;
+        try (AutoLock ignored = lock.lock())
+        {
+            closed = terminated;
+            terminated = x;
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("%s, entries processed/pending/queued=%d/%d/%d",
+                    closed != null ? "Closing" : "Failing",
+                    processedEntries.size(),
+                    pendingEntries.size(),
+                    entries.size()), x);
+            allEntries = new HashSet<>(entries);
+            entries.clear();
+        }
+        allEntries.addAll(processedEntries);
+        processedEntries.clear();
+        allEntries.addAll(pendingEntries);
+        pendingEntries.clear();
+
+        allEntries.forEach(entry -> entry.resetAndFail(x));
+
+        if (closed == null)
+            session.close(ErrorCode.COMPRESSION_ERROR.code, null, NOOP);
     }
 
     public void terminate(Throwable cause)
@@ -421,11 +449,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         }
         if (closed == null)
             iterate();
-    }
-
-    private void closed(HTTP2Session.Entry entry, Throwable failure)
-    {
-        entry.failed(failure);
     }
 
     @Override

@@ -90,6 +90,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -127,32 +128,32 @@ public class ProxyServletTest
         ).map(Arguments::of);
     }
 
-    private HttpClient client;
-    private Proxy clientProxy;
+    private HttpConfiguration httpConfig = new HttpConfiguration();
+    private Server server;
+    private ServerConnector serverConnector;
+    private ServerConnector tlsServerConnector;
     private Server proxy;
     private ServerConnector proxyConnector;
     private ServletContextHandler proxyContext;
     private AbstractProxyServlet proxyServlet;
-    private Server server;
-    private ServerConnector serverConnector;
-    private ServerConnector tlsServerConnector;
+    private HttpClient client;
+    private Proxy clientProxy;
 
     private void startServer(HttpServlet servlet) throws Exception
     {
         QueuedThreadPool serverPool = new QueuedThreadPool();
         serverPool.setName("server");
         server = new Server(serverPool);
-        serverConnector = new ServerConnector(server);
+        HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfig);
+        serverConnector = new ServerConnector(server, 1, 1, h1);
         server.addConnector(serverConnector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenPaths.findTestResourceFile("server_keystore.p12").toString();
+        String keyStorePath = MavenTestingUtils.getTestResourcePathFile("server_keystore.p12").toString();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
-        tlsServerConnector = new ServerConnector(server, new SslConnectionFactory(
-            sslContextFactory,
-            HttpVersion.HTTP_1_1.asString()),
-            new HttpConnectionFactory());
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        tlsServerConnector = new ServerConnector(server, 1, 1, ssl, h1);
         server.addConnector(tlsServerConnector);
 
         ServletContextHandler appCtx = new ServletContextHandler("/", true, false);
@@ -1781,5 +1782,59 @@ public class ProxyServletTest
                 }
             }
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("transparentImpls")
+    public void testServerResponseHeadersTooLargeForServerConfiguration(AbstractProxyServlet proxyServletClass) throws Exception
+    {
+        int maxResponseHeadersSize = 256;
+        httpConfig.setResponseHeaderSize(maxResponseHeadersSize);
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                response.setHeader("X-Large", "A".repeat(maxResponseHeadersSize));
+            }
+        });
+        Map<String, String> initParams = Map.of(
+            "proxyTo", "http://localhost:" + serverConnector.getLocalPort()
+        );
+        startProxy(proxyServletClass, initParams);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transparentImpls")
+    public void testServerResponseHeadersTooLargeForProxyConfiguration(AbstractProxyServlet proxyServletClass) throws Exception
+    {
+        int maxResponseHeadersSize = 256;
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                response.setHeader("X-Large", "A".repeat(maxResponseHeadersSize));
+            }
+        });
+        Map<String, String> initParams = Map.of(
+            "proxyTo", "http://localhost:" + serverConnector.getLocalPort(),
+            "maxResponseHeadersSize", String.valueOf(maxResponseHeadersSize)
+        );
+        startProxy(proxyServletClass, initParams);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
     }
 }

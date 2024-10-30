@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +29,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -36,23 +36,25 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 public class DebugHandlerTest
 {
-    public static final String INBOUND_STARTS_WITH = ">> r=";
-    public static final String OUTBOUND_STARTS_WITH = "<< r=";
+    private static final Logger LOG = LoggerFactory.getLogger(DebugHandlerTest.class);
     public static final HostnameVerifier __hostnameverifier = (hostname, session) -> true;
 
     private SSLContext sslContext;
@@ -75,7 +77,7 @@ public class DebugHandlerTest
         httpConnector.setPort(0);
         server.addConnector(httpConnector);
 
-        Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Path keystorePath = MavenPaths.findTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath.toAbsolutePath().toString());
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -88,17 +90,19 @@ public class DebugHandlerTest
         debugHandler = new DebugHandler();
         capturedLog = new ByteArrayOutputStream();
         debugHandler.setOutputStream(capturedLog);
-        server.setHandler(new Handler.Abstract()
+        debugHandler.setHandler(new Handler.Abstract()
         {
+
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
+                LOG.info("Abstract handle()");
                 response.setStatus(200);
                 callback.succeeded();
                 return true;
             }
         });
-        server.insertHandler(debugHandler);
+        server.setHandler(debugHandler);
 
         server.start();
 
@@ -108,9 +112,15 @@ public class DebugHandlerTest
 
         serverURI = URI.create(String.format("http://%s:%d/", host, httpConnector.getLocalPort()));
         secureServerURI = URI.create(String.format("https://%s:%d/", host, sslConnector.getLocalPort()));
+    }
+
+    @BeforeEach
+    public void trustAllHttpsUrlConnection() throws Exception
+    {
+        Path keystorePath = MavenPaths.findTestResourceFile("keystore.p12");
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = IOResources.asInputStream(sslContextFactory.getKeyStoreResource()))
+        try (InputStream stream = Files.newInputStream(keystorePath))
         {
             keystore.load(stream, "storepwd".toCharArray());
         }
@@ -148,27 +158,30 @@ public class DebugHandlerTest
     }
 
     @Test
-    public void testDebugInboundOutboundMessages() throws IOException
+    public void testThreadName() throws IOException
     {
         HttpURLConnection http = (HttpURLConnection)serverURI.resolve("/foo/bar?a=b").toURL().openConnection();
         assertThat("Response Code", http.getResponseCode(), is(200));
 
-        String log = capturedLog.toString(StandardCharsets.UTF_8.name());
-
-        assertThat("Inbound", log, containsString(INBOUND_STARTS_WITH));
-        assertThat("Outbound", log, containsString(OUTBOUND_STARTS_WITH));
+        String log = capturedLog.toString(StandardCharsets.UTF_8);
+        String expectedThreadName = ":/foo/bar?a=b";
+        assertThat("ThreadName", log, containsString(expectedThreadName));
+        // Look for bad/mangled/duplicated schemes
+        assertThat("ThreadName", log, not(containsString("http:" + expectedThreadName)));
+        assertThat("ThreadName", log, not(containsString("https:" + expectedThreadName)));
     }
 
     @Test
-    public void testSecureInboundOutboundMessages() throws IOException
+    public void testSecureThreadName() throws IOException
     {
         HttpURLConnection http = (HttpURLConnection)secureServerURI.resolve("/foo/bar?a=b").toURL().openConnection();
         assertThat("Response Code", http.getResponseCode(), is(200));
 
-        String log = capturedLog.toString(StandardCharsets.UTF_8.name());
-        System.err.println("****" + log + "******");
-
-        assertThat("Inbound", log, containsString(INBOUND_STARTS_WITH));
-        assertThat("Outbound", log, containsString(OUTBOUND_STARTS_WITH));
+        String log = capturedLog.toString(StandardCharsets.UTF_8);
+        String expectedThreadName = ":/foo/bar?a=b";
+        assertThat("ThreadName", log, containsString(expectedThreadName));
+        // Look for bad/mangled/duplicated schemes
+        assertThat("ThreadName", log, not(containsString("http:" + expectedThreadName)));
+        assertThat("ThreadName", log, not(containsString("https:" + expectedThreadName)));
     }
 }
