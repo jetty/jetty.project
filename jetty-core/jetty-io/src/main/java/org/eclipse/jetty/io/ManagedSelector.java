@@ -348,6 +348,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 LOG.debug("Connected {} {}", connected, channel);
             if (connected)
             {
+                _selectorManager.onConnected(channel);
                 if (connect.timeout.cancel())
                 {
                     key.interestOps(0);

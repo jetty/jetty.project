@@ -454,7 +454,7 @@ public class ClientConnector extends ContainerLifeCycle
             boolean connected = true;
             if (channel instanceof SocketChannel socketChannel)
             {
-                final SocketAddress socketAddress = address; 
+                final SocketAddress socketAddress = address;
                 boolean blocking = isConnectBlocking() && address instanceof InetSocketAddress;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connecting {} to {}", blocking ? "blocking" : "non-blocking", address);
@@ -462,6 +462,7 @@ public class ClientConnector extends ContainerLifeCycle
                 {
                     this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectBegin(socketChannel, socketAddress));
                     socketChannel.socket().connect(address, (int)getConnectTimeout().toMillis());
+                    this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectSuccess(socketChannel));
                     socketChannel.configureBlocking(false);
                 }
                 else
@@ -490,7 +491,7 @@ public class ClientConnector extends ContainerLifeCycle
             if (x.getClass() == SocketException.class)
                 x = new SocketException("Could not connect to " + address).initCause(x);
             IO.close(channel);
-            connectFailed(x, context);
+            connectFailed(channel, x, context);
         }
     }
 
@@ -576,12 +577,13 @@ public class ClientConnector extends ContainerLifeCycle
             promise.failed(failure);
     }
 
-    protected void connectFailed(Throwable failure, Map<String, Object> context)
+    protected void connectFailed(SelectableChannel channel, Throwable failure, Map<String, Object> context)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Could not connect to {}", context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY));
         Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
         if (promise != null)
+            ClientConnector.this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectFailure((SocketChannel)channel, failure));
             promise.failed(failure);
     }
 
@@ -596,7 +598,6 @@ public class ClientConnector extends ContainerLifeCycle
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
             EndPoint endPoint = ClientConnector.this.newEndPoint(channel, selector, selectionKey);
-            ClientConnector.this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectSuccess((SocketChannel)channel));
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
             return endPoint;
         }
@@ -634,8 +635,13 @@ public class ClientConnector extends ContainerLifeCycle
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
-            ClientConnector.this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectFailure((SocketChannel)channel, failure));
-            connectFailed(failure, context);
+            connectFailed(channel, failure, context);
+        }
+        
+        @Override
+        public void onConnected(SelectableChannel channel)
+        {
+            ClientConnector.this.getBeans(ClientConnector.ConnectListener.class).forEach(listener -> listener.onConnectSuccess((SocketChannel)channel));
         }
     }
 
@@ -763,7 +769,9 @@ public class ClientConnector extends ContainerLifeCycle
     public interface ConnectListener extends EventListener
     {
         public void onConnectBegin(SocketChannel s, SocketAddress a);
+
         public void onConnectSuccess(SocketChannel s);
+
         public void onConnectFailure(SocketChannel s, Throwable x);
     }
 }
