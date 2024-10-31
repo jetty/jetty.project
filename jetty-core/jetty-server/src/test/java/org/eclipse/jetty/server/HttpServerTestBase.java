@@ -1980,13 +1980,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
             else
             {
-                HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+                HttpTester.Input input = HttpTester.from(client.getInputStream());
+                HttpTester.Response response = HttpTester.parseResponse(input);
                 assertNotNull(response);
                 assertThat(response.getStatus(), is(200));
-
                 if (pipeline)
                 {
-                    response = HttpTester.parseResponse(client.getInputStream());
+                    response = HttpTester.parseResponse(input);
                     assertNotNull(response);
                     assertThat(response.getStatus(), is(200));
                 }

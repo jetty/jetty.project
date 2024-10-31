@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable, ConnectionPool.MaxMultiplexable
+public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable, ConnectionPool.MaxMultiplexable, ConnectionPool.MaxUsable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP2.class);
 
@@ -106,6 +106,17 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public int getMaxMultiplex()
     {
         return ((HTTP2Session)session).getMaxLocalStreams();
+    }
+
+    @Override
+    public int getMaxUsage()
+    {
+        return ((HTTP2Session)session).getMaxTotalLocalStreams();
+    }
+
+    void setMaxUsage(int maxUsage)
+    {
+        ((HTTP2Session)session).setMaxTotalLocalStreams(maxUsage);
     }
 
     @Override

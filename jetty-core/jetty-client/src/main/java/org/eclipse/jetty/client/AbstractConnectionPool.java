@@ -341,7 +341,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
                 int maxUsage = getMaxUsage();
                 if (connection instanceof MaxUsable maxUsable)
-                    maxUsage = maxUsable.getMaxUsage();
+                    maxUsage = Math.min(maxUsage, maxUsable.getMaxUsage());
                 if (maxUsage > 0)
                 {
                     EntryHolder holder = (EntryHolder)((Attachable)connection).getAttachment();
