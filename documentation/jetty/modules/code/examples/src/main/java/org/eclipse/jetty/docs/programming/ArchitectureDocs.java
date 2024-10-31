@@ -110,8 +110,12 @@ public class ArchitectureDocs
                 {
                     switch (Invocable.getInvocationType(subTask))
                     {
-                        case NON_BLOCKING, EITHER -> subTask.run();
-                        case BLOCKING -> executor.execute(subTask);
+                        case NON_BLOCKING, EITHER ->
+                            // Do not defer a NON-BLOCKING or EITHER task
+                            subTask.run();
+                        case BLOCKING ->
+                            // Defer the BLOCKING task as this thread may not block
+                            executor.execute(subTask);
                     }
                 }
             }
@@ -121,13 +125,27 @@ public class ArchitectureDocs
                 {
                     switch (Invocable.getInvocationType(subTask))
                     {
-                        case NON_BLOCKING -> subTask.run();
-                        case EITHER -> Invocable.invokeNonBlocking(subTask);
+                        case NON_BLOCKING ->
+                            // Do not defer a NON-BLOCKING task
+                            subTask.run();
+                        case EITHER ->
+                        {
+                            if (executor.tryExecute(this))
+                                // Do not defer an EITHER task
+                                subTask.run();
+                            else
+                                // Do not defer the EITHER task, run non-blocking instead
+                                Invocable.invokeNonBlocking(subTask);
+                        }
                         case BLOCKING ->
                         {
                             if (executor.tryExecute(this))
+                                // A reserved thread will consume other subTasks, so we can call the
+                                // BLOCKING task with a hot CPU cache.
                                 subTask.run();
                             else
+                                // Defer the BLOCKING task as there is no reserved thread available to avoid
+                                // head-of-line blocking of the subTask queue.
                                 executor.execute(subTask);
                         }
                     }
