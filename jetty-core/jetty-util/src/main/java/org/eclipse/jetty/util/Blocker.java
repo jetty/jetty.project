@@ -206,6 +206,65 @@ public class Blocker
         };
     }
 
+    public interface Promise<C> extends org.eclipse.jetty.util.Promise<C>, AutoCloseable, Invocable
+    {
+        C block() throws IOException;
+
+        @Override
+        void close();
+    }
+
+    public static <C> Promise<C> promise()
+    {
+        return new Promise<>()
+        {
+            private final CompletableFuture<C> _future = new CompletableFuture<>();
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+
+            @Override
+            public C block() throws IOException
+            {
+                try
+                {
+                    return _future.get();
+                }
+                catch (Throwable t)
+                {
+                    throw IO.rethrow(t);
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                if (!_future.isDone())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Blocking.Promise incomplete", new Throwable());
+                    else
+                        LOG.warn("Blocking.Promise incomplete");
+                }
+            }
+
+            @Override
+            public void succeeded(C result)
+            {
+                _future.complete(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                _future.completeExceptionally(x);
+            }
+        };
+    }
+
     /**
      * A shared reusable Blocking source.
      */

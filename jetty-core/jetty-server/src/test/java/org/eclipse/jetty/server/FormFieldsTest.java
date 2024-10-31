@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -72,7 +73,7 @@ public class FormFieldsTest
     {
         AsyncContent source = new AsyncContent();
         Attributes attributes = new Attributes.Mapped();
-        CompletableFuture<Fields> futureFields = FormFields.from(source, attributes, charset, maxFields, maxLength);
+        CompletableFuture<Fields> futureFields = FormFields.from(source, Invocable.InvocationType.NON_BLOCKING, attributes, charset, maxFields, maxLength);
         assertFalse(futureFields.isDone());
 
         int last = chunks.size() - 1;
@@ -133,7 +134,7 @@ public class FormFieldsTest
     public void testInvalidFormFields(List<String> chunks, Charset charset, int maxFields, int maxLength, Class<? extends Exception> expectedException)
     {
         AsyncContent source = new AsyncContent();
-        CompletableFuture<Fields> futureFields = FormFields.from(source, new Attributes.Mapped(), charset, maxFields, maxLength);
+        CompletableFuture<Fields> futureFields = FormFields.from(source, Invocable.InvocationType.NON_BLOCKING, new Attributes.Mapped(), charset, maxFields, maxLength);
         assertFalse(futureFields.isDone());
         int last = chunks.size() - 1;
         for (int i = 0; i <= last; i++)

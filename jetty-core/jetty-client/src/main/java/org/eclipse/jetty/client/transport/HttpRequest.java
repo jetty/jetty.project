@@ -369,11 +369,11 @@ public class HttpRequest implements Request
         StringBuilder result = new StringBuilder();
         for (String accept : accepts)
         {
-            if (result.length() > 0)
+            if (!result.isEmpty())
                 result.append(", ");
             result.append(accept);
         }
-        if (result.length() > 0)
+        if (!result.isEmpty())
             headers.put(HttpHeader.ACCEPT, result.toString());
         return this;
     }
@@ -859,7 +859,7 @@ public class HttpRequest implements Request
                 if (parts.length > 0)
                 {
                     String name = urlDecode(parts[0]);
-                    if (name.trim().length() == 0)
+                    if (name.trim().isEmpty())
                         continue;
                     param(name, parts.length < 2 ? "" : urlDecode(parts[1]), true);
                 }

@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -341,7 +342,8 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         {
             if (!_onContent.compareAndSet(null, Objects.requireNonNull(onContent)))
                 throw new IllegalStateException("Pending demand");
-            super.demand(this::onContent);
+            // Inner class used instead of lambda for clarity in stack traces.
+            super.demand(new DemandTask(Invocable.getInvocationType(onContent)));
         }
 
         private void onContent()
@@ -363,6 +365,20 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             finally
             {
                 permit.release();
+            }
+        }
+
+        private class DemandTask extends Task.Abstract
+        {
+            private DemandTask(InvocationType invocationType)
+            {
+                super(invocationType);
+            }
+
+            @Override
+            public void run()
+            {
+                onContent();
             }
         }
     }

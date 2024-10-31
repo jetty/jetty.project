@@ -473,7 +473,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
             {
                 case FORM_ENCODED ->
                 {
-                    Fields fields = FormFields.from(contentSource, request, getFormEncodedCharset(request), 10, _maxMessageSize).get();
+                    Fields fields = FormFields.getFields(contentSource, request, getFormEncodedCharset(request), 10, _maxMessageSize);
                     signature = fields.get("signature").getValue();
                     message = fields.get("message").getValue();
                 }

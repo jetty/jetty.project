@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import jakarta.servlet.AsyncContext;
@@ -644,9 +645,7 @@ public class ServletApiRequest implements HttpServletRequest
         {
             try
             {
-                CompletableFuture<ServletMultiPartFormData.Parts> futureServletMultiPartFormData = ServletMultiPartFormData.from(this);
-
-                _parts = futureServletMultiPartFormData.get();
+                _parts = ServletMultiPartFormData.getParts(this);
 
                 Collection<Part> parts = _parts.getParts();
 
@@ -1289,10 +1288,9 @@ public class ServletApiRequest implements HttpServletRequest
                             ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
                             int maxKeys = contextHandler.getMaxFormKeys();
                             int maxContentSize = contextHandler.getMaxFormContentSize();
-                            _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
+                            _contentParameters = FormFields.getFields(getRequest(), maxKeys, maxContentSize);
                         }
-                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                               InterruptedException e)
+                        catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
                             LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
@@ -1328,10 +1326,9 @@ public class ServletApiRequest implements HttpServletRequest
                     {
                         try
                         {
-                            _contentParameters = FormFields.get(getRequest()).get();
+                            _contentParameters = FormFields.getFields(getRequest());
                         }
-                        catch (IllegalStateException | IllegalArgumentException | ExecutionException |
-                               InterruptedException e)
+                        catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
                             LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);

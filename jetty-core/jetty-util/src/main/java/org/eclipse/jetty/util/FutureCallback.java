@@ -174,6 +174,12 @@ public class FutureCallback implements Future<Void>, Callback
     }
 
     @Override
+    public InvocationType getInvocationType()
+    {
+        return InvocationType.NON_BLOCKING;
+    }
+
+    @Override
     public String toString()
     {
         return String.format("FutureCallback@%x{%b,%b}", hashCode(), _done.get(), _cause == COMPLETED);

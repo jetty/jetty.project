@@ -51,6 +51,41 @@ public class InvocableTest
         assertThat(Invocable.combine(EITHER, BLOCKING), is(BLOCKING));
         assertThat(Invocable.combine(EITHER, NON_BLOCKING), is(NON_BLOCKING));
         assertThat(Invocable.combine(EITHER, EITHER), is(EITHER));
+
+        assertThat(Invocable.combineTypes(null, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(null, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(null, NON_BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(null, EITHER), is(BLOCKING));
+
+        assertThat(Invocable.combineTypes(BLOCKING, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, NON_BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER), is(BLOCKING));
+
+        assertThat(Invocable.combineTypes(NON_BLOCKING, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, NON_BLOCKING), is(NON_BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER), is(NON_BLOCKING));
+
+        assertThat(Invocable.combineTypes(EITHER, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, NON_BLOCKING), is(NON_BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, EITHER), is(EITHER));
+
+        assertThat(Invocable.combineTypes(EITHER, EITHER, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, EITHER, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, EITHER, NON_BLOCKING), is(NON_BLOCKING));
+        assertThat(Invocable.combineTypes(EITHER, EITHER, EITHER), is(EITHER));
+
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER, NON_BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(BLOCKING, EITHER, EITHER), is(BLOCKING));
+
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER, null), is(BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER, BLOCKING), is(BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER, NON_BLOCKING), is(NON_BLOCKING));
+        assertThat(Invocable.combineTypes(NON_BLOCKING, EITHER, EITHER), is(NON_BLOCKING));
     }
 
     @Test

@@ -17,12 +17,14 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Promise;
 
 import static org.eclipse.jetty.http.ComplianceViolation.Listener.NOOP;
 
 /**
  * The Configuration needed to parse multipart/form-data.
- * @see MultiPartFormData#from(Content.Source, Attributes, String, MultiPartConfig)
+ * @see MultiPartFormData#getParts(Content.Source, Attributes, String, MultiPartConfig)
+ * @see MultiPartFormData#onParts(Content.Source, Attributes, String, MultiPartConfig, Promise.Invocable)
  */
 public class MultiPartConfig
 {

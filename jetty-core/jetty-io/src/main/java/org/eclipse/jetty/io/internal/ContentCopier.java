@@ -17,6 +17,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,12 +40,6 @@ public class ContentCopier extends IteratingNestedCallback
     }
 
     @Override
-    public InvocationType getInvocationType()
-    {
-        return InvocationType.NON_BLOCKING;
-    }
-
-    @Override
     protected Action process() throws Throwable
     {
         if (terminated)
@@ -54,7 +49,7 @@ public class ContentCopier extends IteratingNestedCallback
 
         if (chunk == null)
         {
-            source.demand(this::succeeded);
+            source.demand(Invocable.from(getInvocationType(), this::succeeded));
             return Action.SCHEDULED;
         }
 

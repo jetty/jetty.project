@@ -71,6 +71,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -629,10 +630,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        Runnable task = _httpChannel.onIdleTimeout(timeout);
-        if (task != null)
-            getExecutor().execute(task);
-        return false; // We've handle (or ignored) the timeout
+        ThreadPool.executeImmediately(getExecutor(), _httpChannel.onIdleTimeout(timeout));
+        return false;
     }
 
     @Override
@@ -640,7 +639,20 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         Runnable task = _httpChannel.onClose();
         if (task != null)
-            task.run();
+        {
+            ThreadPool.executeImmediately(getExecutor(), () ->
+            {
+                try
+                {
+                    task.run();
+                }
+                finally
+                {
+                    super.close();
+                }
+            });
+            return;
+        }
         super.close();
     }
 
@@ -658,6 +670,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public void run()
     {
         onFillable();
+    }
+
+    public void asyncReadFillInterested()
+    {
+        tryFillInterested(_demandContentCallback);
     }
 
     @Override
@@ -701,9 +718,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
                 LOG.debug("demand failed {}", task, x);
-            if (task != null)
-                // Execute error path as invocation type is probably wrong.
-                getConnector().getExecutor().execute(task);
+            ThreadPool.executeImmediately(getConnector().getExecutor(), task);
         }
 
         @Override
@@ -1061,9 +1076,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_httpChannel.getRequest() == null)
                 _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, stream._uri, stream._version, HttpFields.EMPTY));
 
-            Runnable task = _httpChannel.onFailure(_failure);
-            if (task != null)
-                getServer().getThreadPool().execute(task);
+            ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(_failure));
         }
 
         @Override
@@ -1097,9 +1110,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     stream._chunk = Content.Chunk.from(bad);
                 }
 
-                Runnable todo = _httpChannel.onFailure(bad);
-                if (todo != null)
-                    getServer().getThreadPool().execute(todo);
+                ThreadPool.executeImmediately(getServer().getThreadPool(), _httpChannel.onFailure(bad));
             }
         }
     }
@@ -1390,21 +1401,24 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             if (_chunk != null)
             {
-                Runnable onContentAvailable = _httpChannel.onContentAvailable();
-                if (onContentAvailable != null)
-                    onContentAvailable.run();
+                invokeDemandCallback();
                 return;
             }
             parseAndFillForContent();
             if (_chunk != null)
             {
-                Runnable onContentAvailable = _httpChannel.onContentAvailable();
-                if (onContentAvailable != null)
-                    onContentAvailable.run();
+                invokeDemandCallback();
                 return;
             }
 
-            tryFillInterested(_demandContentCallback);
+            asyncReadFillInterested();
+        }
+
+        private void invokeDemandCallback()
+        {
+            Runnable onContentAvailable = _httpChannel.onContentAvailable();
+            if (onContentAvailable != null)
+                onContentAvailable.run();
         }
 
         @Override

@@ -18,18 +18,22 @@ import java.nio.charset.Charset;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContentSourceString
 {
     private final Content.Source content;
     private final CharsetStringBuilder text;
     private final Promise<String> promise;
+    private final DemandTask _demandTask;
 
     public ContentSourceString(Content.Source content, Charset charset, Promise<String> promise)
     {
         this.content = content;
         this.text = CharsetStringBuilder.forCharset(charset);
         this.promise = promise;
+        // Inner class used instead of lambda for clarity in stack traces.
+        this._demandTask = new DemandTask();
     }
 
     public void convert()
@@ -39,7 +43,7 @@ public class ContentSourceString
             Content.Chunk chunk = content.read();
             if (chunk == null)
             {
-                content.demand(this::convert);
+                content.demand(_demandTask);
                 return;
             }
             if (Content.Chunk.isFailure(chunk))
@@ -69,6 +73,20 @@ public class ContentSourceString
         catch (Throwable x)
         {
             promise.failed(x);
+        }
+    }
+
+    private class DemandTask extends Invocable.Task.Abstract
+    {
+        DemandTask()
+        {
+            super(Invocable.getInvocationType(promise));
+        }
+
+        @Override
+        public void run()
+        {
+            convert();
         }
     }
 }

@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -127,18 +128,15 @@ public class DelayedHandler extends Handler.Wrapper
             case FORM_ENCODED -> new UntilFormDelayedProcess(handler, request, response, callback, contentType);
             case MULTIPART_FORM_DATA ->
             {
-                MultiPartConfig config;
                 if (request.getContext().getAttribute(MultiPartConfig.class.getName()) instanceof MultiPartConfig mpc)
-                    config = mpc;
-                else if (getHandler().getServer().getAttribute(MultiPartConfig.class.getName()) instanceof MultiPartConfig mpc)
-                    config = mpc;
-                else
-                    yield null;
-
-                yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, config);
+                    yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, mpc);
+                if (getServer().getAttribute(MultiPartConfig.class.getName()) instanceof MultiPartConfig mpc)
+                    yield new UntilMultipartDelayedProcess(handler, request, response, callback, contentType, mpc);
+                yield null;
             }
             // if other mimeType, then only delay until content if configured
             default -> delayDispatchUntilContent ? newUntilContentDelayedProcess(handler, request, response, callback) : null;
+
         };
     }
 
@@ -250,7 +248,7 @@ public class DelayedHandler extends Handler.Wrapper
                 Content.Chunk chunk = super.getRequest().read();
                 if (chunk == null)
                 {
-                    getRequest().demand(this::onContentAvailable);
+                    getRequest().demand(org.eclipse.jetty.util.thread.Invocable.from(InvocationType.NON_BLOCKING, this::onContentAvailable));
                     break;
                 }
 
@@ -342,30 +340,38 @@ public class DelayedHandler extends Handler.Wrapper
         @Override
         protected void delay()
         {
-            CompletableFuture<Fields> futureFormFields = FormFields.from(getRequest(), _charset);
+            InvocationType invocationType = getHandler().getInvocationType();
+            AtomicInteger done = new AtomicInteger(2);
+            var onFields = new Promise.Invocable<Fields>()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                }
 
-            // if we are done already, then we are still in the scope of the original process call and can
-            // process directly, otherwise we must execute a call to process as we are within a serialized
-            // demand callback.
-            futureFormFields.whenComplete(futureFormFields.isDone() ? this::process : this::executeProcess);
-        }
+                @Override
+                public void succeeded(Fields result)
+                {
+                    if (done.decrementAndGet() == 0)
+                        invocationType.runWithoutBlocking(this::doProcess, getRequest().getContext());
+                }
 
-        private void process(Fields fields, Throwable x)
-        {
-            if (x == null)
-                super.process();
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
-        }
+                private void doProcess()
+                {
+                    process();
+                }
 
-        private void executeProcess(Fields fields, Throwable x)
-        {
-            if (x == null)
-                // We must execute here as even though we have consumed all the input, we are probably
-                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(super::process);
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return invocationType;
+                }
+            };
+
+            FormFields.onFields(getRequest(), _charset, onFields);
+            if (done.decrementAndGet() == 0)
+                process();
         }
     }
 
@@ -385,30 +391,39 @@ public class DelayedHandler extends Handler.Wrapper
         protected void delay()
         {
             Request request = getRequest();
+            InvocationType invocationType = getHandler().getInvocationType();
+            AtomicInteger done = new AtomicInteger(2);
 
-            CompletableFuture<MultiPartFormData.Parts> futureMultiPart = MultiPartFormData.from(request, request, _contentType, _config);
+            Promise.Invocable<MultiPartFormData.Parts> onParts = new Promise.Invocable<>()
+            {
+                @Override
+                public void failed(Throwable x)
+                {
+                    succeeded(null);
+                }
 
-            // if we are done already, then we can call process in this thread, otherwise
-            // we must call executeProcess when the multipart is complete, since it will be called from a serialized callback.
-            futureMultiPart.whenComplete(futureMultiPart.isDone() ? this::process : this::executeProcess);
-        }
+                @Override
+                public void succeeded(MultiPartFormData.Parts result)
+                {
+                    if (done.decrementAndGet() == 0)
+                        invocationType.runWithoutBlocking(this::doProcess, getRequest().getContext());
+                }
 
-        private void process(MultiPartFormData.Parts parts, Throwable failure)
-        {
-            if (failure == null)
-                super.process();
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), failure);
-        }
+                private void doProcess()
+                {
+                    process();
+                }
 
-        private void executeProcess(MultiPartFormData.Parts parts, Throwable x)
-        {
-            if (x == null)
-                // We must execute here as even though we have consumed all the input, we are probably
-                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(super::process);
-            else
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return invocationType;
+                }
+            };
+
+            MultiPartFormData.onParts(request, request, _contentType, _config, onParts);
+            if (done.decrementAndGet() == 0)
+                process();
         }
     }
 }

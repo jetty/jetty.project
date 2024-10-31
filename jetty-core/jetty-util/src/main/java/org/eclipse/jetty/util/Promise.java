@@ -15,6 +15,8 @@ package org.eclipse.jetty.util;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.slf4j.LoggerFactory;
@@ -217,6 +219,155 @@ public interface Promise<C>
                     break;
             }
             return result;
+        }
+    }
+
+    /**
+     * An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise} that provides the
+     * {@link InvocationType} of calls to {@link Promise#succeeded(Object)}.
+     * Also provides the {@link BiConsumer} interface as a convenient for working
+     * with {@link CompletableFuture}.
+     * @param <R> The result type
+     */
+    interface Invocable<R> extends org.eclipse.jetty.util.thread.Invocable, Promise<R>, BiConsumer<R, Throwable>
+    {
+        @Override
+        default void accept(R result, Throwable error)
+        {
+            if (error != null)
+                failed(error);
+            else
+                succeeded(result);
+        }
+    }
+
+    /**
+     * Create an {@link Promise.Invocable}
+     * @param invocationType The {@link org.eclipse.jetty.util.thread.Invocable.InvocationType} of calls to the {@link Invocable}
+     * @param promise The promise on which to delegate calls to.
+     * @param <C> The type
+     * @return An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise}.
+     */
+    static <C> Invocable<C> from(org.eclipse.jetty.util.thread.Invocable.InvocationType invocationType, Promise<C> promise)
+    {
+        return new Invocable<C>()
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            @Override
+            public void succeeded(C result)
+            {
+                promise.succeeded(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                promise.failed(x);
+            }
+        };
+    }
+
+    /**
+     * Create an {@link Invocable} that is {@link org.eclipse.jetty.util.thread.Invocable.InvocationType#NON_BLOCKING} because
+     * it executes the callbacks
+     * @param promise The promise on which to delegate calls to.
+     * @param <C> The type
+     * @return An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise}.
+     */
+    static <C> Invocable<C> from(Executor executor, Promise<C> promise)
+    {
+        Objects.requireNonNull(executor);
+        return new Invocable<C>()
+        {
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
+            }
+
+            @Override
+            public void succeeded(C result)
+            {
+                executor.execute(() -> promise.succeeded(result));
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                executor.execute(() -> promise.failed(x));
+            }
+        };
+    }
+
+    /**
+     * <p>A {@link Promise} that implements {@link Runnable} to perform
+     * a one-shot task that eventually completes this {@link Promise}.</p>
+     * <p>Subclasses override {@link #run()} to implement the task.</p>
+     * <p>Users of this class start the task execution via {@link #run()}.</p>
+     * <p>Typical usage:</p>
+     * <pre>{@code
+     * // Specify what to do in case of success and failure.
+     * Promise.Task<T> task = new Promise.Task<>(() -> onSuccess(), x -> onFailure(x))
+     * {
+     *     @Override
+     *     public void run()
+     *     {
+     *         try
+     *         {
+     *             // Perform some task.
+     *             T result = performTask();
+     *
+     *             // Eventually succeed this Promise.
+     *             succeeded(result);
+     *         }
+     *         catch (Throwable x)
+     *         {
+     *             // Fail this Promise.
+     *             failed(x);
+     *         }
+     *     }
+     * }
+     *
+     * // Start the task.
+     * task.run();
+     * }</pre>
+     *
+     * @param <T> the type of the result of the task
+     */
+    abstract class Task<T> implements Promise<T>, Runnable
+    {
+        private final Runnable onSuccess;
+        private final Consumer<Throwable> onFailure;
+
+        public Task()
+        {
+            onSuccess = null;
+            onFailure = null;
+        }
+
+        public Task(Runnable onSuccess, Consumer<Throwable> onFailure)
+        {
+            this.onSuccess = Objects.requireNonNull(onSuccess);
+            this.onFailure = Objects.requireNonNull(onFailure);
+        }
+
+        @Override
+        public void succeeded(T result)
+        {
+            if (onSuccess != null)
+                onSuccess.run();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (onFailure != null)
+                onFailure.accept(x);
         }
     }
 }

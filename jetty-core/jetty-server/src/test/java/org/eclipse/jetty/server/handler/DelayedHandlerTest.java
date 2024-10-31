@@ -18,7 +18,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
@@ -467,7 +466,7 @@ public class DelayedHandlerTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 processing.countDown();
-                Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);
+                Fields fields = FormFields.getFields(request);
                 Content.Sink.write(response, true, String.valueOf(fields), callback);
                 return true;
             }
@@ -543,7 +542,7 @@ public class DelayedHandlerTest
                 assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
                 assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.handle"));
 
-                Fields fields = FormFields.from(request).get(1, TimeUnit.NANOSECONDS);
+                Fields fields = FormFields.getFields(request);
                 Content.Sink.write(response, true, String.valueOf(fields), callback);
                 return true;
             }
@@ -586,10 +585,7 @@ public class DelayedHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                CompletableFuture<MultiPartFormData.Parts> future = MultiPartFormData.get(request);
-                assertNotNull(future);
-                assertTrue(future.isDone());
-                MultiPartFormData.Parts parts = future.get();
+                MultiPartFormData.Parts parts = MultiPartFormData.getParts(request);
                 assertNotNull(parts);
                 assertThat(parts.size(), equalTo(3));
                 for (int i = 0; i < 3; i++)

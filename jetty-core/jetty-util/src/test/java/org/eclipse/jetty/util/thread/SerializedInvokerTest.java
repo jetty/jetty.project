@@ -13,28 +13,35 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SerializedInvokerTest
 {
-    private SerializedInvoker _serializedInvoker;
     private ExecutorService _executor;
+    private SerializedInvoker _serializedInvoker;
 
     @BeforeEach
     public void beforeEach()
     {
-        _serializedInvoker = new SerializedInvoker(SerializedInvokerTest.class);
         _executor = Executors.newSingleThreadExecutor();
+        _serializedInvoker = new SerializedInvoker(SerializedInvokerTest.class.getSimpleName(), _executor);
     }
 
     @AfterEach
@@ -143,6 +150,44 @@ public class SerializedInvokerTest
         todo.run();
         assertTrue(task4.hasRun());
         assertFalse(_serializedInvoker.isCurrentThreadInvoking());
+    }
+
+    @Test
+    public void testRedispatchOnChangingInvocationTypeNonBlockingToBlocking()
+    {
+        List<Thread> threads = new CopyOnWriteArrayList<>();
+        Runnable r = () -> threads.add(Thread.currentThread());
+
+        _serializedInvoker.run(
+            Invocable.from(Invocable.InvocationType.NON_BLOCKING, r),
+            Invocable.from(Invocable.InvocationType.NON_BLOCKING, r),
+            r,
+            Invocable.from(Invocable.InvocationType.NON_BLOCKING, r)
+        );
+
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(threads.size(), is(4)));
+        assertThat(threads.get(0), is(threads.get(1)));
+        assertThat(threads.get(1), not(threads.get(2)));
+        assertThat(threads.get(2), is(threads.get(3)));
+    }
+
+    @Test
+    public void testNoRedispatchWhenFirstInvocationTypeIsBlocking()
+    {
+        List<Thread> threads = new CopyOnWriteArrayList<>();
+        Runnable r = () -> threads.add(Thread.currentThread());
+
+        _serializedInvoker.run(
+            r,
+            Invocable.from(Invocable.InvocationType.NON_BLOCKING, r),
+            r,
+            Invocable.from(Invocable.InvocationType.NON_BLOCKING, r)
+        );
+
+        assertThat(threads.size(), is(4));
+        assertThat(threads.get(0), is(threads.get(1)));
+        assertThat(threads.get(0), is(threads.get(2)));
+        assertThat(threads.get(0), is(threads.get(3)));
     }
 
     public class Task implements Runnable

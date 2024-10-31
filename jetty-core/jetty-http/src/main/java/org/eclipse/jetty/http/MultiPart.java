@@ -49,6 +49,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -875,14 +876,8 @@ public class MultiPart
             }
             if (part != null)
             {
-                part.getContentSource().demand(() ->
-                {
-                    try (AutoLock ignoredAgain = lock.lock())
-                    {
-                        this.demand = null;
-                    }
-                    demandCallback.run();
-                });
+                // Inner class used instead of lambda for clarity in stack traces.
+                part.getContentSource().demand(new DemandTask(demandCallback));
             }
             else if (invoke)
             {
@@ -938,6 +933,27 @@ public class MultiPart
         private enum State
         {
             FIRST, MIDDLE, HEADERS, CONTENT, COMPLETE
+        }
+
+        private class DemandTask extends Invocable.Task.Abstract
+        {
+            private final Runnable demandCallback;
+
+            private DemandTask(Runnable demandCallback)
+            {
+                super(Invocable.getInvocationType(demandCallback));
+                this.demandCallback = demandCallback;
+            }
+
+            @Override
+            public void run()
+            {
+                try (AutoLock ignoredAgain = lock.lock())
+                {
+                    AbstractContentSource.this.demand = null;
+                }
+                demandCallback.run();
+            }
         }
     }
 

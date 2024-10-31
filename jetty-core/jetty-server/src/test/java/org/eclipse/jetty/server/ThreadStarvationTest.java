@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -31,15 +32,20 @@ import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
+import org.eclipse.jetty.http.MultiPartConfig;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -50,7 +56,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled // TODO
 public class ThreadStarvationTest
 {
     static final int BUFFER_SIZE = 1024 * 1024;
@@ -72,79 +77,85 @@ public class ThreadStarvationTest
     {
         List<Scenario> params = new ArrayList<>();
 
-        // HTTP
-        ConnectorProvider http = (server, acceptors, selectors) ->
+        for (boolean delayed : new boolean[]{false, true})
         {
-            ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
-            HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-            return new ServerConnector(server, null, null, pool, acceptors, selectors, httpConnectionFactory);
-        };
-        ClientSocketProvider httpClient = Socket::new;
-        params.add(new Scenario("http", http, httpClient));
-
-        // HTTPS/SSL/TLS
-        ConnectorProvider https = (server, acceptors, selectors) ->
-        {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-            SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(keystorePath.toString());
-            sslContextFactory.setKeyStorePassword("storepwd");
-            ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
-
-            HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-            ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
-                AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
-            SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
-            httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
-            return connector;
-        };
-        ClientSocketProvider httpsClient = new ClientSocketProvider()
-        {
-            private SSLContext sslContext;
-
+            // HTTP
+            ConnectorProvider http = (server, acceptors, selectors) ->
             {
-                try
-                {
-                    HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-                    sslContext = SSLContext.getInstance("TLS");
-                    sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
-                    HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            }
+                ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+                HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+                return new ServerConnector(server, null, null, pool, acceptors, selectors, httpConnectionFactory);
+            };
+            ClientSocketProvider httpClient = Socket::new;
+            params.add(new Scenario("http", http, httpClient, delayed));
 
-            @Override
-            public Socket newSocket(String host, int port) throws IOException
+            // HTTPS/SSL/TLS
+            ConnectorProvider https = (server, acceptors, selectors) ->
             {
-                return sslContext.getSocketFactory().createSocket(host, port);
-            }
-        };
-        params.add(new Scenario("https/ssl/tls", https, httpsClient));
+                Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+                SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+                sslContextFactory.setKeyStorePath(keystorePath.toString());
+                sslContextFactory.setKeyStorePassword("storepwd");
+                ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+
+                HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+                ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
+                    AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
+                SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
+                httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
+                return connector;
+            };
+            ClientSocketProvider httpsClient = new ClientSocketProvider()
+            {
+                private final SSLContext sslContext;
+
+                {
+                    try
+                    {
+                        HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+                        sslContext = SSLContext.getInstance("TLS");
+                        sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
+                        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                @Override
+                public Socket newSocket(String host, int port) throws IOException
+                {
+                    return sslContext.getSocketFactory().createSocket(host, port);
+                }
+            };
+            params.add(new Scenario("https/ssl/tls", https, httpsClient, delayed));
+        }
 
         return params.stream().map(Arguments::of);
     }
 
-    private QueuedThreadPool _threadPool;
     private Server _server;
     private ServerConnector _connector;
 
-    private Server prepareServer(Scenario scenario, Handler handler)
+    private void prepareServer(Scenario scenario, Handler handler)
     {
-        _threadPool = new QueuedThreadPool();
-        _threadPool.setMinThreads(THREADS);
-        _threadPool.setMaxThreads(THREADS);
-        _threadPool.setDetailedDump(true);
-        _server = new Server(_threadPool);
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setMinThreads(THREADS);
+        threadPool.setMaxThreads(THREADS);
+        threadPool.setDetailedDump(true);
+        _server = new Server(threadPool);
         int acceptors = 1;
         int selectors = 1;
         _connector = scenario.connectorProvider.newConnector(_server, acceptors, selectors);
         _server.addConnector(_connector);
         _server.setHandler(handler);
-        return _server;
+
+        if (scenario.delayed)
+        {
+            _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
+            _server.insertHandler(new DelayedHandler());
+        }
     }
 
     @AfterEach
@@ -163,79 +174,50 @@ public class ThreadStarvationTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testReadInput(Scenario scenario) throws Exception
-    {
-        prepareServer(scenario, new ReadHandler()).start();
-
-        try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort()))
-        {
-            client.setSoTimeout(10000);
-            OutputStream os = client.getOutputStream();
-            InputStream is = client.getInputStream();
-
-            String request =
-                "GET / HTTP/1.0\r\n" +
-                    "Host: localhost\r\n" +
-                    "Content-Length: 10\r\n" +
-                    "\r\n" +
-                    "0123456789\r\n";
-            os.write(request.getBytes(StandardCharsets.UTF_8));
-            os.flush();
-
-            String response = IO.toString(is);
-            assertEquals(-1, is.read());
-            assertThat(response, containsString("200 OK"));
-            assertThat(response, containsString("Read Input 10"));
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("scenarios")
     public void testReadStarvation(Scenario scenario) throws Exception
     {
         prepareServer(scenario, new ReadHandler());
         _server.start();
 
         ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
-
-        List<Callable<String>> clientTasks = new ArrayList<>();
-
-        for (int i = 0; i < CLIENTS; i++)
-        {
-            clientTasks.add(() ->
-            {
-                try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
-                     OutputStream out = client.getOutputStream();
-                     InputStream in = client.getInputStream())
-                {
-                    client.setSoTimeout(10000);
-
-                    String request =
-                        "PUT / HTTP/1.0\r\n" +
-                            "host: localhost\r\n" +
-                            "content-length: 10\r\n" +
-                            "\r\n" +
-                            "1";
-
-                    // Write partial request
-                    out.write(request.getBytes(StandardCharsets.UTF_8));
-                    out.flush();
-
-                    // Finish Request
-                    Thread.sleep(1500);
-                    out.write(("234567890\r\n").getBytes(StandardCharsets.UTF_8));
-                    out.flush();
-
-                    // Read Response
-                    String response = IO.toString(in);
-                    assertEquals(-1, in.read());
-                    return response;
-                }
-            });
-        }
-
         try
         {
+            List<Callable<String>> clientTasks = new ArrayList<>();
+
+            for (int i = 0; i < CLIENTS; i++)
+            {
+                clientTasks.add(() ->
+                {
+                    try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                         OutputStream out = client.getOutputStream();
+                         InputStream in = client.getInputStream())
+                    {
+                        client.setSoTimeout(10000);
+
+                        String request = """
+                            PUT / HTTP/1.0\r
+                            host: localhost\r
+                            content-length: 10\r
+                            \r
+                            1""";
+
+                        // Write partial request
+                        out.write(request.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Finish Request
+                        Thread.sleep(1500);
+                        out.write(("234567890").getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Read Response
+                        String response = IO.toString(in);
+                        assertEquals(-1, in.read());
+                        return response;
+                    }
+                });
+            }
+
             List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
 
             for (Future<String> responseFut : responses)
@@ -251,24 +233,188 @@ public class ThreadStarvationTest
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testFormStarvation(Scenario scenario) throws Exception
+    {
+        prepareServer(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Fields fields = FormFields.getFields(request);
+                StringBuilder builder = new StringBuilder();
+                fields.forEach(field -> builder.append(field.getName()).append('=').append(field.getValue()).append('\n'));
+                response.write(true, BufferUtil.toBuffer(builder.toString()), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
+        try
+        {
+            List<Callable<String>> clientTasks = new ArrayList<>();
+
+            for (int i = 0; i < CLIENTS; i++)
+            {
+                clientTasks.add(() ->
+                {
+                    try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                         OutputStream out = client.getOutputStream();
+                         InputStream in = client.getInputStream())
+                    {
+                        client.setSoTimeout(10000);
+
+                        String request = """
+                            POST / HTTP/1.0\r
+                            host: localhost\r
+                            content-type: application/x-www-form-urlencoded\r
+                            content-length: 11\r
+                            \r
+                            a=1&b""";
+
+                        // Write partial request
+                        out.write(request.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Finish Request
+                        Thread.sleep(1500);
+                        out.write(("=2&c=3").getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Read Response
+                        String response = IO.toString(in);
+                        assertEquals(-1, in.read());
+                        return response;
+                    }
+                });
+            }
+
+            List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
+
+            for (Future<String> responseFut : responses)
+            {
+                String response = responseFut.get();
+                assertThat(response, containsString("200 OK"));
+                assertThat(response, containsString("a=1"));
+                assertThat(response, containsString("b=2"));
+                assertThat(response, containsString("c=3"));
+            }
+        }
+        finally
+        {
+            clientExecutors.shutdownNow();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testMultiPartStarvation(Scenario scenario) throws Exception
+    {
+        MultiPartConfig config = new MultiPartConfig.Builder()
+            .maxParts(10)
+            .maxMemoryPartSize(Long.MAX_VALUE)
+            .maxSize(Long.MAX_VALUE)
+            .useFilesForPartsWithoutFileName(false)
+            .build();
+
+        prepareServer(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                MultiPartFormData.Parts parts = MultiPartFormData.getParts(request, request, "multipart/form-data; boundary=\"A1B2C3\"", config);
+                StringBuilder builder = new StringBuilder();
+                parts.forEach(part -> builder.append(part.getName()).append('=').append(part.getContentAsString(StandardCharsets.UTF_8)).append('\n'));
+                parts.close();
+                response.write(true, BufferUtil.toBuffer(builder.toString()), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
+        try
+        {
+            List<Callable<String>> clientTasks = new ArrayList<>();
+
+            for (int i = 0; i < CLIENTS; i++)
+            {
+                clientTasks.add(() ->
+                {
+                    try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                         OutputStream out = client.getOutputStream();
+                         InputStream in = client.getInputStream())
+                    {
+                        client.setSoTimeout(10000);
+                        String content = """
+                            --A1B2C3
+                            Content-Disposition: form-data; name="part1"
+                            Content-Type: text/plain; charset="UTF-8"
+                            
+                            content1
+                            --A1B2C3
+                            Content-Disposition: form-data; name="part2"
+                            Content-Type: text/plain; charset="UTF-8"
+                            
+                            content2
+                            --A1B2C3--
+                            """;
+                        String header = """
+                           POST / HTTP/1.0
+                           Host: localhost
+                           Content-Type: multipart/form-data; boundary="A1B2C3"
+                           Content-Length: %d
+                           
+                           """.formatted(content.length());
+
+                        // Write partial request
+                        out.write(header.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Finish Request
+                        Thread.sleep(750);
+                        out.write(content.substring(0, 20).getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Finish Request
+                        Thread.sleep(750);
+                        out.write(content.substring(20).getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        // Read Response
+                        String response = IO.toString(in);
+                        assertEquals(-1, in.read());
+                        return response;
+                    }
+                });
+            }
+
+            List<Future<String>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
+
+            for (Future<String> responseFut : responses)
+            {
+                String response = responseFut.get();
+                assertThat(response, containsString("200 OK"));
+                assertThat(response, containsString("part1=content1"));
+                assertThat(response, containsString("part2=content2"));
+            }
+        }
+        finally
+        {
+            clientExecutors.shutdownNow();
+        }
+    }
+
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            /* TODO
-
-            int l = request.getContentLength();
-            int r = 0;
-            while (r < l)
-            {
-                if (request.getInputStream().read() >= 0)
-                    r++;
-            }
-
-            response.write(true, callback, ByteBuffer.wrap(("Read Input " + r + "\r\n").getBytes()));
-            */
+            String string = Content.Source.asString(request);
+            response.write(true, ByteBuffer.wrap(("Read Input " + string.length() + "\r\n").getBytes()), callback);
             return true;
         }
     }
@@ -281,59 +427,59 @@ public class ThreadStarvationTest
         _server.start();
 
         ExecutorService clientExecutors = Executors.newFixedThreadPool(CLIENTS);
-
-        List<Callable<Long>> clientTasks = new ArrayList<>();
-
-        for (int i = 0; i < CLIENTS; i++)
-        {
-            clientTasks.add(() ->
-            {
-                try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
-                     OutputStream out = client.getOutputStream();
-                     InputStream in = client.getInputStream())
-                {
-                    client.setSoTimeout(30000);
-
-                    String request =
-                        "GET / HTTP/1.0\r\n" +
-                            "host: localhost\r\n" +
-                            "\r\n";
-
-                    // Write GET request
-                    out.write(request.getBytes(StandardCharsets.UTF_8));
-                    out.flush();
-
-                    TimeUnit.MILLISECONDS.sleep(1500);
-
-                    // Read Response
-                    long bodyCount = 0;
-                    long len;
-
-                    byte[] buf = new byte[1024];
-
-                    try
-                    {
-                        while ((len = in.read(buf, 0, buf.length)) != -1)
-                        {
-                            for (int x = 0; x < len; x++)
-                            {
-                                if (buf[x] == '!')
-                                    bodyCount++;
-                            }
-                        }
-                    }
-                    catch (Throwable th)
-                    {
-                        _server.dumpStdErr();
-                        throw th;
-                    }
-                    return bodyCount;
-                }
-            });
-        }
-
         try
         {
+            List<Callable<Long>> clientTasks = new ArrayList<>();
+
+            for (int i = 0; i < CLIENTS; i++)
+            {
+                clientTasks.add(() ->
+                {
+                    try (Socket client = scenario.clientSocketProvider.newSocket("localhost", _connector.getLocalPort());
+                         OutputStream out = client.getOutputStream();
+                         InputStream in = client.getInputStream())
+                    {
+                        client.setSoTimeout(30000);
+
+                        String request = """
+                            GET / HTTP/1.0\r
+                            host: localhost\r
+                            \r
+                            """;
+
+                        // Write GET request
+                        out.write(request.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+
+                        TimeUnit.MILLISECONDS.sleep(1500);
+
+                        // Read Response
+                        long bodyCount = 0;
+                        long len;
+
+                        byte[] buf = new byte[1024];
+
+                        try
+                        {
+                            while ((len = in.read(buf, 0, buf.length)) != -1)
+                            {
+                                for (int x = 0; x < len; x++)
+                                {
+                                    if (buf[x] == '!')
+                                        bodyCount++;
+                                }
+                            }
+                        }
+                        catch (Throwable th)
+                        {
+                            _server.dumpStdErr();
+                            throw th;
+                        }
+                        return bodyCount;
+                    }
+                });
+            }
+
             List<Future<Long>> responses = clientExecutors.invokeAll(clientTasks, 60, TimeUnit.SECONDS);
 
             long expected = BUFFERS * BUFFER_SIZE;
@@ -361,40 +507,40 @@ public class ThreadStarvationTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            /* TODO
-            baseRequest.setHandled(true);
             response.setStatus(200);
 
-            response.setContentLength(BUFFERS * BUFFER_SIZE);
-            OutputStream out = response.getOutputStream();
-            for (int i = 0; i < BUFFERS; i++)
+            try (OutputStream out = Content.Sink.asOutputStream(response))
             {
-                out.write(content);
-                out.flush();
+                for (int i = 0; i < BUFFERS; i++)
+                {
+                    out.write(content);
+                    out.flush();
+                }
             }
 
-             */
             return true;
         }
     }
 
     public static class Scenario
     {
-        public final String testType;
-        public final ConnectorProvider connectorProvider;
-        public final ClientSocketProvider clientSocketProvider;
+        private final String testType;
+        private final ConnectorProvider connectorProvider;
+        private final ClientSocketProvider clientSocketProvider;
+        private final boolean delayed;
 
-        public Scenario(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider)
+        private Scenario(String testType, ConnectorProvider connectorProvider, ClientSocketProvider clientSocketProvider, boolean delayed)
         {
             this.testType = testType;
             this.connectorProvider = connectorProvider;
             this.clientSocketProvider = clientSocketProvider;
+            this.delayed = delayed;
         }
 
         @Override
         public String toString()
         {
-            return this.testType;
+            return "%s|%b".formatted(testType, delayed);
         }
     }
 }
