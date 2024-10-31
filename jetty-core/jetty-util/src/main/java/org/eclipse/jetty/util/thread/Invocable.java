@@ -61,9 +61,9 @@ public interface Invocable
          */
         NON_BLOCKING,
         /**
-         * <p>Invoking the {@link Invocable} may either block the invoker thread if
-         * called directly, or must not block the invoker thread if called via
-         * {@link Invocable#invokeNonBlocking(Runnable)}</p>
+         * <p>Invoking the {@link Invocable} may either block the invoker thread, or must not block
+         * the invoker thread if invoked as {@link Invocable#isNonBlockingInvocation() non-blocking}; 
+         * in either case, the invocation must not be deferred, differently from {@link #BLOCKING}.</p>
          * <p>This invocation type is suitable for {@code Invocable}s that
          * may contain both high non-blocking and low priority blocking sub tasks.
          * Because they may contain high priority tasks, the invocation may not be deferred.
