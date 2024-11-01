@@ -58,6 +58,7 @@ public class HttpConfiguration implements Dumpable
         .mutable()
         .build();
     private final List<ComplianceViolation.Listener> _complianceViolationListeners = new ArrayList<>();
+    private int _inputBufferSize = 8 * 1024;
     private int _outputBufferSize = 32 * 1024;
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
@@ -134,6 +135,7 @@ public class HttpConfiguration implements Dumpable
         {
             _formEncodedMethods.put(s, Boolean.TRUE);
         }
+        _inputBufferSize = config._inputBufferSize;
         _outputBufferSize = config._outputBufferSize;
         _outputAggregationSize = config._outputAggregationSize;
         _requestHeaderSize = config._requestHeaderSize;
@@ -199,6 +201,12 @@ public class HttpConfiguration implements Dumpable
     public boolean removeCustomizer(Customizer customizer)
     {
         return _customizers.remove(customizer);
+    }
+
+    @ManagedAttribute("The size in bytes of the input buffer used to read HTTP requests")
+    public int getInputBufferSize()
+    {
+        return _inputBufferSize;
     }
 
     @ManagedAttribute("The size in bytes of the output buffer used to aggregate HTTP output")
@@ -399,6 +407,15 @@ public class HttpConfiguration implements Dumpable
     {
         _customizers.clear();
         _customizers.addAll(customizers);
+    }
+
+    /**
+     * Set the size of the buffer into which HTTP request are read.
+     * @param inputBufferSize buffer size in bytes.
+     */
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        _inputBufferSize = inputBufferSize;
     }
 
     /**

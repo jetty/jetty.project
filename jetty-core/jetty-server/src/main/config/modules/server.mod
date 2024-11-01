@@ -32,6 +32,9 @@ etc/jetty.xml
 ## Port to use to build URIs for secure redirects
 # jetty.httpConfig.securePort=8443
 
+## Input buffer size (in bytes), used if not overridden by TLS or other concerns
+# jetty.httpConfig.inputBufferSize=8192
+
 ## Response content buffer size (in bytes)
 # jetty.httpConfig.outputBufferSize=32768
 
