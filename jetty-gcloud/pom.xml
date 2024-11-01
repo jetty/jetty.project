@@ -17,7 +17,7 @@
   </modules>
 
   <properties>
-    <gcloud.version>2.22.0</gcloud.version>
+    <gcloud.version>2.24.1</gcloud.version>
   </properties>
 
 </project>
