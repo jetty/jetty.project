@@ -11,38 +11,33 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.demos;
+package org.eclipse.jetty.ee11.demos;
 
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Base64;
 
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class SplitFileServerTest extends AbstractEmbeddedTest
+public class SecuredHelloServletTest extends AbstractEmbeddedTest
 {
     private Server server;
 
     @BeforeEach
     public void startServer() throws Exception
     {
-        Path path0 = Paths.get("src/test/resources/dir0");
-        Path path1 = Paths.get("src/test/resources/dir1");
-        Resource resource0 = ResourceFactory.root().newResource(path0);
-        Resource resource1 = ResourceFactory.root().newResource(path1);
-
-        server = SplitFileServer.createServer(0, resource0, resource1);
+        server = SecuredHelloHandler.createServer(0);
         server.start();
     }
 
@@ -53,38 +48,33 @@ public class SplitFileServerTest extends AbstractEmbeddedTest
     }
 
     @Test
-    public void testGetTest0() throws Exception
+    public void testGetWithoutAuth() throws Exception
     {
-        URI uri = server.getURI().resolve("/test0.txt");
-        ContentResponse response = client.GET(uri);
+        URI uri = server.getURI().resolve("/hello");
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.UNAUTHORIZED_401));
+
+        // dumpResponseHeaders(response);
+    }
+
+    @Test
+    public void testGetWithAuth() throws Exception
+    {
+        URI uri = server.getURI().resolve("/hello");
+
+        String authEncoded = Base64.getEncoder().encodeToString("user:password".getBytes(UTF_8));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .headers(headers -> headers.put(HttpHeader.AUTHORIZATION, "Basic " + authEncoded))
+            .send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
         // dumpResponseHeaders(response);
 
         // test response content
         String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody, containsString("test0"));
-    }
-
-    @Test
-    public void testGetTest1() throws Exception
-    {
-        URI uri = server.getURI().resolve("/test1.txt");
-        ContentResponse response = client.GET(uri);
-        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
-
-        // dumpResponseHeaders(response);
-
-        // test response content
-        String responseBody = response.getContentAsString();
-        assertThat("Response Content", responseBody, containsString("test1"));
-    }
-
-    @Test
-    public void testGetTest2() throws Exception
-    {
-        URI uri = server.getURI().resolve("/test2.txt");
-        ContentResponse response = client.GET(uri);
-        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        assertThat("Response Content", responseBody, containsString("<h1>Hello World from HelloServlet</h1>"));
     }
 }
