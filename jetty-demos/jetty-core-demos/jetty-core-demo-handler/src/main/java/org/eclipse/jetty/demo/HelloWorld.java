@@ -19,36 +19,32 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 
-public class HelloHandler extends Handler.Abstract
+public class HelloWorld extends Handler.Abstract
 {
-    final String greeting;
-    final String body;
-
-    public HelloHandler()
-    {
-        this("Hello World");
-    }
-
-    public HelloHandler(String greeting)
-    {
-        this(greeting, null);
-    }
-
-    public HelloHandler(String greeting, String body)
-    {
-        this.greeting = greeting;
-        this.body = body == null ? "" : body;
-    }
-
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
+        // Declare response encoding and types
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html; charset=utf-8");
+
+        // Declare response status code
         response.setStatus(HttpStatus.OK_200);
 
-        Content.Sink.write(response, true, "<h1>" + greeting + "</h1>\n" + body, callback);
+        // Write back response
+        Content.Sink.write(response, true, "<h1>Hello World</h1>\n", callback);
         return true;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = new Server(port);
+        server.setHandler(new HelloWorld());
+
+        server.start();
+        server.join();
     }
 }
