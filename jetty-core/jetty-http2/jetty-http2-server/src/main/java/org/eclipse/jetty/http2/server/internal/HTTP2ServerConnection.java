@@ -76,7 +76,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, inputBufferSize);
+        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, inputBufferSize, httpConfig.getMinInputBufferSpace());
         this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;

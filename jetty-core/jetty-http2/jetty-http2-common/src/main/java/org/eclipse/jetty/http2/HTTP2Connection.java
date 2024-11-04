@@ -58,16 +58,23 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     private final ByteBufferPool bufferPool;
     private final HTTP2Session session;
     private final int bufferSize;
+    private final int minBufferSpace;
     private final ExecutionStrategy strategy;
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
 
     protected HTTP2Connection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize)
     {
+        this(bufferPool, executor, endPoint, session, bufferSize, -1);
+    }
+
+    protected HTTP2Connection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize, int minBufferSpace)
+    {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.session = session;
         this.bufferSize = bufferSize;
+        this.minBufferSpace = minBufferSpace;
         this.strategy = new AdaptiveExecutionStrategy(producer, executor);
         LifeCycle.start(strategy);
     }
@@ -368,8 +375,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                         if (networkBuffer.isRetained())
                         {
                             // If there is sufficient space available, we can top up the buffer rather than allocate a new one
-                            if (BufferUtil.space(networkBuffer.getByteBuffer()) >= 1024) // TODO getHttpConfiguration().getMinInputBufferSpace()
-                                // do not compact the buffer
+                            if (minBufferSpace > 0 && BufferUtil.space(networkBuffer.getByteBuffer()) >= minBufferSpace)                                // do not compact the buffer
                                 compact = false;
                             else
                                 // otherwise reacquire the buffer and fill into the new buffer.
