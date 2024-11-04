@@ -74,7 +74,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -862,7 +862,7 @@ public class ContextHandlerTest
         ensureWritable(TEST_BAD);
         FS.ensureDeleted(TEST_BAD.toPath());
         assertFalse(TEST_BAD.exists());
-        assertTrue(TEST_BAD.mkdir());
+        assertTrue(TEST_BAD.mkdirs());
         TEST_BAD.deleteOnExit();
 
         File notDirectory = new File(TEST_BAD, "notDirectory.txt");
@@ -888,7 +888,7 @@ public class ContextHandlerTest
         );
     }
 
-    @Disabled // TODO doesn't work on jenkins?
+    @Tag("flaky")
     @ParameterizedTest
     @MethodSource("badTempDirs")
     public void testSetTempDirectoryBad(boolean persistent, File badTempDir)

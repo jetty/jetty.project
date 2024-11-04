@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server;
 
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -32,7 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled // TODO
 public class NotAcceptingTest
 {
     private final long idleTimeout = 2000;
@@ -137,69 +138,6 @@ public class NotAcceptingTest
     }
 
     @Test
-    @Disabled
-    public void testLocalConnector() throws Exception
-    {
-        server.setHandler(new HelloHandler());
-        server.start();
-
-        try (LocalEndPoint client0 = localConnector.connect())
-        {
-            client0.addInputAndExecute(BufferUtil.toBuffer("GET /one HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-            HttpTester.Response response = HttpTester.parseResponse(client0.getResponse());
-            assertThat(response.getStatus(), is(200));
-            assertThat(response.getContent(), is("Hello\n"));
-
-            localConnector.setAccepting(false);
-
-            // 0th connection still working
-            client0.addInputAndExecute(BufferUtil.toBuffer("GET /two HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-            response = HttpTester.parseResponse(client0.getResponse());
-            assertThat(response.getStatus(), is(200));
-            assertThat(response.getContent(), is("Hello\n"));
-
-            LocalEndPoint[] local = new LocalEndPoint[10];
-            for (int i = 0; i < 10; i++)
-            {
-                try (LocalEndPoint client = localConnector.connect())
-                {
-                    try
-                    {
-                        local[i] = client;
-                        client.addInputAndExecute(BufferUtil.toBuffer("GET /three HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-                        response = HttpTester.parseResponse(client.getResponse(false, idleTimeout, TimeUnit.MILLISECONDS));
-
-                        // A few local connections may succeed
-                        if (i == local.length - 1)
-                            // but not 10 of them!
-                            fail("Expected TimeoutException");
-                    }
-                    catch (TimeoutException e)
-                    {
-                        // A connection finally failed!
-                        break;
-                    }
-                }
-            }
-            // 0th connection still working
-            client0.addInputAndExecute(BufferUtil.toBuffer("GET /four HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-            response = HttpTester.parseResponse(client0.getResponse());
-            assertThat(response.getStatus(), is(200));
-            assertThat(response.getContent(), is("Hello\n"));
-
-            localConnector.setAccepting(true);
-            // New connection working again
-            try (LocalEndPoint client = localConnector.connect())
-            {
-                client.addInputAndExecute(BufferUtil.toBuffer("GET /five HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-                response = HttpTester.parseResponse(client.getResponse());
-                assertThat(response.getStatus(), is(200));
-                assertThat(response.getContent(), is("Hello\n"));
-            }
-        }
-    }
-
-    @Test
     public void testServerConnectorAsyncAccept() throws Exception
     {
         TestHandler handler = new TestHandler();
@@ -264,28 +202,11 @@ public class NotAcceptingTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            // TODO see below
+            String content = exchange.exchange(request.getHttpURI().getPath());
+            handled++;
+            response.write(true, ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), callback);
             return true;
         }
-        /*
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            try
-            {
-                String content = exchange.exchange(baseRequest.getRequestURI());
-                baseRequest.setHandled(true);
-                handled++;
-                response.setContentType("text/html;charset=utf-8");
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().print(content);
-            }
-            catch (InterruptedException e)
-            {
-                throw new ServletException(e);
-            }
-        }
-        */
 
         public int getHandled()
         {
@@ -308,7 +229,7 @@ public class NotAcceptingTest
             Socket async2 = new Socket("localhost", asyncConnector.getLocalPort());
         )
         {
-            String expectedContent = "Hello" + System.lineSeparator();
+            String expectedContent = "Hello";
 
             for (Socket client : new Socket[]{async2})
             {
@@ -331,7 +252,7 @@ public class NotAcceptingTest
             Socket async1 = new Socket("localhost", asyncConnector.getLocalPort());
         )
         {
-            String expectedContent = "Hello" + System.lineSeparator();
+            String expectedContent = "Hello";
 
             for (Socket client : new Socket[]{async1})
             {
