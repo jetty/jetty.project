@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.Executor;
-
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -53,62 +51,29 @@ public interface Invocable
          * <p>This invocation type is suitable for {@code Invocable}s that
          * call application code, for example to process an HTTP request.</p>
          */
-        BLOCKING
-        {
-            public void runWithoutBlocking(Runnable task, Executor executor)
-                {
-                    executor.execute(task);
-                }
-        },
+        BLOCKING,
         /**
          * <p>Invoking the {@link Invocable} does not block the invoker thread,
          * and the invocation must be performed immediately in the invoker thread.</p>
          * <p>This invocation type is suitable for {@code Invocable}s that
-         * call high priority implementation code that is guaranteed to never block the
+         * call implementation code that is guaranteed to never block the
          * invoker thread.</p>
          */
-        NON_BLOCKING
-        {
-            public void runWithoutBlocking(Runnable task, Executor ignored)
-                {
-                    task.run();
-                }
-        },
+        NON_BLOCKING,
         /**
          * <p>Invoking the {@link Invocable} may act as a {@code BLOCKING} invocable, unless
          * it is called via {@link Invocable#invokeNonBlocking(Runnable)}, in which case it must
          * act as a {@code NON_BLOCKING}.  The implementation must check {@link Invocable#isNonBlockingInvocation()}
          * to determine how it was called.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that have high priority actions that cannot be deferred,
+         * <p>This invocation type is suitable for {@code Invocable}s that have actions that cannot be deferred,
          * even if the caller is constrained in a way that it cannot immediately call a {@code BLOCKING} invocable, but that
-         * may also have lower priority blocking actions that can benefit from being directly called.
+         * may also have blocking actions that can benefit from being directly called.
          * A caller which has an {@code EITHER} {@code Invocable} must call it immediately, either as a {@code BLOCKING}
          * invocation, if possible, otherwise as a {@code NON_BLOCKING}.   It cannot defer, and specifically must not queue
          * the invocation on a thread pool, as it is likely that the high priority task of an {@code EITHER} invocable are
          * to unblock threads.</p>
          */
         EITHER
-        {
-            public void runWithoutBlocking(Runnable task, Executor ignored)
-                {
-                    Invocable.invokeNonBlocking(task);
-                }
-        };
-
-        /**
-         * Run or Execute the task according to the InvocationType without blocking the caller:
-         * <dl>
-         *   <dt>{@link InvocationType#NON_BLOCKING}</dt>
-         *   <dd>The task is run directly</dd>
-         *   <dt>{@link InvocationType#BLOCKING}</dt>
-         *   <dd>The task is executed by the passed executor</dd>
-         *   <dt>{@link InvocationType#EITHER}</dt>
-         *   <dd>The task is invoked via {@link Invocable#invokeNonBlocking(Runnable)}</dd>
-         * </dl>
-         * @param task The task to run
-         * @param executor The executor to use if necessary
-         */
-        public abstract void runWithoutBlocking(Runnable task, Executor executor);
     }
 
     /**
