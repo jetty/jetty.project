@@ -107,17 +107,7 @@ public class ArchitectureDocs
             if (Invocable.isNonBlockingInvocation())
             {
                 for (Task subTask = subTasks.pollFirst(); subTask != null; subTask = subTasks.pollFirst())
-                {
-                    switch (Invocable.getInvocationType(subTask))
-                    {
-                        case NON_BLOCKING, EITHER ->
-                            // Do not defer a NON-BLOCKING or EITHER task
-                            subTask.run();
-                        case BLOCKING ->
-                            // Defer the BLOCKING task as this thread may not block
-                            executor.execute(subTask);
-                    }
-                }
+                    Invocable.getInvocationType(subTask).runWithoutBlocking(subTask, executor);
             }
             else
             {
@@ -130,22 +120,23 @@ public class ArchitectureDocs
                             subTask.run();
                         case EITHER ->
                         {
-                            if (executor.tryExecute(this))
-                                // Do not defer an EITHER task
+                            // Do not defer an EITHER task
+                            if (subTasks.isEmpty())
+                                // No more subtasks, we can invoke directly with hot CPU cache and not block the head-of-line
                                 subTask.run();
                             else
-                                // Do not defer the EITHER task, run non-blocking instead
+                                // more subtasks, so run non-blocking to avoid head-of-line blocking
                                 Invocable.invokeNonBlocking(subTask);
                         }
                         case BLOCKING ->
                         {
-                            if (executor.tryExecute(this))
-                                // A reserved thread will consume other subTasks, so we can call the
-                                // BLOCKING task with a hot CPU cache.
+                            // We can defer a blocking task, but still must avoid head-of-line blocking
+
+                            if (subTasks.isEmpty())
+                                // No more subtasks, we can invoke directly with hot CPU cache and not block the head-of-line
                                 subTask.run();
                             else
-                                // Defer the BLOCKING task as there is no reserved thread available to avoid
-                                // head-of-line blocking of the subTask queue.
+                                // Defer the BLOCKING subtask to the executor so other subtasks can be handled
                                 executor.execute(subTask);
                         }
                     }
