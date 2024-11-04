@@ -60,6 +60,12 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     }
 
     @Override
+    public int getInputBufferSize()
+    {
+        return _config.getInputBufferSize();
+    }
+
+    @Override
     public HttpConfiguration getHttpConfiguration()
     {
         return _config;
