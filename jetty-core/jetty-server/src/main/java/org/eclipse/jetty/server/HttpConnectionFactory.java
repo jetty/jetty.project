@@ -41,6 +41,20 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         super(HttpVersion.HTTP_1_1.asString());
         _config = Objects.requireNonNull(config);
         installBean(_config);
+        setInputBufferSize(_config.getInputBufferSize());
+    }
+
+    @Override
+    public void setInputBufferSize(int size)
+    {
+        super.setInputBufferSize(size);
+        _config.setInputBufferSize(size);
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return _config.getInputBufferSize();
     }
 
     @Override
@@ -75,8 +89,6 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         HttpConnection connection = new HttpConnection(_config, connector, endPoint);
-        connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-        connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         return configure(connection, connector, endPoint);
     }
 }

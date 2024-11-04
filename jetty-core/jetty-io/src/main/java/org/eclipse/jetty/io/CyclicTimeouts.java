@@ -132,8 +132,11 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
     }
 
     /**
-     * <p>Manages the timeout of a new entity.</p>
-     *
+     * <p>Schedules a timeout for a new or modified item.</p>
+     * <p>If an item returned by the {@link #iterator()} has been modified or added so that it may
+     * now be the earliest expiring item, then this method should be called to schedule the timeout.  This need not be called
+     * for a recurrent timeout during {@code Expirable#onTimeoutExpired()}, nor if the timeout of an existing item is increased.
+     * However, it is safe and inexpensive to always call this when modifying an items expiry.</p>
      * @param expirable the new entity to manage the timeout for
      */
     public void schedule(T expirable)

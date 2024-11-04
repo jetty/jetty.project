@@ -98,6 +98,20 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         setInputBufferSize(Frame.DEFAULT_MAX_SIZE + Frame.HEADER_LENGTH);
         setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
         setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
+        setInputBufferSize(httpConfiguration.getInputBufferSize());
+    }
+
+    @Override
+    public void setInputBufferSize(int size)
+    {
+        super.setInputBufferSize(size);
+        httpConfiguration.setInputBufferSize(size);
+    }
+
+    @Override
+    public int getInputBufferSize()
+    {
+        return httpConfiguration.getInputBufferSize();
     }
 
     @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
@@ -327,7 +341,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector,
-            endPoint, httpConfiguration, session, getInputBufferSize(), listener);
+            endPoint, httpConfiguration, session, listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);
