@@ -34,8 +34,8 @@ public interface Invocable
     ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**
-     * <p>The behavior of an {@link Invocable} when it is invoked.</p>
-     * <p>Typically, {@link Runnable}s or {@link org.eclipse.jetty.util.Callback}s declare their
+     * <p>The behavior of an {@link Invocable} task when it is called.</p>
+     * <p>Typically, tasks such as {@link Runnable}s or {@link org.eclipse.jetty.util.Callback}s declare their
      * invocation type; this information is then used by the code that should
      * invoke the {@code Runnable} or {@code Callback} to decide whether to
      * invoke it directly, or submit it to a thread pool to be invoked by
@@ -44,34 +44,35 @@ public interface Invocable
     enum InvocationType
     {
         /**
-         * <p>Invoking the {@link Invocable} may block the invoker thread,
+         * <p>Invoking the task may block the invoker thread,
          * and the invocation may be performed immediately (possibly blocking
          * the invoker thread) or deferred to a later time, for example
-         * by submitting the {@code Invocable} to a thread pool.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
+         * by submitting the task to a thread pool.</p>
+         * <p>This invocation type is suitable for tasks that
          * call application code, for example to process an HTTP request.</p>
          */
         BLOCKING,
         /**
-         * <p>Invoking the {@link Invocable} does not block the invoker thread,
+         * <p>Invoking the task does not block the invoker thread,
          * and the invocation must be performed immediately in the invoker thread.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
-         * call implementation code that is guaranteed to never block the
-         * invoker thread.</p>
+         * <p>This invocation type is suitable for tasks that can not be deferred and is
+         * guaranteed to never block the invoker thread.</p>
          */
         NON_BLOCKING,
         /**
-         * <p>Invoking the {@link Invocable} may act as a {@code BLOCKING} invocable, unless
-         * it is called via {@link Invocable#invokeNonBlocking(Runnable)}, in which case it must
-         * act as a {@code NON_BLOCKING}.  The implementation must check {@link Invocable#isNonBlockingInvocation()}
-         * to determine how it was called.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that have actions that cannot be deferred,
-         * even if the caller is constrained in a way that it cannot immediately call a {@code BLOCKING} invocable, but that
-         * may also have blocking actions that can benefit from being directly called.
-         * A caller which has an {@code EITHER} {@code Invocable} must call it immediately, either as a {@code BLOCKING}
-         * invocation, if possible, otherwise as a {@code NON_BLOCKING}.   It cannot defer, and specifically must not queue
-         * the invocation on a thread pool, as it is likely that the high priority task of an {@code EITHER} invocable are
-         * to unblock threads.</p>
+         * <p>Invoking the task may act either as a {@code BLOCKING} task if invoked directly; or as a {@code NON_BLOCKING}
+         * task if invoked via {@link Invocable#invokeNonBlocking(Runnable)}. The implementation of the task must check
+         * {@link Invocable#isNonBlockingInvocation()} to determine how it was called.
+         * </p>
+         * <p>This invocation type is suitable for tasks that have a multiple subtasks, some of which that cannot be deferred
+         * mixed with other subtasks that can be.
+         * An invoker which has an {@code EITHER} task must call it immediately, either directly, so that it may block; or
+         * via {@link Invocable#invokeNonBlocking(Runnable)} so that it may not.   It cannot defer, and specifically must
+         * not queue the task in a thread pool.
+         * </p>
+         * <p>See the {@link org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy} for an example of
+         * both an invoker of {@code EITHER} tasks, and as an implementation of an {@code EITHER} task, when used in a
+         * chain of {@link ExecutionStrategy}s.</p>
          */
         EITHER
     }
