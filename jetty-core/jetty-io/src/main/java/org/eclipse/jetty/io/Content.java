@@ -73,7 +73,7 @@ public class Content
      * @param source the source to copy from
      * @param sink the sink to copy to
      * @param callback the callback to notify when the copy is complete
-     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual {@link Chunk}s, including
+     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual {@code Content.Chunk}s, including
      *      the ability to ignore transient failures.
      */
     public static void copy(Source source, Sink sink, Callback callback)
