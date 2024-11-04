@@ -341,7 +341,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector,
-            endPoint, httpConfiguration, session, getInputBufferSize(), listener);
+            endPoint, httpConfiguration, session, listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);

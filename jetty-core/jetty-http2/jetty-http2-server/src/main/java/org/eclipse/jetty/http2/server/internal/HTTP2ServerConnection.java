@@ -74,9 +74,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final SocketAddress remoteSocketAddress;
     private boolean recycleHttpChannels;
 
-    public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, ServerSessionListener listener)
     {
-        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, inputBufferSize);
+        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, httpConfig.getInputBufferSize());
         this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;
