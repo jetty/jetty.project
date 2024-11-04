@@ -157,12 +157,20 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         produce();
     }
 
-    private int fill(EndPoint endPoint, ByteBuffer buffer)
+    private int fill(EndPoint endPoint, ByteBuffer buffer, boolean compact)
     {
+        int padding = 0;
         try
         {
             if (endPoint.isInputShutdown())
                 return -1;
+
+            if (!compact)
+            {
+                // Add padding content to avoid compaction
+                padding = buffer.limit();
+                buffer.position(0);
+            }
             return endPoint.fill(buffer);
         }
         catch (IOException x)
@@ -170,6 +178,11 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             if (LOG.isDebugEnabled())
                 LOG.debug("Could not read from {}", endPoint, x);
             return -1;
+        }
+        finally
+        {
+            if (!compact && padding > 0)
+                buffer.position(padding);
         }
     }
 
@@ -335,6 +348,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
                 while (true)
                 {
+                    boolean compact = true;
                     if (parse)
                     {
                         while (networkBuffer.hasRemaining())
@@ -350,14 +364,20 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                         if (task != null)
                             return task;
 
-                        // If more references than 1 (ie not just us), don't refill into buffer and risk compaction.
+                        // If the application has retained the content chunks then we must not overwrite content.
                         if (networkBuffer.isRetained())
-                            reacquireNetworkBuffer();
+                        {
+                            // If there is sufficient space available, we can top up the buffer rather than allocate a new one
+                            if (BufferUtil.space(networkBuffer.getByteBuffer()) >= 1024) // TODO getHttpConfiguration().getMinInputBufferSpace()
+                                // do not compact the buffer
+                                compact = false;
+                            else
+                                // otherwise reacquire the buffer and fill into the new buffer.
+                                reacquireNetworkBuffer();
+                        }
                     }
 
-                    // Here we know that this.networkBuffer is not retained by
-                    // application code: either it has been released, or it's a new one.
-                    int filled = fill(getEndPoint(), networkBuffer.getByteBuffer());
+                    int filled = fill(getEndPoint(), networkBuffer.getByteBuffer(), compact);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Filled {} bytes in {}", filled, networkBuffer);
 

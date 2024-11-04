@@ -365,7 +365,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 int filled;
                 if (isRequestBufferEmpty())
                 {
-                    filled = fillRequestBuffer();
+                    filled = fillRequestBuffer(true);
                     if (LOG.isDebugEnabled())
                         LOG.debug("onFillable filled {} {} {} {}", filled, _httpChannel, _requestBuffer, this);
 
@@ -515,39 +515,27 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             assert !_requestBuffer.hasRemaining();
 
             int filled;
+            boolean compact = true;
 
-            // The application has retained the content chunks then we must not overwrite content.
+            // If the application has retained the content chunks then we must not overwrite content.
             if (_requestBuffer.isRetained())
             {
-                // If there is more than 1K space available, we can top up the buffer rather than allocate a new one
+                // If there is sufficient space available, we can top up the buffer rather than allocate a new one
                 ByteBuffer backing = _requestBuffer.getByteBuffer();
-                int limit = backing.limit();
-                if (backing.capacity() - limit >= getHttpConfiguration().getMinInputBufferSpace())
+                if (BufferUtil.space(backing) >= getHttpConfiguration().getMinInputBufferSpace())
                 {
-                    // Move the position back to 0, leaving limit to cover the retained content and prevent it be overwritten
-                    backing.position(0);
-                    try
-                    {
-                        filled = fillRequestBuffer();
-                    }
-                    finally
-                    {
-                        // revert the position to the original limit to reconsume the retained content
-                        backing.position(limit);
-                    }
+                    // do not compact the buffer
+                    compact = false;
                 }
                 else
                 {
                     // otherwise reacquire the buffer and fill into the new buffer.
                     releaseRequestBuffer();
                     ensureRequestBuffer();
-                    filled = fillRequestBuffer();
                 }
             }
-            else
-            {
-                filled = fillRequestBuffer();
-            }
+
+            filled = fillRequestBuffer(compact);
 
             if (filled <= 0)
             {
@@ -559,11 +547,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
     }
 
-    private int fillRequestBuffer()
+    private int fillRequestBuffer(boolean compact)
     {
+        int padding = 0;
+        ByteBuffer requestBuffer = _requestBuffer.getByteBuffer();
         try
         {
-            ByteBuffer requestBuffer = _requestBuffer.getByteBuffer();
+            if (!compact)
+            {
+                // Add padding content to avoid compaction
+                padding = requestBuffer.limit();
+                requestBuffer.position(0);
+            }
             int filled = getEndPoint().fill(requestBuffer);
             if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
                 filled = getEndPoint().fill(requestBuffer);
@@ -584,6 +579,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
             _parser.atEOF();
             return -1;
+        }
+        finally
+        {
+            if (!compact && padding > 0)
+                requestBuffer.position(padding);
         }
     }
 
