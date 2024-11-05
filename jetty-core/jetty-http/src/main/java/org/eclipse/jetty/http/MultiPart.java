@@ -765,7 +765,7 @@ public class MultiPart
                     builder.append("\r\n");
 
                     // TODO: use a ByteBuffer pool and direct ByteBuffers?
-                    ByteBuffer byteBuffer = UTF_8.encode(builder.toCompleteString());
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(builder.toCompleteString().getBytes(UTF_8));
                     state = State.CONTENT;
                     yield Content.Chunk.from(byteBuffer, false);
                 }
