@@ -111,12 +111,12 @@ public class ArchitectureDocs
                     switch (Invocable.getInvocationType(subTask))
                     {
                         case NON_BLOCKING, EITHER ->
-                            // Do not defer a NON-BLOCKING or EITHER task
-                            // We do not need to use invokeNonBlocking, as we are already invoked via that method
+                            // Do not defer a NON-BLOCKING or EITHER task.
+                            // No need to use invokeNonBlocking(), as this task is already invoked via that method.
                             subTask.run();
 
                         case BLOCKING ->
-                            // Defer the BLOCKING task as this thread may not block
+                            // Defer the BLOCKING task as this thread must not block.
                             executor.execute(subTask);
                     }
                 }
@@ -128,30 +128,30 @@ public class ArchitectureDocs
                     switch (Invocable.getInvocationType(subTask))
                     {
                         case NON_BLOCKING ->
-                            // Do not defer a NON-BLOCKING task
+                            // Do not defer a NON-BLOCKING task.
                             subTask.run();
 
                         case EITHER ->
                         {
-                            // Do not defer an EITHER task
+                            // Do not defer an EITHER task.
                             if (executor.tryExecute(this))
-                                // A reserved thread is consuming any remaining subtasks, so we can call the subtask directly,
+                                // A reserved thread is consuming any remaining subtasks; call the subtask directly,
                                 // and it may block without causing head-of-line blocking.
                                 subTask.run();
                             else
-                                // There is no reserved thread to consume remaining subtasks, so we invoke this
-                                // subtask as non-blocking so that we avoid head-of-line blocking.
+                                // There is no reserved thread to consume remaining subtasks; invoke this
+                                // subtask as non-blocking to avoid head-of-line blocking.
                                 Invocable.invokeNonBlocking(subTask);
                         }
                         case BLOCKING ->
                         {
-                            // A blocking task may be deferred, but it is preferable to run directly with hot CPU cache.
+                            // A blocking task may be deferred, but it is preferable to run it directly with hot CPU cache.
                             if (executor.tryExecute(this))
-                                // A reserved thread is consuming any remaining subtasks, so we can call the subtask directly,
+                                // A reserved thread is consuming any remaining subtasks; call the subtask directly,
                                 // and it may block without causing head-of-line blocking.
                                 subTask.run();
                             else
-                                // There is no reserved thread to consume remaining subtasks, so we defer the execution
+                                // There is no reserved thread to consume remaining subtasks; defer the execution
                                 // of this subtask by executing it and avoiding head-of-line blocking of other subtasks.
                                 executor.execute(subTask);
                         }
