@@ -347,12 +347,13 @@ public class DelayedHandler extends Handler.Wrapper
                 @Override
                 public void failed(Throwable x)
                 {
-                    Response.writeError(getRequest(), getResponse(), getCallback(), x);
+                    succeeded(null);
                 }
 
                 @Override
                 public void succeeded(Fields result)
                 {
+                    // If the handling thread has already exited, we must process without blocking from this callback
                     if (done.decrementAndGet() == 0)
                         invocationType.runWithoutBlocking(this::doProcess, getRequest().getContext());
                 }
@@ -369,6 +370,7 @@ public class DelayedHandler extends Handler.Wrapper
                 }
             };
 
+            // If the fields are already available, we can process from this handling thread
             FormFields.onFields(getRequest(), _charset, onFields);
             if (done.decrementAndGet() == 0)
                 process();
@@ -405,6 +407,7 @@ public class DelayedHandler extends Handler.Wrapper
                 @Override
                 public void succeeded(MultiPartFormData.Parts result)
                 {
+                    // If the handling thread has already exited, we must process without blocking from this callback
                     if (done.decrementAndGet() == 0)
                         invocationType.runWithoutBlocking(this::doProcess, getRequest().getContext());
                 }
@@ -422,6 +425,8 @@ public class DelayedHandler extends Handler.Wrapper
             };
 
             MultiPartFormData.onParts(request, request, _contentType, _config, onParts);
+
+            // If the parts are already available, we can process from this handling thread
             if (done.decrementAndGet() == 0)
                 process();
         }
