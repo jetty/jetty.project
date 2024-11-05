@@ -64,11 +64,12 @@ public interface Invocable
          * task if invoked via {@link Invocable#invokeNonBlocking(Runnable)}. The implementation of the task must check
          * {@link Invocable#isNonBlockingInvocation()} to determine how it was called.
          * </p>
-         * <p>This invocation type is suitable for tasks that have a multiple subtasks, some of which that cannot be deferred
+         * <p>This invocation type is suitable for tasks that have multiple subtasks, some of which that cannot be deferred
          * mixed with other subtasks that can be.
          * An invoker which has an {@code EITHER} task must call it immediately, either directly, so that it may block; or
-         * via {@link Invocable#invokeNonBlocking(Runnable)} so that it may not.   It cannot defer, and specifically must
-         * not queue the task in a thread pool.
+         * via {@link Invocable#invokeNonBlocking(Runnable)} so that it may not.
+         * The invoker cannot defer the task execution, and specifically it must not
+         * queue the {@code EITHER} task in a thread pool.
          * </p>
          * <p>See the {@link org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy} for an example of
          * both an invoker of {@code EITHER} tasks, and as an implementation of an {@code EITHER} task, when used in a
