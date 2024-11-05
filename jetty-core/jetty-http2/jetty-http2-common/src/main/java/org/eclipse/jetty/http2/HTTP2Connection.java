@@ -375,7 +375,8 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                         if (networkBuffer.isRetained())
                         {
                             // If there is sufficient space available, we can top up the buffer rather than allocate a new one
-                            if (minBufferSpace > 0 && BufferUtil.space(networkBuffer.getByteBuffer()) >= minBufferSpace)                                // do not compact the buffer
+                            if (minBufferSpace > 0 && BufferUtil.space(networkBuffer.getByteBuffer()) >= minBufferSpace)
+                                // do not compact the buffer
                                 compact = false;
                             else
                                 // otherwise reacquire the buffer and fill into the new buffer.
