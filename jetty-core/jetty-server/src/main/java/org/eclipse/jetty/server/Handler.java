@@ -221,7 +221,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
     /**
      * <p>A {@link Handler.Container} that can contain multiple other {@link Handler}s.</p>
      *
-     * @see Sequence for an implementation of {@link Collection}.
+     * @see Sequence for an implementation of {@code Collection}.
      * @see Singleton
      */
     interface Collection extends Container
@@ -290,7 +290,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * <p>This is a "singleton" in the sense of {@link Collections#singleton(Object)} and not
      * in the sense of the singleton pattern of a single instance per JVM.</p>
      *
-     * @see Wrapper for an implementation of {@link Singleton}.
+     * @see Wrapper for an implementation of {@code Singleton}.
      * @see Collection
      */
     @ManagedObject

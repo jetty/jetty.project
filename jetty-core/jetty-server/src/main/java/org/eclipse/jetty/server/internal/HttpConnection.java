@@ -639,20 +639,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         Runnable task = _httpChannel.onClose();
         if (task != null)
-        {
-            ThreadPool.executeImmediately(getExecutor(), () ->
-            {
-                try
-                {
-                    task.run();
-                }
-                finally
-                {
-                    super.close();
-                }
-            });
-            return;
-        }
+            task.run();
         super.close();
     }
 
