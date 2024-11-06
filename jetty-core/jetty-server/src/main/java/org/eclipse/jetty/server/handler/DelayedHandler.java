@@ -28,11 +28,14 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
@@ -42,10 +45,23 @@ import org.eclipse.jetty.util.StringUtil;
  * A {@link Handler.Wrapper} that can delay calling {@link Handler#handle(Request, Response, Callback)} on the
  * {@link #getHandler() next Handler} until content is available, either entirely or in part.  This handler is fully
  * asynchronous and will not block waiting for content.   Furthermore, for known content types, the content may be
- * parsed into {@link FormFields} or {@link MultiPartFormData.Parts} prior to handling.
- * <p>
- * This handler can allow a blocking application to run without blocking on input, as the content is asynchronously
- * read before the application is called.
+ * parsed into {@link FormFields} or {@link MultiPartFormData.Parts} prior to handling. Thus, this handler can allow a
+ * blocking application to run without blocking on input, as the content is asynchronously read before the application
+ * is called.
+ * </p>
+ * <p>To delay for {@link FormFields}, the request content must be {@link org.eclipse.jetty.http.MimeTypes.Type#FORM_ENCODED}.
+ * Once read by this handler, the fields are available via {@link FormFields#getFields(Request)}.
+ * </p>
+ * <p>To delay for {@link MultiPartFormData} content, a {@link org.eclipse.jetty.http.MultiPartConfig} instance must be set as
+ * a {@link org.eclipse.jetty.server.Context} or {@link org.eclipse.jetty.server.Server} attribute with the class name
+ * as they attribute name. Once read by this handler, the parts are available via
+ * {@link MultiPartFormData#getParts(Attributes)}, passing in the {@link Request} as the {@link Attributes} instance.
+ * </p>
+ * <p> To delay for arbitrary content, the {@link HttpConfiguration#isDelayDispatchUntilContent()} configuration must
+ * be {@code true} and up to {@link HttpConfiguration#getInputBufferSize()} of data may be
+ * {@link RetainableByteBuffer#retain() retained}.  Once read, the data is made available via the standard
+ * {@link Request#read()} API.
+ * </p>
  */
 public class DelayedHandler extends Handler.Wrapper
 {
