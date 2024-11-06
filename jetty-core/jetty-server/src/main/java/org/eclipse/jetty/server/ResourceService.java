@@ -59,12 +59,12 @@ public class ResourceService
     private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);
     private static final int NO_CONTENT_LENGTH = -1;
     private static final int USE_KNOWN_CONTENT_LENGTH = -2;
-    public static final EnumSet<HttpHeader> CONTENT_HEADERS = EnumSet.of(
+    private static final EnumSet<HttpHeader> CONTENT_HEADERS = EnumSet.of(
         HttpHeader.LAST_MODIFIED,
         HttpHeader.CONTENT_LENGTH,
         HttpHeader.CONTENT_TYPE
     );
-    public static final PreEncodedHttpField ACCEPT_RANGES_BYTES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
+    private static final PreEncodedHttpField ACCEPT_RANGES_BYTES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
 
     private final List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
