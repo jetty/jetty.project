@@ -770,34 +770,10 @@ public class ResourceService
     protected void putNotModifiedHeaders(Response response, HttpContent content)
     {
         HttpFields.Mutable headers = response.getHeaders();
-
-        boolean sendLastModified = true;
-
-        // Existing etags have priority over content etags (often set by compression handler)
-        if (_etags)
-        {
-            if (headers.contains(HttpHeader.ETAG))
-            {
-                sendLastModified = false;
-            }
-            else
-            {
-                HttpField et = content.getETag();
-                if (et != null)
-                {
-                    headers.add(et);
-                    sendLastModified = false;
-                }
-            }
-        }
-
-        // Send last modified only if there is no etag
-        if (sendLastModified)
-        {
-            HttpField lm = content.getLastModified();
-            if (lm != null)
-                headers.put(lm);
-        }
+        // send only lastModified, as it is too difficult to determine the etag with compression
+        HttpField lm = content.getLastModified();
+        if (lm != null)
+            headers.put(lm);
 
         putHeaders(response);
     }
