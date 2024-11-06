@@ -1250,7 +1250,8 @@ public class HttpChannelState implements HttpChannel, Components
                         long committedContentLength = httpChannelState._committedContentLength;
                         long contentLength = committedContentLength >= 0 ? committedContentLength : getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
 
-                        if (contentLength >= 0 && totalWritten != contentLength)
+                        if (contentLength >= 0 && totalWritten != contentLength &&
+                            !(totalWritten == 0 && (HttpMethod.HEAD.is(_request.getMethod()) || getStatus() == HttpStatus.NOT_MODIFIED_304)))
                         {
                             // If the content length were not compatible with what was written, then we need to abort.
                             String lengthError = null;
@@ -1525,7 +1526,9 @@ public class HttpChannelState implements HttpChannel, Components
                 long totalWritten = response._contentBytesWritten;
                 long committedContentLength = httpChannelState._committedContentLength;
 
-                if (committedContentLength >= 0 && committedContentLength != totalWritten && !(totalWritten == 0 && HttpMethod.HEAD.is(_request.getMethod())))
+                if (committedContentLength >= 0 &&
+                    committedContentLength != totalWritten &&
+                    !(totalWritten == 0 && (HttpMethod.HEAD.is(_request.getMethod()) || response.getStatus() == HttpStatus.NOT_MODIFIED_304)))
                     failure = ExceptionUtil.combine(failure, new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten)));
 
                 // Is the request fully consumed?
