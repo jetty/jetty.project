@@ -50,17 +50,17 @@ public class PushPromiseGenerator extends FrameGenerator
         if (promisedStreamId < 0)
             throw new IllegalArgumentException("Invalid promised stream id: " + promisedStreamId);
 
-        int maxFrameSize = getMaxFrameSize();
-        // The promised streamId space.
-        int extraSpace = 4;
-        maxFrameSize -= extraSpace;
-
-        RetainableByteBuffer hpack = encode(encoder, metaData, maxFrameSize);
+        RetainableByteBuffer hpack = encode(encoder, metaData);
         ByteBuffer hpackByteBuffer = hpack.getByteBuffer();
-        int hpackLength = hpackByteBuffer.position();
         BufferUtil.flipToFlush(hpackByteBuffer, 0);
+        int hpackLength = hpackByteBuffer.remaining();
 
-        int length = hpackLength + extraSpace;
+        // No support for splitting in CONTINUATION frames,
+        // also PushPromiseBodyParser does not support it.
+
+        // The promised streamId length.
+        int promisedStreamIdLength = 4;
+        int length = hpackLength + promisedStreamIdLength;
         int flags = Flags.END_HEADERS;
 
         RetainableByteBuffer header = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);

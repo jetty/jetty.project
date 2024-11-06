@@ -50,9 +50,9 @@ public abstract class FrameGenerator
         return headerGenerator.isUseDirectByteBuffers();
     }
 
-    protected RetainableByteBuffer encode(HpackEncoder encoder, MetaData metaData, int maxFrameSize) throws HpackException
+    protected RetainableByteBuffer encode(HpackEncoder encoder, MetaData metaData) throws HpackException
     {
-        RetainableByteBuffer hpacked = headerGenerator.getByteBufferPool().acquire(maxFrameSize, isUseDirectByteBuffers());
+        RetainableByteBuffer hpacked = headerGenerator.getByteBufferPool().acquire(encoder.getMaxHeaderListSize(), isUseDirectByteBuffers());
         try
         {
             ByteBuffer byteBuffer = hpacked.getByteBuffer();

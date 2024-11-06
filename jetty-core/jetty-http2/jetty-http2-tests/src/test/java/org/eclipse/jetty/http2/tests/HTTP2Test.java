@@ -45,8 +45,10 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -1051,7 +1053,7 @@ public class HTTP2Test extends AbstractTest
             .put("custom", value);
         MetaData.Request metaData = newRequest("GET", requestFields);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
-        session.newStream(request, new FuturePromise<>(), new Stream.Listener(){});
+        session.newStream(request, new FuturePromise<>(), new Stream.Listener() {});
 
         // Test failure and close reason on client.
         String closeReason = clientCloseReasonFuture.get(5, TimeUnit.SECONDS);
@@ -1125,7 +1127,7 @@ public class HTTP2Test extends AbstractTest
         Session session = newClientSession(listener);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
-        session.newStream(request, new FuturePromise<>(), new Stream.Listener(){});
+        session.newStream(request, new FuturePromise<>(), new Stream.Listener() {});
 
         // Test failure and close reason on server.
         String closeReason = serverCloseReasonFuture.get(5, TimeUnit.SECONDS);
@@ -1292,6 +1294,48 @@ public class HTTP2Test extends AbstractTest
             .get(5, TimeUnit.SECONDS);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testLargeRequestHeaders() throws Exception
+    {
+        int maxHeadersSize = 20 * 1024;
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setRequestHeaderSize(2 * maxHeadersSize);
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        }, httpConfig);
+        connector.getBean(AbstractHTTP2ServerConnectionFactory.class).setMaxFrameSize(17 * 1024);
+        http2Client.setMaxFrameSize(18 * 1024);
+
+        Session session = newClientSession(new Session.Listener() {});
+
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        HttpFields.Mutable headers = HttpFields.build()
+            // Symbol "<" needs 15 bits to be Huffman encoded,
+            // while letters/numbers take typically less than
+            // 8 bits, and here we want to exceed maxHeadersSize.
+            .put("X-Large", "<".repeat(maxHeadersSize));
+        MetaData.Request request = newRequest("GET", headers);
+        session.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                assertTrue(frame.isEndStream());
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                responseLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
     private static void sleep(long time)
