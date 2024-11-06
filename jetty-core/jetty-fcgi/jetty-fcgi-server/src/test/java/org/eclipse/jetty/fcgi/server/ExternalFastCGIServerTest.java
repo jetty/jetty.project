@@ -22,15 +22,15 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExternalFastCGIServerTest
 {
     @Test
-    @EnabledIfSystemProperty(named = "external.fastcgi.port", matches = "[0-9][0-9][0-9][0-9]")
+    @Tag("external")
     public void testExternalFastCGIServer() throws Exception
     {
         // Assume a FastCGI server is listening on localhost:9000
