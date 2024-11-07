@@ -847,7 +847,7 @@ public class Content
          */
         static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
-            sink.write(last, StandardCharsets.UTF_8.encode(utf8Content), callback);
+            sink.write(last, ByteBuffer.wrap(utf8Content.getBytes(StandardCharsets.UTF_8)), callback);
         }
 
         /**

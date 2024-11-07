@@ -1308,8 +1308,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     if (_unknownExpectation)
                     {
-                        _requestHandler.badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
-                        return null;
+                        throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
                     }
 
                     persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&

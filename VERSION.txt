@@ -1,5 +1,82 @@
 jetty-12.1.0-SNAPSHOT
 
+jetty-12.1.0.alpha0 - 05 November 2024
+ + 842 Implement RFC7239 support in Proxy and Middleman
+ + 5685 AsyncProxyServlet calls onProxyResponseSuccess() when internally it
+   throws "Response header too large" exception
+ + 5888 Limit usage of HTTP/2 connections
+ + 6328 High CPU usage of method handle invocations in Jetty 10
+ + 8769 Introduce new CompressionHandler with support for gzip, brotli, and zstandard
+ + 8790 Jetty-12 HttpContent should have an async API
+ + 9778 Jetty 12 - Remove WriteFlusher.Listener
+ + 9980 Add format option to CustomRequestLog for request authority and request
+   authority scheme
+ + 11358 Jetty Websocket should have some API to handle timeouts
+ + 11492 Auto add AliasChecker for custom Base Resource in DefaultServlet
+ + 11514 Start properties `jetty.webapp.addServerClasses` and
+   `jetty.webapp.addSystemClasses` are not applied during ee8/ee9 deployments
+ + 11560 Implement Web3 OAuth/Sign-In Functionality
+ + 11741 Review case of MimeType.Type charsets
+ + 11749 InvalidArgumentExceptions due to invalid status codes are not handled
+   properly
+ + 11815 Servlet spec 6.1 issue 300
+ + 11934 servlet 6.1 tck cookie test errors
+ + 11956 Consider re-introducing `ByteBufferPool.NON_POOLING` constant
+ + 12023 [12.1.x] Remove deprecated classes/methods
+ + 12082 `RetainableByteBuffer.DynamicCapacity` enters a corrupt state when
+   released
+ + 12184 [12.1.x] Change urls https://eclipse.dev to https://jetty.org
+ + 12195 Integrate Eclipse Dash License Tool to our build
+ + 12214 ThreadStarvation Testing
+ + 12268 `IteratingCallback` may iterate too much when `process()` returns
+   Action.IDLE
+ + 12313 Jetty 12 ee9/ee10 doesn't invoke callbacks when h2 client sends
+   RST_STREAM
+ + 12318 SecurityUtils should not elminate calls to existing methods
+ + 12326 `RemoteInfinispanSessionDataStoreTest.testSavePeriodDirtySession` is
+   flaky
+ + 12330 `LargeHeaderTest.testLargeHeaderNewConnectionsConcurrent` is flaky
+ + 12339 Default session configuration parameter `flushOnResponseCommit` to
+   `true` rather than `false`
+ + 12341 QPack encoder must not send any encoder instructions when
+   SETTINGS_QPACK_MAX_TABLE_CAPACITY is 0
+ + 12348 HttpClientTransportDynamic does not initialize low-level clients
+ + 12350 LdapLoginModule support for Jetty Password obfuscation
+ + 12356 RuntimeIOException: Parser is terminated when doing lots of requests
+   with Connection: Keep-Alive
+ + 12378 Change default value for `SslContextFactory.renegotiationAllowed` to
+   `false`
+ + 12397 `.tgz` files are double-gzipped
+ + 12404 Parsing URI with HttpUri.from(String uri) throws
+   "IllegalArgumentException: Bad authority" when path is empty
+
+jetty-12.0.15 - 05 November 2024
+ + 5685 AsyncProxyServlet calls onProxyResponseSuccess() when internally it
+   throws "Response header too large" exception
+ + 5888 Limit usage of HTTP/2 connections
+ + 9980 Add format option to CustomRequestLog for request authority and request
+   authority scheme
+ + 11492 Auto add AliasChecker for custom Base Resource in DefaultServlet
+ + 11749 InvalidArgumentExceptions due to invalid status codes are not handled
+   properly
+ + 12268 `IteratingCallback` may iterate too much when `process()` returns
+   Action.IDLE
+ + 12313 Jetty 12 ee9/ee10 doesn't invoke callbacks when h2 client sends
+   RST_STREAM
+ + 12341 QPack encoder must not send any encoder instructions when
+   SETTINGS_QPACK_MAX_TABLE_CAPACITY is 0
+ + 12348 HttpClientTransportDynamic does not initialize low-level clients
+ + 12350 LdapLoginModule support for Jetty Password obfuscation
+ + 12356 RuntimeIOException: Parser is terminated when doing lots of requests
+   with Connection: Keep-Alive
+ + 12378 Change default value for `SslContextFactory.renegotiationAllowed` to
+   `false`
+ + 12397 `.tgz` files are double-gzipped
+ + 12404 Parsing URI with HttpUri.from(String uri) throws
+   "IllegalArgumentException: Bad authority" when path is empty
+ + 12430 Correct PrivilegedThreadFactory javadoc
+ + 12435 Improve connection closing when stopping
+
 jetty-12.0.14 - 30 September 2024
  + 929 Implement a utility class to save large downloads to a file (@arsenalzp)
  + 7515 Connection limit problem for "onAccepting" connections
@@ -39,8 +116,6 @@ jetty-12.0.13 - 03 September 2024
  + 3184 Make LifeCycle implement AutoCloseable
  + 3553 Support sslSession() in Jetty Client
  + 6514 How to warm up SslConnection
- + 9121 Jetty 12 - Flaky
-   BlockedWritesWithSmallThreadPoolTest.testServerThreadsBlockedInWrites()
  + 11322 Change jetty-nosql MongoDB dependency from unmaintained
    mongo-java-driver to mongodb-driver-sync
  + 11408 Jetty start module property values with ${expr} are not being expanded
@@ -91,12 +166,13 @@ jetty-10.0.23 - 13 August 2024
  + 12156 Improvements to HttpConnection when reading 0 bytes
 
 jetty-12.0.12 - 25 July 2024
- + 265 --list-config license enhancement
+ + 265 list-config license enhancement
  + 10904 jetty.sh reports FAILED too early
  + 11965 Client: Some HTTP/2 requests are never sent
  + 11996 mTLS: client cert verification for QUIC/HTTP3
  + 12000 Cannot use Paths that have spaces with `jetty-ee10-maven-plugin`
- + 12012 Added a UriCompliance.Violation.USER_INFO to deprecate user info in HttpURI (CVE-2024-6763)
+ + 12012 Added a UriCompliance.Violation.USER_INFO to deprecate user info in
+   HttpURI (CVE-2024-6763)
  + 12018 NPE when passing null value to Request.param
  + 12019 External property file not being read
  + 12022 Intermittent NPE in OutputStream.close with GzipHandler
@@ -6447,7 +6523,7 @@ jetty-9.1.2.v20140210 - 10 February 2014
  + 423421 remove org.slf4j and org.ow2.asm from jetty-all artifact
  + 424171 Old javax.activation jar interferes with email sending
  + 424562 JDBCSessionManager.setNodeIdInSessionId(true) does not work
- + 425275
+ + 425275 
    org.eclipse.jetty.osgi.annotations.AnnotationConfiguration.BundleParserTask.getStatistic()
    returns null when debug is enabled.
  + 425638 Fixed monitor module/xml typos
@@ -6750,7 +6826,7 @@ jetty-9.0.6.v20130930 - 30 September 2013
    in the value
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302
+ + 415302 
  + 415330 Avoid multiple callbacks at EOF
  + 415401 Add initalizeDefaults call to SpringConfigurationProcessor
  + 415548 migrate ProxyHTTPToSPDYTest to use HttpClient to avoid intermittent
@@ -6890,7 +6966,7 @@ jetty-9.1.0.M0 - 16 September 2013
  + 415131 Avoid autoboxing on debug
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302
+ + 415302 
  + 415314 Jetty should not commit response on output if <
    Response.setBufferSize() bytes are written
  + 415330 Avoid multiple callbacks at EOF
@@ -14074,3 +14150,4 @@ jetty-1.0 - 01 January 1998
  + Won the Australian Java Programming Contest!
  + HTTP Server
  + Issue tracking application
+

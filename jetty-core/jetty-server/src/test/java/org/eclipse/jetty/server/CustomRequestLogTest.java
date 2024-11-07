@@ -503,6 +503,17 @@ public class CustomRequestLogTest
     }
 
     @Test
+    public void testLogEmptyQueryString() throws Exception
+    {
+        start("QueryString: %q");
+
+        HttpTester.Response response = getResponse("GET /path HTTP/1.0\n\n");
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("QueryString: -"));
+    }
+
+    @Test
     public void testLogRequestFirstLine() throws Exception
     {
         start("RequestFirstLine: %r");

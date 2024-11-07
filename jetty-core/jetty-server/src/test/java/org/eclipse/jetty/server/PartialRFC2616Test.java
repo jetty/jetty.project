@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -410,7 +409,6 @@ public class PartialRFC2616Test
      * @see <a href="https://www.rfc-editor.org/rfc/rfc2616#section-5.2">RFC 2616 - Section 5.2 - The Resource Identified by a Request</a>
      */
     @Test
-    @Disabled // TODO
     public void test521() throws Exception
     {
         // Default Host
@@ -494,7 +492,6 @@ public class PartialRFC2616Test
     }
 
     @Test
-    @Disabled // TODO
     public void test10418() throws Exception
     {
         // Expect Failure
@@ -550,7 +547,6 @@ public class PartialRFC2616Test
     }
 
     @Test
-    @Disabled // TODO
     public void test824() throws Exception
     {
         // Expect 100 not sent
@@ -609,7 +605,6 @@ public class PartialRFC2616Test
     }
 
     @Test
-    @Disabled // TODO
     public void test1423() throws Exception
     {
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
@@ -628,7 +623,7 @@ public class PartialRFC2616Test
 
             offset = 0;
             response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host:\n" + "Connection: close\n" + "\n");
-            offset = checkContains(response, offset, "HTTP/1.1 200", "200") + 1;
+            offset = checkContains(response, offset, "HTTP/1.1 400", "400") + 1;
         }
     }
 
