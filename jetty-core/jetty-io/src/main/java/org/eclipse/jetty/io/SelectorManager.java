@@ -479,20 +479,12 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
         }
     }
-    
-    /**
-     * <p>Callback method invoked when a connect was completed.</p>
-     */
-    public void onConnected()
-    {
-        
-    }
-    
+
     /**
      * <p>Callback method invoked when a connect was completed.</p>
      * @param channel the channel that attempted the connect
      */
-    public void onConnected(SelectableChannel channel)
+    protected void connectSuccess(SelectableChannel channel)
     {
         
     }

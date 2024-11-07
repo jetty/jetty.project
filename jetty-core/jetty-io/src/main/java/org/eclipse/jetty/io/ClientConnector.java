@@ -96,6 +96,7 @@ public class ClientConnector extends ContainerLifeCycle
     }
 
     private final Configurator configurator;
+    private final List<ConnectListener> listeners = new CopyOnWriteArrayList<>();
     private Executor executor;
     private Scheduler scheduler;
     private ByteBufferPool byteBufferPool;
@@ -111,7 +112,6 @@ public class ClientConnector extends ContainerLifeCycle
     private boolean reusePort;
     private int receiveBufferSize = -1;
     private int sendBufferSize = -1;
-    private final List<ConnectListener> listeners = new CopyOnWriteArrayList<>();
 
     public ClientConnector()
     {
@@ -461,9 +461,10 @@ public class ClientConnector extends ContainerLifeCycle
                 boolean blocking = isConnectBlocking() && address instanceof InetSocketAddress;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connecting {} to {}", blocking ? "blocking" : "non-blocking", address);
+
+                listeners.forEach(listener -> listener.onConnectBegin(socketChannel, socketAddress));
                 if (blocking)
                 {
-                    listeners.forEach(listener -> listener.onConnectBegin(socketChannel, socketAddress));
                     socketChannel.socket().connect(address, (int)getConnectTimeout().toMillis());
                     listeners.forEach(listener -> listener.onConnectSuccess(socketChannel));
                     socketChannel.configureBlocking(false);
@@ -471,7 +472,6 @@ public class ClientConnector extends ContainerLifeCycle
                 else
                 {
                     socketChannel.configureBlocking(false);
-                    listeners.forEach(listener -> listener.onConnectBegin(socketChannel, socketAddress));
                     connected = socketChannel.connect(address);
                 }
             }
@@ -584,10 +584,10 @@ public class ClientConnector extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Could not connect to {}", context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY));
+        listeners.forEach(listener -> listener.onConnectFailure((SocketChannel)channel, failure));
         Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
         if (promise != null)
-            listeners.forEach(listener -> listener.onConnectFailure((SocketChannel)channel, failure));
-        promise.failed(failure);
+            promise.failed(failure);
     }
 
     protected class ClientSelectorManager extends SelectorManager
@@ -642,7 +642,7 @@ public class ClientConnector extends ContainerLifeCycle
         }
 
         @Override
-        public void onConnected(SelectableChannel channel)
+        public void connectSuccess(SelectableChannel channel)
         {
             listeners.forEach(listener -> listener.onConnectSuccess((SocketChannel)channel));
         }
