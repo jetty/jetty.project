@@ -143,6 +143,8 @@ public class AbstractTest
     @AfterEach
     public void dispose() throws Exception
     {
+        // Stop the client so that all connections are closed and any saved buffers are released
+        LifeCycle.stop(httpClient);
         try
         {
             if (serverBufferPool != null)
@@ -152,7 +154,6 @@ public class AbstractTest
         }
         finally
         {
-            LifeCycle.stop(httpClient);
             LifeCycle.stop(server);
         }
     }

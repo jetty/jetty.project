@@ -84,9 +84,6 @@ public class AsyncIOTest extends AbstractTest
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        // Stop the client so that all connections are closed and any saved buffers are released
-        http2Client.stop();
     }
 
     @Test
