@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -390,16 +390,9 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     protected Fields getParameters(Request request)
     {
-        try
-        {
-            Fields queryFields = Request.extractQueryParameters(request);
-            Fields formFields = FormFields.from(request).get();
-            return Fields.combine(queryFields, formFields);
-        }
-        catch (InterruptedException | ExecutionException e)
-        {
-            throw new RuntimeException(e);
-        }
+        Fields queryFields = Request.extractQueryParameters(request);
+        Fields formFields = FormFields.getFields(request);
+        return Fields.combine(queryFields, formFields);
     }
 
     @Override
@@ -583,13 +576,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     {
                         try
                         {
-                            session.setAttribute(J_POST, FormFields.from(request).get());
+                            session.setAttribute(J_POST, FormFields.getFields(request));
                         }
-                        catch (ExecutionException e)
+                        catch (CompletionException e)
                         {
                             throw new ServerAuthException(e.getCause());
                         }
-                        catch (InterruptedException e)
+                        catch (Exception e)
                         {
                             throw new ServerAuthException(e);
                         }

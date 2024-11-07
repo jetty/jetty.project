@@ -1460,8 +1460,9 @@ For form parameters, typical of HTML form submissions, you can use the `FormFiel
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerForm]
 ----
-<1> If the `Content-Type` is `x-www-form-urlencoded`, read the request content with `FormFields`.
+<1> If the `Content-Type` is `application/x-www-form-urlencoded`, read the request content with `FormFields`.
 <2> When all the request content has arrived, process the `Fields`.
+<3> Specify that processing of the form fields is non-blocking.
 
 [WARNING]
 ====
@@ -1478,8 +1479,9 @@ For multipart form data, typical for HTML form file uploads, you can use the `Mu
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerMultiPart]
 ----
-<1> If the `Content-Type` is `multipart/form-data`, read the request content with `MultiPartFormData.Parser`.
+<1> If the `Content-Type` is `multipart/form-data`, parse the request content with `MultiPartFormData`.
 <2> When all the request content has arrived, process the `MultiPartFormData.Parts`.
+<3> Specify that processing of the parts is non-blocking.
 
 [WARNING]
 ====

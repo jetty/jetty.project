@@ -21,7 +21,6 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Fields;
 
 /**
@@ -63,7 +62,7 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
                 {
                     RequestParameterCallback rpc = (RequestParameterCallback)callback;
                     Fields queryFields = Request.extractQueryParameters(_request);
-                    Fields formFields = ExceptionUtil.get(FormFields.from(_request));
+                    Fields formFields = FormFields.getFields(_request);
                     Fields fields = Fields.combine(queryFields, formFields);
                     rpc.setParameterValues(fields.getValues(rpc.getParameterName()));
                 }
