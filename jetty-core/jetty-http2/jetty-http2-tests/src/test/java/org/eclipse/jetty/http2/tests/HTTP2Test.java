@@ -248,6 +248,9 @@ public class HTTP2Test extends AbstractTest
         .thenAccept(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(1024), true)));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        // Stop the client so that all connections are closed and any saved buffers are released
+        http2Client.stop();
     }
 
     @Test

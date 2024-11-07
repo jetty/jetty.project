@@ -622,6 +622,9 @@ public class StreamResetTest extends AbstractTest
             // for the client to process the window updates.
             await().atMost(2 * delay, TimeUnit.MILLISECONDS)
                 .until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
+
+            // Stop the client so that all connections are closed and any saved buffers are released
+            http2Client.stop();
         }
     }
 

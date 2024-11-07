@@ -20,6 +20,7 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -154,6 +155,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         super.onClose(cause);
 
         LifeCycle.stop(strategy);
+        producer.stop();
     }
 
     @Override
@@ -323,16 +325,19 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
+        private static final RetainableByteBuffer.Mutable STOPPED = new RetainableByteBuffer.NonRetainableByteBuffer(BufferUtil.EMPTY_BUFFER);
         private final Callback fillableCallback = new FillableCallback();
+        private final AtomicReference<RetainableByteBuffer.Mutable> savedBuffer = new AtomicReference<>();
         private RetainableByteBuffer.Mutable networkBuffer;
         private boolean shutdown;
         private boolean failed;
 
         private void setInputBuffer(ByteBuffer byteBuffer)
         {
-            acquireNetworkBuffer();
+            RetainableByteBuffer.Mutable networkBuffer = acquireBuffer();
             if (!networkBuffer.append(byteBuffer))
                 LOG.warn("overflow");
+            saveBuffer(networkBuffer);
         }
 
         @Override
@@ -348,8 +353,8 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                 return null;
 
             boolean interested = false;
-            acquireNetworkBuffer();
             int filled = 0;
+            networkBuffer = acquireBuffer();
             try
             {
                 boolean parse = networkBuffer.hasRemaining();
@@ -378,11 +383,18 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                     {
                         // If there is sufficient space available, we can top up the buffer rather than allocate a new one
                         if (minBufferSpace > 0 && BufferUtil.space(networkBuffer.getByteBuffer()) >= minBufferSpace)
+                        {
                             // do not compact the buffer
                             compact = false;
+                        }
                         else
+                        {
                             // otherwise reacquire the buffer and fill into the new buffer.
-                            reacquireNetworkBuffer();
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Released retained {}", networkBuffer);
+                            networkBuffer.release();
+                            networkBuffer = acquireBuffer();
+                        }
                     }
 
                     filled = fill(getEndPoint(), networkBuffer.getByteBuffer(), compact);
@@ -409,51 +421,63 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             }
             finally
             {
-                if (filled < 0 || !networkBuffer.isRetained() || shutdown)
-                    releaseNetworkBuffer();
+                if (networkBuffer.isRetained() && !shutdown)
+                {
+                    saveBuffer(networkBuffer);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Released after process {}", networkBuffer);
+                    networkBuffer.release();
+                }
+                networkBuffer = null;
                 if (interested)
                     getEndPoint().fillInterested(fillableCallback);
             }
         }
 
-        private void acquireNetworkBuffer()
+        private RetainableByteBuffer.Mutable acquireBuffer()
         {
-            if (networkBuffer == null)
+            RetainableByteBuffer.Mutable buffer = savedBuffer.getAndSet(null);
+            if (buffer == null)
+                buffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Acquired {}", buffer);
+            return buffer;
+        }
+
+        private void saveBuffer(RetainableByteBuffer.Mutable buffer)
+        {
+            if (savedBuffer.compareAndSet(null, buffer))
             {
-                networkBuffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers()).asMutable();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Acquired {}", networkBuffer);
+                    LOG.debug("Saved {}", buffer);
+            }
+            else
+            {
+                if (savedBuffer.get() == STOPPED)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Released in save {}", buffer);
+                    buffer.release();
+                }
+                else
+                {
+                    throw new IllegalStateException("Buffer already saved");
+                }
             }
         }
 
-        private void reacquireNetworkBuffer()
+        private void stop()
         {
-            RetainableByteBuffer.Mutable currentBuffer = networkBuffer;
-            if (currentBuffer == null)
-                throw new IllegalStateException();
-
-            if (currentBuffer.hasRemaining())
-                throw new IllegalStateException();
-
-            currentBuffer.release();
-            networkBuffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("Reacquired {}<-{}", currentBuffer, networkBuffer);
-        }
-
-        private void releaseNetworkBuffer()
-        {
-            RetainableByteBuffer.Mutable currentBuffer = networkBuffer;
-            if (currentBuffer == null)
-                return;
-
-            if (currentBuffer.hasRemaining() && !shutdown && !failed)
-                throw new IllegalStateException();
-
-            currentBuffer.release();
-            networkBuffer = null;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Released {}", currentBuffer);
+            RetainableByteBuffer.Mutable buffer = savedBuffer.getAndSet(STOPPED);
+            if (buffer != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Released in stop {}", buffer);
+                buffer.release();
+            }
         }
 
         @Override

@@ -890,6 +890,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
         assertNotNull(result.getRequestFailure());
         assertNotNull(result.getResponseFailure());
+
+        // Stop the client so that all connections are closed and any saved buffers are released
+        http2Client.stop();
     }
 
     @Test
