@@ -102,6 +102,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final SendCallback _sendCallback = new SendCallback();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
     private final HttpFields.Mutable _headerBuilder = HttpFields.build();
+    private final int _minBufferSpace;
     private volatile RetainableByteBuffer _requestBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
@@ -139,6 +140,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
+        _minBufferSpace = configuration.getMinInputBufferSpace() < 0 ? Math.min(1024, configuration.getInputBufferSize()) : configuration.getMinInputBufferSpace();
+
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
     }
@@ -327,9 +330,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (LOG.isDebugEnabled())
             LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
-        if (_requestBuffer != null)
-            _requestBuffer.release();
+        RetainableByteBuffer buffer = _requestBuffer;
         _requestBuffer = null;
+        if (buffer != null)
+            buffer.release();
     }
 
     private void ensureRequestBuffer()
@@ -522,7 +526,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 // If there is sufficient space available, we can top up the buffer rather than allocate a new one
                 ByteBuffer backing = _requestBuffer.getByteBuffer();
-                if (BufferUtil.space(backing) >= getHttpConfiguration().getMinInputBufferSpace())
+                if (_minBufferSpace > 0 && BufferUtil.space(backing) >= _minBufferSpace)
                 {
                     // do not compact the buffer
                     compact = false;

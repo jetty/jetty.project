@@ -74,7 +74,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         this.bufferPool = bufferPool;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.minBufferSpace = minBufferSpace;
+        this.minBufferSpace = minBufferSpace < 0 ? Math.min(1024, bufferSize) : minBufferSpace;
         this.strategy = new AdaptiveExecutionStrategy(producer, executor);
         LifeCycle.start(strategy);
     }
@@ -349,6 +349,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
 
             boolean interested = false;
             acquireNetworkBuffer();
+            int filled = 0;
             try
             {
                 boolean parse = networkBuffer.hasRemaining();
@@ -370,23 +371,23 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                             LOG.debug("Dequeued new task {}", task);
                         if (task != null)
                             return task;
-
-                        // If the application has retained the content chunks then we must not overwrite content.
-                        if (networkBuffer.isRetained())
-                        {
-                            // If there is sufficient space available, we can top up the buffer rather than allocate a new one
-                            if (minBufferSpace > 0 && BufferUtil.space(networkBuffer.getByteBuffer()) >= minBufferSpace)
-                                // do not compact the buffer
-                                compact = false;
-                            else
-                                // otherwise reacquire the buffer and fill into the new buffer.
-                                reacquireNetworkBuffer();
-                        }
                     }
 
-                    int filled = fill(getEndPoint(), networkBuffer.getByteBuffer(), compact);
+                    // If the application has retained the content chunks then we must not overwrite content.
+                    if (networkBuffer.isRetained())
+                    {
+                        // If there is sufficient space available, we can top up the buffer rather than allocate a new one
+                        if (minBufferSpace > 0 && BufferUtil.space(networkBuffer.getByteBuffer()) >= minBufferSpace)
+                            // do not compact the buffer
+                            compact = false;
+                        else
+                            // otherwise reacquire the buffer and fill into the new buffer.
+                            reacquireNetworkBuffer();
+                    }
+
+                    filled = fill(getEndPoint(), networkBuffer.getByteBuffer(), compact);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Filled {} bytes in {}", filled, networkBuffer);
+                        LOG.debug("Filled {} bytes compacted {} in {}", filled, compact, networkBuffer);
 
                     if (filled > 0)
                     {
@@ -408,7 +409,8 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             }
             finally
             {
-                releaseNetworkBuffer();
+                if (filled < 0 || !networkBuffer.isRetained() || shutdown)
+                    releaseNetworkBuffer();
                 if (interested)
                     getEndPoint().fillInterested(fillableCallback);
             }
@@ -443,7 +445,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         {
             RetainableByteBuffer.Mutable currentBuffer = networkBuffer;
             if (currentBuffer == null)
-                throw new IllegalStateException();
+                return;
 
             if (currentBuffer.hasRemaining() && !shutdown && !failed)
                 throw new IllegalStateException();

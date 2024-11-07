@@ -355,13 +355,15 @@ public class HttpConfiguration implements Dumpable
     /**
      * Set if true, delays the application dispatch until content is available (defaults to true).
      * @param delay if true, delays the application dispatch until content is available (defaults to true)
+     * @deprecated Use the DelayedHandler instead.
      */
+    @Deprecated (forRemoval = true, since = "12.1.0")
     public void setDelayDispatchUntilContent(boolean delay)
     {
         _delayDispatchUntilContent = delay;
     }
 
-    @ManagedAttribute("Whether to delay the application dispatch until content is available")
+    @Deprecated (forRemoval = true, since = "12.1.0")
     public boolean isDelayDispatchUntilContent()
     {
         return _delayDispatchUntilContent;
@@ -572,13 +574,16 @@ public class HttpConfiguration implements Dumpable
     /**
      * @return The minimum space available in a retained input buffer before allocating a new one.
      */
+    @ManagedAttribute("The minimum space available in a retained input buffer before allocating a new one")
     public int getMinInputBufferSpace()
     {
         return _minInputBufferSpace;
     }
 
     /**
-     * @param minInputBufferSpace The minimum space available in a retained input buffer before allocating a new one.
+     * @param minInputBufferSpace The minimum space available in a retained input buffer before allocating a new one;
+     *                            0 to always allocate a new buffer;
+     *                            -1 for a default value
      */
     public void setMinInputBufferSpace(int minInputBufferSpace)
     {

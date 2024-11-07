@@ -31,7 +31,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -40,9 +39,10 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
- * A {@link Handler.Wrapper} that can delay calling {@link Handler#handle(Request, Response, Callback)} on the
+ * <p>A {@link Handler.Wrapper} that can delay calling {@link Handler#handle(Request, Response, Callback)} on the
  * {@link #getHandler() next Handler} until content is available, either entirely or in part.  This handler is fully
  * asynchronous and will not block waiting for content.   Furthermore, for known content types, the content may be
  * parsed into {@link FormFields} or {@link MultiPartFormData.Parts} prior to handling. Thus, this handler can allow a
@@ -57,14 +57,14 @@ import org.eclipse.jetty.util.StringUtil;
  * as they attribute name. Once read by this handler, the parts are available via
  * {@link MultiPartFormData#getParts(Attributes)}, passing in the {@link Request} as the {@link Attributes} instance.
  * </p>
- * <p> To delay for arbitrary content, the {@link HttpConfiguration#isDelayDispatchUntilContent()} configuration must
- * be {@code true} and up to {@link HttpConfiguration#getInputBufferSize()} of data may be
- * {@link RetainableByteBuffer#retain() retained}.  Once read, the data is made available via the standard
- * {@link Request#read()} API.
+ * <p> To delay for arbitrary content, the {@link #setMaxRetainedContent(int)} configuration must
+ * be non zero.  Once read, the data is made available via the standard {@link Request#read()} API.
  * </p>
  */
 public class DelayedHandler extends Handler.Wrapper
 {
+    private int _maxRetainedContent = -1;
+
     public DelayedHandler()
     {
         this(null);
@@ -73,6 +73,21 @@ public class DelayedHandler extends Handler.Wrapper
     public DelayedHandler(Handler handler)
     {
         super(handler);
+    }
+
+    public int getMaxRetainedContent()
+    {
+        return _maxRetainedContent;
+    }
+
+    /**
+     * @param maxRetainedContent The maximum bytes to {@link RetainableByteBuffer#retain() retain} whilst delaying content;
+     *                           or 0 to never delay for content;
+     *                           or -1 (default) for a heuristic value.
+     */
+    public void setMaxRetainedContent(int maxRetainedContent)
+    {
+        _maxRetainedContent = maxRetainedContent;
     }
 
     @Override
@@ -131,12 +146,9 @@ public class DelayedHandler extends Handler.Wrapper
         if (!contentExpected)
             return null;
 
-        // are we configured to delay dispatch until content?
-        boolean delayDispatchUntilContent = request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent();
-
         // if no known mimeType, then only delay until content if configured
         if (mimeType == null)
-            return delayDispatchUntilContent ? newUntilContentDelayedProcess(handler, request, response, callback) : null;
+            return _maxRetainedContent != 0 ? new UntilContentDelayedProcess(handler, request, response, callback, _maxRetainedContent) : null;
 
         // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
         return switch (mimeType)
@@ -151,14 +163,10 @@ public class DelayedHandler extends Handler.Wrapper
                 yield null;
             }
             // if other mimeType, then only delay until content if configured
-            default -> delayDispatchUntilContent ? newUntilContentDelayedProcess(handler, request, response, callback) : null;
+            default ->
+                _maxRetainedContent != 0 ? new UntilContentDelayedProcess(handler, request, response, callback, _maxRetainedContent) : null;
 
         };
-    }
-
-    protected DelayedProcess newUntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback)
-    {
-        return new UntilContentDelayedProcess(handler, request, response, callback, -1);
     }
 
     protected abstract static class DelayedProcess
@@ -226,7 +234,7 @@ public class DelayedHandler extends Handler.Wrapper
     /**
      * Delay dispatch until all content or an effective buffer size is reached
      */
-    protected static class UntilContentDelayedProcess extends DelayedProcess implements Runnable
+    protected static class UntilContentDelayedProcess extends DelayedProcess implements Invocable.Task
     {
         private final Deque<Content.Chunk> _chunks = new ArrayDeque<>();
         private final int _maxSize;
@@ -252,11 +260,6 @@ public class DelayedHandler extends Handler.Wrapper
             read(false);
         }
 
-        protected void onContentAvailable()
-        {
-            read(true);
-        }
-
         protected void read(boolean execute)
         {
             while (true)
@@ -264,7 +267,7 @@ public class DelayedHandler extends Handler.Wrapper
                 Content.Chunk chunk = super.getRequest().read();
                 if (chunk == null)
                 {
-                    getRequest().demand(org.eclipse.jetty.util.thread.Invocable.from(InvocationType.NON_BLOCKING, this::onContentAvailable));
+                    getRequest().demand(this);
                     break;
                 }
 
@@ -281,18 +284,29 @@ public class DelayedHandler extends Handler.Wrapper
                 if (chunk.isLast() || _estimatedSize >= _maxSize)
                 {
                     if (execute)
-                        getRequest().getContext().execute(this);
+                        getRequest().getContext().execute(this::doProcess);
                     else
-                        run();
+                        doProcess();
                     break;
                 }
             }
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
 
         /**
          * This is run when enough content has been received to dispatch to the next handler.
          */
         public void run()
+        {
+            read(true);
+        }
+
+        private void doProcess()
         {
             RewindChunksRequest request = new RewindChunksRequest(getRequest(), getCallback(), _chunks);
             if (!process(request, getResponse(), request))

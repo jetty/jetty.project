@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
@@ -66,6 +67,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final long _maxDirectMemory;
     private final IntUnaryOperator _bucketIndexFor;
     private final AtomicBoolean _evictor = new AtomicBoolean(false);
+    private final AtomicLong _reserved = new AtomicLong();
     private boolean _statisticsEnabled;
 
     /**
@@ -175,6 +177,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return maxMemory;
     }
 
+    @ManagedAttribute("The current number of allocated bytes reserved to be added to the pool once released")
+    public long getReserved()
+    {
+        return _reserved.get();
+    }
+
     @ManagedAttribute("Whether statistics are enabled")
     public boolean isStatisticsEnabled()
     {
@@ -214,6 +222,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (entry == null)
         {
             ByteBuffer buffer = BufferUtil.allocate(bucket.getCapacity(), direct);
+            _reserved.addAndGet(buffer.capacity());
             return new ReservedBuffer(buffer, bucket);
         }
 
@@ -249,6 +258,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
     {
+        _reserved.addAndGet(-byteBuffer.capacity());
         bucket.recordRelease();
 
         // Try to reserve an entry to put the buffer into the pool.

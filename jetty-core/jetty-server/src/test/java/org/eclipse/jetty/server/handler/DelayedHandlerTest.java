@@ -189,7 +189,7 @@ public class DelayedHandlerTest
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
                 assertThat(stack, not(containsString("%s.%s".formatted(
                     DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
-                    DelayedHandler.UntilContentDelayedProcess.class.getDeclaredMethod("onContentAvailable").getName()))));
+                    DelayedHandler.UntilContentDelayedProcess.class.getDeclaredMethod("run").getName()))));
 
                 processing.countDown();
                 return super.handle(request, response, callback);
@@ -246,7 +246,7 @@ public class DelayedHandlerTest
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
                 assertThat(stack, not(containsString("%s.%s".formatted(
                     DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
-                    DelayedHandler.UntilContentDelayedProcess.class.getDeclaredMethod("onContentAvailable").getName()))));
+                    DelayedHandler.UntilContentDelayedProcess.class.getDeclaredMethod("run").getName()))));
 
                 // Check content
                 String body = Content.Source.asString(request, StandardCharsets.ISO_8859_1);

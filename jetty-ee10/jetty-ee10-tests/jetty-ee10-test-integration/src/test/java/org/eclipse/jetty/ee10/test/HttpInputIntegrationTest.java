@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLSocket;
@@ -48,11 +49,15 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.DelayedHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -82,6 +87,7 @@ public class HttpInputIntegrationTest
     private static HttpConfiguration __config;
     private static SslContextFactory.Server __sslContextFactory;
     private static ArrayByteBufferPool.Tracking __bufferPool;
+    private static final AtomicBoolean __delayHandler = new AtomicBoolean();
 
     @BeforeAll
     public static void beforeClass() throws Exception
@@ -127,8 +133,20 @@ public class HttpInputIntegrationTest
         http2.setIdleTimeout(5000);
         __server.addConnector(http2);
 
+        DelayedHandler delayedHandler = new DelayedHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                if (__delayHandler.get())
+                    return super.handle(request, response, callback);
+                return getHandler().handle(request, response, callback);
+            }
+        };
+
         ServletContextHandler context = new ServletContextHandler("/ctx");
-        __server.setHandler(context);
+        __server.setHandler(delayedHandler);
+        delayedHandler.setHandler(context);
         ServletHolder holder = new ServletHolder(new TestServlet());
         holder.setAsyncSupported(true);
         context.addServlet(holder, "/*");
@@ -286,6 +304,7 @@ public class HttpInputIntegrationTest
     @MethodSource("scenarios")
     public void testOne(Scenario scenario) throws Exception
     {
+        __delayHandler.set(scenario._delayHandler);
         TestClient client = scenario._client.getDeclaredConstructor().newInstance();
         String response = client.send("/ctx/test?mode=" + scenario._mode, 50, scenario._delay, scenario._length, scenario._send);
 
@@ -309,6 +328,7 @@ public class HttpInputIntegrationTest
     @MethodSource("scenarios")
     public void testStress(Scenario scenario) throws Exception
     {
+        __delayHandler.set(scenario._delayHandler);
         int sum = 0;
         for (String s : scenario._send)
         {
@@ -664,17 +684,18 @@ public class HttpInputIntegrationTest
     {
         private final Class<? extends TestClient> _client;
         private final Mode _mode;
+        private final boolean _delayHandler;
         private final Boolean _delay;
         private final int _status;
         private final int _read;
         private final int _length;
         private final List<String> _send;
 
-        public Scenario(Class<? extends TestClient> client, Mode mode, boolean dispatch, Boolean delay, int status, int read, int length, String... send)
+        public Scenario(Class<? extends TestClient> client, Mode mode, boolean delayHandler, Boolean delay, int status, int read, int length, String... send)
         {
             _client = client;
             _mode = mode;
-            __config.setDelayDispatchUntilContent(dispatch);
+            _delayHandler = delayHandler;
             _delay = delay;
             _status = status;
             _read = read;
@@ -685,8 +706,8 @@ public class HttpInputIntegrationTest
         @Override
         public String toString()
         {
-            return String.format("c=%s, m=%s, delayDispatch=%b delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",
-                _client.getSimpleName(), _mode, __config.isDelayDispatchUntilContent(), _delay, _length, _status, _read, _send);
+            return String.format("c=%s, m=%s, delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",
+                _client.getSimpleName(), _mode, _delay, _length, _status, _read, _send);
         }
     }
 }
