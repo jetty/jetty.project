@@ -73,7 +73,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -1364,7 +1363,6 @@ public class HttpClientTLSTest
     }
 
     @Test
-    @Disabled("fix this test: investigate the difference between client and server bytes")
     public void testBytesInBytesOut() throws Exception
     {
         // Two connections will be closed: SslConnection and HttpConnection.
