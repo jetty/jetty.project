@@ -1910,10 +1910,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             if (path.length() == 0)
@@ -1957,10 +1957,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             Resource resource = ContextHandler.this.getResource(path);
@@ -1993,10 +1993,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             return ContextHandler.this.getResourcePaths(path);
