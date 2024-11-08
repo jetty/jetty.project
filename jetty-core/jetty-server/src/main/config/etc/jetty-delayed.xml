@@ -9,7 +9,7 @@
   <Call name="insertHandler">
     <Arg>
       <New id="DelayedHandler" class="org.eclipse.jetty.server.handler.DelayedHandler">
-        <Set name="maxRetainedContent" property="jetty.delayed.maxRetainedContent"/>
+        <Set name="maxRetainedContentBytes" property="jetty.delayed.maxRetainedContentBytes"/>
       </New>
     </Arg>
   </Call>

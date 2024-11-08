@@ -57,13 +57,13 @@ import org.eclipse.jetty.util.thread.Invocable;
  * as they attribute name. Once read by this handler, the parts are available via
  * {@link MultiPartFormData#getParts(Attributes)}, passing in the {@link Request} as the {@link Attributes} instance.
  * </p>
- * <p> To delay for arbitrary content, the {@link #setMaxRetainedContent(int)} configuration must
+ * <p> To delay for arbitrary content, the {@link #setMaxRetainedContentBytes(long)} configuration must
  * be non zero.  Once read, the data is made available via the standard {@link Request#read()} API.
  * </p>
  */
 public class DelayedHandler extends Handler.Wrapper
 {
-    private int _maxRetainedContent = -1;
+    private long _maxRetainedContentBytes = -1;
 
     public DelayedHandler()
     {
@@ -75,19 +75,19 @@ public class DelayedHandler extends Handler.Wrapper
         super(handler);
     }
 
-    public int getMaxRetainedContent()
+    public long getMaxRetainedContentBytes()
     {
-        return _maxRetainedContent;
+        return _maxRetainedContentBytes;
     }
 
     /**
-     * @param maxRetainedContent The maximum bytes to {@link RetainableByteBuffer#retain() retain} whilst delaying content;
+     * @param maxRetainedContentBytes The maximum bytes to {@link RetainableByteBuffer#retain() retain} whilst delaying content;
      *                           or 0 to never delay for content;
      *                           or -1 (default) for a heuristic value.
      */
-    public void setMaxRetainedContent(int maxRetainedContent)
+    public void setMaxRetainedContentBytes(long maxRetainedContentBytes)
     {
-        _maxRetainedContent = maxRetainedContent;
+        _maxRetainedContentBytes = maxRetainedContentBytes;
     }
 
     @Override
@@ -148,7 +148,7 @@ public class DelayedHandler extends Handler.Wrapper
 
         // if no known mimeType, then only delay until content if configured
         if (mimeType == null)
-            return _maxRetainedContent != 0 ? new UntilContentDelayedProcess(handler, request, response, callback, _maxRetainedContent) : null;
+            return _maxRetainedContentBytes != 0 ? new UntilContentDelayedProcess(handler, request, response, callback, _maxRetainedContentBytes) : null;
 
         // Otherwise, delay until a known content type is fully read; or if the type is not known then until the content is available
         return switch (mimeType)
@@ -164,7 +164,7 @@ public class DelayedHandler extends Handler.Wrapper
             }
             // if other mimeType, then only delay until content if configured
             default ->
-                _maxRetainedContent != 0 ? new UntilContentDelayedProcess(handler, request, response, callback, _maxRetainedContent) : null;
+                _maxRetainedContentBytes != 0 ? new UntilContentDelayedProcess(handler, request, response, callback, _maxRetainedContentBytes) : null;
 
         };
     }
@@ -237,8 +237,8 @@ public class DelayedHandler extends Handler.Wrapper
     protected static class UntilContentDelayedProcess extends DelayedProcess implements Invocable.Task
     {
         private final Deque<Content.Chunk> _chunks = new ArrayDeque<>();
-        private final int _maxSize;
-        private int _estimatedSize;
+        private final long _maxSize;
+        private long _estimatedSize;
 
         /**
          * @param handler The next handler
@@ -248,7 +248,7 @@ public class DelayedHandler extends Handler.Wrapper
          * @param maxSize The maximum size to buffer before dispatching to the next handler;
          *                or -1 to use {@link HttpConnectionFactory#getInputBufferSize()}
          */
-        public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback, int maxSize)
+        public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback, long maxSize)
         {
             super(handler, request, response, callback);
             _maxSize = maxSize < 0 ? request.getConnectionMetaData().getConnector().getConnectionFactory(HttpConnectionFactory.class).getInputBufferSize() : maxSize;
