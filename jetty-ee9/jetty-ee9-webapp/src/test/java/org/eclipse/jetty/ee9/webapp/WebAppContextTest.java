@@ -656,7 +656,8 @@ public class WebAppContextTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        Path warRoot = MavenPaths.findTestResourceDir("webapp-with-resources");
+
+        Path warRoot = MavenTestingUtils.getTargetPath("test-classes/webapp-with-resources");
         assertTrue(Files.isDirectory(warRoot), "Unable to find directory: " + warRoot);
         WebAppContext context = new WebAppContext();
         Resource warResource = context.getResourceFactory().newResource(warRoot);
