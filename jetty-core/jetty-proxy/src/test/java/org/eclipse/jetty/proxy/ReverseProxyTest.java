@@ -152,7 +152,8 @@ public class ReverseProxyTest extends AbstractProxyTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.getHeaders().put("X-Large", "A".repeat(maxResponseHeadersSize));
+                // Use "+" because in HTTP/2 is Huffman encoded in more than 8 bits.
+                response.getHeaders().put("X-Large", "+".repeat(maxResponseHeadersSize));
 
                 // With HTTP/1.1, calling response.write() would fail the Handler callback
                 // which would trigger ErrorHandler and result in a 500 to the proxy.
