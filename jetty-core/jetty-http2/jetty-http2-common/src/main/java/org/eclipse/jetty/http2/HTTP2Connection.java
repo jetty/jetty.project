@@ -75,7 +75,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         this.bufferPool = bufferPool;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.minBufferSpace = minBufferSpace < 0 ? Math.min(1024, bufferSize) : minBufferSpace;
+        this.minBufferSpace = minBufferSpace < 0 ? Math.min(1500, bufferSize) : minBufferSpace;
         this.strategy = new AdaptiveExecutionStrategy(producer, executor);
         LifeCycle.start(strategy);
     }
@@ -451,14 +451,14 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             if (heldBuffer.compareAndSet(null, buffer))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Saved {}", buffer);
+                    LOG.debug("Held {}", buffer);
             }
             else
             {
                 if (heldBuffer.get() == STOPPED)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Released in save {}", buffer);
+                        LOG.debug("Released instead of holding {}", buffer);
                     buffer.release();
                 }
                 else

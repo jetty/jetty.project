@@ -36,23 +36,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class ServerRetainContentTest extends AbstractTest
 {
-
-    @Override
-    protected void prepareServer(Transport transport, Handler handler) throws Exception
-    {
-        super.prepareServer(transport, handler);
-    }
-
     @ParameterizedTest
-    @MethodSource("transports")
+    @MethodSource("transportsNoFCGI")
     public void testRetainPOST(Transport transport) throws Exception
     {
-        assumeTrue(transport != Transport.FCGI);
-
         Queue<Content.Chunk> chunks = new ConcurrentLinkedQueue<>();
         CountDownLatch blocked = new CountDownLatch(1);
 

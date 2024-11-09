@@ -42,11 +42,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private final AtomicReference<Runnable> action = new AtomicReference<>();
     private final ByteBufferPool bufferPool;
+    private final int minInputBufferSpace;
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
     private HTTP3Stream stream;
     private RetainableByteBuffer inputBuffer;
-    private final int minBufferSpace;
     private boolean remotelyClosed;
 
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser)
@@ -54,13 +54,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         this(endPoint, executor, bufferPool, parser, -1);
     }
 
-    public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser, int minBufferSpace)
+    public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser, int minInputBufferSpace)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.parser = parser;
         parser.init(MessageListener::new);
-        this.minBufferSpace = minBufferSpace < 0 ? 1024 : minBufferSpace;
+        this.minInputBufferSpace = minInputBufferSpace < 0 ? 1500 : minInputBufferSpace;
     }
 
     public void onFailure(Throwable failure)
@@ -160,7 +160,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            tryReleaseInputBuffer(remotelyClosed);
+            tryReleaseInputBuffer(true);
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             getEndPoint().close(error, x);
             // Notify the application that a failure happened.
@@ -248,7 +248,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            tryReleaseInputBuffer(remotelyClosed);
+            tryReleaseInputBuffer(true);
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             getEndPoint().close(error, x);
             // Notify the application that a failure happened.
@@ -312,7 +312,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (inputBuffer.isRetained())
                 {
                     // If there is sufficient space available, we can top up the buffer rather than allocate a new one
-                    if (minBufferSpace > 0 && BufferUtil.space(inputBuffer.getByteBuffer()) >= minBufferSpace)
+                    if (minInputBufferSpace > 0 && BufferUtil.space(inputBuffer.getByteBuffer()) >= minInputBufferSpace)
                     {
                         // do not compact the buffer
                         compact = false;
