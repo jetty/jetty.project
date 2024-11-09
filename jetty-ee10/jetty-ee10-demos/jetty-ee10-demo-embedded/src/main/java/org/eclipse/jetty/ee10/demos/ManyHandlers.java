@@ -73,7 +73,7 @@ public class ManyHandlers
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             Fields queryFields = Request.extractQueryParameters(request);
-            Fields formFields = FormFields.from(request).get();
+            Fields formFields = FormFields.getFields(request);
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_JSON.asString());
             response.write(true,

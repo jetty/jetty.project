@@ -1232,6 +1232,15 @@ public class HttpURITest
             "https://[notIpv6]/",
             "https://bad[0::1::2::3::4]/",
 
+            "http://[fe80::1%25eth0]/",
+            "http://[fe80::1%251]/",
+
+            "http://[vulndetector.com]",
+            "http://hostone.com@[vulndetector.com]#hosttwo.com/",
+            "http://hostone.com:80@[vulndetector.com]/",
+            "http://[vulndetector.com]#@normal.com",
+            "http://hostone.com\\\\[vulndetector.com]/",
+
             // Ambiguous empty path
             "http://localhost;param",
             "http://localhost:8080;param"

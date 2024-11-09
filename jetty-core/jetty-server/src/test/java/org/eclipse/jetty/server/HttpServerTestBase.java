@@ -1457,6 +1457,39 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
+    public void test304WithContentLength() throws Exception
+    {
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(304);
+                response.getHeaders().add(HttpHeader.CONTENT_LENGTH, 10);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+            InputStream is = client.getInputStream();
+
+            os.write(("""
+                GET /R1 HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                
+                """).getBytes(StandardCharsets.ISO_8859_1));
+
+            String in = IO.toString(is);
+            assertThat(in, containsString("304 Not Modified"));
+            assertThat(in, containsString("Content-Length: 10"));
+        }
+    }
+
+    @Test
     public void testBlockedClient() throws Exception
     {
         startServer(new HelloHandler());

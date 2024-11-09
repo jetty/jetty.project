@@ -1092,7 +1092,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logQueryString(StringBuilder b, Request request, Response response)
     {
-        append(b, "?" + request.getHttpURI().getQuery());
+        String query = request.getHttpURI().getQuery();
+        append(b, (query == null) ? null : "?" + query);
     }
 
     @SuppressWarnings("unused")

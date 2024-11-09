@@ -36,8 +36,8 @@ public interface Invocable
     ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**
-     * <p>The behavior of an {@link Invocable} when it is invoked.</p>
-     * <p>Typically, {@link Runnable}s or {@link org.eclipse.jetty.util.Callback}s declare their
+     * <p>The behavior of an {@link Invocable} task when it is called.</p>
+     * <p>Typically, tasks such as {@link Runnable}s or {@link org.eclipse.jetty.util.Callback}s declare their
      * invocation type; this information is then used by the code that should
      * invoke the {@code Runnable} or {@code Callback} to decide whether to
      * invoke it directly, or submit it to a thread pool to be invoked by
@@ -46,11 +46,11 @@ public interface Invocable
     enum InvocationType
     {
         /**
-         * <p>Invoking the {@link Invocable} may block the invoker thread,
+         * <p>Invoking the task may block the invoker thread,
          * and the invocation may be performed immediately (possibly blocking
          * the invoker thread) or deferred to a later time, for example
-         * by submitting the {@code Invocable} to a thread pool.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
+         * by submitting the task to a thread pool.</p>
+         * <p>This invocation type is suitable for tasks that
          * call application code, for example to process an HTTP request.</p>
          */
         BLOCKING
@@ -61,11 +61,10 @@ public interface Invocable
             }
         },
         /**
-         * <p>Invoking the {@link Invocable} does not block the invoker thread,
-         * and the invocation may be performed immediately in the invoker thread.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
-         * call implementation code that is guaranteed to never block the
-         * invoker thread.</p>
+         * <p>Invoking the task does not block the invoker thread,
+         * and the invocation must be performed immediately in the invoker thread.</p>
+         * <p>This invocation type is suitable for tasks that can not be deferred and is
+         * guaranteed to never block the invoker thread.</p>
          */
         NON_BLOCKING
         {
@@ -75,12 +74,20 @@ public interface Invocable
             }
         },
         /**
-         * <p>Invoking the {@link Invocable} may block the invoker thread,
-         * but the invocation cannot be deferred to a later time, differently
-         * from {@link #BLOCKING}.</p>
-         * <p>This invocation type is suitable for {@code Invocable}s that
-         * themselves perform the non-deferrable action in a non-blocking way,
-         * thus advancing a possibly stalled system.</p>
+         * <p>Invoking the task may act either as a {@code BLOCKING} task if invoked directly; or as a {@code NON_BLOCKING}
+         * task if invoked via {@link Invocable#invokeNonBlocking(Runnable)}. The implementation of the task must check
+         * {@link Invocable#isNonBlockingInvocation()} to determine how it was called.
+         * </p>
+         * <p>This invocation type is suitable for tasks that have multiple subtasks, some of which that cannot be deferred
+         * mixed with other subtasks that can be.
+         * An invoker which has an {@code EITHER} task must call it immediately, either directly, so that it may block; or
+         * via {@link Invocable#invokeNonBlocking(Runnable)} so that it may not.
+         * The invoker cannot defer the task execution, and specifically it must not
+         * queue the {@code EITHER} task in a thread pool.
+         * </p>
+         * <p>See the {@link org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy} for an example of
+         * both an invoker of {@code EITHER} tasks, and as an implementation of an {@code EITHER} task, when used in a
+         * chain of {@link ExecutionStrategy}s.</p>
          */
         EITHER
         {
