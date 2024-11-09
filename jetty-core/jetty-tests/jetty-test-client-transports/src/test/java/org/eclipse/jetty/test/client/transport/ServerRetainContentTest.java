@@ -52,7 +52,6 @@ public class ServerRetainContentTest extends AbstractTest
     public void testRetainPOST(Transport transport) throws Exception
     {
         assumeTrue(transport != Transport.FCGI);
-        assumeTrue(transport != Transport.H3);
 
         Queue<Content.Chunk> chunks = new ConcurrentLinkedQueue<>();
         CountDownLatch blocked = new CountDownLatch(1);
