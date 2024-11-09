@@ -687,6 +687,11 @@
         <version>${maven.plugin-tools.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-api</artifactId>
+        <version>${maven.resolver.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.mina</groupId>
         <artifactId>mina-core</artifactId>
         <version>${mina.core.version}</version>

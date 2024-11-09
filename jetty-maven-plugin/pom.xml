@@ -156,7 +156,6 @@
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
-      <version>${maven.resolver.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
