@@ -227,7 +227,7 @@
     <h2spec.maven.plugin.version>1.0.13</h2spec.maven.plugin.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hawtio.version>3.0.2</hawtio.version>
-    <hazelcast.version>5.5.0</hazelcast.version>
+    <hazelcast.version>5.3.8</hazelcast.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
     <infinispan.version>11.0.19.Final</infinispan.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
@@ -261,7 +261,7 @@
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
     <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
     <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
-    <jboss-threads.version>3.8.0.Final</jboss-threads.version>
+    <jboss-threads.version>3.6.1.Final</jboss-threads.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.6.1.Final</jboss.logging.version>
