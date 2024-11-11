@@ -73,7 +73,7 @@
     <jnr-unixsocket.version>0.38.23</jnr-unixsocket.version>
     <jolokia.version>1.7.2</jolokia.version>
     <jsp.version>8.5.100</jsp.version>
-    <junit.version>5.11.3</junit.version>
+    <junit.version>5.10.3</junit.version>
     <log4j2.version>2.17.1</log4j2.version>
     <logback.version>1.2.13</logback.version>
     <maven.plugin-tools.version>3.12.0</maven.plugin-tools.version>
