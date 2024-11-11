@@ -1284,7 +1284,7 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 ----
 
 [[handler-use-webapp-context-class-loading]]
-.WebAppContext Class Loading
+==== WebAppContext Class Loading
 
 The Servlet specification requires that a web application class loader must load classes found in the web application `WEB-INF/classes` and `WEB_INF/lib` in preference to using the parent class loader.
 This is significantly different to typical java class loaders where loaders first delegate to their parent class loader.
@@ -1304,12 +1304,14 @@ If the class is found, and it is not a _hidden class_, the class is loaded; othe
 Unfortunately, the Servlet specification does not define exactly which classes are _hidden classes_ and which classes are _protected classes_.
 However, Jetty picks good defaults and allows server applications to customize _hidden classes_ and _protected classes_ in `WebAppContext`.
 
-// TODO: add a section on parentLoaderPriority.
-// TODO: add a code example about how to set system/server classes.
-// TODO: add a code example about how to configure extra classpath
-// TODO: add a section on ClassLoading (see old docs)
+Below you can find an example of how to set up additional classloading configuration, including hidden and protected classes in code:
 
-// TODO: add a section on Configuration (system/server classes)
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=webAppContextClassLoader]
+----
+
+// TODO: add a section on ClassLoading (see old docs)
 // TODO: add a section about how to setup JSP support
 
 [[handler-use-default-servlet]]

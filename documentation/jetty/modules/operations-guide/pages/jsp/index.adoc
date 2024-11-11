@@ -17,7 +17,7 @@ Jetty supports JSP via the `{ee-all}-jsp` modules, which are based on Apache Jas
 
 [source,subs=attributes+]
 ----
-include::{jetty-home}/modules/ee10-jsp.mod[]
+include::{jetty-home}/modules/ee11-jsp.mod[]
 ----
 
 Logging has been bridged to Jetty logging, so you can enable logging for the `org.apache.jasper` package, subpackages and classes as usual.

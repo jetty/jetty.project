@@ -26,7 +26,7 @@ Typically, you would rely on a browser extension such as MetaMask to provide a u
 
 === Support
 
-Currently Jetty only provides support SIWE in Jetty 12.1+ and only for `jetty-core`, and `ee10`+ environments. It is enabled by adding the `EtheremAuthenticator` to the `SecurityHandler` of your web application.
+Currently Jetty only provides support SIWE in Jetty 12.1+ and only for `jetty-core`, and `ee11`+ environments. It is enabled by adding the `EtheremAuthenticator` to the `SecurityHandler` of your web application.
 
 == Usage
 
@@ -87,10 +87,10 @@ Chain IDs::
 
 A nested `LoginService` may be used to assign roles to users of a known Ethereum Address. Or the nested `LoginService` may be combined with the setting `authenticateNewUsers == false` to only allow authentication of known users.
 
-For example a `HashLoginService` may be configured through the `jetty-ee10-web.xml` file:
+For example a `HashLoginService` may be configured through the `jetty-ee11-web.xml` file:
 [, xml, indent=0]
 ----
-<Configure id="wac" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+<Configure id="wac" class="org.eclipse.jetty.ee11.webapp.WebAppContext">
   <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
     <Arg><Ref refid="Server"/></Arg>
     <Call id="realmResource" name="newResource">
