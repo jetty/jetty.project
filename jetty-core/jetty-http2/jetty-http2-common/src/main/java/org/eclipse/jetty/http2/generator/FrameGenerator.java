@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -52,7 +53,10 @@ public abstract class FrameGenerator
 
     protected RetainableByteBuffer encode(HpackEncoder encoder, MetaData metaData) throws HpackException
     {
-        RetainableByteBuffer hpacked = headerGenerator.getByteBufferPool().acquire(encoder.getMaxHeaderListSize(), isUseDirectByteBuffers());
+        int bufferSize = encoder.getMaxHeaderListSize();
+        if (bufferSize <= 0)
+            bufferSize = HpackContext.DEFAULT_MAX_HEADER_LIST_SIZE;
+        RetainableByteBuffer hpacked = headerGenerator.getByteBufferPool().acquire(bufferSize, isUseDirectByteBuffers());
         try
         {
             ByteBuffer byteBuffer = hpacked.getByteBuffer();
