@@ -238,6 +238,7 @@ public class DelayedHandler extends Handler.Wrapper
     {
         private final Deque<Content.Chunk> _chunks = new ArrayDeque<>();
         private final long _maxSize;
+        private final int _chunkOverhead;
         private long _estimatedSize;
 
         /**
@@ -250,8 +251,23 @@ public class DelayedHandler extends Handler.Wrapper
          */
         public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback, long maxSize)
         {
+            this(handler, request, response, callback, maxSize, -1);
+        }
+
+        /**
+         * @param handler The next handler
+         * @param request The delayed request
+         * @param response The delayed response
+         * @param callback The delayed callback
+         * @param maxSize The maximum size to buffer before dispatching to the next handler;
+         *                or -1 to use {@link HttpConnectionFactory#getInputBufferSize()}
+         * @param chunkOverhead The bytes to account for per chunk when calculating the size; or -1 for a default.
+         */
+        public UntilContentDelayedProcess(Handler handler, Request request, Response response, Callback callback, long maxSize, int chunkOverhead)
+        {
             super(handler, request, response, callback);
             _maxSize = maxSize < 0 ? request.getConnectionMetaData().getConnector().getConnectionFactory(HttpConnectionFactory.class).getInputBufferSize() : maxSize;
+            _chunkOverhead = chunkOverhead < 0 ? 8 : chunkOverhead;
         }
 
         @Override
@@ -279,7 +295,7 @@ public class DelayedHandler extends Handler.Wrapper
                 }
 
                 // Estimated size is 8 byte framing overhead per chunk plus the chunk size
-                _estimatedSize += 8 + chunk.remaining();
+                _estimatedSize += _chunkOverhead + chunk.remaining();
 
                 if (chunk.isLast() || _estimatedSize >= _maxSize)
                 {
