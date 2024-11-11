@@ -1287,13 +1287,13 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 .WebAppContext Class Loading
 
 The Servlet specification requires that a web application class loader must load classes found in the web application `WEB-INF/classes` and `WEB_INF/lib` in preference to using the parent class loader.
-This is significantly different to typical java class loaders: where loaders first delegate to their parent class loader.
-For Servlet specification compliant web applications, the typical class loading model, parent-first, is _inverted_.
+This is significantly different to typical java class loaders where loaders first delegate to their parent class loader.
+For Servlet specification compliant web applications, the typical parent-first class loading model is _inverted_.
 
-Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _hidden classes_ (previously _server classes).
+Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _hidden classes_ (previously called _server classes_).
 Web applications receive the HTTP request object as an instance of the `jakarta.servlet.http.HttpServletRequest` interface, and cannot downcast it to the Jetty specific implementation of that interface to access Jetty specific features -- this ensures maximum web application portability across Servlet container implementations.
 
-Lastly, the Servlet specification requires that specific classes are _protected classes (previously called _system classes_), in that they cannot be replaced by the web application loader and normal class loader priority applies.  These classes such as `jakarta.servlet.http.HttpServletRequest`; JDK classes such as `java.lang.String` or `java.sql.Connection`.
+Lastly, the Servlet specification requires that specific classes are _protected classes_ (previously called _system classes_), in that they cannot be replaced by the web application loader and normal class loader priority applies.  These are classes such as `jakarta.servlet.http.HttpServletRequest`; JDK classes such as `java.lang.String` or `java.sql.Connection`.
 
 `WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _protected class_ or a _hidden class_ by delegating to the `ClassVisibilityChecker` of the context.
 

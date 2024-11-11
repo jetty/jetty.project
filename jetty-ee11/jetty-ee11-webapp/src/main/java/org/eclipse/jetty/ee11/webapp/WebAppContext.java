@@ -645,7 +645,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * Add a ClassMatcher for hidden (server) classes by combining with
      * any existing matcher.
      *
-     * @param hiddenClasses The class matcher of patterns to add to the server ClassMatcher
+     * @param hiddenClasses The class matcher of patterns to add to the hidden (server) ClassMatcher
      * @see org.eclipse.jetty.util.ClassVisibilityChecker
      * @see #setHiddenClassMatcher(ClassMatcher)
      */
@@ -668,7 +668,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match System (protected) classes to implement the
+     * @return The ClassMatcher used to match protected (system) classes to implement the
      * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
      * @see #setProtectedClassMatcher(ClassMatcher)
      */
@@ -678,7 +678,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match Server (hidden) classes to implement the
+     * @return The ClassMatcher used to match hidden (server) classes to implement the
      * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
      * @see #setHiddenClassMatcher(ClassMatcher)
      */
