@@ -117,6 +117,12 @@
       <artifactId>kerb-simplekdc</artifactId>
       <version>2.1.0</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jline</groupId>
+          <artifactId>jline</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- transitive dependency defined as a range and we don't want that -->
     <dependency>
