@@ -58,7 +58,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DelayedHandler;
+import org.eclipse.jetty.server.handler.EagerContentHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -223,11 +223,11 @@ public class HugeResourceTest
         ServletHolder holder = context.addServlet(MultipartServlet.class, "/multipart");
         holder.getRegistration().setMultipartConfig(multipartConfig);
 
-        DelayedHandler delayedHandler = new DelayedHandler();
-        server.setHandler(delayedHandler);
+        EagerContentHandler eagerContentHandler = new EagerContentHandler();
+        server.setHandler(eagerContentHandler);
         httpConfig.setDelayDispatchUntilContent(false);
 
-        delayedHandler.setHandler(context);
+        eagerContentHandler.setHandler(context);
         server.start();
     }
 

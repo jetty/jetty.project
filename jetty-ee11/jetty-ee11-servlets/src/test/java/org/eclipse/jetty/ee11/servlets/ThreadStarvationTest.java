@@ -55,7 +55,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.DelayedHandler;
+import org.eclipse.jetty.server.handler.EagerContentHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -108,7 +108,7 @@ public class ThreadStarvationTest
 
         if (delayed)
         {
-            _server.insertHandler(new DelayedHandler());
+            _server.insertHandler(new EagerContentHandler());
             connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
         }
         _server.start();
@@ -205,7 +205,7 @@ public class ThreadStarvationTest
 
         if (delayed)
         {
-            _server.insertHandler(new DelayedHandler());
+            _server.insertHandler(new EagerContentHandler());
             connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
         }
         _server.start();

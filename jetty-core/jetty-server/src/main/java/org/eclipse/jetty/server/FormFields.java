@@ -195,8 +195,29 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      */
     public static void onFields(Request request, Charset charset, Promise.Invocable<Fields> promise)
     {
-        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
-        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
+        onFields(request, charset, -1, -1, promise);
+    }
+
+    /**
+     * Asynchronously read and parse FormFields from a {@link Request}.
+     * <p>
+     * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * @param request The request to get or read the Fields from
+     * @param charset The {@link Charset} of the request content, if previously extracted.
+     * @param maxFields The maximum number of fields to be parsed; or -1 for a default
+     * @param maxLength The maximum total size of the fields; or -1 for a default
+     * @param promise The action to take when the FormFields are available.
+     * @see #onFields(Request, Charset, Promise.Invocable)
+     * @see #getFields(Request)
+     * @see #getFields(Request, int, int)
+     */
+    public static void onFields(Request request, Charset charset, int maxFields, int maxLength, Promise.Invocable<Fields> promise)
+    {
+        if (maxFields < 0)
+            maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        if (maxLength < 0)
+            maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
         from(request, promise.getInvocationType(), request, charset, maxFields, maxLength).whenComplete(promise);
     }
 

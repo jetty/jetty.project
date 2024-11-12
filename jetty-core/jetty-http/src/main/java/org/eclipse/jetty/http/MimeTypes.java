@@ -699,6 +699,19 @@ public class MimeTypes
         return MimeTypes.CACHE.get(contentType);
     }
 
+    public static String getMimeTypeAsStringFromContentType(HttpField field)
+    {
+        if (field == null)
+            return null;
+
+        assert field.getHeader() == HttpHeader.CONTENT_TYPE;
+
+        if (field instanceof MimeTypes.ContentTypeField contentTypeField)
+            return contentTypeField.getMimeType().asString();
+
+        return getBase(field.getValue());
+    }
+
     /**
      * Efficiently extract the charset value from a {@code Content-Type} {@link HttpField}.
      * @param field A {@code Content-Type} field.

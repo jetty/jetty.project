@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 import static org.eclipse.jetty.http.ComplianceViolation.Listener.NOOP;
 
@@ -49,6 +50,15 @@ public class MultiPartConfig
 
         public Builder()
         {
+        }
+
+        /**
+         * @param location the directory where parts will be saved as files.
+         */
+        public Builder location(String location)
+        {
+            location(ResourceFactory.root().newResource(location).getPath());
+            return this;
         }
 
         /**

@@ -55,7 +55,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.DelayedHandler;
+import org.eclipse.jetty.server.handler.EagerContentHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -133,7 +133,7 @@ public class HttpInputIntegrationTest
         http2.setIdleTimeout(5000);
         __server.addConnector(http2);
 
-        DelayedHandler delayedHandler = new DelayedHandler()
+        EagerContentHandler eagerContentHandler = new EagerContentHandler()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -145,8 +145,8 @@ public class HttpInputIntegrationTest
         };
 
         ServletContextHandler context = new ServletContextHandler("/ctx");
-        __server.setHandler(delayedHandler);
-        delayedHandler.setHandler(context);
+        __server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(context);
         ServletHolder holder = new ServletHolder(new TestServlet());
         holder.setAsyncSupported(true);
         context.addServlet(holder, "/*");
