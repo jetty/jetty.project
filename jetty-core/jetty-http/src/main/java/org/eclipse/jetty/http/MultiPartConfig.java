@@ -60,7 +60,7 @@ public class MultiPartConfig
             location(ResourceFactory.root().newResource(location).getPath());
             return this;
         }
-
+        
         /**
          * @param location the directory where parts will be saved as files.
          */
@@ -80,7 +80,7 @@ public class MultiPartConfig
         }
 
         /**
-         * @return the maximum size in bytes of the whole multipart content, or -1 for unlimited.
+         * @param maxSize the maximum size in bytes of the whole multipart content, or -1 for unlimited.
          */
         public Builder maxSize(long maxSize)
         {
@@ -89,7 +89,7 @@ public class MultiPartConfig
         }
 
         /**
-         * @return the maximum part size in bytes, or -1 for unlimited.
+         * @param maxPartSize  the maximum part size in bytes, or -1 for unlimited.
          */
         public Builder maxPartSize(long maxPartSize)
         {

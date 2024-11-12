@@ -87,7 +87,7 @@ public class HttpInputIntegrationTest
     private static HttpConfiguration __config;
     private static SslContextFactory.Server __sslContextFactory;
     private static ArrayByteBufferPool.Tracking __bufferPool;
-    private static final AtomicBoolean __delayHandler = new AtomicBoolean();
+    private static final AtomicBoolean __eagerHandler = new AtomicBoolean();
 
     @BeforeAll
     public static void beforeClass() throws Exception
@@ -136,10 +136,10 @@ public class HttpInputIntegrationTest
         EagerContentHandler eagerContentHandler = new EagerContentHandler()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
             {
-                if (__delayHandler.get())
-                    return super.handle(request, response, callback);
+                if (__eagerHandler.get())
+                    return super.onConditionsMet(request, response, callback);
                 return getHandler().handle(request, response, callback);
             }
         };
@@ -304,9 +304,9 @@ public class HttpInputIntegrationTest
     @MethodSource("scenarios")
     public void testOne(Scenario scenario) throws Exception
     {
-        __delayHandler.set(scenario._delayHandler);
+        __eagerHandler.set(scenario._eagerHandler);
         TestClient client = scenario._client.getDeclaredConstructor().newInstance();
-        String response = client.send("/ctx/test?mode=" + scenario._mode, 50, scenario._delay, scenario._length, scenario._send);
+        String response = client.send("/ctx/test?mode=" + scenario._mode, 50, scenario._eager, scenario._length, scenario._send);
 
         int sum = 0;
         for (String s : scenario._send)
@@ -328,7 +328,7 @@ public class HttpInputIntegrationTest
     @MethodSource("scenarios")
     public void testStress(Scenario scenario) throws Exception
     {
-        __delayHandler.set(scenario._delayHandler);
+        __eagerHandler.set(scenario._eagerHandler);
         int sum = 0;
         for (String s : scenario._send)
         {
@@ -352,7 +352,7 @@ public class HttpInputIntegrationTest
                 TestClient client = scenario._client.getDeclaredConstructor().newInstance();
                 for (int j = 0; j < loops; j++)
                 {
-                    String response = client.send("/ctx/test?mode=" + scenario._mode, 10, scenario._delay, scenario._length, scenario._send);
+                    String response = client.send("/ctx/test?mode=" + scenario._mode, 10, scenario._eager, scenario._length, scenario._send);
                     assertTrue(response.startsWith("HTTP"), response);
                     assertTrue(response.contains(" " + scenario._status + " "), response);
                     assertTrue(response.contains("read=" + scenario._read), response);
@@ -684,19 +684,19 @@ public class HttpInputIntegrationTest
     {
         private final Class<? extends TestClient> _client;
         private final Mode _mode;
-        private final boolean _delayHandler;
-        private final Boolean _delay;
+        private final boolean _eagerHandler;
+        private final Boolean _eager;
         private final int _status;
         private final int _read;
         private final int _length;
         private final List<String> _send;
 
-        public Scenario(Class<? extends TestClient> client, Mode mode, boolean delayHandler, Boolean delay, int status, int read, int length, String... send)
+        public Scenario(Class<? extends TestClient> client, Mode mode, boolean eagerHandler, Boolean eager, int status, int read, int length, String... send)
         {
             _client = client;
             _mode = mode;
-            _delayHandler = delayHandler;
-            _delay = delay;
+            _eagerHandler = eagerHandler;
+            _eager = eager;
             _status = status;
             _read = read;
             _length = length;
@@ -707,7 +707,7 @@ public class HttpInputIntegrationTest
         public String toString()
         {
             return String.format("c=%s, m=%s, delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",
-                _client.getSimpleName(), _mode, _delay, _length, _status, _read, _send);
+                _client.getSimpleName(), _mode, _eager, _length, _status, _read, _send);
         }
     }
 }

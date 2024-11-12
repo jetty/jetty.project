@@ -6,23 +6,23 @@
     <Arg>
       <New id="EagerContentHandler" class="org.eclipse.jetty.server.handler.EagerContentHandler">
         <Arg>
-          <Array type="org.eclipse.jetty.server.handler.EagerContentHandler.ContentLoaderFactory">
+          <Array type="org.eclipse.jetty.server.handler.EagerContentHandler$ContentLoaderFactory">
             <Item>
-              <New class="org.eclipse.jetty.server.handler.EagerContentHandler.FormContentLoaderFactory">
-                <Arg><Property name="jetty.eager.form.maxFields" default="-1"/></Arg>
-                <Arg><Property name="jetty.eager.form.maxLength" default="-1"/></Arg>
+              <New class="org.eclipse.jetty.server.handler.EagerContentHandler$FormContentLoaderFactory">
+                <Arg type="int"><Property name="jetty.eager.form.maxFields" default="-1"/></Arg>
+                <Arg type="int"><Property name="jetty.eager.form.maxLength" default="-1"/></Arg>
               </New>
             </Item>
             <Item>
-              <New class="org.eclipse.jetty.server.handler.EagerContentHandler.MultiPartContentLoaderFactory">
+              <New class="org.eclipse.jetty.server.handler.EagerContentHandler$MultiPartContentLoaderFactory">
                 <Arg><Ref refid="jetty.eager.MultiPartConfig>"/></Arg>
               </New>
             </Item>
             <Item>
-              <New class="org.eclipse.jetty.server.handler.EagerContentHandler.RetainedContentLoaderFactory">
-                <Arg><Property name="jetty.eager.retained.maxRetainedBytes" default="-1"/></Arg>
-                <Arg><Property name="jetty.eager.retained.frameOverhead" default="-1"/></Arg>
-                <Arg><Property name="jetty.eager.retained.reject" default="false"/></Arg>
+              <New class="org.eclipse.jetty.server.handler.EagerContentHandler$RetainedContentLoaderFactory">
+                <Arg type="int"><Property name="jetty.eager.retained.maxRetainedBytes" default="-1"/></Arg>
+                <Arg type="int"><Property name="jetty.eager.retained.frameOverhead" default="-1"/></Arg>
+                <Arg type="boolean"><Property name="jetty.eager.retained.reject" default="false"/></Arg>
               </New>
             </Item>
           </Array>
