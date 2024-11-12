@@ -52,10 +52,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.CompletionStreamWrapper;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -573,14 +575,53 @@ public interface Request extends Attributes, Content.Source
 
     static Fields getParameters(Request request) throws Exception
     {
-        return getParametersAsync(request).get();
+        try (Blocker.Promise<Fields> promise = Blocker.promise())
+        {
+            onParameters(request, promise);
+            return promise.block();
+        }
     }
 
+    /**
+     * @deprecated use {@link #onParameters(Request, Promise.Invocable)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.0.16")
     static CompletableFuture<Fields> getParametersAsync(Request request)
     {
         Fields queryFields = Request.extractQueryParameters(request);
         CompletableFuture<Fields> contentFields = FormFields.from(request);
         return contentFields.thenApply(formFields -> Fields.combine(queryFields, formFields));
+    }
+
+    /**
+     * Asynchronous version of {@link #getParameters(Request)}.
+     *
+     * @param request the request
+     * @param promise the promise that will be completed with the parameters
+     */
+    static void onParameters(Request request, Promise.Invocable<Fields> promise)
+    {
+        Fields queryFields = Request.extractQueryParameters(request);
+        FormFields.onFields(request, new Promise.Invocable<>()
+        {
+            @Override
+            public void succeeded(Fields result)
+            {
+                promise.succeeded(Fields.combine(queryFields, result));
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                promise.failed(x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return promise.getInvocationType();
+            }
+        });
     }
 
     @SuppressWarnings("unchecked")

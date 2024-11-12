@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -73,14 +72,7 @@ class UpgradeRequestDelegate implements UpgradeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        Map<String, List<String>> result = new LinkedHashMap<>();
-        HttpFields headers = request.getHeaders();
-        for (HttpField header : headers)
-        {
-            String name = header.getName();
-            result.put(name, headers.getValuesList(name));
-        }
-        return result;
+        return HttpFields.asMap(request.getHeaders());
     }
 
     @Override

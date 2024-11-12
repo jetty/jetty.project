@@ -88,7 +88,7 @@ public interface Environment extends Attributes
 
         public Named(String name)
         {
-            this (name, null);
+            this(name, null);
         }
 
         public Named(String name, ClassLoader classLoader)

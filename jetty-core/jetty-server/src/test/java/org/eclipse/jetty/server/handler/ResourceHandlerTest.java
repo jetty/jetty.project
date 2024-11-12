@@ -1474,6 +1474,7 @@ public class ResourceHandlerTest
                     \r
                     """.formatted(eTag1)));
             assertThat(response3.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+            assertThat(response3.getField(ETAG), notNullValue());
 
             HttpTester.Response response4 = HttpTester.parseResponse(
                     _local.getResponse("""
@@ -1485,6 +1486,7 @@ public class ResourceHandlerTest
                     \r
                     """.formatted(eTag2)));
             assertThat(response4.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+            assertThat(response3.getField(ETAG), notNullValue());
         }
 
         assertThat(contentFactory.getCachedFiles(), is(2));
@@ -1983,6 +1985,7 @@ public class ResourceHandlerTest
                 \r
                 """.formatted(etag)));
         assertThat(response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(ETAG), notNullValue());
         assertThat(response.getContent(), is(""));
     }
 
@@ -2340,6 +2343,7 @@ public class ResourceHandlerTest
             """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(ETAG), notNullValue());
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2350,6 +2354,7 @@ public class ResourceHandlerTest
             """.replace("@ETAG@", etag));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(ETAG), notNullValue());
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2462,6 +2467,7 @@ public class ResourceHandlerTest
             """.replace("@LASTMODIFIED@", lastModified));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(LAST_MODIFIED), notNullValue());
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2482,6 +2488,7 @@ public class ResourceHandlerTest
             """.replace("@DATE@", DateGenerator.formatDate(System.currentTimeMillis() + 10000)));
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getField(LAST_MODIFIED), notNullValue());
 
         rawResponse = _local.getResponse("""
             GET /context/file.txt HTTP/1.1\r
@@ -2531,6 +2538,7 @@ public class ResourceHandlerTest
                 """.formatted(lastModified)));
 
         assertThat(response.getStatus(), equalTo(304));
+        assertThat(response.getField(LAST_MODIFIED), notNullValue());
         assertThat(response.getContent(), is(""));
 
         response = HttpTester.parseResponse(

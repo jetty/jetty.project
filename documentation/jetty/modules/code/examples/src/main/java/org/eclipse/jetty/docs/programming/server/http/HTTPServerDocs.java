@@ -46,7 +46,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
@@ -773,23 +773,29 @@ public class HTTPServerDocs
                 if (MimeTypes.Type.FORM_ENCODED.is(contentType))
                 {
                     // Convert the request content into Fields.
-                    CompletableFuture<Fields> completableFields = FormFields.from(request); // <1>
-
-                    // When all the request content has arrived, process the fields.
-                    completableFields.whenComplete((fields, failure) -> // <2>
+                    FormFields.onFields(request, new Promise.Invocable<>() // <1>
                     {
-                        if (failure == null)
+                        @Override
+                        public void succeeded(Fields fields) // <2>
                         {
                             processFields(fields);
                             // Send a simple 200 response, completing the callback.
                             response.setStatus(HttpStatus.OK_200);
                             callback.succeeded();
                         }
-                        else
+
+                        @Override
+                        public void failed(Throwable failure)
                         {
                             // Reading the request content failed.
                             // Send an error response, completing the callback.
                             Response.writeError(request, response, callback, failure);
+                        }
+
+                        @Override
+                        public InvocationType getInvocationType() // <3>
+                        {
+                            return InvocationType.NON_BLOCKING;
                         }
                     });
 
@@ -822,21 +828,17 @@ public class HTTPServerDocs
                 String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
                 if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType))
                 {
-                    // Extract the multipart boundary.
-                    String boundary = MultiPart.extractBoundary(contentType);
-
-                    // Create and configure the multipart parser.
-                    MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
-                    // By default, uploaded files are stored in this directory, to
-                    // avoid to read the file content (which can be large) in memory.
-                    parser.setFilesDirectory(Path.of("/tmp"));
+                    // Configuration for the MultiPart parser.
+                    MultiPartConfig config = new MultiPartConfig.Builder()
+                        // By default, uploaded files are stored in this directory, to
+                        // avoid to read the file content (which can be large) in memory.
+                        .location(Path.of("/tmp"))
+                        .build();
                     // Convert the request content into parts.
-                    CompletableFuture<MultiPartFormData.Parts> completableParts = parser.parse(request); // <1>
-
-                    // When all the request content has arrived, process the parts.
-                    completableParts.whenComplete((parts, failure) -> // <2>
+                    MultiPartFormData.onParts(request, request, contentType, config, new Promise.Invocable<>() // <1>
                     {
-                        if (failure == null)
+                        @Override
+                        public void succeeded(MultiPartFormData.Parts parts) // <2>
                         {
                             // Use the Parts API to process the parts.
                             processParts(parts);
@@ -844,11 +846,19 @@ public class HTTPServerDocs
                             response.setStatus(HttpStatus.OK_200);
                             callback.succeeded();
                         }
-                        else
+
+                        @Override
+                        public void failed(Throwable failure)
                         {
                             // Reading the request content failed.
                             // Send an error response, completing the callback.
                             Response.writeError(request, response, callback, failure);
+                        }
+
+                        @Override
+                        public InvocationType getInvocationType() // <3>
+                        {
+                            return InvocationType.NON_BLOCKING;
                         }
                     });
 

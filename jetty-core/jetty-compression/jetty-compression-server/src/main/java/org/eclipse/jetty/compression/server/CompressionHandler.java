@@ -14,10 +14,10 @@
 package org.eclipse.jetty.compression.server;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.http.EtagUtils;
@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -63,8 +64,7 @@ public class CompressionHandler extends Handler.Wrapper
     public static final String HANDLER_ETAGS = CompressionHandler.class.getPackageName() + ".ETag";
 
     private static final Logger LOG = LoggerFactory.getLogger(CompressionHandler.class);
-    // TODO: make into a case-insensitive map
-    private final Map<String, Compression> supportedEncodings = new HashMap<>();
+    private final Map<String, Compression> supportedEncodings = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final PathMappings<CompressionConfig> pathConfigs = new PathMappings<CompressionConfig>();
 
     public CompressionHandler()
@@ -228,7 +228,7 @@ public class CompressionHandler extends Handler.Wrapper
                         {
                             String lvalue = StringUtil.asciiToLowerCase(value);
                             // only track encodings that are supported by this handler
-                            if (supportedEncodings.containsKey(lvalue))
+                            if ("*".equals(value) || supportedEncodings.containsKey(lvalue))
                             {
                                 if (requestAcceptEncoding == null)
                                     requestAcceptEncoding = new ArrayList<>();
@@ -315,6 +315,26 @@ public class CompressionHandler extends Handler.Wrapper
                 CompressionConfig.builder()
                     .from(MimeTypes.DEFAULTS)
                     .build());
+        }
+
+        // ensure that the preferred encoder order is sane for the configuration.
+        for (MappedResource<CompressionConfig> pathConfig : pathConfigs)
+        {
+            List<String> preferredEncoders = pathConfig.getResource().getCompressPreferredEncoderOrder();
+            if (preferredEncoders.isEmpty())
+                continue;
+            ListIterator<String> preferredIter = preferredEncoders.listIterator();
+            while (preferredIter.hasNext())
+            {
+                String listedEncoder = preferredIter.next();
+                if (!supportedEncodings.containsKey(listedEncoder))
+                {
+                    LOG.warn("Unable to find compression encoder {} from configuration for pathspec {} in registered compression encoders [{}]",
+                        listedEncoder, pathConfig.getPathSpec(),
+                        String.join(", ", supportedEncodings.keySet()));
+                    preferredIter.remove(); // remove bad encoding
+                }
+            }
         }
 
         super.doStart();

@@ -155,11 +155,14 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             try
             {
                 Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
-                cb.succeeded();
+                if (webSocket == null)
+                    cb.succeeded();
                 return webSocket;
             }
             catch (Throwable t)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not create WebSocket endpoint", t);
                 cb.failed(t);
                 return null;
             }
@@ -205,11 +208,14 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             try
             {
                 Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
-                cb.succeeded();
+                if (webSocket == null)
+                    cb.succeeded();
                 return webSocket;
             }
             catch (Throwable t)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not create WebSocket endpoint", t);
                 cb.failed(t);
                 return null;
             }

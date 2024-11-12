@@ -33,7 +33,7 @@ public class PathContentSource implements Content.Source
 
     public PathContentSource(Path path, ByteBufferPool byteBufferPool)
     {
-        this (path, byteBufferPool instanceof ByteBufferPool.Sized sized ? sized : new ByteBufferPool.Sized(byteBufferPool));
+        this(path, byteBufferPool instanceof ByteBufferPool.Sized sized ? sized : new ByteBufferPool.Sized(byteBufferPool));
     }
 
     public PathContentSource(Path path, ByteBufferPool.Sized sizedBufferPool)

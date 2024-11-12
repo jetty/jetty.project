@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.websocket.server.internal;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +23,7 @@ import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
@@ -35,13 +35,22 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
 {
     private final ServerUpgradeResponse upgradeResponse;
     private final HttpServletResponse httpServletResponse;
+    private final boolean isUpgraded;
+    private final Map<String, List<String>> headers;
 
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
+        this(response, false);
+    }
+
+    public DelegatedServerUpgradeResponse(ServerUpgradeResponse response, boolean isUpgraded)
+    {
         upgradeResponse = response;
+        this.isUpgraded = isUpgraded;
         ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
         this.httpServletResponse = (HttpServletResponse)servletContextResponse.getRequest()
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+        headers = HttpFields.asMap(upgradeResponse.getHeaders());
     }
 
     @Override
@@ -55,13 +64,13 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void setHeader(String name, String value)
     {
-        upgradeResponse.getHeaders().put(name, value);
+        headers.put(name, List.of(value));
     }
 
     @Override
     public void setHeader(String name, List<String> values)
     {
-        upgradeResponse.getHeaders().put(name, values);
+        headers.put(name, values);
     }
 
     @Override
@@ -91,9 +100,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        Map<String, List<String>> headers = getHeaderNames().stream()
-            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(getHeaders(name))));
-        return Collections.unmodifiableMap(headers);
+        return isUpgraded ? Collections.unmodifiableMap(headers) : headers;
     }
 
     @Override

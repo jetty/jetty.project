@@ -18,7 +18,7 @@ import org.eclipse.jetty.server.Handler;
 /**
  * @deprecated Use {@link EagerContentHandler}
  */
-@Deprecated(forRemoval = true; since="12.1.0")
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class DelayedHandler extends EagerContentHandler
 {
     DelayedHandler()

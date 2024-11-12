@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -90,6 +91,7 @@ public class CustomRequestLogTest
     {
         _server = new Server();
         _httpConfig = new HttpConfiguration();
+        _httpConfig.setUriCompliance(UriCompliance.DEFAULT.with("fragments", UriCompliance.Violation.FRAGMENT));
         _serverConnector = new ServerConnector(_server, 1, 1, new HttpConnectionFactory(_httpConfig));
         _server.addConnector(_serverConnector);
         TestRequestLogWriter writer = new TestRequestLogWriter();
@@ -165,10 +167,7 @@ public class CustomRequestLogTest
     public void testIgnorePaths(String testPath, boolean existsInLog) throws Exception
     {
         start("RequestPath: %U",
-            customRequestLog ->
-            {
-                customRequestLog.setIgnorePaths(new String[]{"/zed/*", "/zee/*"});
-            });
+            customRequestLog -> customRequestLog.setIgnorePaths(new String[]{"/zed/*", "/zee/*"}));
 
         HttpTester.Response response = getResponse("GET @PATH@ HTTP/1.0\n\n".replace("@PATH@", testPath));
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -245,8 +244,7 @@ public class CustomRequestLogTest
     @Test
     public void testLogAddress() throws Exception
     {
-        start("" +
-              "%{local}a|%{local}p|" +
+        start("%{local}a|%{local}p|" +
               "%{remote}a|%{remote}p|" +
               "%{server}a|%{server}p|" +
               "%{client}a|%{client}p");
@@ -337,7 +335,7 @@ public class CustomRequestLogTest
         HttpTester.Response response = getResponse("""
             GET / HTTP/1.0
             Content-Length: %d
-                                
+            
             %s""".formatted(content.length(), content));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
@@ -449,9 +447,9 @@ public class CustomRequestLogTest
 
             GET /a HTTP/1.1
             Host: localhost
-                        
+            
             GET /a HTTP/1.0
-                        
+            
             """, 3);
 
         assertThat(_logs.poll(5, TimeUnit.SECONDS), is("KeepAliveRequests: 1"));
@@ -755,7 +753,7 @@ public class CustomRequestLogTest
             output.write("""
                 GET /abort HTTP/1.1
                 Host: localhost
-                    
+                
                 """.getBytes(StandardCharsets.ISO_8859_1));
             output.flush();
 
@@ -764,7 +762,7 @@ public class CustomRequestLogTest
 
             String line = in.readLine();
             assertThat(line, is("HTTP/1.1 200 OK"));
-            while (line != null && line.length() > 0)
+            while (line != null && !line.isEmpty())
                 line = in.readLine();
 
             line = in.readLine();

@@ -28,7 +28,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -37,11 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled
 @ExtendWith(WorkDirExtension.class)
 public class TestJettyEmbedder
 {
-
     @Test
     public void testJettyEmbedderFromDefaults(WorkDir workDir) throws Exception
     {
@@ -120,7 +117,7 @@ public class TestJettyEmbedder
             ContextHandlerCollection contexts = ServerSupport.findContextHandlerCollection(jetty.getServer());
             assertNotNull(contexts);
             assertTrue(contexts.contains(otherHandler));
-            assertTrue(contexts.contains(webApp));
+            assertTrue(contexts.contains(webApp.get()));
 
             //stop the webapp and check durable listener retained
             jetty.stopWebApp();

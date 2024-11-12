@@ -928,6 +928,21 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
+     * <p>Wraps an instance of {@link HttpFields} as a {@link Map}.</p>
+     * <p>If the provided {@link HttpFields} is an instance of {@link HttpFields.Mutable} then changes to the
+     * {@link Map} will be reflected in the underlying {@link HttpFields}.
+     * Otherwise, any modification to the {@link Map} will throw {@link UnsupportedOperationException}.</p>
+     * @param fields the {@link HttpFields} to convert to a {@link Map}.
+     * @return an {@link Map} representing the contents of the {@link HttpFields}.
+     */
+    static Map<String, List<String>> asMap(HttpFields fields)
+    {
+        return (fields instanceof HttpFields.Mutable mutable)
+            ? new HttpFieldsMap.Mutable(mutable)
+            : new HttpFieldsMap.Immutable(fields);
+    }
+
+    /**
      * @return a sequential stream of the {@link HttpField}s in this instance
      */
     default Stream<HttpField> stream()

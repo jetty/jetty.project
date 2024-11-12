@@ -46,7 +46,7 @@ public class WebSocketComponents extends ContainerLifeCycle
     public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,
                                ByteBufferPool bufferPool, InflaterPool inflaterPool, DeflaterPool deflaterPool)
     {
-        this (extensionRegistry, objectFactory, bufferPool, inflaterPool, deflaterPool, null);
+        this(extensionRegistry, objectFactory, bufferPool, inflaterPool, deflaterPool, null);
     }
 
     public WebSocketComponents(WebSocketExtensionRegistry extensionRegistry, DecoratedObjectFactory objectFactory,

@@ -81,6 +81,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * Set a {@link Fields} or related failure for the request
      * @param request The request to which to associate the fields with
      * @param fields A {@link CompletableFuture} that will provide either the fields or a failure.
+     * @deprecated do not use it, no replacement.
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static void set(Request request, CompletableFuture<Fields> fields)
@@ -199,18 +200,15 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     }
 
     /**
-     * Asynchronously read and parse FormFields from a {@link Request}.
-     * <p>
-     * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
-     * can be called multiple times, with subsequent calls returning the results of the first call.
+     * <p>Asynchronously reads and parses {@link FormFields} from a {@link Request}.</p>
+     * <p>Calls to {@code onFields} and {@code getFields} methods are idempotent, and
+     * can be called multiple times, with subsequent calls returning the results of the first call.</p>
+     *
      * @param request The request to get or read the Fields from
      * @param charset The {@link Charset} of the request content, if previously extracted.
-     * @param maxFields The maximum number of fields to be parsed; or -1 for a default
-     * @param maxLength The maximum total size of the fields; or -1 for a default
+     * @param maxFields The maximum number of fields to accept; or -1 for a default
+     * @param maxLength The maximum length of fields; or -1 for a default
      * @param promise The action to take when the FormFields are available.
-     * @see #onFields(Request, Charset, Promise.Invocable)
-     * @see #getFields(Request)
-     * @see #getFields(Request, int, int)
      */
     public static void onFields(Request request, Charset charset, int maxFields, int maxLength, Promise.Invocable<Fields> promise)
     {
@@ -225,7 +223,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param request The request to enquire from
      * @return A {@link CompletableFuture} that will provide either the fields or a failure, or null if none set.
      * @see #from(Request)
-     *
+     * @deprecated use {@link #getFields(Request)} instead.
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> get(Request request)
@@ -244,6 +242,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      *                using the classname as the attribute name, else the request is used
      *                as a {@link Content.Source} from which to read the fields and set the attribute.
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     * @deprecated use {@link #onFields(Request, Promise.Invocable)} instead.
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> from(Request request)
@@ -260,6 +259,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      *                as a {@link Content.Source} from which to read the fields and set the attribute.
      * @param charset the {@link Charset} to use for byte to string conversion.
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     * @deprecated use {@link #onFields(Request, Charset, Promise.Invocable)} instead.
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> from(Request request, Charset charset)
@@ -277,6 +277,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param maxFields The maximum number of fields to be parsed
      * @param maxLength The maximum total size of the fields
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     * @deprecated use {@link #onFields(Request, Charset, int, int, Promise.Invocable)} instead.
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> from(Request request, int maxFields, int maxLength)
@@ -293,6 +294,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param maxFields The maximum number of fields to be parsed
      * @param maxLength The maximum total size of the fields
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     * @deprecated use {@link #onFields(Request, Charset, int, int, Promise.Invocable)} instead.
      */
     @Deprecated(forRemoval = true, since = "12.0.15")
     public static CompletableFuture<Fields> from(Request request, Charset charset, int maxFields, int maxLength)

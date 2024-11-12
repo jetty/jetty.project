@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,12 @@ public class ResourceService
     private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);
     private static final int NO_CONTENT_LENGTH = -1;
     private static final int USE_KNOWN_CONTENT_LENGTH = -2;
+    private static final EnumSet<HttpHeader> CONTENT_HEADERS = EnumSet.of(
+        HttpHeader.LAST_MODIFIED,
+        HttpHeader.CONTENT_LENGTH,
+        HttpHeader.CONTENT_TYPE
+    );
+    private static final PreEncodedHttpField ACCEPT_RANGES_BYTES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
 
     private final List<CompressedContentFormat> _precompressedFormats = new ArrayList<>();
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
@@ -351,6 +358,7 @@ public class ResourceService
                         if (matched != null)
                         {
                             response.getHeaders().put(HttpHeader.ETAG, matched);
+                            putNotModifiedHeaders(response, content);
                             writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                             return true;
                         }
@@ -368,17 +376,18 @@ public class ResourceService
                 String mdlm = DateGenerator.formatDate(content.getLastModifiedInstant());
                 if (ifms.equals(mdlm))
                 {
+                    putNotModifiedHeaders(response, content);
                     writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return true;
                 }
 
-                // TODO: what should we do when we get a crappy date?
                 long ifmsl = HttpDateTime.parseToEpoch(ifms);
                 if (ifmsl != -1)
                 {
                     long lm = content.getResource().lastModified().toEpochMilli();
                     if (lm != -1 && lm / 1000 <= ifmsl / 1000)
                     {
+                        putNotModifiedHeaders(response, content);
                         writeHttpError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                         return true;
                     }
@@ -388,7 +397,6 @@ public class ResourceService
             // Parse the if[un]modified dates and compare to resource
             if (ifums != null && ifm == null)
             {
-                // TODO: what should we do when we get a crappy date?
                 long ifumsl = HttpDateTime.parseToEpoch(ifums);
                 if (ifumsl != -1)
                 {
@@ -699,55 +707,55 @@ public class ResourceService
 
     protected void putHeaders(Response response, HttpContent content, long contentLength)
     {
-        // TODO it is very inefficient to do many put's to a HttpFields, as each put is a full iteration.
-        //      it might be better remove headers en masse and then just add the extras:
-        // NOTE: If these headers come from a Servlet Filter we shouldn't override them here.
-//        headers.remove(EnumSet.of(
-//            HttpHeader.LAST_MODIFIED,
-//            HttpHeader.CONTENT_LENGTH,
-//            HttpHeader.CONTENT_TYPE,
-//            HttpHeader.CONTENT_ENCODING,
-//            HttpHeader.ETAG,
-//            HttpHeader.ACCEPT_RANGES,
-//            HttpHeader.CACHE_CONTROL
-//            ));
-//        HttpField lm = content.getLastModified();
-//        if (lm != null)
-//            headers.add(lm);
-//        etc.
+        HttpFields.Mutable headers = response.getHeaders();
 
-        HttpField lm = content.getLastModified();
-        if (lm != null)
-            response.getHeaders().put(lm);
-
-        if (contentLength == USE_KNOWN_CONTENT_LENGTH)
-        {
-            response.getHeaders().put(content.getContentLength());
-        }
-        else if (contentLength > NO_CONTENT_LENGTH)
-        {
-            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
-        }
-
-        HttpField ct = content.getContentType();
-        if (ct != null)
-            response.getHeaders().put(ct);
-
-        HttpField ce = content.getContentEncoding();
-        if (ce != null)
-            response.getHeaders().put(ce);
-
-        if (_etags)
+        // Existing etags have priority over content etags (often set by compression handler)
+        if (_etags && !headers.contains(HttpHeader.ETAG))
         {
             HttpField et = content.getETag();
             if (et != null)
-                response.getHeaders().put(et);
+                headers.add(et);
         }
 
-        if (_acceptRanges && !response.getHeaders().contains(HttpHeader.ACCEPT_RANGES))
-            response.getHeaders().put(new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes"));
-        if (_cacheControl != null && !response.getHeaders().contains(HttpHeader.CACHE_CONTROL))
-            response.getHeaders().put(_cacheControl);
+        // Existing content encoding is kept only if not set for content.
+        HttpField ce = content.getContentEncoding();
+        if (ce != null)
+            headers.put(ce);
+
+        // Remove content headers and re-add if we have them
+        headers.remove(CONTENT_HEADERS);
+        HttpField lm = content.getLastModified();
+        if (lm != null)
+            headers.add(lm);
+        if (contentLength == USE_KNOWN_CONTENT_LENGTH)
+            headers.add(content.getContentLength());
+        else if (contentLength > NO_CONTENT_LENGTH)
+            headers.add(HttpHeader.CONTENT_LENGTH, contentLength);
+        HttpField ct = content.getContentType();
+        if (ct != null)
+            headers.add(ct);
+
+        putHeaders(response);
+    }
+
+    protected void putNotModifiedHeaders(Response response, HttpContent content)
+    {
+        HttpFields.Mutable headers = response.getHeaders();
+        // send only lastModified, as it is too difficult to determine the etag with compression
+        HttpField lm = content.getLastModified();
+        if (lm != null)
+            headers.put(lm);
+
+        putHeaders(response);
+    }
+
+    protected void putHeaders(Response response)
+    {
+        HttpFields.Mutable headers = response.getHeaders();
+        if (_acceptRanges && !headers.contains(HttpHeader.ACCEPT_RANGES))
+            headers.add(ACCEPT_RANGES_BYTES);
+        if (_cacheControl != null && !headers.contains(HttpHeader.CACHE_CONTROL))
+            headers.add(_cacheControl);
     }
 
     /**

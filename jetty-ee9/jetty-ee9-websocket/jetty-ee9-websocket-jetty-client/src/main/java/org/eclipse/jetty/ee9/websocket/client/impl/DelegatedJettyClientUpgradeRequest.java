@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.EndPoint;
@@ -78,7 +79,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return null;
+        return HttpFields.asMap(delegate.getHeaders());
     }
 
     @Override

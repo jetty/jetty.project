@@ -16,6 +16,7 @@ package org.eclipse.jetty.docs.programming.migration;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
@@ -30,9 +31,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartConfig;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -208,7 +212,7 @@ public class ServletToHandlerDocs
             Session session = request.getSession(create);
 
             callback.succeeded();
-            return false;
+            return true;
         }
     }
     // end::request[]
@@ -372,6 +376,75 @@ public class ServletToHandlerDocs
             return true;
         }
         // end::requestContent-source[]
+    }
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    public class RequestContentAPIsFormFields extends Handler.Abstract
+    {
+        // tag::requestContent-formFields[]
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        {
+            FormFields.onFields(request, new Promise.Invocable<>()
+            {
+                @Override
+                public void succeeded(Fields fields)
+                {
+                    // Process the form fields here.
+
+                    // Implicitly respond with status code 200 and no content.
+                    callback.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable failure)
+                {
+                    // Implicitly respond with status code 500.
+                    callback.failed(failure);
+                }
+            });
+
+            return true;
+        }
+        // end::requestContent-formFields[]
+    }
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    public class RequestContentAPIsMultiPart extends Handler.Abstract
+    {
+        // tag::requestContent-multiPart[]
+        @Override
+        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        {
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+
+            MultiPartConfig multiPartConfig = new MultiPartConfig.Builder()
+                // The directory where the parts content are saved.
+                .location(Path.of("/tmp"))
+                .build();
+
+            MultiPartFormData.onParts(request, request, contentType, multiPartConfig, new Promise.Invocable<>()
+            {
+                @Override
+                public void succeeded(MultiPartFormData.Parts parts)
+                {
+                    // Process the parts here.
+
+                    // Implicitly respond with status code 200 and no content.
+                    callback.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable failure)
+                {
+                    // Implicitly respond with status code 500.
+                    callback.failed(failure);
+                }
+            });
+
+            return true;
+        }
+        // end::requestContent-multiPart[]
     }
 
     @SuppressWarnings("InnerClassMayBeStatic")

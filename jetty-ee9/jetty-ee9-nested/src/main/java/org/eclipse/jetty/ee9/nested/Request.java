@@ -470,7 +470,7 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    _contentParameters = FormFields.get(_coreRequest).get();
+                    _contentParameters = FormFields.getFields(_coreRequest);
                     return;
                 }
                 catch (RuntimeException e)

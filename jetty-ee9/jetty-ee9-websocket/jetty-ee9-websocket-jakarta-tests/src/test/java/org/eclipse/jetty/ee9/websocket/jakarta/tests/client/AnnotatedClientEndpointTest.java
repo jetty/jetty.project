@@ -15,14 +15,12 @@ package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.Date;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.EndpointConfig;
-import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
@@ -75,12 +73,6 @@ public class AnnotatedClientEndpointTest
 
     public static class AnnotatedEndpointConfigurator extends ClientEndpointConfig.Configurator
     {
-        @Override
-        public void afterResponse(HandshakeResponse hr)
-        {
-            hr.getHeaders().put("X-Test", Collections.singletonList("Extra"));
-            super.afterResponse(hr);
-        }
     }
 
     private static CoreServer server;

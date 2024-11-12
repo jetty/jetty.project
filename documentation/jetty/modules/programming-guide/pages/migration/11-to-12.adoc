@@ -133,6 +133,10 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-stream]
 
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-source]
+
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-formFields]
+
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-multiPart]
 ----
 
 Refer also to the `Content.Source` APIs detailed in xref:arch/io.adoc#content-source[this section].

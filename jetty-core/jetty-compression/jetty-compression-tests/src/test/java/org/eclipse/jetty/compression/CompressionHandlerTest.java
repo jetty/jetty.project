@@ -21,10 +21,15 @@ import java.nio.file.Path;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.compression.brotli.BrotliCompression;
+import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
+import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.QuotedQualityCSV;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -33,6 +38,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -560,6 +566,90 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 byte[] content = response.getContent();
                 assertThat(content, is(resourceBody));
             }
+        }
+    }
+
+    /**
+     * Testing how CompressionHandler acts with multiple compression implementation added
+     * (brotli, gzip, and zstandard are all added enabled),
+     * and the {@link CompressionConfig#getCompressPreferredEncoderOrder()} configuration.
+     * Also tests the handling of {@code Accept-Encoding: *} request headers.
+     */
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = true, delimiterString = "|", textBlock = """
+        acceptEncoding | preferredEncoding | expectedContentEncoding
+        br             | gzip, br          | br
+        br, gzip       | gzip, br          | gzip
+                       | br, zstd          |
+        *              | zstd, br, gzip    | zstd
+        *              |                   | 
+        """)
+    public void testCompressPreferredEncoders(
+        String acceptEncodingHeader,
+        String preferredEncodingCsv,
+        String expectedContentEncoding) throws Exception
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        GzipCompression gzipCompression = new GzipCompression();
+        gzipCompression.setByteBufferPool(pool);
+        BrotliCompression brotliCompression = new BrotliCompression();
+        brotliCompression.setByteBufferPool(pool);
+        ZstandardCompression zstdCompression = new ZstandardCompression();
+        zstdCompression.setByteBufferPool(pool);
+
+        String resourceName = "texts/quotes.txt";
+        String resourceContentType = "text/plain;charset=utf-8";
+        String requestedPath = "/path/to/quotes.txt";
+
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        byte[] resourceBody = Files.readAllBytes(resourcePath);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.addCompression(gzipCompression);
+        compressionHandler.addCompression(brotliCompression);
+        compressionHandler.addCompression(zstdCompression);
+
+        QuotedQualityCSV qcsv = new QuotedQualityCSV();
+        qcsv.addValue(preferredEncodingCsv);
+        CompressionConfig config = CompressionConfig.builder()
+            .compressPreferredEncoderOrder(qcsv.getValues())
+            .build();
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, acceptEncodingHeader);
+            })
+            .path(requestedPath)
+            .send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+        if (StringUtil.isNotBlank(expectedContentEncoding))
+        {
+            assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(expectedContentEncoding));
+        }
+        else
+        {
+            assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
         }
     }
 

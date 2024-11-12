@@ -396,7 +396,9 @@ public class HttpURITest
                 {"/context/dir%3B/", "/context/dir%3B/", "/context/dir;/", EnumSet.noneOf(Violation.class)},
                 {"/f%u006f%u006F/bar", "/foo/bar", "/foo/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
                 {"/f%u0001%u0001/bar", "/f%01%01/bar", "/f\001\001/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+                // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                 {"/foo/%u20AC/bar", "/foo/\u20AC/bar", "/foo/\u20AC/bar", EnumSet.of(Violation.UTF16_ENCODINGS)},
+                // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
 
                 // nfc encoded unicode path
                 {"/dir/swedish-%C3%A5.txt", "/dir/swedish-å.txt", "/dir/swedish-å.txt", EnumSet.noneOf(Violation.class)},
@@ -497,6 +499,11 @@ public class HttpURITest
                 {"http://localhost:9000/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/x\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", EnumSet.noneOf(Violation.class)},
                 {"http://localhost:9000/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", "/\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32\uD83C\uDF32", EnumSet.noneOf(Violation.class)},
                 // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
+
+                // Fragments
+                {"http://host/path/info#fragment", "/path/info", "/path/info", EnumSet.of(Violation.FRAGMENT)},
+                {"//host/path/info#frag/ment", "/path/info", "/path/info", EnumSet.of(Violation.FRAGMENT)},
+                {"/path/info#fragment", "/path/info", "/path/info", EnumSet.of(Violation.FRAGMENT)}
             }).map(Arguments::of);
     }
 
@@ -511,7 +518,7 @@ public class HttpURITest
             assertThat("Decoded Path", uri.getDecodedPath(), is(decodedPath));
 
             EnumSet<Violation> ambiguous = EnumSet.copyOf(expected);
-            ambiguous.retainAll(EnumSet.complementOf(EnumSet.of(Violation.UTF16_ENCODINGS, Violation.BAD_UTF8_ENCODING)));
+            ambiguous.retainAll(UriCompliance.AMBIGUOUS_VIOLATIONS);
 
             assertThat(uri.isAmbiguous(), is(!ambiguous.isEmpty()));
             assertThat(uri.hasAmbiguousSegment(), is(ambiguous.contains(Violation.AMBIGUOUS_PATH_SEGMENT)));
@@ -913,9 +920,9 @@ public class HttpURITest
 
     @ParameterizedTest
     @MethodSource("parseData")
-    public void testParseURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment) throws Exception
+    public void testParseURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment)
     {
-        URI javaUri = null;
+        URI javaUri;
         try
         {
             javaUri = new URI(input);
@@ -940,7 +947,7 @@ public class HttpURITest
 
     @ParameterizedTest
     @MethodSource("parseData")
-    public void testCompareToJavaNetURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment) throws Exception
+    public void testCompareToJavaNetURI(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment)
     {
         URI javaUri = null;
         try

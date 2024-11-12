@@ -35,7 +35,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -398,16 +397,17 @@ public class ResourceTest
 
     @Test
     @EnabledOnOs(OS.WINDOWS)
-    @Disabled("This will create different Resource objects, not sure if this is still results in a problem")
     public void testEqualsWindowsCaseInsensitiveDrive() throws Exception
     {
         URI a = new URI("file:///c:/foo/bar");
         URI b = new URI("file:///C:/foo/bar");
-        
+
         Resource ra = resourceFactory.newResource(a);
         Resource rb = resourceFactory.newResource(b);
 
-        assertEquals(rb, ra);
+        // only PathResource supports Object.equals()
+        if (ra instanceof PathResource && rb instanceof PathResource)
+            assertEquals(rb, ra);
     }
 
     @Test

@@ -206,7 +206,7 @@ public class Blocker
         };
     }
 
-    public interface Promise<C> extends org.eclipse.jetty.util.Promise<C>, AutoCloseable, Invocable
+    public interface Promise<C> extends org.eclipse.jetty.util.Promise.Invocable<C>, AutoCloseable
     {
         C block() throws IOException;
 

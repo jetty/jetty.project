@@ -156,8 +156,6 @@ public class JakartaWebSocketCreator implements WebSocketCreator
 
         // [JSR] Step 5: Call modifyHandshake
         configurator.modifyHandshake(config, jsrHandshakeRequest, jsrHandshakeResponse);
-        // Set modified headers Map back into response properly
-        jsrHandshakeResponse.setHeaders(jsrHandshakeResponse.getHeaders());
 
         try
         {
@@ -168,7 +166,8 @@ public class JakartaWebSocketCreator implements WebSocketCreator
         }
         catch (Throwable x)
         {
-            LOG.warn("Unable to create websocket: {}", config.getEndpointClass().getName(), x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to create websocket: {}", config.getEndpointClass().getName(), x);
             callback.failed(x);
             return null;
         }

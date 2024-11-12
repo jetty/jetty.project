@@ -114,7 +114,12 @@ public final class UriCompliance implements ComplianceViolation.Mode
         /**
          * Allow user info in the authority portion of the URI and HTTP specs.
          */
-        USER_INFO("https://datatracker.ietf.org/doc/html/rfc9110#name-deprecation-of-userinfo-in-", "Deprecated User Info");
+        USER_INFO("https://datatracker.ietf.org/doc/html/rfc9110#name-deprecation-of-userinfo-in-", "Deprecated User Info"),
+
+        /**
+         * Allow a fragment in the URI.
+         */
+        FRAGMENT("https://www.rfc-editor.org/rfc/rfc9110.html#section-7.1", "Fragment");
 
         private final String _url;
         private final String _description;
@@ -166,7 +171,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
         Violation.AMBIGUOUS_PATH_SEGMENT,
         Violation.AMBIGUOUS_PATH_SEPARATOR,
         Violation.SUSPICIOUS_PATH_CHARACTERS,
-        Violation.ILLEGAL_PATH_CHARACTERS));
+        Violation.ILLEGAL_PATH_CHARACTERS,
+        Violation.FRAGMENT));
 
     /**
      * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
@@ -197,7 +203,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
             Violation.UTF16_ENCODINGS,
-            Violation.USER_INFO));
+            Violation.USER_INFO,
+            Violation.FRAGMENT));
 
     /**
      * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form, and illegal characters
