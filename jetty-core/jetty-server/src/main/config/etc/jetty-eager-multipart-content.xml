@@ -4,9 +4,11 @@
 <Configure class="org.eclipse.jetty.http.MultiPartConfig$Builder">
 
   <Call name="location">
-    <Arg><Property name = "jetty.eager.multipart.location">
-      <Default><SystemProperty name="java.io.tmpdir"/></Default>
-    </Property></Arg>
+    <Arg>
+      <Property name = "jetty.eager.multipart.location">
+        <Default><SystemProperty name="java.io.tmpdir"/></Default
+      </Property>
+    </Arg>
   </Call>
 
   <Set name="maxParts" type="int" property="jetty.eager.multipart.maxParts"/>
