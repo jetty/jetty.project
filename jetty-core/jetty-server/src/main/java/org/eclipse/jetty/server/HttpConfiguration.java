@@ -90,7 +90,7 @@ public class HttpConfiguration implements Dumpable
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
-    private int _minInputBufferSpace = 1024;
+    private int _minInputBufferSpace = 1500;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -355,7 +355,7 @@ public class HttpConfiguration implements Dumpable
     /**
      * Set if true, delays the application dispatch until content is available (defaults to true).
      * @param delay if true, delays the application dispatch until content is available (defaults to true)
-     * @deprecated Use the DelayedHandler instead.
+     * @deprecated Use {@link org.eclipse.jetty.server.handler.EagerContentHandler} instead.
      */
     @Deprecated (forRemoval = true, since = "12.1.0")
     public void setDelayDispatchUntilContent(boolean delay)

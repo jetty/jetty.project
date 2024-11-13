@@ -64,7 +64,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
     private final ContentLoaderFactory _defaultFactory;
 
     /**
-     * Construct an {@code EagerContentHandler} with default {@link ContentLoaderFactory EagerContentFactories}
+     * Construct an {@code EagerContentHandler} with the default {@link ContentLoaderFactory} set
      */
     public EagerContentHandler()
     {
@@ -72,7 +72,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * Construct an {@code EagerContentHandler} with default {@link ContentLoaderFactory EagerContentFactories}
+     * Construct an {@code EagerContentHandler} with the default {@link ContentLoaderFactory} set
      * @param handler The next handler (also can be set with {@link #setHandler(Handler)}
      */
     public EagerContentHandler(Handler handler)
@@ -81,7 +81,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * Construct an {@code EagerContentHandler} with specific {@link ContentLoaderFactory EagerContentFactories}
+     * Construct an {@code EagerContentHandler} with the specific {@link ContentLoaderFactory} instances
      * @param factories The {@link ContentLoaderFactory} instances used to eagerly load content.
      */
     public EagerContentHandler(ContentLoaderFactory... factories)
@@ -90,7 +90,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * Construct an {@code EagerContentHandler} with specific {@link ContentLoaderFactory EagerContentFactories}
+     * Construct an {@code EagerContentHandler} with the specific {@link ContentLoaderFactory} instances
      * @param handler The next handler (also can be set with {@link #setHandler(Handler)}
      * @param factories The {@link ContentLoaderFactory} instances used to eagerly load content.
      */
@@ -154,11 +154,11 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
         if (factory == null)
             return next.handle(request, response, callback);
 
-        ContentLoader process = factory.newContentLoader(contentType, mimeType, next, request, response, callback);
-        if (process == null)
+        ContentLoader contentLoader = factory.newContentLoader(contentType, mimeType, next, request, response, callback);
+        if (contentLoader == null)
             return next.handle(request, response, callback);
 
-        process.load();
+        contentLoader.load();
         return true;
     }
 
@@ -185,7 +185,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
     }
 
     /**
-     * An Eager Content processor, created by a {@link ContentLoaderFactory} to asynchronous load content from a {@link Request}
+     * An eager content processor, created by a {@link ContentLoaderFactory} to asynchronous load content from a {@link Request}
      * before calling the {@link Handler#handle(Request, Response, Callback)} method of the passed {@link Handler}.
      */
     public abstract static class ContentLoader
@@ -228,23 +228,21 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
             handle(getRequest(), getResponse(), getCallback());
         }
 
-        protected boolean handle(Request request, Response response, Callback callback)
+        protected void handle(Request request, Response response, Callback callback)
         {
             try
             {
                 if (getHandler().handle(request, response, callback))
-                    return true;
+                    return;
 
                 // The handle was rejected, so write the error using the original potentially unwrapped request/response/callback
-                Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.NOT_FOUND_404);
+                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
             }
             catch (Throwable t)
             {
                 // The handle failed, so write the error using the original potentially unwrapped request/response/callback
-                Response.writeError(getRequest(), getResponse(), getCallback(), t);
+                Response.writeError(request, response, callback, t);
             }
-            // return false to indicate the passed request/response/callback were not used.
-            return false;
         }
 
         /**
@@ -480,8 +478,8 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
         {
             private final Deque<Content.Chunk> _chunks = new ArrayDeque<>();
             private final long _maxRetainedBytes;
-            private final int _chunkOverhead;
-            private final boolean _reject;
+            private final int _framingOverhead;
+            private final boolean _rejectWhenExceeded;
             private long _estimatedSize;
 
             /**
@@ -491,19 +489,19 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
              * @param callback The delayed callback
              * @param maxRetainedBytes The maximum size to buffer before dispatching to the next handler;
              *                or -1 for a heuristically determined default
-             * @param frameOverhead The bytes to account for per chunk when calculating the size; or -1 for a heuristic.
-             * @param reject If {@code true} then requests are rejected if the content is not complete before maxRetainedBytes.
+             * @param framingOverhead The bytes to account for per chunk when calculating the size; or -1 for a heuristic.
+             * @param rejectWhenExceeded If {@code true} then requests are rejected if the content is not complete before maxRetainedBytes.
              */
-            public RetainedContentLoader(Handler handler, Request request, Response response, Callback callback, long maxRetainedBytes, int frameOverhead, boolean reject)
+            public RetainedContentLoader(Handler handler, Request request, Response response, Callback callback, long maxRetainedBytes, int framingOverhead, boolean rejectWhenExceeded)
             {
                 super(handler, request, response, callback);
                 _maxRetainedBytes = maxRetainedBytes < 0
                     ? Math.max(1, request.getConnectionMetaData().getConnector().getConnectionFactory(HttpConnectionFactory.class).getInputBufferSize() - 1500)
                     : maxRetainedBytes;
-                _chunkOverhead = frameOverhead < 0
-                    ? (request.getConnectionMetaData().getHttpVersion() == HttpVersion.HTTP_2 ? 9 : 8)
-                    : frameOverhead;
-                _reject = reject;
+                _framingOverhead = framingOverhead < 0
+                    ? (request.getConnectionMetaData().getHttpVersion().getVersion() <= HttpVersion.HTTP_1_1.getVersion() ? 8 : 9)
+                    : framingOverhead;
+                _rejectWhenExceeded = rejectWhenExceeded;
             }
 
             @Override
@@ -531,11 +529,11 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
                     }
 
                     // Estimated size is 8 byte framing overhead per chunk plus the chunk size
-                    _estimatedSize += _chunkOverhead + chunk.remaining();
+                    _estimatedSize += _framingOverhead + chunk.remaining();
 
                     boolean oversize = _estimatedSize >= _maxRetainedBytes;
 
-                    if (_reject && oversize && !chunk.isLast())
+                    if (_rejectWhenExceeded && oversize && !chunk.isLast())
                     {
                         Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.PAYLOAD_TOO_LARGE_413);
                         break;
@@ -569,8 +567,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
             private void doHandle()
             {
                 RewindChunksRequest request = new RewindChunksRequest(getRequest(), getCallback(), _chunks);
-                if (!handle(request, getResponse(), request))
-                    request.release();
+                handle(request, getResponse(), request);
             }
 
             private static class RewindChunksRequest extends Request.Wrapper implements Callback
@@ -583,6 +580,12 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
                     super(wrapped);
                     _chunks = chunks;
                     _callback = callback;
+                }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return _callback.getInvocationType();
                 }
 
                 @Override
@@ -600,17 +603,17 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
                 }
 
                 @Override
-                public void fail(Throwable failure, boolean last)
-                {
-                    release();
-                    _callback.failed(failure);
-                }
-
-                @Override
                 public void succeeded()
                 {
                     release();
                     _callback.succeeded();
+                }
+
+                @Override
+                public void fail(Throwable failure)
+                {
+                    release();
+                    _callback.failed(failure);
                 }
             }
         }

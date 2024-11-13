@@ -1,4 +1,3 @@
-
 [description]
 Applies the EagerContentHandler to the entire server
 #tag::description[]
@@ -35,9 +34,8 @@ etc/jetty-eager-content.xml
 # jetty.eager.retained.maxRetainedBytes=-1
 
 ## The frame overhead to use when calculating the retained bytes or -1 for a default
-# jetty.eager.retained.frameOverhead=-1
+# jetty.eager.retained.framingOverhead=-1
 
 ## If requests should be rejected if they exceed the maxRetainedBytes
-# jetty.eager.retained.reject=false
-
+# jetty.eager.retained.rejectWhenExceeded=false
 #end::documentation[]

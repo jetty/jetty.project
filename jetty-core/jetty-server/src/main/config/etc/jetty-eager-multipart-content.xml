@@ -6,7 +6,7 @@
   <Call name="location">
     <Arg>
       <Property name = "jetty.eager.multipart.location">
-        <Default><SystemProperty name="java.io.tmpdir"/></Default
+        <Default><SystemProperty name="java.io.tmpdir"/></Default>
       </Property>
     </Arg>
   </Call>
@@ -26,7 +26,6 @@
     </Arg>
   </Call>
 
-  <!-- TODO fields -->
   <Call id="jetty.eager.MultiPartConfig" name="build"/>
 
 </Configure>

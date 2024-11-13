@@ -38,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
@@ -62,6 +63,8 @@ import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Tag;
@@ -1959,6 +1962,73 @@ public class DistributionTests extends AbstractJettyHomeTest
                     .timeout(15, TimeUnit.SECONDS)
                     .send();
                 assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+        }
+    }
+
+    @Test
+    public void testEagerContentHandler() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,ee11-demo-jetty,eager-content,eager-multipart-content"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int httpPort = Tester.freePort();
+            List<String> args = List.of(
+                "jetty.delayed.maxRetainedContentBytes=-1",
+                "jetty.eager.form.maxFields=100",
+                "jetty.eager.form.maxLength=20000",
+                "jetty.eager.retained.maxRetainedBytes=8192",
+                "jetty.eager.retained.framingOverhead=10",
+                "jetty.eager.retained.rejectWhenExceeded=false",
+                "jetty.eager.multipart.location=/tmp",
+                "jetty.eager.multipart.maxParts=100",
+                "jetty.eager.multipart.maxSize=100000",
+                "jetty.eager.multipart.maxPartSize=32768",
+                "jetty.eager.multipart.maxMemoryPartSize=2048",
+                "jetty.eager.multipart.maxHeadersSize=4096",
+                "jetty.eager.multipart.useFilesForPartsWithoutFileName=true",
+                "jetty.eager.multipart.complianceMode=RFC7578",
+                "jetty.http.port=" + httpPort);
+            try (JettyHomeTester.Run run2 = distribution.start(args); AsyncRequestContent content = new AsyncRequestContent())
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                startHttpClient();
+
+                CountDownLatch latch = new CountDownLatch(1);
+                client.newRequest("http://localhost:" + httpPort + "/ee11-test/dump")
+                    .method("POST")
+                    .body(content)
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send(result ->
+                    {
+                        assertThat(result.getResponse().getStatus(), is(HttpStatus.OK_200));
+                        latch.countDown();
+                    });
+
+                for (int i = 1; i < 10; i++)
+                {
+                    Callback.Completable complete = new Callback.Completable();
+                    content.write(false, BufferUtil.toBuffer(Integer.toString(i)), complete);
+                    content.flush();
+                    Thread.sleep(10);
+                    complete.get(5, TimeUnit.SECONDS);
+                }
+
+                Callback.Completable end = new Callback.Completable();
+                content.write(true, BufferUtil.toBuffer("x"), end);
+                content.close();
+                end.get(5, TimeUnit.SECONDS);
+
+                assertTrue(latch.await(15, TimeUnit.SECONDS));
             }
         }
     }
