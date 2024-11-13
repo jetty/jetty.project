@@ -434,7 +434,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
     public static class RetainedContentLoaderFactory implements ContentLoaderFactory
     {
         private final long _maxRetainedBytes;
-        private final int _frameOverhead;
+        private final int _framingOverhead;
         private final boolean _reject;
 
         public RetainedContentLoaderFactory()
@@ -444,18 +444,18 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
 
         /**
          * @param maxRetainedBytes the maximum number bytes to retain whilst eagerly loading, which
-         *                         includes the content bytes and any {@code frameOverhead} per chunk;
+         *                         includes the content bytes and any {@code framingOverhead} per chunk;
          *                         or -1 for a heuristically determined value that will not increase memory commitment.
-         * @param frameOverhead the number of bytes to include in the estimated size per {@link Content.Chunk} to allow
+         * @param framingOverhead the number of bytes to include in the estimated size per {@link Content.Chunk} to allow
          *                      for framing overheads in the transport. Since the content is retained rather than copied, any
          *                      framing data is also retained in the IO buffer.
          * @param reject if {@code true}, then if {@code maxRetainBytes} is exceeded, the request is rejected with a
          *               {@link HttpStatus#PAYLOAD_TOO_LARGE_413} response.
          */
-        public RetainedContentLoaderFactory(long maxRetainedBytes, int frameOverhead, boolean reject)
+        public RetainedContentLoaderFactory(long maxRetainedBytes, int framingOverhead, boolean reject)
         {
             _maxRetainedBytes = maxRetainedBytes;
-            _frameOverhead = frameOverhead;
+            _framingOverhead = framingOverhead;
             _reject = reject;
         }
 
@@ -468,7 +468,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
         @Override
         public ContentLoader newContentLoader(String contentType, String mimeType, Handler handler, Request request, Response response, Callback callback)
         {
-            return new RetainedContentLoader(handler, request, response, callback, _maxRetainedBytes, _frameOverhead, _reject);
+            return new RetainedContentLoader(handler, request, response, callback, _maxRetainedBytes, _framingOverhead, _reject);
         }
 
         /**

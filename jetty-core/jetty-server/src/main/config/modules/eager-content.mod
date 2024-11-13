@@ -21,9 +21,6 @@ etc/jetty-eager-content.xml
 
 [ini-template]
 #tag::documentation[]
-## The maximum bytes to retain whilst delaying content; or 0 for no delay; or -1 (default) for a default value.
-# jetty.delayed.maxRetainedContentBytes=-1
-
 ## The maximum number of FormFields to be eagerly loaded or -1 for a default
 # jetty.eager.form.maxFields=-1
 
@@ -38,4 +35,6 @@ etc/jetty-eager-content.xml
 
 ## If requests should be rejected if they exceed the maxRetainedBytes
 # jetty.eager.retained.rejectWhenExceeded=false
+
+## For eager multipart configuration use eager-multipart-content module
 #end::documentation[]
