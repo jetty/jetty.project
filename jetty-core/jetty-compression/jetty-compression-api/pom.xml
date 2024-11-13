@@ -22,12 +22,12 @@
       <artifactId>jetty-http</artifactId>
     </dependency>
     <dependency>
-      <artifactId>jetty-io</artifactId>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-io</artifactId>
     </dependency>
     <dependency>
-      <artifactId>jetty-util</artifactId>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
