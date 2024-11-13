@@ -36,6 +36,7 @@ public enum HttpComplianceSection
     NO_AMBIGUOUS_PATH_SEPARATORS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path separators"),
     NO_AMBIGUOUS_PATH_PARAMETERS("https://tools.ietf.org/html/rfc3986#section-3.3", "No ambiguous URI path parameters"),
     NO_UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF16 encoding"),
+    NO_USER_INFO("https://datatracker.ietf.org/doc/html/rfc9110#name-deprecation-of-userinfo-in-", "User info in authority"),
     NO_AMBIGUOUS_EMPTY_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI empty segment"),
     NO_AMBIGUOUS_PATH_ENCODING("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path encoding");
 

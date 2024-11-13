@@ -135,6 +135,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                     HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS,
                     HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS,
                     HttpComplianceSection.NO_UTF16_ENCODINGS,
+                    HttpComplianceSection.NO_USER_INFO,
                     HttpComplianceSection.NO_AMBIGUOUS_EMPTY_SEGMENT,
                     HttpComplianceSection.NO_AMBIGUOUS_PATH_ENCODING));
                 break;
@@ -217,6 +218,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     }
 
     private static final EnumMap<HttpURI.Violation, HttpComplianceSection> __uriViolations = new EnumMap<>(HttpURI.Violation.class);
+
     static
     {
         // create a map from Violation to compliance in a loop, so that any new violations added are detected with ISE
@@ -241,6 +243,9 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
                     break;
                 case UTF16:
                     __uriViolations.put(violation, HttpComplianceSection.NO_UTF16_ENCODINGS);
+                    break;
+                case USER_INFO:
+                    __uriViolations.put(violation, HttpComplianceSection.NO_USER_INFO);
                     break;
                 default:
                     throw new IllegalStateException();
