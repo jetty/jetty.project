@@ -11,12 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.gzip;
+package org.eclipse.jetty.compression.gzip.internal;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.zip.GZIPOutputStream;
+
+import org.eclipse.jetty.compression.gzip.GzipEncoderConfig;
 
 /**
  * A {@link GZIPOutputStream} that you can configure, unlike the

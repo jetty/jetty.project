@@ -11,16 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.gzip;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.zip.GZIPInputStream;
-
-public class ConfiguredGzipInputStream extends GZIPInputStream
+module org.eclipse.jetty.compression.zstandard
 {
-    public ConfiguredGzipInputStream(InputStream in, GzipDecoderConfig config) throws IOException
-    {
-        super(in, config.getBufferSize());
-    }
+    requires transitive org.eclipse.jetty.compression;
+    requires org.slf4j;
+
+    requires com.github.luben.zstd_jni;
+
+    exports org.eclipse.jetty.compression.zstandard;
 }

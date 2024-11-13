@@ -27,6 +27,8 @@ import org.eclipse.jetty.compression.DecoderConfig;
 import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.EncoderConfig;
 import org.eclipse.jetty.compression.EncoderSink;
+import org.eclipse.jetty.compression.zstandard.internal.ZstandardDecoderSource;
+import org.eclipse.jetty.compression.zstandard.internal.ZstandardEncoderSink;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.zstandard;
+package org.eclipse.jetty.compression.zstandard.internal;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,6 +21,8 @@ import com.github.luben.zstd.EndDirective;
 import com.github.luben.zstd.ZstdCompressCtx;
 import com.github.luben.zstd.ZstdFrameProgression;
 import org.eclipse.jetty.compression.EncoderSink;
+import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
+import org.eclipse.jetty.compression.zstandard.ZstandardEncoderConfig;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;

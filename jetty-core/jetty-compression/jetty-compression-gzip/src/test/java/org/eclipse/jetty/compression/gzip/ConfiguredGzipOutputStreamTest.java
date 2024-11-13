@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.compression.gzip.internal.ConfiguredGzipOutputStream;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;

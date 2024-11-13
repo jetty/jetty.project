@@ -11,14 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.brotli;
+package org.eclipse.jetty.compression.brotli.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.aayushatharva.brotli4j.encoder.Encoder;
 import com.aayushatharva.brotli4j.encoder.EncoderJNI;
 import org.eclipse.jetty.compression.EncoderSink;
+import org.eclipse.jetty.compression.brotli.BrotliCompression;
+import org.eclipse.jetty.compression.brotli.BrotliEncoderConfig;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -60,7 +63,8 @@ public class BrotliEncoderSink extends EncoderSink
         this.compression = compression;
         try
         {
-            this.encoder = new EncoderJNI.Wrapper(config.getBufferSize(), config.getCompressionLevel(), config.getLgWindow(), config.getMode());
+            Encoder.Mode mode = Encoder.Mode.of(config.getStrategy());
+            this.encoder = new EncoderJNI.Wrapper(config.getBufferSize(), config.getCompressionLevel(), config.getLgWindow(), mode);
             this.inputBuffer = encoder.getInputBuffer();
         }
         catch (IOException e)

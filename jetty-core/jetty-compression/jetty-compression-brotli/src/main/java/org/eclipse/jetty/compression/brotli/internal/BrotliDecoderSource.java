@@ -11,13 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.brotli;
+package org.eclipse.jetty.compression.brotli.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.aayushatharva.brotli4j.decoder.DecoderJNI;
 import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.brotli.BrotliCompression;
+import org.eclipse.jetty.compression.brotli.BrotliDecoderConfig;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 

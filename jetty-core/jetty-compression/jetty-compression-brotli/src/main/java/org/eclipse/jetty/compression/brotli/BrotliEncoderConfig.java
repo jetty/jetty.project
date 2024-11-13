@@ -26,12 +26,6 @@ public class BrotliEncoderConfig implements EncoderConfig
      */
     public static final int DEFAULT_QUALITY = 11;
     /**
-     * Default Brotli Mode (Strategy).
-     *
-     * @see <a href="https://www.brotli.org/encode.html">Encoder Defaults</a>
-     */
-    public static final Encoder.Mode DEFAULT_MODE = Encoder.Mode.GENERIC;
-    /**
      * Default Brotli Window.
      *
      * @see <a href="https://www.brotli.org/encode.html">Encoder Defaults</a>
@@ -41,15 +35,15 @@ public class BrotliEncoderConfig implements EncoderConfig
     public static final int MIN_BUFFER_SIZE = 32;
 
     private int bufferSize = 4096;
+    private int strategy = 0;
     private int quality = DEFAULT_QUALITY;
-    private Encoder.Mode mode = DEFAULT_MODE;
     private int lgWindow = DEFAULT_WINDOW;
 
     public Parameters asEncoderParams()
     {
         Parameters params = new Parameters();
         params.setQuality(getCompressionLevel());
-        params.setMode(getMode());
+        params.setMode(Encoder.Mode.of(getStrategy()));
         params.setWindow(getLgWindow());
         return params;
     }
@@ -122,15 +116,10 @@ public class BrotliEncoderConfig implements EncoderConfig
         this.lgWindow = window;
     }
 
-    public Encoder.Mode getMode()
-    {
-        return mode;
-    }
-
     @Override
     public int getStrategy()
     {
-        return mode.ordinal();
+        return strategy;
     }
 
     /**
@@ -151,6 +140,6 @@ public class BrotliEncoderConfig implements EncoderConfig
         if ((strategy < 0) || (strategy > Encoder.Mode.values().length))
             throw new IllegalArgumentException("Unsupported brotli strategy mode: " + strategy);
 
-        mode = Encoder.Mode.of(strategy);
+        this.strategy = strategy;
     }
 }

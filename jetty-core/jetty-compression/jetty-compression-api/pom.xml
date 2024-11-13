@@ -19,7 +19,15 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <artifactId>jetty-http</artifactId>
+    </dependency>
+    <dependency>
+      <artifactId>jetty-io</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>jetty-util</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

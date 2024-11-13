@@ -11,12 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.zstandard;
+package org.eclipse.jetty.compression.zstandard.internal;
 
 import java.nio.ByteBuffer;
 
 import com.github.luben.zstd.ZstdDecompressCtx;
 import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
+import org.eclipse.jetty.compression.zstandard.ZstandardDecoderConfig;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
