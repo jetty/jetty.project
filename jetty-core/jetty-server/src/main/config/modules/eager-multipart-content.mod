@@ -1,4 +1,3 @@
-
 [description]
 Applies MultiPart configuration to the EagerContentHandler
 
@@ -17,22 +16,22 @@ etc/jetty-eager-multipart-content.xml
 # jetty.eager.multipart.location=/tmp
 
 ## The maximum number of parts that can be parsed from the multipart content, or -1 for unlimited.
-# jetty.eager.multipart.maxParts=
+# jetty.eager.multipart.maxParts=100
 
 ## The maximum size in bytes of the whole multipart content, or -1 for unlimited.
-# jetty.eager.multipart.maxSize=
+# jetty.eager.multipart.maxSize=52428800
 
 ## The maximum part size in bytes, or -1 for unlimited.
-# jetty.eager.multipart.maxPartSize=
+# jetty.eager.multipart.maxPartSize=10485760
 
 ## The maximum size of a part in memory, after which it will be written as a file.
-# jetty.eager.multipart.maxMemoryPartSize=
+# jetty.eager.multipart.maxMemoryPartSize=1024
 
 ## The max length of a Part header, in bytes, or -1 for unlimited length.
-# jetty.eager.multipart.maxHeadersSize=
+# jetty.eager.multipart.maxHeadersSize=8192
 
 ## Whether parts without a fileName are stored as files.
-# jetty.eager.multipart.useFilesForPartsWithoutFileName=
+# jetty.eager.multipart.useFilesForPartsWithoutFileName=true
 
 ## The MultiPart compliance mode.
 # jetty.eager.multipart.complianceMode=RFC7578

@@ -1292,7 +1292,6 @@ public class ServletApiRequest implements HttpServletRequest
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
@@ -1330,7 +1329,6 @@ public class ServletApiRequest implements HttpServletRequest
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
@@ -1341,7 +1339,6 @@ public class ServletApiRequest implements HttpServletRequest
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
-                LOG.warn(e.toString());
                 throw new BadMessageException("Unable to parse form content", e);
             }
         }

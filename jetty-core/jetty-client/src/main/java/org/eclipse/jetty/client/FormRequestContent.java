@@ -32,7 +32,7 @@ public class FormRequestContent extends StringRequestContent
 
     public FormRequestContent(Fields fields, Charset charset)
     {
-        super("application/x-www-form-urlencoded", convert(fields, charset), charset);
+        super("application/x-www-form-urlencoded;charset=" + charset.name(), convert(fields, charset), charset);
     }
 
     public static String convert(Fields fields)

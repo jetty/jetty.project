@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -305,10 +304,7 @@ public class ContextProvider extends ScanningAppProvider
         initializeContextPath(contextHandler, path);
 
         if (Files.isDirectory(path))
-        {
             contextHandler.setBaseResource(ResourceFactory.of(this).newResource(path));
-            System.err.println("SET BASE RESOURCE to " + path);
-        }
 
         //TODO think of better way of doing this
         //pass through properties as attributes directly

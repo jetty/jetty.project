@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,25 +32,33 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
 import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
@@ -63,9 +72,10 @@ import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -74,6 +84,7 @@ import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1966,69 +1977,184 @@ public class DistributionTests extends AbstractJettyHomeTest
         }
     }
 
-    @Test
-    public void testEagerContentHandler() throws Exception
+    @ParameterizedTest
+    @EnumSource(value = HttpVersion.class, names = {"HTTP_1_1", "HTTP_2"})
+    public void testEagerContentHandler(HttpVersion httpVersion) throws Exception
     {
-        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,ee11-demo-jetty,eager-content,eager-multipart-content"))
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=resources,test-keystore,http,http2c,ee11-deploy,ee11-annotations,eager-content"))
         {
-            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            int httpPort = Tester.freePort();
-            List<String> args = List.of(
-                "jetty.delayed.maxRetainedContentBytes=-1",
-                "jetty.eager.form.maxFields=100",
-                "jetty.eager.form.maxLength=20000",
-                "jetty.eager.retained.maxRetainedBytes=8192",
-                "jetty.eager.retained.framingOverhead=10",
-                "jetty.eager.retained.rejectWhenExceeded=false",
-                "jetty.eager.multipart.location=/tmp",
-                "jetty.eager.multipart.maxParts=100",
-                "jetty.eager.multipart.maxSize=100000",
-                "jetty.eager.multipart.maxPartSize=32768",
-                "jetty.eager.multipart.maxMemoryPartSize=2048",
-                "jetty.eager.multipart.maxHeadersSize=4096",
-                "jetty.eager.multipart.useFilesForPartsWithoutFileName=true",
-                "jetty.eager.multipart.complianceMode=RFC7578",
-                "jetty.http.port=" + httpPort);
-            try (JettyHomeTester.Run run2 = distribution.start(args); AsyncRequestContent content = new AsyncRequestContent())
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion);
+            String contextPath = "ctx";
+            distribution.installWar(war, contextPath);
+
+            int port = Tester.freePort();
+            int maxRetainedBytes = 128;
+            String[] properties = {
+                "jetty.http.selectors=1",
+                "jetty.http.port=" + port,
+                "jetty.eager.retained.framingOverhead=16",
+                "jetty.eager.retained.maxRetainedBytes=" + maxRetainedBytes,
+                "jetty.eager.retained.rejectWhenExceeded=false"
+            };
+            try (JettyHomeTester.Run run2 = distribution.start(properties))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
-                startHttpClient();
 
-                CountDownLatch latch = new CountDownLatch(1);
-                client.newRequest("http://localhost:" + httpPort + "/ee11-test/dump")
-                    .method("POST")
-                    .body(content)
-                    .timeout(15, TimeUnit.SECONDS)
-                    .send(result ->
-                    {
-                        assertThat(result.getResponse().getStatus(), is(HttpStatus.OK_200));
-                        latch.countDown();
-                    });
-
-                for (int i = 1; i < 10; i++)
+                startHttpClient(() ->
                 {
-                    Callback.Completable complete = new Callback.Completable();
-                    content.write(false, BufferUtil.toBuffer(Integer.toString(i)), complete);
-                    content.flush();
-                    Thread.sleep(10);
-                    complete.get(5, TimeUnit.SECONDS);
-                }
+                    ClientConnector connector = new ClientConnector();
+                    HTTP2Client h2Client = new HTTP2Client(connector);
+                    return new HttpClient(new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(h2Client)));
+                });
 
-                Callback.Completable end = new Callback.Completable();
-                content.write(true, BufferUtil.toBuffer("x"), end);
+                IntStream.of(maxRetainedBytes / 2, maxRetainedBytes * 10).forEach(contentLength ->
+                {
+                    try
+                    {
+                        ContentResponse response = client.newRequest("http://localhost:" + port + "/" + contextPath + "/echo/content")
+                            .method("POST")
+                            .version(httpVersion)
+                            .body(new BytesRequestContent(new byte[contentLength]))
+                            .send();
+
+                        assertEquals(HttpStatus.OK_200, response.getStatus());
+                        assertEquals(contentLength, response.getContent().length);
+                    }
+                    catch (Exception x)
+                    {
+                        throw new RuntimeException(x);
+                    }
+                });
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = HttpVersion.class, names = {"HTTP_1_1", "HTTP_2"})
+    public void testEagerFormContentHandler(HttpVersion httpVersion) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=resources,test-keystore,http,http2c,ee11-deploy,ee11-annotations,eager-content"))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion);
+            String contextPath = "ctx";
+            distribution.installWar(war, contextPath);
+
+            int port = Tester.freePort();
+            String[] properties = {
+                "jetty.http.selectors=1",
+                "jetty.http.port=" + port,
+                "jetty.eager.form.maxFields=16",
+                "jetty.eager.form.maxLength=128"
+            };
+            try (JettyHomeTester.Run run2 = distribution.start(properties))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient(() ->
+                {
+                    ClientConnector connector = new ClientConnector();
+                    HTTP2Client h2Client = new HTTP2Client(connector);
+                    return new HttpClient(new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(h2Client)));
+                });
+
+                Map<String, List<String>> inMap = new LinkedHashMap<>();
+                inMap.put("greet", List.of("Hello World"));
+                inMap.put("currency", List.of("€"));
+                Charset charset = StandardCharsets.UTF_8;
+                ContentResponse response = client.newRequest("http://localhost:" + port + "/" + contextPath + "/echo/form")
+                    .method("POST")
+                    .version(httpVersion)
+                    .body(new FormRequestContent(new Fields(new MultiMap<>(inMap)), charset))
+                    .send();
+
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                LinkedHashMap<String, List<String>> outMap = new LinkedHashMap<>();
+                UrlEncoded.decodeTo(response.getContentAsString(), (name, value) -> outMap.computeIfAbsent(name, k -> new ArrayList<>()).add(value), charset);
+                assertEquals(inMap, outMap);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = HttpVersion.class, names = {"HTTP_1_1", "HTTP_2"})
+    public void testEagerMultiPartContentHandler(HttpVersion httpVersion) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=resources,test-keystore,http,http2c,ee11-deploy,ee11-annotations,eager-multipart-content"))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=DEBUG
+                """;
+            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
+            long fileLength = Files.size(jettyLogging);
+
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion);
+            String contextPath = "ctx";
+            distribution.installWar(war, contextPath);
+
+            Path work = distribution.getJettyBase().resolve("work");
+
+            int port = Tester.freePort();
+            String[] properties = {
+                "jetty.http.selectors=1",
+                "jetty.http.port=" + port,
+                "jetty.eager.multipart.location=" + work.toAbsolutePath(),
+                "jetty.eager.multipart.maxParts=3",
+                "jetty.eager.multipart.maxSize=1024",
+                "jetty.eager.multipart.maxMemoryPartSize=0",
+                "jetty.eager.multipart.maxHeadersSize=1024",
+                "jetty.eager.multipart.useFilesForPartsWithoutFileName=true"
+            };
+            try (JettyHomeTester.Run run2 = distribution.start(properties))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient(() ->
+                {
+                    ClientConnector connector = new ClientConnector();
+                    HTTP2Client h2Client = new HTTP2Client(connector);
+                    return new HttpClient(new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(h2Client)));
+                });
+
+                MultiPartRequestContent content = new MultiPartRequestContent();
+                content.addPart(new MultiPart.ByteBufferPart("part1", null, HttpFields.EMPTY, StandardCharsets.UTF_8.encode("13-bytes-long")));
+                content.addPart(new MultiPart.PathPart("part2", null, HttpFields.EMPTY, distribution.getJettyBase().resolve("resources/jetty-logging.properties")));
                 content.close();
-                end.get(5, TimeUnit.SECONDS);
+                ContentResponse response = client.newRequest("http://localhost:" + port + "/" + contextPath + "/echo/multipart")
+                    .method("POST")
+                    .version(httpVersion)
+                    .body(content)
+                    .send();
 
-                assertTrue(latch.await(15, TimeUnit.SECONDS));
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                String[] lines = StringUtil.csvSplit(response.getContentAsString());
+                assertEquals(2, lines.length);
+                assertEquals(lines[0], "name=part1&length=13");
+                assertEquals(lines[1], "name=part2&length=" + fileLength);
             }
         }
     }

@@ -2,8 +2,8 @@
 Applies the EagerContentHandler to the entire server
 #tag::description[]
 The EagerContentHandler can eagerly load content asynchronously before calling the next handler.
-Typically this handler is deployed before an application that uses blocking IO to read the request body and if deployed
-after this handler, the application will never (or seldom) block for request content.
+Typically, this handler is deployed before an application that uses blocking IO to read the request body
+and if deployed after this handler, the application will never (or rarely) block for request content.
 This gives many of the benefits of asynchronous IO without the need to write an asynchronous application.
 #end::description[]
 
