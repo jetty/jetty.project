@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,12 +34,13 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -47,6 +49,7 @@ import org.w3c.dom.Document;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -55,7 +58,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // TODO
 public class ErrorHandlerTest
 {
     StacklessLogging stacklessLogging;
@@ -153,8 +155,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
 
         assertContent(response);
     }
@@ -211,8 +213,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
         assertContent(response);
     }
 
@@ -229,8 +231,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
         assertContent(response);
     }
 
@@ -250,8 +252,8 @@ public class ErrorHandlerTest
 
         assertThat(response.getStatus(), is(404));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
         assertThat(response.get(HttpHeader.CONNECTION), is("keep-alive"));
         assertContent(response);
     }
@@ -272,8 +274,8 @@ public class ErrorHandlerTest
 
         assertThat(response.getStatus(), is(404));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
         assertThat(response.getField(HttpHeader.CONNECTION), nullValue());
         assertContent(response);
     }
@@ -294,8 +296,8 @@ public class ErrorHandlerTest
 
         assertThat(response.getStatus(), is(404));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
         assertThat(response.getField(HttpHeader.CONNECTION), nullValue());
         assertContent(response);
     }
@@ -316,8 +318,8 @@ public class ErrorHandlerTest
 
         assertThat(response.getStatus(), is(404));
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
         assertThat(response.getField(HttpHeader.CONNECTION).getValue(), is("close"));
         assertContent(response);
     }
@@ -335,8 +337,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
 
         assertContent(response);
     }
@@ -355,8 +357,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=UTF-8\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=UTF-8"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=UTF-8\""));
 
         assertContent(response);
     }
@@ -375,8 +377,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=UTF-8\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=UTF-8"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=UTF-8\""));
 
         assertContent(response);
     }
@@ -397,8 +399,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
 
         assertContent(response);
     }
@@ -434,8 +436,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=UTF-8\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=UTF-8"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=UTF-8\""));
 
         assertContent(response);
     }
@@ -454,8 +456,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(404));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=UTF-8\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=UTF-8"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=UTF-8\""));
 
         assertContent(response);
     }
@@ -509,8 +511,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(444));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
 
         assertContent(response);
     }
@@ -533,8 +535,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(500));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=ISO-8859-1"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=ISO-8859-1\""));
 
         String content = assertContent(response);
 
@@ -567,8 +569,8 @@ public class ErrorHandlerTest
 
         assertThat("Response status code", response.getStatus(), is(500));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
-        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
-        assertThat(response.getContent(), containsString("content=\"text/html;charset=UTF-8\""));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsStringIgnoringCase("text/html;charset=UTF-8"));
+        assertThat(response.getContent(), containsStringIgnoringCase("content=\"text/html;charset=UTF-8\""));
 
         String content = assertContent(response);
 
@@ -718,13 +720,14 @@ public class ErrorHandlerTest
             }
         });
 
-        context.setErrorHandler(new ErrorHandler()
+        server.setErrorHandler(new org.eclipse.jetty.server.Request.Handler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                response.getOutputStream().println("Server Error");
+                response.setStatus(404);
+                response.write(true, ByteBuffer.wrap("Server Error".getBytes()), callback);
+                return true;
             }
         });
 

@@ -113,6 +113,7 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     private int maxDecoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxEncoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxHeaderBlockFragment = 0;
+    private int maxRequestHeadersSize = 8 * 1024;
     private int maxResponseHeadersSize = 8 * 1024;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
@@ -355,6 +356,17 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     public void setMaxHeaderBlockFragment(int maxHeaderBlockFragment)
     {
         this.maxHeaderBlockFragment = maxHeaderBlockFragment;
+    }
+
+    @ManagedAttribute("The max size of request headers")
+    public int getMaxRequestHeadersSize()
+    {
+        return maxRequestHeadersSize;
+    }
+
+    public void setMaxRequestHeadersSize(int maxRequestHeadersSize)
+    {
+        this.maxRequestHeadersSize = maxRequestHeadersSize;
     }
 
     @ManagedAttribute("The max size of response headers")

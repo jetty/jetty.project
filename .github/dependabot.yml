@@ -89,6 +89,10 @@ updates:
         versions: [ ">=1.4.0"]
       - dependency-name: "org.mortbay.jasper:*"
         versions: [ ">=10.0.0"]
+      - dependency-name: "org.jboss.threads:*"
+        versions: [ ">=3.7.0"]
+      - dependency-name: "com.hazelcast:*"
+        versions: [ ">=5.4"]
 
   - package-ecosystem: "maven"
     directory: "/"
@@ -185,6 +189,10 @@ updates:
         versions: [ ">=12" ]
       - dependency-name: "org.mortbay.jasper:*"
         versions: [ ">=10.1.0"]
+      - dependency-name: "org.jboss.threads:*"
+        versions: [ ">=3.7.0"]
+      - dependency-name: "com.hazelcast:*"
+        versions: [ ">=5.4"]
 
   - package-ecosystem: "maven"
     directory: "/"
@@ -229,4 +237,12 @@ updates:
         versions: [ ">=2.3" ]
       - dependency-name: "org.eclipse.platform:org.eclipse.osgi.services"
         versions: [ ">=3.12" ]
+      - dependency-name: "org.junit.jupiter:*"
+        versions: [ ">=5.11" ]
+      - dependency-name: "javax.websocket:*"
+        versions: [ ">=1.1"]
+      - dependency-name: "org.infinispan.protostream:*"
+        versions: [ ">4.5" ]
+      - dependency-name: "org.apache.avro:*"
+        versions: [ ">=1.12" ]
 

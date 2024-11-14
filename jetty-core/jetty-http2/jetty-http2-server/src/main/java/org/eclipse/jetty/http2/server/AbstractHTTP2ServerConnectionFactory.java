@@ -300,10 +300,13 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         int maxTableSize = getMaxDecoderTableCapacity();
         if (maxTableSize != HpackContext.DEFAULT_MAX_TABLE_CAPACITY)
             settings.put(SettingsFrame.HEADER_TABLE_SIZE, maxTableSize);
+        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, getMaxConcurrentStreams());
         int initialStreamRecvWindow = getInitialStreamRecvWindow();
         if (initialStreamRecvWindow != FlowControlStrategy.DEFAULT_WINDOW_SIZE)
             settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, initialStreamRecvWindow);
-        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, getMaxConcurrentStreams());
+        int maxFrameSize = getMaxFrameSize();
+        if (maxFrameSize > Frame.DEFAULT_MAX_SIZE)
+            settings.put(SettingsFrame.MAX_FRAME_SIZE, maxFrameSize);
         int maxHeadersSize = getHttpConfiguration().getRequestHeaderSize();
         if (maxHeadersSize > 0)
             settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, maxHeadersSize);
@@ -318,10 +321,10 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
         generator.getHpackEncoder().setMaxHeaderListSize(getHttpConfiguration().getResponseHeaderSize());
+
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
 
         ServerParser parser = newServerParser(connector, getRateControlFactory().newRateControl(endPoint));
-        parser.setMaxFrameSize(getMaxFrameSize());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, parser, generator, listener, flowControl);

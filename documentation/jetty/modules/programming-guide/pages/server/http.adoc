@@ -1284,32 +1284,34 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 ----
 
 [[handler-use-webapp-context-class-loading]]
-.WebAppContext Class Loading
+==== WebAppContext Class Loading
 
-The Servlet specification requires that a web application class loader must load the web application classes from `WEB-INF/classes` and `WEB_INF/lib`.
-The web application class loader is special because it behaves differently from typical class loaders: where typical class loaders first delegate to their parent class loader and then try to find the class locally, the web application class loader first tries to find the class locally and then delegates to the parent class loader.
-The typical class loading model, parent-first, is _inverted_ for web application class loaders, as they use a child-first model.
+The Servlet specification requires that a web application class loader must load classes found in the web application `WEB-INF/classes` and `WEB_INF/lib` in preference to using the parent class loader.
+This is significantly different to typical java class loaders where loaders first delegate to their parent class loader.
+For Servlet specification compliant web applications, the typical parent-first class loading model is _inverted_.
 
-Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _server classes_.
+Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _hidden classes_ (previously called _server classes_).
 Web applications receive the HTTP request object as an instance of the `jakarta.servlet.http.HttpServletRequest` interface, and cannot downcast it to the Jetty specific implementation of that interface to access Jetty specific features -- this ensures maximum web application portability across Servlet container implementations.
 
-Lastly, the Servlet specification requires that other classes, also called _system classes_, such as `jakarta.servlet.http.HttpServletRequest` or JDK classes such as `java.lang.String` or `java.sql.Connection` cannot be modified by web applications by putting, for example, modified versions of those classes in `WEB-INF/classes` so that they are loaded first by the web application class loader (instead of the class-path class loader where they are normally loaded from).
+Lastly, the Servlet specification requires that specific classes are _protected classes_ (previously called _system classes_), in that they cannot be replaced by the web application loader and normal class loader priority applies.  These are classes such as `jakarta.servlet.http.HttpServletRequest`; JDK classes such as `java.lang.String` or `java.sql.Connection`.
 
-`WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _system class_ or a _server class_ and acts according to the Servlet specification.
+`WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _protected class_ or a _hidden class_ by delegating to the `ClassVisibilityChecker` of the context.
 
-When `WebAppClassLoader` is asked to load a class, it first tries to find the class locally (since it must use the inverted child-first model); if the class is found, and it is not a _system class_, the class is loaded; otherwise the class is not found locally.
+When `WebAppClassLoader` is asked to load a class, it first tries to find the class locally (since it must use the inverted child-first model); if the class is found, and it is not a _protected class_, the class is loaded; otherwise the class is not found locally.
 If the class is not found locally, the parent class loader is asked to load the class; the parent class loader uses the standard parent-first model, so it delegates the class loading to its parent, and so on.
-If the class is found, and it is not a _server class_, the class is loaded; otherwise the class is not found and a `ClassNotFoundException` is thrown.
+If the class is found, and it is not a _hidden class_, the class is loaded; otherwise the class is not found and a `ClassNotFoundException` is thrown.
 
-Unfortunately, the Servlet specification does not define exactly which classes are _system classes_ and which classes are _server classes_.
-However, Jetty picks good defaults and allows server applications to customize _system classes_ and _server classes_ in `WebAppContext`.
+Unfortunately, the Servlet specification does not define exactly which classes are _hidden classes_ and which classes are _protected classes_.
+However, Jetty picks good defaults and allows server applications to customize _hidden classes_ and _protected classes_ in `WebAppContext`.
 
-// TODO: add a section on parentLoaderPriority.
-// TODO: add a code example about how to set system/server classes.
-// TODO: add a code example about how to configure extra classpath
+Below you can find an example of how to set up additional classloading configuration, including hidden and protected classes in code:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=webAppContextClassLoader]
+----
+
 // TODO: add a section on ClassLoading (see old docs)
-
-// TODO: add a section on Configuration (system/server classes)
 // TODO: add a section about how to setup JSP support
 
 [[handler-use-default-servlet]]

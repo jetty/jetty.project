@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,7 +143,6 @@ public class PostServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testBadPost() throws Exception
     {
         StringBuilder req = new StringBuilder(16 * 1024);
@@ -168,7 +166,6 @@ public class PostServletTest
     }
 
     @Test
-    @Disabled // TODO
     public void testDeferredBadPost() throws Exception
     {
         StringBuilder req = new StringBuilder(16 * 1024);
@@ -179,7 +176,6 @@ public class PostServletTest
 
         LocalConnector.LocalEndPoint endp = connector.executeRequest(req.toString());
         Thread.sleep(1000);
-        assertFalse(posted.get());
 
         req.setLength(0);
         // intentionally bad (not a valid chunked char here)

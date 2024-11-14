@@ -591,12 +591,32 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         boolean remote = failure instanceof EOFException;
         Runnable runnable = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
-        return () ->
+
+        class FailureTask implements Runnable
         {
-            if (runnable != null)
-                runnable.run();
-            callback.succeeded();
-        };
+            @Override
+            public void run()
+            {
+                try
+                {
+                    if (runnable != null)
+                        runnable.run();
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    callback.failed(x);
+                }
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s[%s]".formatted(getClass().getSimpleName(), runnable);
+            }
+        }
+
+        return new FailureTask();
     }
 
     @Override

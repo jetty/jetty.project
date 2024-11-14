@@ -54,6 +54,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,12 +203,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (channel != null)
         {
             Runnable task = channel.onFailure(failure, callback);
-            if (task != null)
-            {
-                // We must dispatch to another thread because the task
-                // may call application code that performs blocking I/O.
-                offerTask(task, true);
-            }
+            // The task may unblock a blocked read or write, so it cannot be
+            // queued, because there may be no threads available to run it.
+            ThreadPool.executeImmediately(getExecutor(), task);
         }
         else
         {

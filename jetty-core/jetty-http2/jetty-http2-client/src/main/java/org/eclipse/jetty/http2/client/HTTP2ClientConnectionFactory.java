@@ -54,10 +54,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(bufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
+        generator.getHpackEncoder().setMaxHeaderListSize(client.getMaxRequestHeadersSize());
+
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
 
         Parser parser = new Parser(bufferPool, client.getMaxResponseHeadersSize());
-        parser.setMaxFrameSize(client.getMaxFrameSize());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
         HTTP2ClientSession session = new HTTP2ClientSession(client.getScheduler(), endPoint, parser, generator, listener, flowControl);

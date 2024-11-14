@@ -615,13 +615,17 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             failure = frame.getFailure();
             flowControlLength = drain();
         }
-        close();
-        boolean removed = session.removeStream(this);
         session.dataConsumed(this, flowControlLength);
-        if (removed)
-            notifyFailure(this, frame, callback);
-        else
-            callback.succeeded();
+        close();
+
+        notifyFailure(this, frame, new Nested(callback)
+        {
+            @Override
+            public void completed()
+            {
+                session.removeStream(HTTP2Stream.this);
+            }
+        });
     }
 
     private int drain()

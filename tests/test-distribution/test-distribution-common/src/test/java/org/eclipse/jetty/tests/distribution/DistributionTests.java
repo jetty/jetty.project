@@ -502,7 +502,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient(ssl);
                 URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
                 ContentResponse response = client.GET(serverUri);
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus(), response.getContentAsString());
                 String content = response.getContentAsString();
                 assertThat(content, containsString("WebSocketEcho: success"));
                 assertThat(content, containsString("ConnectTimeout: 4999"));
@@ -560,7 +560,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient(scheme.equals("https"));
                 URI serverUri = URI.create(scheme + "://localhost:" + port + "/test");
                 ContentResponse response = client.GET(serverUri);
-                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(HttpStatus.OK_200, response.getStatus(), response.getContentAsString());
                 String content = response.getContentAsString();
                 assertThat(content, containsString("WebSocketEcho: success"));
                 assertThat(content, containsString("ConnectTimeout: 4999"));

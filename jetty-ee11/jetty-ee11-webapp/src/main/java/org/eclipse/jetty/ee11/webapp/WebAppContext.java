@@ -77,7 +77,9 @@ import org.slf4j.LoggerFactory;
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link WebXmlConfiguration} and
  * {@link JettyWebXmlConfiguration}.
- *
+ * </p>
+ * <p>The class implements {@link WebAppClassLoader.Context} and thus the {@link org.eclipse.jetty.util.ClassVisibilityChecker}
+ * API, which is used by any {@link WebAppClassLoader} to control visibility of classes to the context.</p>
  */
 @ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context, Deployable
@@ -611,9 +613,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the hidden (server) classes patterns.
      * <p>
-     * These classes/packages are used to implement the server and are hidden
-     * from the context.  If the context needs to load these classes, it must have its
-     * own copy of them in WEB-INF/lib or WEB-INF/classes.
+     * This {@link ClassMatcher} is used to implement the {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract
+     * for the context by determining which classes and resources from the server and environment classloader are hidden
+     * from the context.  The context may have its own copy of these classes/resources in WEB-INF/lib or WEB-INF/classes.
      *
      * @param hiddenClasses the server classes pattern
      */
@@ -626,9 +628,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the protected (system) classes patterns.
      * <p>
-     * These classes/packages are provided by the JVM and
-     * cannot be replaced by classes of the same name from WEB-INF,
-     * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
+     *
+     * This {@link ClassMatcher} is used to implement the {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract
+     * for the context by determining which classes and resources from the server and environment classloader may not be
+     * overridden by the context.  The context may not have its own copy of these classes/resources.
      *
      * @param protectedClasses the system classes pattern
      */
@@ -642,7 +645,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * Add a ClassMatcher for hidden (server) classes by combining with
      * any existing matcher.
      *
-     * @param hiddenClasses The class matcher of patterns to add to the server ClassMatcher
+     * @param hiddenClasses The class matcher of patterns to add to the hidden (server) ClassMatcher
+     * @see org.eclipse.jetty.util.ClassVisibilityChecker
+     * @see #setHiddenClassMatcher(ClassMatcher)
      */
     public void addHiddenClassMatcher(ClassMatcher hiddenClasses)
     {
@@ -654,6 +659,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * any existing matcher.
      *
      * @param protectedClasses The class matcher of patterns to add to the system ClassMatcher
+     * @see org.eclipse.jetty.util.ClassVisibilityChecker
+     * @see #setProtectedClassMatcher(ClassMatcher)
      */
     public void addProtectedClassMatcher(ClassMatcher protectedClasses)
     {
@@ -661,7 +668,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match System (protected) classes
+     * @return The ClassMatcher used to match protected (system) classes to implement the
+     * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
+     * @see #setProtectedClassMatcher(ClassMatcher)
      */
     public ClassMatcher getProtectedClassMatcher()
     {
@@ -669,7 +678,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match Server (hidden) classes
+     * @return The ClassMatcher used to match hidden (server) classes to implement the
+     * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
+     * @see #setHiddenClassMatcher(ClassMatcher)
      */
     public ClassMatcher getHiddenClassMatcher()
     {
