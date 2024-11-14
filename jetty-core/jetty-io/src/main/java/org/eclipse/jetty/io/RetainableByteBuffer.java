@@ -799,13 +799,23 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean isFull()
         {
-            return getWrapped().asMutable().isFull();
+            // Do not call asMutable() as it would throw if retained
+            // while this operation is read-only so we do not care
+            // about being retained or not.
+            if (getWrapped() instanceof Mutable mutable)
+                return mutable.isFull();
+            return true;
         }
 
         @Override
         public long space()
         {
-            return getWrapped().asMutable().space();
+            // Do not call asMutable() as it would throw if retained
+            // while this operation is read-only so we do not care
+            // about being retained or not.
+            if (getWrapped() instanceof Mutable mutable)
+                return mutable.space();
+            return 0L;
         }
 
         @Override
