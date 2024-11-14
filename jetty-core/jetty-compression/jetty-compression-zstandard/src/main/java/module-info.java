@@ -15,7 +15,6 @@ module org.eclipse.jetty.compression.zstandard
 {
     requires transitive org.eclipse.jetty.compression;
     requires org.slf4j;
-
     requires com.github.luben.zstd_jni;
 
     exports org.eclipse.jetty.compression.zstandard;

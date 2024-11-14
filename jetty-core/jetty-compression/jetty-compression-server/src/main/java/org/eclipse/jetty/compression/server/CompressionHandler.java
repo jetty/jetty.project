@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.server.internal.CompressionResponse;
+import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;

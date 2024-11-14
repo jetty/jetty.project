@@ -15,7 +15,7 @@ module org.eclipse.jetty.compression.brotli
 {
     requires transitive org.eclipse.jetty.compression;
     requires org.slf4j;
-
     requires com.aayushatharva.brotli4j;
+
     exports org.eclipse.jetty.compression.brotli;
 }

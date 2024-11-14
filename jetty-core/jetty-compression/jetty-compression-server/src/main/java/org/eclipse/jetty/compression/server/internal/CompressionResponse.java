@@ -11,13 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.compression.server;
+package org.eclipse.jetty.compression.server.internal;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.EncoderSink;
+import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
