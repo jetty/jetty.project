@@ -41,8 +41,8 @@ public class GzipDecoderSource extends DecoderSource
     private static final ByteBuffer EMPTY_BUFFER = BufferUtil.EMPTY_BUFFER;
     private final GzipCompression compression;
     private final int bufferSize;
-    private InflaterPool.Entry inflaterEntry;
-    private Inflater inflater;
+    private final InflaterPool.Entry inflaterEntry;
+    private final Inflater inflater;
     private State state;
     private int size;
     private long value;

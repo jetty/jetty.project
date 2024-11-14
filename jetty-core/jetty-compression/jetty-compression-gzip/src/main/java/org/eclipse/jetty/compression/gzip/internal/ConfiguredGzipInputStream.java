@@ -19,6 +19,9 @@ import java.util.zip.GZIPInputStream;
 
 import org.eclipse.jetty.compression.gzip.GzipDecoderConfig;
 
+/**
+ * A {@link GZIPInputStream} that you can configure, unlike the JVM default provided one.
+ */
 public class ConfiguredGzipInputStream extends GZIPInputStream
 {
     public ConfiguredGzipInputStream(InputStream in, GzipDecoderConfig config) throws IOException

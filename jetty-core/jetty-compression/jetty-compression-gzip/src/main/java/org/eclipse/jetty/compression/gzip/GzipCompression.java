@@ -28,7 +28,6 @@ import org.eclipse.jetty.compression.gzip.internal.ConfiguredGzipInputStream;
 import org.eclipse.jetty.compression.gzip.internal.ConfiguredGzipOutputStream;
 import org.eclipse.jetty.compression.gzip.internal.GzipDecoderSource;
 import org.eclipse.jetty.compression.gzip.internal.GzipEncoderSink;
-import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -36,17 +35,13 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class GzipCompression extends Compression
 {
     public static final int DEFAULT_MIN_GZIP_SIZE = 32;
     public static final int BREAK_EVEN_GZIP_SIZE = 23;
-    public static final List<String> EXTENSIONS = List.of("gz", "gzip");
-    private static final Logger LOG = LoggerFactory.getLogger(GzipCompression.class);
+    private static final List<String> EXTENSIONS = List.of("gz", "gzip");
     private static final String ENCODING_NAME = "gzip";
-    public static final CompressedContentFormat GZIP = new CompressedContentFormat(ENCODING_NAME, ".gz");
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
     private int minCompressSize = DEFAULT_MIN_GZIP_SIZE;

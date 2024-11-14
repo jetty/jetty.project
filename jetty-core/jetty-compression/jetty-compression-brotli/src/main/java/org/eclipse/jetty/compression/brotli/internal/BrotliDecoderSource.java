@@ -25,7 +25,6 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class BrotliDecoderSource extends DecoderSource
 {
-    private static final ByteBuffer EMPTY_BUFFER = BufferUtil.EMPTY_BUFFER;
     private final BrotliCompression compression;
     private final DecoderJNI.Wrapper decoder;
 

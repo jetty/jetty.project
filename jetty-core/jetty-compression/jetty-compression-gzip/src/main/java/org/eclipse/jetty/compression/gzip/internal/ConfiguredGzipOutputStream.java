@@ -21,8 +21,7 @@ import java.util.zip.GZIPOutputStream;
 import org.eclipse.jetty.compression.gzip.GzipEncoderConfig;
 
 /**
- * A {@link GZIPOutputStream} that you can configure, unlike the
- * JVM default provided one.
+ * A {@link GZIPOutputStream} that you can configure, unlike the JVM default provided one.
  */
 public class ConfiguredGzipOutputStream extends GZIPOutputStream
 {

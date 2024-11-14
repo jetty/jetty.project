@@ -28,9 +28,9 @@ import org.eclipse.jetty.util.component.Destroyable;
 
 public class DecompressionRequest extends Request.Wrapper implements Destroyable
 {
-    private Compression compression;
-    private HttpFields fields;
-    private DecoderSource decoderSource;
+    private final Compression compression;
+    private final HttpFields fields;
+    private final DecoderSource decoderSource;
 
     public DecompressionRequest(
         Compression compression,

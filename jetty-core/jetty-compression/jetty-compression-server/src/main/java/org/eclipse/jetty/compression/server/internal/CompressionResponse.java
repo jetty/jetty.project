@@ -26,13 +26,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CompressionResponse extends Response.Wrapper implements Callback, Invocable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CompressionResponse.class);
-
     enum State
     {
         MIGHT_COMPRESS,
