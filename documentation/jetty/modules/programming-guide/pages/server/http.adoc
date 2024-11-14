@@ -1227,10 +1227,13 @@ Server
 * MultiPart request content.
 * Any other type of request content.
 
-For Form and MultiPart request content, `EagerContentHandler` reads the whole request content and then invokes the next `Handler`.
-This allows web applications that use blocking API calls such as `HttpServletRequest.getParameterMap()` (for Form request content) or `HttpServletRequest.getParts()` (for MultiPart request content) to avoid blocking.
+For Form request content, `EagerContentHandler` reads the whole request content, parses it into a `Fields` object, and then invokes the next `Handler`.
+This allows web applications that use blocking API calls such as `HttpServletRequest.getParameterMap()` to avoid blocking, since they can directly use the already created `Fields` object.
 
-For other types of request content, `EagerContentHandler` reads and retains request content bytes up to a configurable amount, and then invokes the next `Handler`.
+Similarly, for MultiPart request content, `EagerContentHandler` reads the whole request content, parses it into `MultiPartFormData.Parts`, and then invokes the next `Handler`.
+This allows web applications that use blocking API calls such as `HttpServletRequest.getParts()` to avoid blocking, since the can directly use the already created `MultiPartFormData.Parts` object.
+
+For other types of request content, `EagerContentHandler` reads and retains request content bytes up to a configurable amount, and then invokes the next `Handler`, without any further processing of the request content bytes.
 This allows web applications that use blocking API calls such as `HttpServletRequest.getInputStream()` to avoid blocking in most cases (if the request is smaller than what has been configured in `EagerContentHandler`).
 
 [[handler-use-servlet]]
