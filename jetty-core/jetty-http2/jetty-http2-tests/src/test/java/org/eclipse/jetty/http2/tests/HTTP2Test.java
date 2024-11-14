@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -47,6 +48,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -1314,7 +1316,20 @@ public class HTTP2Test extends AbstractTest
         connector.getBean(AbstractHTTP2ServerConnectionFactory.class).setMaxFrameSize(17 * 1024);
         http2Client.setMaxFrameSize(18 * 1024);
 
-        Session session = newClientSession(new Session.Listener() {});
+        // Wait for the SETTINGS frame to be exchanged.
+        CountDownLatch settingsLatch = new CountDownLatch(1);
+        Session session = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+        });
+        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+        EndPoint serverEndPoint = connector.getConnectedEndPoints().iterator().next();
+        HTTP2Connection connection = (HTTP2Connection)serverEndPoint.getConnection();
+        await().atMost(5, TimeUnit.SECONDS).until(() -> connection.getSession().getGenerator().getMaxFrameSize() == http2Client.getMaxFrameSize());
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         HttpFields.Mutable headers = HttpFields.build()

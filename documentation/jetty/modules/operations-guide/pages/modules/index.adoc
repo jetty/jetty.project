@@ -213,8 +213,14 @@ In this way, you are guaranteed that the `https` module is processed after the `
 
 This directive indicates that this module is ordered before the listed module names, if they are enabled.
 
-One use of this directive is to create a prerequisite module without the need to modify the `depends` directive of an existing module.
-For example, to create a custom `org.eclipse.jetty.server.Server` subclass instance to be used by the standard `server` module, without modifying the existing `server.mod` file nor the `jetty.xml` file that it uses. This can be achieved by creating the `custom-server` xref:modules/custom.adoc[Jetty custom module]:
+For example, module `test-keystore` is `[before]` module `ssl`.
+Enabling the `test-keystore` module _does not_ enable the `ssl` module.
+
+This directive is used to create a prerequisite module without the need to modify the `depends` directive of an existing module.
+
+For example, you want to create a custom `org.eclipse.jetty.server.Server` subclass instance to be used by the standard `server` module, but without modifying the existing `server.mod` file nor the `jetty.xml` file that `server.mod` uses.
+
+This can be achieved by creating the following `custom-server` xref:modules/custom.adoc[Jetty custom module]:
 
 .custom-server.mod
 ----
