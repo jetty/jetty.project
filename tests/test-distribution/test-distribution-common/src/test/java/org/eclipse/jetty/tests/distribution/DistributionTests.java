@@ -2000,9 +2000,9 @@ public class DistributionTests extends AbstractJettyHomeTest
             String[] properties = {
                 "jetty.http.selectors=1",
                 "jetty.http.port=" + port,
-                "jetty.eager.retained.framingOverhead=16",
-                "jetty.eager.retained.maxRetainedBytes=" + maxRetainedBytes,
-                "jetty.eager.retained.rejectWhenExceeded=false"
+                "jetty.eager.content.framingOverhead=16",
+                "jetty.eager.content.maxRetainedBytes=" + maxRetainedBytes,
+                "jetty.eager.content.rejectWhenExceeded=false"
             };
             try (JettyHomeTester.Run run2 = distribution.start(properties))
             {

@@ -48,9 +48,9 @@
             </Item>
             <Item>
               <New class="org.eclipse.jetty.server.handler.EagerContentHandler$RetainedContentLoaderFactory">
-                <Arg type="int"><Property name="jetty.eager.retained.maxRetainedBytes" default="-1"/></Arg>
-                <Arg type="int"><Property name="jetty.eager.retained.framingOverhead" default="-1"/></Arg>
-                <Arg type="boolean"><Property name="jetty.eager.retained.rejectWhenExceeded" default="false"/></Arg>
+                <Arg type="int"><Property name="jetty.eager.content.maxRetainedBytes" default="-1"/></Arg>
+                <Arg type="int"><Property name="jetty.eager.content.framingOverhead" default="-1"/></Arg>
+                <Arg type="boolean"><Property name="jetty.eager.content.rejectWhenExceeded" default="false"/></Arg>
               </New>
             </Item>
           </Array>

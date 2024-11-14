@@ -58,11 +58,11 @@ etc/jetty-eager-content.xml
 # jetty.eager.multipart.complianceMode=RFC7578
 
 ## The maximum bytes of request content, including framing overhead, to read and retain eagerly, or -1 for a default.
-# jetty.eager.retained.maxRetainedBytes=-1
+# jetty.eager.content.maxRetainedBytes=-1
 
 ## The framing overhead to use when calculating the request content bytes to read and retain, or -1 for a default.
-# jetty.eager.retained.framingOverhead=-1
+# jetty.eager.content.framingOverhead=-1
 
 ## Whether requests should be rejected if they exceed maxRetainedBytes.
-# jetty.eager.retained.rejectWhenExceeded=false
+# jetty.eager.content.rejectWhenExceeded=false
 #end::documentation[]
