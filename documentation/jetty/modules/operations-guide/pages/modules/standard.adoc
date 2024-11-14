@@ -129,6 +129,21 @@ The module properties are:
 include::{jetty-home}/modules/debuglog.mod[tags=documentation]
 ----
 
+[[eager-content]]
+== Module `eager-content`
+
+The `eager-content` module installs the `org.eclipse.jetty.server.handler.EagerContentHandler` at the root of the `Handler` tree.
+
+The `EagerContentHandler` can eagerly load request content, asynchronously, before calling the next `Handler`.
+For more information see xref:programming-guide:server/http.adoc#handler-use-eager[this section].
+
+`EagerContentHandler` can eagerly load content for form uploads, multipart uploads and any request content, and you can configure it with different properties for these three cases.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/eager-content.mod[tags=documentation]
+----
 
 [[eeN-deploy]]
 == Module `{ee-all}-deploy`

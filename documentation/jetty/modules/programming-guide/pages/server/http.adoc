@@ -1198,6 +1198,41 @@ In the example above, `ContextHandlerCollection` will try to match a request to 
 NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong requests from clients.
 Jetty will send an HTTP `404` response anyway if `DefaultHandler` has not been set.
 
+[[handler-use-eager]]
+==== EagerContentHandler
+
+`EagerContentHandler` reads eagerly the HTTP request content, and invokes the next `Handler` in the `Handler` tree when the request content has been read.
+
+`EagerContentHandler` should be installed when web applications use blocking I/O to read the request content, which is the typical case for Servlet or RESTful (JAX-RS) web applications.
+
+Because the request content is read eagerly and asynchronously, the web application will never (or rarely) block while reading the request content.
+In this way, the application obtains the benefits of asynchronous I/O without forcing web application developers to use more complicated asynchronous I/O APIs.
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── (GzipHandler) // optional
+    └── EagerContentHandler
+        └── ContextHandler /app
+            └── AppHandler
+----
+
+`EagerContentHandler` should be installed in the `Handler` tree _after_ other ``Handler``s that may modify or transform the request content, like for example the `GzipHandler`.
+
+`EagerContentHandler` eagerly reads request content in the following cases:
+
+* Form request content.
+* MultiPart request content.
+* Any other type of request content.
+
+For Form and MultiPart request content, `EagerContentHandler` reads the whole request content and then invokes the next `Handler`.
+This allows web applications that use blocking API calls such as `HttpServletRequest.getParameterMap()` (for Form request content) or `HttpServletRequest.getParts()` (for MultiPart request content) to avoid blocking.
+
+For other types of request content, `EagerContentHandler` reads and retains request content bytes up to a configurable amount, and then invokes the next `Handler`.
+This allows web applications that use blocking API calls such as `HttpServletRequest.getInputStream()` to avoid blocking in most cases (if the request is smaller than what has been configured in `EagerContentHandler`).
+
 [[handler-use-servlet]]
 === Servlet API Handlers
 
