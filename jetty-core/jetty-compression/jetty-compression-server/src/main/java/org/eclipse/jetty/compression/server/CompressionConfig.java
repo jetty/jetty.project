@@ -335,6 +335,9 @@ public class CompressionConfig extends AbstractLifeCycle
         if (!decompressMimeTypes.test(contentType))
             return null;
 
+        if (!decompressPaths.test(pathInContext))
+            return null;
+
         return matchedEncoding;
     }
 
@@ -519,7 +522,7 @@ public class CompressionConfig extends AbstractLifeCycle
         }
 
         /**
-         * A path that does not supports response content compression.
+         * A path that does not support response content compression.
          *
          * <p>
          * See {@link Builder} for details on PathSpec string.

@@ -38,8 +38,7 @@ import org.eclipse.jetty.util.compression.InflaterPool;
 
 public class GzipCompression extends Compression
 {
-    public static final int DEFAULT_MIN_GZIP_SIZE = 32;
-    public static final int BREAK_EVEN_GZIP_SIZE = 23;
+    private static final int DEFAULT_MIN_GZIP_SIZE = 32;
     private static final List<String> EXTENSIONS = List.of("gz", "gzip");
     private static final String ENCODING_NAME = "gzip";
     private static final HttpField X_CONTENT_ENCODING = new PreEncodedHttpField("X-Content-Encoding", ENCODING_NAME);
@@ -88,8 +87,7 @@ public class GzipCompression extends Compression
     @Override
     public void setDefaultDecoderConfig(DecoderConfig config)
     {
-        GzipDecoderConfig gzipDecoderConfig = GzipDecoderConfig.class.cast(config);
-        this.defaultDecoderConfig = gzipDecoderConfig;
+        this.defaultDecoderConfig = (GzipDecoderConfig)config;
     }
 
     @Override
@@ -101,8 +99,7 @@ public class GzipCompression extends Compression
     @Override
     public void setDefaultEncoderConfig(EncoderConfig config)
     {
-        GzipEncoderConfig gzipEncoderConfig = GzipEncoderConfig.class.cast(config);
-        this.defaultEncoderConfig = gzipEncoderConfig;
+        this.defaultEncoderConfig = (GzipEncoderConfig)config;
     }
 
     public DeflaterPool getDeflaterPool()
@@ -158,28 +155,28 @@ public class GzipCompression extends Compression
     @Override
     public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
     {
-        GzipDecoderConfig gzipDecoderConfig = GzipDecoderConfig.class.cast(config);
+        GzipDecoderConfig gzipDecoderConfig = (GzipDecoderConfig)config;
         return new ConfiguredGzipInputStream(in, gzipDecoderConfig);
     }
 
     @Override
     public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
     {
-        GzipDecoderConfig gzipDecoderConfig = GzipDecoderConfig.class.cast(config);
+        GzipDecoderConfig gzipDecoderConfig = (GzipDecoderConfig)config;
         return new GzipDecoderSource(this, source, gzipDecoderConfig);
     }
 
     @Override
     public OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException
     {
-        GzipEncoderConfig gzipEncoderConfig = GzipEncoderConfig.class.cast(config);
+        GzipEncoderConfig gzipEncoderConfig = (GzipEncoderConfig)config;
         return new ConfiguredGzipOutputStream(out, gzipEncoderConfig);
     }
 
     @Override
     public EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config)
     {
-        GzipEncoderConfig gzipEncoderConfig = GzipEncoderConfig.class.cast(config);
+        GzipEncoderConfig gzipEncoderConfig = (GzipEncoderConfig)config;
         return new GzipEncoderSink(this, sink, gzipEncoderConfig);
     }
 

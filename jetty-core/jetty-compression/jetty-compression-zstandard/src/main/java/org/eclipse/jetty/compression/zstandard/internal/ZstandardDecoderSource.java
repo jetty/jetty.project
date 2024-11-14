@@ -26,7 +26,6 @@ public class ZstandardDecoderSource extends DecoderSource
 {
     private final ZstandardCompression compression;
     private final ZstdDecompressCtx decompressCtx;
-    private final int bufferSize;
 
     public ZstandardDecoderSource(ZstandardCompression compression, Content.Source src, ZstandardDecoderConfig config)
     {
@@ -34,7 +33,6 @@ public class ZstandardDecoderSource extends DecoderSource
         this.compression = compression;
         this.decompressCtx = new ZstdDecompressCtx();
         this.decompressCtx.setMagicless(config.isMagicless());
-        this.bufferSize = config.getBufferSize();
     }
 
     @Override

@@ -67,7 +67,7 @@ public class CompressionHandler extends Handler.Wrapper
 
     private static final Logger LOG = LoggerFactory.getLogger(CompressionHandler.class);
     private final Map<String, Compression> supportedEncodings = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private final PathMappings<CompressionConfig> pathConfigs = new PathMappings<CompressionConfig>();
+    private final PathMappings<CompressionConfig> pathConfigs = new PathMappings<>();
 
     public CompressionHandler()
     {
@@ -97,10 +97,7 @@ public class CompressionHandler extends Handler.Wrapper
      */
     public CompressionConfig ensureConfiguration(PathSpec pathSpec)
     {
-        return pathConfigs.computeIfAbsent(pathSpec, (spec) ->
-        {
-            return CompressionConfig.builder().build();
-        });
+        return pathConfigs.computeIfAbsent(pathSpec, (spec) -> CompressionConfig.builder().build());
     }
 
     /**
@@ -202,7 +199,7 @@ public class CompressionHandler extends Handler.Wrapper
         String requestContentEncoding = null;
         // The `Accept-Encoding` request header indicating the supported list of compression encoding techniques.
         List<String> requestAcceptEncoding = null;
-        // Tracks the `If-Match` or `If-None-Match` request headers contains a etag separator.
+        // Tracks the `If-Match` or `If-None-Match` request headers contains an etag separator.
         boolean etagMatches = false;
 
         HttpFields fields = request.getHeaders();
@@ -239,10 +236,7 @@ public class CompressionHandler extends Handler.Wrapper
                         }
                     }
                 }
-                case IF_MATCH, IF_NONE_MATCH ->
-                {
-                    etagMatches |= field.getValue().contains(EtagUtils.ETAG_SEPARATOR);
-                }
+                case IF_MATCH, IF_NONE_MATCH -> etagMatches |= field.getValue().contains(EtagUtils.ETAG_SEPARATOR);
             }
         }
 
@@ -271,7 +265,7 @@ public class CompressionHandler extends Handler.Wrapper
         // We need to wrap the request IFF we are inflating or have seen etags with compression separators
         if (decompressEncoding != null || etagMatches)
         {
-            decompressionRequest = newDecompressionRequest(request, decompressEncoding, config);
+            decompressionRequest = newDecompressionRequest(request, decompressEncoding);
         }
 
         // Wrap the response and callback IFF we can be deflated and will try to deflate
@@ -283,7 +277,7 @@ public class CompressionHandler extends Handler.Wrapper
                 response.getHeaders().ensureField(config.getVary());
             }
 
-            Response compression = newCompressionResponse(this, request, response, callback, compressEncoding, config);
+            Response compression = newCompressionResponse(request, response, callback, compressEncoding, config);
             compressionResponse = compression;
             if (compression instanceof Callback dynamicCallback)
                 compressionCallback = dynamicCallback;
@@ -346,13 +340,7 @@ public class CompressionHandler extends Handler.Wrapper
     protected void doStop() throws Exception
     {
         super.doStop();
-
-        supportedEncodings.values().forEach(
-            (codec) ->
-            {
-                removeBean(codec);
-            }
-        );
+        supportedEncodings.values().forEach(this::removeBean);
     }
 
     private Compression getCompression(String encoding)
@@ -368,7 +356,7 @@ public class CompressionHandler extends Handler.Wrapper
         return compression;
     }
 
-    private Response newCompressionResponse(CompressionHandler compressionHandler, Request request, Response response, Callback callback, String compressEncoding, CompressionConfig config)
+    private Response newCompressionResponse(Request request, Response response, Callback callback, String compressEncoding, CompressionConfig config)
     {
         Compression compression = getCompression(compressEncoding);
         if (compression == null)
@@ -377,12 +365,12 @@ public class CompressionHandler extends Handler.Wrapper
         return new CompressionResponse(compression, request, response, callback, config);
     }
 
-    private Request newDecompressionRequest(Request request, String decompressEncoding, CompressionConfig config)
+    private Request newDecompressionRequest(Request request, String decompressEncoding)
     {
         Compression compression = getCompression(decompressEncoding);
         if (compression == null)
             return request;
 
-        return new DecompressionRequest(compression, request, config);
+        return new DecompressionRequest(compression, request);
     }
 }

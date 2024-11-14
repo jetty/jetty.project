@@ -39,8 +39,8 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
     private final Callback callback;
     private final CompressionConfig config;
     private final Compression compression;
+    private final AtomicReference<State> state = new AtomicReference<>(State.MIGHT_COMPRESS);
     private EncoderSink encoderSink;
-    private AtomicReference<State> state = new AtomicReference<>(State.MIGHT_COMPRESS);
     private boolean last;
 
     public CompressionResponse(Compression compression, Request request, Response wrapped, Callback callback, CompressionConfig config)
@@ -115,10 +115,7 @@ public class CompressionResponse extends Response.Wrapper implements Callback, I
                 if (last)
                     this.last = true;
             }
-            case NOT_COMPRESSING ->
-            {
-                super.write(last, content, callback);
-            }
+            case NOT_COMPRESSING -> super.write(last, content, callback);
         }
     }
 }

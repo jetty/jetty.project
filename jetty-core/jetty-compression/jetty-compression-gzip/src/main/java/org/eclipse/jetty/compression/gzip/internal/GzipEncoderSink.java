@@ -57,7 +57,6 @@ public class GzipEncoderSink extends EncoderSink
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(GzipEncoderSink.class);
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     /**
      * Per RFC-1952 (Section 2.3.1) this is the "Unknown" OS value as a byte.
      */
@@ -77,13 +76,6 @@ public class GzipEncoderSink extends EncoderSink
         0, // extra flags
         OS_UNKNOWN // operating system
     };
-    /**
-     * Per RFC-1952, the GZIP trailer is 8 bytes.
-     * 1. [CRC32] integer (4 bytes) representing CRC of uncompressed data.
-     * 2. [ISIZE] integer (4 bytes) representing total bytes of uncompressed data.
-     * This implies that Gzip cannot properly handle uncompressed sizes above <em>2^32 bytes</em> (or <em>4,294,967,296 bytes</em>)
-     */
-    private static final int GZIP_TRAILER_SIZE = 8;
     private final GzipCompression compression;
     private final CompressionPool<Deflater>.Entry deflaterEntry;
     private final Deflater deflater;
@@ -91,7 +83,7 @@ public class GzipEncoderSink extends EncoderSink
     private final ByteBuffer input;
     private final int bufferSize;
     private final CRC32 crc = new CRC32();
-    private final AtomicReference<State> state = new AtomicReference<State>(State.HEADERS);
+    private final AtomicReference<State> state = new AtomicReference<>(State.HEADERS);
     /**
      * Number of input bytes provided to the deflater.
      * This is different then {@link Deflater#getTotalIn()} as that only shows
@@ -277,7 +269,7 @@ public class GzipEncoderSink extends EncoderSink
         // Per javadoc, the .getBytesRead() is preferred as it is a return value of `long`.
         // The gzip trailer is fixed at a value of `int`, so we use the non-preferred .getTotalIn()
         // instead.  Also, if a gzip compressed is larger than Integer.MAX_VALUE then this trailer is broken anyway.
-        output.putInt((int)deflater.getTotalIn()); // // Number of uncompressed bytes
+        output.putInt(deflater.getTotalIn()); // // Number of uncompressed bytes
         output.flip();
     }
 }

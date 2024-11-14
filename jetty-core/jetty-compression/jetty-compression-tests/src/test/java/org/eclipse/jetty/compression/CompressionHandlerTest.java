@@ -115,7 +115,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
@@ -197,7 +197,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
@@ -251,7 +251,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
@@ -297,7 +297,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
@@ -333,7 +333,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
@@ -400,7 +400,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
@@ -582,7 +582,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         br, gzip       | gzip, br          | gzip
                        | br, zstd          |
         *              | zstd, br, gzip    | zstd
-        *              |                   | 
+        *              |                   |
         """)
     public void testCompressPreferredEncoders(
         String acceptEncodingHeader,
@@ -619,7 +619,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);

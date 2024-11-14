@@ -49,34 +49,6 @@ public abstract class Compression extends ContainerLifeCycle
     }
 
     /**
-     * Test if the {@code Accept-Encoding} request header and {@code Content-Length} response
-     * header are suitable to allow compression for the response compression implementation.
-     *
-     * @param headers the request headers
-     * @param contentLength the content length
-     * @return true if compression is allowed
-     */
-    public boolean acceptsCompression(HttpFields headers, long contentLength)
-    {
-        if (contentLength >= 0 && contentLength < getMinCompressSize())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded minCompressSize {}", this, headers);
-            return false;
-        }
-
-        // check the accept encoding header
-        if (!headers.contains(HttpHeader.ACCEPT_ENCODING, getEncodingName()))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded not {} acceptable {}", this, getEncodingName(), headers);
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Acquire a {@link RetainableByteBuffer} that is managed by this {@link Compression} implementation
      * which is suitable for compressed output from an {@link EncoderSink} or compressed input from a {@link DecoderSource}.
      *

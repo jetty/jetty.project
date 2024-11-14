@@ -71,11 +71,16 @@ public class GzipEncoderConfig implements EncoderConfig
     @Override
     public void setStrategy(int strategy)
     {
-        if (strategy != Deflater.DEFAULT_STRATEGY ||
-            strategy != Deflater.FILTERED ||
-            strategy != Deflater.HUFFMAN_ONLY)
-            throw new IllegalArgumentException("Unrecognized strategy: " + strategy);
-        this.strategy = strategy;
+        switch (strategy)
+        {
+            case Deflater.DEFAULT_STRATEGY:
+            case Deflater.FILTERED:
+            case Deflater.HUFFMAN_ONLY:
+                this.strategy = strategy;
+                break;
+            default:
+                throw new IllegalArgumentException("Unrecognized strategy: " + strategy);
+        }
     }
 
     /**

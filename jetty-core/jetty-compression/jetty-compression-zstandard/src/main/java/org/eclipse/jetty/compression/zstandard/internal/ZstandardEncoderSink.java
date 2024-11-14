@@ -97,7 +97,7 @@ public class ZstandardEncoderSink extends EncoderSink
                 case CONTINUE -> continueOp(last, content);
                 case END -> endOp(last);
                 case FLUSH -> flushOp(last);
-                case FINISHED -> finishOp(last);
+                case FINISHED -> null;
             };
             if (writeRecord != null)
                 done = true;
@@ -152,7 +152,7 @@ public class ZstandardEncoderSink extends EncoderSink
             while (inputBuf.hasRemaining())
             {
                 outputBuf.getByteBuffer().clear();
-                boolean flushed = compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), inputBuf.getByteBuffer(), EndDirective.CONTINUE);
+                compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), inputBuf.getByteBuffer(), EndDirective.CONTINUE);
                 outputBuf.getByteBuffer().flip();
                 if (outputBuf.getByteBuffer().hasRemaining())
                 {
@@ -193,12 +193,6 @@ public class ZstandardEncoderSink extends EncoderSink
             return new WriteRecord(false, outputBuf.getByteBuffer(), writeCallback);
         }
         outputBuf.release();
-        return null;
-    }
-
-    private WriteRecord finishOp(boolean last)
-    {
-        // do nothing
         return null;
     }
 

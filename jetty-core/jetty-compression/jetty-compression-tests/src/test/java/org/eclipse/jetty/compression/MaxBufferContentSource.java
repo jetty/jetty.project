@@ -25,7 +25,6 @@ public class MaxBufferContentSource implements Content.Source
     private final int maxSize;
     private Content.Chunk activeChunk;
     private Throwable failed;
-    private boolean terminated = false;
 
     public MaxBufferContentSource(Content.Source source, int maxSize)
     {
@@ -55,9 +54,6 @@ public class MaxBufferContentSource implements Content.Source
     {
         if (failed != null)
             return Content.Chunk.from(failed, true);
-
-        if (terminated)
-            return Content.Chunk.EOF;
 
         Content.Chunk readChunk = readChunk();
         if (readChunk == null)

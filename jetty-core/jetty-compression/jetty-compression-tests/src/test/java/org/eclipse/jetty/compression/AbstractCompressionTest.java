@@ -182,7 +182,7 @@ public abstract class AbstractCompressionTest
             case "zstandard" -> newCompression(ZstandardCompression.class);
             case "gzip" -> newCompression(GzipCompression.class);
             default -> fail("Unrecognized compressionType: " + compressionType);
-        };
+        }
     }
 
     protected void newCompression(Class<? extends Compression> compressionClass) throws Exception

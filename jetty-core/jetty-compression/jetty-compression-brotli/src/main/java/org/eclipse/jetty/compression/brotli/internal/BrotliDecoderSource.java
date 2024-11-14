@@ -18,23 +18,20 @@ import java.nio.ByteBuffer;
 
 import com.aayushatharva.brotli4j.decoder.DecoderJNI;
 import org.eclipse.jetty.compression.DecoderSource;
-import org.eclipse.jetty.compression.brotli.BrotliCompression;
 import org.eclipse.jetty.compression.brotli.BrotliDecoderConfig;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class BrotliDecoderSource extends DecoderSource
 {
-    private final BrotliCompression compression;
     private final DecoderJNI.Wrapper decoder;
 
-    public BrotliDecoderSource(BrotliCompression compression, Content.Source source, BrotliDecoderConfig config)
+    public BrotliDecoderSource(Content.Source source, BrotliDecoderConfig config)
     {
         super(source);
-        this.compression = compression;
         try
         {
-            this.decoder = new DecoderJNI.Wrapper(compression.getBufferSize());
+            this.decoder = new DecoderJNI.Wrapper(config.getBufferSize());
         }
         catch (IOException e)
         {
@@ -59,10 +56,7 @@ public class BrotliDecoderSource extends DecoderSource
                 {
                     return last ? Content.Chunk.EOF : Content.Chunk.EMPTY;
                 }
-                case OK ->
-                {
-                    decoder.push(0);
-                }
+                case OK -> decoder.push(0);
                 case NEEDS_MORE_INPUT ->
                 {
                     ByteBuffer input = decoder.getInputBuffer();
@@ -82,10 +76,7 @@ public class BrotliDecoderSource extends DecoderSource
                     // rely on status.OK to go to EOF
                     return Content.Chunk.from(output, false);
                 }
-                default ->
-                {
-                    throw new IOException("Decoder failure: Corrupted input buffer");
-                }
+                default -> throw new IOException("Decoder failure: Corrupted input buffer");
             }
         }
     }

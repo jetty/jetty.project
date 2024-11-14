@@ -37,6 +37,6 @@ public class GzipDecoderConfig implements DecoderConfig
     @Override
     public void setBufferSize(int size)
     {
-        this.bufferSize = this.bufferSize = Math.max(MIN_BUFFER_SIZE, size);
+        this.bufferSize = Math.max(MIN_BUFFER_SIZE, size);
     }
 }

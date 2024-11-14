@@ -32,10 +32,7 @@ public class DecompressionRequest extends Request.Wrapper implements Destroyable
     private final HttpFields fields;
     private final DecoderSource decoderSource;
 
-    public DecompressionRequest(
-        Compression compression,
-        Request request,
-        CompressionConfig config)
+    public DecompressionRequest(Compression compression, Request request)
     {
         super(request);
         this.compression = compression;

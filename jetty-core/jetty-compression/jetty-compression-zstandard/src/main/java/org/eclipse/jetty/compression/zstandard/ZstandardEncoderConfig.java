@@ -29,7 +29,7 @@ public class ZstandardEncoderConfig implements EncoderConfig
      */
     public static final int DEFAULT_BUFFER_SIZE;
     public static final int MIN_BUFFER_SIZE = 32;
-    private static final Logger LOG = LoggerFactory.getLogger(ZstandardDecoderConfig.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ZstandardEncoderConfig.class);
 
     static
     {

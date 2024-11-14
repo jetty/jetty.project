@@ -38,7 +38,6 @@ public class GzipDecoderSource extends DecoderSource
     private static final Logger LOG = LoggerFactory.getLogger(GzipDecoderSource.class);
     // Unsigned Integer Max == 2^32
     private static final long UINT_MAX = 0xFFFFFFFFL;
-    private static final ByteBuffer EMPTY_BUFFER = BufferUtil.EMPTY_BUFFER;
     private final GzipCompression compression;
     private final int bufferSize;
     private final InflaterPool.Entry inflaterEntry;
@@ -159,7 +158,7 @@ public class GzipDecoderSource extends DecoderSource
                     }
                     case ID ->
                     {
-                        value += (currByte & 0xFF) << 8 * size;
+                        value += (long)(currByte & 0xFF) << 8 * size;
                         ++size;
                         if (size == 2)
                         {
@@ -187,7 +186,6 @@ public class GzipDecoderSource extends DecoderSource
                         state = State.MTIME;
                         size = 0;
                         value = 0;
-                        break;
                     }
                     case MTIME ->
                     {
@@ -196,19 +194,11 @@ public class GzipDecoderSource extends DecoderSource
                         if (size == 4)
                             state = State.XFL;
                     }
-                    case XFL ->
-                    {
-                        // Skip XFL
-                        state = State.OS;
-                    }
-                    case OS ->
-                    {
-                        // Skip OS
-                        state = State.FLAGS;
-                    }
+                    case XFL -> state = State.OS; // Skip XFL
+                    case OS -> state = State.FLAGS; // Skip OS
                     case EXTRA_LENGTH ->
                     {
-                        value += (currByte & 0xFF) << 8 * size;
+                        value += (long)(currByte & 0xFF) << 8 * size;
                         ++size;
                         if (size == 2)
                             state = State.EXTRA;
@@ -257,11 +247,11 @@ public class GzipDecoderSource extends DecoderSource
                     }
                     case CRC ->
                     {
-                        value += (currByte & 0xFF) << 8 * size;
+                        value += (long)(currByte & 0xFF) << 8 * size;
                         ++size;
                         if (size == 4)
                         {
-                            // From RFC 1952, compliant decoders need not to verify the CRC
+                            // From RFC 1952, compliant decoders need not verify the CRC
                             state = State.ISIZE;
                             size = 0;
                             value = 0;

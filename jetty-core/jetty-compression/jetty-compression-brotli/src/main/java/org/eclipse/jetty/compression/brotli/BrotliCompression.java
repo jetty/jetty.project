@@ -161,7 +161,7 @@ public class BrotliCompression extends Compression
     public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
     {
         BrotliDecoderConfig brotliDecoderConfig = BrotliDecoderConfig.class.cast(config);
-        return new BrotliDecoderSource(this, source, brotliDecoderConfig);
+        return new BrotliDecoderSource(source, brotliDecoderConfig);
     }
 
     @Override
@@ -175,7 +175,7 @@ public class BrotliCompression extends Compression
     public EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config)
     {
         BrotliEncoderConfig brotliEncoderConfig = BrotliEncoderConfig.class.cast(config);
-        return new BrotliEncoderSink(this, sink, brotliEncoderConfig);
+        return new BrotliEncoderSink(sink, brotliEncoderConfig);
     }
 
     private ByteOrder getByteOrder()
