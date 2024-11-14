@@ -1277,7 +1277,7 @@ public class ServletApiRequest implements HttpServletRequest
             try
             {
                 int contentLength = getContentLength();
-                if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
+                if (contentLength != 0)
                 {
                     String baseType = HttpField.getValueParameters(getContentType(), null);
                     if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
