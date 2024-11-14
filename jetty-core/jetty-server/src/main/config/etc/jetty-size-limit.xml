@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.server.handler.SizeLimitHandler">
+        <Arg type="long"><Property name="jetty.sizeLimit.maxRequestContentSize" default="-1" /></Arg>
+        <Arg type="long"><Property name="jetty.sizeLimit.maxResponseContentSize" default="-1" /></Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

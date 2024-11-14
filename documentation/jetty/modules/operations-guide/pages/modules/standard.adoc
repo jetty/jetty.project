@@ -328,6 +328,17 @@ However, we the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1
 
 If the system property `java.rmi.server.hostname` is not specified, the RMI client will try to connect to `127.0.1.1` (because that's what in the RMI stub) and fail because nothing is listening on that address.
 
+[[qos]]
+== Module `qos`
+
+The `qos` module installs the `QoSHandler` at the root of the `Handler` tree; the `QoSHandler` applies limits to the number of concurrent requests, as explained in xref:programming-guide:server/http.adoc#handler-use-qos[this section].
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/qos.mod[tags=documentation]
+----
+
 [[requestlog]]
 == Module `requestlog`
 
@@ -545,6 +556,17 @@ The module properties to configure the Jetty server scheduler are:
 include::{jetty-home}/modules/server.mod[tags=documentation-scheduler-config]
 ----
 
+[[size-limit]]
+== Module `size-limit`
+
+The `size-limit` module installs the `SizeLimitHandler` at the root of the `Handler` tree; the `SizeLimitHandler` applies limits to the request content and the response content, as explained in xref:programming-guide:server/http.adoc#handler-use-size-limit[this section].
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/size-limit.mod[tags=documentation]
+----
+
 [[ssl]]
 == Module `ssl`
 
@@ -701,6 +723,17 @@ include::{jetty-home}/modules/test-keystore.mod[]
 
 Note how properties `jetty.sslContext.keyStorePath` and `jetty.sslContext.keyStorePassword` are configured, only if not already set (via the `?=` operator), directly in the module file, rather than in a `+*.ini+` file.
 This is done to avoid that these properties accidentally overwrite a real KeyStore configuration.
+
+[[thread-limit]]
+== Module `thread-limit`
+
+The `thread-limit` module installs the `ThreadLimitHandler` at the root of the `Handler` tree; the `ThreadLimitHandler` applies limits to the number of concurrent threads per remote IP address, as explained in xref:programming-guide:server/http.adoc#handler-use-thread-limit[this section].
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/thread-limit.mod[tags=documentation]
+----
 
 [[threadpool]]
 == Module `threadpool`

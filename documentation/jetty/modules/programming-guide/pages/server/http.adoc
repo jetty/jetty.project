@@ -814,6 +814,29 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 If the resource is not found, `ResourceHandler` will not return `true` from the `handle(\...)` method, so what happens next depends on the `Handler` tree structure.
 See also <<handler-use-default,how to use>> `DefaultHandler`.
 
+[[handler-use-conditional]]
+==== ConditionalHandler
+
+`ConditionalHandler` is an abstract `Handler` that matches conditions about the request, and allows subclasses to handle the request differently depending on whether the conditions have been met or not.
+
+Subclasses must override methods:
+
+* `boolean onConditionsMet(Request, Response, Callback)`, to handle the request when the conditions are met.
+* `boolean onConditionsNotMet(Request, Response, Callback)`, to handle the request when the conditions are not met.
+
+Conditions can be specified using an include/exclude mechanism, where a condition match if it is not excluded, and either it is included or the include set is empty.
+
+For example, you can specify to match only the specific HTTP request method `DELETE` by adding it to the include set; or you can specify to match all HTTP request methods apart `TRACE` by adding it to the exclude set.
+
+`ConditionalHandler` allows you to specify conditions for the following request properties:
+
+* The request HTTP method.
+* The request link:{javadoc-url}/org/eclipse/jetty/server/Request.html#getPathInContext(org.eclipse.jetty.server.Request)[path in context], that is the request URI relative to the context path.
+* The request remote address.
+* Custom predicates that receive the request to match a custom condition.
+
+Notable subclasses of `ConditionalHandler` are, for example, <<handler-use-qos,`QoSHandler`>> and <<handler-use-thread-limit,`ThreadLimitHandler`>>.
+
 [[handler-use-gzip]]
 ==== GzipHandler
 
@@ -905,7 +928,7 @@ Server
         └── ContextHandler N
 ----
 
-[[handler-use-sizelimit]]
+[[handler-use-size-limit]]
 ==== SizeLimitHandler
 
 `SizeLimitHandler` tracks the sizes of request content and response content, and fails the request processing with an HTTP status code of https://www.rfc-editor.org/rfc/rfc9110.html#name-413-content-too-large[`413 Content Too Large`].
@@ -1039,6 +1062,8 @@ Refer to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler
 ==== QoSHandler
 
 `QoSHandler` allows web applications to limit the number of concurrent requests, therefore implementing a quality of service (QoS) mechanism for end users.
+
+`QoSHandler` extends xref:handler-use-conditional[`ConditionalHandler`], so you may be able to restrict what `QoSHandler` does to only requests that match the conditions (for example, only to `POST` requests, or only for certain request URIs, etc.)
 
 Web applications may need to access resources with limited capacity, for example a relational database accessed through a JDBC connection pool.
 
@@ -1197,6 +1222,20 @@ In the example above, `ContextHandlerCollection` will try to match a request to 
 
 NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong requests from clients.
 Jetty will send an HTTP `404` response anyway if `DefaultHandler` has not been set.
+
+[[handler-use-thread-limit]]
+==== ThreadLimitHandler
+
+`ThreadLimitHandler` tracks remote IP addresses and limits the number of concurrent requests (and therefore threads) for each remote IP address to protect against denial-of-service attacks.
+
+`ThreadLimitHandler` extends xref:handler-use-conditional[`ConditionalHandler`], so you may be able to restrict what `ThreadLimitHandler` does to only requests that match the conditions (for example, only to `POST` requests, or only for certain request URIs, etc.)
+
+The remote IP address can be derived from the network, or from the `Forwarded` (or the now obsolete `X-Forwarded-For`) HTTP header.
+The `Forwarded` header is typically present in requests that have been forwarded to Jetty by a reverse proxy such as HAProxy, Nginx, Apache, etc.
+
+// TODO: mention the DoSHandler in Jetty 12.1.x.
+
+Note that `ThreadLimitHandler` is different from xref:handler-use-qos[`QoSHandler`] in that it limits the number of concurrent requests per remote IP address, while `QoSHandler` limits the total number of concurrent requests.
 
 [[handler-use-servlet]]
 === Servlet API Handlers

@@ -1943,4 +1943,57 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ee8", "ee9", "ee10"})
+    public void testLimitHandlers(String env) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        String[] modules = {
+            "http",
+            "qos",
+            "size-limit",
+            "thread-limit",
+            toEnvironment("webapp", env),
+            toEnvironment("deploy", env)
+        };
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + String.join(",", modules)))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=DEBUG
+                """;
+            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
+
+            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            distribution.installWar(war, "test");
+
+            int port = Tester.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.selectors=1", "jetty.http.port=" + port))
+            {
+                try
+                {
+                    assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                    startHttpClient();
+                    URI serverUri = URI.create("http://localhost:" + port + "/test/");
+                    ContentResponse response = client.newRequest(serverUri)
+                        .timeout(15, TimeUnit.SECONDS)
+                        .send();
+                    assertEquals(HttpStatus.OK_200, response.getStatus());
+                }
+                finally
+                {
+                    run2.getLogs().forEach(System.err::println);
+                }
+            }
+        }
+    }
 }

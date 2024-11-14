@@ -13,7 +13,7 @@ server
 server
 
 [after]
-threadlimit
+thread-limit
 
 [xml]
 etc/jetty-delayed.xml

@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.server.handler.QoSHandler">
+        <Set name="maxRequestCount" property="jetty.qos.maxRequestCount" />
+        <Set name="maxSuspendedRequestCount" property="jetty.qos.maxSuspendedRequestCount" />
+        <Set name="maxSuspend">
+          <Call class="java.time.Duration" name="ofMillis">
+            <Arg type="long">
+              <Property name="jetty.qos.maxSuspendDuration" default="0" />
+            </Arg>
+          </Call>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

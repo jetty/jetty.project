@@ -1,10 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<!-- =============================================================== -->
-<!-- Mixin the Thread Limit Handler to the entire server             -->
-<!-- =============================================================== -->
-
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">
     <Arg>
@@ -16,5 +12,3 @@
     </Arg>
   </Call>
 </Configure>
-
-
