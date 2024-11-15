@@ -26,12 +26,9 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class Compression extends ContainerLifeCycle
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Compression.class);
     private final String encodingName;
     private final String etagSuffix;
     private final String etagSuffixQuote;

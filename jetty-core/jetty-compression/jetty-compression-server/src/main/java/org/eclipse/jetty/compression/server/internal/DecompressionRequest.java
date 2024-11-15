@@ -17,7 +17,6 @@ import java.util.ListIterator;
 
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.DecoderSource;
-import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
