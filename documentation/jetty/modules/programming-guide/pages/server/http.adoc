@@ -819,10 +819,25 @@ See also <<handler-use-default,how to use>> `DefaultHandler`.
 
 `ConditionalHandler` is an abstract `Handler` that matches conditions about the request, and allows subclasses to handle the request differently depending on whether the conditions have been met or not.
 
-Subclasses must override methods:
+You may subclass `ConditionalHandler.Abstract` and override these methods:
 
 * `boolean onConditionsMet(Request, Response, Callback)`, to handle the request when the conditions are met.
 * `boolean onConditionsNotMet(Request, Response, Callback)`, to handle the request when the conditions are not met.
+
+Alternatively, you can use the following `ConditionalHandler` subclasses that implement common behaviors:
+
+* `ConditionalHandler.ElseNext`:
+** When conditions are met, you have to write the implementation.
+** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
+* `ConditionalHandler.Reject`:
+** When conditions are met, a response is written with a configurable, non-2xx, HTTP status code.
+** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
+* `ConditionalHandler.SkipNext`:
+** When conditions are met, the handling of the request is forwarded to the next-next `Handler`, skipping the next `Handler`.
+** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
+* `ConditionalHandler.DontHandle`:
+** When conditions are met, the request is not handled.
+** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
 
 Conditions can be specified using an include/exclude mechanism, where a condition match if it is not excluded, and either it is included or the include set is empty.
 
@@ -1061,11 +1076,13 @@ Refer to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler
 [[handler-use-qos]]
 ==== QoSHandler
 
-`QoSHandler` allows web applications to limit the number of concurrent requests, therefore implementing a quality of service (QoS) mechanism for end users.
+`QoSHandler` allows web applications to limit the number of _active_ concurrent requests, that is requests that are currently being handled by a thread, and therefore are not waiting asynchronously, for example reading request content or writing response content.
 
 `QoSHandler` extends xref:handler-use-conditional[`ConditionalHandler`], so you may be able to restrict what `QoSHandler` does to only requests that match the conditions (for example, only to `POST` requests, or only for certain request URIs, etc.)
 
 Web applications may need to access resources with limited capacity, for example a relational database accessed through a JDBC connection pool.
+Limiting the number of active concurrent requests helps to control the load on the server, so that it does not become overloaded and possibly unresponsive.
+In turn, this improves the quality of service (QoS) for end users of the web application, because either their request is being handled actively by the server, or it is rejected sooner (after a configurable timeout in `QoSHandler`) rather than later (after a possibly longer idle timeout).
 
 Consider the case where each HTTP request results in a JDBC query, and the capacity of the database is of 400 queries/s.
 Allowing more than 400 HTTP requests/s into the system, for example 500 requests/s, results in 100 requests blocking waiting for a JDBC connection _for every second_.
@@ -1074,7 +1091,7 @@ When no more threads are available, additional requests will queue up as tasks i
 This situation affects the whole server, so one bad behaving web application may affect other well behaving web applications.
 From the end user perspective the quality of service is terrible, because requests will take a lot of time to be served and eventually time out.
 
-In cases of load spikes, caused for example by popular events (weather or social events), usage bursts (Black Friday sales), or even denial of service attacks, it is desirable to give priority to certain requests rather than others.
+In cases of load spikes, caused for example by popular events (weather or social events), usage bursts (Black Friday sales), or even denial-of-service attacks, it is desirable to give priority to certain requests rather than others.
 For example, in an e-commerce site requests that lead to the checkout and to the payments should have higher priorities than requests to browse the products.
 Another example is to prioritize requests for certain users such as paying users or administrative users.
 

@@ -17,9 +17,9 @@ etc/jetty-size-limit.xml
 
 [ini-template]
 #tag::documentation[]
-## The maximum request content size, in bytes.
+## The maximum request content size in bytes, or -1 for unlimited.
 # jetty.sizeLimit.maxRequestContentSize=-1
 
-## The maximum response content size, in bytes.
+## The maximum response content size in bytes, or -1 for unlimited.
 # jetty.sizeLimit.maxResponseContentSize=-1
 #end::documentation[]

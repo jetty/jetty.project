@@ -26,4 +26,22 @@ etc/jetty-thread-limit.xml
 
 ## The thread limit per remote IP address.
 # jetty.threadlimit.threadLimit=10
+
+## A comma-separated list of HTTP methods to include when matching a request.
+# jetty.threadlimit.include.method=
+
+## A comma-separated list of HTTP methods to exclude when matching a request.
+# jetty.threadlimit.exclude.method=
+
+## A comma-separated list of URI path patterns to include when matching a request.
+# jetty.threadlimit.include.path=
+
+## A comma-separated list of URI path patterns to exclude when matching a request.
+# jetty.threadlimit.exclude.path=
+
+## A comma-separated list of remote addresses patterns to include when matching a request.
+# jetty.threadlimit.include.inet=
+
+## A comma-separated list of remote addresses patterns to exclude when matching a request.
+# jetty.threadlimit.exclude.inet=
 #end::documentation[]

@@ -26,4 +26,22 @@ etc/jetty-qos.xml
 
 ## The maximum duration that a request may remain suspended, in milliseconds; use 0 for unlimited time.
 # jetty.qos.maxSuspendDuration=0
+
+## A comma-separated list of HTTP methods to include when matching a request.
+# jetty.qos.include.method=
+
+## A comma-separated list of HTTP methods to exclude when matching a request.
+# jetty.qos.exclude.method=
+
+## A comma-separated list of URI path patterns to include when matching a request.
+# jetty.qos.include.path=
+
+## A comma-separated list of URI path patterns to exclude when matching a request.
+# jetty.qos.exclude.path=
+
+## A comma-separated list of remote addresses patterns to include when matching a request.
+# jetty.qos.include.inet=
+
+## A comma-separated list of remote addresses patterns to exclude when matching a request.
+# jetty.qos.exclude.inet=
 #end::documentation[]
