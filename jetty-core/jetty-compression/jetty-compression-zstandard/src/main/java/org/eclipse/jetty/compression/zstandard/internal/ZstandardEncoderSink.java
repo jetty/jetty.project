@@ -71,10 +71,7 @@ public class ZstandardEncoderSink extends EncoderSink
             // skip if progress not yet started.
             // this allows for empty body contents to not cause errors.
             ZstdFrameProgression frameProgression = compressCtx.getFrameProgression();
-            if (frameProgression.getConsumed() <= 0)
-            {
-                return false;
-            }
+            return frameProgression.getConsumed() > 0;
         }
 
         return true;
