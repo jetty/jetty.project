@@ -33,6 +33,7 @@ public class JsrHandshakeRequest implements HandshakeRequest
 {
     private final ServerUpgradeRequest delegate;
     private final HttpServletRequest httpServletRequest;
+    private final Map<String, List<String>> headers;
     private Map<String, List<String>> parameterMap;
 
     public JsrHandshakeRequest(ServerUpgradeRequest req)
@@ -40,12 +41,13 @@ public class JsrHandshakeRequest implements HandshakeRequest
         this.delegate = req;
         this.httpServletRequest = (HttpServletRequest)req
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+        this.headers = HttpFields.asMap(delegate.getHeaders());
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return HttpFields.asMap(delegate.getHeaders());
+        return headers;
     }
 
     @Override

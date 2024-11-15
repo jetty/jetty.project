@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.websocket.server.internal;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,22 +34,15 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
 {
     private final ServerUpgradeResponse upgradeResponse;
     private final HttpServletResponse httpServletResponse;
-    private final boolean isUpgraded;
     private final Map<String, List<String>> headers;
 
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
-        this(response, false);
-    }
-
-    public DelegatedServerUpgradeResponse(ServerUpgradeResponse response, boolean isUpgraded)
-    {
         upgradeResponse = response;
-        this.isUpgraded = isUpgraded;
         ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
         this.httpServletResponse = (HttpServletResponse)servletContextResponse.getRequest()
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
-        headers = HttpFields.asMap(upgradeResponse.getHeaders());
+        this.headers = HttpFields.asMap(upgradeResponse.getHeaders());
     }
 
     @Override
@@ -100,7 +92,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return isUpgraded ? Collections.unmodifiableMap(headers) : headers;
+        return headers;
     }
 
     @Override
