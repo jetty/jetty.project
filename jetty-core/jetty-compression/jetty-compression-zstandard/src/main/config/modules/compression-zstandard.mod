@@ -10,7 +10,7 @@ compression
 experimental
 
 [depend]
-compression-api
+compression-common
 compression
 
 [files]
