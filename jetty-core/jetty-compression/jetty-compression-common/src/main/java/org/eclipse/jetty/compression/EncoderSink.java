@@ -79,7 +79,7 @@ public abstract class EncoderSink implements Content.Sink
     {
         private enum State
         {
-            // Intial state, nothing has been attempted yet
+            // Initial state, nothing has been attempted yet
             INITIAL,
             // We have started compressing
             COMPRESSING,
