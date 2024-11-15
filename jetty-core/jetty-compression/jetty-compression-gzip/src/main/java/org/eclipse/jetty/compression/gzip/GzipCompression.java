@@ -188,14 +188,14 @@ public class GzipCompression extends Compression
         if (deflaterPool == null)
         {
             deflaterPool = DeflaterPool.ensurePool(getContainer());
-            addBean(deflaterPool);
         }
+        addBean(deflaterPool);
 
         if (inflaterPool == null)
         {
             inflaterPool = InflaterPool.ensurePool(getContainer());
-            addBean(inflaterPool);
         }
+        addBean(inflaterPool);
     }
 
     @Override
