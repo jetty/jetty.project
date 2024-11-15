@@ -333,6 +333,24 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * @return the number of bytes that can be added, appended or put into this buffer,
+     * assuming it is {@link #asMutable() mutable}.
+     */
+    default long space()
+    {
+        return capacity() - remaining();
+    }
+
+    /**
+     * @return true if no more bytes can be added, appended or put to this buffer,
+     * assuming it is {@link #asMutable() mutable}.
+     */
+    default boolean isFull()
+    {
+        return space() == 0L;
+    }
+
+    /**
      * <p>Skips, advancing the ByteBuffer position, the given number of bytes.</p>
      *
      * @param length the maximum number of bytes to skip
@@ -517,23 +535,6 @@ public interface RetainableByteBuffer extends Retainable
      */
     interface Mutable extends RetainableByteBuffer
     {
-        /**
-         * @return the number of bytes that can be added, appended or put into this buffer.
-         */
-        default long space()
-        {
-            return capacity() - remaining();
-        }
-
-        /**
-         * @return true if the {@link #size()} is equals to the {@link #maxSize()} and no more bytes can be added, appended
-         * or put to this buffer.
-         */
-        default boolean isFull()
-        {
-            return space() == 0;
-        }
-
         /**
          * Add the passed {@link ByteBuffer} to this buffer, growing this buffer if necessary and possible.
          * The source {@link ByteBuffer} is passed by reference and the caller gives up "ownership", so implementations of
@@ -799,23 +800,13 @@ public interface RetainableByteBuffer extends Retainable
         @Override
         public boolean isFull()
         {
-            // Do not call asMutable() as it would throw if retained
-            // while this operation is read-only so we do not care
-            // about being retained or not.
-            if (getWrapped() instanceof Mutable mutable)
-                return mutable.isFull();
-            return true;
+            return getWrapped().isFull();
         }
 
         @Override
         public long space()
         {
-            // Do not call asMutable() as it would throw if retained
-            // while this operation is read-only so we do not care
-            // about being retained or not.
-            if (getWrapped() instanceof Mutable mutable)
-                return mutable.space();
-            return 0L;
+            return getWrapped().space();
         }
 
         @Override
