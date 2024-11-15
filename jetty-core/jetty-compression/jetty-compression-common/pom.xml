@@ -1,27 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-  <artifactId>jetty-compression-common</artifactId>
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
-      <groupId>org.eclipse.jetty</groupId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
-      <groupId>org.eclipse.jetty</groupId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <groupId>org.eclipse.jetty</groupId>
     </dependency>
     <dependency>
-      <artifactId>jetty-slf4j-impl</artifactId>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
+
   <description>Jetty Core Compression API</description>
+
+  <artifactId>jetty-compression-common</artifactId>
   <modelVersion>4.0.0</modelVersion>
   <name>Core :: Compression :: API</name>
   <packaging>jar</packaging>
@@ -31,7 +32,6 @@
     <groupId>org.eclipse.jetty.compression</groupId>
     <version>12.1.0-SNAPSHOT</version>
   </parent>
-
   <properties>
     <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
   </properties>
