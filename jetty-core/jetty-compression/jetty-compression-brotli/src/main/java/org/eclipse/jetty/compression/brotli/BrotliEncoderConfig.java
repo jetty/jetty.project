@@ -24,15 +24,14 @@ public class BrotliEncoderConfig implements EncoderConfig
      *
      * @see <a href="https://www.brotli.org/encode.html">Encoder Defaults</a>
      */
-    public static final int DEFAULT_QUALITY = 11;
+    private static final int DEFAULT_QUALITY = 11;
     /**
      * Default Brotli Window.
      *
      * @see <a href="https://www.brotli.org/encode.html">Encoder Defaults</a>
      */
-    public static final int DEFAULT_WINDOW = 22;
-
-    public static final int MIN_BUFFER_SIZE = 32;
+    private static final int DEFAULT_WINDOW = 22;
+    private static final int MIN_BUFFER_SIZE = 32;
 
     private int bufferSize = 4096;
     private int strategy = 0;

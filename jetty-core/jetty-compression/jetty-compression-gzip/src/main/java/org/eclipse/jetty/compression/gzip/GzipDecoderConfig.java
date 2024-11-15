@@ -20,12 +20,11 @@ public class GzipDecoderConfig implements DecoderConfig
     /**
      * Default Buffer Size as found in {@link java.util.zip.GZIPInputStream}.
      */
-    public static final int DEFAULT_BUFFER_SIZE = 512;
+    private static final int DEFAULT_BUFFER_SIZE = 512;
     /**
      * Minimum buffer size to avoid issues with JDK-8133170
      */
-    public static final int MIN_BUFFER_SIZE = 32;
-
+    private static final int MIN_BUFFER_SIZE = 32;
     private int bufferSize = DEFAULT_BUFFER_SIZE;
 
     @Override

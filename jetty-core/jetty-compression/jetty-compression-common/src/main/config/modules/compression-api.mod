@@ -13,6 +13,6 @@ experimental
 server
 
 [lib]
-lib/compression/jetty-compression-api-${jetty.version}.jar
+lib/compression/jetty-compression-common-${jetty.version}.jar
 
 

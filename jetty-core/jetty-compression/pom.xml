@@ -15,7 +15,7 @@
   <description>Jetty Core Compression</description>
 
   <modules>
-    <module>jetty-compression-api</module>
+    <module>jetty-compression-common</module>
     <module>jetty-compression-server</module>
     <module>jetty-compression-gzip</module>
     <module>jetty-compression-brotli</module>
