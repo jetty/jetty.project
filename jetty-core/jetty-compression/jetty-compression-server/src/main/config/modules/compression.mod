@@ -17,5 +17,5 @@ server
 lib/compression/jetty-compression-server-${jetty.version}.jar
 
 [xml]
-etc/jetty-compression-handler.xml
+etc/jetty-compression.xml
 
