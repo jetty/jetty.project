@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -196,7 +197,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         return input.read(buffer);
     }
 
-    void writeProxyResponseContent(ServletOutputStream output, ByteBuffer content) throws IOException
+    protected void writeProxyResponseContent(ServletOutputStream output, ByteBuffer content) throws IOException
     {
         write(output, content);
     }
@@ -594,6 +595,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     protected class ProxyWriter implements WriteListener
     {
+        private final AutoLock lock = new AutoLock();
         private final Queue<Chunk> chunks = new ArrayDeque<>();
         private final HttpServletRequest clientRequest;
         private final Response serverResponse;
@@ -610,7 +612,10 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to downstream: {} bytes {}", getRequestId(clientRequest), content.remaining(), callback);
-            return chunks.offer(new Chunk(content, callback));
+            try (AutoLock ignored = lock.lock())
+            {
+                return chunks.offer(new Chunk(content, callback));
+            }
         }
 
         @Override
@@ -640,7 +645,10 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                         return;
                 }
 
-                this.chunk = chunk = chunks.poll();
+                try (AutoLock ignored = lock.lock())
+                {
+                    this.chunk = chunk = chunks.poll();
+                }
                 if (chunk == null)
                     return;
 
