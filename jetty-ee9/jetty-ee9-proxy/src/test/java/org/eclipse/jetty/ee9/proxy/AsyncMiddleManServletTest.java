@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -1641,6 +1642,58 @@ public class AsyncMiddleManServletTest
         IO.copy(zipIn, out2);
         assertArrayEquals(content2, out2.toByteArray());
         assertNull(zipIn.getNextEntry());
+    }
+
+    @Test
+    public void testProxyResponseContentFlush() throws Exception
+    {
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                try
+                {
+                    ServletOutputStream output = response.getOutputStream();
+                    output.write(new byte[16]);
+                    output.flush();
+                    serverLatch.await(5, TimeUnit.SECONDS);
+                    output.write(new byte[32]);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected void writeProxyResponseContent(ServletOutputStream output, ByteBuffer content) throws IOException
+            {
+                super.writeProxyResponseContent(output, content);
+                // Force a flush for every write, to avoid
+                // buffering it in the ServletOutputStream.
+                if (output.isReady())
+                    output.flush();
+            }
+        });
+        startClient();
+
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        client.newRequest("localhost", serverConnector.getLocalPort())
+            // Tell the server to continue to send data only if we receive the first small chunk.
+            .onResponseContent((response, content) -> serverLatch.countDown())
+            .timeout(10, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                clientLatch.countDown();
+            });
+
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void sleep(long delay)
