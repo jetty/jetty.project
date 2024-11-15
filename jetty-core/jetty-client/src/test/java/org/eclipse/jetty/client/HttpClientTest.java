@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -57,12 +56,13 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -78,7 +78,6 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -1939,6 +1938,48 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRequestHeadersSizeOverflow(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
+        int capacity = buffer.capacity();
+        buffer.release();
+        client.setMaxRequestHeadersSize(3 * capacity);
+        connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setRequestHeaderSize(3 * capacity);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            // Overflow the request headers size, but don't exceed the max.
+            .agent("A".repeat(2 * capacity))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testMaxRequestHeadersSize(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
+        int capacity = buffer.capacity();
+        buffer.release();
+        client.setMaxRequestHeadersSize(2 * capacity);
+        connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setRequestHeaderSize(4 * capacity);
+
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            // Overflow the max request headers size.
+            .agent("A".repeat(3 * capacity))
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
+    }
+
     private void assertCopyRequest(Request original)
     {
         Request copy = client.copyRequest(original, original.getURI());
@@ -2014,209 +2055,5 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 .body(new StringRequestContent("0123456789ABCDEF"))
                 .send(this);
         }
-    }
-
-    private static Random rnd = new Random();
-    private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
-
-    public static final int CHARS_LENGTH = CHARS.length();
-
-    protected static String getRandomString(int size)
-    {
-        StringBuilder sb = new StringBuilder(size);
-        while (sb.length() < size)
-        { // length of the random string.
-            int index = rnd.nextInt(CHARS_LENGTH);
-            sb.append(CHARS.charAt(index));
-        }
-        return sb.toString();
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testSmallHeadersSize(Scenario scenario) throws Exception
-    {
-        startClient(scenario);
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
-        destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
-        Request request = client.newRequest(URI.create("http://localhost/"));
-        request.agent(getRandomString(888)); //More than the request buffer size, but less than the default max request headers size
-        final CountDownLatch headersLatch = new CountDownLatch(1);
-        final CountDownLatch successLatch = new CountDownLatch(1);
-        final CountDownLatch failureLatch = new CountDownLatch(1);
-        request.listener(new Request.Listener()
-        {
-            @Override
-            public void onHeaders(Request request)
-            {
-                headersLatch.countDown();
-            }
-
-            @Override
-            public void onSuccess(Request request)
-            {
-                successLatch.countDown();
-            }
-
-            @Override
-            public void onFailure(Request request, Throwable failure)
-            {
-                failureLatch.countDown();
-            }
-        });
-        connection.send(request, null);
-
-        String requestString = endPoint.takeOutputString();
-        assertTrue(requestString.startsWith("GET / HTTP/1.1\r\nAccept-Encoding: gzip\r\n"));
-        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testMaxRequestHeadersSize(Scenario scenario) throws Exception
-    {
-        startClient(scenario);
-        byte[] buffer = new byte[32 * 1024];
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(buffer, buffer.length);
-        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
-        destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
-        Request request = client.newRequest(URI.create("http://localhost/"));
-        //More than the request buffer size, but less than the default max request headers size
-
-        int desiredHeadersSize = 20 * 1024;
-        int currentHeadersSize = 0;
-        int i = 0;
-        while (currentHeadersSize < desiredHeadersSize)
-        {
-            final int index = i++;
-            final String headerValue = getRandomString(800);
-            final int headerSize = headerValue.length();
-            currentHeadersSize += headerSize;
-            request.cookie(new HttpCookie()
-            {
-                @Override
-                public String getName()
-                {
-                    return "large" + index;
-                }
-
-                @Override
-                public String getValue()
-                {
-                    return headerValue;
-                }
-
-                @Override
-                public int getVersion()
-                {
-                    return 0;
-                }
-
-                @Override
-                public Map<String, String> getAttributes()
-                {
-                    return new HashMap<>();
-                }
-            });
-        }
-
-        final CountDownLatch headersLatch = new CountDownLatch(1);
-        final CountDownLatch successLatch = new CountDownLatch(1);
-        request.listener(new Request.Listener()
-        {
-            @Override
-            public void onHeaders(Request request)
-            {
-                headersLatch.countDown();
-            }
-
-            @Override
-            public void onSuccess(Request request)
-            {
-                successLatch.countDown();
-            }
-        });
-        connection.send(request, null);
-
-        String requestString = endPoint.takeOutputString();
-        assertTrue(requestString.startsWith("GET / HTTP/1.1\r\nAccept-Encoding: gzip\r\n"));
-        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(successLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testMaxRequestHeadersSizeOverflow(Scenario scenario) throws Exception
-    {
-        startClient(scenario);
-        byte[] buffer = new byte[32 * 1024];
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(buffer, buffer.length);
-        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
-        destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
-        Request request = client.newRequest(URI.create("http://localhost/"));
-        //More than the request buffer size, but less than the default max request headers size
-
-        int desiredHeadersSize = 35 * 1024;
-        int currentHeadersSize = 0;
-        int i = 0;
-        while (currentHeadersSize < desiredHeadersSize)
-        {
-            final int index = i++;
-            final String headerValue = getRandomString(800);
-            final int headerSize = headerValue.length();
-            currentHeadersSize += headerSize;
-            request.cookie(new HttpCookie()
-            {
-                @Override
-                public String getName()
-                {
-                    return "large" + index;
-                }
-
-                @Override
-                public String getValue()
-                {
-                    return headerValue;
-                }
-
-                @Override
-                public int getVersion()
-                {
-                    return 0;
-                }
-
-                @Override
-                public Map<String, String> getAttributes()
-                {
-                    return new HashMap<>();
-                }
-            });
-        }
-
-        final CountDownLatch headersLatch = new CountDownLatch(1);
-        final CountDownLatch failureLatch = new CountDownLatch(1);
-        request.listener(new Request.Listener()
-        {
-            @Override
-            public void onHeaders(Request request)
-            {
-                headersLatch.countDown();
-            }
-
-            @Override
-            public void onFailure(Request request, Throwable failure)
-            {
-                failureLatch.countDown();
-            }
-        });
-        connection.send(request, null);
-
-        assertTrue(headersLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -39,8 +39,6 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     private int headerCacheSize = 1024;
     private boolean headerCacheCaseSensitive;
 
-    private int maxRequestHeadersSize = 32 * 1024;
-
     public HttpClientTransportOverHTTP()
     {
         this(1);
@@ -128,19 +126,5 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     public void setInitializeConnections(boolean initialize)
     {
         factory.setInitializeConnections(initialize);
-    }
-
-    /**
-     * @return The maximum allowed size in bytes for the HTTP request headers
-     */
-    @ManagedAttribute("The maximum allowed size in bytes for the HTTP request headers")
-    public int getMaxRequestHeadersSize()
-    {
-        return maxRequestHeadersSize;
-    }
-
-    public void setMaxRequestHeadersSize(int maxRequestHeadersSize)
-    {
-        this.maxRequestHeadersSize = maxRequestHeadersSize;
     }
 }

@@ -16,9 +16,7 @@ package org.eclipse.jetty.client.transport.internal;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpRequestException;
-import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpSender;
@@ -52,6 +50,7 @@ public class HttpSenderOverHTTP extends HttpSender
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
+        generator.setMaxHeaderBytes(channel.getHttpDestination().getHttpClient().getMaxRequestHeadersSize());
     }
 
     @Override
@@ -160,6 +159,7 @@ public class HttpSenderOverHTTP extends HttpSender
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             HttpExchange exchange = getHttpExchange();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+            int requestHeadersSize = httpClient.getRequestBufferSize();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -176,33 +176,23 @@ public class HttpSenderOverHTTP extends HttpSender
                 {
                     case NEED_HEADER:
                     {
-                        headerBuffer = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
+                        headerBuffer = bufferPool.acquire(requestHeadersSize, useDirectByteBuffers);
                         break;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        int maxRequestHeadersSize = -1;
-                        //For HTTP1.1 only
-                        HttpClientTransport transport = httpClient.getTransport();
-                        if (transport instanceof HttpClientTransportOverHTTP httpTransport)
+                        int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
+                        if (maxRequestHeadersSize > requestHeadersSize)
                         {
-                            maxRequestHeadersSize = httpTransport.getMaxRequestHeadersSize();
-                        }
-                        if (headerBuffer.capacity() < maxRequestHeadersSize)
-                        {
-                            RetainableByteBuffer newHeaderBuffer = bufferPool.acquire(maxRequestHeadersSize, useDirectByteBuffers);
-                            headerBuffer.getByteBuffer().flip();
-                            newHeaderBuffer.getByteBuffer().put(headerBuffer.getByteBuffer());
-                            RetainableByteBuffer toRelease = headerBuffer;
-                            headerBuffer  = newHeaderBuffer;
-                            toRelease.release();
+                            generator.reset();
+                            headerBuffer.release();
+                            headerBuffer = bufferPool.acquire(maxRequestHeadersSize, useDirectByteBuffers);
+                            requestHeadersSize = maxRequestHeadersSize;
                             break;
                         }
                         else
                         {
-                            headerBuffer.release();
-                            headerBuffer = null;
-                            throw new IllegalArgumentException("Request header too large");
+                            throw new IllegalArgumentException("Request headers too large");
                         }
                     }
                     case NEED_CHUNK:
