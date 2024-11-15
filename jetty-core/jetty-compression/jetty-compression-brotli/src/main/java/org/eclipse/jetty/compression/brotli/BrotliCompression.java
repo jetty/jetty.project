@@ -101,10 +101,10 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public void setDefaultDecoderConfig(DecoderConfig config)
+    public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
     {
-        BrotliDecoderConfig brotliDecoderConfig = BrotliDecoderConfig.class.cast(config);
-        this.defaultDecoderConfig = brotliDecoderConfig;
+        BrotliDecoderConfig brotliDecoderConfig = (BrotliDecoderConfig)config;
+        return new BrotliInputStream(in, brotliDecoderConfig.getBufferSize());
     }
 
     @Override
@@ -114,10 +114,10 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public void setDefaultEncoderConfig(EncoderConfig config)
+    public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
     {
-        BrotliEncoderConfig brotliEncoderConfig = BrotliEncoderConfig.class.cast(config);
-        this.defaultEncoderConfig = Objects.requireNonNull(brotliEncoderConfig);
+        BrotliDecoderConfig brotliDecoderConfig = (BrotliDecoderConfig)config;
+        return new BrotliDecoderSource(source, brotliDecoderConfig);
     }
 
     @Override
@@ -151,31 +151,30 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
-    {
-        BrotliDecoderConfig brotliDecoderConfig = BrotliDecoderConfig.class.cast(config);
-        return new BrotliInputStream(in, config.getBufferSize());
-    }
-
-    @Override
-    public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
-    {
-        BrotliDecoderConfig brotliDecoderConfig = BrotliDecoderConfig.class.cast(config);
-        return new BrotliDecoderSource(source, brotliDecoderConfig);
-    }
-
-    @Override
     public OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException
     {
-        BrotliEncoderConfig brotliEncoderConfig = BrotliEncoderConfig.class.cast(config);
+        BrotliEncoderConfig brotliEncoderConfig = (BrotliEncoderConfig)config;
         return new BrotliOutputStream(out, brotliEncoderConfig.asEncoderParams());
     }
 
     @Override
     public EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config)
     {
-        BrotliEncoderConfig brotliEncoderConfig = BrotliEncoderConfig.class.cast(config);
+        BrotliEncoderConfig brotliEncoderConfig = (BrotliEncoderConfig)config;
         return new BrotliEncoderSink(sink, brotliEncoderConfig);
+    }
+
+    @Override
+    public void setDefaultDecoderConfig(DecoderConfig config)
+    {
+        this.defaultDecoderConfig = (BrotliDecoderConfig)config;
+    }
+
+    @Override
+    public void setDefaultEncoderConfig(EncoderConfig config)
+    {
+        BrotliEncoderConfig brotliEncoderConfig = (BrotliEncoderConfig)config;
+        this.defaultEncoderConfig = Objects.requireNonNull(brotliEncoderConfig);
     }
 
     private ByteOrder getByteOrder()
