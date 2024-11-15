@@ -32,10 +32,12 @@ import org.eclipse.jetty.http.HttpHeader;
 public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
 {
     private final Response delegate;
+    private final Map<String, List<String>> headers;
 
     public DelegatedJettyClientUpgradeResponse(Response response)
     {
         this.delegate = response;
+        this.headers = HttpFields.asMap(delegate.getHeaders());
     }
 
     @Override
@@ -65,7 +67,7 @@ public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return HttpFields.asMap(delegate.getHeaders());
+        return headers;
     }
 
     @Override

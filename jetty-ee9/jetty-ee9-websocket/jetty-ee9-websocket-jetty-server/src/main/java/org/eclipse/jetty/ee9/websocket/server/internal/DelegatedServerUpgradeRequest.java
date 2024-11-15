@@ -46,6 +46,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     private final String queryString;
     private final ServerUpgradeRequest upgradeRequest;
     private final HttpServletRequest httpServletRequest;
+    private final Map<String, List<String>> headers;
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
 
@@ -55,6 +56,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
         this.upgradeRequest = request;
         this.queryString = httpServletRequest.getQueryString();
+        this.headers = HttpFields.asMap(upgradeRequest.getHeaders());
 
         try
         {
@@ -114,7 +116,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return HttpFields.asMap(upgradeRequest.getHeaders());
+        return headers;
     }
 
     @Override

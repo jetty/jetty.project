@@ -19,7 +19,6 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -69,6 +68,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
     private WebSocketSession session;
+    private byte messageType;
 
     public JettyWebSocketFrameHandler(WebSocketContainer container, Object endpointInstance, JettyWebSocketFrameHandlerMetadata metadata)
     {
@@ -193,44 +193,36 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback coreCallback)
     {
-        CompletableFuture<Void> frameCallback = null;
+        if (frame.getOpCode() == OpCode.TEXT || frame.getOpCode() == OpCode.BINARY)
+            messageType = frame.getOpCode();
+
         if (frameHandle != null)
         {
             try
             {
-                frameCallback = new org.eclipse.jetty.websocket.api.Callback.Completable();
-                frameHandle.invoke(new JettyWebSocketFrame(frame), frameCallback);
+                byte effectiveOpCode = frame.isDataFrame() ? messageType : frame.getOpCode();
+                frameHandle.invoke(new JettyWebSocketFrame(frame, effectiveOpCode),
+                    org.eclipse.jetty.websocket.api.Callback.from(coreCallback::succeeded, coreCallback::failed));
             }
             catch (Throwable cause)
             {
                 coreCallback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause));
-                return;
             }
+
+            autoDemand();
+            return;
         }
 
-        Callback.Completable eventCallback = new Callback.Completable();
         switch (frame.getOpCode())
         {
-            case OpCode.CLOSE -> onCloseFrame(frame, eventCallback);
-            case OpCode.PING -> onPingFrame(frame, eventCallback);
-            case OpCode.PONG -> onPongFrame(frame, eventCallback);
-            case OpCode.TEXT -> onTextFrame(frame, eventCallback);
-            case OpCode.BINARY -> onBinaryFrame(frame, eventCallback);
-            case OpCode.CONTINUATION -> onContinuationFrame(frame, eventCallback);
+            case OpCode.TEXT -> onTextFrame(frame, coreCallback);
+            case OpCode.BINARY -> onBinaryFrame(frame, coreCallback);
+            case OpCode.CONTINUATION -> onContinuationFrame(frame, coreCallback);
+            case OpCode.PING -> onPingFrame(frame, coreCallback);
+            case OpCode.PONG -> onPongFrame(frame, coreCallback);
+            case OpCode.CLOSE -> onCloseFrame(frame, coreCallback);
             default -> coreCallback.failed(new IllegalStateException());
-        };
-
-        // Combine the callback from the frame handler and the event handler.
-        CompletableFuture<Void> callback = eventCallback;
-        if (frameCallback != null)
-            callback = frameCallback.thenCompose(ignored -> eventCallback);
-        callback.whenComplete((r, x) ->
-        {
-            if (x == null)
-                coreCallback.succeeded();
-            else
-                coreCallback.failed(x);
-        });
+        }
     }
 
     @Override
@@ -358,6 +350,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
         else
         {
+            callback.succeeded();
             internalDemand();
         }
     }

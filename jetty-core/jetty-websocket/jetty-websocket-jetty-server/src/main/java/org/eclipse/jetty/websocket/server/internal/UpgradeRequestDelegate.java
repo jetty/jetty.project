@@ -35,10 +35,12 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 class UpgradeRequestDelegate implements UpgradeRequest
 {
     private final ServerUpgradeRequest request;
+    private final Map<String, List<String>> headers;
 
     UpgradeRequestDelegate(ServerUpgradeRequest request)
     {
         this.request = request;
+        this.headers = HttpFields.asMap(request.getHeaders());
     }
 
     @Override
@@ -72,7 +74,7 @@ class UpgradeRequestDelegate implements UpgradeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return HttpFields.asMap(request.getHeaders());
+        return headers;
     }
 
     @Override

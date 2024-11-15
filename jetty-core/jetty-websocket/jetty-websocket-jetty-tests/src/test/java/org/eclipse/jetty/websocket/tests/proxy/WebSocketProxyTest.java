@@ -18,6 +18,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -32,7 +33,10 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.exceptions.WebSocketException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -44,6 +48,8 @@ import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -265,9 +271,6 @@ public class WebSocketProxyTest
     @Test
     public void testPingPong() throws Exception
     {
-        PingPongSocket serverEndpoint = new PingPongSocket();
-        serverSocket = serverEndpoint;
-
         PingPongSocket clientSocket = new PingPongSocket();
         client.connect(clientSocket, proxyUri);
         assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
@@ -276,12 +279,10 @@ public class WebSocketProxyTest
         // Test unsolicited pong from client.
         ByteBuffer b2 = BufferUtil.toBuffer("unsolicited pong from client");
         clientSocket.session.sendPong(b2, Callback.NOOP);
-        assertThat(serverEndpoint.pingMessages.size(), is(0));
-        assertThat(serverEndpoint.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("unsolicited pong from client")));
 
         // Test unsolicited pong from server.
         ByteBuffer b1 = BufferUtil.toBuffer("unsolicited pong from server");
-        serverEndpoint.session.sendPong(b1, Callback.NOOP);
+        serverSocket.session.sendPong(b1, Callback.NOOP);
         assertThat(clientSocket.pingMessages.size(), is(0));
         assertThat(clientSocket.pongMessages.poll(5, TimeUnit.SECONDS), is(BufferUtil.toBuffer("unsolicited pong from server")));
 
@@ -293,7 +294,6 @@ public class WebSocketProxyTest
         }
         for (int i = 0; i < 15; i++)
         {
-            assertThat(serverEndpoint.pingMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
             assertThat(clientSocket.pongMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
         }
 
@@ -301,12 +301,11 @@ public class WebSocketProxyTest
         for (int i = 0; i < 23; i++)
         {
             ByteBuffer b = intToStringByteBuffer(i);
-            serverEndpoint.session.sendPing(b, Callback.NOOP);
+            serverSocket.session.sendPing(b, Callback.NOOP);
         }
         for (int i = 0; i < 23; i++)
         {
             assertThat(clientSocket.pingMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
-            assertThat(serverEndpoint.pongMessages.poll(5, TimeUnit.SECONDS), is(intToStringByteBuffer(i)));
         }
 
         clientSocket.session.close(StatusCode.NORMAL, "closing from test", Callback.NOOP);
@@ -328,7 +327,6 @@ public class WebSocketProxyTest
 
         // Check we had no unexpected pings or pongs sent.
         assertThat(clientSocket.pingMessages.size(), is(0));
-        assertThat(serverEndpoint.pingMessages.size(), is(0));
     }
 
     private ByteBuffer intToStringByteBuffer(int i)
@@ -337,20 +335,74 @@ public class WebSocketProxyTest
     }
 
     @WebSocket
-    public static class PingPongSocket extends EventSocket
+    public static class PingPongSocket
     {
         public BlockingQueue<ByteBuffer> pingMessages = new BlockingArrayQueue<>();
         public BlockingQueue<ByteBuffer> pongMessages = new BlockingArrayQueue<>();
+
+        private static final Logger LOG = LoggerFactory.getLogger(EventSocket.class);
+
+        public Session session;
+
+        public volatile int closeCode = StatusCode.UNDEFINED;
+        public volatile String closeReason;
+        public volatile Throwable error = null;
+
+        public CountDownLatch openLatch = new CountDownLatch(1);
+        public CountDownLatch errorLatch = new CountDownLatch(1);
+        public CountDownLatch closeLatch = new CountDownLatch(1);
+
+        @OnWebSocketOpen
+        public void onOpen(Session session)
+        {
+            this.session = session;
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}  onOpen(): {}", this, session);
+            openLatch.countDown();
+        }
 
         @OnWebSocketFrame
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
             switch (frame.getOpCode())
             {
-                case OpCode.PING -> pingMessages.add(BufferUtil.copy(frame.getPayload()));
-                case OpCode.PONG -> pongMessages.add(BufferUtil.copy(frame.getPayload()));
+                case OpCode.PING ->
+                {
+                    pingMessages.add(BufferUtil.copy(frame.getPayload()));
+                    session.sendPong(frame.getPayload(), callback);
+                }
+                case OpCode.PONG ->
+                {
+                    pongMessages.add(BufferUtil.copy(frame.getPayload()));
+                    callback.succeed();
+                }
+                default -> callback.succeed();
             }
-            callback.succeed();
+        }
+
+        @OnWebSocketClose
+        public void onClose(int statusCode, String reason)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}  onClose(): {}:{}", this, statusCode, reason);
+            this.closeCode = statusCode;
+            this.closeReason = reason;
+            closeLatch.countDown();
+        }
+
+        @OnWebSocketError
+        public void onError(Throwable cause)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}  onError(): {}", this, cause);
+            error = cause;
+            errorLatch.countDown();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("[%s@%x]", getClass().getSimpleName(), hashCode());
         }
     }
 

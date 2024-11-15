@@ -101,4 +101,22 @@ public interface Frame
     boolean isRsv2();
 
     boolean isRsv3();
+
+    default CloseStatus getCloseStatus()
+    {
+        return null;
+    }
+
+    record CloseStatus(int statusCode, String reason)
+    {
+    }
+
+    /**
+     * The effective opcode of the frame accounting for the CONTINUATION opcode.
+     * If the frame is a CONTINUATION frame for a TEXT message, this will return TEXT.
+     * If the frame is a CONTINUATION frame for a BINARY message, this will return BINARY.
+     * Otherwise, this will return the same opcode as the frame.
+     * @return the effective opcode of the frame.
+     */
+    byte getEffectiveOpCode();
 }

@@ -32,12 +32,14 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
 {
     private final ServerUpgradeResponse upgradeResponse;
     private final HttpServletResponse httpServletResponse;
+    private final Map<String, List<String>> headers;
 
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
         this.upgradeResponse = response;
         this.httpServletResponse = (HttpServletResponse)response.getRequest()
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
+        this.headers = HttpFields.asMap(upgradeResponse.getHeaders());
     }
 
     @Override
@@ -87,7 +89,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return HttpFields.asMap(upgradeResponse.getHeaders());
+        return headers;
     }
 
     @Override

@@ -58,6 +58,46 @@ public interface Callback
     }
 
     /**
+     * Creates a nested callback that runs completed after
+     * completing the nested callback.
+     *
+     * @param callback The nested callback
+     * @param completed The completion to run after the nested callback is completed
+     * @return a new callback.
+     */
+    static Callback from(Callback callback, Runnable completed)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeed()
+            {
+                try
+                {
+                    callback.succeed();
+                }
+                finally
+                {
+                    completed.run();
+                }
+            }
+
+            @Override
+            public void fail(Throwable x)
+            {
+                try
+                {
+                    callback.fail(x);
+                }
+                finally
+                {
+                    completed.run();
+                }
+            }
+        };
+    }
+
+    /**
      * <p>Method to invoke to succeed the callback.</p>
      *
      * @see #fail(Throwable)

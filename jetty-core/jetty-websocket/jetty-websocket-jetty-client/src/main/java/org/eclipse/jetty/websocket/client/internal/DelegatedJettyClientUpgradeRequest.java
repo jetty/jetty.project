@@ -41,10 +41,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 {
     private final CoreClientUpgradeRequest delegate;
+    private final Map<String, List<String>> headers;
 
     public DelegatedJettyClientUpgradeRequest(CoreClientUpgradeRequest delegate)
     {
         this.delegate = delegate;
+        this.headers = HttpFields.asMap(delegate.getHeaders());
     }
 
     @Override
@@ -79,7 +81,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return HttpFields.asMap(delegate.getHeaders());
+        return headers;
     }
 
     @Override

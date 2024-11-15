@@ -46,6 +46,7 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
     public void setBinaryHandle(Class<? extends MessageSink> sinkClass, MethodHandle binary, Object origin)
     {
         assertNotSet(this.binaryHandle, "BINARY Handler", origin);
+        assertNotSet(this.frameHandle, "FRAME Handler", origin);
         this.binaryHandle = binary;
         this.binarySink = sinkClass;
     }
@@ -85,6 +86,10 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
     public void setFrameHandle(MethodHandle frame, Object origin)
     {
         assertNotSet(this.frameHandle, "FRAME Handler", origin);
+        assertNotSet(this.textHandle, "TEXT Handler", origin);
+        assertNotSet(this.binaryHandle, "BINARY Handler", origin);
+        assertNotSet(this.pingHandle, "PING Handler", origin);
+        assertNotSet(this.pongHandle, "PONG Handler", origin);
         this.frameHandle = frame;
     }
 
@@ -107,6 +112,7 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
     public void setPingHandle(MethodHandle ping, Object origin)
     {
         assertNotSet(this.pingHandle, "PING Handler", origin);
+        assertNotSet(this.frameHandle, "FRAME Handler", origin);
         this.pingHandle = ping;
     }
 
@@ -118,6 +124,7 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
     public void setPongHandle(MethodHandle pong, Object origin)
     {
         assertNotSet(this.pongHandle, "PONG Handler", origin);
+        assertNotSet(this.frameHandle, "FRAME Handler", origin);
         this.pongHandle = pong;
     }
 
@@ -129,6 +136,7 @@ public class JettyWebSocketFrameHandlerMetadata extends Configuration.Configurat
     public void setTextHandle(Class<? extends MessageSink> sinkClass, MethodHandle text, Object origin)
     {
         assertNotSet(this.textHandle, "TEXT Handler", origin);
+        assertNotSet(this.frameHandle, "FRAME Handler", origin);
         this.textHandle = text;
         this.textSink = sinkClass;
     }
