@@ -106,9 +106,9 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.addCompression(compression);
         CompressionConfig config = CompressionConfig.builder()
-            .compressEncodingInclude("br")
-            .compressEncodingInclude("gzip")
-            .compressEncodingExclude("zstd")
+            .compressIncludeEncoding("br")
+            .compressIncludeEncoding("gzip")
+            .compressExcludeEncoding("zstd")
             .build();
 
         compressionHandler.putConfiguration("/", config);
@@ -155,7 +155,8 @@ public class CompressionHandlerTest extends AbstractCompressionTest
 
     /**
      * Testing how CompressionHandler acts with a single compression implementation added.
-     * Configuration is only using {@code compressPath} excluding {@code *.png} paths, and including {@code /path/*}
+     * Configuration is only using {@code compressMimeTypes} excluding {@code image/png}, and including both
+     * {@code text/plain} and {@code image/svg+xml}
      */
     @ParameterizedTest
     @CsvSource(textBlock = """
@@ -176,11 +177,11 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         gzip,      images/logo.png,  image/png,                /images/logo.png,           false
         gzip,      images/logo.png,  image/png,                /path/deep/images/logo.png, false
         """)
-    public void testCompressPathConfig(String compressionType,
-                                       String resourceName,
-                                       String resourceContentType,
-                                       String requestedPath,
-                                       boolean expectedIsCompressed) throws Exception
+    public void testCompressMimeTypesConfig(String compressionType,
+                                            String resourceName,
+                                            String resourceContentType,
+                                            String requestedPath,
+                                            boolean expectedIsCompressed) throws Exception
     {
         newCompression(compressionType);
         Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
@@ -189,8 +190,9 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.addCompression(compression);
         CompressionConfig config = CompressionConfig.builder()
-            .compressPathInclude("/path/*")
-            .compressPathExclude("*.png")
+            .compressIncludeMimeType("text/plain")
+            .compressIncludeMimeType("image/svg+xml")
+            .compressExcludeMimeType("image/png")
             .build();
 
         compressionHandler.putConfiguration("/", config);
@@ -356,8 +358,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
 
     /**
      * Testing how CompressionHandler acts with a single compression implementation added.
-     * Configuration is only using {@code compressMimeTypes} excluding {@code image/png}, and including both
-     * {@code text/plain} and {@code image/svg+xml}
+     * Configuration is only using {@code compressPath} excluding {@code *.png} paths, and including {@code /path/*}
      */
     @ParameterizedTest
     @CsvSource(textBlock = """
@@ -378,11 +379,11 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         gzip,      images/logo.png,  image/png,                /images/logo.png,           false
         gzip,      images/logo.png,  image/png,                /path/deep/images/logo.png, false
         """)
-    public void testCompressMimeTypesConfig(String compressionType,
-                                            String resourceName,
-                                            String resourceContentType,
-                                            String requestedPath,
-                                            boolean expectedIsCompressed) throws Exception
+    public void testCompressPathConfig(String compressionType,
+                                       String resourceName,
+                                       String resourceContentType,
+                                       String requestedPath,
+                                       boolean expectedIsCompressed) throws Exception
     {
         newCompression(compressionType);
         Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
@@ -391,9 +392,8 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.addCompression(compression);
         CompressionConfig config = CompressionConfig.builder()
-            .compressMimeTypeInclude("text/plain")
-            .compressMimeTypeInclude("image/svg+xml")
-            .compressMimeTypeExclude("image/png")
+            .compressIncludePath("/path/*")
+            .compressExcludePath("*.png")
             .build();
 
         compressionHandler.putConfiguration("/", config);
@@ -469,10 +469,10 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.addCompression(compression);
         CompressionConfig config = CompressionConfig.builder()
-            .decompressMethodInclude("GET")
-            .decompressMethodInclude("POST")
-            .decompressMethodExclude("PUT")
-            .compressEncodingExclude(compression.getEncodingName()) // don't compress the responses
+            .decompressIncludeMethod("GET")
+            .decompressIncludeMethod("POST")
+            .decompressExcludeMethod("PUT")
+            .compressExcludeEncoding(compression.getEncodingName()) // don't compress the responses
             .build();
 
         compressionHandler.putConfiguration("/", config);
