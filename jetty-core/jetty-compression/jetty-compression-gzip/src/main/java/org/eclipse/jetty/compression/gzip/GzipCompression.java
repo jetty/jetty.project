@@ -24,8 +24,8 @@ import org.eclipse.jetty.compression.DecoderConfig;
 import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.EncoderConfig;
 import org.eclipse.jetty.compression.EncoderSink;
-import org.eclipse.jetty.compression.gzip.internal.ConfiguredGzipInputStream;
-import org.eclipse.jetty.compression.gzip.internal.ConfiguredGzipOutputStream;
+import org.eclipse.jetty.compression.gzip.internal.ConfigurableGzipInputStream;
+import org.eclipse.jetty.compression.gzip.internal.ConfigurableGzipOutputStream;
 import org.eclipse.jetty.compression.gzip.internal.GzipDecoderSource;
 import org.eclipse.jetty.compression.gzip.internal.GzipEncoderSink;
 import org.eclipse.jetty.http.HttpField;
@@ -156,7 +156,7 @@ public class GzipCompression extends Compression
     public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
     {
         GzipDecoderConfig gzipDecoderConfig = (GzipDecoderConfig)config;
-        return new ConfiguredGzipInputStream(in, gzipDecoderConfig);
+        return new ConfigurableGzipInputStream(in, gzipDecoderConfig);
     }
 
     @Override
@@ -170,7 +170,7 @@ public class GzipCompression extends Compression
     public OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException
     {
         GzipEncoderConfig gzipEncoderConfig = (GzipEncoderConfig)config;
-        return new ConfiguredGzipOutputStream(out, gzipEncoderConfig);
+        return new ConfigurableGzipOutputStream(out, gzipEncoderConfig);
     }
 
     @Override

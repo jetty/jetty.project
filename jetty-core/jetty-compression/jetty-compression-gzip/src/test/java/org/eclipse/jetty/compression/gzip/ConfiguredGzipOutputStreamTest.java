@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.compression.gzip.internal.ConfiguredGzipOutputStream;
+import org.eclipse.jetty.compression.gzip.internal.ConfigurableGzipOutputStream;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -36,7 +36,7 @@ public class ConfiguredGzipOutputStreamTest extends AbstractGzipTest
         GzipEncoderConfig config = new GzipEncoderConfig();
         config.setCompressionLevel(Deflater.BEST_COMPRESSION);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ConfiguredGzipOutputStream gzipOutputStream = new ConfiguredGzipOutputStream(baos, config))
+             ConfigurableGzipOutputStream gzipOutputStream = new ConfigurableGzipOutputStream(baos, config))
         {
             List<String> entries = List.of("Hello", " World", "!");
             for (String entry : entries)
