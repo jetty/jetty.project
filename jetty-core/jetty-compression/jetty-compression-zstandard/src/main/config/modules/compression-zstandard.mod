@@ -10,13 +10,13 @@ compression
 experimental
 
 [depend]
-compression-common
 compression
 
 [files]
 maven://com.github.luben/zstd-jni/${zstd-jni.version}|lib/compression/zstd-jni-${zstd-jni.version}.jar
 
 [lib]
+lib/compression/jetty-compression-common-${jetty.version}.jar
 lib/compression/zstd-jni-${zstd-jni.version}.jar
 
 [xml]

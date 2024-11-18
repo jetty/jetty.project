@@ -136,7 +136,7 @@ public class CompressionConfig extends AbstractLifeCycle
      * Get the set of excluded Path Specs for response compression.
      *
      * @return the set of excluded Path Specs
-     * @see #getCompressPathIncludes()
+     * @see #getCompressIncludesPath()
      */
     @ManagedAttribute("Set of Response Compression Path Exclusions")
     public Set<String> getCompressExcludePaths()
@@ -178,7 +178,7 @@ public class CompressionConfig extends AbstractLifeCycle
      * @see #getCompressExcludePaths()
      */
     @ManagedAttribute("Set of Response Compression Path Exclusions")
-    public Set<String> getCompressPathIncludes()
+    public Set<String> getCompressIncludesPath()
     {
         Set<String> includes = compressPaths.getIncluded();
         return Collections.unmodifiableSet(includes);

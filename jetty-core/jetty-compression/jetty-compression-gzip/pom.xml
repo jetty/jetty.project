@@ -20,7 +20,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.compression</groupId>
       <artifactId>jetty-compression-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

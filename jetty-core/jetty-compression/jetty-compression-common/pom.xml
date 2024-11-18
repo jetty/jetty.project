@@ -14,7 +14,7 @@
   <name>Core :: Compression :: Common</name>
   <description>Jetty Core Compression Common</description>
   <properties>
-    <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>
