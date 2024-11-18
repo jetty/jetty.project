@@ -16,7 +16,7 @@ compression
 maven://com.aayushatharva.brotli4j/brotli4j/${brotli4j.version}|lib/compression/brotli4j-${brotli4j.version}.jar
 
 [lib]
-lib/compression/jetty-compression-common-${jetty.version}.jar
+lib/compression/jetty-compression-brotli-${jetty.version}.jar
 lib/compression/brotli4j-${brotli4j.version}.jar
 
 [xml]
