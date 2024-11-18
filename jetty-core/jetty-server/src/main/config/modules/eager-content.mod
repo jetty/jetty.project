@@ -13,8 +13,8 @@ server
 
 [after]
 compression
-cross-origin
 gzip
+cross-origin
 rewrite
 size-limit
 

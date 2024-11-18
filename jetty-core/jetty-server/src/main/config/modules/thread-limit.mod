@@ -5,10 +5,6 @@ the number of requests per IP address, for denial-of-service protection.
 [tags]
 server
 
-[before]
-compression
-gzip
-
 [depends]
 server
 

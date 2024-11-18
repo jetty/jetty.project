@@ -186,12 +186,12 @@ public class Module implements Comparable<Module>
         }
         if (m < 0)
             throw new IllegalArgumentException("Module not contained within modules directory: " + basehome.toShortForm(path));
-        String n = path.getName(m + 1).toString();
+        StringBuilder n = new StringBuilder(path.getName(m + 1).toString());
         for (int i = m + 2; i < path.getNameCount(); i++)
         {
-            n = n + "/" + path.getName(i).toString();
+            n.append("/").append(path.getName(i));
         }
-        Matcher matcher = MOD_NAME.matcher(n);
+        Matcher matcher = MOD_NAME.matcher(n.toString());
         if (!matcher.matches())
             throw new IllegalArgumentException("Module filename must have .mod extension: " + basehome.toShortForm(path));
         _name = matcher.group(1);
@@ -248,7 +248,7 @@ public class Module implements Comparable<Module>
 
     public void expandDependencies(Props props)
     {
-        Function<String, String> expander = d -> props.expand(d);
+        Function<String, String> expander = props::expand;
 
         List<String> tmp = _depends.stream().map(expander).collect(Collectors.toList());
         _depends.clear();
@@ -329,7 +329,7 @@ public class Module implements Comparable<Module>
 
     public boolean hasLicense()
     {
-        return (_license != null) && (_license.size() > 0);
+        return !_license.isEmpty();
     }
 
     /**
@@ -383,7 +383,7 @@ public class Module implements Comparable<Module>
                 else
                 {
                     // blank lines and comments are valid for ini-template section
-                    if ((line.length() == 0) || line.startsWith("#"))
+                    if ((line.isEmpty()) || line.startsWith("#"))
                     {
                         // Remember ini comments and whitespace (empty lines)
                         // for the [ini-template] section
@@ -554,6 +554,11 @@ public class Module implements Comparable<Module>
     public List<String> getDepends()
     {
         return new ArrayList<>(_depends);
+    }
+
+    public boolean isDeprecated()
+    {
+        return !_deprecated.isEmpty();
     }
 
     public List<String> getDeprecated()

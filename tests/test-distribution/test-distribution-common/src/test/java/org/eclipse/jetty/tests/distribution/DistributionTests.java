@@ -1177,11 +1177,20 @@ public class DistributionTests extends AbstractJettyHomeTest
         );
         Files.write(deprecatedModule, lines, StandardOpenOption.CREATE);
 
+        try (JettyHomeTester.Run listConfigRun = distribution.start(List.of("--list-modules")))
+        {
+            assertTrue(listConfigRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, listConfigRun.getExitValue());
+
+            assertTrue(listConfigRun.getLogs().stream().noneMatch(log -> log.contains("DEPRECATED")));
+        }
+
         try (JettyHomeTester.Run listConfigRun = distribution.start(List.of("--list-modules=deprecated")))
         {
             assertTrue(listConfigRun.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, listConfigRun.getExitValue());
 
+            assertTrue(listConfigRun.getLogs().stream().anyMatch(log -> log.contains("DEPRECATED")));
             assertTrue(listConfigRun.getLogs().stream().anyMatch(log -> log.contains(description)));
         }
 
