@@ -131,6 +131,10 @@
     <module>jetty-home</module>
     <module>jetty-integrations</module>
     <module>tests</module>
+<<<<<<< HEAD
+=======
+    <!--module>javadoc</module-->
+>>>>>>> 7d280532f6e (test javadoc snapshot)
     <module>documentation</module>
     <module>jetty-p2</module>
   </modules>
@@ -359,7 +363,11 @@
     <maven.install.plugin.version>3.1.3</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.8.1</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
+<<<<<<< HEAD
     <maven.javadoc.plugin.version>3.11.2</maven.javadoc.plugin.version>
+=======
+    <maven.javadoc.plugin.version>3.11.2-SNAPSHOT</maven.javadoc.plugin.version>
+>>>>>>> 7d280532f6e (test javadoc snapshot)
     <maven.plugin-tools.version>3.15.1</maven.plugin-tools.version>
     <maven.release.plugin.version>3.1.0</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.2.0</maven.remote-resources-plugin.version>
@@ -2851,6 +2859,7 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-javadoc-plugin</artifactId>
               <configuration>
+<<<<<<< HEAD
                 <additionalDependencies>
                   <additionalDependency>
                     <groupId>jakarta.transaction</groupId>
@@ -2866,6 +2875,7 @@
                 <disableSourcepathUsage>true</disableSourcepathUsage>
                 <legacyMode>true</legacyMode>
                 <skippedModules>org.eclipse.jetty.*.demos:.*,
+                  org.eclipse.jetty.ee11:jetty-ee11-test.*,
                   org.eclipse.jetty.ee10:jetty-ee10-test.*,
                   org.eclipse.jetty.ee9:jetty-ee9-test.*,
                   jetty-.*-runner,
