@@ -177,7 +177,7 @@ public class CompressionConfig extends AbstractLifeCycle
      * @return the set of included Path Specs
      * @see #getCompressExcludePaths()
      */
-    @ManagedAttribute("Set of Response Compression Path Exclusions")
+    @ManagedAttribute("Set of Response Compression Path Inclusions")
     public Set<String> getCompressIncludePaths()
     {
         Set<String> includes = compressPaths.getIncluded();
@@ -196,7 +196,7 @@ public class CompressionConfig extends AbstractLifeCycle
      * @return the preferred order of encoders.
      * @see Builder#compressPreferredEncoderOrder(List)
      */
-    @ManagedAttribute()
+    @ManagedAttribute("Preferred Compression Encoder Order")
     public List<String> getCompressPreferredEncoderOrder()
     {
         return Collections.unmodifiableList(compressPreferredEncoderOrder);
