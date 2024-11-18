@@ -40,7 +40,7 @@ public class CompressionConfigTest
         br, gzip          | gzip, br        | br, gzip
         zstd, br          | gzip, br, zstd  | zstd, br
         zstd, br, gzip    | *               | zstd, br, gzip
-                          | *               |   
+                          | *               |
         """)
     public void testCalcPreferredEncoders(String preferredEncoderOrderCsv, String acceptEncodingHeaderValuesCsv, String expectedEncodersCsv)
     {
