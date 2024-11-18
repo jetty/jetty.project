@@ -83,6 +83,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.DoSHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -1746,5 +1747,43 @@ public class HTTPServerDocs
 
         server.start();
         // end::requestCustomizer[]
+    }
+
+    public void dosHandler() throws Exception
+    {
+        // tag::dosHandler[]
+        class CatalogHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the catalog application.
+                callback.succeeded();
+                return true;
+            }
+        }
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create and configure DoSHandler.
+        DoSHandler dosHandler = new DoSHandler(
+            // Identify remote clients by IP address.
+            DoSHandler.ID_FROM_REMOTE_ADDRESS,
+            // Allow 50 requests/s per remote client.
+            new DoSHandler.LeakingBucketTrackerFactory(50),
+            // When the request rate is exceeded, delay for 10s and then respond with 429.
+            new DoSHandler.DelayedRejectHandler(10000, -1, new DoSHandler.StatusRejectHandler()),
+            // Limit the number of remote clients.
+            5000
+        );
+        server.setHandler(dosHandler);
+
+        // Protect the catalog application by wrapping CatalogHandler with DoSHandler.
+        dosHandler.setHandler(new CatalogHandler());
+
+        server.start();
+        // end::dosHandler[]
     }
 }
