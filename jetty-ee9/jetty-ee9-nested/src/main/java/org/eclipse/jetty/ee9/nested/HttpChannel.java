@@ -626,8 +626,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             _response.getStatus() != HttpStatus.NOT_MODIFIED_304 &&
                             !_response.isContentComplete(_response.getHttpOutput().getWritten()))
                         {
-                            if (sendErrorOrAbort("Insufficient content written"))
-                                break;
+                            sendErrorOrAbort("Insufficient content written");
+                            break;
                         }
 
                         // Set a close callback on the HttpOutput to make it an async callback
