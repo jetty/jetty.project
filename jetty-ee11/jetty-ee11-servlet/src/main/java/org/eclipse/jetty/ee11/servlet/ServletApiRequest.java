@@ -1277,7 +1277,7 @@ public class ServletApiRequest implements HttpServletRequest
             try
             {
                 int contentLength = getContentLength();
-                if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
+                if (contentLength != 0)
                 {
                     String baseType = HttpField.getValueParameters(getContentType(), null);
                     if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
@@ -1292,7 +1292,6 @@ public class ServletApiRequest implements HttpServletRequest
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
@@ -1330,7 +1329,6 @@ public class ServletApiRequest implements HttpServletRequest
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
@@ -1341,7 +1339,6 @@ public class ServletApiRequest implements HttpServletRequest
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
-                LOG.warn(e.toString());
                 throw new BadMessageException("Unable to parse form content", e);
             }
         }

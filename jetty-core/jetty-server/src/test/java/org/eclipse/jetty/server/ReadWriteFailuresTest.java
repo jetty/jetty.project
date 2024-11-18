@@ -93,7 +93,7 @@ public class ReadWriteFailuresTest
             POST / HTTP/1.1
             Host: localhost
             Content-Length: 1
-                        
+            
             """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
 

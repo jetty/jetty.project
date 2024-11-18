@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 
 import static org.eclipse.jetty.http.ComplianceViolation.Listener.NOOP;
 
@@ -54,6 +55,15 @@ public class MultiPartConfig
         /**
          * @param location the directory where parts will be saved as files.
          */
+        public Builder location(String location)
+        {
+            location(ResourceFactory.root().newResource(location).getPath());
+            return this;
+        }
+        
+        /**
+         * @param location the directory where parts will be saved as files.
+         */
         public Builder location(Path location)
         {
             _location = location;
@@ -70,7 +80,7 @@ public class MultiPartConfig
         }
 
         /**
-         * @return the maximum size in bytes of the whole multipart content, or -1 for unlimited.
+         * @param maxSize the maximum size in bytes of the whole multipart content, or -1 for unlimited.
          */
         public Builder maxSize(long maxSize)
         {
@@ -79,7 +89,7 @@ public class MultiPartConfig
         }
 
         /**
-         * @return the maximum part size in bytes, or -1 for unlimited.
+         * @param maxPartSize  the maximum part size in bytes, or -1 for unlimited.
          */
         public Builder maxPartSize(long maxPartSize)
         {

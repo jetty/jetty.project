@@ -103,7 +103,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         http2Client.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
         http2Client.setConnectBlocking(httpClient.isConnectBlocking());
         http2Client.setBindAddress(httpClient.getBindAddress());
-        http2Client.setMaxRequestHeadersSize(httpClient.getRequestBufferSize());
+        http2Client.setMaxRequestHeadersSize(httpClient.getMaxRequestHeadersSize());
         http2Client.setMaxResponseHeadersSize(httpClient.getMaxResponseHeadersSize());
     }
 

@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DelayedHandlerTest
+public class EagerContentHandlerTest
 {
     private Server _server;
     private ServerConnector _connector;
@@ -73,19 +74,11 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testNotDelayed() throws Exception
+    public void testNotEager() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler()
-        {
-            @Override
-            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
-            {
-                return null;
-            }
-        };
-
-        _server.setHandler(delayedHandler);
-        delayedHandler.setHandler(new HelloHandler());
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new HelloHandler(), new EagerContentHandler.ContentLoaderFactory[]{});
+        _server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(new HelloHandler());
         _server.start();
 
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
@@ -109,32 +102,40 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testDelayed() throws Exception
+    public void testEager() throws Exception
     {
         Exchanger<Runnable> handleEx = new Exchanger<>();
-        DelayedHandler delayedHandler = new DelayedHandler()
-        {
-            @Override
-            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new HelloHandler(),
+            new EagerContentHandler.ContentLoaderFactory()
             {
-                return new DelayedProcess(handler, request, response, callback)
+                @Override
+                public String getApplicableMimeType()
                 {
-                    @Override
-                    protected void delay() throws Exception
-                    {
-                        handleEx.exchange(this::process);
-                    }
-                };
-            }
-        };
+                    return null;
+                }
 
-        _server.setHandler(delayedHandler);
+                @Override
+                public EagerContentHandler.ContentLoader newContentLoader(String contentType, String mimeType, Handler handler, Request request, Response response, Callback callback)
+                {
+                    return new EagerContentHandler.ContentLoader(handler, request, response, callback)
+                    {
+                        @Override
+                        protected void load() throws Exception
+                        {
+                            handleEx.exchange(this::handle);
+                        }
+                    };
+                }
+            });
+
+        _server.setHandler(eagerContentHandler);
         CountDownLatch processing = new CountDownLatch(1);
-        delayedHandler.setHandler(new HelloHandler()
+        eagerContentHandler.setHandler(new HelloHandler()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
+                assertThat(Content.Source.asString(request), is("0123456789"));
                 processing.countDown();
                 return super.handle(request, response, callback);
             }
@@ -144,9 +145,11 @@ public class DelayedHandlerTest
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             String request = """
-                GET / HTTP/1.1\r
+                POST / HTTP/1.1\r
                 Host: localhost\r
+                Content-Length: 10\r
                 \r
+                0123456789\r
                 """;
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -170,13 +173,13 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testDelayedUntilContent() throws Exception
+    public void testEagerRetainedContent() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler();
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.RetainedContentLoaderFactory(-1, -1, true));
 
-        _server.setHandler(delayedHandler);
+        _server.setHandler(eagerContentHandler);
         CountDownLatch processing = new CountDownLatch(1);
-        delayedHandler.setHandler(new HelloHandler()
+        eagerContentHandler.setHandler(new HelloHandler()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -187,8 +190,8 @@ public class DelayedHandlerTest
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
                 assertThat(stack, not(containsString("%s.%s".formatted(
-                    DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
-                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
+                    EagerContentHandler.RetainedContentLoaderFactory.RetainedContentLoader.class.getSimpleName(),
+                    EagerContentHandler.RetainedContentLoaderFactory.RetainedContentLoader.class.getDeclaredMethod("run").getName()))));
 
                 processing.countDown();
                 return super.handle(request, response, callback);
@@ -225,15 +228,15 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testDelayedUntilContentInContext() throws Exception
+    public void testEagerContentInContext() throws Exception
     {
         ContextHandler context = new ContextHandler();
         _server.setHandler(context);
-        DelayedHandler delayedHandler = new DelayedHandler();
-        context.setHandler(delayedHandler);
+        EagerContentHandler eagerContentHandler = new EagerContentHandler();
+        context.setHandler(eagerContentHandler);
 
         CountDownLatch processing = new CountDownLatch(1);
-        delayedHandler.setHandler(new HelloHandler()
+        eagerContentHandler.setHandler(new HelloHandler()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -244,8 +247,12 @@ public class DelayedHandlerTest
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, not(containsString("DemandContentCallback.succeeded")));
                 assertThat(stack, not(containsString("%s.%s".formatted(
-                    DelayedHandler.UntilContentDelayedProcess.class.getSimpleName(),
-                    DelayedHandler.UntilContentDelayedProcess.class.getMethod("onContent").getName()))));
+                    EagerContentHandler.RetainedContentLoaderFactory.RetainedContentLoader.class.getSimpleName(),
+                    EagerContentHandler.RetainedContentLoaderFactory.RetainedContentLoader.class.getDeclaredMethod("run").getName()))));
+
+                // Check content
+                String body = Content.Source.asString(request, StandardCharsets.ISO_8859_1);
+                assertThat(body, is("0123456789"));
 
                 // Check the thread is in the context
                 assertThat(ContextHandler.getCurrentContext(), sameInstance(context.getContext()));
@@ -273,7 +280,12 @@ public class DelayedHandlerTest
 
             assertFalse(processing.await(250, TimeUnit.MILLISECONDS));
 
-            output.write("01234567\r\n".getBytes(StandardCharsets.UTF_8));
+            output.write("0123456".getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            assertFalse(processing.await(250, TimeUnit.MILLISECONDS));
+
+            output.write("789".getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             assertTrue(processing.await(10, TimeUnit.SECONDS));
@@ -288,12 +300,12 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testNoDelayWithContent() throws Exception
+    public void testDirectCallWithContent() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler();
+        EagerContentHandler eagerContentHandler = new EagerContentHandler();
 
-        _server.setHandler(delayedHandler);
-        delayedHandler.setHandler(new HelloHandler()
+        _server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(new HelloHandler()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -303,7 +315,6 @@ public class DelayedHandlerTest
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
-                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.handle"));
 
                 // Check the content is available
                 String content = Content.Source.asString(request);
@@ -337,26 +348,87 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testDelayed404() throws Exception
+    public void testDirectCallWithChunkedContent() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler()
+        EagerContentHandler eagerContentHandler = new EagerContentHandler();
+
+        _server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(new HelloHandler()
         {
             @Override
-            protected DelayedProcess newDelayedProcess(boolean contentExpected, String contentType, MimeTypes.Type mimeType, Handler handler, Request request, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                return new DelayedProcess(handler, request, response, callback)
+                // Check that we are called directly from HttpConnection.onFillable
+                ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
+                new Throwable().printStackTrace(new PrintStream(out));
+                String stack = out.toString(StandardCharsets.ISO_8859_1);
+                assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
+
+                // Check the content is available
+                String content = Content.Source.asString(request);
+                assertThat(content, equalTo("1234567890"));
+
+                return super.handle(request, response, callback);
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                \r
+                3;\r
+                123\r
+                4;\r
+                4567\r
+                3;\r
+                890\r
+                0;\r
+                \r
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("Hello"));
+        }
+    }
+
+    @Test
+    public void testEager404() throws Exception
+    {
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.ContentLoaderFactory()
+        {
+            @Override
+            public String getApplicableMimeType()
+            {
+                return null;
+            }
+
+            @Override
+            public EagerContentHandler.ContentLoader newContentLoader(String contentType, String mimeType, Handler handler, Request request, Response response, Callback callback)
+            {
+                return new EagerContentHandler.ContentLoader(handler, request, response, callback)
                 {
                     @Override
-                    protected void delay()
+                    protected void load()
                     {
-                        getRequest().getContext().execute(this::process);
+                        getRequest().getContext().execute(this::handle);
                     }
                 };
             }
-        };
+        });
 
-        _server.setHandler(delayedHandler);
-        delayedHandler.setHandler(new Handler.Abstract()
+        _server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -388,13 +460,13 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testDelayedFormFields() throws Exception
+    public void testEagerFormFields() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler();
+        EagerContentHandler eagerContentHandler = new EagerContentHandler();
 
-        _server.setHandler(delayedHandler);
+        _server.setHandler(eagerContentHandler);
         CountDownLatch processing = new CountDownLatch(2);
-        delayedHandler.setHandler(new Handler.Abstract()
+        eagerContentHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -459,22 +531,21 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testNoDelayFormFields() throws Exception
+    public void testDirectCallFormFields() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler();
+        EagerContentHandler eagerContentHandler = new EagerContentHandler();
 
-        _server.setHandler(delayedHandler);
-        delayedHandler.setHandler(new Handler.Abstract()
+        _server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                // Check that we are called directly from HttpConnection.onFillable via DelayedHandler.handle().
+                // Check that we are called directly from HttpConnection.onFillable via EagerHandler.handle().
                 ByteArrayOutputStream out = new ByteArrayOutputStream(8192);
                 new Throwable().printStackTrace(new PrintStream(out));
                 String stack = out.toString(StandardCharsets.ISO_8859_1);
                 assertThat(stack, containsString("org.eclipse.jetty.server.internal.HttpConnection.onFillable"));
-                assertThat(stack, containsString("org.eclipse.jetty.server.handler.DelayedHandler.handle"));
 
                 Fields fields = FormFields.getFields(request);
                 Content.Sink.write(response, true, String.valueOf(fields), callback);
@@ -509,12 +580,12 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testDelayedMultipart() throws Exception
+    public void testEagerMultipart() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler();
+        EagerContentHandler eagerContentHandler = new EagerContentHandler();
         _server.setAttribute(MultiPartConfig.class.getName(), new MultiPartConfig.Builder().build());
-        _server.setHandler(delayedHandler);
-        delayedHandler.setHandler(new Handler.Abstract()
+        _server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception

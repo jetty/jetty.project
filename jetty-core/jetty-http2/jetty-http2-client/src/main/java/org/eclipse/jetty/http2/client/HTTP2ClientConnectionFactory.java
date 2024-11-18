@@ -84,7 +84,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
         private HTTP2ClientConnection(HTTP2Client client, EndPoint endpoint, HTTP2ClientSession session, Promise<Session> sessionPromise, Session.Listener listener)
         {
-            super(client.getByteBufferPool(), client.getExecutor(), endpoint, session, client.getInputBufferSize());
+            super(client.getByteBufferPool(), client.getExecutor(), endpoint, session, client.getInputBufferSize(), -1);
             this.client = client;
             this.promise = sessionPromise;
             this.listener = listener;

@@ -196,9 +196,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      */
     public static void onFields(Request request, Charset charset, Promise.Invocable<Fields> promise)
     {
-        int maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
-        int maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
-        onFields(request, charset, maxFields, maxLength, promise);
+        onFields(request, charset, -1, -1, promise);
     }
 
     /**
@@ -208,12 +206,16 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      *
      * @param request The request to get or read the Fields from
      * @param charset The {@link Charset} of the request content, if previously extracted.
-     * @param maxFields The maximum number of fields to accept
-     * @param maxLength The maximum length of fields
+     * @param maxFields The maximum number of fields to accept; or -1 for a default
+     * @param maxLength The maximum length of fields; or -1 for a default
      * @param promise The action to take when the FormFields are available.
      */
     public static void onFields(Request request, Charset charset, int maxFields, int maxLength, Promise.Invocable<Fields> promise)
     {
+        if (maxFields < 0)
+            maxFields = getContextAttribute(request.getContext(), FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_FIELDS_DEFAULT);
+        if (maxLength < 0)
+            maxLength = getContextAttribute(request.getContext(), FormFields.MAX_LENGTH_ATTRIBUTE, FormFields.MAX_LENGTH_DEFAULT);
         from(request, promise.getInvocationType(), request, charset, maxFields, maxLength).whenComplete(promise);
     }
 

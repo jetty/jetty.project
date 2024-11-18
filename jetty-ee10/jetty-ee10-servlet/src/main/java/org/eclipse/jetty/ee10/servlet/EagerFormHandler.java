@@ -28,7 +28,9 @@ import org.eclipse.jetty.util.Promise;
  * Handler to eagerly and asynchronously read and parse {@link MimeTypes.Type#FORM_ENCODED} and
  * {@link MimeTypes.Type#MULTIPART_FORM_DATA} content prior to invoking the {@link ServletHandler},
  * which can then consume them with blocking APIs but without blocking.
+ * @deprecated use {@link org.eclipse.jetty.server.handler.EagerContentHandler}
  */
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class EagerFormHandler extends Handler.Wrapper
 {
     public EagerFormHandler()

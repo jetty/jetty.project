@@ -74,6 +74,9 @@ etc/jetty.xml
 ## Whether to use direct ByteBuffers for reading or writing
 # jetty.httpConfig.useInputDirectByteBuffers=true
 # jetty.httpConfig.useOutputDirectByteBuffers=true
+
+## The minimum space available in a retained input buffer before allocating a new one.
+# jetty.httpConfig.minInputBufferSpace=1024
 # end::documentation-http-config[]
 
 # tag::documentation-server-compliance[]
@@ -129,3 +132,4 @@ etc/jetty.xml
 
 ## Should the DefaultHandler show a list of known contexts in a root 404 response.
 # jetty.server.default.showContexts=true
+

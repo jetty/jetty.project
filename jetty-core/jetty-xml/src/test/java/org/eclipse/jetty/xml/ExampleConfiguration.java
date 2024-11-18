@@ -51,6 +51,7 @@ public class ExampleConfiguration extends HashMap<String, Object>
     private ConstructorArgTestClass constructorArgTestClass;
     public Map map;
     public Double number;
+    public String builder;
 
     public interface TestInterface
     {
@@ -213,5 +214,11 @@ public class ExampleConfiguration extends HashMap<String, Object>
     public void setMap(Map map)
     {
         this.map = map;
+    }
+
+    public ExampleConfiguration builder(String value)
+    {
+        this.builder = value;
+        return this;
     }
 }

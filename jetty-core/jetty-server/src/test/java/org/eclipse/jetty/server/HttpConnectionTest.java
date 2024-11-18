@@ -21,6 +21,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -28,7 +29,9 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -47,6 +50,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.internal.HttpConnection;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
@@ -69,6 +73,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpConnectionTest
@@ -1701,5 +1706,98 @@ public class HttpConnectionTest
             assertFalse(response.getMetaData().getHttpFields().contains(HttpHeader.CONNECTION));
         else
             assertThat(response.get(HttpHeader.CONNECTION), is(expectedConnectionHeader));
+    }
+
+    @Test
+    public void testRetainedChunks() throws Exception
+    {
+        Queue<Content.Chunk> chunks = new ConcurrentLinkedQueue<>();
+        CountDownLatch blocked = new CountDownLatch(1);
+
+        _server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                while (true)
+                {
+                    Content.Chunk chunk = request.read();
+                    if (chunk == null)
+                    {
+                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        {
+                            blocked.countDown();
+                            request.demand(blocker);
+                            blocker.block();
+                        }
+                        catch (IOException e)
+                        {
+                            // ignored
+                        }
+                        continue;
+                    }
+
+                    chunks.add(chunk);
+                    if (chunk.isLast())
+                        break;
+                }
+                callback.succeeded();
+                return true;
+            }
+        });
+        _server.start();
+
+        LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest("""
+            POST / HTTP/1.1\r
+            Host: localhost\r
+            Transfer-Encoding: chunked\r
+            \r
+            3;\r
+            one\r
+            3;\r
+            two\r
+            5;\r
+            """);
+
+        // Wait for the server to block on the read().
+        blocked.await(5, TimeUnit.SECONDS);
+
+        // Send more content.
+        localEndPoint.addInput("""
+            three\r
+            4;\r
+            four\r
+            4;\r
+            five\r
+            3;\r
+            si""");
+
+        // Send more content.
+        localEndPoint.addInput("""
+            x\r
+            5;\r
+            seven\r
+            5;\r
+            eight\r
+            0;\r
+            \r
+            """);
+
+        String rawResponse = localEndPoint.getResponse();
+        // System.err.println(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        localEndPoint.close();
+
+        assertThat(chunks.size(), greaterThan(8));
+        // chunks.forEach(System.err::println);
+
+        // test all chunks are backed by the same buffer
+        Content.Chunk firstChunk = chunks.peek();
+        assertNotNull(firstChunk);
+        String backing = firstChunk.toString().replaceFirst("WithRetainable.*ReservedBuffer", "ReservedBuffer").replaceFirst("\\[.*", "");
+        for (Content.Chunk chunk : chunks)
+            if (chunk.hasRemaining())
+                assertThat(chunk.toString(), containsString(backing));
     }
 }

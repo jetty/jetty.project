@@ -614,7 +614,7 @@ public class XmlConfiguration
             String setter = "set" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
             String id = node.getAttribute("id");
             String property = node.getAttribute("property");
-            String propertyValue = null;
+            Object propertyValue = null;
 
             Class<?> oClass = nodeClass(node);
             if (oClass == null)
@@ -630,6 +630,7 @@ public class XmlConfiguration
                 {
                     // check that there is at least one setter or field that could have matched
                     if (Arrays.stream(oClass.getMethods()).noneMatch(m -> m.getName().equals(setter)) &&
+                        Arrays.stream(oClass.getMethods()).noneMatch(m -> m.getName().equals(name)) &&
                         Arrays.stream(oClass.getFields()).filter(f -> Modifier.isPublic(f.getModifiers())).noneMatch(f -> f.getName().equals(name)))
                     {
                         NoSuchMethodException e = new NoSuchMethodException(String.format("No method '%s' on %s", setter, oClass.getName()));
@@ -639,6 +640,8 @@ public class XmlConfiguration
                     // otherwise it is a noop
                     return;
                 }
+
+                propertyValue = toType(propertyValue, node.getAttribute("type"));
             }
 
             Object value = value(obj, node);
@@ -676,10 +679,44 @@ public class XmlConfiguration
                 try
                 {
                     Field type = vClass.getField("TYPE");
-                    vClass = (Class<?>)type.get(null);
-                    Method set = oClass.getMethod(setter, vClass);
+                    Class<?> nClass = (Class<?>)type.get(null);
+                    Method set = oClass.getMethod(setter, nClass);
                     invokeMethod(set, obj, arg);
                     return;
+                }
+                catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
+                {
+                    LOG.trace("IGNORED", e);
+                    errors.add(e);
+                }
+
+                // Try a builder
+                try
+                {
+                    Method builder = oClass.getMethod(name, vClass);
+                    if (builder.getReturnType() == oClass)
+                    {
+                        invokeMethod(builder, obj, arg);
+                        return;
+                    }
+                }
+                catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
+                {
+                    LOG.trace("IGNORED", e);
+                    errors.add(e);
+                }
+
+                // Try for native builder
+                try
+                {
+                    Field type = vClass.getField("TYPE");
+                    Class<?> nClass = (Class<?>)type.get(null);
+                    Method builder = oClass.getMethod(name, nClass);
+                    if (builder.getReturnType() == oClass)
+                    {
+                        invokeMethod(builder, obj, arg);
+                        return;
+                    }
                 }
                 catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
@@ -1509,6 +1546,11 @@ public class XmlConfiguration
                 }
             }
 
+            return toType(value, type);
+        }
+
+        private Object toType(Object value, String type) throws Exception
+        {
             // No value
             if (value == null)
             {

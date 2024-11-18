@@ -219,6 +219,8 @@ public class XmlConfigurationTest
         assertThat(concurrentMap, instanceOf(ConcurrentMap.class));
         assertEquals(concurrentMap.get("KEY"), "ITEM");
 
+        assertThat(tc.builder, is("builder"));
+
         if ("org/eclipse/jetty/xml/configureWithElements.xml".equals(configure))
         {
             System.err.println("Static call with TestImpl: " + ExampleConfiguration.calledWithClass);

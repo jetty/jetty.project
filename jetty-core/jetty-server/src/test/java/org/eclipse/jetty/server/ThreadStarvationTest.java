@@ -36,7 +36,7 @@ import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.handler.DelayedHandler;
+import org.eclipse.jetty.server.handler.EagerContentHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -154,7 +154,7 @@ public class ThreadStarvationTest
         if (scenario.delayed)
         {
             _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(true);
-            _server.insertHandler(new DelayedHandler());
+            _server.insertHandler(new EagerContentHandler());
         }
     }
 

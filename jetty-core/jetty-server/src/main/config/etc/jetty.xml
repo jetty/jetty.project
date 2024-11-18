@@ -71,6 +71,7 @@
       <Set name="generateRedirectBody" property="jetty.httpConfig.generateRedirectBody"/>
       <Set name="useInputDirectByteBuffers" property="jetty.httpConfig.useInputDirectByteBuffers"/>
       <Set name="useOutputDirectByteBuffers" property="jetty.httpConfig.useOutputDirectByteBuffers"/>
+      <Set name="minInputBufferSpace" property="jetty.httpConfig.minInputBufferSpace"/>
     </New>
 
     <!-- =========================================================== -->

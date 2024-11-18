@@ -90,6 +90,7 @@ public class HttpConfiguration implements Dumpable
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
+    private int _minInputBufferSpace = 1500;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -168,6 +169,7 @@ public class HttpConfiguration implements Dumpable
         _serverAuthority = config._serverAuthority;
         _localAddress = config._localAddress;
         _maxUnconsumedRequestContentReads = config._maxUnconsumedRequestContentReads;
+        _minInputBufferSpace = config._minInputBufferSpace;
     }
 
     /**
@@ -353,13 +355,15 @@ public class HttpConfiguration implements Dumpable
     /**
      * Set if true, delays the application dispatch until content is available (defaults to true).
      * @param delay if true, delays the application dispatch until content is available (defaults to true)
+     * @deprecated Use {@link org.eclipse.jetty.server.handler.EagerContentHandler} instead.
      */
+    @Deprecated (forRemoval = true, since = "12.1.0")
     public void setDelayDispatchUntilContent(boolean delay)
     {
         _delayDispatchUntilContent = delay;
     }
 
-    @ManagedAttribute("Whether to delay the application dispatch until content is available")
+    @Deprecated (forRemoval = true, since = "12.1.0")
     public boolean isDelayDispatchUntilContent()
     {
         return _delayDispatchUntilContent;
@@ -565,6 +569,25 @@ public class HttpConfiguration implements Dumpable
     public void setMaxErrorDispatches(int max)
     {
         _maxErrorDispatches = max;
+    }
+
+    /**
+     * @return The minimum space available in a retained input buffer before allocating a new one.
+     */
+    @ManagedAttribute("The minimum space available in a retained input buffer before allocating a new one")
+    public int getMinInputBufferSpace()
+    {
+        return _minInputBufferSpace;
+    }
+
+    /**
+     * @param minInputBufferSpace The minimum space available in a retained input buffer before allocating a new one;
+     *                            0 to always allocate a new buffer;
+     *                            -1 for a default value
+     */
+    public void setMinInputBufferSpace(int minInputBufferSpace)
+    {
+        _minInputBufferSpace = minInputBufferSpace;
     }
 
     /**

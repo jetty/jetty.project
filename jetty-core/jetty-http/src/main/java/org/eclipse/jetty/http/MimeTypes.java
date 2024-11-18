@@ -61,7 +61,11 @@ public class MimeTypes
     public enum Type
     {
         FORM_ENCODED("application/x-www-form-urlencoded"),
+        FORM_ENCODED_UTF_8("application/x-www-form-urlencoded;charset=utf-8", FORM_ENCODED),
+        FORM_ENCODED_8859_1("application/x-www-form-urlencoded;charset=iso-8859-1", FORM_ENCODED),
+
         MESSAGE_HTTP("message/http"),
+
         MULTIPART_BYTERANGES("multipart/byteranges"),
         MULTIPART_FORM_DATA("multipart/form-data"),
 
@@ -77,6 +81,10 @@ public class MimeTypes
                     return super.getContentTypeField(charset);
                 }
             },
+
+        TEXT_HTML_8859_1("text/html;charset=iso-8859-1", TEXT_HTML),
+        TEXT_HTML_UTF_8("text/html;charset=utf-8", TEXT_HTML),
+
         TEXT_PLAIN("text/plain")
             {
                 @Override
@@ -89,6 +97,9 @@ public class MimeTypes
                     return super.getContentTypeField(charset);
                 }
             },
+        TEXT_PLAIN_8859_1("text/plain;charset=iso-8859-1", TEXT_PLAIN),
+        TEXT_PLAIN_UTF_8("text/plain;charset=utf-8", TEXT_PLAIN),
+
         TEXT_XML("text/xml")
             {
                 @Override
@@ -101,21 +112,14 @@ public class MimeTypes
                     return super.getContentTypeField(charset);
                 }
             },
-        TEXT_JSON("text/json", StandardCharsets.UTF_8),
-        APPLICATION_JSON("application/json", StandardCharsets.UTF_8),
-
-        TEXT_HTML_8859_1("text/html;charset=iso-8859-1", TEXT_HTML),
-        TEXT_HTML_UTF_8("text/html;charset=utf-8", TEXT_HTML),
-
-        TEXT_PLAIN_8859_1("text/plain;charset=iso-8859-1", TEXT_PLAIN),
-        TEXT_PLAIN_UTF_8("text/plain;charset=utf-8", TEXT_PLAIN),
-
         TEXT_XML_8859_1("text/xml;charset=iso-8859-1", TEXT_XML),
         TEXT_XML_UTF_8("text/xml;charset=utf-8", TEXT_XML),
 
+        TEXT_JSON("text/json", StandardCharsets.UTF_8),
         TEXT_JSON_8859_1("text/json;charset=iso-8859-1", TEXT_JSON),
         TEXT_JSON_UTF_8("text/json;charset=utf-8", TEXT_JSON),
 
+        APPLICATION_JSON("application/json", StandardCharsets.UTF_8),
         APPLICATION_JSON_8859_1("application/json;charset=iso-8859-1", APPLICATION_JSON),
         APPLICATION_JSON_UTF_8("application/json;charset=utf-8", APPLICATION_JSON);
 
@@ -691,7 +695,25 @@ public class MimeTypes
         if (field instanceof MimeTypes.ContentTypeField contentTypeField)
             return contentTypeField.getMimeType();
 
-        return MimeTypes.CACHE.get(field.getValue());
+        String contentType = field.getValue();
+        int semicolon = contentType.indexOf(';');
+        if (semicolon >= 0)
+            contentType = contentType.substring(0, semicolon).trim();
+
+        return MimeTypes.CACHE.get(contentType);
+    }
+
+    public static String getMimeTypeAsStringFromContentType(HttpField field)
+    {
+        if (field == null)
+            return null;
+
+        assert field.getHeader() == HttpHeader.CONTENT_TYPE;
+
+        if (field instanceof MimeTypes.ContentTypeField contentTypeField)
+            return contentTypeField.getMimeType().asString();
+
+        return getBase(field.getValue());
     }
 
     /**
