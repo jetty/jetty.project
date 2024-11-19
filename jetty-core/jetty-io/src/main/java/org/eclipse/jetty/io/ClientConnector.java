@@ -462,11 +462,11 @@ public class ClientConnector extends ContainerLifeCycle
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connecting {} to {}", blocking ? "blocking" : "non-blocking", address);
 
-                listeners.forEach(listener -> listener.onConnectBegin(socketChannel, socketAddress));
+                connectionBegin(socketChannel, socketAddress);
                 if (blocking)
                 {
                     socketChannel.socket().connect(address, (int)getConnectTimeout().toMillis());
-                    listeners.forEach(listener -> listener.onConnectSuccess(socketChannel));
+                    connectionSuccess(socketChannel);
                     socketChannel.configureBlocking(false);
                 }
                 else
@@ -584,7 +584,7 @@ public class ClientConnector extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Could not connect to {}", context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY));
-        listeners.forEach(listener -> listener.onConnectFailure((SocketChannel)channel, failure));
+        connectionFailure((SocketChannel)channel, failure);
         Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
         if (promise != null)
             promise.failed(failure);
@@ -792,5 +792,50 @@ public class ClientConnector extends ContainerLifeCycle
         if (listener instanceof ConnectListener connectListener)
             return listeners.remove(connectListener);
         return false;
+    }
+    
+    private void connectionBegin(SocketChannel socketChannel, SocketAddress socketAddress)
+    {
+        try
+        {
+            for (ConnectListener listener : listeners)
+            {
+                listener.onConnectBegin(socketChannel, socketAddress);
+            }
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
+    private void connectionSuccess(SocketChannel socketChannel)
+    {
+        try
+        {
+            for (ConnectListener listener : listeners)
+            {
+                listener.onConnectSuccess(socketChannel);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
+    private void connectionFailure(SocketChannel socketChannel, Throwable throwable)
+    {
+        try
+        {
+            for (ConnectListener listener : listeners)
+            {
+                listener.onConnectFailure(socketChannel, throwable);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 }
