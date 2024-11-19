@@ -29,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Perform the RFC2616 tests against a server running with the Jetty NIO Connector and listening on HTTPS (HTTP over SSL).
  */
 @ExtendWith(WorkDirExtension.class)
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class RFC2616NIOHttpsTest extends RFC2616BaseTest
 {
     private static XmlBasedJettyServer xmlBasedJettyServer;

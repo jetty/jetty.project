@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * <a href="http://tools.ietf.org/html/rfc2616">RFC 2616</a> (HTTP/1.1) Test Case
  */
+@Deprecated(forRemoval = true, since = "12.1.0")
 public abstract class RFC2616BaseTest
 {
     public static class EchoHandler extends Handler.Abstract.NonBlocking
