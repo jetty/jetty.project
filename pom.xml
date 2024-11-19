@@ -2837,16 +2837,17 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-javadoc-plugin</artifactId>
               <configuration>
-                <skippedModules>
-                  org.eclipse.jetty.*.demos:.*,
+                <skippedModules>org.eclipse.jetty.*.demos:.*,
                   org.eclipse.jetty.ee11:jetty-ee11-test.*,
                   org.eclipse.jetty.ee10:jetty-ee10-test.*,
                   org.eclipse.jetty.ee9:jetty-ee9-test.*,
                   jetty-.*-runner,
-                  .*:.*maven-plugin,
+                  .*:.*maven.*,
                   jetty-test-http2-client-transport-provided-webapp,
-                  .*-osgi-.*
-                </skippedModules>
+                  .*-osgi-.*,
+                  jetty-infinispan.*,
+                  jetty-start,
+                  jetty-gcloud-session-manager</skippedModules>
               </configuration>
             </plugin>
           </plugins>
