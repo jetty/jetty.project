@@ -1311,6 +1311,11 @@ If a remote client exceeds the configured request rate, `DoSHandler` forwards th
 Delaying the request handling is of little cost for the server (since the request is delayed asynchronously), but the attacker would not know whether the request it sent was processed or rejected until the timeout elapses.
 Hopefully, the delay forces the attacker to use more resources, and/or reduce the request rate, therefore reducing the attack impact on the server.
 
+[CAUTION]
+====
+While `DoSHandler` may be a good start for simple setups, denial-of-service protection is typically best performed _outside_ the server itself, for example in load balancers or other data center network infrastructure components.
+====
+
 Here is a simple example that shows how to use `DoSHandler`:
 
 [,java,indent=0,options=nowrap]
