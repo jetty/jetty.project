@@ -436,7 +436,9 @@ public class HttpGenerator
 
             case COMPLETING_1XX:
             {
+                Boolean persistent = _persistent;
                 reset();
+                _persistent = persistent;
                 return Result.DONE;
             }
 
