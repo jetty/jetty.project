@@ -5,10 +5,6 @@ to limit the number of concurrent requests, for resource management.
 [tags]
 server
 
-[before]
-compression
-gzip
-
 [depends]
 server
 
