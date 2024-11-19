@@ -2847,7 +2847,14 @@
                   .*-osgi-.*,
                   jetty-infinispan.*,
                   jetty-start,
-                  jetty-gcloud-session-manager</skippedModules>
+                  jetty-gcloud-session-manager,
+                  jetty-e8.*</skippedModules>
+                <sourceFileExcludes>
+                  <sourceFileExclude>**/module-info.java</sourceFileExclude>
+                </sourceFileExcludes>
+                <sourceFileIncludes>
+                  <sourceFileInclude>org/eclipse/jetty/**/*.java</sourceFileInclude>
+                </sourceFileIncludes>
               </configuration>
             </plugin>
           </plugins>
