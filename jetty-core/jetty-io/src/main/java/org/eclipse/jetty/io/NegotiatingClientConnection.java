@@ -66,7 +66,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
             if (completed)
                 replaceConnection();
             else
-                fillInterested();
+                nonBlockingFillInterested();
         }
         catch (Throwable x)
         {
@@ -89,7 +89,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
             }
             if (filled == 0)
             {
-                fillInterested();
+                nonBlockingFillInterested();
                 break;
             }
         }

@@ -513,7 +513,7 @@ public class ConnectHandler extends Handler.Wrapper
         }
     }
 
-    protected static class ConnectContext
+    public static class ConnectContext
     {
         private final ConcurrentMap<String, Object> context = new ConcurrentHashMap<>();
         private final Request request;
@@ -570,7 +570,7 @@ public class ConnectHandler extends Handler.Wrapper
         {
             super.onOpen();
             onConnectSuccess(connectContext, this);
-            fillInterested();
+            nonBlockingFillInterested();
         }
 
         @Override
@@ -613,7 +613,7 @@ public class ConnectHandler extends Handler.Wrapper
 
             if (buffer == null)
             {
-                fillInterested();
+                nonBlockingFillInterested();
                 return;
             }
 
@@ -626,7 +626,7 @@ public class ConnectHandler extends Handler.Wrapper
                     buffer = null;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Wrote initial {} bytes to server {}", remaining, DownstreamConnection.this);
-                    fillInterested();
+                    nonBlockingFillInterested();
                 }
 
                 @Override
@@ -779,6 +779,12 @@ public class ConnectHandler extends Handler.Wrapper
             protected void onCompleteFailure(Throwable cause)
             {
                 buffer = Retainable.release(buffer);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING;
             }
 
             private void disconnect(Throwable x)

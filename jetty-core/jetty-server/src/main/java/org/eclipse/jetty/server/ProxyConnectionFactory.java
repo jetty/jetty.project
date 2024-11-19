@@ -181,7 +181,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         }
                         if (fill == 0)
                         {
-                            fillInterested();
+                            nonBlockingFillInterested();
                             return;
                         }
 
@@ -215,7 +215,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Proxy v1 onOpen parsing ran out of bytes, marking as fillInterested");
-                            fillInterested();
+                            nonBlockingFillInterested();
                             return;
                         }
                     }
@@ -497,7 +497,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Proxy v2 onOpen parsing fixed length packet ran out of bytes, marking as fillInterested");
-                        fillInterested();
+                        nonBlockingFillInterested();
                     }
                 }
                 catch (Exception x)
@@ -530,7 +530,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         }
                         if (fill == 0)
                         {
-                            fillInterested();
+                            nonBlockingFillInterested();
                             return;
                         }
 
@@ -554,7 +554,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         }
                         if (fill == 0)
                         {
-                            fillInterested();
+                            nonBlockingFillInterested();
                             return;
                         }
                     }

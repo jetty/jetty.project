@@ -438,7 +438,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     // If we have already released the request buffer, then use fill interest before allocating another
                     if (_requestBuffer == null)
                     {
-                        fillInterested();
+                        fillInterested(_fillableCallback);
                         break;
                     }
                 }

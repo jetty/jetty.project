@@ -83,7 +83,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        nonBlockingFillInterested();
     }
 
     @Override
@@ -106,7 +106,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 {
                     // Here the SSL handshake is not finished yet but we filled 0 bytes,
                     // so we need to read more.
-                    fillInterested();
+                    nonBlockingFillInterested();
                 }
             }
             else

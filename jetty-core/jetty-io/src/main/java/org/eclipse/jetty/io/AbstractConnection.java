@@ -40,6 +40,7 @@ public abstract class AbstractConnection implements Connection, Invocable
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback _readCallback;
+    private final Callback _nonBlockingReadCallback;
     private int _inputBufferSize = 2048;
 
     protected AbstractConnection(EndPoint endPoint, Executor executor)
@@ -49,6 +50,7 @@ public abstract class AbstractConnection implements Connection, Invocable
         _endPoint = endPoint;
         _executor = executor;
         _readCallback = new ReadCallback();
+        _nonBlockingReadCallback = new NonBlockingReadCallback();
     }
 
     @Override
@@ -95,6 +97,11 @@ public abstract class AbstractConnection implements Connection, Invocable
     public void fillInterested()
     {
         fillInterested(_readCallback);
+    }
+
+    public void nonBlockingFillInterested()
+    {
+        fillInterested(_nonBlockingReadCallback);
     }
 
     /**
@@ -302,6 +309,20 @@ public abstract class AbstractConnection implements Connection, Invocable
         public String toString()
         {
             return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), AbstractConnection.this);
+        }
+    }
+
+    /**
+     * <p>The default {@link Callback} for read interest, typically used from {@link #onOpen()}.</p>
+     * <p>In other cases, use {@link #fillInterested(Callback)} with a {@link Callback} that
+     * reports a more specific {@link Invocable.InvocationType}.</p>
+     */
+    private class NonBlockingReadCallback extends ReadCallback
+    {
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
     }
 }

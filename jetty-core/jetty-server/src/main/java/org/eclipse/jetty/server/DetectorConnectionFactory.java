@@ -183,7 +183,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                 if (upgraded)
                     _buffer.release();
                 else
-                    fillInterested();
+                    nonBlockingFillInterested();
             }
             catch (Throwable x)
             {
@@ -211,7 +211,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                     }
                     if (fill == 0)
                     {
-                        fillInterested();
+                        nonBlockingFillInterested();
                         return;
                     }
 
