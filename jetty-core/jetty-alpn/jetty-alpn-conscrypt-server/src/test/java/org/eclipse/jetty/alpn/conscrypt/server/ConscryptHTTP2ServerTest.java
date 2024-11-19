@@ -56,6 +56,7 @@ public class ConscryptHTTP2ServerTest
         Security.addProvider(new OpenSSLProvider());
     }
 
+    private final HttpConfiguration httpsConfig = new HttpConfiguration();
     private final Server server = new Server();
 
     private SslContextFactory.Server newServerSslContextFactory()
@@ -90,9 +91,7 @@ public class ConscryptHTTP2ServerTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        HttpConfiguration httpsConfig = new HttpConfiguration();
         httpsConfig.setSecureScheme("https");
-
         httpsConfig.setSendXPoweredBy(true);
         httpsConfig.setSendServerVersion(true);
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
@@ -139,5 +138,13 @@ public class ConscryptHTTP2ServerTest
             ContentResponse contentResponse = client.GET("https://localhost:" + port);
             assertEquals(200, contentResponse.getStatus());
         }
+    }
+
+    @Test
+    public void testSNIRequired() throws Exception
+    {
+        // The KeyStore contains 1 certificate with two DNS names.
+        httpsConfig.getCustomizer(SecureRequestCustomizer.class).setSniRequired(true);
+        testSimpleRequest();
     }
 }
