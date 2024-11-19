@@ -6,6 +6,9 @@ For form data and multipart, the handling is delayed until the entire request bo
 been asynchronously read. For all other content types, the delay is for up to a configurable
 number of content bytes.
 
+[deprecated]
+Use 'eager-content' module instead.
+
 [tags]
 server
 
