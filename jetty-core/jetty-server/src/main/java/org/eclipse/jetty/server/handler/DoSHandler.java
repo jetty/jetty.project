@@ -185,7 +185,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         // Calculate an id for the request (which may be global empty string).
         String id = _clientIdFn.apply(request);
 
-        // Reject or handle untracked request
+        // Reject or handle untracked request.
         if (id == null)
             id = "";
 
@@ -193,18 +193,18 @@ public class DoSHandler extends ConditionalHandler.ElseNext
         // Trackers are removed if CyclicTimeouts#onExpired returns true.
         Tracker tracker = _trackers.computeIfAbsent(id, this::newTracker);
 
-        // If we have too many trackers, then we will have a null tracker
+        // If we have too many trackers, then we will have a null tracker.
         if (tracker == null)
             return _rejectUntracked ? _rejectHandler.handle(request, response, callback) : nextHandler(request, response, callback);
 
-        // IS the request allowed by the tracker?
+        // Is the request allowed by the tracker?
         boolean allowed = tracker.onRequest(NanoTime.now());
         if (LOG.isDebugEnabled())
             LOG.debug("allowed={} {}", allowed, tracker);
         if (allowed)
             return nextHandler(request, response, callback);
 
-        // Otherwise reject the request as it is over rate
+        // Otherwise reject the request as it is over the rate.
         return _rejectHandler.handle(request, response, callback);
     }
 

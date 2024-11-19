@@ -1111,6 +1111,8 @@ This is an example of a `QoSHandler` subclass where you can implement a custom p
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=advancedQoSHandler]
 ----
 
+Note that `QoSHandler` limits the number of _active_ concurrent requests for the whole server; if you want to apply limits for each remote client, see <<handler-use-thread-limit,`ThreadLimitHandler`>> and <<handler-use-dos,`DoSHandler`>>.
+
 [[handler-use-secured]]
 ==== SecuredRedirectHandler -- Redirect from HTTP to HTTPS
 
@@ -1288,9 +1290,40 @@ This allows web applications that use blocking API calls such as `HttpServletReq
 The remote IP address can be derived from the network, or from the `Forwarded` (or the now obsolete `X-Forwarded-For`) HTTP header.
 The `Forwarded` header is typically present in requests that have been forwarded to Jetty by a reverse proxy such as HAProxy, Nginx, Apache, etc.
 
-// TODO: mention the DoSHandler in Jetty 12.1.x.
-
 Note that `ThreadLimitHandler` is different from xref:handler-use-qos[`QoSHandler`] in that it limits the number of concurrent requests per remote IP address, while `QoSHandler` limits the total number of concurrent requests.
+
+Note also that `ThreadLimitHandler` is different from xref:handler-use-dos[`DoSHandler`] in that it limits the number of concurrent requests per remote IP address, while `DoSHandler` limits the request rate per remote IP address.
+
+[[handler-use-dos]]
+==== DoSHandler
+
+`DoSHandler` tracks remote clients (in a pluggable way, by default using the remote IP address), and limits the rate of requests for each remote client, to protect against denial-of-service attacks.
+
+`DoSHandler` extends xref:handler-use-conditional[`ConditionalHandler`], so you may be able to restrict what `DoSHandler` does to only requests that match the conditions (for example, only to `POST` requests, or only for certain request URIs, etc.)
+
+`DoSHandler` allows you to specify how to identify a remote client (by default using the remote IP address, but this is configurable), and the algorithm to use to calculate the rate of requests for each remote client (by default the link:https://en.wikipedia.org/wiki/Leaky_bucket[Leaky Bucket Algorithm]).
+
+If a remote client exceeds the configured request rate, `DoSHandler` forwards the request handling to a configurable `Request.Handler` that allows you to decide how to handle the request.
+`DosHandler` provides two such ``Request.Handler``s out of the box:
+
+* `StatusRejectHandler` (the default) that responds with a configurable HTTP status code (by default `429 Too Many Requests`)
+* `DelayedRejectHandler` that delays the request handling by a configurable timeout, and then forwards to request handling to another `Request.Handler` (by default `StatusRejectHandler`).
+Delaying the request handling is of little cost for the server (since the request is delayed asynchronously), but the attacker would not know whether the request it sent was processed or rejected until the timeout elapses.
+Hopefully, the delay forces the attacker to use more resources, and/or reduce the request rate, therefore reducing the attack impact on the server.
+
+[CAUTION]
+====
+While `DoSHandler` may be a good start for simple setups, denial-of-service protection is typically best performed _outside_ the server itself, for example in load balancers or other data center network infrastructure components.
+====
+
+Here is a simple example that shows how to use `DoSHandler`:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=dosHandler]
+----
+
+For other denial-of-service protections, see also <<handler-use-qos,`QoSHandler`>> and <<handler-use-thread-limit,`ThreadLimitHandler`>>.
 
 [[handler-use-servlet]]
 === Servlet API Handlers

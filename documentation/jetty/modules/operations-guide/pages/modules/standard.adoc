@@ -129,6 +129,19 @@ The module properties are:
 include::{jetty-home}/modules/debuglog.mod[tags=documentation]
 ----
 
+[[dos]]
+== Module `dos`
+
+The `dos` module installs the `org.eclipse.jetty.server.handler.DoSHandler` at the root of the `Handler` tree.
+
+The `DoSHandler` limits the rate of requests per remote client, as explained in xref:programming-guide:server/http.adoc#handler-use-dos[this section].
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/dos.mod[tags=documentation]
+----
+
 [[eager-content]]
 == Module `eager-content`
 

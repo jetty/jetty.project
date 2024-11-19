@@ -40,18 +40,17 @@
         </Arg>
         <Arg name="maxTrackers" type="int"><Property name="jetty.dos.maxTrackers" default="-1"/></Arg>
         <Arg name="rejectUntracked" type="boolean"><Property name="jetty.dos.rejectUntracked" default="false"/></Arg>
-
-        <Call name="includeInetAddressPattern">
+        <Call name="includeMethod">
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-              <Arg><Property name="jetty.dos.include.inet" default="" /></Arg>
+              <Arg><Property name="jetty.dos.include.method" default="" /></Arg>
             </Call>
           </Arg>
         </Call>
-        <Call name="excludeInetAddressPattern">
+        <Call name="excludeMethod">
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
-              <Arg><Property name="jetty.dos.exclude.inet" default="" /></Arg>
+              <Arg><Property name="jetty.dos.exclude.method" default="" /></Arg>
             </Call>
           </Arg>
         </Call>
@@ -66,6 +65,20 @@
           <Arg>
             <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
               <Arg><Property name="jetty.dos.exclude.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="includeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.include.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.dos.exclude.inet" default="" /></Arg>
             </Call>
           </Arg>
         </Call>

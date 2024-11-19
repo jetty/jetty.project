@@ -6,14 +6,18 @@ Enables the DosHandler for the server.
 [tags]
 connector
 
-[depend]
+[before]
+compression
+gzip
+
+[depends]
 server
 
 [xml]
 etc/jetty-dos.xml
 
 [ini-template]
-
+#tag::documentation[]
 ## The algorithm to use for obtaining an remote client identifier from a Request: ID_FROM_REMOTE_ADDRESS, ID_FROM_REMOTE_PORT, ID_FROM_REMOTE_ADDRESS_PORT, ID_FROM_CONNECTION
 #jetty.dos.id.type=ID_FROM_REMOTE_ADDRESS
 #jetty.dos.id.class=org.eclipse.jetty.server.handler.DosHandler
@@ -48,15 +52,21 @@ etc/jetty-dos.xml
 ## The status code used to reject requests; or 0 to abort the request; or -1 for a default
 #jetty.dos.rejectStatus=429
 
-## List of InetAddress patterns to include
-#jetty.dos.include.inet=10.10.10-14.0-128
+## A comma-separated list of HTTP methods to include when matching a request.
+# jetty.dos.include.method=
 
-## List of InetAddressPatterns to exclude
-#jetty.dos.exclude.inet=10.10.10-14.0-128
+## A comma-separated list of HTTP methods to exclude when matching a request.
+# jetty.dos.exclude.method=
 
-## List of path patterns to include
-#jetty.dos.include.path=/context/*
+## A comma-separated list of URI path patterns to include when matching a request.
+# jetty.dos.include.path=
 
-## List of path to exclude
-#jetty.dos.exclude.path=/context/*
+## A comma-separated list of URI path patterns to exclude when matching a request.
+# jetty.dos.exclude.path=
 
+## A comma-separated list of remote addresses patterns to include when matching a request.
+# jetty.dos.include.inet=
+
+## A comma-separated list of remote addresses patterns to exclude when matching a request.
+# jetty.dos.exclude.inet=
+#end::documentation[]
