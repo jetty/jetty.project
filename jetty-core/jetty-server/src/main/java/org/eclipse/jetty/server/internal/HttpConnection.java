@@ -88,6 +88,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
     private static final AtomicLong __connectionIdGenerator = new AtomicLong();
 
+    private final Callback _fillableCallback = new FillableCallback();
     private final TunnelSupport _tunnelSupport = new TunnelSupportOverHTTP1();
     private final AtomicLong _streamIdGenerator = new AtomicLong();
     private final long _id;
@@ -144,12 +145,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
-    }
-
-    @Override
-    public InvocationType getInvocationType()
-    {
-        return getServer().getInvocationType();
     }
 
     protected HttpGenerator newHttpGenerator()
@@ -451,7 +446,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     assert isRequestBufferEmpty();
                     releaseRequestBuffer();
-                    fillInterested();
+                    fillInterested(_fillableCallback);
                     break;
                 }
                 else if (filled < 0)
@@ -623,7 +618,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     }
 
     @Override
-    protected void onFillInterestedFailed(Throwable cause)
+    public void onFillInterestedFailed(Throwable cause)
     {
         _parser.close();
         super.onFillInterestedFailed(cause);
@@ -641,10 +636,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public void close()
     {
-        Runnable task = _httpChannel.onClose();
-        if (task != null)
-            task.run();
-        super.close();
+        try
+        {
+            Runnable task = _httpChannel.onClose();
+            if (task != null)
+                task.run();
+        }
+        finally
+        {
+            super.close();
+        }
     }
 
     @Override
@@ -652,7 +653,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         super.onOpen();
         if (isRequestBufferEmpty())
-            fillInterested();
+            fillInterested(_fillableCallback);
         else
             getExecutor().execute(this);
     }
@@ -1676,6 +1677,34 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public String getReason()
         {
             return getMessage();
+        }
+    }
+
+    private class FillableCallback implements Callback
+    {
+        private final InvocationType _invocationType;
+
+        public FillableCallback()
+        {
+            _invocationType = getServer().getInvocationType();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _invocationType;
         }
     }
 }

@@ -51,15 +51,6 @@ public abstract class AbstractConnection implements Connection, Invocable
         _readCallback = new ReadCallback();
     }
 
-    @Deprecated
-    @Override
-    public InvocationType getInvocationType()
-    {
-        // TODO consider removing the #fillInterested method from the connection and only use #fillInterestedCallback
-        //      so a connection need not be Invocable
-        return Invocable.super.getInvocationType();
-    }
-
     @Override
     public void addEventListener(EventListener listener)
     {
@@ -90,25 +81,27 @@ public abstract class AbstractConnection implements Connection, Invocable
     }
 
     /**
-     * <p>Utility method to be called to register read interest.</p>
-     * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
-     * will be called back as appropriate.</p>
+     * <p>Registers read interest using the default {@link Callback} with {@link Invocable.InvocationType#BLOCKING}.</p>
+     * <p>When read readiness is signaled, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
+     * will be invoked.</p>
+     * <p>This method should be used sparingly, mainly from {@link #onOpen()}, and {@link #fillInterested(Callback)}
+     * should be preferred instead, passing a {@link Callback} that specifies the {@link Invocable.InvocationType}
+     * for each specific case where read interest needs to be registered.</p>
      *
+     * @see #fillInterested(Callback)
      * @see #onFillable()
+     * @see #onFillInterestedFailed(Throwable)
      */
     public void fillInterested()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("fillInterested {}", this);
-        getEndPoint().fillInterested(_readCallback);
+        fillInterested(_readCallback);
     }
 
     /**
-     * <p>Utility method to be called to register read interest.</p>
-     * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
-     * will be called back as appropriate.</p>
+     * <p>Registers read interest with the given callback.</p>
+     * <p>When read readiness is signaled, the callback will be completed.</p>
      *
-     * @see #onFillable()
+     * @param callback the callback to complete when read readiness is signaled
      */
     public void fillInterested(Callback callback)
     {
@@ -130,7 +123,7 @@ public abstract class AbstractConnection implements Connection, Invocable
     /**
      * <p>Callback method invoked when the endpoint is ready to be read.</p>
      *
-     * @see #fillInterested()
+     * @see #fillInterested(Callback)
      */
     public abstract void onFillable();
 
@@ -139,7 +132,7 @@ public abstract class AbstractConnection implements Connection, Invocable
      *
      * @param cause the exception that caused the failure
      */
-    protected void onFillInterestedFailed(Throwable cause)
+    public void onFillInterestedFailed(Throwable cause)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onFillInterestedFailed {}", this, cause);
@@ -286,7 +279,12 @@ public abstract class AbstractConnection implements Connection, Invocable
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 
-    private class ReadCallback implements Callback, Invocable
+    /**
+     * <p>The default {@link Callback} for read interest, typically used from {@link #onOpen()}.</p>
+     * <p>In other cases, use {@link #fillInterested(Callback)} with a {@link Callback} that
+     * reports a more specific {@link Invocable.InvocationType}.</p>
+     */
+    private class ReadCallback implements Callback
     {
         @Override
         public void succeeded()
@@ -304,12 +302,6 @@ public abstract class AbstractConnection implements Connection, Invocable
         public String toString()
         {
             return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), AbstractConnection.this);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return AbstractConnection.this.getInvocationType();
         }
     }
 }

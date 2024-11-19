@@ -432,7 +432,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                 }
                 networkBuffer = null;
                 if (interested)
-                    getEndPoint().fillInterested(fillableCallback);
+                    fillInterested(fillableCallback);
             }
         }
 

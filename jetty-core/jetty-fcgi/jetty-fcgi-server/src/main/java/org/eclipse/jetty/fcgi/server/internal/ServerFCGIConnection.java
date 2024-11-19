@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
+    private final Callback fillableCallback = new FillableCallback();
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
@@ -161,7 +163,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        fillInterested(fillableCallback);
     }
 
     @Override
@@ -189,7 +191,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 else if (read == 0)
                 {
                     releaseInputBuffer();
-                    fillInterested();
+                    fillInterested(fillableCallback);
                     return;
                 }
                 else
@@ -305,7 +307,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     {
         releaseInputBuffer();
         if (failure == null)
-            fillInterested();
+            fillInterested(fillableCallback);
         else
             getFlusher().shutdown();
     }
@@ -407,25 +409,46 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     @Override
     public void close()
     {
-        if (stream != null)
+        try
         {
-            Runnable task = stream.getHttpChannel().onClose();
-            if (task != null)
+            if (stream != null)
             {
-                ThreadPool.executeImmediately(getExecutor(), () ->
-                {
-                    try
-                    {
-                        task.run();
-                    }
-                    finally
-                    {
-                        super.close();
-                    }
-                });
-                return;
+                Runnable task = stream.getHttpChannel().onClose();
+                if (task != null)
+                    task.run();
             }
         }
-        super.close();
+        finally
+        {
+            super.close();
+        }
+    }
+
+    private class FillableCallback implements Callback
+    {
+        private final InvocationType invocationType;
+
+        public FillableCallback()
+        {
+            invocationType = getConnector().getServer().getInvocationType();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return invocationType;
+        }
     }
 }

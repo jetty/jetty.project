@@ -509,12 +509,6 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         }
 
         @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        @Override
         public void onFillable()
         {
         }
