@@ -486,7 +486,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected void connectSuccess(SelectableChannel channel)
     {
-        
     }
     
     public interface SelectorManagerListener extends EventListener
