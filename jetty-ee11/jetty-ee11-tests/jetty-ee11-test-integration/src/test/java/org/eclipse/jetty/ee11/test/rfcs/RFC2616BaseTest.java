@@ -748,7 +748,7 @@ public abstract class RFC2616BaseTest
             87654321
             """;
 
-        try(Socket socket = http.open())
+        try (Socket socket = http.open())
         {
             InputStream in = socket.getInputStream();
             OutputStream out = socket.getOutputStream();
