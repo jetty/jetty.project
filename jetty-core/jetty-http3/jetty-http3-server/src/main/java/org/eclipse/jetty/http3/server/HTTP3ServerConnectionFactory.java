@@ -158,8 +158,18 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             getConnection().onIdleTimeout(http3Stream, timeout, (task, timedOut) ->
             {
                 Executor executor = http3Stream.getSession().getProtocolSession().getQuicSession().getExecutor();
-                ThreadPool.executeImmediately(executor, task);
-                promise.succeeded(timedOut);
+                ThreadPool.executeImmediately(executor, () ->
+                {
+                    try
+                    {
+                        task.run();
+                        promise.succeeded(timedOut);
+                    }
+                    catch (Throwable x)
+                    {
+                        promise.failed(x);
+                    }
+                });
             });
         }
 
