@@ -49,8 +49,8 @@ public abstract class AbstractConnection implements Connection, Invocable
             throw new IllegalArgumentException("Executor must not be null!");
         _endPoint = endPoint;
         _executor = executor;
-        _readCallback = new ReadCallback();
-        _nonBlockingReadCallback = new NonBlockingReadCallback();
+        _readCallback = new FillableCallback();
+        _nonBlockingReadCallback = new NonBlockingFillableCallback();
     }
 
     @Override
@@ -291,7 +291,7 @@ public abstract class AbstractConnection implements Connection, Invocable
      * <p>In other cases, use {@link #fillInterested(Callback)} with a {@link Callback} that
      * reports a more specific {@link Invocable.InvocationType}.</p>
      */
-    private class ReadCallback implements Callback
+    private class FillableCallback implements Callback
     {
         @Override
         public void succeeded()
@@ -317,7 +317,7 @@ public abstract class AbstractConnection implements Connection, Invocable
      * <p>In other cases, use {@link #fillInterested(Callback)} with a {@link Callback} that
      * reports a more specific {@link Invocable.InvocationType}.</p>
      */
-    private class NonBlockingReadCallback extends ReadCallback
+    private class NonBlockingFillableCallback extends FillableCallback
     {
         @Override
         public InvocationType getInvocationType()

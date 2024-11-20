@@ -1682,12 +1682,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     private class FillableCallback implements Callback
     {
-        private final InvocationType _invocationType;
-
-        public FillableCallback()
-        {
-            _invocationType = getServer().getInvocationType();
-        }
+        private final InvocationType _invocationType = getServer().getInvocationType();
 
         @Override
         public void succeeded()

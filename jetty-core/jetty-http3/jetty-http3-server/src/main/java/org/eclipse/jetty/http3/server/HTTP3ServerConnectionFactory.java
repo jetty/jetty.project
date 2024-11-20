@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.server;
 
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,13 +155,10 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onIdleTimeout(Stream.Server stream, TimeoutException timeout, Promise<Boolean> promise)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            getConnection().onIdleTimeout((HTTP3Stream)stream, timeout, (task, timedOut) ->
+            getConnection().onIdleTimeout(http3Stream, timeout, (task, timedOut) ->
             {
-                if (task != null)
-                {
-                    ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                    protocolSession.offer(task, true);
-                }
+                Executor executor = http3Stream.getSession().getProtocolSession().getQuicSession().getExecutor();
+                ThreadPool.executeImmediately(executor, task);
                 promise.succeeded(timedOut);
             });
         }
@@ -168,12 +167,9 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onFailure(Stream.Server stream, long error, Throwable failure)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable task = getConnection().onFailure((HTTP3Stream)stream, failure);
-            if (task != null)
-            {
-                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                protocolSession.offer(task, true);
-            }
+            Runnable task = getConnection().onFailure(http3Stream, failure);
+            Executor executor = http3Stream.getSession().getProtocolSession().getQuicSession().getExecutor();
+            ThreadPool.executeImmediately(executor, task);
         }
     }
 }

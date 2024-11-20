@@ -426,12 +426,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
 
     private class FillableCallback implements Callback
     {
-        private final InvocationType invocationType;
-
-        public FillableCallback()
-        {
-            invocationType = getConnector().getServer().getInvocationType();
-        }
+        private final InvocationType invocationType = getConnector().getServer().getInvocationType();
 
         @Override
         public void succeeded()
