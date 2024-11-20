@@ -99,6 +99,14 @@ public abstract class AbstractConnection implements Connection, Invocable
         fillInterested(_readCallback);
     }
 
+    /**
+     * <p>Registers read interest using the default {@link Callback} with {@link Invocable.InvocationType#NON_BLOCKING}.</p>
+     * <p>When read readiness is signaled, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
+     * will be invoked.</p>
+     * <p>This method should be used sparingly, and {@link #fillInterested(Callback)}
+     * should be preferred instead, passing a {@link Callback} that specifies the {@link Invocable.InvocationType}
+     * for each specific case where read interest needs to be registered.</p>
+     */
     public void nonBlockingFillInterested()
     {
         fillInterested(_nonBlockingReadCallback);

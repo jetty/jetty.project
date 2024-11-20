@@ -184,18 +184,25 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             channel.onTimeout(timeout, (task, timedOut) ->
             {
-                ThreadPool.executeImmediately(getExecutor(), () ->
+                if (task != null)
                 {
-                    try
+                    ThreadPool.executeImmediately(getExecutor(), () ->
                     {
-                        task.run();
-                        promise.succeeded(timedOut);
-                    }
-                    catch (Throwable x)
-                    {
-                        promise.failed(x);
-                    }
-                });
+                        try
+                        {
+                            task.run();
+                            promise.succeeded(timedOut);
+                        }
+                        catch (Throwable x)
+                        {
+                            promise.failed(x);
+                        }
+                    });
+                }
+                else
+                {
+                    promise.succeeded(timedOut);
+                }
             });
         }
         else
