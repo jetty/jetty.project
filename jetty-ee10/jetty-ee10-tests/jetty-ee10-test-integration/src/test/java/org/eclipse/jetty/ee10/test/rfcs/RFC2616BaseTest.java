@@ -14,7 +14,10 @@
 package org.eclipse.jetty.ee10.test.rfcs;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -46,7 +49,9 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -665,7 +670,6 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82ExpectInvalid() throws Exception
     {
@@ -690,7 +694,6 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82ExpectWithBody() throws Exception
     {
@@ -719,35 +722,70 @@ public abstract class RFC2616BaseTest
      * @throws Exception failure
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO https://github.com/jetty/jetty.project/issues/9206
     @Test
     public void test82UnexpectWithBody() throws Exception
     {
         // Expect with body
 
-        StringBuffer req3 = new StringBuffer();
-        req3.append("GET /redirect/R1 HTTP/1.1\n");
-        req3.append("Host: localhost\n");
-        req3.append("Expect: 100-continue\n"); // Valid Expect header.
-        req3.append("Content-Type: text/plain\n");
-        req3.append("Content-Length: 8\n");
-        req3.append("\n");
-        req3.append("123456\r\n");
-        req3.append("GET /echo/R1 HTTP/1.1\n");
-        req3.append("Host: localhost\n");
-        req3.append("Content-Type: text/plain\n");
-        req3.append("Content-Length: 8\n");
-        req3.append("Connection: close\n");
-        req3.append("\n");
-        req3.append("87654321"); // Body
+        String request1 = """
+            GET /redirect/R1 HTTP/1.1\r
+            Host: localhost\r
+            Expect: 100-continue\r
+            Content-Type: text/plain\r
+            Content-Length: 8\r
+            \r
+            """;
 
-        List<HttpTester.Response> responses = http.requests(req3);
+        String bodyAndRequest2 = """
+            123456\r
+            GET /echo/R1 HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 8\r
+            Connection: close\r
+            \r
+            87654321
+            """;
 
-        HttpTester.Response response = responses.get(0);
+        try (Socket socket = http.open())
+        {
+            InputStream in = socket.getInputStream();
+            OutputStream out = socket.getOutputStream();
 
-        assertEquals(302, response.getStatus(), "8.2.3 ignored no 100");
-        assertEquals("close", response.get("Connection"));
-        assertEquals(1, responses.size());
+            out.write(request1.getBytes(StandardCharsets.ISO_8859_1));
+            out.flush();
+
+            byte[] raw = new byte[8192];
+            int offset = 0;
+            int length = raw.length;
+            while (true)
+            {
+                int len = in.read(raw, offset, length);
+                assertThat(len, greaterThan(0));
+                offset += len;
+                length -= len;
+                String response = new String(raw, 0, offset, StandardCharsets.ISO_8859_1);
+                if (response.contains("HTTP/1.1 302 Found\r\n"))
+                    break;
+            }
+
+            out.write(bodyAndRequest2.getBytes(StandardCharsets.ISO_8859_1));
+            out.flush();
+
+            while (true)
+            {
+                int len = in.read(raw, offset, length);
+                if (len < 0)
+                    break;
+                offset += len;
+                length -= len;
+            }
+
+            String response = new String(raw, 0, offset, StandardCharsets.ISO_8859_1);
+            assertThat(response, containsString("Connection: close"));
+            assertThat(response, not(containsString(" 200 OK")));
+            assertThat(response, not(containsString("87654321")));
+        }
     }
 
     /**
@@ -755,13 +793,12 @@ public abstract class RFC2616BaseTest
      *
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
-    @Disabled //TODO review Expect/Continue-100 handling
     @Test
     public void test82ExpectNormal() throws Exception
     {
         // Expect 100
 
-        StringBuffer req4 = new StringBuffer();
+        StringBuilder req4 = new StringBuilder();
         req4.append("GET /echo/R1 HTTP/1.1\n");
         req4.append("Host: localhost\n");
         req4.append("Connection: close\n");
@@ -770,24 +807,50 @@ public abstract class RFC2616BaseTest
         req4.append("Content-Length: 7\n");
         req4.append("\n"); // No body
 
-        Socket sock = http.open();
-        try
+        http.setTimeoutMillis(1000000);
+        try (Socket sock = http.open())
         {
-            http.send(sock, req4);
+            InputStream in = sock.getInputStream();
+            OutputStream out = sock.getOutputStream();
+            out.write(req4.toString().getBytes(StandardCharsets.ISO_8859_1));
+            out.flush();
 
-            http.setTimeoutMillis(2000);
-            HttpTester.Response response = http.readAvailable(sock);
-            assertThat("8.2.3 expect 100", response.getStatus(), is(HttpStatus.CONTINUE_100));
+            byte[] raw = new byte[8192];
+            int offset = 0;
+            int length = raw.length;
+            while (true)
+            {
+                int len = in.read(raw, offset, length);
+                assertThat(len, greaterThan(0));
+                offset += len;
+                length -= len;
+                String response = new String(raw, 0, offset, StandardCharsets.ISO_8859_1);
+                if (response.equals("HTTP/1.1 100 Continue\r\n\r\n"))
+                    break;
+            }
 
-            http.send(sock, "654321\n"); // Now send the data
-            response = http.read(sock);
+            out.write("6543210".getBytes(StandardCharsets.ISO_8859_1));
+            out.flush();
 
-            assertThat("8.2.3 expect 100", response.getStatus(), is(HttpStatus.OK_200));
-            assertThat("8.2.3 expect 100", response.getContent(), Matchers.containsString("654321\n"));
-        }
-        finally
-        {
-            http.close(sock);
+            while (true)
+            {
+                int len = in.read(raw, offset, length);
+                if (len > 0)
+                {
+                    offset += len;
+                    length -= len;
+                }
+                else if (len == 0)
+                {
+                    throw new IllegalStateException();
+                }
+                else
+                {
+                    String response = new String(raw, 0, offset, StandardCharsets.ISO_8859_1);
+                    if (response.contains("HTTP/1.1 200 OK\r\n") && response.contains("6543210"))
+                        break;
+                }
+            }
         }
     }
 

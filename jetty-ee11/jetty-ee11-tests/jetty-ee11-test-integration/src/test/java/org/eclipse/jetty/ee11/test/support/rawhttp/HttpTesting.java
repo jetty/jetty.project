@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.StringUtil;
 /**
  * Testing utility for performing RAW HTTP request/response.
  */
+@Deprecated(forRemoval = true, since = "12.1.0")
 public class HttpTesting
 {
     private boolean debug = false;
