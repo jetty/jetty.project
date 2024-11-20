@@ -764,7 +764,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param allowed True if relative redirection locations are allowed
+     * @param allowed True if relative redirection locations are allowed (default {@code true}).
      */
     public void setRelativeRedirectAllowed(boolean allowed)
     {
@@ -772,7 +772,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return True if relative redirection locations are allowed
+     * @return True if relative redirection locations are allowed (default {@code true})
      */
     @ManagedAttribute("Whether relative redirection locations are allowed")
     public boolean isRelativeRedirectAllowed()

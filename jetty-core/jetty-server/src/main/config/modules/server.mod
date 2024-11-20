@@ -54,7 +54,7 @@ etc/jetty.xml
 # jetty.httpConfig.sendServerVersion=true
 
 ## Whether to send the Date: header
-# jetty.httpConfig.sendDateHeader=false
+# jetty.httpConfig.sendDateHeader=true
 
 ## Max per-connection header cache size (in nodes)
 # jetty.httpConfig.headerCacheSize=1024
