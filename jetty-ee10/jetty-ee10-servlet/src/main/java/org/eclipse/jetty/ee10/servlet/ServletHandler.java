@@ -43,6 +43,7 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -132,8 +133,11 @@ public class ServletHandler extends Handler.Wrapper
     }
 
     /**
-     * @param decodeAmbiguousURIs {@code True} if ambiguous URIs are decoded by {@link ServletApiRequest#getServletPath()}
-     *                            and {@link ServletApiRequest#getPathInfo()}.
+     * Allow or disallow ambiguous URIs to be returned by {@link ServletApiRequest#getServletPath()}
+     * and {@link ServletApiRequest#getPathInfo()}.  Note that the
+     * {@link org.eclipse.jetty.server.HttpConfiguration#setUriCompliance(UriCompliance)} must also be set to
+     * allow ambiguous URIs to be accepted by the {@link org.eclipse.jetty.server.Connector}.
+     * @param decodeAmbiguousURIs {@code True} if ambiguous URIs are decoded by all servlet API methods.
      */
     public void setDecodeAmbiguousURIs(boolean decodeAmbiguousURIs)
     {

@@ -135,6 +135,10 @@ Configure Commands:
 Options:
 --------
 
+  --env=<environmentName>
+                   Sets the environment which will apply to all subsequent libraries,
+                   properties and XML files.
+
   --modules=<moduleName>(,<moduleName>)*
                    Enables a module for this execution.
                    To enable a module for all future executions, use the
@@ -145,7 +149,8 @@ Options:
 
   --libs=<classpath>
                    Adds the specified class-path entries to the the server
-                   class-path (or module-path).
+                   class-path; or module-path; or environment classpath if
+                   there has been a prior --env argument.
 
   --files=<uri>|<location>
   --download=<uri>|<location>
@@ -167,7 +172,6 @@ Options:
                                configured jetty dirs (eg: `${jetty.base}`
                                and any `--include-jetty-dir` and finally
                                checking the `${jetty.home}`)
-
 
   --exec
                    Executes the generated command line in a forked JVM
@@ -234,6 +238,42 @@ Options:
                    configuration to all specific ${jetty.base} directories
                    without having to modify ${jetty.home}.
 
+  -D<name>=<value>
+                   Specifies a system property, as well as a start property.
+                   Note: this is a program argument that is interpreted and
+                   added to the existing JVM system properties.
+
+  <file>.xml
+                   Specifies a Jetty XML file relative to ${jetty.base}.
+                   This file is in addition to the Jetty XML files resolved
+                   from the [xml] sections of the enabled modules.
+                   If there has been a prior --env argument, the XML will be
+                   executed within that environment
+
+  <name>=<value>
+                   Specifies a property value that overrides the same
+                   property defined in a ${jetty.base}/start.d/*.ini file,
+                   or in the [ini] section of a *.mod file.
+
+                   <name>=<value>
+                     Sets the property value unconditionally.
+                   <name>+=<value>
+                     Appends the given value to the existing value.
+                   <name>?=<value>
+                     Sets the property value only if it is not already set.
+
+                   If there has been a prior --env argument, then the property is
+                   set only for the current environment, otherwise it is set for
+                   the whole server.
+
+  <file>.properties
+                   Specifies a file of property assignments that overrides the same
+                   property defined in a ${jetty.base}/start.d/*.ini file,
+                   or in the [ini] section of a *.mod file.
+                   If there has been a prior --env argument, then the property is
+                   set only for the current environment, otherwise it is set for
+                   the whole server.
+
   jetty.home=<directory>
                    Sets the ${jetty.home} directory.
                    By default it is resolved from the start.jar file path.
@@ -273,25 +313,3 @@ Options:
   maven.repo.uri=<url>
                    The base URL to use to download Maven dependencies.
                    Defaults to: https://repo1.maven.org/maven2/.
-
-  <name>=<value>
-                  Specifies a property value that overrides the same
-                  property defined in a ${jetty.base}/start.d/*.ini file,
-                  or in the [ini] section of a *.mod file.
-
-                  <name>=<value>
-                    Sets the property value unconditionally.
-                  <name>+=<value>
-                    Appends the given value to the existing value.
-                  <name>?=<value>
-                    Sets the property value only if it is not already set.
-
-  -D<name>=<value>
-                  Specifies a system property, as well as a start property.
-                  Note: this is a program argument that is interpreted and
-                  added to the existing JVM system properties.
-
-  <xml-file>
-                  Specifies a Jetty XML file relative to ${jetty.base}.
-                  This file is in addition to the Jetty XML files resolved
-                  from the [xml] sections of the enabled modules.
