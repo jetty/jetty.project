@@ -686,7 +686,6 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                System.err.println("processing request " + request.getHttpURI().getPath());
                 requests.incrementAndGet();
                 handled.incrementAndGet();
                 phaser.get().countDown();
@@ -732,24 +731,24 @@ public class IdleTimeoutTest extends AbstractTest
         }
 
         // Send one more request to consume the whole session flow control window.
-        CountDownLatch resetLatch = new CountDownLatch(1);
+        CountDownLatch extraLatch = new CountDownLatch(1);
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
         client.newStream(frame, promise, new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+            public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                callback.succeeded();
-                resetLatch.countDown();
+                responses.incrementAndGet();
+                extraLatch.countDown();
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(((HTTP2Session)client).updateSendWindow(0));
         stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
 
-        assertTrue(resetLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(extraLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Wait for WINDOW_UPDATEs to be processed by the client.
         await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
@@ -758,7 +757,9 @@ public class IdleTimeoutTest extends AbstractTest
         await().atMost(5, TimeUnit.SECONDS).until(handled::get, is(0));
         assertThat(requests.get(), is(count - 1));
 
-        await().atMost(5, TimeUnit.SECONDS).until(responses::get, is(count - 1));
+        // The first 2 requests are handled normally and responded with 200, the last 2 are
+        // not handled due to timeout while queued, but they are responded anyway with a 500.
+        await().atMost(5, TimeUnit.SECONDS).until(responses::get, is(count + 1));
     }
 
     @Test

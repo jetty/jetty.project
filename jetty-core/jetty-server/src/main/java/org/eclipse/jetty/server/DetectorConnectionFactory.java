@@ -137,7 +137,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         return configure(new DetectorConnection(endPoint, connector), connector, endPoint);
     }
 
-    private class DetectorConnection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+    private class DetectorConnection extends AbstractConnection.NonBlocking implements Connection.UpgradeFrom, Connection.UpgradeTo
     {
         private final Connector _connector;
         private final RetainableByteBuffer _buffer;
@@ -183,7 +183,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                 if (upgraded)
                     _buffer.release();
                 else
-                    nonBlockingFillInterested();
+                    fillInterested();
             }
             catch (Throwable x)
             {
@@ -211,7 +211,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                     }
                     if (fill == 0)
                     {
-                        nonBlockingFillInterested();
+                        fillInterested();
                         return;
                     }
 

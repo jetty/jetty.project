@@ -445,11 +445,16 @@ public class HttpChannelState implements HttpChannel, Components
             // If not handled, then we just fail the request callback
             if (!_handled && _handling == null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failing request not yet handled {} {}", _request, this);
                 Callback callback = _request._callback;
                 task = () -> callback.failed(x);
             }
             else
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("failing request {} {}", _request, this);
+
                 // Set the failure to arrange for any subsequent reads or demands to fail.
                 if (_readFailure == null)
                     _readFailure = Content.Chunk.from(x, true);

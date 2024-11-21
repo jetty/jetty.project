@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class NegotiatingServerConnection extends AbstractConnection
+public abstract class NegotiatingServerConnection extends AbstractConnection.NonBlocking
 {
     private static final Logger LOG = LoggerFactory.getLogger(NegotiatingServerConnection.class);
 
@@ -83,7 +83,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
     public void onOpen()
     {
         super.onOpen();
-        nonBlockingFillInterested();
+        fillInterested();
     }
 
     @Override
@@ -106,7 +106,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 {
                     // Here the SSL handshake is not finished yet but we filled 0 bytes,
                     // so we need to read more.
-                    nonBlockingFillInterested();
+                    fillInterested();
                 }
             }
             else

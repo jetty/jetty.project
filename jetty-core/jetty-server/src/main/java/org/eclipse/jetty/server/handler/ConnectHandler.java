@@ -570,7 +570,7 @@ public class ConnectHandler extends Handler.Wrapper
         {
             super.onOpen();
             onConnectSuccess(connectContext, this);
-            nonBlockingFillInterested();
+            fillInterested();
         }
 
         @Override
@@ -613,7 +613,7 @@ public class ConnectHandler extends Handler.Wrapper
 
             if (buffer == null)
             {
-                nonBlockingFillInterested();
+                fillInterested();
                 return;
             }
 
@@ -626,7 +626,7 @@ public class ConnectHandler extends Handler.Wrapper
                     buffer = null;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Wrote initial {} bytes to server {}", remaining, DownstreamConnection.this);
-                    nonBlockingFillInterested();
+                    fillInterested();
                 }
 
                 @Override
@@ -659,7 +659,7 @@ public class ConnectHandler extends Handler.Wrapper
         }
     }
 
-    private abstract static class TunnelConnection extends AbstractConnection
+    private abstract static class TunnelConnection extends AbstractConnection.NonBlocking
     {
         private final IteratingCallback pipe = new ProxyIteratingCallback();
         private final ByteBufferPool bufferPool;
