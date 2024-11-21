@@ -92,9 +92,6 @@ import org.slf4j.LoggerFactory;
  *
  *  baseResource      Set to replace the context resource base
  *
- *  resourceCache     If set, this is a context attribute name, which the servlet
- *                    will use to look for a shared ResourceCache instance.
- *
  *  relativeBaseResource
  *                    Set with a pathname relative to the base of the
  *                    servlet context root. Useful for only serving static content out
