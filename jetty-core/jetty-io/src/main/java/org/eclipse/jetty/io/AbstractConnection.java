@@ -278,7 +278,7 @@ public abstract class AbstractConnection implements Connection, Invocable
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 
-    public static abstract class NonBlocking extends AbstractConnection
+    public abstract static class NonBlocking extends AbstractConnection
     {
         private final Callback _nonBlockingReadCallback = new NonBlockingFillableCallback();
 
