@@ -180,19 +180,31 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Idle timeout on {}", stream, timeout);
         HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
-        if (channel != null)
-        {
-            channel.onTimeout(timeout, (task, timedOut) ->
-            {
-                if (task != null)
-                    offerTask(task, true);
-                promise.succeeded(timedOut);
-            });
-        }
-        else
+        if (channel == null)
         {
             promise.succeeded(false);
+            return;
         }
+        channel.onTimeout(timeout, (task, timedOut) ->
+        {
+            if (task == null)
+            {
+                promise.succeeded(timedOut);
+                return;
+            }
+            ThreadPool.executeImmediately(getExecutor(), () ->
+            {
+                try
+                {
+                    task.run();
+                    promise.succeeded(timedOut);
+                }
+                catch (Throwable x)
+                {
+                    promise.failed(x);
+                }
+            });
+        });
     }
 
     public void onStreamFailure(Stream stream, Throwable failure, Callback callback)
