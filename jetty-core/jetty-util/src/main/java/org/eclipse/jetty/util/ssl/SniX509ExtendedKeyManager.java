@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import javax.net.ssl.ExtendedSSLSession;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIMatcher;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -115,23 +116,30 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         String host = null;
         if (session instanceof ExtendedSSLSession extended)
         {
-            host = extended.getRequestedServerNames().stream()
-                .filter(SNIHostName.class::isInstance)
-                .map(SNIHostName.class::cast)
-                .map(SNIHostName::getAsciiName)
-                .findFirst()
-                .orElse(null);
+            for (SNIServerName serverName : extended.getRequestedServerNames())
+            {
+                if (serverName instanceof SNIHostName hostName)
+                {
+                    host = hostName.getAsciiName();
+                    break;
+                }
+            }
         }
         if (host == null)
         {
             // Find our SNIMatcher.  There should only be one and it always matches (always returns true
             // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
-            host = matchers == null ? null : matchers.stream()
-                .filter(SslContextFactory.AliasSNIMatcher.class::isInstance)
-                .map(SslContextFactory.AliasSNIMatcher.class::cast)
-                .findFirst()
-                .map(SslContextFactory.AliasSNIMatcher::getHost)
-                .orElse(null);
+            if (matchers != null)
+            {
+                for (SNIMatcher matcher : matchers)
+                {
+                    if (matcher instanceof SslContextFactory.AliasSNIMatcher aliasMatcher)
+                    {
+                        host = aliasMatcher.getHost();
+                        break;
+                    }
+                }
+            }
         }
         if (session != null && host != null)
             session.putValue(SslContextFactory.Server.SNI_HOST, host);

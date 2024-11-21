@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.ExtendedSSLSession;
 import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 
@@ -243,14 +244,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         // SSLSession attributes, so perform a more expensive SNI retrieval.
         if (session instanceof ExtendedSSLSession extended)
         {
-            sniHost = extended.getRequestedServerNames().stream()
-                .filter(SNIHostName.class::isInstance)
-                .map(SNIHostName.class::cast)
-                .map(SNIHostName::getAsciiName)
-                .findFirst()
-                .orElse(null);
-            if (sniHost != null)
-                return sniHost;
+            for (SNIServerName serverName : extended.getRequestedServerNames())
+            {
+                if (serverName instanceof SNIHostName hostName)
+                    return hostName.getAsciiName();
+            }
         }
 
         // Nothing more we can do.
