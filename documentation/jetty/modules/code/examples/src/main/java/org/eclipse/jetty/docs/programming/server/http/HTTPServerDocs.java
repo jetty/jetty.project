@@ -1662,6 +1662,7 @@ public class HTTPServerDocs
                 return true;
             }
         }
+
         ContextHandler contextHandler = new ContextHandler(new MyWebApp(), "/app");
         gracefulHandler.setHandler(contextHandler);
 
