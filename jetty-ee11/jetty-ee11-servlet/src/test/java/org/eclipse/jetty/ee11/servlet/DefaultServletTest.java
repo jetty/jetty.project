@@ -74,7 +74,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1969,47 +1968,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(scenario.expectedStatus));
         if (scenario.extraAsserts != null)
             scenario.extraAsserts.accept(response);
-    }
-
-    @Disabled("Disabled until fix for HttpContent merged")
-    @Test
-    public void testDirectFromResourceHttpContent() throws Exception
-    {
-        FS.ensureDirExists(docRoot);
-        Path index = docRoot.resolve("index.html");
-        Files.writeString(index, "<h1>Hello World</h1>", UTF_8);
-
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-        defholder.setInitParameter("dirAllowed", "true");
-        defholder.setInitParameter("redirectWelcome", "false");
-        defholder.setInitParameter("useFileMappedBuffer", "true");
-        defholder.setInitParameter("welcomeServlets", "exact");
-        defholder.setInitParameter("gzip", "false");
-        defholder.setInitParameter("resourceCache", "resourceCache");
-
-        String rawResponse;
-        HttpTester.Response response;
-
-        rawResponse = connector.getResponse("""
-            GET /context/index.html HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
-
-        /*
-        TODO: fix after HttpContent changes.
-        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
-        HttpContent content = factory.getContent("/index.html", 200);
-        ByteBuffer buffer = content.getDirectBuffer();
-        assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html", 5);
-        buffer = content.getDirectBuffer();
-        assertThat("Direct buffer", buffer, is(nullValue()));
-         */
     }
 
     @SuppressWarnings("Duplicates")

@@ -108,6 +108,11 @@ public interface ThreadPool extends Executor
             task.run();
             return;
         }
+        if (invocationType == Invocable.InvocationType.EITHER)
+        {
+            Invocable.invokeNonBlocking(task);
+            return;
+        }
 
         if (executor instanceof TryExecutor tryExecutor && tryExecutor.tryExecute(task))
             return;
@@ -116,12 +121,6 @@ public interface ThreadPool extends Executor
         if (virtual != null)
         {
             virtual.execute(task);
-            return;
-        }
-
-        if (invocationType == Invocable.InvocationType.EITHER)
-        {
-            Invocable.invokeNonBlocking(task);
             return;
         }
 

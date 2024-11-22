@@ -56,7 +56,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -2033,47 +2032,6 @@ public class ResourceServletTest
         assertThat(response.toString(), response.getStatus(), is(scenario.expectedStatus));
         if (scenario.extraAsserts != null)
             scenario.extraAsserts.accept(response);
-    }
-
-    @Test
-    public void testDirectFromResourceHttpContent() throws Exception
-    {
-        FS.ensureDirExists(docRoot);
-        Path index = docRoot.resolve("index.html");
-        Files.writeString(index, "<h1>Hello World</h1>", UTF_8);
-
-        ServletHolder holder = context.addServlet(ResourceServlet.class, "/");
-        holder.setInitParameter("dirAllowed", "true");
-        holder.setInitParameter("redirectWelcome", "false");
-        holder.setInitParameter("useFileMappedBuffer", "true");
-        holder.setInitParameter("welcomeServlets", "exact");
-        holder.setInitParameter("gzip", "false");
-        holder.setInitParameter("resourceCache", "resourceCache");
-
-        String rawResponse;
-        HttpTester.Response response;
-
-        rawResponse = connector.getResponse("""
-            GET /context/index.html HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
-
-        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
-
-        /*
-        TODO: fix after HttpContent changes.
-        HttpContent content = factory.getContent("/index.html", 200);
-        ByteBuffer buffer = content.getDirectBuffer();
-        assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html", 5);
-        buffer = content.getDirectBuffer();
-        assertThat("Direct buffer", buffer, is(nullValue()));
-         */
     }
 
     @SuppressWarnings("Duplicates")

@@ -1443,7 +1443,6 @@ public class DefaultServletTest
             defholder.setInitParameter("useFileMappedBuffer", "true");
             defholder.setInitParameter("welcomeServlets", "exact");
             defholder.setInitParameter("gzip", "false");
-            defholder.setInitParameter("resourceCache", "resourceCache");
         });
 
         String rawResponse;
