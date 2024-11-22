@@ -540,6 +540,18 @@ The `jetty.server.stopAtShutdown` property configures a JVM shutdown hook that i
 
 Obviously, the JVM can also be stopped with `kill -KILL <pid>` that exits the process abruptly without running the JVM shutdown hooks.
 
+[[stop-graceful]]
+=== Stopping Gracefully
+
+Stopping Jetty abruptly when there are active HTTP requests being handled may result in a variety or errors, because Jetty components that are used to handle requests are being stopped concurrently.
+
+For example, when the Jetty thread pool is stopped, an attempt to submit a task would throw `RejectedExecutionException`; when a component is stopped, its fields may be nulled-out, resulting in a `NullPointerException` being thrown if the component is used; etc.
+
+You can stop Jetty _gracefully_ by adding the `graceful` Jetty module (see xref:modules/standard.adoc#graceful[this section] for more information).
+
+When Jetty is stopped, the `graceful` module organizes to reject new requests, but allows existing requests to finish within a configurable timeout; then closes all the connections, stops all the Jetty components, and then exits the JVM.
+In this way, existing requests are not responded with an error caused by the server stopping, provided they complete within the timeout.
+
 [[stop-remote]]
 === Stopping Jetty from Remote
 

@@ -168,6 +168,19 @@ Jetty's configuration properties are identical across all versions of this modul
 include::{jetty-home}/modules/ee10-webapp.mod[tags=ini-template]
 ----
 
+[[graceful]]
+== Module `graceful`
+
+The `graceful` module allows to shut down gracefully the Jetty server when it is stopped (see xref:start/index.adoc#stop[this section] for more information about stopping Jetty).
+
+The `graceful` module installs the `GracefulHandler` at the root of the `Handler` tree; the `GracefulHandler` rejects new requests, but allows current requests to terminate within a configurable timeout, as explained in xref:programming-guide:server/http.adoc#handler-use-graceful[this section].
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/graceful.mod[tags=documentation]
+----
+
 [[http]]
 == Module `http`
 

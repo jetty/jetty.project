@@ -89,9 +89,6 @@ etc/jetty.xml
 ## Whether ctrl+c on the console gracefully stops the Jetty server
 # jetty.server.stopAtShutdown=true
 
-## Timeout in ms to apply when stopping the server gracefully
-# jetty.server.stopTimeout=5000
-
 ## Dump the state of the Jetty server, components, and webapps after startup
 # jetty.server.dumpAfterStart=false
 

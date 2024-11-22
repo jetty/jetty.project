@@ -1254,6 +1254,41 @@ The `Forwarded` header is typically present in requests that have been forwarded
 
 Note that `ThreadLimitHandler` is different from xref:handler-use-qos[`QoSHandler`] in that it limits the number of concurrent requests per remote IP address, while `QoSHandler` limits the total number of concurrent requests.
 
+[[handler-use-graceful]]
+==== GracefulHandler
+
+`GracefulHandler` allows to stop the Jetty server in a graceful way, by rejecting new requests but allowing existing requests to complete within a configurable timeout.
+
+In this way, existing requests can be completed normally rather than with failures caused by the fact that the server is stopping; for example, stopping the server causes all TCP connections to be closed, so trying to write a response will result in a failure.
+
+In order to stop Jetty gracefully, you need the following:
+
+* Install the `GracefulHandler`, typically just after the `Server` at the root of the `Handler` tree.
+* Configure `Server.stopTimeout` to a positive value.
+
+When the `Server` component is stopped, it will check the `Server.stopTimeout`, and if positive, it will initiate a graceful shutdown by notifying all components that implement the `Graceful` interface that the shutdown has been initiated.
+
+`GracefulHandler` implements `Graceful`, so it will start rejecting new requests with status code `503 Service Available`, but will allow existing requests to complete for a period of time up to `Server.stopTimeout`.
+
+When all existing requests have completed, the `Server` stops all ``Connector``s, closes all connections, and finally stops all the components.
+
+This is how you configure and use `GracefulHandler`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=gracefulHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+  └── GracefulHandler
+      └── ContextHandler
+          └── MyWebApp
+----
+
 [[handler-use-servlet]]
 === Servlet API Handlers
 
