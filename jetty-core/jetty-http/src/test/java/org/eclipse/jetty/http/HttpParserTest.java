@@ -36,6 +36,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.HTTP_0_9;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.LF_CHUNK_TERMINATION;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.LF_HEADER_TERMINATION;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTILINE_FIELD_VALUE;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,6 +46,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -113,29 +117,40 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParseMockIP(String eoln)
+    @MethodSource("scenarios")
+    public void testLineParseMockIP(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /mock/127.0.0.1 HTTP/1.1" + eoln + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /mock/127.0.0.1 HTTP/1.0" + scenario.eol + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        assertNull(_bad);
         assertEquals("POST", _methodOrVersion);
         assertEquals("/mock/127.0.0.1", _uriOrStatus);
-        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("HTTP/1.0", _versionOrReason);
         assertEquals(-1, _headers);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParse0(String eoln)
+    @MethodSource("scenarios")
+    public void testLineParse0(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /foo HTTP/1.0" + eoln + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /foo HTTP/1.0" + scenario.eol + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("POST", _methodOrVersion);
         assertEquals("/foo", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -143,41 +158,50 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParse1RFC2616(String eoln)
+    @MethodSource("scenarios")
+    public void testLineParse1HTTP_0_9(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("GET /999" + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("GET /999" + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", HTTP_0_9));
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
         assertEquals("/999", _uriOrStatus);
         assertEquals("HTTP/0.9", _versionOrReason);
         assertEquals(-1, _headers);
-        assertThat(_complianceViolation, contains(HttpCompliance.Violation.HTTP_0_9));
+        assertTrue(_complianceViolation.contains(HTTP_0_9));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParse1(String eoln)
+    @MethodSource("scenarios")
+    public void testLineParse1(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("GET /999" + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("GET /999" + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance.without("no 0.9", HTTP_0_9));
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/0.9 not supported", _bad);
-        assertThat(_complianceViolation, Matchers.empty());
+        assertThat(_complianceViolation, scenario.isViolation() ? not(empty()) : empty());
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParse2RFC2616(String eoln)
+    @Test
+    public void testLineParse2RFC2616()
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /222 " + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /222 \r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
@@ -192,28 +216,38 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParse2(String eoln)
+    @MethodSource("scenarios")
+    public void testLineParse2(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /222 " + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /222 " + scenario.eol);
 
         _versionOrReason = null;
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance.without("no 0.9", HTTP_0_9));
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/0.9 not supported", _bad);
-        assertThat(_complianceViolation, Matchers.empty());
+        assertThat(_complianceViolation, scenario.isViolation() ? not(empty()) : empty());
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParse3(String eoln)
+    @MethodSource("scenarios")
+    public void testLineParse3(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /fo\u0690 HTTP/1.0" + eoln + eoln, StandardCharsets.UTF_8);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /fo\u0690 HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.UTF_8);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("POST", _methodOrVersion);
         assertEquals("/fo\u0690", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -221,14 +255,19 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParse4(String eoln)
+    @MethodSource("scenarios")
+    public void testLineParse4(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /foo?param=\u0690 HTTP/1.0" + eoln + eoln, StandardCharsets.UTF_8);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /foo?param=\u0690 HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.UTF_8);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("POST", _methodOrVersion);
         assertEquals("/foo?param=\u0690", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -236,14 +275,19 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLineParse5(String eoln)
+    @MethodSource("scenarios")
+    public void testLineParse5(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("GET /ctx/testLoginPage;jsessionid=123456789;other HTTP/1.0" + eoln + eoln, StandardCharsets.UTF_8);
+        ByteBuffer buffer = BufferUtil.toBuffer("GET /ctx/testLoginPage;jsessionid=123456789;other HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.UTF_8);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("GET", _methodOrVersion);
         assertEquals("/ctx/testLoginPage;jsessionid=123456789;other", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -251,14 +295,19 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLongURLParse(String eoln)
+    @MethodSource("scenarios")
+    public void testLongURLParse(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("POST /123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/ HTTP/1.0" + eoln + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("POST /123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/ HTTP/1.0" + scenario.eol + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("POST", _methodOrVersion);
         assertEquals("/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -266,14 +315,19 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testAllowedLinePreamble(String eoln)
+    @MethodSource("scenarios")
+    public void testAllowedLinePreamble(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer(eoln + eoln + "GET / HTTP/1.0" + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer(scenario.eol + scenario.eol + "GET / HTTP/1.0" + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -281,25 +335,35 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testDisallowedLinePreamble(String eoln)
+    @MethodSource("scenarios")
+    public void testDisallowedLinePreamble(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer(eoln + " " + eoln + "GET / HTTP/1.0" + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer(scenario.eol + " " + scenario.eol + "GET / HTTP/1.0" + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("Illegal character SPACE=' '", _bad);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testConnect(String eoln)
+    @MethodSource("scenarios")
+    public void testConnect(Scenario scenario)
     {
-        ByteBuffer buffer = BufferUtil.toBuffer("CONNECT 192.168.1.2:80 HTTP/1.1" + eoln + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("CONNECT 192.168.1.2:80 HTTP/1.1" + scenario.eol + scenario.eol);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("CONNECT", _methodOrVersion);
         assertEquals("192.168.1.2:80", _uriOrStatus);
         assertEquals("HTTP/1.1", _versionOrReason);
@@ -307,18 +371,23 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testSimple(String eoln)
+    @MethodSource("scenarios")
+    public void testSimple(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
@@ -333,18 +402,23 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testLowerCaseVersion(String eoln)
+    @MethodSource("scenarios")
+    public void testLowerCaseVersion(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / http/1.1" + eoln +
-                "Host: localhost" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / http/1.1" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
@@ -373,18 +447,23 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderCacheNearMiss(String eoln)
+    @MethodSource("scenarios")
+    public void testHeaderCacheNearMiss(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Connection: closed" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Connection: closed" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
@@ -399,21 +478,26 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderCacheSplitNearMiss(String eoln)
+    @MethodSource("scenarios")
+    public void testHeaderCacheSplitNearMiss(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
                 "Connection: close");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         assertFalse(parser.parseNext(buffer));
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         buffer = BufferUtil.toBuffer(
-            "d" + eoln +
-                eoln);
+            "d" + scenario.eol +
+                scenario.eol);
         assertTrue(parser.parseNext(buffer));
 
         assertTrue(_headerCompleted);
@@ -429,21 +513,26 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testFoldedField2616(String eoln)
+    @MethodSource("scenarios")
+    public void testFoldedFieldMultiLine(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Name: value" + eoln +
-                " extra" + eoln +
-                "Name2: " + eoln +
-                "\tvalue2" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Name: value" + scenario.eol +
+                " extra" + scenario.eol +
+                "Name2: " + scenario.eol +
+                "\tvalue2" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", MULTILINE_FIELD_VALUE));
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertThat(_bad, Matchers.nullValue());
         assertEquals("Host", _hdr[0]);
@@ -453,56 +542,41 @@ public class HttpParserTest
         assertEquals("value extra", _val[1]);
         assertEquals("Name2", _hdr[2]);
         assertEquals("value2", _val[2]);
-        assertThat(_complianceViolation, contains(MULTILINE_FIELD_VALUE, MULTILINE_FIELD_VALUE));
+        assertTrue(_complianceViolation.contains(MULTILINE_FIELD_VALUE));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testFoldedField7230(String eoln)
+    @MethodSource("scenarios")
+    public void testWhiteSpaceInName(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Name: value" + eoln +
-                " extra" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "N ame: value" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
-
-        assertThat(_bad, Matchers.notNullValue());
-        assertThat(_bad, containsString("Line Folding not supported"));
-        assertThat(_complianceViolation, Matchers.empty());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testWhiteSpaceInName(String eoln)
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "N ame: value" + eoln +
-                eoln);
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
-        parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertThat(_bad, Matchers.notNullValue());
         assertThat(_bad, containsString("Illegal character"));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testWhiteSpaceAfterName(String eoln)
+    @MethodSource("scenarios")
+    public void testWhiteSpaceAfterName(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Name : value" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Name : value" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
@@ -566,17 +640,17 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testNoValue(String eoln)
+    @MethodSource("scenarios")
+    public void testNoValue(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Name0:  " + eoln +
-                "Name1:" + eoln +
-                "Authorization:  " + eoln +
-                "Authorization:" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Name0:  " + scenario.eol +
+                "Name1:" + scenario.eol +
+                "Authorization:  " + scenario.eol +
+                "Authorization:" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler()
         {
@@ -587,9 +661,14 @@ public class HttpParserTest
                 super.badMessage(failure);
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.setHeaderCacheSize(1024);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
@@ -610,18 +689,23 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testTrailingSpacesInHeaderNameNoCustom0(String eoln)
+    @MethodSource("scenarios")
+    public void testTrailingSpacesInHeaderNameNoCustom0(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 204 No Content" + eoln +
-                "Access-Control-Allow-Headers : Origin" + eoln +
-                "Other: value" + eoln +
-                eoln);
+            "HTTP/1.1 204 No Content" + scenario.eol +
+                "Access-Control-Allow-Headers : Origin" + scenario.eol +
+                "Other: value" + scenario.eol +
+                scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, -1, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("204", _uriOrStatus);
@@ -630,47 +714,52 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testNoColon7230(String eoln)
+    @MethodSource("scenarios")
+    public void testNoColon7230(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Name" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Name" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
         assertThat(_bad, containsString("Illegal character"));
-        assertThat(_complianceViolation, Matchers.empty());
+        assertThat(_complianceViolation, scenario.isViolation() ? not(empty()) : empty());
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderParseDirect(String eoln)
+    @MethodSource("scenarios")
+    public void testHeaderParseDirect(Scenario scenario)
     {
         ByteBuffer b0 = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Header1: value1" + eoln +
-                "Header2:   value 2a  " + eoln +
-                "Header3: 3" + eoln +
-                "Header4:value4" + eoln +
-                "Server5: notServer" + eoln +
-                "HostHeader: notHost" + eoln +
-                "Connection: close" + eoln +
-                "Accept-Encoding: gzip, deflated" + eoln +
-                "Accept: unknown" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Header2:   value 2a  " + scenario.eol +
+                "Header3: 3" + scenario.eol +
+                "Header4:value4" + scenario.eol +
+                "Server5: notServer" + scenario.eol +
+                "HostHeader: notHost" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                "Accept-Encoding: gzip, deflated" + scenario.eol +
+                "Accept: unknown" + scenario.eol +
+                scenario.eol);
         ByteBuffer buffer = BufferUtil.allocateDirect(b0.capacity());
         int pos = BufferUtil.flipToFill(buffer);
         BufferUtil.put(b0, buffer);
         BufferUtil.flipToFlush(buffer, pos);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
@@ -699,25 +788,31 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderParseCRLF(String eoln)
+    @MethodSource("scenarios")
+    public void testHeaderParseCRLF(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Header1: value1" + eoln +
-                "Header2:   value 2a  " + eoln +
-                "Header3: 3" + eoln +
-                "Header4:value4" + eoln +
-                "Server5: notServer" + eoln +
-                "HostHeader: notHost" + eoln +
-                "Connection: close" + eoln +
-                "Accept-Encoding: gzip, deflated" + eoln +
-                "Accept: unknown" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Header2:   value 2a  " + scenario.eol +
+                "Header3: 3" + scenario.eol +
+                "Header4:value4" + scenario.eol +
+                "Server5: notServer" + scenario.eol +
+                "HostHeader: notHost" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                "Accept-Encoding: gzip, deflated" + scenario.eol +
+                "Accept: unknown" + scenario.eol +
+                scenario.eol);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
@@ -746,25 +841,30 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderParse(String eoln)
+    @MethodSource("scenarios")
+    public void testHeaderParse(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Header1: value1" + eoln +
-                "Header2:   value 2a value 2b  " + eoln +
-                "Header3: 3" + eoln +
-                "Header4:value4" + eoln +
-                "Server5: notServer" + eoln +
-                "HostHeader: notHost" + eoln +
-                "Connection: close" + eoln +
-                "Accept-Encoding: gzip, deflated" + eoln +
-                "Accept: unknown" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Header2:   value 2a value 2b  " + scenario.eol +
+                "Header3: 3" + scenario.eol +
+                "Header4:value4" + scenario.eol +
+                "Server5: notServer" + scenario.eol +
+                "HostHeader: notHost" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                "Accept-Encoding: gzip, deflated" + scenario.eol +
+                "Accept: unknown" + scenario.eol +
+                scenario.eol);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
@@ -793,18 +893,23 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testQuoted(String eoln)
+    @MethodSource("scenarios")
+    public void testQuoted(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Name0: \"value0\"\t" + eoln +
-                "Name1: \"value\t1\"" + eoln +
-                "Name2: \"value\t2A\",\"value,2B\"\t" + eoln +
-                eoln);
+            "GET / HTTP/1.0" + scenario.eol +
+                "Name0: \"value0\"\t" + scenario.eol +
+                "Name1: \"value\t1\"" + scenario.eol +
+                "Name2: \"value\t2A\",\"value,2B\"\t" + scenario.eol +
+                scenario.eol);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
@@ -819,24 +924,29 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testEncodedHeader(String eoln)
+    @MethodSource("scenarios")
+    public void testEncodedHeader(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.allocate(4096);
         BufferUtil.flipToFill(buffer);
         BufferUtil.put(BufferUtil.toBuffer("GET "), buffer);
         buffer.put("/foo/\u0690/".getBytes(StandardCharsets.UTF_8));
-        BufferUtil.put(BufferUtil.toBuffer(" HTTP/1.0" + eoln), buffer);
+        BufferUtil.put(BufferUtil.toBuffer(" HTTP/1.0" + scenario.eol), buffer);
         BufferUtil.put(BufferUtil.toBuffer("Header1: "), buffer);
         buffer.put("\u00e6 \u00e6".getBytes(StandardCharsets.ISO_8859_1));
-        BufferUtil.put(BufferUtil.toBuffer("  " + eoln + "Header2: "), buffer);
+        BufferUtil.put(BufferUtil.toBuffer("  " + scenario.eol + "Header2: "), buffer);
         buffer.put((byte)-1);
-        BufferUtil.put(BufferUtil.toBuffer(eoln + eoln), buffer);
+        BufferUtil.put(BufferUtil.toBuffer(scenario.eol + scenario.eol), buffer);
         BufferUtil.flipToFlush(buffer, 0);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/foo/\u0690/", _uriOrStatus);
@@ -850,65 +960,70 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponseBufferUpgradeFrom(String eoln)
+    @MethodSource("scenarios")
+    public void testResponseBufferUpgradeFrom(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 101 Upgrade" + eoln +
-                "Connection: upgrade" + eoln +
-                "Content-Length: 0" + eoln +
-                "Sec-WebSocket-Accept: 4GnyoUP4Sc1JD+2pCbNYAhFYVVA" + eoln +
-                eoln +
+            "HTTP/1.1 101 Upgrade" + scenario.eol +
+                "Connection: upgrade" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Sec-WebSocket-Accept: 4GnyoUP4Sc1JD+2pCbNYAhFYVVA" + scenario.eol +
+                scenario.eol +
                 "FOOGRADE");
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         while (!parser.isState(State.END))
         {
             parser.parseNext(buffer);
+            if (scenario.expectBad())
+            {
+                assertThat(_bad, containsString("LF line terminator"));
+                return;
+            }
         }
 
         assertThat(BufferUtil.toUTF8String(buffer), Matchers.is("FOOGRADE"));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadMethodEncoding(String eoln)
+    @MethodSource("scenarios")
+    public void testBadMethodEncoding(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "G\u00e6T / HTTP/1.0" + eoln + "Header0: value0" + eoln + eoln);
+            "G\u00e6T / HTTP/1.0" + scenario.eol + "Header0: value0" + scenario.eol + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
+        parseAll(parser, buffer);
+        assertThat(_bad, containsString("Illegal character"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testBadVersionEncoding(Scenario scenario)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / H\u00e6P/1.0" + scenario.eol + "Header0: value0" + scenario.eol + scenario.eol);
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
         assertThat(_bad, Matchers.notNullValue());
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadVersionEncoding(String eoln)
+    @MethodSource("scenarios")
+    public void testBadHeaderEncoding(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / H\u00e6P/1.0" + eoln + "Header0: value0" + eoln + eoln);
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
-        parseAll(parser, buffer);
-        assertThat(_bad, Matchers.notNullValue());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadHeaderEncoding(String eoln)
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "H\u00e6der0: value0" + eoln +
+            "GET / HTTP/1.0" + scenario.eol +
+                "H\u00e6der0: value0" + scenario.eol +
                 "\n\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
         assertThat(_bad, Matchers.notNullValue());
     }
@@ -948,18 +1063,23 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderTab(String eoln)
+    @MethodSource("scenarios")
+    public void testHeaderTab(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: localhost" + eoln +
-                "Header: value\talternate" + eoln +
-                "\n\n");
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Header: value\talternate" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
@@ -971,51 +1091,58 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testCaseSensitiveMethod(String eoln)
+    @MethodSource("scenarios")
+    public void testCaseSensitiveMethod(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "gEt / http/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "gEt / http/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler, -1, scenario.compliance.with("test", CASE_INSENSITIVE_METHOD));
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
-        assertThat(_complianceViolation, contains(CASE_INSENSITIVE_METHOD));
+        assertTrue(_complianceViolation.contains(CASE_INSENSITIVE_METHOD));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testCaseSensitiveMethodLegacy(String eoln)
+    @Test
+    public void testCaseSensitiveMethodLegacy()
     {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "gEt / http/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("""
+            gEt / http/1.0\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.LEGACY);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.LEGACY);
         parseAll(parser, buffer);
+
         assertNull(_bad);
         assertEquals("gEt", _methodOrVersion);
         assertThat(_complianceViolation, Matchers.empty());
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testCaseInsensitiveHeader(String eoln)
+    @Test
+    public void testCaseInsensitiveHeader()
     {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / http/1.0" + eoln +
-                "HOST: localhost" + eoln +
-                "cOnNeCtIoN: ClOsE" + eoln +
-                eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("""
+            GET / http/1.0\r
+            HOST: localhost\r
+            cOnNeCtIoN: ClOsE\r
+            \r
+            """);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.RFC7230_LEGACY);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
+
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
@@ -1028,17 +1155,17 @@ public class HttpParserTest
         assertThat(_complianceViolation, Matchers.empty());
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testCaseInSensitiveHeaderLegacy(String eoln)
+    @Test
+    public void testCaseInSensitiveHeaderLegacy()
     {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / http/1.0" + eoln +
-                "HOST: localhost" + eoln +
-                "cOnNeCtIoN: ClOsE" + eoln +
-                eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("""
+            GET / http/1.0\r
+            HOST: localhost\r
+            cOnNeCtIoN: ClOsE\r
+            \r
+            """);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, -1, HttpCompliance.LEGACY);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.LEGACY);
         parser.setHeaderCacheCaseSensitive(true);
         parseAll(parser, buffer);
         assertNull(_bad);
@@ -1054,18 +1181,18 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testSplitHeaderParse(String eoln)
+    @MethodSource("scenarios")
+    public void testSplitHeaderParse(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "XXXXSPLIT / HTTP/1.0" + eoln +
-                "Host: localhost" + eoln +
-                "Header1: value1" + eoln +
-                "Header2:   value 2a  " + eoln +
-                "Header3: 3" + eoln +
-                "Header4:value4" + eoln +
-                "Server5: notServer" + eoln +
-                eoln +
+            "XXXXSPLIT / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Header2:   value 2a  " + scenario.eol +
+                "Header3: 3" + scenario.eol +
+                "Header4:value4" + scenario.eol +
+                "Server5: notServer" + scenario.eol +
+                scenario.eol +
                 "ZZZZ");
         buffer.position(2);
         buffer.limit(buffer.capacity() - 2);
@@ -1074,7 +1201,7 @@ public class HttpParserTest
         for (int i = 0; i < buffer.capacity() - 4; i++)
         {
             HttpParser.RequestHandler handler = new Handler();
-            HttpParser parser = new HttpParser(handler);
+            HttpParser parser = new HttpParser(handler, scenario.compliance);
 
             buffer.limit(2 + i);
             buffer.position(2);
@@ -1087,6 +1214,12 @@ public class HttpParserTest
                 // parse the rest
                 buffer.limit(buffer.capacity() - 2);
                 parser.parseNext(buffer);
+            }
+
+            if (scenario.expectBad())
+            {
+                assertThat(_bad, containsString("LF line terminator"));
+                return;
             }
 
             assertEquals("SPLIT", _methodOrVersion);
@@ -1109,24 +1242,37 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testChunkParse(String eoln)
+    @MethodSource("scenarios")
+    public void testChunkParse(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0" + eoln +
-            "Header1: value1" + eoln +
-            "Transfer-Encoding: chunked" + eoln +
-            eoln +
-            "a;" + eoln +
-            "0123456789" + eoln +
-            "1a" + eoln +
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-            "0" + eoln +
-            eoln);
+            "GET /chunk HTTP/1.0" + scenario.eol +
+            "Header1: value1" + scenario.eol +
+            "Transfer-Encoding: chunked" + scenario.eol +
+            scenario.eol +
+            "a;" + scenario.eolChunk +
+            "0123456789" + scenario.eolChunk +
+            "1a" + scenario.eolChunk +
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+            "0" + scenario.eolChunk +
+            scenario.eolChunk);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
 
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
+
+        assertFalse(_early);
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -1140,24 +1286,34 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadChunkLength(String eoln)
+    @MethodSource("scenarios")
+    public void testBadChunkLength(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0" + eoln +
-                "Header1: value1" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "a;" + eoln +
-                "0123456789" + eoln +
-                "xx" + eoln +
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-                "0" + eoln +
-                eoln
+            "GET /chunk HTTP/1.0" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "a;" + scenario.eolChunk +
+                "0123456789" + scenario.eolChunk +
+                "xx" + scenario.eolChunk +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+                "0" + scenario.eolChunk +
+                scenario.eol
         );
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
@@ -1171,23 +1327,28 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadTransferEncoding(String eoln)
+    @MethodSource("scenarios")
+    public void testBadTransferEncoding(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0" + eoln +
-            "Header1: value1" + eoln +
-            "Transfer-Encoding: chunked, identity" + eoln +
-            eoln +
-            "a;" + eoln +
-            "0123456789" + eoln +
-            "1a" + eoln +
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-            "0" + eoln +
-            eoln);
+            "GET /chunk HTTP/1.0" + scenario.eol +
+            "Header1: value1" + scenario.eol +
+            "Transfer-Encoding: chunked, identity" + scenario.eol +
+            scenario.eol +
+            "a;" + scenario.eolChunk +
+            "0123456789" + scenario.eolChunk +
+            "1a" + scenario.eolChunk +
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+            "0" + scenario.eolChunk +
+            scenario.eol);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
@@ -1196,24 +1357,34 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testChunkParseTrailer(String eoln)
+    @MethodSource("scenarios")
+    public void testChunkParseTrailer(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0" + eoln +
-                "Header1: value1" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "a;" + eoln +
-                "0123456789" + eoln +
-                "1a" + eoln +
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-                "0" + eoln +
-                "Trailer: value" + eoln +
-                eoln);
+            "GET /chunk HTTP/1.0" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "a;" + scenario.eolChunk +
+                "0123456789" + scenario.eolChunk +
+                "1a" + scenario.eolChunk +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+                "0" + scenario.eolChunk +
+                "Trailer: value" + scenario.eolChunk +
+                scenario.eol);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
@@ -1232,24 +1403,34 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testChunkParseTrailers(String eoln)
+    @MethodSource("scenarios")
+    public void testChunkParseTrailers(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "a;" + eoln +
-                "0123456789" + eoln +
-                "1a" + eoln +
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-                "0" + eoln +
-                "Trailer: value" + eoln +
-                "Foo: bar" + eoln +
-                eoln);
+            "GET /chunk HTTP/1.0" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "a;" + scenario.eolChunk +
+                "0123456789" + scenario.eolChunk +
+                "1a" + scenario.eolChunk +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+                "0" + scenario.eolChunk +
+                "Trailer: value" + scenario.eol +
+                "Foo: bar" + scenario.eol +
+                scenario.eol);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
@@ -1271,25 +1452,36 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testChunkParseBadTrailer(String eoln)
+    @MethodSource("scenarios")
+    public void testChunkParseBadTrailer(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0" + eoln +
-                "Header1: value1" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "a;" + eoln +
-                "0123456789" + eoln +
-                "1a" + eoln +
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-                "0" + eoln +
+            "GET /chunk HTTP/1.0" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "a;" + scenario.eolChunk +
+                "0123456789" + scenario.eolChunk +
+                "1a" + scenario.eolChunk +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+                "0" + scenario.eolChunk +
                 "Trailer: value");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
+
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
@@ -1304,22 +1496,32 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testChunkParseNoTrailer(String eoln)
+    @MethodSource("scenarios")
+    public void testChunkParseNoTrailer(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0" + eoln +
-                "Header1: value1" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "a;" + eoln +
-                "0123456789" + eoln +
-                "1a" + eoln +
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-                "0" + eoln);
+            "GET /chunk HTTP/1.0" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "a;" + scenario.eolChunk +
+                "0123456789" + scenario.eolChunk +
+                "1a" + scenario.eolChunk +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+                "0" + scenario.eolChunk);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
 
@@ -1348,18 +1550,23 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testEarlyEOF(String eoln)
+    @MethodSource("scenarios")
+    public void testEarlyEOF(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /uri HTTP/1.0" + eoln +
-                "Content-Length: 20" + eoln +
-                eoln +
+            "GET /uri HTTP/1.0" + scenario.eol +
+                "Content-Length: 20" + scenario.eol +
+                scenario.eol +
                 "0123456789");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.atEOF();
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/uri", _uriOrStatus);
@@ -1370,20 +1577,32 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testChunkEarlyEOF(String eoln)
+    @MethodSource("scenarios")
+    public void testChunkEarlyEOF(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0" + eoln +
-                "Header1: value1" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "a;" + eoln +
-                "0123456789" + eoln);
+            "GET /chunk HTTP/1.0" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "a;" + scenario.eolChunk +
+                "0123456789" + scenario.eolChunk);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.atEOF();
         parseAll(parser, buffer);
+
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
@@ -1397,39 +1616,49 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testMultiParse(String eoln)
+    @MethodSource("scenarios")
+    public void testMultiParse(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /mp HTTP/1.0" + eoln +
-                "Connection: Keep-Alive" + eoln +
-                "Header1: value1" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "a;" + eoln +
-                "0123456789" + eoln +
-                "1a" + eoln +
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-                "0" + eoln +
+            "GET /mp HTTP/1.0" + scenario.eol +
+                "Connection: Keep-Alive" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "a;" + scenario.eolChunk +
+                "0123456789" + scenario.eolChunk +
+                "1a" + scenario.eolChunk +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+                "0" + scenario.eolChunk +
 
-                eoln +
+                scenario.eol +
 
-                "POST /foo HTTP/1.0" + eoln +
-                "Connection: Keep-Alive" + eoln +
-                "Header2: value2" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln +
+                "POST /foo HTTP/1.0" + scenario.eol +
+                "Connection: Keep-Alive" + scenario.eol +
+                "Header2: value2" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol +
 
-                "PUT /doodle HTTP/1.0" + eoln +
-                "Connection: close" + eoln +
-                "Header3: value3" + eoln +
-                "Content-Length: 10" + eoln +
-                eoln +
-                "0123456789" + eoln);
+                "PUT /doodle HTTP/1.0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                "Header3: value3" + scenario.eol +
+                "Content-Length: 10" + scenario.eol +
+                scenario.eol +
+                "0123456789" + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
         assertEquals("GET", _methodOrVersion);
         assertEquals("/mp", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -1463,41 +1692,56 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testMultiParseEarlyEOF(String eoln)
+    @MethodSource("scenarios")
+    public void testMultiParseEarlyEOF(Scenario scenario)
     {
         ByteBuffer buffer0 = BufferUtil.toBuffer(
-            "GET /mp HTTP/1.0" + eoln +
-                "Connection: Keep-Alive" + eoln);
+            "GET /mp HTTP/1.0" + scenario.eol +
+                "Connection: Keep-Alive" + scenario.eol);
 
-        ByteBuffer buffer1 = BufferUtil.toBuffer("Header1: value1" + eoln +
-            "Transfer-Encoding: chunked" + eoln +
-            eoln +
-            "a;" + eoln +
-            "0123456789" + eoln +
-            "1a" + eoln +
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
-            "0" + eoln +
+        ByteBuffer buffer1 = BufferUtil.toBuffer("Header1: value1" + scenario.eol +
+            "Transfer-Encoding: chunked" + scenario.eol +
+            scenario.eol +
+            "a;" + scenario.eolChunk +
+            "0123456789" + scenario.eolChunk +
+            "1a" + scenario.eolChunk +
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
+            "0" + scenario.eolChunk +
 
-            eoln +
+            scenario.eol +
 
-            "POST /foo HTTP/1.0" + eoln +
-            "Connection: Keep-Alive" + eoln +
-            "Header2: value2" + eoln +
-            "Content-Length: 0" + eoln +
-            eoln +
+            "POST /foo HTTP/1.0" + scenario.eol +
+            "Connection: Keep-Alive" + scenario.eol +
+            "Header2: value2" + scenario.eol +
+            "Content-Length: 0" + scenario.eol +
+            scenario.eol +
 
-            "PUT /doodle HTTP/1.0" + eoln +
-            "Connection: close" + eoln + "Header3: value3" + eoln +
-            "Content-Length: 10" + eoln +
-            eoln +
-            "0123456789" + eoln);
+            "PUT /doodle HTTP/1.0" + scenario.eol +
+            "Connection: close" + scenario.eol + "Header3: value3" + scenario.eol +
+            "Content-Length: 10" + scenario.eol +
+            scenario.eol +
+            "0123456789" + scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer0);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         parser.atEOF();
         parser.parseNext(buffer1);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
         assertEquals("GET", _methodOrVersion);
         assertEquals("/mp", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
@@ -1530,19 +1774,24 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponseParse0(String eoln)
+    @MethodSource("scenarios")
+    public void testResponseParse0(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 Correct" + eoln +
-                "Content-Length: 10" + eoln +
-                "Content-Type: text/plain" + eoln +
-                eoln +
-                "0123456789" + eoln);
+            "HTTP/1.1 200 Correct" + scenario.eol +
+                "Content-Length: 10" + scenario.eol +
+                "Content-Type: text/plain" + scenario.eol +
+                scenario.eol +
+                "0123456789" + scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, -1, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
         assertEquals("Correct", _versionOrReason);
@@ -1552,17 +1801,22 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponseParse1(String eoln)
+    @MethodSource("scenarios")
+    public void testResponseParse1(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 Not-Modified" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "HTTP/1.1 304 Not-Modified" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, -1, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("304", _uriOrStatus);
         assertEquals("Not-Modified", _versionOrReason);
@@ -1571,23 +1825,28 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponseParse2(String eoln)
+    @MethodSource("scenarios")
+    public void testResponseParse2(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 204 No-Content" + eoln +
-                "Header: value" + eoln +
-                eoln +
+            "HTTP/1.1 204 No-Content" + scenario.eol +
+                "Header: value" + scenario.eol +
+                scenario.eol +
 
-                "HTTP/1.1 200 Correct" + eoln +
-                "Content-Length: 10" + eoln +
-                "Content-Type: text/plain" + eoln +
-                eoln +
-                "0123456789" + eoln);
+                "HTTP/1.1 200 Correct" + scenario.eol +
+                "Content-Length: 10" + scenario.eol +
+                "Content-Type: text/plain" + scenario.eol +
+                scenario.eol +
+                "0123456789" + scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("204", _uriOrStatus);
         assertEquals("No-Content", _versionOrReason);
@@ -1608,19 +1867,24 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponseParse3(String eoln)
+    @MethodSource("scenarios")
+    public void testResponseParse3(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200" + eoln +
-                "Content-Length: 10" + eoln +
-                "Content-Type: text/plain" + eoln +
-                eoln +
-                "0123456789" + eoln);
+            "HTTP/1.1 200" + scenario.eol +
+                "Content-Length: 10" + scenario.eol +
+                "Content-Type: text/plain" + scenario.eol +
+                scenario.eol +
+                "0123456789" + scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
         assertNull(_versionOrReason);
@@ -1630,19 +1894,24 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponseParse4(String eoln)
+    @MethodSource("scenarios")
+    public void testResponseParse4(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 " + eoln +
-                "Content-Length: 10" + eoln +
-                "Content-Type: text/plain" + eoln +
-                eoln +
-                "0123456789" + eoln);
+            "HTTP/1.1 200 " + scenario.eol +
+                "Content-Length: 10" + scenario.eol +
+                "Content-Type: text/plain" + scenario.eol +
+                scenario.eol +
+                "0123456789" + scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
         assertNull(_versionOrReason);
@@ -1652,41 +1921,51 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponseEOFContent(String eoln)
+    @MethodSource("scenarios")
+    public void testResponseEOFContent(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 " + eoln +
-                "Content-Type: text/plain" + eoln +
-                eoln +
-                "0123456789" + eoln);
+            "HTTP/1.1 200 " + scenario.eol +
+                "Content-Type: text/plain" + scenario.eol +
+                scenario.eol +
+                "0123456789" + scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.atEOF();
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
         assertNull(_versionOrReason);
-        assertEquals(10 + eoln.length(), _content.length());
-        assertEquals("0123456789" + eoln, _content);
+        assertEquals(10 + scenario.eol.length(), _content.length());
+        assertEquals("0123456789" + scenario.eol, _content);
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponse304WithContentLength(String eoln)
+    @MethodSource("scenarios")
+    public void testResponse304WithContentLength(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 found" + eoln +
-                "Content-Length: 10" + eoln +
-                eoln);
+            "HTTP/1.1 304 found" + scenario.eol +
+                "Content-Length: 10" + scenario.eol +
+                scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("304", _uriOrStatus);
         assertEquals("found", _versionOrReason);
@@ -1696,17 +1975,22 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponse101WithTransferEncoding(String eoln)
+    @MethodSource("scenarios")
+    public void testResponse101WithTransferEncoding(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 101 switching protocols" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln);
+            "HTTP/1.1 101 switching protocols" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("101", _uriOrStatus);
         assertEquals("switching protocols", _versionOrReason);
@@ -1732,38 +2016,50 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testResponseReasonIso88591(String eoln)
+    @MethodSource("scenarios")
+    public void testResponseReasonIso88591(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 302 déplacé temporairement" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln, StandardCharsets.ISO_8859_1);
+            "HTTP/1.1 302 déplacé temporairement" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol, StandardCharsets.ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("302", _uriOrStatus);
         assertEquals("déplacé temporairement", _versionOrReason);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testSeekEOF(String eoln)
+    @MethodSource("scenarios")
+    public void testSeekEOF(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                "Connection: close" + eoln +
-                eoln +
-                eoln + // extra CRLF ignored
-                "HTTP/1.1 400 OK" + eoln);  // extra data causes close ??
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol +
+                scenario.eol + // extra CRLF ignored
+                "HTTP/1.1 400 OK" + scenario.eol);  // extra data causes close ??
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
         assertEquals("OK", _versionOrReason);
@@ -1782,19 +2078,24 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testNoURI(String eoln)
+    @MethodSource("scenarios")
+    public void testNoURI(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET" + eoln +
-                "Content-Length: 0" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertNull(_methodOrVersion);
         assertEquals("No URI", _bad);
         assertFalse(buffer.hasRemaining());
@@ -1805,19 +2106,24 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testNoURI2(String eoln)
+    @MethodSource("scenarios")
+    public void testNoURI2(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET " + eoln +
-                "Content-Length: 0" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET " + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertNull(_methodOrVersion);
         assertEquals("No URI", _bad);
         assertFalse(buffer.hasRemaining());
@@ -1828,35 +2134,42 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testUnknownRequestVersion(String eoln)
+    @MethodSource("scenarios")
+    public void testUnknownRequestVersion(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP" + eoln +
-                "Host: localhost" + eoln +
-                eoln);
+            "GET / HTTP" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("Unknown Version", _bad);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testUnknownResponseVersion(String eoln)
+    @MethodSource("scenarios")
+    public void testUnknownResponseVersion(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HPPT/7.7 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "HPPT/7.7 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+
         assertNull(_methodOrVersion);
         assertEquals("Unknown Version", _bad);
         assertFalse(buffer.hasRemaining());
@@ -1867,19 +2180,24 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testNoStatus(String eoln)
+    @MethodSource("scenarios")
+    public void testNoStatus(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1" + eoln +
-                "Content-Length: 0" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "HTTP/1.1" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertNull(_methodOrVersion);
         assertEquals("No Status", _bad);
         assertFalse(buffer.hasRemaining());
@@ -1890,19 +2208,24 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testNoStatus2(String eoln)
+    @MethodSource("scenarios")
+    public void testNoStatus2(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 " + eoln +
-                "Content-Length: 0" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "HTTP/1.1 " + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.ResponseHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertNull(_methodOrVersion);
         assertEquals("No Status", _bad);
         assertFalse(buffer.hasRemaining());
@@ -1913,19 +2236,24 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadRequestVersion(String eoln)
+    @MethodSource("scenarios")
+    public void testBadRequestVersion(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HPPT/7.7" + eoln +
-                "Content-Length: 0" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HPPT/7.7" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertNull(_methodOrVersion);
         assertEquals("Unknown Version", _bad);
         assertFalse(buffer.hasRemaining());
@@ -1935,13 +2263,13 @@ public class HttpParserTest
         assertEquals(HttpParser.State.CLOSED, parser.getState());
 
         buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.01" + eoln +
-                "Content-Length: 0" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.01" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         handler = new Handler();
-        parser = new HttpParser(handler);
+        parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
         assertNull(_methodOrVersion);
@@ -1954,19 +2282,26 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadCR(String eoln)
+    @MethodSource("scenarios")
+    public void testBadCR(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
+            "GET / HTTP/1.0" + scenario.eol +
                 "Content-Length: 0\r" +
                 "Connection: close\r" +
                 "\r");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+
         assertEquals("Bad EOL", _bad);
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
@@ -1981,7 +2316,7 @@ public class HttpParserTest
                 "\r");
 
         handler = new Handler();
-        parser = new HttpParser(handler);
+        parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
         assertEquals("Bad EOL", _bad);
@@ -2136,21 +2471,26 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testMultipleContentLengthWithLargerThenCorrectValue(String eoln)
+    @MethodSource("scenarios")
+    public void testMultipleContentLengthWithLargerThenCorrectValue(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "POST / HTTP/1.1" + eoln +
-                "Content-Length: 2" + eoln +
-                "Content-Length: 1" + eoln +
-                "Connection: close" + eoln +
-                eoln +
+            "POST / HTTP/1.1" + scenario.eol +
+                "Content-Length: 2" + scenario.eol +
+                "Content-Length: 1" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol +
                 "X");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("POST", _methodOrVersion);
         assertEquals("Multiple Content-Lengths", _bad);
         assertFalse(buffer.hasRemaining());
@@ -2161,21 +2501,26 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testMultipleContentLengthWithCorrectThenLargerValue(String eoln)
+    @MethodSource("scenarios")
+    public void testMultipleContentLengthWithCorrectThenLargerValue(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "POST / HTTP/1.1" + eoln +
-                "Content-Length: 1" + eoln +
-                "Content-Length: 2" + eoln +
-                "Connection: close" + eoln +
-                eoln +
+            "POST / HTTP/1.1" + scenario.eol +
+                "Content-Length: 1" + scenario.eol +
+                "Content-Length: 2" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol +
                 "X");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("POST", _methodOrVersion);
         assertEquals("Multiple Content-Lengths", _bad);
         assertFalse(buffer.hasRemaining());
@@ -2186,23 +2531,33 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testTransferEncodingChunkedThenContentLength(String eoln)
+    @MethodSource("scenarios")
+    public void testTransferEncodingChunkedThenContentLength(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "POST /chunk HTTP/1.1" + eoln +
-                "Host: localhost" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                "Content-Length: 1" + eoln +
-                eoln +
-                "1" + eoln +
-                "X" + eoln +
-                "0" + eoln +
-                eoln);
+            "POST /chunk HTTP/1.1" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                "Content-Length: 1" + scenario.eol +
+                scenario.eol +
+                "1" + scenario.eolChunk +
+                "X" + scenario.eolChunk +
+                "0" + scenario.eolChunk +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
 
         assertEquals("POST", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
@@ -2212,27 +2567,37 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertThat(_complianceViolation, contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        assertTrue(_complianceViolation.contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testContentLengthThenTransferEncodingChunked(String eoln)
+    @MethodSource("scenarios")
+    public void testContentLengthThenTransferEncodingChunked(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "POST /chunk HTTP/1.1" + eoln +
-                "Host: localhost" + eoln +
-                "Content-Length: 1" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "1" + eoln +
-                "X" + eoln +
-                "0" + eoln +
-                eoln);
+            "POST /chunk HTTP/1.1" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Content-Length: 1" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "1" + scenario.eolChunk +
+                "X" + scenario.eolChunk +
+                "0" + scenario.eolChunk +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
 
         assertEquals("POST", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
@@ -2242,141 +2607,181 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertThat(_complianceViolation, contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        assertTrue(_complianceViolation.contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHost(String eoln)
+    @MethodSource("scenarios")
+    public void testHost(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: host" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: host" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("host", _host);
         assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testUriHost11(String eoln)
+    @MethodSource("scenarios")
+    public void testUriHost11(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET http://host/ HTTP/1.1" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET http://host/ HTTP/1.1" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("No Host", _bad);
         assertEquals("http://host/", _uriOrStatus);
         assertEquals(0, _port);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testUriHost10(String eoln)
+    @MethodSource("scenarios")
+    public void testUriHost10(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET http://host/ HTTP/1.0" + eoln +
-                eoln);
+            "GET http://host/ HTTP/1.0" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertNull(_bad);
         assertEquals("http://host/", _uriOrStatus);
         assertEquals(0, _port);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testNoHost(String eoln)
+    @MethodSource("scenarios")
+    public void testNoHost(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("No Host", _bad);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testIPHost(String eoln)
+    @MethodSource("scenarios")
+    public void testIPHost(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: 192.168.0.1" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: 192.168.0.1" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("192.168.0.1", _host);
         assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testIPv6Host(String eoln)
+    @MethodSource("scenarios")
+    public void testIPv6Host(Scenario scenario)
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: [::1]" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: [::1]" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("[::1]", _host);
         assertEquals(URIUtil.UNDEFINED_PORT, _port);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadIPv6Host(String eoln)
+    @MethodSource("scenarios")
+    public void testBadIPv6Host(Scenario scenario)
     {
         try (StacklessLogging ignored = new StacklessLogging(HttpParser.class))
         {
             ByteBuffer buffer = BufferUtil.toBuffer(
-                "GET / HTTP/1.1" + eoln +
-                    "Host: [::1" + eoln +
-                    "Connection: close" + eoln +
-                    eoln);
+                "GET / HTTP/1.1" + scenario.eol +
+                    "Host: [::1" + scenario.eol +
+                    "Connection: close" + scenario.eol +
+                    scenario.eol);
 
             HttpParser.RequestHandler handler = new Handler();
-            HttpParser parser = new HttpParser(handler);
+            HttpParser parser = new HttpParser(handler, scenario.compliance);
             parser.parseNext(buffer);
+            if (scenario.expectBad())
+            {
+                assertThat(_bad, containsString("LF line terminator"));
+                return;
+            }
             assertThat(_bad, containsString("Bad"));
         }
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHostPort(String eoln)
+    @MethodSource("scenarios")
+    public void testHostPort(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: myhost:8888" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: myhost:8888" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("myhost", _host);
         assertEquals(8888, _port);
     }
@@ -2526,66 +2931,81 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testIPHostPort(String eoln)
+    @MethodSource("scenarios")
+    public void testIPHostPort(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: 192.168.0.1:8888" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: 192.168.0.1:8888" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("192.168.0.1", _host);
         assertEquals(8888, _port);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testIPv6HostPort(String eoln)
+    @MethodSource("scenarios")
+    public void testIPv6HostPort(Scenario scenario)
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: [::1]:8888" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: [::1]:8888" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("[::1]", _host);
         assertEquals(8888, _port);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testEmptyHostPort(String eoln)
+    @MethodSource("scenarios")
+    public void testEmptyHostPort(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host:" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host:" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertNull(_host);
         assertNull(_bad);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testRequestMaxHeaderBytesURITooLong(String eoln)
+    @MethodSource("scenarios")
+    public void testRequestMaxHeaderBytesURITooLong(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /long/nested/path/uri HTTP/1.1" + eoln +
-                "Host: example.com" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET /long/nested/path/uri HTTP/1.1" + scenario.eol +
+                "Host: example.com" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         int maxHeaderBytes = 5;
         HttpParser.RequestHandler handler = new Handler();
@@ -2596,15 +3016,15 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testRequestMaxHeaderBytesCumulative(String eoln)
+    @MethodSource("scenarios")
+    public void testRequestMaxHeaderBytesCumulative(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /nested/path/uri HTTP/1.1" + eoln +
-                "Host: example.com" + eoln +
-                "X-Large-Header: lorem-ipsum-dolor-sit" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET /nested/path/uri HTTP/1.1" + scenario.eol +
+                "Host: example.com" + scenario.eol +
+                "X-Large-Header: lorem-ipsum-dolor-sit" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                scenario.eol);
 
         int maxHeaderBytes = 64;
         HttpParser.RequestHandler handler = new Handler();
@@ -2615,36 +3035,46 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
+    @MethodSource("scenarios")
     @SuppressWarnings("ReferenceEquality")
-    public void testInsensitiveCachedField(String eoln)
+    public void testInsensitiveCachedField(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Content-Type: text/plain;Charset=UTF-8" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Content-Type: text/plain;Charset=UTF-8" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         HttpField field = _fields.get(0);
         assertThat(field.getValue(), is("text/plain;charset=utf-8"));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
+    @MethodSource("scenarios")
     @SuppressWarnings("ReferenceEquality")
-    public void testDynamicCachedField(String eoln)
+    public void testDynamicCachedField(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: www.smh.com.au" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: www.smh.com.au" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertEquals("www.smh.com.au", parser.getFieldCache().get("Host: www.smh.com.au").getValue());
         HttpField field = _fields.get(0);
 
@@ -2654,21 +3084,26 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testParseRequest(String eoln)
+    @MethodSource("scenarios")
+    public void testParseRequest(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1" + eoln +
-                "Host: localhost" + eoln +
-                "Header1: value1" + eoln +
-                "Connection: close" + eoln +
-                "Accept-Encoding: gzip, deflated" + eoln +
-                "Accept: unknown" + eoln +
-                eoln);
+            "GET / HTTP/1.1" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Connection: close" + scenario.eol +
+                "Accept-Encoding: gzip, deflated" + scenario.eol +
+                "Accept: unknown" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertEquals("GET", _methodOrVersion);
         assertEquals("/", _uriOrStatus);
@@ -2684,18 +3119,23 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHTTP2Preface(String eoln)
+    @MethodSource("scenarios")
+    public void testHTTP2Preface(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "PRI * HTTP/2.0" + eoln +
-                eoln +
-                "SM" + eoln +
-                eoln);
+            "PRI * HTTP/2.0" + scenario.eol +
+                scenario.eol +
+                "SM" + scenario.eol +
+                scenario.eol);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
 
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
@@ -2707,8 +3147,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testForHTTP09HeaderCompleteTrueDoesNotEmitContentComplete(String eoln)
+    @MethodSource("scenarios")
+    public void testForHTTP09HeaderCompleteTrueDoesNotEmitContentComplete(Scenario scenario)
     {
         HttpParser.RequestHandler handler = new Handler()
         {
@@ -2721,7 +3161,7 @@ public class HttpParserTest
         };
 
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
-        ByteBuffer buffer = BufferUtil.toBuffer("GET /path" + eoln);
+        ByteBuffer buffer = BufferUtil.toBuffer("GET /path" + scenario.eol);
         boolean handle = parser.parseNext(buffer);
         assertTrue(handle);
         assertFalse(buffer.hasRemaining());
@@ -2741,8 +3181,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testForContentLengthZeroHeaderCompleteTrueDoesNotEmitContentComplete(String eoln)
+    @MethodSource("scenarios")
+    public void testForContentLengthZeroHeaderCompleteTrueDoesNotEmitContentComplete(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -2753,13 +3193,18 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln);
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertFalse(buffer.hasRemaining());
         assertFalse(_contentCompleted);
@@ -2773,8 +3218,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testForEmptyChunkedContentHeaderCompleteTrueDoesNotEmitContentComplete(String eoln)
+    @MethodSource("scenarios")
+    public void testForEmptyChunkedContentHeaderCompleteTrueDoesNotEmitContentComplete(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -2785,15 +3230,20 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "0" + eoln +
-                eoln);
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "0" + scenario.eolChunk +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
         assertFalse(_contentCompleted);
@@ -2801,14 +3251,19 @@ public class HttpParserTest
 
         // Need to parse more to advance the parser.
         handle = parser.parseNext(buffer);
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
         assertTrue(handle);
         assertTrue(_contentCompleted);
         assertTrue(_messageCompleted);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testForContentLengthZeroContentCompleteTrueDoesNotEmitMessageComplete(String eoln)
+    @MethodSource("scenarios")
+    public void testForContentLengthZeroContentCompleteTrueDoesNotEmitMessageComplete(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -2819,13 +3274,20 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln);
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+
         assertTrue(handle);
         assertFalse(buffer.hasRemaining());
         assertFalse(_messageCompleted);
@@ -2837,8 +3299,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testForEmptyChunkedContentContentCompleteTrueDoesNotEmitMessageComplete(String eoln)
+    @MethodSource("scenarios")
+    public void testForEmptyChunkedContentContentCompleteTrueDoesNotEmitMessageComplete(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -2849,15 +3311,25 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Transfer-Encoding: chunked" + eoln +
-                eoln +
-                "0" + eoln +
-                eoln);
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Transfer-Encoding: chunked" + scenario.eol +
+                scenario.eol +
+                "0" + scenario.eolChunk +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
+        if (scenario.expectEarly())
+        {
+            assertTrue(_early);
+            return;
+        }
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
         assertFalse(_messageCompleted);
@@ -2869,8 +3341,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderAfterContentLengthZeroContentCompleteTrue(String eoln)
+    @MethodSource("scenarios")
+    public void testHeaderAfterContentLengthZeroContentCompleteTrue(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -2881,15 +3353,20 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
-        String header = "Header: Foobar" + eoln;
+        String header = "Header: Foobar" + scenario.eol;
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln +
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol +
                 header);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
         assertEquals(header, BufferUtil.toString(buffer));
@@ -2905,8 +3382,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testSmallContentLengthContentCompleteTrue(String eoln)
+    @MethodSource("scenarios")
+    public void testSmallContentLengthContentCompleteTrue(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -2917,16 +3394,21 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
-        String header = "Header: Foobar" + eoln;
+        String header = "Header: Foobar" + scenario.eol;
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 1" + eoln +
-                eoln +
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 1" + scenario.eol +
+                scenario.eol +
                 "0" +
                 header);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
         assertEquals(header, BufferUtil.toString(buffer));
@@ -2942,8 +3424,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHeaderAfterSmallContentLengthContentCompleteTrue(String eoln)
+    @MethodSource("scenarios")
+    public void testHeaderAfterSmallContentLengthContentCompleteTrue(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -2954,14 +3436,19 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 1" + eoln +
-                eoln +
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 1" + scenario.eol +
+                scenario.eol +
                 "0");
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertFalse(buffer.hasRemaining());
         assertTrue(_contentCompleted);
@@ -2975,8 +3462,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testEOFContentContentCompleteTrue(String eoln)
+    @MethodSource("scenarios")
+    public void testEOFContentContentCompleteTrue(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -2987,13 +3474,18 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                eoln +
+            "HTTP/1.1 200 OK" + scenario.eol +
+                scenario.eol +
                 "0");
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertFalse(handle);
         assertFalse(buffer.hasRemaining());
         assertEquals("0", _content);
@@ -3017,8 +3509,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testHEADRequestHeaderCompleteTrue(String eoln)
+    @MethodSource("scenarios")
+    public void testHEADRequestHeaderCompleteTrue(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -3036,13 +3528,18 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.setHeadResponse(true);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                eoln);
+            "HTTP/1.1 200 OK" + scenario.eol +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertFalse(buffer.hasRemaining());
         assertFalse(_contentCompleted);
@@ -3063,8 +3560,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testNoContentHeaderCompleteTrue(String eoln)
+    @MethodSource("scenarios")
+    public void testNoContentHeaderCompleteTrue(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -3082,13 +3579,18 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         // HTTP 304 does not have a body.
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 Not Modified" + eoln +
-                eoln);
+            "HTTP/1.1 304 Not Modified" + scenario.eol +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertFalse(buffer.hasRemaining());
         assertFalse(_contentCompleted);
@@ -3109,8 +3611,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testCRLFAfterResponseHeaderCompleteTrue(String eoln)
+    @MethodSource("scenarios")
+    public void testCRLFAfterResponseHeaderCompleteTrue(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -3121,22 +3623,27 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 Not Modified" + eoln +
-                eoln +
-                eoln +
-                eoln +
-                "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln +
-                eoln +
-                eoln +
-                "HTTP/1.1 303 See Other" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln);
+            "HTTP/1.1 304 Not Modified" + scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                "HTTP/1.1 303 See Other" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
         assertEquals("304", _uriOrStatus);
@@ -3186,8 +3693,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testCRLFAfterResponseContentCompleteTrue(String eoln)
+    @MethodSource("scenarios")
+    public void testCRLFAfterResponseContentCompleteTrue(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -3198,22 +3705,27 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 Not Modified" + eoln +
-                eoln +
-                eoln +
-                eoln +
-                "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln +
-                eoln +
-                eoln +
-                "HTTP/1.1 303 See Other" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln);
+            "HTTP/1.1 304 Not Modified" + scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                "HTTP/1.1 303 See Other" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
         assertEquals("304", _uriOrStatus);
@@ -3260,8 +3772,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testCRLFAfterResponseMessageCompleteFalse(String eoln)
+    @MethodSource("scenarios")
+    public void testCRLFAfterResponseMessageCompleteFalse(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -3272,22 +3784,27 @@ public class HttpParserTest
                 return false;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 Not Modified" + eoln +
-                eoln +
-                eoln +
-                eoln +
-                "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln +
-                eoln +
-                eoln +
-                "HTTP/1.1 303 See Other" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln);
+            "HTTP/1.1 304 Not Modified" + scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                scenario.eol +
+                "HTTP/1.1 303 See Other" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertFalse(handle);
         assertTrue(buffer.hasRemaining());
         assertEquals("304", _uriOrStatus);
@@ -3316,8 +3833,8 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testSPAfterResponseMessageCompleteFalse(String eoln)
+    @MethodSource("scenarios")
+    public void testSPAfterResponseMessageCompleteFalse(Scenario scenario)
     {
         HttpParser.ResponseHandler handler = new Handler()
         {
@@ -3328,16 +3845,21 @@ public class HttpParserTest
                 return false;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, scenario.compliance);
 
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 Not Modified" + eoln +
-                eoln +
+            "HTTP/1.1 304 Not Modified" + scenario.eol +
+                scenario.eol +
                 " " + // Single SP.
-                "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln);
+                "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol);
         boolean handle = parser.parseNext(buffer);
+        if (scenario.expectBad())
+        {
+            assertThat(_bad, containsString("LF line terminator"));
+            return;
+        }
         assertFalse(handle);
         assertTrue(buffer.hasRemaining());
         assertEquals("304", _uriOrStatus);
@@ -3353,14 +3875,14 @@ public class HttpParserTest
         assertNotNull(_bad);
 
         buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln +
+            "HTTP/1.1 200 OK" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol +
                 " " + // Single SP.
-                "HTTP/1.1 303 See Other" + eoln +
-                "Content-Length: 0" + eoln +
-                eoln);
-        parser = new HttpParser(handler);
+                "HTTP/1.1 303 See Other" + scenario.eol +
+                "Content-Length: 0" + scenario.eol +
+                scenario.eol);
+        parser = new HttpParser(handler, scenario.compliance);
         handle = parser.parseNext(buffer);
         assertFalse(handle);
         assertTrue(buffer.hasRemaining());
@@ -3487,7 +4009,8 @@ public class HttpParserTest
         public void badMessage(HttpException failure)
         {
             String reason = failure.getReason();
-            _bad = reason == null ? String.valueOf(failure.getCode()) : reason;
+            if (_bad == null)
+                _bad = reason == null ? String.valueOf(failure.getCode()) : reason;
         }
 
         @Override
@@ -3594,5 +4117,43 @@ public class HttpParserTest
         assertFalse(HttpHeaderValue.parseCsvIndex("close, unknown , bytes", list::add, s -> false));
         assertThat(list, contains(HttpHeaderValue.CLOSE));
         assertThat(unknowns, empty());
+    }
+
+    public static Stream<Scenario> scenarios()
+    {
+        List<Scenario> scenarios = new ArrayList<>();
+        for (HttpCompliance compliance : new HttpCompliance[] { HttpCompliance.STRICT, HttpCompliance.RFC9110, HttpCompliance.RFC7230, HttpCompliance.RFC2616, HttpCompliance.RFC7230_LEGACY, HttpCompliance.RFC2616_LEGACY})
+            for (String eol : new String[] { "\r\n", "\n" } )
+                for (String eolChunk : new String[] { "\r\n", "\n" } )
+                    scenarios.add(new Scenario(eol, eolChunk, compliance));
+        return scenarios.stream();
+    }
+
+    public record Scenario(String eol, String eolChunk, HttpCompliance compliance)
+    {
+        public boolean isViolation()
+        {
+            return !eol.equals("\r\n");
+        }
+
+        public boolean isChunkViolation()
+        {
+            return !eolChunk.equals("\r\n");
+        }
+
+        public boolean expectBad()
+        {
+            return isViolation() && !compliance.allows(LF_HEADER_TERMINATION);
+        }
+
+        public boolean expectEarly()
+        {
+            return isChunkViolation() && !compliance.allows(LF_CHUNK_TERMINATION);
+        }
+
+        public String toString()
+        {
+            return "%s[eol=%s, eolChunk=%s, c=%s".formatted(this.getClass().getSimpleName(), isViolation() ? "LF" : "CRLF", isChunkViolation() ? "LF" : "CRLF", compliance.getName());
+        }
     }
 }

@@ -125,7 +125,17 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * must reject a request if the target URI has an authority that is different than a provided Host header.
          * A deployment may include this violation to allow different values on the target URI and the Host header on a received request.
          */
-        MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority");
+        MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority"),
+
+        /**
+         * Allow LF termination of start line and header fields.
+         */
+        LF_HEADER_TERMINATION("https://www.rfc-editor.org/rfc/rfc9112.html#section-2.2", "LF line terminator in header"),
+
+        /**
+         * Allow LF termination of chunk headers and chunks
+         */
+        LF_CHUNK_TERMINATION("https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1", "LF line terminator in chunk");
 
         private final String url;
         private final String description;
@@ -167,10 +177,21 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     public static final String VIOLATIONS_ATTR = ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY;
 
     /**
+     * The HttpCompliance mode that supports no known violations.
+     */
+    public static final HttpCompliance STRICT = new HttpCompliance("STRICT", noneOf(Violation.class));
+
+    /**
+     * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc9110">RFC 9110</a>
+     * with no known violations.
+     */
+    public static final HttpCompliance RFC9110 = new HttpCompliance("RFC9110", of(Violation.LF_HEADER_TERMINATION));
+
+    /**
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>
      * with no known violations.
      */
-    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
+    public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", of(Violation.LF_CHUNK_TERMINATION, Violation.LF_HEADER_TERMINATION));
 
     /**
      * The HttpCompliance mode that supports <a href="https://tools.ietf.org/html/rfc2616">RFC 7230</a>
@@ -179,7 +200,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     public static final HttpCompliance RFC2616 = new HttpCompliance("RFC2616", of(
         Violation.HTTP_0_9,
         Violation.MULTILINE_FIELD_VALUE,
-        Violation.MISMATCHED_AUTHORITY
+        Violation.MISMATCHED_AUTHORITY,
+        Violation.LF_CHUNK_TERMINATION,
+        Violation.LF_HEADER_TERMINATION
     ));
 
     /**
@@ -202,7 +225,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      */
     public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
 
-    private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
+    private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(STRICT, RFC9110, RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     /**
