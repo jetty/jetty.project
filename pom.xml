@@ -2892,6 +2892,8 @@
                 <sourceFileIncludes>
                   <sourceFileInclude>org/eclipse/jetty/**/*.java</sourceFileInclude>
                 </sourceFileIncludes>
+                <!--                <sourcepath>src/main/foo</sourcepath>-->
+                <!--                <subpackages>src/main/foo</subpackages>-->
               </configuration>
             </plugin>
           </plugins>
