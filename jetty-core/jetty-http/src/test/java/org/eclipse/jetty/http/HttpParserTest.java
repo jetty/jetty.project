@@ -159,7 +159,7 @@ public class HttpParserTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testLineParse1HTTP_0_9(Scenario scenario)
+    public void testLineParse1Http9(Scenario scenario)
     {
         ByteBuffer buffer = BufferUtil.toBuffer("GET /999" + scenario.eol);
 
@@ -4122,9 +4122,9 @@ public class HttpParserTest
     public static Stream<Scenario> scenarios()
     {
         List<Scenario> scenarios = new ArrayList<>();
-        for (HttpCompliance compliance : new HttpCompliance[] { HttpCompliance.STRICT, HttpCompliance.RFC9110, HttpCompliance.RFC7230, HttpCompliance.RFC2616, HttpCompliance.RFC7230_LEGACY, HttpCompliance.RFC2616_LEGACY})
-            for (String eol : new String[] { "\r\n", "\n" } )
-                for (String eolChunk : new String[] { "\r\n", "\n" } )
+        for (HttpCompliance compliance : new HttpCompliance[] {HttpCompliance.STRICT, HttpCompliance.RFC9110, HttpCompliance.RFC7230, HttpCompliance.RFC2616, HttpCompliance.RFC7230_LEGACY, HttpCompliance.RFC2616_LEGACY})
+            for (String eol : new String[] {"\r\n", "\n"})
+                for (String eolChunk : new String[] {"\r\n", "\n"})
                     scenarios.add(new Scenario(eol, eolChunk, compliance));
         return scenarios.stream();
     }
