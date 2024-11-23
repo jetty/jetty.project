@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.tests.distribution;
+package org.eclipse.jetty.tests.distribution;
 
 import java.io.FileWriter;
 import java.nio.file.Files;
@@ -21,12 +21,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
-import org.eclipse.jetty.ee10.tests.distribution.siwe.EthereumCredentials;
-import org.eclipse.jetty.ee10.tests.distribution.siwe.SignInWithEthereumGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.siwe.EthereumAuthenticator;
-import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
+import org.eclipse.jetty.tests.distribution.siwe.EthereumCredentials;
+import org.eclipse.jetty.tests.distribution.siwe.SignInWithEthereumGenerator;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.util.Fields;
@@ -100,8 +99,7 @@ public class SiweTests extends AbstractJettyHomeTest
                 client.setFollowRedirects(false);
                 response = client.GET(uri + "/admin");
                 assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
-                assertThat(response.getHeaders().get(HttpHeader.LOCATION),
-                    containsString(uri + "/login.html"));
+                assertThat(response.getHeaders().get(HttpHeader.LOCATION), containsString("/login.html"));
 
                 // Fetch a nonce from the server.
                 response = client.GET(uri + "/auth/nonce");
@@ -112,8 +110,7 @@ public class SiweTests extends AbstractJettyHomeTest
                 FormRequestContent authRequestContent = getAuthRequestContent(port, nonce);
                 response = client.POST(uri + "/auth/login").body(authRequestContent).send();
                 assertThat(response.getStatus(), is(HttpStatus.SEE_OTHER_303));
-                assertThat(response.getHeaders().get(HttpHeader.LOCATION),
-                    containsString(uri + "/admin"));
+                assertThat(response.getHeaders().get(HttpHeader.LOCATION), containsString("/admin"));
 
                 // We can access /admin as user has the admin role.
                 response = client.GET(uri + "/admin");
