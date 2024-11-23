@@ -131,10 +131,6 @@
     <module>jetty-home</module>
     <module>jetty-integrations</module>
     <module>tests</module>
-<<<<<<< HEAD
-=======
-    <!--module>javadoc</module-->
->>>>>>> 7d280532f6e (test javadoc snapshot)
     <module>documentation</module>
     <module>jetty-p2</module>
   </modules>
@@ -2892,8 +2888,6 @@
                 <sourceFileIncludes>
                   <sourceFileInclude>org/eclipse/jetty/**/*.java</sourceFileInclude>
                 </sourceFileIncludes>
-                <!--                <sourcepath>src/main/foo</sourcepath>-->
-                <!--                <subpackages>src/main/foo</subpackages>-->
               </configuration>
             </plugin>
           </plugins>
