@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -74,6 +71,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.test.client.transport.AbstractTest.freePort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -516,15 +514,5 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
             .send();
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-    }
-
-    private static int freePort() throws IOException
-    {
-        try (ServerSocket server = new ServerSocket())
-        {
-            server.setReuseAddress(true);
-            server.bind(new InetSocketAddress("localhost", 0));
-            return server.getLocalPort();
-        }
     }
 }

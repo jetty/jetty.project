@@ -457,12 +457,11 @@ public class ClientConnector extends ContainerLifeCycle
             boolean connected = true;
             if (channel instanceof SocketChannel socketChannel)
             {
-                final SocketAddress socketAddress = address;
                 boolean blocking = isConnectBlocking() && address instanceof InetSocketAddress;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connecting {} to {}", blocking ? "blocking" : "non-blocking", address);
 
-                notifyConnectBegin(socketChannel, socketAddress);
+                notifyConnectBegin(socketChannel, address);
                 if (blocking)
                 {
                     socketChannel.socket().connect(address, (int)getConnectTimeout().toMillis());
@@ -473,6 +472,8 @@ public class ClientConnector extends ContainerLifeCycle
                 {
                     socketChannel.configureBlocking(false);
                     connected = socketChannel.connect(address);
+                    if (connected)
+                        notifyConnectSuccess(socketChannel);
                 }
             }
             else
@@ -494,7 +495,7 @@ public class ClientConnector extends ContainerLifeCycle
             if (x.getClass() == SocketException.class)
                 x = new SocketException("Could not connect to " + address).initCause(x);
             IO.close(channel);
-            connectFailed(channel, x, context);
+            connectFailed(channel, address, x, context);
         }
     }
 
@@ -580,14 +581,75 @@ public class ClientConnector extends ContainerLifeCycle
             promise.failed(failure);
     }
 
-    protected void connectFailed(SelectableChannel channel, Throwable failure, Map<String, Object> context)
+    protected void connectFailed(SelectableChannel channel, SocketAddress address, Throwable failure, Map<String, Object> context)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Could not connect to {}", context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY));
-        notifyConnectFailure((SocketChannel)channel, failure);
+            LOG.debug("Could not connect to {}", address);
+        notifyConnectFailure((SocketChannel)channel, address, failure);
         Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
         if (promise != null)
             promise.failed(failure);
+    }
+
+    @Override
+    public boolean addEventListener(EventListener listener)
+    {
+        if (listener instanceof ConnectListener connectListener)
+            return listeners.add(connectListener);
+        return super.addEventListener(listener);
+    }
+
+    @Override
+    public boolean removeEventListener(EventListener listener)
+    {
+        if (listener instanceof ConnectListener connectListener)
+            return listeners.remove(connectListener);
+        return super.removeEventListener(listener);
+    }
+
+    private void notifyConnectBegin(SocketChannel socketChannel, SocketAddress socketAddress)
+    {
+        for (ConnectListener listener : listeners)
+        {
+            try
+            {
+                listener.onConnectBegin(socketChannel, socketAddress);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("failure notifying listener {}", listener, x);
+            }
+        }
+    }
+
+    private void notifyConnectSuccess(SocketChannel socketChannel)
+    {
+        for (ConnectListener listener : listeners)
+        {
+            try
+            {
+                listener.onConnectSuccess(socketChannel);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("failure notifying listener {}", listener, x);
+            }
+        }
+    }
+
+    private void notifyConnectFailure(SocketChannel socketChannel, SocketAddress socketAddress, Throwable throwable)
+    {
+        for (ConnectListener listener : listeners)
+        {
+            try
+            {
+                listener.onConnectFailure(socketChannel, socketAddress, throwable);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("failure notifying listener {}", listener, x);
+            }
+        }
     }
 
     protected class ClientSelectorManager extends SelectorManager
@@ -634,17 +696,20 @@ public class ClientConnector extends ContainerLifeCycle
         }
 
         @Override
-        protected void connectionFailed(SelectableChannel channel, Throwable failure, Object attachment)
+        public void connectionSucceeded(SelectableChannel channel)
         {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> context = (Map<String, Object>)attachment;
-            connectFailed(channel, failure, context);
+            super.connectionSucceeded(channel);
+            notifyConnectSuccess((SocketChannel)channel);
         }
 
         @Override
-        public void connectSuccess(SelectableChannel channel)
+        protected void connectionFailed(SelectableChannel channel, Throwable failure, Object attachment)
         {
-            listeners.forEach(listener -> listener.onConnectSuccess((SocketChannel)channel));
+            super.connectionFailed(channel, failure, attachment);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> context = (Map<String, Object>)attachment;
+            SocketAddress address = (SocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+            connectFailed(channel, address, failure, context);
         }
     }
 
@@ -770,119 +835,44 @@ public class ClientConnector extends ContainerLifeCycle
     }
     
     /**
-     * <p>A listener emits events for TCP connection establishment and failure</p>
-     * {@link #ClientConnector.ConnectListener} is notified of the events:
+     * <p>A listener for events about {@link SocketChannel#connect(SocketAddress)}.</p>
+     * <p>The events are:</p>
      * <ul>
-     * <li>Beginning of connect attempt</li>
-     * <li>Success of connect attempt</li>
-     * <li>Failed connect attempt</li>
+     * <li>{@link ConnectListener#onConnectBegin(SocketChannel, SocketAddress) begin}, just before the {@code connect()} call</li>
+     * <li>{@link ConnectListener#onConnectSuccess(SocketChannel) success}, when the {@code connect()} call succeeds</li>
+     * <li>{@link ConnectListener#onConnectFailure(SocketChannel, SocketAddress, Throwable) failure}, when the {@code connect()} call fails</li>
      * </ul>
-     * As an example {@link #ClientConnector.ConnectListener} can be used to trace attempts of connect for HttpClient
      */
     public interface ConnectListener extends EventListener
     {
         /**
-         * <p>Callback method is invoked for the very beginning of connect attempt</p>
-         * <p>The {@code socketChannel} parameter can be used to extract socket channel information</p>
-         * <p>The {@code socketAddress} parameter can be used to extract socket address information</p>
-         * 
-         * @param socketChannel the socket channel which is registered with connect attempt
-         * @param socketAddress the socket address which is registered with connect attempt
+         * <p>Callback method invoked just before a {@link SocketChannel#connect(SocketAddress)} call.</p>
+         *
+         * @param socketChannel the local socket channel that is about to connect
+         * @param socketAddress the remote socket address to connect to
          */
-        public void onConnectBegin(SocketChannel socketChannel, SocketAddress socketAddress);
-        
-        /**
-         * <p>Callback method is invoked for successfully connect attempt</p>
-         * <p>The {@code socketChannel} parameter can be used to extract socket channel information</p>
-         * 
-         * @param socketChannel the socket channel which is registered with connect attempt
-         */
-        public void onConnectSuccess(SocketChannel socketChannel);
-        
-        /**
-         * <p>Callback method is invoked for failed connect attempt</p>
-         * <p>The {@code socketChannel} parameter can be used to extract socket channel information</p>
-         * <p>The {@code throwable} parameter can be used to extract exception information of connect attempt</p>
-         * 
-         * @param socketChannel the socket channel which is registered with connect attempt
-         */
-        public void onConnectFailure(SocketChannel socketChannel, Throwable throwable);
-    }
-
-    @Override
-    public boolean addEventListener(EventListener listener)
-    {
-        if (listener instanceof ConnectListener connectListener)
-            return listeners.add(connectListener);
-        return super.addEventListener(listener);
-    }
-
-    @Override
-    public boolean removeEventListener(EventListener listener)
-    {
-        if (listener instanceof ConnectListener connectListener)
-            return listeners.remove(connectListener);
-        return super.removeEventListener(listener);
-    }
-    
-    /**
-     * <p>A wrapper for ConnectListener.notifyConnectBegin() call</p>
-     * @param socketChannel {@link #SocketChannel} registered for connect attempt
-     * @param socketAddress {@link #SocketAddress} registered for connect attempt
-     */
-    private void notifyConnectBegin(SocketChannel socketChannel, SocketAddress socketAddress)
-    {
-
-        for (ConnectListener listener : listeners)
+        default void onConnectBegin(SocketChannel socketChannel, SocketAddress socketAddress)
         {
-            try
-            {
-                listener.onConnectBegin(socketChannel, socketAddress);
-            }
-            catch (Throwable x)
-            {
-                x.printStackTrace();
-            }
         }
-    }
-    
-    /**
-     * <p>Wrapper for ConnectListener.onConnectSuccess() call</p>
-     * @param socketChannel {@link #SocketChannel} for successfully connect attempt
-     */
-    private void notifyConnectSuccess(SocketChannel socketChannel)
-    {
 
-        for (ConnectListener listener : listeners)
-        {   
-            try
-            {
-                listener.onConnectSuccess(socketChannel);
-            }
-            catch (Throwable x)
-            {
-                x.printStackTrace();
-            }
-        }
-    }
-    
-    /**
-     * <p>Wrapper for ConnectListener.onConnectFailure() call</p>
-     * @param socketChannel {@link #SocketChannel} registered for failed connect attempt
-     * @param throwable {@link #Throwable} exception arisen with failed attempt
-     */
-    private void notifyConnectFailure(SocketChannel socketChannel, Throwable throwable)
-    {
-        for (ConnectListener listener : listeners)
+        /**
+         * <p>Callback method invoked when a {@link SocketChannel#connect(SocketAddress)} call completes successfully.</p>
+         *
+         * @param socketChannel the local socket channel that succeeded to connect to the remote socket address
+         */
+        default void onConnectSuccess(SocketChannel socketChannel)
         {
-            try
-            {
-                listener.onConnectFailure(socketChannel, throwable);
-            }
-            catch (Throwable x)
-            {
-                x.printStackTrace();
-            }
+        }
+
+        /**
+         * <p>Callback method invoked when a {@link SocketChannel#connect(SocketAddress)} call completes with a failure.</p>
+         *
+         * @param socketChannel the local socket channel that failed to connect to the remote socket address
+         * @param socketAddress the remote socket address to connect to
+         * @param failure the failure cause
+         */
+        default void onConnectFailure(SocketChannel socketChannel, SocketAddress socketAddress, Throwable failure)
+        {
         }
     }
 }

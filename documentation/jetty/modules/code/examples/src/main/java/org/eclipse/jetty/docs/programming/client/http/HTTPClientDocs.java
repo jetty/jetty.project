@@ -20,10 +20,13 @@ import java.io.OutputStream;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -1232,5 +1235,39 @@ public class HTTPClientDocs
             })
             .send();
         // end::connectionInformation[]
+    }
+
+    public void connectListener() throws Exception
+    {
+        // tag::connectListener[]
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.addEventListener(new ClientConnector.ConnectListener()
+        {
+            private final ConcurrentMap<SocketChannel, Long> times = new ConcurrentHashMap<>();
+
+            @Override
+            public void onConnectBegin(SocketChannel socketChannel, SocketAddress socketAddress)
+            {
+                times.put(socketChannel, System.nanoTime());
+            }
+
+            @Override
+            public void onConnectSuccess(SocketChannel socketChannel)
+            {
+                Long begin = times.remove(socketChannel);
+                System.getLogger("connection").log(INFO, "established in %d ns", System.nanoTime() - begin);
+            }
+
+            @Override
+            public void onConnectFailure(SocketChannel socketChannel, SocketAddress socketAddress, Throwable failure)
+            {
+                Long begin = times.remove(socketChannel);
+                System.getLogger("connection").log(INFO, "failed in %d ns", System.nanoTime() - begin);
+            }
+        });
+
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
+        httpClient.start();
+        // end::connectListener[]
     }
 }
