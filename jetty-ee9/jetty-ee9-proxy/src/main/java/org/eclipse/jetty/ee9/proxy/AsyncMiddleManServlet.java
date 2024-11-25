@@ -595,10 +595,10 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     protected class ProxyWriter extends IteratingCallback implements WriteListener
     {
         private final AutoLock lock = new AutoLock();
-        private final Queue<Chunk> chunks = new ArrayDeque<>();
+        private final Queue<BufferWithCallback> chunks = new ArrayDeque<>();
         private final HttpServletRequest clientRequest;
         private final Response serverResponse;
-        private Chunk chunk;
+        private BufferWithCallback chunk;
         private boolean writePending;
 
         protected ProxyWriter(HttpServletRequest clientRequest, Response serverResponse)
@@ -613,7 +613,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 _log.debug("{} proxying content to downstream: {} bytes {}", getRequestId(clientRequest), content.remaining(), callback);
             try (AutoLock ignored = lock.lock())
             {
-                return chunks.offer(new Chunk(content, callback));
+                return chunks.offer(new BufferWithCallback(content, callback));
             }
         }
 
@@ -622,7 +622,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             ServletOutputStream output = clientRequest.getAsyncContext().getResponse().getOutputStream();
 
-            Chunk chunk;
+            BufferWithCallback chunk;
             try (AutoLock ignored = lock.lock())
             {
                 chunk = this.chunk = chunks.poll();
@@ -650,10 +650,11 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         protected void onSuccess()
         {
-            Chunk chunk;
+            BufferWithCallback chunk;
             try (AutoLock ignored = lock.lock())
             {
                 chunk = this.chunk;
+                this.chunk = null;
             }
             if (_log.isDebugEnabled())
                 _log.debug("{} async write complete of {} on {}", getRequestId(clientRequest), chunk, this);
@@ -663,10 +664,11 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         protected void onCompleteFailure(Throwable failure)
         {
-            Chunk chunk;
+            BufferWithCallback chunk;
             try (AutoLock ignored = lock.lock())
             {
                 chunk = this.chunk;
+                this.chunk = null;
             }
             if (chunk != null)
                 chunk.callback.failed(failure);
@@ -872,7 +874,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
     }
 
-    private record Chunk(ByteBuffer buffer, Callback callback)
+    private record BufferWithCallback(ByteBuffer buffer, Callback callback)
     {
         @Override
         public String toString()
