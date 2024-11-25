@@ -102,6 +102,18 @@ public interface ThreadPool extends Executor
         if (task == null)
             return;
 
+        Invocable.InvocationType invocationType = Invocable.getInvocationType(task);
+        if (invocationType == Invocable.InvocationType.NON_BLOCKING)
+        {
+            task.run();
+            return;
+        }
+        if (invocationType == Invocable.InvocationType.EITHER)
+        {
+            Invocable.invokeNonBlocking(task);
+            return;
+        }
+
         if (executor instanceof TryExecutor tryExecutor && tryExecutor.tryExecute(task))
             return;
 
@@ -112,21 +124,13 @@ public interface ThreadPool extends Executor
             return;
         }
 
-        switch (Invocable.getInvocationType(task))
+        try
         {
-            case NON_BLOCKING -> task.run();
-            case EITHER -> Invocable.invokeNonBlocking(task);
-            default ->
-            {
-                try
-                {
-                    new Thread(task).start();
-                }
-                catch (Throwable ignored)
-                {
-                    task.run();
-                }
-            }
+            new Thread(task, "jetty-immediate-executor").start();
+        }
+        catch (Throwable ignored)
+        {
+            task.run();
         }
     }
 }

@@ -408,25 +408,18 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     @Override
     public void close()
     {
-        if (stream != null)
+        try
         {
-            Runnable task = stream.getHttpChannel().onClose();
-            if (task != null)
+            if (stream != null)
             {
-                ThreadPool.executeImmediately(getExecutor(), () ->
-                {
-                    try
-                    {
-                        task.run();
-                    }
-                    finally
-                    {
-                        super.close();
-                    }
-                });
-                return;
+                Runnable task = stream.getHttpChannel().onClose();
+                if (task != null)
+                    task.run();
             }
         }
-        super.close();
+        finally
+        {
+            super.close();
+        }
     }
 }

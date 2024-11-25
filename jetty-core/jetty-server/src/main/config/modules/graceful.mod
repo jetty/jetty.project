@@ -11,3 +11,10 @@ server
 
 [xml]
 etc/jetty-graceful.xml
+
+[ini-template]
+# tag::documentation[]
+## The timeout, in milliseconds, to apply when stopping the server gracefully.
+# jetty.server.stopTimeout=5000
+# end::documentation[]
+

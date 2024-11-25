@@ -90,7 +90,6 @@
     <!-- extra server options                                        -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown"><Property name="jetty.server.stopAtShutdown" default="true"/></Set>
-    <Set name="stopTimeout"><Property name="jetty.server.stopTimeout" default="5000"/></Set>
     <Set name="dumpAfterStart" property="jetty.server.dumpAfterStart"/>
     <Set name="dumpBeforeStop" property="jetty.server.dumpBeforeStop"/>
     <Set name="tempDirectory" property="jetty.server.tempDirectory"/>

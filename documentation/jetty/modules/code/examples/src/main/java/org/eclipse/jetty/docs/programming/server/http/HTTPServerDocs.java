@@ -84,6 +84,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
@@ -1635,6 +1636,38 @@ public class HTTPServerDocs
 
         server.start();
         // end::defaultHandler[]
+    }
+
+    public void gracefulHandler() throws Exception
+    {
+        // tag::gracefulHandler[]
+        Server server = new Server();
+
+        // Install the GracefulHandler.
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        server.setHandler(gracefulHandler);
+
+        // Set the Server stopTimeout to wait at most
+        // 10 seconds for existing requests to complete.
+        server.setStopTimeout(10_000);
+
+        // Add one web application.
+        class MyWebApp extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Implement your web application.
+                callback.succeeded();
+                return true;
+            }
+        }
+
+        ContextHandler contextHandler = new ContextHandler(new MyWebApp(), "/app");
+        gracefulHandler.setHandler(contextHandler);
+
+        server.start();
+        // end::gracefulHandler[]
     }
 
     public void continue100()
