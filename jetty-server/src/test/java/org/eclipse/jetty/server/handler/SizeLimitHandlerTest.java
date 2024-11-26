@@ -252,7 +252,7 @@ public class SizeLimitHandlerTest
             String text = new String(data, 0, 1024, Charset.defaultCharset());
 
             for (int i = 0; i < 9; i++)
-                endp.addInput("400\r\n" + text + "\r\n");
+                endp.addInput(Integer.toHexString(text.length()) + ";\r\n" + text + "\r\n");
 
             HttpTester.Response response = HttpTester.parseResponse(endp.getResponse());
 

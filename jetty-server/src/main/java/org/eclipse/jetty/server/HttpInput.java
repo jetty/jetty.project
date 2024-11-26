@@ -499,6 +499,10 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             return _interceptor.readFrom(content);
         }
+        catch (RuntimeException | Error x)
+        {
+            throw x;
+        }
         catch (Throwable x)
         {
             IOException failure = new IOException("Bad content", x);
@@ -1146,6 +1150,8 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             if (_error instanceof IOException)
                 throw (IOException)_error;
+            if (_error instanceof RuntimeException)
+                throw (RuntimeException)_error;
             throw new IOException(_error);
         }
 
