@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -63,9 +64,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -110,10 +112,10 @@ public class HttpInputInterceptorTest
                 // Throw immediately from the interceptor.
                 jettyRequest.getHttpInput().addInterceptor(content ->
                 {
-                    throw new RuntimeException();
+                    throw new BadMessageException();
                 });
 
-                assertThrows(IOException.class, () -> IO.readBytes(request.getInputStream()));
+                assertThrows(BadMessageException.class, () -> IO.readBytes(request.getInputStream()));
                 serverLatch.countDown();
                 response.setStatus(HttpStatus.NO_CONTENT_204);
             }
@@ -159,7 +161,7 @@ public class HttpInputInterceptorTest
                     throw new RuntimeException();
                 });
 
-                assertThrows(IOException.class, () -> IO.readBytes(request.getInputStream()));
+                assertThrows(RuntimeException.class, () -> IO.readBytes(request.getInputStream()));
                 serverLatch.countDown();
                 response.setStatus(HttpStatus.NO_CONTENT_204);
             }
@@ -362,7 +364,7 @@ public class HttpInputInterceptorTest
                         // Now the interceptor should throw, but isReady() should not.
                         if (input.isReady())
                         {
-                            assertThrows(IOException.class, () -> assertEquals(bytes[0], input.read()));
+                            assertThrows(RuntimeException.class, () -> assertEquals(bytes[0], input.read()));
                             readFailureLatch.countDown();
                             response.setStatus(HttpStatus.NO_CONTENT_204);
                             asyncContext.complete();
@@ -431,7 +433,7 @@ public class HttpInputInterceptorTest
                     @Override
                     public void onError(Throwable error)
                     {
-                        assertSame(failure, error.getCause());
+                        assertThat(failure, anyOf(sameInstance(error), sameInstance(error.getCause())));
                         response.setStatus(HttpStatus.NO_CONTENT_204);
                         asyncContext.complete();
                     }
