@@ -545,7 +545,7 @@ Among the configurable properties, the most relevant are:
 Configures the compliance to HTTP specifications.
 The value could be:
 
-* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] constants, such as `RFC7230` or `RFC2616`.
+* One of the predefined link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] constants, such as `RFC9110`, RFC7230` or `RFC2616`.
 For example: `jetty.httpConfig.compliance=RFC2616`.
 * A comma-separated list of violations to allow or forbid, as specified by the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#from(java.lang.String)[`HttpCompliance.from(String)`] method.
 For example, `jetty.httpConfig.compliance=RFC7230,MULTIPLE_CONTENT_LENGTHS` means that the HTTP compliance is that defined by `RFC7230`, but also allows the `HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS`, so that requests that have multiple `Content-Length` headers are accepted (they would be rejected when using just `HttpCompliance.RFC7230`).

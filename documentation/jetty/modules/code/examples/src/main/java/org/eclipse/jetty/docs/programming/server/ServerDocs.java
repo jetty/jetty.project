@@ -271,7 +271,7 @@ public class ServerDocs
     {
         // tag::httpCompliance[]
         HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.setHttpCompliance(HttpCompliance.RFC7230);
+        httpConfiguration.setHttpCompliance(HttpCompliance.RFC9110);
         // end::httpCompliance[]
     }
 
@@ -280,8 +280,8 @@ public class ServerDocs
         // tag::httpComplianceCustom[]
         HttpConfiguration httpConfiguration = new HttpConfiguration();
 
-        // RFC7230 compliance, but allow Violation.MULTIPLE_CONTENT_LENGTHS.
-        HttpCompliance customHttpCompliance = HttpCompliance.from("RFC7230,MULTIPLE_CONTENT_LENGTHS");
+        // RFC9110 compliance, but allow Violation.MULTIPLE_CONTENT_LENGTHS.
+        HttpCompliance customHttpCompliance = HttpCompliance.from("RFC9110,MULTIPLE_CONTENT_LENGTHS");
 
         httpConfiguration.setHttpCompliance(customHttpCompliance);
         // end::httpComplianceCustom[]

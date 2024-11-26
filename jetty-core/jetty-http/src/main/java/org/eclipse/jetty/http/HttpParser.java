@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
+import static org.eclipse.jetty.http.HttpCompliance.RFC9110;
 import static org.eclipse.jetty.http.HttpCompliance.Violation;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.DUPLICATE_HOST_HEADERS;
@@ -50,7 +50,7 @@ import static org.eclipse.jetty.http.HttpTokens.EOL_LF;
 import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
 
 /**
- * A Parser for 1.0 and 1.1 as defined by RFC7230
+ * A Parser for 1.0 and 1.1 as defined by <a href="https://datatracker.ietf.org/doc/html/rfc9112">RFC 9112</a>
  * <p>
  * This parser parses HTTP client and server messages from buffers
  * passed in the {@link #parseNext(ByteBuffer)} method.  The parsed
@@ -85,14 +85,16 @@ import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
  * <p>
  * The parser can work in varying compliance modes:
  * <dl>
- * <dt>RFC7230</dt><dd>(default) Compliance with RFC7230</dd>
- * <dt>RFC2616</dt><dd>Wrapped headers and HTTP/0.9 supported</dd>
- * <dt>LEGACY</dt><dd>Adherence to Servlet Specification requirement for
+ * <dt>{@link HttpCompliance#RFC9110}</dt><dd>(default) Compliance with RFC9110 and RFC9112</dd>
+ * <dt>{@link HttpCompliance#RFC7230}</dt><dd>(default) Compliance with RFC7230</dd>
+ * <dt>{@link HttpCompliance#RFC2616}</dt><dd>Wrapped headers and HTTP/0.9 supported</dd>
+ * <dt>{@link HttpCompliance#LEGACY}</dt><dd>Adherence to Servlet Specification requirement for
  * exact case of header names, bypassing the header caches, which are case insensitive,
  * otherwise equivalent to RFC2616</dd>
  * </dl>
  *
- * @see <a href="http://tools.ietf.org/html/rfc7230">RFC 7230</a>
+ * @see <a href="https://datatracker.ietf.org/doc/html/rfc9110">RFC 9110</a>
+ * @see <a href="https://datatracker.ietf.org/doc/html/rfc9112">RFC 9112</a>
  */
 public class HttpParser
 {
@@ -276,7 +278,7 @@ public class HttpParser
 
     private static HttpCompliance compliance()
     {
-        return RFC7230;
+        return RFC9110;
     }
 
     public HttpParser(RequestHandler handler)

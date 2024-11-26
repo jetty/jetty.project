@@ -131,7 +131,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private boolean strictEventOrdering = false;
     private long destinationIdleTimeout;
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
-    private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
+    private HttpCompliance httpCompliance = HttpCompliance.RFC9110;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
@@ -917,7 +917,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
 
     /**
      * Gets the http compliance mode for parsing http responses.
-     * The default http compliance level is {@link HttpCompliance#RFC7230} which is the latest HTTP/1.1 specification
+     * The default http compliance level is {@link HttpCompliance#RFC9110} which is the latest HTTP specification
      *
      * @return the HttpCompliance instance
      */
