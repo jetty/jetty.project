@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -329,7 +330,31 @@ public class Fields implements Iterable<Fields.Field>
      */
     public Map<String, String[]> toStringArrayMap()
     {
-        Map<String, String[]> result = new LinkedHashMap<>();
+        Map<String, String[]> result = new LinkedHashMap<>()
+        {
+            @Override
+            public String toString()
+            {
+                if (fields.isEmpty())
+                    return "{}";
+
+                StringBuilder sb = new StringBuilder();
+                sb.append('{');
+                for (Iterator<Map.Entry<String, String[]>> i = entrySet().iterator(); i.hasNext();)
+                {
+                    Map.Entry<String, String[]> e = i.next();
+                    String key = e.getKey();
+                    String[] value = e.getValue();
+                    sb.append(key);
+                    sb.append('=');
+                    sb.append(Arrays.asList(value));
+                    if (i.hasNext())
+                        sb.append(',');
+                }
+                sb.append('}');
+                return sb.toString();
+            }
+        };
         fields.forEach((k, f) -> result.put(f.getName(), f.getValues().toArray(new String[0])));
         return result;
     }
