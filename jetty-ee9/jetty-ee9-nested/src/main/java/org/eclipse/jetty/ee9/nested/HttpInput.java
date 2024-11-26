@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -311,9 +312,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug("read error={} {}", error, this);
             if (error != null)
             {
-                if (error instanceof IOException)
-                    throw (IOException)error;
-                throw new IOException(error);
+                ExceptionUtil.ifExceptionThrowAs(IOException.class, error);
             }
 
             if (content.isEof())

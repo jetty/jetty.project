@@ -100,8 +100,10 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/Se
 [[servleturi]]
 === Servlet URI Compliance Modes
 
-Even if the server has been configured (as above) to allow ambiguous URIs to be received, individual Servlet Contexts may not allow such ambiguous URIs to be returned via some specific methods.
+Even if the server has been configured (as above) to allow ambiguous URIs to be received, individual Servlet contexts may not allow such ambiguous URIs to be returned via some specific methods.
+
 Specifically the `HttpServletRequest` methods: link:https://jakarta.ee/specifications/servlet/6.0/apidocs/jakarta.servlet/jakarta/servlet/http/httpservletrequest#getServletPath()[getServletPath()] and link:https://jakarta.ee/specifications/servlet/6.0/apidocs/jakarta.servlet/jakarta/servlet/http/httpservletrequest#getPathInfo()[getPathInfo()], may throw `IllegalArgumentException` for such URIs.
+
 The intention is for safer methods, such as link:https://jakarta.ee/specifications/servlet/6.0/apidocs/jakarta.servlet/jakarta/servlet/http/httpservletrequest#getRequestURI()[getRequestURI] to be used instead.
 
 If necessary, the `ServletHandler` can be configured to allow ambiguous URIs from all methods with link:{javadoc-url}/org/eclipse/jetty/ee10/servlet/ServletHandler.html#setDecodeAmbiguousURIs(boolean)[setDecodeAmbiguousURIs(boolean)].
