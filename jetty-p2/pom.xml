@@ -11,7 +11,7 @@
   <name>Jetty :: P2</name>
   <description>Generates a (maven based) P2 Updatesite</description>
   <properties>
-    <tycho-version>4.0.9</tycho-version>
+    <tycho-version>4.0.10</tycho-version>
   </properties>
   <dependencies>
     <!-- This dependency is to make sure this projects is build after all relevant

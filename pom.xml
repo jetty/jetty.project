@@ -208,7 +208,7 @@
     <commons-codec.version>1.17.1</commons-codec.version>
     <commons-lang3.version>3.17.0</commons-lang3.version>
     <commons.compress.version>1.27.1</commons.compress.version>
-    <commons.io.version>2.17.0</commons.io.version>
+    <commons.io.version>2.18.0</commons.io.version>
     <compiler.release>11</compiler.release>
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
@@ -218,7 +218,7 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.35.1</google.errorprone.version>
+    <google.errorprone.version>2.36.0</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
     <grpc.version>1.68.1</grpc.version>
     <gson.version>2.11.0</gson.version>
@@ -293,10 +293,10 @@
     <kerb-simplekdc.version>2.1.0</kerb-simplekdc.version>
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.24.1</log4j2.version>
+    <log4j2.version>2.24.2</log4j2.version>
     <logback.version>1.5.12</logback.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.5.0</mariadb.version>
+    <mariadb.version>3.5.1</mariadb.version>
     <maven-plugin.plugin.version>3.15.1</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
