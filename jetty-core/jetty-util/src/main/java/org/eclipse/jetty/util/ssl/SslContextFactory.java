@@ -51,7 +51,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -585,7 +584,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
-     * You can either use the exact Cipher suite name or a a regular expression.
+     * You can either use the exact Cipher suite name or a regular expression.
      *
      * @param cipher Cipher names to add to {@link SSLEngine#setEnabledCipherSuites(String[])}
      */
@@ -605,7 +604,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
-     * You can either use the exact Cipher suite name or a a regular expression.
+     * You can either use the exact Cipher suite name or a regular expression.
      *
      * @param cipherSuites The array of cipher suite names to include in
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
@@ -1929,9 +1928,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             sslParams.setCipherSuites(_selectedCipherSuites);
         if (_selectedProtocols != null)
             sslParams.setProtocols(_selectedProtocols);
-        if (this instanceof Server)
+        if (this instanceof Server server)
         {
-            Server server = (Server)this;
             if (server.getWantClientAuth())
                 sslParams.setWantClientAuth(true);
             if (server.getNeedClientAuth())
@@ -2380,7 +2378,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             boolean sniRequired = isSniRequired();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Selecting alias: keyType={}, sni={}, sniRequired={}, certs={}", keyType, String.valueOf(sniHost), sniRequired, certificates);
+                LOG.debug("Selecting alias: keyType={}, sni={}, sniRequired={}, certs={}", keyType, sniHost, sniRequired, certificates);
 
             String alias;
             if (sniHost == null)
@@ -2393,7 +2391,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                 // Match the SNI host.
                 List<X509> matching = certificates.stream()
                     .filter(x509 -> x509.matches(sniHost))
-                    .collect(Collectors.toList());
+                    .toList();
 
                 if (matching.isEmpty())
                 {
@@ -2419,7 +2417,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Selected alias={}", String.valueOf(alias));
+                LOG.debug("Selected alias={}", alias);
 
             return alias;
         }

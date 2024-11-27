@@ -109,11 +109,11 @@ $JETTY_BASE
 │   └── jetty-logging.properties
 └── start.d
     ├── https.ini
-    └── ssl.ini
+    └── ssl-context.ini
 ----
 
 Note that the KeyStore file is missing, because you have to provide one with the cryptographic material you want (read xref:keystore/index.adoc[this section] to create your own KeyStore).
-You need to configure these two properties by editing `ssl.ini`:
+You need to configure these two properties by editing `ssl-context.ini`:
 
 * `jetty.sslContext.keyStorePath`
 * `jetty.sslContext.keyStorePassword`
@@ -141,7 +141,7 @@ The `$JETTY_BASE` directory is now:
 │   └── jetty-logging.properties
 └── start.d
     ├── https.ini
-    ├── ssl.ini
+    ├── ssl-context.ini
     └── test-keystore.ini
 ----
 
@@ -716,21 +716,22 @@ If you enable _both_ the `https` and the `http2` module, you will have a single 
 Secure protocols have a slightly more complicated configuration since they require to configure a _KeyStore_.
 Refer to the xref:keystore/index.adoc[KeyStore section] for more information about how to create and manage a KeyStore.
 
-For simple cases, you only need to configure the KeyStore path and KeyStore password as explained in xref:modules/standard.adoc#ssl-keystore-tls[this section].
+For simple cases, you only need to configure the KeyStore path and KeyStore password as explained in xref:modules/standard.adoc#ssl-context[this section].
 
-For more advanced configuration you may want to configure the TLS protocol versions, or the ciphers to include/exclude, etc.
-The correct way of doing this is to create a custom xref:xml/index.adoc[Jetty XML file] and reference it in `$JETTY_BASE/start.d/ssl.ini`:
+For more advanced configuration, for example where Jetty module properties are not defined, or the values for those properties need to be fetched from external sources, you can follow the steps below.
 
-.ssl.ini
-[source]
+First, create a custom xref:xml/index.adoc[Jetty XML file] and reference it in `$JETTY_BASE/start.d/ssl-context.ini`:
+
+.ssl-context.ini
+[source,subs="verbatim,quotes"]
 ----
-jetty.sslContext.keyStorePassword=my_passwd! <1>
-etc/tls-config.xml <2>
+--module=ssl-context
+*etc/tls-config.xml* <1>
+...
 ----
-<1> Configures the `jetty.sslContext.keyStorePassword` property with the KeyStore password.
-<2> References your newly created `$JETTY_BASE/etc/tls-config.xml`.
+<1> The path to the custom XML file, relative to `$JETTY_BASE`.
 
-The `ssl.ini` file above only shows the lines that are not commented out (you can leave the lines that are commented unmodified for future reference).
+The `ssl-context.ini` file above only shows the lines that are not commented out (you can leave the lines that are commented unmodified for future reference).
 
 You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following template content:
 
@@ -748,7 +749,7 @@ You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following templ
 ----
 <1> Here goes your advanced configuration.
 
-The `tls-config.xml` file references the `sslContextFactory` component (created by the `ssl` Jetty module) that configures the KeyStore and TLS parameters, so that you can now call its APIs via XML, and you will have full flexibility for any advanced configuration you want (see below for few examples).
+The `tls-config.xml` file references the `sslContextFactory` component (created by the `ssl-context` Jetty module) that configures the KeyStore and TLS parameters, so that you can now call its APIs via XML (using the syntax described in xref:xml/index.adoc[this section]), and you will have full flexibility for any advanced configuration you want (see below for few examples).
 
 Refer to the link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Server.html[SslContextFactory.Server javadocs] for the list of methods that you can call through the Jetty XML file.
 
@@ -783,7 +784,8 @@ To explicitly add the exclusion of TLSv1.0 and TLSv1.1 (that are also vulnerable
 [[ssl-customize-ciphers]]
 ==== Customizing SSL/TLS Ciphers
 
-You can precisely set the list of excluded ciphers, completely overriding Jetty's default, with this XML:
+By default, certain cipher suites are already excluded because they are either weak or vulnerable.
+To explicitly exclude more cipher suites in addition to those excluded by default, you can use this XML:
 
 .tls-config.xml
 [,xml]
@@ -793,27 +795,21 @@ You can precisely set the list of excluded ciphers, completely overriding Jetty'
 
 <Configure>
   <Ref refid="sslContextFactory">
-    <Set name="ExcludeCipherSuites">
-      <Array type="String">
-        <Item>^TLS_RSA_.*$</Item>
-        <Item>^.*_RSA_.*_(MD5|SHA|SHA1)$</Item>
-        <Item>^.*_DHE_RSA_.*$</Item>
-        <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
-        <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
-        <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
-        <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
-        <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
-        <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
-        <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
-      </Array>
-    </Set>
+    <Call name="addExcludeCipherSuites">
+      <Arg>
+        <Array type="String">
+          <Item>^TLS_DHE_.*$</Item>
+          <Item>TLS_CHACHA20_POLY1305_SHA256</Item>
+        </Array>
+      </Arg>
+    </Call>
   </Ref>
 </Configure>
 ----
 
 Note how each array item specifies a _regular expression_ that matches multiple ciphers, or specifies a precise cipher to exclude.
 
-You can choose to create multiple XML files, and reference them all from `$JETTY_BASE/start.d/ssl.ini`, or put all your custom configurations in a single XML file.
+You can choose to create multiple XML files, and reference them all from `$JETTY_BASE/start.d/ssl-context.ini`, or put all your custom configurations in a single XML file.
 
 [[ssl-renew]]
 === Renewing the Certificates

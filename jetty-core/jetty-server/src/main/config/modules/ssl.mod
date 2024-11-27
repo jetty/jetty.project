@@ -1,6 +1,7 @@
 [description]
 Enables a TLS (SSL) connector to support secure protocols.
-Secure HTTP/1.1 is provided by enabling the "https" module and secure HTTP/2 is provided by enabling the "http2" module.
+Secure HTTP/1.1 is provided by enabling the "https" module.
+Secure HTTP/2 is provided by enabling the "http2" module.
 
 [tags]
 connector
@@ -8,14 +9,14 @@ ssl
 internal
 
 [depend]
+ssl-context
 server
 
 [xml]
 etc/jetty-ssl.xml
-etc/jetty-ssl-context.xml
 
 [ini-template]
-# tag::documentation-connector[]
+# tag::documentation[]
 ### TLS (SSL) Connector Configuration
 
 ## The host/address to bind the connector to.
@@ -69,68 +70,4 @@ etc/jetty-ssl-context.xml
 
 ## Whether to include the subdomain property in any Strict-Transport-Security header.
 # jetty.ssl.stsIncludeSubdomains=true
-# end::documentation-connector[]
-
-# tag::documentation-ssl-context[]
-### SslContextFactory Configuration
-## Note that OBF passwords are not secure, just protected from casual observation.
-
-## Whether client SNI data is required for all secure connections.
-## When SNI is required, clients that do not send SNI data are rejected with a TLS handshake error.
-# jetty.sslContext.sniRequired=false
-
-## The Endpoint Identification Algorithm.
-## Same as javax.net.ssl.SSLParameters#setEndpointIdentificationAlgorithm(String).
-# jetty.sslContext.endpointIdentificationAlgorithm=
-
-## The JSSE Provider.
-# jetty.sslContext.provider=
-
-## The KeyStore file path, either an absolute path or a relative path to $JETTY_BASE.
-# jetty.sslContext.keyStorePath=etc/keystore.p12
-
-## The TrustStore file path, either an absolute path or a relative path to $JETTY_BASE.
-# jetty.sslContext.trustStorePath=etc/keystore.p12
-
-## The KeyStore password.
-# jetty.sslContext.keyStorePassword=
-
-## The Keystore type.
-# jetty.sslContext.keyStoreType=PKCS12
-
-## The KeyStore provider.
-# jetty.sslContext.keyStoreProvider=
-
-## The KeyManager password.
-# jetty.sslContext.keyManagerPassword=
-
-## The TrustStore password.
-# jetty.sslContext.trustStorePassword=
-
-## The TrustStore type.
-# jetty.sslContext.trustStoreType=PKCS12
-
-## The TrustStore provider.
-# jetty.sslContext.trustStoreProvider=
-
-## Whether client certificate authentication is required.
-# jetty.sslContext.needClientAuth=false
-
-## Whether client certificate authentication is desired, but not required.
-# jetty.sslContext.wantClientAuth=false
-
-## Whether cipher order is significant.
-# jetty.sslContext.useCipherSuitesOrder=true
-
-## The SSLSession cache size.
-# jetty.sslContext.sslSessionCacheSize=-1
-
-## The SSLSession cache timeout (in seconds).
-# jetty.sslContext.sslSessionTimeout=-1
-
-## Whether TLS renegotiation is allowed.
-# jetty.sslContext.renegotiationAllowed=true
-
-## The max number of TLS renegotiations per connection.
-# jetty.sslContext.renegotiationLimit=5
-# end::documentation-ssl-context[]
+# end::documentation[]

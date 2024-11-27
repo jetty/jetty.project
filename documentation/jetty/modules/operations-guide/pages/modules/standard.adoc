@@ -613,13 +613,12 @@ include::{jetty-home}/modules/size-limit.mod[tags=documentation]
 
 The `ssl` module provides the secure connector, and allows you to configure the KeyStore properties and the TLS parameters, and depends on the <<server,`server` module>>.
 
-[[ssl-connector]]
-=== Secure Connector Properties
+For more information about securing a connector and supporting secure protocols, refer to xref:protocols/index.adoc#ssl[this section].
 
 The module properties to configure the secure connector are:
 
 ----
-include::{jetty-home}/modules/ssl.mod[tags=documentation-connector]
+include::{jetty-home}/modules/ssl.mod[tags=documentation]
 ----
 
 Among the configurable properties, the most relevant are:
@@ -635,18 +634,18 @@ Refer to <<http-acceptors,this section>> for more information about acceptor thr
 The number of NIO selectors (with an associated thread) that manage connections -- default -1 (i.e. a select heuristic decides the value; the current heuristic calculates a value based on the number of cores).
 Refer to <<http-selectors,this section>> for more information about selector threads.
 
-The module properties to configure the KeyStore and TLS parameters are:
+[[ssl-context]]
+== Module `ssl-context`
 
-----
-include::{jetty-home}/modules/ssl.mod[tags=documentation-ssl-context]
-----
-
-[[ssl-keystore-tls]]
-=== KeyStore Properties and TLS Properties
+The `ssl-context` module provides the KeyStore, TrustStore and TLS configuration necessary to the `ssl` module.
 
 The Jetty component that manages the KeyStore, that contains the cryptographic material and the TLS configuration is an instance of `SslContextFactory.Server`.
 
-You can configure the `SslContextFactory.Server` by specifying properties, or by invoking its method for a more xref:ssl-advanced[advanced configuration].
+The module properties to configure the KeyStore and TLS parameters are:
+
+----
+include::{jetty-home}/modules/ssl-context.mod[tags=documentation]
+----
 
 Among the configurable properties, the most relevant are:
 
@@ -663,61 +662,10 @@ Whether client certificate authentication should be required.
 `jetty.sslContext.wantClientAuth`::
 Whether client certificate authentication should be requested.
 
+Configuring `SslContextFactory.Server` using properties is sufficient for most cases.
+For the cases where Jetty module properties are not defined, or when you need more advanced configuration, you can refer to xref:protocols/index.adoc#ssl-customize[this section].
+
 If you configure client certificate authentication, you need to configure and distribute a client KeyStore as explained in xref:keystore/index.adoc#client-authn[this section].
-
-[[ssl-advanced]]
-=== Advanced TLS Configuration
-
-Configuring `SslContextFactory.Server` using properties as explained in xref:ssl-keystore-tls[this section] is sufficient for most cases.
-
-For the cases where Jetty module properties are not defined, or when you need more advanced configuration (for example the ability to include and/or exclude the TLS cipher suites), you can follow these steps:
-
-. Modify `$JETTY_BASE/start.d/ssl.ini` by adding a path to a custom XML file, for example:
-+
-.ssl.ini
-[source,subs="verbatim,quotes"]
-----
---module=ssl
-*etc/ssl-config.xml* <1>
-...
-----
-<1> The path to the custom XML file, relative to `$JETTY_BASE`.
-. Create the custom XML file, with your advanced configuration.
-For example, to exclude certain TLS ciphers you can use the following file:
-+
-.ssl-config.xml
-[source,xml,subs="verbatim"]
-----
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://jetty.org/jetty/configure_10_0.dtd">
-
-<Configure>
-  <Ref refid="sslContextFactory"> <1>
-    <!-- Example using the Set element -->
-    <Set name="ExcludeCipherSuites"> <2>
-      <Array type="String">
-        <Item>^TLS_RSA_.*$</Item>
-        <Item>^.*_(MD5|SHA|SHA1)$</Item>
-      </Array>
-    </Set>
-    <!-- Example using the Call element -->
-    <Call name="addExcludeCipherSuites">
-      <Arg>
-        <Array type="String">
-          <Item>^SSL_.*$</Item>
-        </Array>
-      </Arg>
-    </Call>
-  </Ref>
-</Configure>
-----
-<1> Reference the existing `sslContextFactory` object.
-<2> Call the method `setExcludeCipherSuites(String\...)` to specify regular expressions of the TLS ciphers you want to exclude.
-
-The syntax to use in the custom XML file is described in xref:xml/index.adoc[this section].
-
-In the custom XML file you can call any `SslContextFactory.Server` method.
-Refer to the `SslContextFactory.Server` link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Server.html[javadocs] for the comprehensive list of methods.
 
 [[ssl-reload]]
 == Module `ssl-reload`
