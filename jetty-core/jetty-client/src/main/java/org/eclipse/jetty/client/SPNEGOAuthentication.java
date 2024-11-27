@@ -214,7 +214,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
 
         String b64Input = headerInfo.getBase64();
         byte[] input = b64Input == null ? new byte[0] : Base64.getDecoder().decode(b64Input);
-        byte[] output = SecurityUtils.doAs(spnegoContext.subject, initGSSContext(spnegoContext, request.getHost(), input));
+        byte[] output = SecurityUtils.callAs(spnegoContext.subject, initGSSContext(spnegoContext, request.getHost(), input));
         String b64Output = output == null ? null : new String(Base64.getEncoder().encode(output));
 
         // The result cannot be used for subsequent requests,

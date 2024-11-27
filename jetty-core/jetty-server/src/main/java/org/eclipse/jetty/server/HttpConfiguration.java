@@ -58,6 +58,7 @@ public class HttpConfiguration implements Dumpable
         .mutable()
         .build();
     private final List<ComplianceViolation.Listener> _complianceViolationListeners = new ArrayList<>();
+    private int _inputBufferSize = 8 * 1024;
     private int _outputBufferSize = 32 * 1024;
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
@@ -85,9 +86,11 @@ public class HttpConfiguration implements Dumpable
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed = true;
+    private boolean _generateRedirectBody = false;
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
+    private int _minInputBufferSpace = 1500;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -133,6 +136,7 @@ public class HttpConfiguration implements Dumpable
         {
             _formEncodedMethods.put(s, Boolean.TRUE);
         }
+        _inputBufferSize = config._inputBufferSize;
         _outputBufferSize = config._outputBufferSize;
         _outputAggregationSize = config._outputAggregationSize;
         _requestHeaderSize = config._requestHeaderSize;
@@ -159,11 +163,13 @@ public class HttpConfiguration implements Dumpable
         _complianceViolationListeners.addAll(config._complianceViolationListeners);
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
+        _generateRedirectBody = config._generateRedirectBody;
         _uriCompliance = config._uriCompliance;
         _redirectUriCompliance = config._redirectUriCompliance;
         _serverAuthority = config._serverAuthority;
         _localAddress = config._localAddress;
         _maxUnconsumedRequestContentReads = config._maxUnconsumedRequestContentReads;
+        _minInputBufferSpace = config._minInputBufferSpace;
     }
 
     /**
@@ -197,6 +203,12 @@ public class HttpConfiguration implements Dumpable
     public boolean removeCustomizer(Customizer customizer)
     {
         return _customizers.remove(customizer);
+    }
+
+    @ManagedAttribute("The size in bytes of the input buffer used to read HTTP requests")
+    public int getInputBufferSize()
+    {
+        return _inputBufferSize;
     }
 
     @ManagedAttribute("The size in bytes of the output buffer used to aggregate HTTP output")
@@ -343,13 +355,15 @@ public class HttpConfiguration implements Dumpable
     /**
      * Set if true, delays the application dispatch until content is available (defaults to true).
      * @param delay if true, delays the application dispatch until content is available (defaults to true)
+     * @deprecated Use {@link org.eclipse.jetty.server.handler.EagerContentHandler} instead.
      */
+    @Deprecated (forRemoval = true, since = "12.1.0")
     public void setDelayDispatchUntilContent(boolean delay)
     {
         _delayDispatchUntilContent = delay;
     }
 
-    @ManagedAttribute("Whether to delay the application dispatch until content is available")
+    @Deprecated (forRemoval = true, since = "12.1.0")
     public boolean isDelayDispatchUntilContent()
     {
         return _delayDispatchUntilContent;
@@ -397,6 +411,15 @@ public class HttpConfiguration implements Dumpable
     {
         _customizers.clear();
         _customizers.addAll(customizers);
+    }
+
+    /**
+     * Set the size of the buffer into which HTTP request are read.
+     * @param inputBufferSize buffer size in bytes.
+     */
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        _inputBufferSize = inputBufferSize;
     }
 
     /**
@@ -546,6 +569,25 @@ public class HttpConfiguration implements Dumpable
     public void setMaxErrorDispatches(int max)
     {
         _maxErrorDispatches = max;
+    }
+
+    /**
+     * @return The minimum space available in a retained input buffer before allocating a new one.
+     */
+    @ManagedAttribute("The minimum space available in a retained input buffer before allocating a new one")
+    public int getMinInputBufferSpace()
+    {
+        return _minInputBufferSpace;
+    }
+
+    /**
+     * @param minInputBufferSpace The minimum space available in a retained input buffer before allocating a new one;
+     *                            0 to always allocate a new buffer;
+     *                            -1 for a default value
+     */
+    public void setMinInputBufferSpace(int minInputBufferSpace)
+    {
+        _minInputBufferSpace = minInputBufferSpace;
     }
 
     /**
@@ -736,6 +778,23 @@ public class HttpConfiguration implements Dumpable
     public boolean isRelativeRedirectAllowed()
     {
         return _relativeRedirectAllowed;
+    }
+
+    /**
+     * @param generate True if a redirection body will be generated if no response body is supplied.
+     */
+    public void setGenerateRedirectBody(boolean generate)
+    {
+        _generateRedirectBody = generate;
+    }
+
+    /**
+     * @return True if a redirection body will be generated if no response body is supplied.
+     */
+    @ManagedAttribute("Whether a redirection response body will be generated")
+    public boolean isGenerateRedirectBody()
+    {
+        return _generateRedirectBody;
     }
 
     /**

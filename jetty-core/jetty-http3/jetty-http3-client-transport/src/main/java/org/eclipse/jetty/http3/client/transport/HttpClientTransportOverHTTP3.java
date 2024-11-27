@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.client.transport;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.List;
@@ -84,6 +83,7 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
         configuration.setInputBufferSize(httpClient.getResponseBufferSize());
         configuration.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
         configuration.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
+        configuration.setMaxRequestHeadersSize(httpClient.getMaxRequestHeadersSize());
         configuration.setMaxResponseHeadersSize(httpClient.getMaxResponseHeadersSize());
     }
 
@@ -100,12 +100,6 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     public Destination newDestination(Origin origin)
     {
         return new HttpDestination(getHttpClient(), origin);
-    }
-
-    @Override
-    public void connect(InetSocketAddress address, Map<String, Object> context)
-    {
-        connect((SocketAddress)address, context);
     }
 
     @Override

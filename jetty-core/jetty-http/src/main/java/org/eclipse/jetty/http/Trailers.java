@@ -13,24 +13,15 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.BufferUtil;
 
-public class Trailers implements Content.Chunk
+public class Trailers extends Content.Chunk.Empty
 {
     private final HttpFields trailers;
 
     public Trailers(HttpFields trailers)
     {
         this.trailers = trailers;
-    }
-
-    @Override
-    public ByteBuffer getByteBuffer()
-    {
-        return BufferUtil.EMPTY_BUFFER;
     }
 
     @Override

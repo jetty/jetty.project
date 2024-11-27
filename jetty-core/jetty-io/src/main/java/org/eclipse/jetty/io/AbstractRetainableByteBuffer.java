@@ -14,22 +14,21 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.util.Objects;
-
-import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * <p>Abstract implementation of {@link RetainableByteBuffer} with
  * reference counting.</p>
+ * @deprecated
  */
-public abstract class AbstractRetainableByteBuffer implements RetainableByteBuffer
+@Deprecated(forRemoval = true)
+public abstract class AbstractRetainableByteBuffer extends RetainableByteBuffer.FixedCapacity
 {
-    private final ReferenceCounter refCount = new ReferenceCounter(0);
-    private final ByteBuffer byteBuffer;
+    private final ReferenceCounter _refCount;
 
     public AbstractRetainableByteBuffer(ByteBuffer byteBuffer)
     {
-        this.byteBuffer = Objects.requireNonNull(byteBuffer);
+        super(byteBuffer, new ReferenceCounter(0));
+        _refCount = (ReferenceCounter)getWrapped();
     }
 
     /**
@@ -37,42 +36,6 @@ public abstract class AbstractRetainableByteBuffer implements RetainableByteBuff
      */
     protected void acquire()
     {
-        refCount.acquire();
-    }
-
-    @Override
-    public boolean canRetain()
-    {
-        return refCount.canRetain();
-    }
-
-    @Override
-    public void retain()
-    {
-        refCount.retain();
-    }
-
-    @Override
-    public boolean release()
-    {
-        return refCount.release();
-    }
-
-    @Override
-    public boolean isRetained()
-    {
-        return refCount.isRetained();
-    }
-
-    @Override
-    public ByteBuffer getByteBuffer()
-    {
-        return byteBuffer;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "%s@%x[rc=%d,%s]".formatted(getClass().getSimpleName(), hashCode(), refCount.get(), BufferUtil.toDetailString(byteBuffer));
+        _refCount.acquire();
     }
 }

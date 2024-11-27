@@ -136,7 +136,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             return configure(new ProxyProtocolV1Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 
-        private static class ProxyProtocolV1Connection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+        private static class ProxyProtocolV1Connection extends AbstractConnection.NonBlocking implements Connection.UpgradeFrom, Connection.UpgradeTo
         {
             // 0     1 2       3       4 5 6
             // 98765432109876543210987654321
@@ -253,7 +253,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v1 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
-                BufferUtil.append(_buffer.getByteBuffer(), buffer);
+                _buffer.asMutable().append(buffer);
             }
 
             /**
@@ -451,7 +451,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             return configure(new ProxyProtocolV2Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 
-        private class ProxyProtocolV2Connection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+        private class ProxyProtocolV2Connection extends AbstractConnection.NonBlocking implements Connection.UpgradeFrom, Connection.UpgradeTo
         {
             private static final int HEADER_LENGTH = 16;
 
@@ -880,27 +880,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            SocketAddress local = getLocalSocketAddress();
-            if (local instanceof InetSocketAddress)
-                return (InetSocketAddress)local;
-            return null;
-        }
-
-        @Override
         public SocketAddress getLocalSocketAddress()
         {
             return _local;
-        }
-
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            SocketAddress remote = getRemoteSocketAddress();
-            if (remote instanceof InetSocketAddress)
-                return (InetSocketAddress)remote;
-            return null;
         }
 
         @Override

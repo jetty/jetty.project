@@ -426,13 +426,6 @@ public abstract class WriteFlusher
             if (LOG.isDebugEnabled())
                 LOG.debug("Flushed={} written={} remaining={} {}", flushed, written, after, this);
 
-            if (written > 0)
-            {
-                Connection connection = _endPoint.getConnection();
-                if (connection instanceof Listener listener)
-                    listener.onFlushed(written);
-            }
-
             if (flushed)
                 return null;
 
@@ -576,31 +569,5 @@ public abstract class WriteFlusher
     {
         State s = _state.get();
         return String.format("WriteFlusher@%x{%s}->%s", hashCode(), s, s instanceof PendingState ? ((PendingState)s)._callback : null);
-    }
-
-    /**
-     * <p>A listener of {@link WriteFlusher} events.
-     * If implemented by a Connection class, the {@link #onFlushed(long)} event will be delivered to it.</p>
-     *
-     * @deprecated functionality removed, no replacement
-     */
-    @Deprecated(since = "12.0.10", forRemoval = true)
-    public interface Listener
-    {
-        /**
-         * <p>Invoked when a {@link WriteFlusher} flushed bytes in a non-blocking way,
-         * as part of a - possibly larger - write.</p>
-         * <p>This method may be invoked multiple times, for example when writing a large
-         * buffer: a first flush of bytes, then the connection became TCP congested, and
-         * a subsequent flush of bytes when the connection became writable again.</p>
-         * <p>This method is never invoked concurrently, but may be invoked by different
-         * threads, so implementations may not rely on thread-local variables.</p>
-         * <p>Implementations may throw an {@link IOException} to signal that the write
-         * should fail, for example if the implementation enforces a minimum data rate.</p>
-         *
-         * @param bytes the number of bytes flushed
-         * @throws IOException if the write should fail
-         */
-        void onFlushed(long bytes) throws IOException;
     }
 }

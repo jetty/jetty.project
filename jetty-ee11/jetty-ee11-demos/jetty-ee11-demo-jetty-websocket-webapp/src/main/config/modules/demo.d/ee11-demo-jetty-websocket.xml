@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- ==================================================================
+Configure and deploy the test web application
+===================================================================== -->
+
+<Configure id="testWebapp" class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Required minimal context configuration :                        -->
+  <!--  + contextPath                                                  -->
+  <!--  + war OR baseResource                                          -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Set name="contextPath">/ee11-test</Set>
+  <Set name="war"><Property name="jetty.webapps" default="." />/ee11-demo-jetty-websocket.war
+  </Set>
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Optional context configuration                                  -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Set name="extractWAR">true</Set>
+  <Set name="copyWebDir">false</Set>
+  </Set>
+  
+</Configure>

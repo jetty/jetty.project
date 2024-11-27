@@ -75,9 +75,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final SocketAddress remoteSocketAddress;
     private boolean recycleHttpChannels;
 
-    public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, ServerSessionListener listener)
     {
-        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, inputBufferSize);
+        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, httpConfig.getInputBufferSize(), httpConfig.getMinInputBufferSpace());
         this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;
@@ -180,19 +180,31 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Idle timeout on {}", stream, timeout);
         HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
-        if (channel != null)
-        {
-            channel.onTimeout(timeout, (task, timedOut) ->
-            {
-                if (task != null)
-                    offerTask(task, true);
-                promise.succeeded(timedOut);
-            });
-        }
-        else
+        if (channel == null)
         {
             promise.succeeded(false);
+            return;
         }
+        channel.onTimeout(timeout, (task, timedOut) ->
+        {
+            if (task == null)
+            {
+                promise.succeeded(timedOut);
+                return;
+            }
+            ThreadPool.executeImmediately(getExecutor(), () ->
+            {
+                try
+                {
+                    task.run();
+                    promise.succeeded(timedOut);
+                }
+                catch (Throwable x)
+                {
+                    promise.failed(x);
+                }
+            });
+        });
     }
 
     public void onStreamFailure(Stream stream, Throwable failure, Callback callback)

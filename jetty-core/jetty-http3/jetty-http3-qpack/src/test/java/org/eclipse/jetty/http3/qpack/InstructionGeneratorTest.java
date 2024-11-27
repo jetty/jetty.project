@@ -16,12 +16,12 @@ package org.eclipse.jetty.http3.qpack;
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
-import static org.hamcrest.Matchers.is;
 
 public class InstructionGeneratorTest
 {
@@ -29,10 +29,9 @@ public class InstructionGeneratorTest
 
     private String toHexString(Instruction instruction)
     {
-        ByteBufferPool.Accumulator lease = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.DynamicCapacity lease = new RetainableByteBuffer.DynamicCapacity();
         instruction.encode(_bufferPool, lease);
-        assertThat(lease.getSize(), is(1));
-        return BufferUtil.toHexString(lease.getByteBuffers().get(0));
+        return BufferUtil.toHexString(lease.getByteBuffer());
     }
 
     @Test

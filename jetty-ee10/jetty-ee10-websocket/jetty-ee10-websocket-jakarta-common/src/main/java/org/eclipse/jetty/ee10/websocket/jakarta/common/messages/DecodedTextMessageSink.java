@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
+import java.lang.invoke.WrongMethodTypeException;
 import java.util.List;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
-import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,18 +32,23 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
 {
     private static final Logger LOG = LoggerFactory.getLogger(DecodedTextMessageSink.class);
 
-    public DecodedTextMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
+    public DecodedTextMessageSink(CoreSession session, MethodHolder methodHolder, List<RegisteredDecoder> decoders)
     {
-        super(session, methodHandle, decoders);
+        super(session, methodHolder, decoders);
     }
 
     @Override
-    MessageSink newMessageSink(CoreSession coreSession) throws NoSuchMethodException, IllegalAccessException
+    MessageSink newMessageSink(CoreSession coreSession)
     {
-        MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
-            .findVirtual(getClass(), "onMessage", MethodType.methodType(void.class, String.class))
-            .bindTo(this);
-        return new StringMessageSink(coreSession, methodHandle, true);
+        MethodHolder methodHolder = args ->
+        {
+            if (args.length != 1)
+                throw new WrongMethodTypeException(String.format("Expected %s params but had %s", 1, args.length));
+            onMessage((String)args[0]);
+            return null;
+        };
+
+        return new StringMessageSink(coreSession, methodHolder, true);
     }
 
     public void onMessage(String wholeMessage)

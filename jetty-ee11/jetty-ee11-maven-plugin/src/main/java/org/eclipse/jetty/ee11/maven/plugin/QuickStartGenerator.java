@@ -1,0 +1,187 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.ee11.maven.plugin;
+
+import java.nio.file.Path;
+
+import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee11.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.ee11.quickstart.QuickStartConfiguration.Mode;
+import org.eclipse.jetty.ee11.webapp.Configurations;
+import org.eclipse.jetty.maven.ServerSupport;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+/**
+ * Run enough of jetty in order to generate a quickstart file for a
+ * webapp. Optionally, some essential elements of the WebAppContext
+ * configuration can also be converted to properties and saved to
+ * a file after the quickstart generation.
+ *
+ */
+public class QuickStartGenerator
+{
+    private final Path quickstartXml;
+    private final MavenWebAppContext webApp;
+    private Path webAppProps;
+    private String contextXml;
+    private boolean prepared = false;
+    private Server server;
+    private QueuedThreadPool tpool;
+
+    /**
+     * @param quickstartXml the file to generate quickstart into
+     * @param webApp the webapp for which to generate quickstart
+     */
+    public QuickStartGenerator(Path quickstartXml, MavenWebAppContext webApp)
+    {
+        this.quickstartXml = quickstartXml;
+        this.webApp = webApp == null ? new MavenWebAppContext() : webApp;
+    }
+
+    /**
+     * Get the webApp.
+     * @return the webApp
+     */
+    public MavenWebAppContext getWebApp()
+    {
+        return webApp;
+    }
+
+    /**
+     * Get the quickstartXml.
+     * @return the quickstartXml
+     */
+    public Path getQuickstartXml()
+    {
+        return quickstartXml;
+    }
+    
+    /**
+     * Get the server.
+     * @return the server
+     */
+    public Server getServer()
+    {
+        return server;
+    }
+
+    /**
+     * Set the server to use.
+     * @param server the server to use
+     */
+    public void setServer(Server server)
+    {
+        this.server = server;
+    }
+
+    public Path getWebAppProps()
+    {
+        return webAppProps;
+    }
+
+    /**
+     * Set properties file describing the webapp.
+     * @param webAppProps properties file describing the webapp
+     */
+    public void setWebAppProps(Path webAppProps)
+    {
+        this.webAppProps = webAppProps;
+    }
+    
+    public String getContextXml()
+    {
+        return contextXml;
+    }
+
+    /**
+     * Set a context xml file to apply to the webapp.
+     * @param contextXml a context xml file to apply to the webapp
+     */
+    public void setContextXml(String contextXml)
+    {
+        this.contextXml = contextXml;
+    }
+    
+    /**
+     * Configure the webapp in preparation for quickstart generation.
+     */
+    private void prepareWebApp()
+    {
+        //set the webapp up to do very little other than generate the quickstart-web.xml
+        webApp.addConfiguration(new MavenQuickStartConfiguration());
+        webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
+        webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, quickstartXml);
+        webApp.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "o");
+        webApp.setCopyWebDir(false);
+        webApp.setCopyWebInf(false);
+    }
+
+    /**
+     * Run enough of jetty to generate a full quickstart xml file for the 
+     * webapp. The tmp directory is persisted.
+     * 
+     * @throws Exception if there is an unspecified problem
+     */
+    public void generate() throws Exception
+    {
+        if (quickstartXml == null)
+            throw new IllegalStateException("No quickstart xml output file");
+
+        if (!prepared)
+        {
+            prepared = true;
+            prepareWebApp();
+            
+            if (server == null)
+                server = new Server();
+
+            //ensure handler structure enabled
+            ServerSupport.configureHandlers(server, null, null);
+
+            Configurations.setServerDefault(server);
+            
+            //if our server has a thread pool associated we can do annotation scanning multithreaded,
+            //otherwise scanning will be single threaded
+            if (tpool == null)
+                tpool = server.getBean(QueuedThreadPool.class);
+
+            //add webapp to our fake server instance
+            ServerSupport.addWebApplication(server, webApp);
+
+            //leave everything unpacked for the forked process to use
+            webApp.setTempDirectoryPersistent(true);
+        }
+
+        try
+        {
+            if (tpool != null)
+                tpool.start();
+            else
+                webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
+
+            webApp.start(); //just enough to generate the quickstart
+
+            //save config of the webapp BEFORE we stop
+            if (webAppProps != null)
+                WebAppPropertyConverter.toProperties(webApp, webAppProps.toFile(), contextXml);
+        }
+        finally
+        {
+            webApp.stop();        
+            if (tpool != null)
+                tpool.stop();
+        }
+    }
+}

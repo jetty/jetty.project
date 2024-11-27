@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
@@ -29,19 +28,7 @@ public class MockEndpoint implements EndPoint
     public static final String NOT_SUPPORTED = "Not supported by MockEndPoint";
 
     @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        throw new UnsupportedOperationException(NOT_SUPPORTED);
-    }
-
-    @Override
     public SocketAddress getLocalSocketAddress()
-    {
-        throw new UnsupportedOperationException(NOT_SUPPORTED);
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);
     }

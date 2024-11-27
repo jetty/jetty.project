@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * {@link CharacterCodingException}. Already decoded characters may also be appended (e.g. {@link #append(char)}
  * making this class suitable for decoding % encoded strings of already decoded characters.
  * </p>
- * @see CharsetStringBuilder for decoding of arbitrary {@link java.nio.charset.Charset}s.
+ * @see CharsetStringBuilder for decoding of arbitrary {@code Charset}s.
  */
 public class Utf8StringBuilder implements CharsetStringBuilder
 {
@@ -234,7 +234,11 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     protected void bufferReset()
     {
+        // If the buffer is much larger than necessary, trim it to empty
+        boolean trim = _buffer.capacity() > (_buffer.length() * 8);
         _buffer.setLength(0);
+        if (trim)
+            _buffer.trimToSize();
     }
 
     public void appendByte(byte b) throws IOException

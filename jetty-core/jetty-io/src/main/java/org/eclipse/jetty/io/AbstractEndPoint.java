@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -60,25 +59,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        SocketAddress local = getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return (InetSocketAddress)local;
-        return null;
-    }
-
-    @Override
     public abstract SocketAddress getLocalSocketAddress();
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        SocketAddress remote = getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress)
-            return (InetSocketAddress)remote;
-        return null;
-    }
 
     @Override
     public abstract SocketAddress getRemoteSocketAddress();

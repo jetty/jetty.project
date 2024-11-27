@@ -102,10 +102,10 @@ public interface Callback extends Invocable
      * with the given {@code blocking} characteristic.</p>
      *
      * @param completable the CompletableFuture to convert into a callback
-     * @param invocation whether the callback is blocking
+     * @param invocationType whether the callback is blocking
      * @return a callback that when completed, completes the given CompletableFuture
      */
-    static Callback from(CompletableFuture<?> completable, InvocationType invocation)
+    static Callback from(CompletableFuture<?> completable, InvocationType invocationType)
     {
         if (completable instanceof Callback)
             return (Callback)completable;
@@ -135,7 +135,7 @@ public interface Callback extends Invocable
             @Override
             public InvocationType getInvocationType()
             {
-                return invocation;
+                return invocationType;
             }
         };
     }
@@ -290,6 +290,12 @@ public interface Callback extends Invocable
             {
                 Callback.failed(callback::failed, completed, x);
             }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return callback.getInvocationType();
+            }
         };
     }
 
@@ -320,15 +326,21 @@ public interface Callback extends Invocable
                 }
             }
 
+            @Override
+            public void failed(Throwable x)
+            {
+                Callback.failed(this::completed, callback::failed, x);
+            }
+
             private void completed(Throwable ignored)
             {
                 completed.run();
             }
 
             @Override
-            public void failed(Throwable x)
+            public InvocationType getInvocationType()
             {
-                Callback.failed(this::completed, callback::failed, x);
+                return callback.getInvocationType();
             }
         };
     }
@@ -356,6 +368,12 @@ public interface Callback extends Invocable
             {
                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                 Callback.failed(callback, cause);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return callback.getInvocationType();
             }
         };
     }

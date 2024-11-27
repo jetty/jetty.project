@@ -24,7 +24,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletOutputStream;
@@ -133,9 +132,8 @@ public class HttpOutput extends ServletOutputStream
     private State _state = State.OPEN;
     private boolean _softClose = false;
     private long _written;
-    private long _flushed;
     private long _firstByteNanoTime = -1;
-    private ByteBufferPool _pool;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -178,7 +176,7 @@ public class HttpOutput extends ServletOutputStream
 
     public void reopen()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             _softClose = false;
         }
@@ -212,7 +210,7 @@ public class HttpOutput extends ServletOutputStream
         boolean wake = false;
         Callback closedCallback = null;
         ByteBuffer closeContent = null;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (LOG.isDebugEnabled())
                 state = stateString();
@@ -223,7 +221,8 @@ public class HttpOutput extends ServletOutputStream
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                lockedReleaseBuffer(failure != null);
+                if (failure == null)
+                    lockedReleaseBuffer();
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -314,7 +313,7 @@ public class HttpOutput extends ServletOutputStream
 
     public void softClose()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             _softClose = true;
         }
@@ -333,7 +332,7 @@ public class HttpOutput extends ServletOutputStream
         boolean succeeded = false;
         Throwable error = null;
         ByteBuffer content = null;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             // First check the API state for any unrecoverable situations
             switch (_apiState)
@@ -442,10 +441,10 @@ public class HttpOutput extends ServletOutputStream
      */
     public void completed(Throwable failure)
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             _state = State.CLOSED;
-            lockedReleaseBuffer(failure != null);
+            lockedReleaseBuffer();
         }
     }
 
@@ -454,7 +453,7 @@ public class HttpOutput extends ServletOutputStream
     {
         ByteBuffer content = null;
         Blocker.Callback blocker = null;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_softClose)
                 return;
@@ -575,44 +574,43 @@ public class HttpOutput extends ServletOutputStream
 
     public ByteBuffer getByteBuffer()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             return lockedAcquireBuffer().getByteBuffer();
         }
+    }
+
+    private ByteBufferPool.Sized getSizedByteBufferPool()
+    {
+        int bufferSize = getBufferSize();
+        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+        if (_pool == null || _pool.getSize() != bufferSize || _pool.isDirect() != useOutputDirectByteBuffers)
+            _pool = new ByteBufferPool.Sized(_servletChannel.getRequest().getComponents().getByteBufferPool(), useOutputDirectByteBuffers, bufferSize);
+        return _pool;
     }
 
     private RetainableByteBuffer lockedAcquireBuffer()
     {
         assert _channelState.isLockHeldByCurrentThread();
 
-        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-
         if (_aggregate == null)
-        {
-            _pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
-            _aggregate = _pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
-        }
+            _aggregate = getSizedByteBufferPool().acquire();
         return _aggregate;
     }
 
-    private void lockedReleaseBuffer(boolean failure)
+    private void lockedReleaseBuffer()
     {
         assert _channelState.isLockHeldByCurrentThread();
-
         if (_aggregate != null)
         {
-            if (failure && _pool != null)
-                _pool.removeAndRelease(_aggregate);
-            else
-                _aggregate.release();
+            _aggregate.release();
             _aggregate = null;
-            _pool = null;
         }
     }
 
     public boolean isClosed()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             return _softClose || (_state != State.OPEN);
         }
@@ -620,18 +618,13 @@ public class HttpOutput extends ServletOutputStream
 
     public boolean isAsync()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
-            switch (_apiState)
+            return switch (_apiState)
             {
-                case ASYNC:
-                case READY:
-                case PENDING:
-                case UNREADY:
-                    return true;
-                default:
-                    return false;
-            }
+                case ASYNC, READY, PENDING, UNREADY -> true;
+                default -> false;
+            };
         }
     }
 
@@ -639,7 +632,7 @@ public class HttpOutput extends ServletOutputStream
     public void flush() throws IOException
     {
         ByteBuffer content = null;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             switch (_state)
             {
@@ -726,7 +719,7 @@ public class HttpOutput extends ServletOutputStream
 
         // Async or Blocking ?
         boolean async;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
             long written = _written + len;
@@ -861,7 +854,7 @@ public class HttpOutput extends ServletOutputStream
 
         // Async or Blocking ?
         boolean async;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
             long written = _written + len;
@@ -940,7 +933,7 @@ public class HttpOutput extends ServletOutputStream
         // Async or Blocking ?
 
         boolean async = false;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
             long written = _written + 1;
@@ -1198,7 +1191,7 @@ public class HttpOutput extends ServletOutputStream
 
     private boolean prepareSendContent(int len, Callback callback)
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_aggregate != null && _aggregate.hasRemaining())
             {
@@ -1249,35 +1242,11 @@ public class HttpOutput extends ServletOutputStream
         _commitSize = size;
     }
 
-    /**
-     * <p>Invoked when bytes have been flushed to the network.</p>
-     *
-     * @param bytes the number of bytes flushed
-     * @throws IOException if the minimum data rate, when set, is not respected
-     * @see org.eclipse.jetty.io.WriteFlusher.Listener
-     */
-    public void onFlushed(long bytes) throws IOException
-    {
-        if (_firstByteNanoTime == -1 || _firstByteNanoTime == Long.MAX_VALUE)
-            return;
-        long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
-        _flushed += bytes;
-        long minFlushed = minDataRate * NanoTime.millisSince(_firstByteNanoTime) / TimeUnit.SECONDS.toMillis(1);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
-        if (_flushed < minFlushed)
-        {
-            IOException ioe = new IOException(String.format("Response content data rate < %d B/s", minDataRate));
-            _servletChannel.abort(ioe);
-            throw ioe;
-        }
-    }
-
     public void recycle()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
-            lockedReleaseBuffer(_state != State.CLOSED);
+            lockedReleaseBuffer();
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
             _softClose = true; // Stay closed until next request
@@ -1290,14 +1259,13 @@ public class HttpOutput extends ServletOutputStream
             _writeListener = null;
             _onError = null;
             _firstByteNanoTime = -1;
-            _flushed = 0;
             _closedCallback = null;
         }
     }
 
     public void resetBuffer()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_aggregate != null)
                 _aggregate.clear();
@@ -1311,7 +1279,7 @@ public class HttpOutput extends ServletOutputStream
         if (!_servletChannel.getServletRequestState().isAsync())
             throw new IllegalStateException("!ASYNC: " + stateString());
         boolean wake;
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_apiState != ApiState.BLOCKING)
                 throw new IllegalStateException("!OPEN" + stateString());
@@ -1326,29 +1294,23 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public boolean isReady()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
-            switch (_apiState)
+            return switch (_apiState)
             {
-                case BLOCKING:
-                case READY:
-                    return true;
-
-                case ASYNC:
+                case BLOCKING, READY -> true;
+                case ASYNC ->
+                {
                     _apiState = ApiState.READY;
-                    return true;
-
-                case PENDING:
+                    yield true;
+                }
+                case PENDING ->
+                {
                     _apiState = ApiState.UNREADY;
-                    return false;
-
-                case BLOCKED:
-                case UNREADY:
-                    return false;
-
-                default:
-                    throw new IllegalStateException(stateString());
-            }
+                    yield false;
+                }
+                case BLOCKED, UNREADY -> false;
+            };
         }
     }
 
@@ -1356,7 +1318,7 @@ public class HttpOutput extends ServletOutputStream
     {
         Throwable error = null;
 
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_onError != null)
             {
@@ -1407,7 +1369,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public String toString()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             return String.format("%s@%x{%s}", this.getClass().getSimpleName(), hashCode(), stateString());
         }
@@ -1435,9 +1397,18 @@ public class HttpOutput extends ServletOutputStream
         }
 
         @Override
-        public void onCompleteFailure(Throwable e)
+        protected void onFailure(Throwable e)
         {
             onWriteComplete(_last, e);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            try (AutoLock ignored = _channelState.lock())
+            {
+                lockedReleaseBuffer();
+            }
         }
     }
 
@@ -1471,11 +1442,11 @@ public class HttpOutput extends ServletOutputStream
         }
 
         @Override
-        public void onCompleteFailure(Throwable e)
+        protected void onFailure(Throwable e)
         {
             try
             {
-                super.onCompleteFailure(e);
+                super.onFailure(e);
             }
             catch (Throwable t)
             {
@@ -1498,7 +1469,7 @@ public class HttpOutput extends ServletOutputStream
         }
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             if (_aggregate != null && _aggregate.hasRemaining())
             {
@@ -1549,7 +1520,7 @@ public class HttpOutput extends ServletOutputStream
         }
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             // flush any content from the aggregate
             if (_aggregate != null && _aggregate.hasRemaining())
@@ -1672,15 +1643,18 @@ public class HttpOutput extends ServletOutputStream
         {
             _buffer.release();
             IO.close(_in);
-            super.onCompleteSuccess();
+        }
+
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            IO.close(_in);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
-            IO.close(_in);
-            super.onCompleteFailure(x);
         }
     }
 
@@ -1745,15 +1719,18 @@ public class HttpOutput extends ServletOutputStream
         {
             _buffer.release();
             IO.close(_in);
-            super.onCompleteSuccess();
+        }
+
+        @Override
+        protected void onFailure(Throwable cause)
+        {
+            IO.close(_in);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
-            IO.close(_in);
-            super.onCompleteFailure(x);
         }
     }
 

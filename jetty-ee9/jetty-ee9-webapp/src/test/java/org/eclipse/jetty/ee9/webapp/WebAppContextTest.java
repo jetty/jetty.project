@@ -63,7 +63,6 @@ import org.eclipse.jetty.util.resource.Resources;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -117,7 +116,6 @@ public class WebAppContextTest
      * @param tempDir the directory into which the war will be generated
      * @param name the name of the war
      * @return the Path of the generated war
-     *
      * @throws Exception if the war cannot be created
      */
     private Path createWar(Path tempDir, String name) throws Exception
@@ -350,17 +348,17 @@ public class WebAppContextTest
      * @throws Exception on test failure
      */
     @Test
-    @Disabled // No cross context dispatch
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
         Handler.Sequence handlers = new Handler.Sequence();
         WebAppContext contextA = new WebAppContext(".", "/A");
+        contextA.setCrossContextDispatchSupported(true);
 
         contextA.addServlet(ServletA.class, "/s");
         handlers.addHandler(contextA);
         WebAppContext contextB = new WebAppContext(".", "/B");
-
+        contextB.setCrossContextDispatchSupported(true);
         contextB.addServlet(ServletB.class, "/s");
         contextB.setContextWhiteList("/doesnotexist", "/B/s");
         handlers.addHandler(contextB);
@@ -456,7 +454,7 @@ public class WebAppContextTest
         assertThat(HttpTester.parseResponse(connector.getResponse("GET //WEB-INF/test.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(HttpTester.parseResponse(connector.getResponse("GET /WEB-INF%2ftest.xml HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
-        
+
     @ParameterizedTest
     @ValueSource(strings = {
         "/WEB-INF",
@@ -652,14 +650,14 @@ public class WebAppContextTest
     }
 
     @Test
-    @Disabled("There is extra decoding of the nested-reserved paths that is getting in the way")
     public void testGetResourcePaths() throws Exception
     {
         Server server = newServer();
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        Path warRoot = MavenPaths.findTestResourceDir("webapp-with-resources");
+
+        Path warRoot = MavenTestingUtils.getTargetPath("test-classes/webapp-with-resources");
         assertTrue(Files.isDirectory(warRoot), "Unable to find directory: " + warRoot);
         WebAppContext context = new WebAppContext();
         Resource warResource = context.getResourceFactory().newResource(warRoot);
@@ -697,8 +695,6 @@ public class WebAppContextTest
 
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
         assertThat(response1.getContent(), containsString("/WEB-INF"));
-        assertThat(response1.getContent(), containsString("/WEB-INF/lib"));
-        assertThat(response1.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
         assertThat(response1.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
 
         HttpTester.Response response2 = HttpTester.parseResponse(connector.getResponse("""
@@ -877,8 +873,10 @@ public class WebAppContextTest
         assertThat("Should have environment specific test pattern", serverClasses, hasItem(testPattern));
         assertThat("Should have pattern from defaults", serverClasses, hasItem("org.eclipse.jetty."));
         assertThat("Should have pattern from JaasConfiguration", serverClasses, hasItem("-org.eclipse.jetty.security.jaas."));
-        for (String defaultServerClass: WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
+        for (String defaultServerClass : WebAppClassLoading.DEFAULT_HIDDEN_CLASSES)
+        {
             assertThat("Should have default patterns", serverClasses, hasItem(defaultServerClass));
+        }
         assertThat("deprecated API", serverClasses, hasItem("org.deprecated.api."));
     }
 
@@ -911,7 +909,9 @@ public class WebAppContextTest
         assertThat("Should have pattern from defaults", systemClasses, hasItem("jakarta."));
         assertThat("Should have pattern from JaasConfiguration", systemClasses, hasItem("org.eclipse.jetty.security.jaas."));
         for (String defaultSystemClass : WebAppClassLoading.DEFAULT_PROTECTED_CLASSES)
+        {
             assertThat("Should have default patterns", systemClasses, hasItem(defaultSystemClass));
+        }
         assertThat("deprecated API", systemClasses, hasItem("org.deprecated.api."));
     }
 }

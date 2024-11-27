@@ -15,6 +15,7 @@ package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
@@ -104,43 +105,60 @@ public class Flusher
         protected void onSuccess()
         {
             if (active != null)
+            {
+                active.release();
                 active.succeeded();
-            active = null;
+                active = null;
+            }
         }
 
         @Override
-        public void onCompleteFailure(Throwable x)
+        public void onFailure(Throwable cause)
         {
             if (active != null)
-                active.failed(x);
-            active = null;
-
-            while (true)
+                active.failed(cause);
+            List<Entry> entries;
+            try (AutoLock ignored = lock.lock())
             {
-                Entry entry = poll();
-                if (entry == null)
-                    break;
-                entry.failed(x);
+                entries = new ArrayList<>(queue);
             }
+            entries.forEach(entry -> entry.failed(cause));
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            if (active != null)
+            {
+                active.release();
+                active = null;
+            }
+            List<Entry> entries;
+            try (AutoLock ignored = lock.lock())
+            {
+                entries = new ArrayList<>(queue);
+                queue.clear();
+            }
+            entries.forEach(Entry::release);
         }
     }
 
-    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback) implements Callback
+    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback)
     {
-        @Override
         public void succeeded()
         {
-            if (accumulator != null)
-                accumulator.release();
             callback.succeeded();
         }
 
-        @Override
         public void failed(Throwable x)
+        {
+            callback.failed(x);
+        }
+
+        private void release()
         {
             if (accumulator != null)
                 accumulator.release();
-            callback.failed(x);
         }
     }
 }

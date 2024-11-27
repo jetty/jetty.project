@@ -153,7 +153,7 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
                 throw failure;
 
             if (!_demand.get())
-                break;
+                return Action.IDLE;
 
             if (_needContent)
             {
@@ -173,12 +173,10 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
                 _callback = null;
             }
         }
-
-        return Action.IDLE;
     }
 
     @Override
-    protected void onCompleteFailure(Throwable cause)
+    protected void onFailure(Throwable cause)
     {
         Throwable suppressed = _failure.getAndSet(cause);
         if (suppressed != null && suppressed != cause)

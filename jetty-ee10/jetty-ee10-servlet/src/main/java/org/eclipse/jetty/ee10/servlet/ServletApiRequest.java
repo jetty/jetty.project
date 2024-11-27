@@ -23,30 +23,37 @@ import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ReadListener;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConnection;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeEvent;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,7 +62,10 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
+import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
+import org.eclipse.jetty.ee10.servlet.util.ServletInputStreamWrapper;
+import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -69,6 +79,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -80,7 +91,7 @@ import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
@@ -489,7 +500,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         return requestedSession == null ? null : requestedSession.sessionId();
     }
 
@@ -548,7 +559,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         HttpSession session = getSession(false);
         SessionManager manager = getServletRequestInfo().getSessionManager();
         return requestedSession != null &&
@@ -562,15 +573,15 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.sessionIdFromCookie();
+        RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_COOKIE);
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
+        RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     @Override
@@ -732,8 +743,255 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        // Not implemented. Throw ServletException as per spec.
-        throw new ServletException("Not implemented");
+        Response response = _servletContextRequest.getServletContextResponse();
+        if (response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
+            throw new IllegalStateException("Response status should be 101");
+        if (response.getHeaders().get("Upgrade") == null)
+            throw new IllegalStateException("Missing Upgrade header");
+        if (!"Upgrade".equalsIgnoreCase(response.getHeaders().get("Connection")))
+            throw new IllegalStateException("Invalid Connection header");
+        if (response.isCommitted())
+            throw new IllegalStateException("Cannot upgrade committed response");
+        if (_servletChannel.getConnectionMetaData().getHttpVersion() != HttpVersion.HTTP_1_1)
+            throw new IllegalStateException("Only requests over HTTP/1.1 can be upgraded");
+
+        CompletableFuture<Void> outputStreamComplete = new CompletableFuture<>();
+        CompletableFuture<Void> inputStreamComplete = new CompletableFuture<>();
+        ServletOutputStream outputStream = new ServletOutputStreamWrapper(_servletContextRequest.getHttpOutput())
+        {
+            @Override
+            public void write(int b) throws IOException
+            {
+                try
+                {
+                    super.write(b);
+                }
+                catch (Throwable t)
+                {
+                    outputStreamComplete.completeExceptionally(t);
+                    throw t;
+                }
+            }
+
+            @Override
+            public void write(byte[] b) throws IOException
+            {
+                try
+                {
+                super.write(b);
+                }
+                catch (Throwable t)
+                {
+                    outputStreamComplete.completeExceptionally(t);
+                    throw t;
+                }
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException
+            {
+                try
+                {
+                    super.write(b, off, len);
+                }
+                catch (Throwable t)
+                {
+                    outputStreamComplete.completeExceptionally(t);
+                    throw t;
+                }
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                try
+                {
+                    super.close();
+                    outputStreamComplete.complete(null);
+                }
+                catch (Throwable t)
+                {
+                    outputStreamComplete.completeExceptionally(t);
+                    throw t;
+                }
+            }
+
+            @Override
+            public void setWriteListener(WriteListener writeListener)
+            {
+                super.setWriteListener(new WriteListener()
+                {
+                    @Override
+                    public void onWritePossible() throws IOException
+                    {
+                        writeListener.onWritePossible();
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        writeListener.onError(t);
+                        outputStreamComplete.completeExceptionally(t);
+                    }
+                });
+            }
+        };
+        ServletInputStream inputStream = new ServletInputStreamWrapper(_servletContextRequest.getHttpInput())
+        {
+            @Override
+            public int read() throws IOException
+            {
+                try
+                {
+                    int read = super.read();
+                    if (read == -1)
+                        inputStreamComplete.complete(null);
+                    return read;
+                }
+                catch (Throwable t)
+                {
+                    inputStreamComplete.completeExceptionally(t);
+                    throw t;
+                }
+            }
+
+            @Override
+            public int read(byte[] b) throws IOException
+            {
+                try
+                {
+                    int read = super.read(b);
+                    if (read == -1)
+                        inputStreamComplete.complete(null);
+                    return read;
+                }
+                catch (Throwable t)
+                {
+                    inputStreamComplete.completeExceptionally(t);
+                    throw t;
+                }
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException
+            {
+                try
+                {
+                    int read = super.read(b, off, len);
+                    if (read == -1)
+                        inputStreamComplete.complete(null);
+                    return read;
+                }
+                catch (Throwable t)
+                {
+                    inputStreamComplete.completeExceptionally(t);
+                    throw t;
+                }
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                try
+                {
+                    super.close();
+                    inputStreamComplete.complete(null);
+                }
+                catch (Throwable t)
+                {
+                    inputStreamComplete.completeExceptionally(t);
+                    throw t;
+                }
+            }
+
+            @Override
+            public void setReadListener(ReadListener readListener)
+            {
+                super.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        readListener.onDataAvailable();
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        try
+                        {
+                            readListener.onAllDataRead();
+                            inputStreamComplete.complete(null);
+                        }
+                        catch (Throwable t)
+                        {
+                            inputStreamComplete.completeExceptionally(t);
+                            throw t;
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        readListener.onError(t);
+                        inputStreamComplete.completeExceptionally(t);
+                    }
+                });
+            }
+        };
+
+        T upgradeHandler;
+        try
+        {
+            upgradeHandler = handlerClass.getDeclaredConstructor().newInstance();
+        }
+        catch (Exception e)
+        {
+            throw new ServletException("Unable to instantiate handler class", e);
+        }
+
+        Connection connection = _servletContextRequest.getConnectionMetaData().getConnection();
+        if (connection instanceof Connection.Tunnel upgradeableConnection)
+        {
+            outputStream.flush(); // commit the 101 response
+            upgradeableConnection.startTunnel();
+        }
+        else
+        {
+            LOG.warn("Unexpected connection type {}", connection);
+            throw new IllegalStateException();
+        }
+        AsyncContext asyncContext = forceStartAsync(); // force the servlet in async mode
+        CompletableFuture.allOf(inputStreamComplete, outputStreamComplete).whenComplete((result, failure) ->
+        {
+            upgradeHandler.destroy();
+            asyncContext.complete();
+        });
+
+        WebConnection webConnection = new WebConnection()
+        {
+            @Override
+            public void close() throws Exception
+            {
+                IO.close(inputStream);
+                IO.close(outputStream);
+            }
+
+            @Override
+            public ServletInputStream getInputStream()
+            {
+                return inputStream;
+            }
+
+            @Override
+            public ServletOutputStream getOutputStream()
+            {
+                return outputStream;
+            }
+        };
+
+        upgradeHandler.init(webConnection);
+        return upgradeHandler;
     }
 
     @Override
@@ -758,37 +1016,54 @@ public class ServletApiRequest implements HttpServletRequest
             referrer += "?" + query;
         pushHeaders.put(HttpHeader.REFERER, referrer);
 
-        StringBuilder cookieBuilder = new StringBuilder();
-        Cookie[] cookies = getCookies();
-        if (cookies != null)
-        {
-            for (Cookie cookie : cookies)
-            {
-                if (!cookieBuilder.isEmpty())
-                    cookieBuilder.append("; ");
-                cookieBuilder.append(cookie.getName()).append("=").append(cookie.getValue());
-            }
-        }
+        Cookie[] existing = getCookies();
+        List<Object> cookies = new ArrayList<>();
+        if (existing != null && existing.length > 0)
+            cookies.addAll(Arrays.asList(existing));
+
         // Any Set-Cookie in the response should be present in the push.
         for (HttpField field : _servletContextRequest.getServletContextResponse().getHeaders())
         {
             HttpHeader header = field.getHeader();
             if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)
             {
-                HttpCookie httpCookie;
-                if (field instanceof HttpCookieUtils.SetCookieHttpField set)
-                    httpCookie = set.getHttpCookie();
-                else
-                    httpCookie = SET_COOKIE_PARSER.parse(field.getValue());
-                if (httpCookie == null || httpCookie.isExpired())
+                HttpCookie httpCookie = (field instanceof HttpCookieUtils.SetCookieHttpField set)
+                    ? set.getHttpCookie()
+                    : SET_COOKIE_PARSER.parse(field.getValue());
+
+                if (httpCookie == null)
                     continue;
-                if (!cookieBuilder.isEmpty())
-                    cookieBuilder.append("; ");
-                cookieBuilder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
+
+                if (httpCookie.isExpired())
+                {
+                    for (Iterator<Object> i = cookies.iterator(); i.hasNext();)
+                    {
+                        Object o = i.next();
+                        if (o instanceof Cookie cookie && cookie.getName().equals(httpCookie.getName()))
+                            i.remove();
+                        else if (o instanceof HttpCookie cookie && cookie.getName().equals(httpCookie.getName()))
+                            i.remove();
+                    }
+                    continue;
+                }
+                cookies.add(httpCookie);
             }
         }
-        if (!cookieBuilder.isEmpty())
+
+        if (!cookies.isEmpty())
+        {
+            StringBuilder cookieBuilder = new StringBuilder();
+            for (Object o : cookies)
+            {
+                if (!cookieBuilder.isEmpty())
+                    cookieBuilder.append("; ");
+                if (o instanceof Cookie cookie)
+                    cookieBuilder.append(cookie.getName()).append("=").append(cookie.getValue());
+                else if (o instanceof HttpCookie httpCookie)
+                    cookieBuilder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
+            }
             pushHeaders.put(HttpHeader.COOKIE, cookieBuilder.toString());
+        }
 
         String sessionId;
         HttpSession httpSession = getSession(false);
@@ -907,7 +1182,15 @@ public class ServletApiRequest implements HttpServletRequest
     public String getContentType()
     {
         if (_contentType == null)
-            _contentType = getFields().get(HttpHeader.CONTENT_TYPE);
+        {
+            HttpField contentType = getFields().getField(HttpHeader.CONTENT_TYPE);
+            if (contentType != null)
+            {
+                _contentType = contentType.getValue();
+                if (_charset == null)
+                    _charset = MimeTypes.getCharsetFromContentType(contentType);
+            }
+        }
         return _contentType;
     }
 
@@ -985,7 +1268,7 @@ public class ServletApiRequest implements HttpServletRequest
             try
             {
                 int contentLength = getContentLength();
-                if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
+                if (contentLength != 0)
                 {
                     String baseType = HttpField.getValueParameters(getContentType(), null);
                     if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
@@ -1000,7 +1283,6 @@ public class ServletApiRequest implements HttpServletRequest
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
@@ -1038,7 +1320,6 @@ public class ServletApiRequest implements HttpServletRequest
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            LOG.warn(e.toString());
                             throw new BadMessageException("Unable to parse form content", e);
                         }
                     }
@@ -1049,7 +1330,6 @@ public class ServletApiRequest implements HttpServletRequest
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
-                LOG.warn(e.toString());
                 throw new BadMessageException("Unable to parse form content", e);
             }
         }
@@ -1350,6 +1630,11 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (!isAsyncSupported())
             throw new IllegalStateException("Async Not Supported");
+        return forceStartAsync();
+    }
+
+    private AsyncContext forceStartAsync()
+    {
         ServletChannelState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);

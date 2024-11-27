@@ -57,6 +57,8 @@ public class IO
 {
     private static final Logger LOG = LoggerFactory.getLogger(IO.class);
 
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
+
     public static final String
         CRLF = "\r\n";
 

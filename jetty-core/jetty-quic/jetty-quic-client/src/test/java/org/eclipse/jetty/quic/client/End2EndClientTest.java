@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -65,6 +66,7 @@ public class End2EndClientTest
           </body>
         </html>
         """;
+    private QuicTransport transport;
 
     @BeforeEach
     public void setUp() throws Exception
@@ -83,9 +85,8 @@ public class End2EndClientTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-        // Use the deprecated APIs for backwards compatibility testing.
-        connector = new QuicServerConnector(server, sslContextFactory, http1, http2);
-        connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
+        ServerQuicConfiguration serverQuicConfiguration = new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
+        connector = new QuicServerConnector(server, serverQuicConfiguration, http1, http2);
         server.addConnector(connector);
 
         server.setHandler(new Handler.Abstract()
@@ -100,9 +101,9 @@ public class End2EndClientTest
 
         server.start();
 
-        // Use the deprecated APIs for backwards compatibility testing.
-        ClientConnector clientConnector = new ClientConnector(new QuicClientConnectorConfigurator());
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client(true);
+        transport = new QuicTransport(new ClientQuicConfiguration(clientSslContextFactory, null));
+        ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(clientSslContextFactory);
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
@@ -123,6 +124,7 @@ public class End2EndClientTest
     public void testSimpleHTTP1() throws Exception
     {
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertThat(response.getStatus(), is(200));
@@ -135,6 +137,7 @@ public class End2EndClientTest
     {
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
             .version(HttpVersion.HTTP_2)
+            .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertThat(response.getStatus(), is(200));
@@ -148,6 +151,7 @@ public class End2EndClientTest
         for (int i = 0; i < 1000; i++)
         {
             ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort() + "/" + i)
+                .transport(transport)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertThat(response.getStatus(), is(200));
@@ -169,7 +173,9 @@ public class End2EndClientTest
             {
                 try
                 {
-                    ContentResponse response = client.GET("https://localhost:" + connector.getLocalPort() + path);
+                    ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort() + path)
+                        .transport(transport)
+                        .send();
                     assertThat(response.getStatus(), is(200));
                     String contentAsString = response.getContentAsString();
                     assertThat(contentAsString, is(responseContent));
@@ -178,7 +184,7 @@ public class End2EndClientTest
                 {
                     throw new RuntimeException(e);
                 }
-            });
+            }, client.getExecutor());
         }
         CompletableFuture.allOf(futures)
             .orTimeout(15, TimeUnit.SECONDS)

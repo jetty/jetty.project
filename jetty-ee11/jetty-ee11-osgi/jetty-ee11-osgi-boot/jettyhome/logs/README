@@ -1,0 +1,3 @@
+This folder contains the logs by default during development time.
+In production or outside the eclipse PDE, it is likely that a different jetty.home
+was set or jetty.log so it won't be here.

@@ -148,7 +148,7 @@ public class ProxyServletTest
         server.addConnector(serverConnector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        String keyStorePath = MavenTestingUtils.getTestResourcePathFile("server_keystore.p12").toString();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
@@ -430,7 +430,7 @@ public class ProxyServletTest
     {
         // Create a 6 MiB file
         final int length = 6 * 1024;
-        Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
+        Path targetTestsDir = MavenTestingUtils.getTargetTestingPath();
         Files.createDirectories(targetTestsDir);
         final Path temp = Files.createTempFile(targetTestsDir, "test_", null);
         byte[] kb = new byte[1024];
@@ -572,7 +572,7 @@ public class ProxyServletTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 PrintWriter writer = resp.getWriter();
-                writer.write(req.getHeader("X-Forwarded-Host"));
+                writer.write(req.getHeader(HttpHeader.FORWARDED.asString()));
                 writer.flush();
             }
         });
@@ -580,9 +580,9 @@ public class ProxyServletTest
         startClient();
 
         ContentResponse response = client.GET("http://localhost:" + serverConnector.getLocalPort());
-        assertThat("Response expected to contain content of X-Forwarded-Host Header from the request",
+        assertThat("Response expected to contain content of Forwarded header from the request",
             response.getContentAsString(),
-            equalTo("localhost:" + serverConnector.getLocalPort()));
+            containsString("localhost:" + serverConnector.getLocalPort()));
     }
 
     @ParameterizedTest

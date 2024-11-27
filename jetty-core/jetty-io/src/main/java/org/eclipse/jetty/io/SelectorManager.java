@@ -369,8 +369,18 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
-     * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
-     * <p>By default it just logs with level warning.</p>
+     * <p>Callback method invoked when a non-blocking connect was succeeded.</p>
+     *
+     * @param channel the channel that attempted the connect
+     */
+    protected void connectionSucceeded(SelectableChannel channel)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connected {}", channel);
+    }
+
+    /**
+     * <p>Callback method invoked when a non-blocking connect failed.</p>
      *
      * @param channel the channel that attempted the connect
      * @param ex the exception that caused the connect to fail
@@ -378,7 +388,8 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     protected void connectionFailed(SelectableChannel channel, Throwable ex, Object attachment)
     {
-        LOG.warn(String.format("%s - %s", channel, attachment), ex);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Failed to connect {}", channel, ex);
     }
 
     /**

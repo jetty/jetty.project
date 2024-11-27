@@ -59,12 +59,14 @@ public class CDITests extends AbstractJettyHomeTest
         return Stream.of(
             Arguments.of("ee9", "cdi-spi", "weld", null), // Weld >= 3.1.2
             Arguments.of("ee10", "cdi-spi", "weld", null), // Weld >= 3.1.2
+            Arguments.of("ee11", "cdi-spi", "weld", null), // Weld >= 3.1.2
             Arguments.of("ee9", "cdi-decorate", "weld", null), // Weld >= 3.1.3
-            Arguments.of("ee10", "cdi-decorate", "weld", null) // Weld >= 3.1.3
+            Arguments.of("ee10", "cdi-decorate", "weld", null), // Weld >= 3.1.3
+            Arguments.of("ee11", "cdi-decorate", "weld", null) // Weld >= 3.1.3
             // -- Apache OpenWebBeans -- as of 2.0.27 was not ported to jakarta namespace
             // Uses test-owb-cdi-webapp
             //Arguments.of("ee9", "owb", "cdi-spi", null),
-            //Arguments.of("ee10", "cdi-spi", "owb", null)
+            //Arguments.of("ee11", "cdi-spi", "owb", null)
         );
     }
 

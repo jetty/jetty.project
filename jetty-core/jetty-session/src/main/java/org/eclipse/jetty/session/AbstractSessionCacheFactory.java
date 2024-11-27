@@ -25,7 +25,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     boolean _saveOnInactiveEvict;
     boolean _saveOnCreate;
     boolean _removeUnloadableSessions;
-    boolean _flushOnResponseCommit;
+    boolean _flushOnResponseCommit = true;
     boolean _invalidateOnShutdown;
     
     public abstract SessionCache newSessionCache(SessionManager manager);

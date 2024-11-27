@@ -1,0 +1,50 @@
+REQUEST|GET|/ccd-ee11/redispatch/ee11
+# we reach ee11
+STEP|SET_HTTP_SESSION_ATTRIBUTE|test-name-10|test-value-ee11
+STEP|CONTEXT_FORWARD|/ccd-ee8|/redispatch/ee8
+# we reach ee8
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-10
+STEP|SET_HTTP_SESSION_ATTRIBUTE|test-name-8|test-value-ee8
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-10
+STEP|CONTEXT_FORWARD|/ccd-ee9|/redispatch/ee9
+# we reach ee9
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-10
+STEP|SET_HTTP_SESSION_ATTRIBUTE|test-name|test-value-ee9
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-10
+STEP|GET_HTTP_SESSION_ATTRIBUTE|test-name-8
+STEP|REQUEST_INCLUDE|/dump/ee9
+EXPECTED_EVENT|Initial plan: ee11-session-forward-to-ee8-session-include-ee9-dump.txt
+EXPECTED_EVENT|DispatchPlanHandler.handle() method=GET path-query=/ccd-ee11/redispatch/ee11
+# we reach ee11
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee11.CCDServlet.service() dispatcherType=REQUEST method=GET requestUri=/ccd-ee11/redispatch/ee11
+# we reach ee8
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee8.CCDServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee8/redispatch/ee8
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee8.CCDServlet.service() HttpSession is null
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee8.CCDServlet.service() HttpSession exists: [test-name-10]=[null]
+# we reach ee9
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.CCDServlet.service() dispatcherType=FORWARD method=GET requestUri=/ccd-ee9/redispatch/ee9
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.CCDServlet.service() HttpSession is null
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.CCDServlet.service() HttpSession exists: [test-name-10]=[null]
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.CCDServlet.service() HttpSession exists: [test-name-8]=[null]
+EXPECTED_EVENT|org.eclipse.jetty.tests.ccd.ee9.DumpServlet.service() dispatcherType=INCLUDE method=GET requestUri=/ccd-ee9/redispatch/ee9
+EXPECTED_PROP|request.dispatcherType|INCLUDE
+EXPECTED_PROP|request.requestURI|/ccd-ee9/redispatch/ee9
+EXPECTED_PROP|request.session.exists|true
+EXPECTED_PROP|session[test-name]|test-value-ee9
+EXPECTED_PROP|req.attr[jakarta.servlet.forward.context_path]|/ccd-ee8
+EXPECTED_PROP|req.attr[jakarta.servlet.forward.path_info]|/ee8
+EXPECTED_PROP|req.attr[jakarta.servlet.forward.request_uri]|/ccd-ee8/redispatch/ee8
+EXPECTED_PROP|req.attr[jakarta.servlet.forward.servlet_path]|/redispatch
+EXPECTED_PROP|req.attr[jakarta.servlet.include.context_path]/ccd-ee9
+EXPECTED_PROP|req.attr[jakarta.servlet.include.path_info]|/ee9
+EXPECTED_PROP|req.attr[jakarta.servlet.include.request_uri]|/ccd-ee9/dump/ee9
+EXPECTED_PROP|req.attr[jakarta.servlet.include.servlet_path]/dump
+EXPECTED_PROP|req.attr[javax.servlet.include.context_path]|<null>
+EXPECTED_PROP|req.attr[javax.servlet.include.path_info]|<null>
+EXPECTED_PROP|req.attr[javax.servlet.include.request_uri]|<null>
+EXPECTED_PROP|req.attr[javax.servlet.include.servlet_path]|<null>
+EXPECTED_PROP|req.attr[javax.servlet.forward.context_path]|/ccd-ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.path_info]|/ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.request_uri]|/ccd-ee8/redispatch/ee8
+EXPECTED_PROP|req.attr[javax.servlet.forward.servlet_path]|/redispatch
+EXPECTED_SESSION_IDS|true

@@ -46,7 +46,7 @@ public class BadAppTests extends AbstractJettyHomeTest
      * It is expected that the server does not start and exits with an error code
      */
     @ParameterizedTest
-    @CsvSource({"ee9", "ee10"})
+    @CsvSource({"ee9", "ee10", "ee11"})
     public void testXmlThrowOnUnavailableTrue(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -85,7 +85,7 @@ public class BadAppTests extends AbstractJettyHomeTest
      */
     
     @ParameterizedTest
-    @CsvSource({"ee9", "ee10"})
+    @CsvSource({"ee9", "ee10", "ee11"})
     public void testXmlThrowOnUnavailableFalse(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -127,7 +127,7 @@ public class BadAppTests extends AbstractJettyHomeTest
      */
 
     @ParameterizedTest
-    @CsvSource({"ee9", "ee10"})
+    @CsvSource({"ee9", "ee10", "ee11"})
     public void testNoXmlThrowOnUnavailableDefault(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -158,7 +158,7 @@ public class BadAppTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @CsvSource({"ee9", "ee10"})
+    @CsvSource({"ee9", "ee10", "ee11"})
     public void testBadWebSocketWebapp(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");

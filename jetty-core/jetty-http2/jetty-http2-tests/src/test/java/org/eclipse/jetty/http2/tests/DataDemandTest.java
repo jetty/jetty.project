@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -349,7 +350,7 @@ public class DataDemandTest extends AbstractTest
         // which will test that it won't throw StackOverflowError.
         ByteBufferPool bufferPool = new ArrayByteBufferPool();
         Generator generator = new Generator(bufferPool);
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
         for (int i = 512; i >= 0; --i)
             generator.data(accumulator, new DataFrame(clientStream.getId(), ByteBuffer.allocate(1), i == 0), 1);
 
@@ -357,7 +358,7 @@ public class DataDemandTest extends AbstractTest
         // client finishes writing the SETTINGS reply to the server
         // during connection initialization, or we risk a WritePendingException.
         Thread.sleep(1000);
-        ((HTTP2Session)clientStream.getSession()).getEndPoint().write(Callback.NOOP, accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
+        accumulator.writeTo(((HTTP2Session)clientStream.getSession()).getEndPoint(), false);
 
         assertTrue(latch.await(15, TimeUnit.SECONDS));
     }

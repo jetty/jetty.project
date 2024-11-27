@@ -93,7 +93,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * If true, when a response is about to be committed back to the client,
      * a dirty session will be flushed to the session store.
      */
-    protected boolean _flushOnResponseCommit;
+    protected boolean _flushOnResponseCommit = true;
     
     /**
      * If true, when the server shuts down, all sessions in the

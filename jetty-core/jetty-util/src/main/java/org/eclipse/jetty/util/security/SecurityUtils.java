@@ -28,10 +28,12 @@ import javax.security.auth.Subject;
  */
 public class SecurityUtils
 {
-    private static final MethodHandle doAs = lookupDoAs();
+    private static final MethodHandle callAs = lookupCallAs();
     private static final MethodHandle doPrivileged = lookupDoPrivileged();
+    private static final MethodHandle getSecurityManager = lookupGetSecurityManager();
+    private static final MethodHandle checkPermission = lookupCheckPermission();
 
-    private static MethodHandle lookupDoAs()
+    private static MethodHandle lookupCallAs()
     {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try
@@ -39,14 +41,13 @@ public class SecurityUtils
             // Subject.doAs() is deprecated for removal and replaced by Subject.callAs().
             // Lookup first the new API, since for Java versions where both exists, the
             // new API delegates to the old API (for example Java 18, 19 and 20).
-            // Otherwise (Java 17), lookup the old API.
             return lookup.findStatic(Subject.class, "callAs", MethodType.methodType(Object.class, Subject.class, Callable.class));
         }
         catch (Throwable x)
         {
             try
             {
-                // Lookup the old API.
+                // Otherwise (Java 17), lookup the old API.
                 MethodType oldSignature = MethodType.methodType(Object.class, Subject.class, PrivilegedAction.class);
                 MethodHandle doAs = lookup.findStatic(Subject.class, "doAs", oldSignature);
                 // Convert the Callable used in the new API to the PrivilegedAction used in the old API.
@@ -76,16 +77,48 @@ public class SecurityUtils
         }
     }
 
+    private static MethodHandle lookupGetSecurityManager()
+    {
+        try
+        {
+            // Use reflection to work with Java versions that have and don't have System.getSecurityManager().
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            return lookup.findStatic(java.lang.System.class, "getSecurityManager", MethodType.methodType(Object.class));
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
+    private static MethodHandle lookupCheckPermission()
+    {
+        try
+        {
+            // Use reflection to work with Java versions that have and don't have SecurityManager.
+            Class<?> klass = ClassLoader.getPlatformClassLoader().loadClass("java.lang.SecurityManager");
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            return lookup.findVirtual(klass, "checkPermission", MethodType.methodType(Void.class, Permission.class));
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
     /**
      * Get the current security manager, if available.
      * @return the current security manager, if available
      */
     public static Object getSecurityManager()
     {
+        if (getSecurityManager == null)
+        {
+            return null;
+        }
         try
         {
-            // Use reflection to work with Java versions that have and don't have SecurityManager.
-            return System.class.getMethod("getSecurityManager").invoke(null);
+            return getSecurityManager.invoke();
         }
         catch (Throwable ignored)
         {
@@ -102,15 +135,18 @@ public class SecurityUtils
      */
     public static void checkPermission(Permission permission) throws SecurityException
     {
+        if (getSecurityManager == null || checkPermission == null)
+        {
+            return;
+        }
         Object securityManager = SecurityUtils.getSecurityManager();
         if (securityManager == null)
             return;
         try
         {
-            securityManager.getClass().getMethod("checkPermission")
-                .invoke(securityManager, permission);
+            checkPermission.invoke(securityManager, permission);
         }
-        catch (SecurityException x)
+        catch (SecurityException | NullPointerException x)
         {
             throw x;
         }
@@ -129,11 +165,9 @@ public class SecurityUtils
      */
     public static <T> T doPrivileged(PrivilegedAction<T> action)
     {
-        // Keep this method short and inlineable.
-        MethodHandle methodHandle = doPrivileged;
-        if (methodHandle == null)
+        if (doPrivileged == null)
             return action.run();
-        return doPrivileged(methodHandle, action);
+        return doPrivileged(doPrivileged, action);
     }
 
     @SuppressWarnings("unchecked")
@@ -154,6 +188,21 @@ public class SecurityUtils
     }
 
     /**
+     * <p>Runs the  action as the given subject.</p>
+     *
+     * @param subject the subject this action runs as
+     * @param action the action to run
+     * @return the result of the action
+     * @param <T> the type of the result
+     * @deprecated use {@link #callAs(Subject, Callable)}
+     */
+    @Deprecated(forRemoval = true, since = "12.1.0")
+    public static <T> T doAs(Subject subject, Callable<T> action)
+    {
+        return callAs(subject, action);
+    }
+
+    /**
      * <p>Runs the given action as the given subject.</p>
      *
      * @param subject the subject this action runs as
@@ -162,14 +211,14 @@ public class SecurityUtils
      * @param <T> the type of the result
      */
     @SuppressWarnings("unchecked")
-    public static <T> T doAs(Subject subject, Callable<T> action)
+    public static <T> T callAs(Subject subject, Callable<T> action)
     {
         try
         {
-            MethodHandle methodHandle = doAs;
-            if (methodHandle == null)
+            if (callAs == null)
                 return action.call();
-            return (T)methodHandle.invoke(subject, action);
+
+            return (T)callAs.invoke(subject, action);
         }
         catch (RuntimeException | Error x)
         {

@@ -1,0 +1,27 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Migrating from Jetty 12.0.x to Jetty 12.1.x
+
+[[api-changes]]
+== APIs Changes
+
+=== `IteratingCallback`
+
+Class `IteratingCallback` underwent refinements that changed the behavior of the `onCompleteFailure(Throwable)` method.
+
+In Jetty 12.0.x, `IteratingCallback.onCompleteFailure(Throwable)` was called as soon as a failure was reported, without waiting the completion of the asynchronous operation (despite its name containing the word "complete").
+
+For example, if a write operation performed with `IteratingCallback` was pending due to TCP congestion, and a timeout happened, `onCompleteFailure(Throwable)` was called as soon as the timeout happened, without waiting for the TCP congestion to resolve.
+
+In Jetty 12.1.x, the same behavior is achieved by `IteratingCallback.onFailure(Throwable)`, so applications should review their usage of `IteratingCallback` and change the overrides of `onCompleteFailure(Throwable)` to override `onFailure(Throwable)` instead.

@@ -24,6 +24,11 @@ mvn -B -Pdependency-updates-reports validate -Dmaven.build.cache.enabled=false
 cp target/site/dependency-updates-aggregate-report.html $REPORT_OUTPUT_DIR/dependency-updates-report-core.html
 popd
 
+pushd jetty-ee11
+mvn -B -Pdependency-updates-reports validate -Dmaven.build.cache.enabled=false
+cp target/site/dependency-updates-aggregate-report.html $REPORT_OUTPUT_DIR/dependency-updates-report-ee11.html
+popd
+
 pushd jetty-ee10
 mvn -B -Pdependency-updates-reports validate -Dmaven.build.cache.enabled=false
 cp target/site/dependency-updates-aggregate-report.html $REPORT_OUTPUT_DIR/dependency-updates-report-ee10.html

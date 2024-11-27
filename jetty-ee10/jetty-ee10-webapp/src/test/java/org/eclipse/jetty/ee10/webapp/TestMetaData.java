@@ -227,7 +227,7 @@ public class TestMetaData
         wac.getMetaData().addDiscoveredAnnotation(annotationD);
         wac.getMetaData().addDiscoveredAnnotation(annotationE);
 
-        wac.getMetaData().resolve(wac);
+        wac.resolveMetaData();
         //test that annotations are applied from resources in order:
         //no resource associated, container resources, web-inf classes resources, web-inf lib resources
         assertThat(applications, contains(annotationC, annotationD, annotationE, annotationA, annotationB));

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Add Gzip support into the Compression Handler                   -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Ref refid="CompressionHandler">
+    <Call name="addCompression">
+      <Arg>
+        <New id="gzipCompression" class="org.eclipse.jetty.compression.gzip.GzipCompression">
+          <Set name="minCompressSize" property="jetty.gzip.minCompressSize"/>
+          <Set name="inflaterPool">
+            <New class="org.eclipse.jetty.util.compression.InflaterPool">
+              <Arg type="int"><Property name="jetty.gzip.inflaterPool.capacity" deprecated="jetty.gzip.inflaterPoolCapacity" default="1024"/></Arg>
+              <Arg type="boolean"><Property name="jetty.gzip.inflaterPool.noWrap" default="true"/></Arg>
+            </New>
+          </Set>
+          <Set name="deflaterPool">
+            <New class="org.eclipse.jetty.util.compression.DeflaterPool">
+              <Arg type="int"><Property name="jetty.gzip.deflaterPool.capacity" deprecated="jetty.gzip.deflaterPoolCapacity" default="1024"/></Arg>
+              <Arg type="int"><Property name="jetty.gzip.deflaterPool.compressionLevel" deprecated="jetty.gzip.compressionLevel" default="-1"/></Arg>
+              <Arg type="boolean"><Property name="jetty.gzip.deflaterPool.noWrap" default="true"/></Arg>
+            </New>
+          </Set>
+          <Set name="defaultDecoderConfig">
+            <New id="gzipDefaultDecoderConfig" class="org.eclipse.jetty.compression.gzip.GzipDecoderConfig">
+              <Set name="bufferSize" property="jetty.gzip.decoder.bufferSize"/>
+            </New>
+          </Set>
+          <Set name="defaultEncoderConfig">
+            <New id="gzipDefaultEncoderConfig" class="org.eclipse.jetty.compression.gzip.GzipEncoderConfig">
+              <Set name="bufferSize" property="jetty.gzip.encoder.bufferSize"/>
+              <Set name="compressionLevel" property="jetty.gzip.encoder.compressionLevel"/>
+              <Set name="strategy" property="jetty.gzip.encoder.strategy"/>
+              <Set name="syncFlush" property="jetty.gzip.encoder.syncFlush"/>
+            </New>
+          </Set>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
+
+

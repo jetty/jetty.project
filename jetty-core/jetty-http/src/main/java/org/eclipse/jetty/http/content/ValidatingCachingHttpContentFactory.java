@@ -59,7 +59,7 @@ public class ValidatingCachingHttpContentFactory extends CachingHttpContentFacto
      */
     public ValidatingCachingHttpContentFactory(@Name("authority") HttpContent.Factory authority,
                                                @Name("validationPeriod") long validationPeriod,
-                                               @Name("bufferPool") ByteBufferPool bufferPool)
+                                               @Name("bufferPool") ByteBufferPool.Sized bufferPool)
     {
         this(authority, validationPeriod, bufferPool, null, -1, -1);
     }
@@ -77,7 +77,7 @@ public class ValidatingCachingHttpContentFactory extends CachingHttpContentFacto
      */
     public ValidatingCachingHttpContentFactory(@Name("authority") HttpContent.Factory authority,
                                                @Name("validationPeriod") long validationPeriod,
-                                               @Name("byteBufferPool") ByteBufferPool bufferPool,
+                                               @Name("byteBufferPool") ByteBufferPool.Sized bufferPool,
                                                @Name("scheduler") Scheduler scheduler,
                                                @Name("sweepPeriod") long sweepPeriod,
                                                @Name("idleTimeout") long idleTimeout)

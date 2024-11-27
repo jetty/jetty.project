@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -62,7 +63,7 @@ public class HttpTester
 
         public Input()
         {
-            this(BufferUtil.allocate(8192));
+            this(BufferUtil.allocate(IO.DEFAULT_BUFFER_SIZE));
         }
 
         Input(ByteBuffer buffer)
@@ -477,7 +478,7 @@ public class HttpTester
                     switch (result)
                     {
                         case NEED_HEADER:
-                            header = BufferUtil.allocate(8192);
+                            header = BufferUtil.allocate(IO.DEFAULT_BUFFER_SIZE);
                             continue;
 
                         case HEADER_OVERFLOW:
@@ -491,7 +492,7 @@ public class HttpTester
                             continue;
 
                         case NEED_CHUNK_TRAILER:
-                            chunk = BufferUtil.allocate(8192);
+                            chunk = BufferUtil.allocate(IO.DEFAULT_BUFFER_SIZE);
                             continue;
 
                         case NEED_INFO:

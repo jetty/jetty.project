@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="wac" class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+  <Set name="contextPath">/ee11-test-spec</Set>
+  <Set name="war"><Property name="jetty.webapps" />/ee11-demo-spec.war
+  </Set>
+  <Set name="configurationDiscovered">true</Set>
+
+  <New id="tx" class="org.eclipse.jetty.ee11.plus.jndi.Transaction">
+    <Arg><Property name="environment" default="ee11"/></Arg>
+    <Arg>
+      <New class="org.example.MockUserTransaction" />
+    </Arg>
+  </New>
+
+  <New id="maxAmount" class="org.eclipse.jetty.plus.jndi.EnvEntry">
+    <Arg>
+      <Ref refid='wac' />
+    </Arg>
+    <Arg>maxAmount</Arg>
+    <Arg type="java.lang.Double">100</Arg>
+    <Arg type="boolean">true</Arg>
+  </New>
+
+  <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid='wac'/></Arg>
+    <Arg>jdbc/mydatasource</Arg>
+    <Arg>
+     <New class="org.example.MockDataSource">
+     </New>
+    </Arg>
+   </New>
+</Configure>

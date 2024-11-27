@@ -344,7 +344,7 @@ public class ServletHandler extends Handler.Wrapper
             _listeners.addAll(listenerHolders);
 
             // Update indexes for prepending filters
-            _matchAfterIndex = (_filterMappings.size() == 0 ? -1 : _filterMappings.size() - 1);
+            _matchAfterIndex = (_filterMappings.isEmpty() ? -1 : _filterMappings.size() - 1);
             _matchBeforeIndex = -1;
 
             _durable.clear();
@@ -478,7 +478,7 @@ public class ServletHandler extends Handler.Wrapper
      */
     public MatchedResource<MappedServlet> getMatchedServlet(String target)
     {
-        if (target.startsWith("/") || target.length() == 0)
+        if (target.startsWith("/") || target.isEmpty())
         {
             if (_servletPathMap == null)
                 return null;

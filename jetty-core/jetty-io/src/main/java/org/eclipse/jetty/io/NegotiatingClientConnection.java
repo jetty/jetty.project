@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class NegotiatingClientConnection extends AbstractConnection
+public abstract class NegotiatingClientConnection extends AbstractConnection.NonBlocking
 {
     private static final Logger LOG = LoggerFactory.getLogger(NegotiatingClientConnection.class);
 

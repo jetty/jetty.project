@@ -18,8 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * WebServletAnnotationHandler
- *
  * Process a WebServlet annotation on a class.
  */
 public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationHandler
@@ -37,7 +35,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     @Override
     public void handle(AnnotationParser.ClassInfo info, String annotationName)
     {
-        if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
+        if (!"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
 
         WebServletAnnotation annotation = new WebServletAnnotation(_context, info.getClassName(), info.getContainingResource());
@@ -47,7 +45,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     @Override
     public void handle(AnnotationParser.FieldInfo info, String annotationName)
     {
-        if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
+        if (!"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
 
         LOG.warn("@WebServlet annotation not supported for fields");
@@ -56,7 +54,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     @Override
     public void handle(AnnotationParser.MethodInfo info, String annotationName)
     {
-        if (annotationName == null || !"jakarta.servlet.annotation.WebServlet".equals(annotationName))
+        if (!"jakarta.servlet.annotation.WebServlet".equals(annotationName))
             return;
 
         LOG.warn("@WebServlet annotation not supported for methods");

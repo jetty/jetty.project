@@ -22,8 +22,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * ServletResponseHttpWrapper
- *
  * Wrapper to tunnel a ServletResponse via an HttpServletResponse
  */
 public class ServletResponseHttpWrapper extends ServletResponseWrapper implements HttpServletResponse

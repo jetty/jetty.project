@@ -43,6 +43,9 @@
 ** xref:troubleshooting/state-tracking.adoc[]
 ** xref:troubleshooting/component-dump.adoc[]
 ** xref:troubleshooting/debugging.adoc[]
+* Jetty Security
+** xref:security/siwe-support.adoc[]
 * Migration Guides
 ** xref:migration/94-to-10.adoc[]
 ** xref:migration/11-to-12.adoc[]
+** xref:migration/12.0-to-12.1.adoc[]

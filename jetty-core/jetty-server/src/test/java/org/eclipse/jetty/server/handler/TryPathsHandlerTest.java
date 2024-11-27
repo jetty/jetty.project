@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -100,10 +101,10 @@ public class TryPathsHandlerTest
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
             }
         };
 
@@ -171,10 +172,10 @@ public class TryPathsHandlerTest
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
             }
         };
         resourceHandler.setDirAllowed(false);
@@ -299,10 +300,10 @@ public class TryPathsHandlerTest
         ResourceHandler resourceHandler = new ResourceHandler()
         {
             @Override
-            protected HttpContent.Factory newHttpContentFactory()
+            protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
             {
                 // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes());
+                return new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
             }
         };
         resourceHandler.setDirAllowed(false);

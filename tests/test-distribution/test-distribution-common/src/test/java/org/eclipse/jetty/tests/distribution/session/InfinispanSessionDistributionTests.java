@@ -65,11 +65,10 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
                         .withEnv("PASS", "foobar")
                         .withEnv("MGMT_USER", "admin")
                         .withEnv("MGMT_PASS", "admin")
-                        .withEnv("CONFIG_PATH", "/user-config/config.yaml")
+                        .withEnv("JAVA_OPTIONS", "-Xms64m -Xmx256m -Djgroups.dns.query=infinispan-dns-ping.myproject.svc.cluster.local")
                         .waitingFor(Wait.forListeningPorts(11222))
                         .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-                        .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
-                        .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
+                        .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
         infinispan.start();
         host = infinispan.getHost();
         port = infinispan.getMappedPort(11222);

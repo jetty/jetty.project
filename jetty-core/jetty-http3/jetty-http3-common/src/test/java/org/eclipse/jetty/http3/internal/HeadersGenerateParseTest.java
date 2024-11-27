@@ -50,7 +50,7 @@ public class HeadersGenerateParseTest
         QpackEncoder encoder = new QpackEncoder(instructions -> {});
         encoder.setMaxHeadersSize(4 * 1024);
         ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator(); // TODO remove
         new MessageGenerator(bufferPool, encoder, true).generate(accumulator, 0, input, null);
 
         QpackDecoder decoder = new QpackDecoder(instructions -> {});

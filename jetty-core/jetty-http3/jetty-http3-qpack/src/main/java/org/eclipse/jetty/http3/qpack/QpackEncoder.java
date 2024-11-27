@@ -156,7 +156,7 @@ public class QpackEncoder implements Dumpable
     }
 
     /**
-     * Set the capacity of the DynamicTable and send an instruction to set the capacity on the remote Decoder.
+     * Set the capacity of the DynamicTable and send a instruction to set the capacity on the remote Decoder.
      *
      * @param capacity the new capacity.
      */
@@ -166,15 +166,9 @@ public class QpackEncoder implements Dumpable
         {
             if (capacity > getMaxTableCapacity())
                 throw new IllegalArgumentException("DynamicTable capacity exceeds max capacity");
-            int oldCapacity = _context.getDynamicTable().getCapacity();
-
-            // Only send the instruction if there was a change to the table capacity.
-            if (oldCapacity != capacity)
-            {
-                _context.getDynamicTable().setCapacity(capacity);
-                _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
-                notifyInstructionHandler();
-            }
+            _context.getDynamicTable().setCapacity(capacity);
+            _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
+            notifyInstructionHandler();
         }
     }
 

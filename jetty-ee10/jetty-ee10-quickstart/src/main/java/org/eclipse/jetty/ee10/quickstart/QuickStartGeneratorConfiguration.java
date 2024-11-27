@@ -814,8 +814,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        MetaData metadata = context.getMetaData();
-        metadata.resolve(context);
+        context.resolveMetaData();
         try (OutputStream os = Files.newOutputStream(_quickStartWebXml))
         {
             generateQuickStartWebXml(context, os);

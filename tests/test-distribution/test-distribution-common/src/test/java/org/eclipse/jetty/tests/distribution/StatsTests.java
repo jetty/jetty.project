@@ -45,7 +45,7 @@ public class StatsTests extends AbstractJettyHomeTest
 {
     @Disabled //TODO stats.mod broken
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testStatsServlet(String env) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");

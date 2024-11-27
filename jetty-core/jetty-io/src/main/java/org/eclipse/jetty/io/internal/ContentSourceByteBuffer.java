@@ -15,14 +15,14 @@ package org.eclipse.jetty.io.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContentSourceByteBuffer implements Invocable.Task
 {
-    private final ByteBufferAccumulator accumulator = new ByteBufferAccumulator();
+    private final RetainableByteBuffer.Mutable.DynamicCapacity dynamic = new RetainableByteBuffer.Mutable.DynamicCapacity();
     private final Content.Source source;
     private final Promise<ByteBuffer> promise;
 
@@ -53,12 +53,14 @@ public class ContentSourceByteBuffer implements Invocable.Task
                 return;
             }
 
-            accumulator.copyBuffer(chunk.getByteBuffer());
+            dynamic.append(chunk.getByteBuffer().slice());
             chunk.release();
 
             if (chunk.isLast())
             {
-                promise.succeeded(accumulator.takeByteBuffer());
+                ByteBuffer dynamicResult = dynamic.getByteBuffer();
+                dynamic.release();
+                promise.succeeded(dynamicResult);
                 return;
             }
         }

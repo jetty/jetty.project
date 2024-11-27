@@ -30,7 +30,9 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -67,6 +69,7 @@ public class End2EndClientWithClientCertAuthTest
         \t</body>
         </html>""";
     private SslContextFactory.Server serverSslContextFactory;
+    private Transport transport;
 
     @BeforeEach
     public void setUp() throws Exception
@@ -95,9 +98,8 @@ public class End2EndClientWithClientCertAuthTest
         httpConfiguration.addCustomizer(new SecureRequestCustomizer());
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-        // Use the deprecated APIs for backwards compatibility testing.
-        connector = new QuicServerConnector(server, serverSslContextFactory, http1, http2);
-        connector.getQuicConfiguration().setPemWorkDirectory(serverWorkPath);
+        ServerQuicConfiguration serverQuicConfiguration = new ServerQuicConfiguration(serverSslContextFactory, serverWorkPath);
+        connector = new QuicServerConnector(server, serverQuicConfiguration, http1, http2);
         server.addConnector(connector);
 
         server.setHandler(new Handler.Abstract()
@@ -112,15 +114,16 @@ public class End2EndClientWithClientCertAuthTest
 
         server.start();
 
-        // Use the deprecated APIs for backwards compatibility testing.
-        QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator();
-        configurator.getQuicConfiguration().setPemWorkDirectory(clientWorkPath);
-        ClientConnector clientConnector = new ClientConnector(configurator);
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
         clientSslContextFactory.setCertAlias("mykey");
         clientSslContextFactory.setKeyStore(keyStore);
         clientSslContextFactory.setKeyStorePassword("storepwd");
         clientSslContextFactory.setTrustStore(keyStore);
+        clientSslContextFactory.setTrustStorePassword("storepwd");
+        ClientQuicConfiguration clientQuicConfiguration = new ClientQuicConfiguration(clientSslContextFactory, clientWorkPath);
+        clientQuicConfiguration.start();
+        transport = new QuicTransport(clientQuicConfiguration);
+        ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(clientSslContextFactory);
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
@@ -141,6 +144,7 @@ public class End2EndClientWithClientCertAuthTest
     {
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
+            .transport(transport)
             .send();
         assertThat(response.getStatus(), is(200));
         String contentAsString = response.getContentAsString();
@@ -150,12 +154,13 @@ public class End2EndClientWithClientCertAuthTest
     @Test
     public void testServerRejectsClientInvalidCert() throws Exception
     {
-        // remove the trust store config from the server
+        // Remove the trust store config from the server.
         server.stop();
         serverSslContextFactory.setTrustStore(null);
         server.start();
 
         assertThrows(TimeoutException.class, () -> client.newRequest("https://localhost:" + connector.getLocalPort())
+            .transport(transport)
             .timeout(1, TimeUnit.SECONDS)
             .send());
     }

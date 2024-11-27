@@ -80,36 +80,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     }
 
     /**
-     * <p>Creates an instance with the specified strategy.</p>
-     *
-     * @param strategyType the strategy to used to lookup entries
-     * @param maxSize the maximum number of pooled entries
-     * @param cache whether a {@link ThreadLocal} cache should be used for the most recently released entry
-     * @deprecated cache is no longer supported. Use {@link StrategyType#THREAD_ID}
-     */
-    @Deprecated(since = "12.0.4", forRemoval = true)
-    public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache)
-    {
-        this(strategyType, maxSize, pooled -> 1);
-    }
-
-    /**
-     * <p>Creates an instance with the specified strategy.
-     * and a function that returns the max multiplex count for a given pooled object.</p>
-     *
-     * @param strategyType the strategy to used to lookup entries
-     * @param maxSize the maximum number of pooled entries
-     * @param cache whether a {@link ThreadLocal} cache should be used for the most recently released entry
-     * @param maxMultiplex a function that given the pooled object returns the max multiplex count
-     * @deprecated cache is no longer supported. Use {@link StrategyType#THREAD_ID}
-     */
-    @Deprecated(since = "12.0.4", forRemoval = true)
-    public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache, ToIntFunction<P> maxMultiplex)
-    {
-        this(strategyType, maxSize, maxMultiplex);
-    }
-
-    /**
      * <p>Creates an instance with the specified strategy.
      * and a function that returns the max multiplex count for a given pooled object.</p>
      *

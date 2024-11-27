@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee11</groupId>
+    <artifactId>jetty-ee11-tests</artifactId>
+    <version>12.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-ee11-test-sessions</artifactId>
+  <packaging>pom</packaging>
+  <name>EE11 :: Tests :: Sessions</name>
+  <modules>
+    <module>jetty-ee11-test-sessions-common</module>
+    <module>jetty-ee11-test-sessions-file</module>
+    <module>jetty-ee11-test-sessions-gcloud</module>
+    <module>jetty-ee11-test-sessions-hazelcast</module>
+    <module>jetty-ee11-test-sessions-infinispan</module>
+    <module>jetty-ee11-test-sessions-jdbc</module>
+    <module>jetty-ee11-test-sessions-memcached</module>
+    <module>jetty-ee11-test-sessions-mongodb</module>
+  </modules>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+    <maven.source.skip>true</maven.source.skip>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-session</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee11</groupId>
+        <artifactId>jetty-ee11-test-sessions-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.annotations;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import javax.naming.InitialContext;
@@ -38,12 +37,17 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceAnnotationHandler.class);
 
-    protected static final List<Class<?>> ENV_ENTRY_TYPES =
-        Arrays.asList(new Class[]
-            {
-                String.class, Character.class, Integer.class, Boolean.class, Double.class, Byte.class, Short.class, Long.class,
-                Float.class
-            });
+    protected static final List<Class<?>> ENV_ENTRY_TYPES = List.of(
+        String.class,
+        Character.class,
+        Integer.class,
+        Boolean.class,
+        Double.class,
+        Byte.class,
+        Short.class,
+        Long.class,
+        Float.class
+    );
 
     public ResourceAnnotationHandler(WebAppContext wac)
     {
@@ -63,22 +67,22 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             handleClass(clazz);
 
             Method[] methods = clazz.getDeclaredMethods();
-            for (int i = 0; i < methods.length; i++)
+            for (Method method : methods)
             {
-                handleMethod(clazz, methods[i]);
+                handleMethod(clazz, method);
             }
             Field[] fields = clazz.getDeclaredFields();
             //For each field, get all of it's annotations
-            for (int i = 0; i < fields.length; i++)
+            for (Field field : fields)
             {
-                handleField(clazz, fields[i]);
+                handleField(clazz, field);
             }
         }
     }
 
     public void handleClass(Class<?> clazz)
     {
-        Resource resource = (Resource)clazz.getAnnotation(Resource.class);
+        Resource resource = clazz.getAnnotation(Resource.class);
         if (resource != null)
         {
             String name = resource.name();
@@ -102,7 +106,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
     public void handleField(Class<?> clazz, Field field)
     {
-        Resource resource = (Resource)field.getAnnotation(Resource.class);
+        Resource resource = field.getAnnotation(Resource.class);
         if (resource != null)
         {
             //JavaEE Spec 5.2.3: Field cannot be static
@@ -179,7 +183,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         }
                         catch (NameNotFoundException e)
                         {
-                            bound = false;
+                            if (LOG.isTraceEnabled())
+                                LOG.trace("ignored", e);
                         }
                     }
                     //Check there is a JNDI entry for this annotation
@@ -226,7 +231,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
     public void handleMethod(Class<?> clazz, Method method)
     {
 
-        Resource resource = (Resource)method.getAnnotation(Resource.class);
+        Resource resource = method.getAnnotation(Resource.class);
         if (resource != null)
         {
             /*
@@ -336,7 +341,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         }
                         catch (NameNotFoundException e)
                         {
-                            bound = false;
+                            if (LOG.isTraceEnabled())
+                                LOG.trace("ignored", e);
                         }
                     }
 
@@ -378,20 +384,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      */
     public boolean supportsResourceInjection(Class<?> c)
     {
-        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) ||
-            jakarta.servlet.Filter.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
-            return true;
-
-        return false;
+        return isAnnotatableServletClass(c);
     }
 
     /**

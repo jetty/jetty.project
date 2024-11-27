@@ -51,17 +51,13 @@ import org.slf4j.LoggerFactory;
  * Specializes URLClassLoader with some utility and file mapping
  * methods.
  * <p>
- * This loader defaults to the 2.3 servlet spec behavior where non
- * system classes are loaded from the classpath in preference to the
- * parent loader.  Java2 compliant loading, where the parent loader
- * always has priority, can be selected with the
- * {@link WebAppContext#setParentLoaderPriority(boolean)}
- * method and influenced with {@link WebAppContext#isHiddenClass(Class)} and
- * {@link WebAppContext#isProtectedClass(Class)}.
+ * This loader implements the Servlet specification behavior that may invert the normal Java classloader parent priority
+ * behaviour. The {@link ClassVisibilityChecker} API of the {@link WebAppClassLoader.Context} implementation is
+ * used to determine which classes from the parent classloader are hidden from the context, and which are protected
+ * from being overridden by the context.
  * <p>
- * If no parent class loader is provided, then the current thread
- * context classloader will be used.  If that is null then the
- * classloader that loaded this class is used as the parent.
+ * Java compliant loading, where the parent loader always has priority, can be selected with the
+ * {@link WebAppContext#setParentLoaderPriority(boolean)} method.
  */
 public class WebAppClassLoader extends URLClassLoader implements ClassVisibilityChecker
 {
@@ -169,6 +165,9 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
     /**
      * Constructor.
+     * <p>
+     * The {@link Thread#currentThread()} {@link Thread#getContextClassLoader()} will be used as the parent loader,
+     * unless {@code null}, in which case the classloader that loaded this class is used as the parent.
      *
      * @param context the context for this classloader
      */
@@ -180,7 +179,9 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     /**
      * Constructor.
      *
-     * @param parent the parent classloader
+     * @param parent the parent classloader; if {@code null} then the {@link Thread#currentThread()}
+     *               {@link Thread#getContextClassLoader()} will be used as the parent loader,
+     *               unless also {@code null}, in which case the classloader that loaded this class is used as the parent.
      * @param context the context for this classloader
      */
     public WebAppClassLoader(ClassLoader parent, Context context)
@@ -308,8 +309,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     public PermissionCollection getPermissions(CodeSource cs)
     {
         PermissionCollection permissions = _context.getPermissions();
-        PermissionCollection pc = (permissions == null) ? super.getPermissions(cs) : permissions;
-        return pc;
+        return (permissions == null) ? super.getPermissions(cs) : permissions;
     }
 
     @Override
@@ -355,7 +355,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
     /**
      * Get a resource from the classloader
-     *
+     * <p>
      * NOTE: this method provides a convenience of hacking off a leading /
      * should one be present. This is non-standard and it is recommended
      * to not rely on this behavior
@@ -424,8 +424,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         synchronized (getClassLoadingLock(name))
         {
             ClassNotFoundException ex = null;
-            Class<?> parentClass = null;
-            Class<?> webappClass = null;
+            Class<?> parentClass;
+            Class<?> webappClass;
 
             // Has this loader loaded the class already?
             webappClass = findLoadedClass(name);
@@ -596,17 +596,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
         finally
         {
-            if (content != null)
-            {
-                try
-                {
-                    content.close();
-                }
-                catch (IOException e)
-                {
-                    throw new ClassNotFoundException(name, e);
-                }
-            }
+            IO.close(content);
         }
     }
 

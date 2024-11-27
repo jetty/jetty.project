@@ -166,11 +166,11 @@ public class FrameFlusherTest
         FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather)
         {
             @Override
-            public void onCompleteFailure(Throwable failure)
+            public void onFailure(Throwable failure)
             {
                 error.set(failure);
                 flusherFailure.countDown();
-                super.onCompleteFailure(failure);
+                super.onFailure(failure);
             }
         };
 

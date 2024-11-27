@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <New class="org.eclipse.jetty.http.MultiPartConfig$Builder">
+    <Call name="location">
+      <Arg>
+        <Property name = "jetty.eager.multipart.location">
+          <Default><SystemProperty name="java.io.tmpdir"/></Default>
+        </Property>
+      </Arg>
+    </Call>
+
+    <Set name="maxParts" type="int" property="jetty.eager.multipart.maxParts"/>
+    <Set name="maxSize" type="long" property="jetty.eager.multipart.maxSize"/>
+    <Set name="maxPartSize" type="long" property="jetty.eager.multipart.maxPartSize"/>
+    <Set name="maxMemoryPartSize" type="long" property="jetty.eager.multipart.maxMemoryPartSize"/>
+    <Set name="maxHeadersSize" type="int" property="jetty.eager.multipart.maxHeadersSize"/>
+    <Set name="useFilesForPartsWithoutFileName" type="Boolean" property="jetty.eager.multipart.useFilesForPartsWithoutFileName"/>
+
+    <Call name="complianceMode">
+      <Arg>
+        <Call class="org.eclipse.jetty.http.MultiPartCompliance" name="from">
+          <Arg type="String"><Property name="jetty.eager.multipart.complianceMode" default="RFC7578"/></Arg>
+        </Call>
+      </Arg>
+    </Call>
+
+    <Call id="jetty.eager.MultiPartConfig" name="build"/>
+  </New>
+
+  <Call name="insertHandler">
+    <Arg>
+      <New id="EagerContentHandler" class="org.eclipse.jetty.server.handler.EagerContentHandler">
+        <Arg>
+          <Array type="org.eclipse.jetty.server.handler.EagerContentHandler$ContentLoaderFactory">
+            <Item>
+              <New class="org.eclipse.jetty.server.handler.EagerContentHandler$FormContentLoaderFactory">
+                <Arg type="int"><Property name="jetty.eager.form.maxFields" default="-1"/></Arg>
+                <Arg type="int"><Property name="jetty.eager.form.maxLength" default="-1"/></Arg>
+              </New>
+            </Item>
+            <Item>
+              <New class="org.eclipse.jetty.server.handler.EagerContentHandler$MultiPartContentLoaderFactory">
+                <Arg><Ref refid="jetty.eager.MultiPartConfig>"/></Arg>
+              </New>
+            </Item>
+            <Item>
+              <New class="org.eclipse.jetty.server.handler.EagerContentHandler$RetainedContentLoaderFactory">
+                <Arg type="int"><Property name="jetty.eager.content.maxRetainedBytes" default="-1"/></Arg>
+                <Arg type="int"><Property name="jetty.eager.content.framingOverhead" default="-1"/></Arg>
+                <Arg type="boolean"><Property name="jetty.eager.content.rejectWhenExceeded" default="false"/></Arg>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
+        <Call name="includeMethod">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.eager.include.method" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludeMethod">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.eager.exclude.method" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="includePath">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.eager.include.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludePath">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.eager.exclude.path" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="includeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.eager.include.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Call name="excludeInetAddressPattern">
+          <Arg>
+            <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+              <Arg><Property name="jetty.eager.exclude.inet" default="" /></Arg>
+            </Call>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

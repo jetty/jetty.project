@@ -44,7 +44,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
     {
         List<Arguments> arguments = new ArrayList<>();
         
-        for (String env : new String[] {"ee9", "ee10"})
+        for (String env : new String[] {"ee9", "ee10", "ee11"})
         {
             arguments.add(Arguments.of(env, "logging-jetty",
                 Arrays.asList(
@@ -169,7 +169,7 @@ public class LoggingOptionsTests extends AbstractJettyHomeTest
                 }
             }
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + ".demo-jsp-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWar(war, "test");
 
             int port = Tester.freePort();

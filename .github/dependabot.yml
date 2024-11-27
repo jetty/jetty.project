@@ -246,3 +246,7 @@ updates:
       - dependency-name: "org.apache.avro:*"
         versions: [ ">=1.12" ]
 
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

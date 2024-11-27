@@ -11,6 +11,10 @@ pushd jetty-core
 mvn -N -B -Pupdate-dependencies-core validate -Dmaven.build.cache.enabled=false
 popd
 
+pushd jetty-ee11
+mvn -N -B -Pupdate-dependencies-ee11 validate -Dmaven.build.cache.enabled=false
+popd
+
 pushd jetty-ee10
 mvn -N -B -Pupdate-dependencies-ee10 validate -Dmaven.build.cache.enabled=false
 popd

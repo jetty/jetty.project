@@ -221,7 +221,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 }
 
                 @Override
-                protected void onCompleteFailure(Throwable cause)
+                protected void onFailure(Throwable cause)
                 {
                     dispose();
                     callback.failed(cause);

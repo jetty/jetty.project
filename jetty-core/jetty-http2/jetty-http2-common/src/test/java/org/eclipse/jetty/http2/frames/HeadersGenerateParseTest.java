@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +28,7 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,18 +64,13 @@ public class HeadersGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
             generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
             frames.clear();
-            for (ByteBuffer buffer : accumulator.getByteBuffers())
-            {
-                while (buffer.hasRemaining())
-                {
-                    parser.parse(buffer);
-                }
-            }
+            UnknownParseTest.parse(parser, accumulator);
+            accumulator.release();
 
             assertEquals(1, frames.size());
             HeadersFrame frame = frames.get(0);
@@ -123,19 +118,13 @@ public class HeadersGenerateParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
             generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
             frames.clear();
-            for (ByteBuffer buffer : accumulator.getByteBuffers())
-            {
-                buffer = buffer.slice();
-                while (buffer.hasRemaining())
-                {
-                    parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-                }
-            }
+            UnknownParseTest.parse(parser, accumulator);
+            accumulator.release();
 
             assertEquals(1, frames.size());
             HeadersFrame frame = frames.get(0);

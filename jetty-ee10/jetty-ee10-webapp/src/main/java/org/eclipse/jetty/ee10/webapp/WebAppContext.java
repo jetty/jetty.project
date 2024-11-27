@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRegistration.Dynamic;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpSessionActivationListener;
@@ -54,6 +56,7 @@ import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -74,7 +77,9 @@ import org.slf4j.LoggerFactory;
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link WebXmlConfiguration} and
  * {@link JettyWebXmlConfiguration}.
- *
+ * </p>
+ * <p>The class implements {@link WebAppClassLoader.Context} and thus the {@link org.eclipse.jetty.util.ClassVisibilityChecker}
+ * API, which is used by any {@link WebAppClassLoader} to control visibility of classes to the context.</p>
  */
 @ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context, Deployable
@@ -626,9 +631,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the hidden (server) classes patterns.
      * <p>
-     * These classes/packages are used to implement the server and are hidden
-     * from the context.  If the context needs to load these classes, it must have its
-     * own copy of them in WEB-INF/lib or WEB-INF/classes.
+     * This {@link ClassMatcher} is used to implement the {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract
+     * for the context by determining which classes and resources from the server and environment classloader are hidden
+     * from the context.  The context may have its own copy of these classes/resources in WEB-INF/lib or WEB-INF/classes.
      *
      * @param hiddenClasses the server classes pattern
      */
@@ -641,9 +646,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the protected (system) classes patterns.
      * <p>
-     * These classes/packages are provided by the JVM and
-     * cannot be replaced by classes of the same name from WEB-INF,
-     * regardless of the value of {@link #setParentLoaderPriority(boolean)}.
+     *
+     * This {@link ClassMatcher} is used to implement the {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract
+     * for the context by determining which classes and resources from the server and environment classloader may not be
+     * overridden by the context.  The context may not have its own copy of these classes/resources.
      *
      * @param protectedClasses the system classes pattern
      */
@@ -658,6 +664,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * any existing matcher.
      *
      * @param hiddenClasses The class matcher of patterns to add to the server ClassMatcher
+     * @see org.eclipse.jetty.util.ClassVisibilityChecker
+     * @see #setHiddenClassMatcher(ClassMatcher)
      */
     public void addHiddenClassMatcher(ClassMatcher hiddenClasses)
     {
@@ -669,6 +677,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * any existing matcher.
      *
      * @param protectedClasses The class matcher of patterns to add to the system ClassMatcher
+     * @see org.eclipse.jetty.util.ClassVisibilityChecker
+     * @see #setProtectedClassMatcher(ClassMatcher)
      */
     public void addProtectedClassMatcher(ClassMatcher protectedClasses)
     {
@@ -676,7 +686,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match System (protected) classes
+     * @return The ClassMatcher used to match System (protected) classes to implement the
+     * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
+     * @see #setProtectedClassMatcher(ClassMatcher)
      */
     public ClassMatcher getProtectedClassMatcher()
     {
@@ -684,7 +696,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @return The ClassMatcher used to match Server (hidden) classes
+     * @return The ClassMatcher used to match Server (hidden) classes to implement the
+     * {@link org.eclipse.jetty.util.ClassVisibilityChecker} contract.
+     * @see #setHiddenClassMatcher(ClassMatcher)
      */
     public ClassMatcher getHiddenClassMatcher()
     {
@@ -1189,7 +1203,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * Set the context white list
-     *
+     * <p>
      * In certain circumstances you want may want to deny access of one webapp from another
      * when you may not fully trust the webapp.  Setting this white list will enable a
      * check when a servlet called <code>ServletContextHandler.Context#getContext(String)</code>,
@@ -1293,14 +1307,89 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _throwUnavailableOnStartupException;
     }
 
+    public void resolveMetaData() throws Exception
+    {
+        LOG.debug("metadata resolve {}", this);
+
+        //Ensure origins is fresh
+        _metadata._origins.clear();
+
+        // Set the ordered lib attribute
+        List<Resource> orderedWebInfJars;
+        if (_metadata.isOrdered())
+        {
+            orderedWebInfJars = _metadata.getWebInfResources(true);
+            List<String> orderedLibs = new ArrayList<>();
+            for (Resource jar: orderedWebInfJars)
+            {
+                URI uri = URIUtil.unwrapContainer(jar.getURI());
+                orderedLibs.add(uri.getPath());
+            }
+            setAttribute(ServletContext.ORDERED_LIBS, Collections.unmodifiableList(orderedLibs));
+        }
+
+        // set the webxml version
+        if (_metadata._webXmlRoot != null)
+        {
+            getContext().getServletContext().setEffectiveMajorVersion(_metadata._webXmlRoot.getMajorVersion());
+            getContext().getServletContext().setEffectiveMinorVersion(_metadata._webXmlRoot.getMinorVersion());
+        }
+
+        //process web-defaults.xml, web.xml and override-web.xmls
+        for (DescriptorProcessor p : _metadata._descriptorProcessors)
+        {
+            p.process(this, _metadata.getDefaultsDescriptor());
+            p.process(this, _metadata.getWebDescriptor());
+            for (WebDescriptor wd : _metadata.getOverrideDescriptors())
+            {
+                LOG.debug("process {} {} {}", this, p, wd);
+                p.process(this, wd);
+            }
+        }
+
+        List<Resource> resources = new ArrayList<>();
+        resources.add(null); //always apply annotations with no resource first
+        resources.addAll(_metadata._orderedContainerResources); //next all annotations from container path
+        resources.addAll(_metadata._webInfClasses); //next everything from web-inf classes
+        resources.addAll(_metadata.getWebInfResources(_metadata.isOrdered())); //finally annotations (in order) from webinf path
+
+        for (Resource r : resources)
+        {
+            //Process the web-fragment.xml before applying annotations from a fragment.
+            //Note that some fragments, or resources that aren't fragments won't have
+            //a descriptor.
+            FragmentDescriptor fd = _metadata._webFragmentResourceMap.get(r);
+            if (fd != null)
+            {
+                for (DescriptorProcessor p : _metadata._descriptorProcessors)
+                {
+                    LOG.debug("process {} {}", this, fd);
+                    p.process(this, fd);
+                }
+            }
+
+            //Then apply the annotations - note that if metadata is complete
+            //either overall or for a fragment, those annotations won't have
+            //been discovered.
+            List<DiscoveredAnnotation> annotations = _metadata._annotations.get(r);
+            if (annotations != null)
+            {
+                for (DiscoveredAnnotation a : annotations)
+                {
+                    LOG.debug("apply {}", a);
+                    a.apply();
+                }
+            }
+        }
+    }
+
     @Override
     protected void startContext()
         throws Exception
     {
         if (configure())
         {
-            //resolve the metadata
-            _metadata.resolve(this);
+            resolveMetaData();
             startWebapp();
         }
     }

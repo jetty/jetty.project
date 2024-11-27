@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 /**
  * <p>A {@link MessageSink} implementation that delivers TEXT frames
@@ -34,12 +33,12 @@ public class PartialStringMessageSink extends AbstractMessageSink
      * Creates a new {@link PartialStringMessageSink}.
      *
      * @param session the WebSocket session
-     * @param methodHandle the application function to invoke when a new frame has arrived
+     * @param methodHolder the application function to invoke when a new frame has arrived
      * @param autoDemand whether this {@link MessageSink} manages demand automatically
      */
-    public PartialStringMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public PartialStringMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHandle, autoDemand);
+        super(session, methodHolder, autoDemand);
     }
 
     @Override
@@ -55,12 +54,12 @@ public class PartialStringMessageSink extends AbstractMessageSink
             if (frame.isFin())
             {
                 String complete = accumulator.takeCompleteString(BadPayloadException.InvalidUtf8::new);
-                getMethodHandle().invoke(complete, true);
+                getMethodHolder().invoke(complete, true);
             }
             else
             {
                 String partial = accumulator.takePartialString(BadPayloadException.InvalidUtf8::new);
-                getMethodHandle().invoke(partial, false);
+                getMethodHolder().invoke(partial, false);
             }
 
             callback.succeeded();

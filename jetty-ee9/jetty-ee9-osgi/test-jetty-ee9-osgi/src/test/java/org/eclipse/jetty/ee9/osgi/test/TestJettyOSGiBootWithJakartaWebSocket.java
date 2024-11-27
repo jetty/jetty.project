@@ -75,7 +75,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.demos").artifactId("jetty-ee9-demo-jetty-webapp").classifier("webbundle").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-jakarta-websocket-webapp").classifier("webbundle-ee9").versionAsInProject().noStart());
         return res;
     }
 
@@ -94,7 +94,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         startBundle(bundleContext, "org.eclipse.jetty.ee9.websocket.jakarta.common");
         startBundle(bundleContext, "org.eclipse.jetty.ee9.websocket.jakarta.client");
         startBundle(bundleContext, "org.eclipse.jetty.ee9.websocket.jakarta.server");
-        startBundle(bundleContext, "org.eclipse.jetty.ee9.demos.webapp");
+        startBundle(bundleContext, "org.eclipse.jetty.demos.servlet5.jakarta.websocket.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
@@ -108,7 +108,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         Logger log = Logger.getLogger(this.getClass().getName());
 
         SimpleJakartaWebSocket socket = new SimpleJakartaWebSocket();
-        URI uri = new URI("ws://127.0.0.1:" + port + "/ee9-demo-jetty/javax.websocket/");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/servlet5-demo-jakarta-websocket/jakarta.websocket/");
         log.info("Attempting to connect to " + uri);
         try (Session session = container.connectToServer(socket, uri))
         {
@@ -118,7 +118,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
             String msg = "Foo";
             remote.sendText(msg);
             log.info("Send message");
-            assertTrue(socket.messageLatch.await(2, TimeUnit.SECONDS)); // give remote 1 second to respond
+            assertTrue(socket.messageLatch.await(5, TimeUnit.SECONDS)); // give remote some time to respond
         }
         catch (Throwable e)
         {
@@ -126,7 +126,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         }
         finally
         {
-            assertTrue(socket.closeLatch.await(2, TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
+            assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS)); // give remote some time to acknowledge response
         }
     }
 

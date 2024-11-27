@@ -24,22 +24,16 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 public class MockHttpStream implements HttpStream
 {
     private static final Throwable SUCCEEDED = new Throwable();
-    private static final Content.Chunk DEMAND = new Content.Chunk()
+    private static final Content.Chunk DEMAND = new Content.Chunk.Empty()
     {
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return BufferUtil.EMPTY_BUFFER;
-        }
-
         @Override
         public boolean isLast()
         {
@@ -49,7 +43,7 @@ public class MockHttpStream implements HttpStream
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
     private final CountDownLatch _completed = new CountDownLatch(1);
-    private final ByteBufferAccumulator _accumulator = new ByteBufferAccumulator();
+    private final RetainableByteBuffer.DynamicCapacity _accumulator = new RetainableByteBuffer.DynamicCapacity();
     private final AtomicReference<ByteBuffer> _out = new AtomicReference<>();
     private final HttpChannel _channel;
     private final AtomicReference<MetaData.Response> _response = new AtomicReference<>();
@@ -186,7 +180,7 @@ public class MockHttpStream implements HttpStream
         }
 
         if (content != null)
-            _accumulator.copyBuffer(content);
+            _accumulator.append(content);
 
         if (last)
         {
@@ -198,7 +192,7 @@ public class MockHttpStream implements HttpStream
                     _responseTrailers = HttpFields.build(trailers);
             }
 
-            if (!_out.compareAndSet(null, _accumulator.takeRetainableByteBuffer().getByteBuffer()))
+            if (!_out.compareAndSet(null, _accumulator.take().getByteBuffer()))
             {
                 if (response != null || content != null)
                 {

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
@@ -39,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -145,12 +147,50 @@ public class ResponseHeadersTest
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
-        assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/plain;charset=UTF-8"));
+        assertThat("Response Header Content-Type", response.get("Content-Type"), equalToIgnoringCase("text/plain;charset=utf-8"));
 
         String expected = StringUtil.replace(actualPathInfo, "%0A", " "); // replace OBS fold with space
         expected = URLDecoder.decode(expected, StandardCharsets.UTF_8); // decode the rest
         expected = expected.trim(); // trim whitespace at start/end
         assertThat("Response Header X-example", response.get("X-Example"), is(expected));
+    }
+
+    @Test
+    public void testCharsetAfterGetOutputStream() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+
+        HttpServlet charsetResetToJsonMimeTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                OutputStream out = response.getOutputStream();
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/html");
+                out.write("hello".getBytes(StandardCharsets.UTF_8));
+            }
+        };
+
+        contextHandler.addServlet(charsetResetToJsonMimeTypeServlet, "/charset/hello/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/charset/hello/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The Content-Type should not have a charset= portion
+        assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/html;charset=utf-8"));
     }
 
     @Test

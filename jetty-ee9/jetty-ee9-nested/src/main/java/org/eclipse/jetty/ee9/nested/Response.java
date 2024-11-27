@@ -561,7 +561,7 @@ public class Response implements HttpServletResponse
     {
         if (consumeAll)
             getHttpChannel().ensureConsumeAllOrNotPersistent();
-        if (!HttpStatus.isRedirection(code))
+        if (!HttpStatus.isRedirectionWithLocation(code))
             throw new IllegalArgumentException("Not a 3xx redirect code");
 
         if (!isMutable())
@@ -1465,7 +1465,7 @@ public class Response implements HttpServletResponse
         return (HttpServletResponse)servletResponse;
     }
 
-    private static class HttpFieldsSupplier implements Supplier<HttpFields>
+    protected static class HttpFieldsSupplier implements Supplier<HttpFields>
     {
         private final Supplier<Map<String, String>> _supplier;
 

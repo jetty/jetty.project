@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AnnotationIntrospector
  * Introspects a class to find various types of
  * annotations as defined by the servlet specification.
  */
@@ -43,8 +42,6 @@ public class AnnotationIntrospector
     private final WebAppContext _context;
 
     /**
-     * IntrospectableAnnotationHandler
-     *
      * Interface for all handlers that wish to introspect a class to find a particular annotation
      */
     public interface IntrospectableAnnotationHandler
@@ -53,9 +50,7 @@ public class AnnotationIntrospector
     }
 
     /**
-     * AbstractIntrospectableAnnotationHandler
-     *
-     * Base class for handlers that introspect a class to find a particular annotation.
+      * Base class for handlers that introspect a class to find a particular annotation.
      * A handler can optionally introspect the parent hierarchy of a class.
      */
     public abstract static class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
@@ -69,6 +64,27 @@ public class AnnotationIntrospector
         {
             _context = Objects.requireNonNull(context);
             _introspectAncestors = introspectAncestors;
+        }
+
+        /**
+         * Check if the given class is permitted to have Servlet annotation.
+         *
+         * @param c the class
+         * @return true if the spec permits the class to have Servlet annotations, false otherwise
+         */
+        protected static boolean isAnnotatableServletClass(Class<?> c)
+        {
+            return jakarta.servlet.Servlet.class.isAssignableFrom(c) ||
+                jakarta.servlet.Filter.class.isAssignableFrom(c) ||
+                jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) ||
+                jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
+                jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
+                jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
+                jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+                jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
+                jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
+                jakarta.servlet.AsyncListener.class.isAssignableFrom(c) ||
+                jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c);
         }
 
         @Override
@@ -106,7 +122,7 @@ public class AnnotationIntrospector
     /**
      * Test if an object should be introspected for some specific types of annotations
      * like PostConstruct/PreDestroy/MultiPart etc etc.
-     *
+     * <p>
      * According to servlet 4.0, these types of annotations should only be evaluated iff any
      * of the following are true:
      * <ol>
@@ -183,7 +199,7 @@ public class AnnotationIntrospector
 
         Class<?> clazz = o.getClass();
 
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             // Lock to ensure that only 1 thread can be introspecting, and that
             // thread must have fully finished generating the products of

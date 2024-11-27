@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.cdi;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;

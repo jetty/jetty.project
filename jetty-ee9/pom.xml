@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.16-SNAPSHOT</version>
+    <version>12.1.0-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.ee9</groupId>
   <artifactId>jetty-ee9</artifactId>
@@ -42,37 +42,34 @@
 
   <properties>
 
-    <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>2.0.0</jakarta.annotation.api.version>
-    <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
-    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>3.0.1</jakarta.enterprise.cdi.api.version>
-    <jakarta.inject.api.version>2.0.1.MR</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>2.0.1</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version>
-    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
-    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
+    <jakarta.activation.api.version>${ee9.jakarta.activation.api.version}</jakarta.activation.api.version>
+    <jakarta.annotation.api.version>${ee9.jakarta.annotation.api.version}</jakarta.annotation.api.version>
+    <jakarta.authentication.api.version>${ee9.jakarta.authentication.api.version}</jakarta.authentication.api.version>
+    <jakarta.el.api.version>${ee9.jakarta.el.api.version}</jakarta.el.api.version>
+    <jakarta.enterprise.cdi.api.version>${ee9.jakarta.enterprise.cdi.api.version}</jakarta.enterprise.cdi.api.version>
+    <jakarta.inject.api.version>${ee9.jakarta.inject.api.version}</jakarta.inject.api.version>
+    <jakarta.interceptor.api.version>${ee9.jakarta.interceptor.api.version}</jakarta.interceptor.api.version>
+    <jakarta.mail.api.version>${ee9.jakarta.mail.api.version}</jakarta.mail.api.version>
+    <jakarta.servlet.api.version>${ee9.jakarta.servlet.api.version}</jakarta.servlet.api.version>
+    <jakarta.servlet.jsp.api.version>${ee9.jakarta.servlet.jsp.api.version}</jakarta.servlet.jsp.api.version>
+    <jakarta.servlet.jsp.jstl.api.version>${ee9.jakarta.servlet.jsp.jstl.api.version}</jakarta.servlet.jsp.jstl.api.version>
+    <jakarta.servlet.jsp.jstl.impl.version>${ee9.jakarta.servlet.jsp.jstl.impl.version}</jakarta.servlet.jsp.jstl.impl.version>
+    <jakarta.transaction-api.version>${ee9.jakarta.transaction-api.version}</jakarta.transaction-api.version>
+    <jakarta.websocket.api.version>${ee9.jakarta.websocket.api.version}</jakarta.websocket.api.version>
     <!-- TODO: remove? -->
-    <jakarta.ws.rs.api.version>3.0.0</jakarta.ws.rs.api.version>
-    <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
-    <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
-
+    <jakarta.ws.rs.api.version>${ee9.jakarta.ws.rs.api.version}</jakarta.ws.rs.api.version>
+    <jakarta.xml.bind.api.version>${ee9.jakarta.xml.bind.api.version}</jakarta.xml.bind.api.version>
+    <jakarta.xml.bind.impl.version>${ee9.jakarta.xml.bind.impl.version}</jakarta.xml.bind.impl.version>
+    <jakarta.xml.jaxws.impl.version>${ee9.jakarta.xml.jaxws.impl.version}</jakarta.xml.jaxws.impl.version>
+    <jakarta.xml.ws.api.version>${ee9.jakarta.xml.ws.api.version}</jakarta.xml.ws.api.version>
     <!-- TODO: Remove these javax.* entries? -->
-    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
+    <javax.activation.impl.version>${ee9.javax.activation.impl.version}</javax.activation.impl.version>
+    <javax.mail.glassfish.version>${ee9.javax.mail.glassfish.version}</javax.mail.glassfish.version>
     <!-- FIXME we need a separate property for this one -->
-    <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
-
-    <jsp.impl.version>10.0.27</jsp.impl.version>
-
+    <jetty.servlet.api.version>${ee9.jetty.servlet.api.version}</jetty.servlet.api.version>
+    <jsp.impl.version>${ee9.jsp.impl.version}</jsp.impl.version>
     <sonar.skip>true</sonar.skip>
-    <weld.version>4.0.3.Final</weld.version>
+    <weld.version>${ee9.weld.version}</weld.version>
   </properties>
 
   <dependencyManagement>
@@ -172,6 +169,68 @@
         <artifactId>jakarta.xml.ws-api</artifactId>
         <version>${jakarta.xml.ws.api.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-async-rest-jar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-async-rest-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jaas-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
+        <version>${project.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.demos</groupId>
+        <artifactId>jetty-servlet5-demo-web-fragment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Jetty EE 9 Dependencies -->
       <dependency>
@@ -266,69 +325,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-async-rest-jar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-async-rest-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-container-initializer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-jaas-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-jndi-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-jsp-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-mock-resources</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
         <artifactId>jetty-ee9-demo-proxy-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
-        <version>${project.version}</version>
-        <type>war</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-web-fragment</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -498,8 +495,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of activation spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of activation spec -->
                         <groupId>jakarta.activation</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -509,8 +505,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of annotation spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of annotation spec -->
                         <groupId>jakarta.annotation</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -520,8 +515,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.x of authentication spec
-                             ee10 starts with version 3.x -->
+                        <!-- for ee9, we need to stay on 2.x of authentication spec -->
                         <groupId>jakarta.authentication</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -531,8 +525,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 4.x of el spec
-                             ee10 starts with version 5.x -->
+                        <!-- for ee9, we need to stay on 4.x of el spec -->
                         <groupId>jakarta.el</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -542,8 +535,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.x of cdi spec
-                             ee10 starts with version 4.x -->
+                        <!-- for ee9, we need to stay on 3.x of cdi spec -->
                         <groupId>jakarta.enterprise</groupId>
                         <artifactId>jakarta.enterprise.cdi-api</artifactId>
                         <ignoreVersions>
@@ -554,8 +546,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of interceptor spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of interceptor spec -->
                         <groupId>jakarta.interceptor</groupId>
                         <artifactId>jakarta.interceptor-api</artifactId>
                         <ignoreVersions>
@@ -566,8 +557,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of mail spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of mail spec -->
                         <groupId>jakarta.mail</groupId>
                         <artifactId>jakarta.mail-api</artifactId>
                         <ignoreVersions>
@@ -578,8 +568,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 5.x of servlet spec
-                             ee10 starts with version 6.x -->
+                        <!-- for ee9, we need to stay on 5.x of servlet spec -->
                         <groupId>jakarta.servlet</groupId>
                         <artifactId>jakarta.servlet-api</artifactId>
                         <ignoreVersions>
@@ -590,8 +579,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.0.x of jsp spec
-                             ee10 starts with version 3.1.x -->
+                        <!-- for ee9, we need to stay on 3.0.x of jsp spec -->
                         <groupId>jakarta.servlet</groupId>
                         <artifactId>jakarta.servlet.jsp-api</artifactId>
                         <ignoreVersions>
@@ -602,8 +590,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.x of jsp-jstl spec
-                             ee10 starts with version 3.x -->
+                        <!-- for ee9, we need to stay on 2.x of jsp-jstl spec -->
                         <groupId>jakarta.servlet.jsp.jstl</groupId>
                         <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
                         <ignoreVersions>
@@ -614,8 +601,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.x of jsp-jstl impl (glassfish)
-                             ee10 starts with version 3.x -->
+                        <!-- for ee9, we need to stay on 2.x of jsp-jstl impl (glassfish) -->
                         <groupId>org.glassfish.web</groupId>
                         <artifactId>jakarta.servlet.jsp.jstl</artifactId>
                         <ignoreVersions>
@@ -626,8 +612,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-jsp impl
-                             ee10 starts with version 10.1.x -->
+                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-jsp impl -->
                         <groupId>org.mortbay.jasper</groupId>
                         <artifactId>apache-jsp</artifactId>
                         <ignoreVersions>
@@ -638,8 +623,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl
-                             ee10 starts with version 10.1.x -->
+                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl -->
                         <groupId>org.mortbay.jasper</groupId>
                         <artifactId>apache-el</artifactId>
                         <ignoreVersions>
@@ -721,8 +705,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of activation spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of activation spec -->
                         <groupId>jakarta.activation</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -732,8 +715,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of annotation spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of annotation spec -->
                         <groupId>jakarta.annotation</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -743,8 +725,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.x of authentication spec
-                             ee10 starts with version 3.x -->
+                        <!-- for ee9, we need to stay on 2.x of authentication spec -->
                         <groupId>jakarta.authentication</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -754,8 +735,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 4.x of el spec
-                             ee10 starts with version 5.x -->
+                        <!-- for ee9, we need to stay on 4.x of el spec -->
                         <groupId>jakarta.el</groupId>
                         <ignoreVersions>
                           <ignoreVersion>
@@ -765,8 +745,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.x of cdi spec
-                             ee10 starts with version 4.x -->
+                        <!-- for ee9, we need to stay on 3.x of cdi spec -->
                         <groupId>jakarta.enterprise</groupId>
                         <artifactId>jakarta.enterprise.cdi-api</artifactId>
                         <ignoreVersions>
@@ -777,8 +756,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of interceptor spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of interceptor spec -->
                         <groupId>jakarta.interceptor</groupId>
                         <artifactId>jakarta.interceptor-api</artifactId>
                         <ignoreVersions>
@@ -789,8 +767,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of inject spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of inject spec -->
                         <groupId>jakarta.inject</groupId>
                         <artifactId>jakarta.inject-api</artifactId>
                         <ignoreVersions>
@@ -801,8 +778,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.0.x of mail spec
-                             ee10 starts with version 2.1.x -->
+                        <!-- for ee9, we need to stay on 2.0.x of mail spec -->
                         <groupId>jakarta.mail</groupId>
                         <artifactId>jakarta.mail-api</artifactId>
                         <ignoreVersions>
@@ -813,8 +789,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 5.x of servlet spec
-                             ee10 starts with version 6.x -->
+                        <!-- for ee9, we need to stay on 5.x of servlet spec -->
                         <groupId>jakarta.servlet</groupId>
                         <artifactId>jakarta.servlet-api</artifactId>
                         <ignoreVersions>
@@ -825,8 +800,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.0.x of jsp spec
-                             ee10 starts with version 3.1.x -->
+                        <!-- for ee9, we need to stay on 3.0.x of jsp spec -->
                         <groupId>jakarta.servlet</groupId>
                         <artifactId>jakarta.servlet.jsp-api</artifactId>
                         <ignoreVersions>
@@ -837,8 +811,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 2.x of jsp-jstl spec
-                             ee10 starts with version 3.x -->
+                        <!-- for ee9, we need to stay on 2.x of jsp-jstl spec -->
                         <groupId>jakarta.servlet.jsp.jstl</groupId>
                         <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
                         <ignoreVersions>
@@ -849,8 +822,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.0.x of ws.rs.api spec
-                             ee10 starts with version 3.1.x -->
+                        <!-- for ee9, we need to stay on 3.0.x of ws.rs.api spec -->
                         <groupId>jakarta.ws.rs</groupId>
                         <artifactId>jakarta.ws.rs-api</artifactId>
                         <ignoreVersions>
@@ -861,8 +833,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.0.x of xml.bind-api
-                             ee10 starts with version 4.0.x -->
+                        <!-- for ee9, we need to stay on 3.0.x of xml.bind-api -->
                         <groupId>jakarta.xml.bind</groupId>
                         <artifactId>jakarta.xml.bind-api</artifactId>
                         <ignoreVersions>
@@ -873,8 +844,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.0.x of xml.bind implementation
-                             ee10 starts with version 4.0.x -->
+                        <!-- for ee9, we need to stay on 3.0.x of xml.bind implementation -->
                         <groupId>org.glassfish.jaxb</groupId>
                         <artifactId>jaxb-runtime</artifactId>
                         <ignoreVersions>
@@ -885,8 +855,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.0.x of jaxws implementation
-                             ee10 starts with version 4.0.x -->
+                        <!-- for ee9, we need to stay on 3.0.x of jaxws implementation -->
                         <groupId>com.sun.xml.ws</groupId>
                         <artifactId>jaxws-rt</artifactId>
                         <ignoreVersions>
@@ -897,8 +866,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 3.0.x of xml.ws api
-                             ee10 starts with version 4.0.x -->
+                        <!-- for ee9, we need to stay on 3.0.x of xml.ws api -->
                         <groupId>jakarta.xml.ws</groupId>
                         <artifactId>jakarta.xml.ws-api</artifactId>
                         <ignoreVersions>
@@ -909,8 +877,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-jsp impl
-                             ee10 starts with version 10.1.x -->
+                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-jsp impl -->
                         <groupId>org.mortbay.jasper</groupId>
                         <artifactId>apache-jsp</artifactId>
                         <ignoreVersions>
@@ -921,8 +888,7 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl
-                             ee10 starts with version 10.1.x -->
+                        <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl -->
                         <groupId>org.mortbay.jasper</groupId>
                         <artifactId>apache-el</artifactId>
                         <ignoreVersions>

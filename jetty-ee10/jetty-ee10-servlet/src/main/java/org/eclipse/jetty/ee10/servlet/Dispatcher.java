@@ -753,12 +753,9 @@ public class Dispatcher implements RequestDispatcher
 
     private class ErrorRequest extends ParameterRequestWrapper
     {
-        private final HttpServletRequest _httpServletRequest;
-
         public ErrorRequest(HttpServletRequest httpRequest)
         {
             super(httpRequest);
-            _httpServletRequest = httpRequest;
         }
 
         @Override

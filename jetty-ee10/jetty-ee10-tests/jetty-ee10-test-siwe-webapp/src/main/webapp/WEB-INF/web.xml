@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+  <display-name>SIWE Authentication Webapp</display-name>
+
+  <login-config>
+    <auth-method>SIWE</auth-method>
+    <realm-name>myRealm</realm-name>
+  </login-config>
+
+  <context-param>
+    <param-name>org.eclipse.jetty.security.siwe.login_path</param-name>
+    <param-value>/login.html</param-value>
+  </context-param>
+  <context-param>
+    <param-name>org.eclipse.jetty.security.siwe.error_path</param-name>
+    <param-value>/error?foobar=3</param-value>
+  </context-param>
+  <context-param>
+    <param-name>org.eclipse.jetty.security.siwe.chainIds</param-name>
+    <param-value>2,3,4,1,5,7</param-value>
+  </context-param>
+
+  <security-role>
+    <role-name>admin</role-name>
+  </security-role>
+  <security-role>
+    <role-name>forbidden</role-name>
+  </security-role>
+  <security-role>
+    <role-name>**</role-name>
+  </security-role>
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>User Pages</web-resource-name>
+      <url-pattern>/login</url-pattern>
+      <url-pattern>/expiry</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>**</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Admin Page</web-resource-name>
+      <url-pattern>/admin</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>admin</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Forbidden Page</web-resource-name>
+      <url-pattern>/forbidden</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>forbidden</role-name>
+    </auth-constraint>
+  </security-constraint>
+</web-app>
+
+

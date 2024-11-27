@@ -123,7 +123,7 @@ public class ServerHttpCookieTest
 
             // bad characters
             Arguments.of(RFC6265_STRICT, "Cookie: name=va\\ue", 400, null, List.of("400", "Bad Cookie value").toArray(new String[0])),
-            Arguments.of(RFC6265_STRICT, "Cookie: name=\"value\"", 200, "Version=", List.of("[name=value]").toArray(new String[0])),
+            Arguments.of(RFC6265_STRICT, "Cookie: name=\"value\"", 200, "Version=", List.of("[name=\"value\"]").toArray(new String[0])),
             Arguments.of(RFC6265_STRICT, "Cookie: name=\"value;other=extra\"", 400, null, List.of("400", "Bad Cookie quoted value").toArray(new String[0])),
             Arguments.of(RFC6265, "Cookie: name=\"value;other=extra\"", 200, "name=value", null),
             Arguments.of(RFC6265_LEGACY, "Cookie: name=\"value;other=extra\"", 200, null, List.of("[name=value;other=extra]").toArray(new String[0])),
@@ -167,13 +167,12 @@ public class ServerHttpCookieTest
             Arguments.of(RFC6265_LEGACY, "name=value", "name=value"),
             Arguments.of(RFC2965, "name=value", "name=value"),
             Arguments.of(RFC2965_LEGACY, "name=value", "name=value"),
-
+            Arguments.of(CookieCompliance.from("0"), "name=value;$version=1;$path=/path;$domain=domain", "name=value; Path=/path; Domain=domain"),
             Arguments.of(RFC6265_STRICT, "name=value;$version=1;$path=/path;$domain=domain", "name=value; Path=/path; Domain=domain"),
             Arguments.of(RFC6265, "name=value;$version=1;$path=/path;$domain=domain", "name=value; Path=/path; Domain=domain"),
             Arguments.of(RFC6265_LEGACY, "name=value;$version=1;$path=/path;$domain=domain", "name=value; Path=/path; Domain=domain"),
             Arguments.of(RFC2965, "name=value;$version=1;$path=/path;$domain=domain", "name=value;Version=1;Domain=domain;Path=/path"),
             Arguments.of(RFC2965_LEGACY, "name=value;$version=1;$path=/path;$domain=domain", "name=value;Version=1;Domain=domain;Path=/path"),
-
             Arguments.of(RFC6265, "name=value", "name=value")
             );
     }

@@ -1111,6 +1111,8 @@ This is an example of a `QoSHandler` subclass where you can implement a custom p
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=advancedQoSHandler]
 ----
 
+Note that `QoSHandler` limits the number of _active_ concurrent requests for the whole server; if you want to apply limits for each remote client, see <<handler-use-thread-limit,`ThreadLimitHandler`>> and <<handler-use-dos,`DoSHandler`>>.
+
 [[handler-use-secured]]
 ==== SecuredRedirectHandler -- Redirect from HTTP to HTTPS
 
@@ -1240,6 +1242,44 @@ In the example above, `ContextHandlerCollection` will try to match a request to 
 NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong requests from clients.
 Jetty will send an HTTP `404` response anyway if `DefaultHandler` has not been set.
 
+[[handler-use-eager]]
+==== EagerContentHandler
+
+`EagerContentHandler` reads eagerly the HTTP request content, and invokes the next `Handler` in the `Handler` tree when the request content has been read.
+
+`EagerContentHandler` should be installed when web applications use blocking I/O to read the request content, which is the typical case for Servlet or RESTful (JAX-RS) web applications.
+
+Because the request content is read eagerly and asynchronously, the web application will never (or rarely) block while reading the request content.
+In this way, the application obtains the benefits of asynchronous I/O without forcing web application developers to use more complicated asynchronous I/O APIs.
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── (GzipHandler) // optional
+    └── EagerContentHandler
+        └── ContextHandler /app
+            └── AppHandler
+----
+
+`EagerContentHandler` should be installed in the `Handler` tree _after_ other ``Handler``s that may modify or transform the request content, like for example the `GzipHandler`.
+
+`EagerContentHandler` eagerly reads request content in the following cases:
+
+* Form request content.
+* MultiPart request content.
+* Any other type of request content.
+
+For Form request content, `EagerContentHandler` reads the whole request content, parses it into a `Fields` object, and then invokes the next `Handler`.
+This allows web applications that use blocking API calls such as `HttpServletRequest.getParameterMap()` to avoid blocking, since they can directly use the already created `Fields` object.
+
+Similarly, for MultiPart request content, `EagerContentHandler` reads the whole request content, parses it into `MultiPartFormData.Parts`, and then invokes the next `Handler`.
+This allows web applications that use blocking API calls such as `HttpServletRequest.getParts()` to avoid blocking, since the can directly use the already created `MultiPartFormData.Parts` object.
+
+For other types of request content, `EagerContentHandler` reads and retains request content bytes up to a configurable amount, and then invokes the next `Handler`, without any further processing of the request content bytes.
+This allows web applications that use blocking API calls such as `HttpServletRequest.getInputStream()` to avoid blocking in most cases (if the request is smaller than what has been configured in `EagerContentHandler`).
+
 [[handler-use-thread-limit]]
 ==== ThreadLimitHandler
 
@@ -1250,9 +1290,75 @@ Jetty will send an HTTP `404` response anyway if `DefaultHandler` has not been s
 The remote IP address can be derived from the network, or from the `Forwarded` (or the now obsolete `X-Forwarded-For`) HTTP header.
 The `Forwarded` header is typically present in requests that have been forwarded to Jetty by a reverse proxy such as HAProxy, Nginx, Apache, etc.
 
-// TODO: mention the DoSHandler in Jetty 12.1.x.
-
 Note that `ThreadLimitHandler` is different from xref:handler-use-qos[`QoSHandler`] in that it limits the number of concurrent requests per remote IP address, while `QoSHandler` limits the total number of concurrent requests.
+
+Note also that `ThreadLimitHandler` is different from xref:handler-use-dos[`DoSHandler`] in that it limits the number of concurrent requests per remote IP address, while `DoSHandler` limits the request rate per remote IP address.
+
+[[handler-use-dos]]
+==== DoSHandler
+
+`DoSHandler` tracks remote clients (in a pluggable way, by default using the remote IP address), and limits the rate of requests for each remote client, to protect against denial-of-service attacks.
+
+`DoSHandler` extends xref:handler-use-conditional[`ConditionalHandler`], so you may be able to restrict what `DoSHandler` does to only requests that match the conditions (for example, only to `POST` requests, or only for certain request URIs, etc.)
+
+`DoSHandler` allows you to specify how to identify a remote client (by default using the remote IP address, but this is configurable), and the algorithm to use to calculate the rate of requests for each remote client (by default the link:https://en.wikipedia.org/wiki/Leaky_bucket[Leaky Bucket Algorithm]).
+
+If a remote client exceeds the configured request rate, `DoSHandler` forwards the request handling to a configurable `Request.Handler` that allows you to decide how to handle the request.
+`DosHandler` provides two such ``Request.Handler``s out of the box:
+
+* `StatusRejectHandler` (the default) that responds with a configurable HTTP status code (by default `429 Too Many Requests`)
+* `DelayedRejectHandler` that delays the request handling by a configurable timeout, and then forwards to request handling to another `Request.Handler` (by default `StatusRejectHandler`).
+Delaying the request handling is of little cost for the server (since the request is delayed asynchronously), but the attacker would not know whether the request it sent was processed or rejected until the timeout elapses.
+Hopefully, the delay forces the attacker to use more resources, and/or reduce the request rate, therefore reducing the attack impact on the server.
+
+[CAUTION]
+====
+While `DoSHandler` may be a good start for simple setups, denial-of-service protection is typically best performed _outside_ the server itself, for example in load balancers or other data center network infrastructure components.
+====
+
+Here is a simple example that shows how to use `DoSHandler`:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=dosHandler]
+----
+
+For other denial-of-service protections, see also <<handler-use-qos,`QoSHandler`>> and <<handler-use-thread-limit,`ThreadLimitHandler`>>.
+
+[[handler-use-graceful]]
+==== GracefulHandler
+
+`GracefulHandler` allows to stop the Jetty server in a graceful way, by rejecting new requests but allowing existing requests to complete within a configurable timeout.
+
+In this way, existing requests can be completed normally rather than with failures caused by the fact that the server is stopping; for example, stopping the server causes all TCP connections to be closed, so trying to write a response will result in a failure.
+
+In order to stop Jetty gracefully, you need the following:
+
+* Install the `GracefulHandler`, typically just after the `Server` at the root of the `Handler` tree.
+* Configure `Server.stopTimeout` to a positive value.
+
+When the `Server` component is stopped, it will check the `Server.stopTimeout`, and if positive, it will initiate a graceful shutdown by notifying all components that implement the `Graceful` interface that the shutdown has been initiated.
+
+`GracefulHandler` implements `Graceful`, so it will start rejecting new requests with status code `503 Service Available`, but will allow existing requests to complete for a period of time up to `Server.stopTimeout`.
+
+When all existing requests have completed, the `Server` stops all ``Connector``s, closes all connections, and finally stops all the components.
+
+This is how you configure and use `GracefulHandler`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=gracefulHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+  └── GracefulHandler
+      └── ContextHandler
+          └── MyWebApp
+----
 
 [[handler-use-servlet]]
 === Servlet API Handlers
@@ -1340,32 +1446,34 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 ----
 
 [[handler-use-webapp-context-class-loading]]
-.WebAppContext Class Loading
+==== WebAppContext Class Loading
 
-The Servlet specification requires that a web application class loader must load the web application classes from `WEB-INF/classes` and `WEB_INF/lib`.
-The web application class loader is special because it behaves differently from typical class loaders: where typical class loaders first delegate to their parent class loader and then try to find the class locally, the web application class loader first tries to find the class locally and then delegates to the parent class loader.
-The typical class loading model, parent-first, is _inverted_ for web application class loaders, as they use a child-first model.
+The Servlet specification requires that a web application class loader must load classes found in the web application `WEB-INF/classes` and `WEB_INF/lib` in preference to using the parent class loader.
+This is significantly different to typical java class loaders where loaders first delegate to their parent class loader.
+For Servlet specification compliant web applications, the typical parent-first class loading model is _inverted_.
 
-Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _server classes_.
+Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _hidden classes_ (previously called _server classes_).
 Web applications receive the HTTP request object as an instance of the `jakarta.servlet.http.HttpServletRequest` interface, and cannot downcast it to the Jetty specific implementation of that interface to access Jetty specific features -- this ensures maximum web application portability across Servlet container implementations.
 
-Lastly, the Servlet specification requires that other classes, also called _system classes_, such as `jakarta.servlet.http.HttpServletRequest` or JDK classes such as `java.lang.String` or `java.sql.Connection` cannot be modified by web applications by putting, for example, modified versions of those classes in `WEB-INF/classes` so that they are loaded first by the web application class loader (instead of the class-path class loader where they are normally loaded from).
+Lastly, the Servlet specification requires that specific classes are _protected classes_ (previously called _system classes_), in that they cannot be replaced by the web application loader and normal class loader priority applies.  These are classes such as `jakarta.servlet.http.HttpServletRequest`; JDK classes such as `java.lang.String` or `java.sql.Connection`.
 
-`WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _system class_ or a _server class_ and acts according to the Servlet specification.
+`WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _protected class_ or a _hidden class_ by delegating to the `ClassVisibilityChecker` of the context.
 
-When `WebAppClassLoader` is asked to load a class, it first tries to find the class locally (since it must use the inverted child-first model); if the class is found, and it is not a _system class_, the class is loaded; otherwise the class is not found locally.
+When `WebAppClassLoader` is asked to load a class, it first tries to find the class locally (since it must use the inverted child-first model); if the class is found, and it is not a _protected class_, the class is loaded; otherwise the class is not found locally.
 If the class is not found locally, the parent class loader is asked to load the class; the parent class loader uses the standard parent-first model, so it delegates the class loading to its parent, and so on.
-If the class is found, and it is not a _server class_, the class is loaded; otherwise the class is not found and a `ClassNotFoundException` is thrown.
+If the class is found, and it is not a _hidden class_, the class is loaded; otherwise the class is not found and a `ClassNotFoundException` is thrown.
 
-Unfortunately, the Servlet specification does not define exactly which classes are _system classes_ and which classes are _server classes_.
-However, Jetty picks good defaults and allows server applications to customize _system classes_ and _server classes_ in `WebAppContext`.
+Unfortunately, the Servlet specification does not define exactly which classes are _hidden classes_ and which classes are _protected classes_.
+However, Jetty picks good defaults and allows server applications to customize _hidden classes_ and _protected classes_ in `WebAppContext`.
 
-// TODO: add a section on parentLoaderPriority.
-// TODO: add a code example about how to set system/server classes.
-// TODO: add a code example about how to configure extra classpath
+Below you can find an example of how to set up additional classloading configuration, including hidden and protected classes in code:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=webAppContextClassLoader]
+----
+
 // TODO: add a section on ClassLoading (see old docs)
-
-// TODO: add a section on Configuration (system/server classes)
 // TODO: add a section about how to setup JSP support
 
 [[handler-use-default-servlet]]

@@ -28,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AbstractHolder
- *
  * Base class for all servlet-related classes that may be lazily instantiated  (eg servlet, filter,
  * listener), and/or require metadata to be held regarding their origin
  * (web.xml, annotation, programmatic api etc).
@@ -86,7 +84,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         //if no class already loaded and no classname, make permanently unavailable
         if (_class == null && (_className == null || _className.isEmpty()))
-            throw new UnavailableException("No class in holder " + toString());
+            throw new UnavailableException("No class in holder " + this);
 
         //try to load class
         if (_class == null)
@@ -100,7 +98,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             catch (Exception e)
             {
                 LOG.warn("Unable to load class {}", _className, e);
-                throw new UnavailableException("Class loading error for holder " + toString());
+                throw new UnavailableException("Class loading error for holder " + this);
             }
         }
     }
@@ -173,19 +171,23 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     protected void setInstance(T instance)
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             _instance = instance;
             if (instance == null)
                 setHeldClass(null);
             else
-                setHeldClass((Class<T>)instance.getClass());
+            {
+                @SuppressWarnings("unchecked")
+                Class<? extends T> clazz = (Class<? extends T>)instance.getClass();
+                setHeldClass(clazz);
+            }
         }
     }
 
     protected T getInstance()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _instance;
         }
@@ -193,7 +195,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     protected T createInstance() throws Exception
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             ServletContext ctx = getServletContext();
             if (ctx == null)
@@ -241,7 +243,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
      */
     public boolean isInstance()
     {
-        try (AutoLock l = lock())
+        try (AutoLock ignored = lock())
         {
             return _instance != null;
         }

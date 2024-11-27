@@ -70,7 +70,7 @@ public class AnnotationDecorator implements Decorator
     }
 
     @Override
-    public Object decorate(Object o)
+    public <T> T decorate(T o)
     {
         introspect(o, DecoratedObjectFactory.getAssociatedInfo());
         return o;

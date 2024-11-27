@@ -34,7 +34,6 @@ public interface ContentProducer
     /**
      * Fail all content currently available in this {@link ContentProducer} instance
      * as well as in the underlying {@link Content.Source}.
-     *
      * This call is always non-blocking.
      * Doesn't change state.
      * @return true if EOF was reached.
@@ -50,7 +49,6 @@ public interface ContentProducer
 
     /**
      * Get the byte count produced by the underlying {@link Content.Source}.
-     *
      * This call is always non-blocking.
      * Doesn't change state.
      * @return the byte count produced by the underlying {@link Content.Source}.
@@ -60,7 +58,6 @@ public interface ContentProducer
     /**
      * Get the byte count that can immediately be read from this
      * {@link ContentProducer} instance or the underlying {@link Content.Source}.
-     *
      * This call is always non-blocking.
      * Doesn't change state.
      * @return the available byte count.
@@ -70,7 +67,6 @@ public interface ContentProducer
     /**
      * Check if this {@link ContentProducer} instance contains some
      * content chunk without querying the underlying {@link Content.Source}.
-     *
      * This call is always non-blocking.
      * Doesn't change state.
      * Doesn't query the HttpChannel.

@@ -34,12 +34,12 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
     }
 
     @Override
-    public void doHandle(Class clazz)
+    public void doHandle(Class<?> clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
 
-        MultipartConfig multi = (MultipartConfig)clazz.getAnnotation(MultipartConfig.class);
+        MultipartConfig multi = clazz.getAnnotation(MultipartConfig.class);
         if (multi == null)
             return;
 

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.0.16-SNAPSHOT</version>
+    <version>12.1.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-server</artifactId>
   <name>Core :: Server</name>
@@ -88,6 +88,9 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <systemPropertyVariables>
+            <STOP.EXIT>FALSE</STOP.EXIT>
+          </systemPropertyVariables>
           <argLine>@{argLine} ${jetty.surefire.argLine}
             --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging
             --add-reads org.eclipse.jetty.server=java.xml</argLine>

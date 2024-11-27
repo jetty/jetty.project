@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URL;
 
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
     {
         //parse webdefault-ee10.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
-        if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
+        if (StringUtil.isNotBlank(defaultsDescriptor))
         {
             Resource dftResource = context.getResourceFactory().newClassLoaderResource(defaultsDescriptor);
             if (Resources.missing(dftResource))
@@ -78,7 +79,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         //parse but don't process override-web.xml
         for (String overrideDescriptor : context.getOverrideDescriptors())
         {
-            if (overrideDescriptor != null && overrideDescriptor.length() > 0)
+            if (StringUtil.isNotBlank(overrideDescriptor))
             {
                 Resource orideResource = context.getResourceFactory().newClassLoaderResource(overrideDescriptor);
                 if (Resources.missing(orideResource))

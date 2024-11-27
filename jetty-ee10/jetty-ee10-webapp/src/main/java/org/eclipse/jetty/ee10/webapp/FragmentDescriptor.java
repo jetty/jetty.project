@@ -22,8 +22,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
- * Fragment
- *
  * A web-fragment.xml descriptor.
  */
 public class FragmentDescriptor extends WebDescriptor
@@ -38,8 +36,8 @@ public class FragmentDescriptor extends WebDescriptor
 
     protected OtherType _otherType = OtherType.None;
 
-    protected List<String> _befores = new ArrayList<String>();
-    protected List<String> _afters = new ArrayList<String>();
+    protected List<String> _befores = new ArrayList<>();
+    protected List<String> _afters = new ArrayList<>();
     protected String _name;
 
     public FragmentDescriptor(Resource xml)
@@ -68,7 +66,7 @@ public class FragmentDescriptor extends WebDescriptor
         if (nameNode != null)
         {
             String tmp = nameNode.toString(false, true);
-            if (tmp != null && tmp.length() > 0)
+            if (tmp != null && !tmp.isEmpty())
                 _name = tmp;
         }
     }
@@ -97,7 +95,7 @@ public class FragmentDescriptor extends WebDescriptor
             return;
 
         Iterator<?> iter = before.iterator();
-        XmlParser.Node node = null;
+        XmlParser.Node node;
         while (iter.hasNext())
         {
             Object o = iter.next();
@@ -124,7 +122,7 @@ public class FragmentDescriptor extends WebDescriptor
             return;
 
         Iterator<?> iter = after.iterator();
-        XmlParser.Node node = null;
+        XmlParser.Node node;
         while (iter.hasNext())
         {
             Object o = iter.next();

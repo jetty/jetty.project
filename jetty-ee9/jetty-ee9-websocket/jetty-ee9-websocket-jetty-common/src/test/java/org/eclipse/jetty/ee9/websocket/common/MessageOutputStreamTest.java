@@ -49,10 +49,10 @@ public class MessageOutputStreamTest
         bufferPool = new ArrayByteBufferPool()
         {
             @Override
-            public RetainableByteBuffer acquire(int size, boolean direct)
+            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
             {
                 leaks.incrementAndGet();
-                return new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
                 {
                     @Override
                     public boolean release()

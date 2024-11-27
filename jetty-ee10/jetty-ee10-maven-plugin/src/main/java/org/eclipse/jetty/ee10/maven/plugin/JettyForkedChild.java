@@ -13,24 +13,8 @@
 
 package org.eclipse.jetty.ee10.maven.plugin;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
-
 import org.eclipse.jetty.maven.AbstractForkedChild;
 import org.eclipse.jetty.maven.AbstractJettyEmbedder;
-import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

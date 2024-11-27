@@ -52,7 +52,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -103,12 +102,6 @@ public class UnixDomainTest
                 SocketAddress remote = endPoint.getRemoteSocketAddress();
                 assertThat(remote, Matchers.instanceOf(UnixDomainSocketAddress.class));
 
-                // Verify that other address methods don't throw.
-                local = assertDoesNotThrow(endPoint::getLocalAddress);
-                assertNull(local);
-                remote = assertDoesNotThrow(endPoint::getRemoteAddress);
-                assertNull(remote);
-
                 assertDoesNotThrow(endPoint::toString);
 
                 callback.succeeded();
@@ -116,12 +109,12 @@ public class UnixDomainTest
             }
         });
 
-        // Use the deprecated APIs for backwards compatibility testing.
-        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+        ClientConnector clientConnector = new ClientConnector();
         try (HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector)))
         {
             httpClient.start();
             ContentResponse response = httpClient.newRequest(uri)
+                .transport(new Transport.TCPUnix(unixDomainPath))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 

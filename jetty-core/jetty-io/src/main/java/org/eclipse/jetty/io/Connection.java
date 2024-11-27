@@ -141,6 +141,16 @@ public interface Connection extends Closeable
     }
 
     /**
+     * <p>Start a tunnel over the current connection without replacing the connection.</p>
+     * <p>This can be used for upgrade within a connection, but it is not really an upgrade for this connection
+     * as the connection remains and just tunnels data to/from its endpoint.</p>
+     */
+    interface Tunnel
+    {
+        void startTunnel();
+    }
+
+    /**
      * <p>A Listener for connection events.</p>
      * <p>Listeners can be added to a {@link Connection} to get open and close events.
      * The AbstractConnectionFactory implements a pattern where objects implement

@@ -436,7 +436,9 @@ public class HttpGenerator
 
             case COMPLETING_1XX:
             {
+                Boolean persistent = _persistent;
                 reset();
+                _persistent = persistent;
                 return Result.DONE;
             }
 
@@ -459,10 +461,16 @@ public class HttpGenerator
         }
     }
 
-    public void servletUpgrade()
+    public void startTunnel()
     {
         _noContentResponse = false;
         _state = State.COMMITTED;
+    }
+
+    @Deprecated(since = "12.1.0", forRemoval = true)
+    public void servletUpgrade()
+    {
+        startTunnel();
     }
 
     private void prepareChunk(ByteBuffer chunk, int remaining)

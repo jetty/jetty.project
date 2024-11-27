@@ -54,7 +54,7 @@ The following command line enables _hot_ deployment by specifying the `jetty.dep
 $ java -jar $JETTY_HOME/start.jar jetty.deploy.scanInterval=1
 ----
 
-To make _hot_ deployment persistent, you need to edit the appropriate `<env>-deploy` module configuration file, `$JETTY_BASE/start.d/<env>-deploy.ini` (eg: `ee10-deploy.ini`), uncomment the module property `jetty.deploy.scanInterval` and change the value to `1` second (or greater):
+To make _hot_ deployment persistent, you need to edit the appropriate `<env>-deploy` module configuration file, `$JETTY_BASE/start.d/<env>-deploy.ini` (eg: `ee11-deploy.ini`), uncomment the module property `jetty.deploy.scanInterval` and change the value to `1` second (or greater):
 
 .<env>-deploy.ini
 [source,subs=+quotes]

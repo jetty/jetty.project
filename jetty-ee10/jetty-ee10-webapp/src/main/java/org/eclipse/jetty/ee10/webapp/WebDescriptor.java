@@ -37,7 +37,7 @@ public class WebDescriptor extends Descriptor
     private static final Logger LOG = LoggerFactory.getLogger(WebDescriptor.class);
 
     public static XmlParser __nonValidatingStaticParser = newParser(false);
-    protected MetaData.Complete _metaDataComplete;
+    protected Boolean _metaDataComplete;
     protected int _majorVersion = 4; //default to container version
     protected int _minorVersion = 0;
     protected ArrayList<String> _classNames = new ArrayList<>();
@@ -55,7 +55,7 @@ public class WebDescriptor extends Descriptor
      */
     public static boolean isMetaDataComplete(WebDescriptor d)
     {
-        return (d != null && d.getMetaDataComplete() == MetaData.Complete.True);
+        return (d != null && d.getMetaDataComplete() == Boolean.TRUE);
     }
 
     /**
@@ -118,7 +118,7 @@ public class WebDescriptor extends Descriptor
         processDistributable();
     }
 
-    public MetaData.Complete getMetaDataComplete()
+    public Boolean getMetaDataComplete()
     {
         return _metaDataComplete;
     }
@@ -158,14 +158,14 @@ public class WebDescriptor extends Descriptor
         }
 
         if (_majorVersion <= 2 && _minorVersion < 5)
-            _metaDataComplete = MetaData.Complete.True; // does not apply before 2.5
+            _metaDataComplete = true; // does not apply before 2.5
         else
         {
-            String s = (String)_root.getAttribute("metadata-complete");
+            String s = _root.getAttribute("metadata-complete");
             if (s == null)
-                _metaDataComplete = MetaData.Complete.NotSet;
+                _metaDataComplete = null;
             else
-                _metaDataComplete = Boolean.valueOf(s).booleanValue() ? MetaData.Complete.True : MetaData.Complete.False;
+                _metaDataComplete = Boolean.valueOf(s);
         }
 
         if (LOG.isDebugEnabled())
@@ -184,7 +184,7 @@ public class WebDescriptor extends Descriptor
         // _processor.setOrdering(new AbsoluteOrdering());
 
         Iterator<Object> iter = ordering.iterator();
-        XmlParser.Node node = null;
+        XmlParser.Node node;
         while (iter.hasNext())
         {
             Object o = iter.next();

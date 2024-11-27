@@ -6,11 +6,8 @@ pipeline {
   options {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
-    buildDiscarder logRotator( numToKeepStr: '60' )
+    buildDiscarder logRotator( numToKeepStr: '40' )
     disableRestartFromStage()
-  }
-  environment {
-    LAUNCHABLE_TOKEN = credentials('launchable-token')
   }
   stages {
     stage("Parallel Stage") {
@@ -18,7 +15,7 @@ pipeline {
         stage("Build / Test - JDK21") {
           agent { node { label 'linux' } }
           steps {
-            timeout( time: 180, unit: 'MINUTES' ) {
+            timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
@@ -31,7 +28,7 @@ pipeline {
         stage("Build / Test - JDK23") {
           agent { node { label 'linux' } }
           steps {
-            timeout( time: 180, unit: 'MINUTES' ) {
+            timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk23", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk23", name: "Static Analysis jdk23", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
@@ -42,7 +39,7 @@ pipeline {
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
-            timeout( time: 180, unit: 'MINUTES' ) {
+            timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk17", "clean install -Perrorprone", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
@@ -76,7 +73,7 @@ pipeline {
 def slackNotif() {
   script {
     try {
-      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' ) {
+      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' || env.BRANCH_NAME == 'jetty-12.1.x' ) {
         //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
         // by ${BUILD_USER}
         COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
@@ -114,7 +111,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           buildCache = useBuildCache()
           if (buildCache) {
             echo "Using build cache"
-            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred "
+            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred  "
           } else {
             // when not using cache
             echo "Not using build cache"
@@ -125,8 +122,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
-          runLaunchable ("verify")
-          runLaunchable ("record build --name jetty-12.0.x")
           dashProfile = ""
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
@@ -140,9 +135,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     }
     finally
     {
-      junit testDataPublishers: [[$class: 'JUnitFlakyTestDataPublisher']], testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
-      echo "Launchable record tests"
-      runLaunchable ("record tests --build jetty-12.0.x maven '**/target/surefire-reports/**/*.xml' '**/target/invoker-reports/TEST*.xml'")
+      junit testResults: '**/target/surefire-reports/**/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
     }
   }
 }
@@ -155,7 +148,7 @@ def useBuildCache() {
   if (env.BRANCH_NAME ==~ /PR-\d+/) {
     labelNoBuildCache = pullRequest.labels.contains("build-no-cache") || pullRequest.labels.contains("dependencies")
   }
-  def noBuildCache = (env.BRANCH_NAME == 'jetty-12.0.x') || labelNoBuildCache;
+  def noBuildCache = (env.BRANCH_NAME == 'jetty-12.1.x') || labelNoBuildCache;
   return !noBuildCache;
   // want to skip build cache
   // return false
@@ -178,25 +171,13 @@ def saveHome() {
 def websiteBuild() {
   script {
     try {
-      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x') {
+      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' || env.BRANCH_NAME == 'jetty-12.1.x') {
         build(job: 'website/jetty.website/main', propagate: false, wait: false)
       }
     } catch (Exception e) {
       e.printStackTrace()
       echo "skip website build triggering: " + e.getMessage()
     }
-  }
-}
-/**
- * run launchable with args and ignore any errors
- * @param args
- */
-def runLaunchable(args) {
-  try {
-    sh "launchable $args"
-  } catch (Exception e) {
-    e.printStackTrace()
-    echo "skip failure running Launchable: " + e.getMessage()
   }
 }
 

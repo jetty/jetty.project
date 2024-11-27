@@ -130,7 +130,6 @@ public class RequestTest
         _server = new Server();
         _context = new ContextHandler(_server);
         HttpConnectionFactory http = new HttpConnectionFactory();
-        http.setRecordHttpComplianceViolations(true);
         http.setInputBufferSize(1024);
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);

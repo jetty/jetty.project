@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.AnnotatedElement;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -91,6 +94,7 @@ public class AbstractTest
     protected ServerQuicConfiguration serverQuicConfig;
     protected Server server;
     protected AbstractConnector connector;
+    protected ClientConnector clientConnector;
     protected HttpClient client;
     protected ArrayByteBufferPool.Tracking serverBufferPool;
     protected ArrayByteBufferPool.Tracking clientBufferPool;
@@ -127,16 +131,18 @@ public class AbstractTest
     @AfterEach
     public void dispose(TestInfo testInfo) throws Exception
     {
+        // Stop the client so that all connections are closed and any saved buffers are released
+        LifeCycle.stop(client);
         try
         {
             if (serverBufferPool != null && !isLeakTrackingDisabled(testInfo, "server"))
-                assertNoLeaks(serverBufferPool, testInfo, "server-", "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
+                assertNoLeaks(serverBufferPool, testInfo, "server-", "Server Leaks: ");
             if (clientBufferPool != null && !isLeakTrackingDisabled(testInfo, "client"))
-                assertNoLeaks(clientBufferPool, testInfo, "client-", "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
+                assertNoLeaks(clientBufferPool, testInfo, "client-", "Client Leaks: ");
         }
         finally
         {
-            stop();
+            LifeCycle.stop(server);
         }
     }
 
@@ -366,32 +372,28 @@ public class AbstractTest
 
     protected HttpClientTransport newHttpClientTransport(Transport transport) throws Exception
     {
+        clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
         return switch (transport)
         {
             case HTTP, HTTPS ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 yield new HttpClientTransportOverHTTP(clientConnector);
             }
             case H2C, H2 ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
             case H3 ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
                 SslContextFactory.Client sslClient = newSslContextFactoryClient();
                 HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslClient, null), clientConnector);
                 yield new HttpClientTransportOverHTTP3(http3Client);
             }
-            case FCGI -> new HttpClientTransportOverFCGI(1, "");
+            case FCGI -> new HttpClientTransportOverFCGI(clientConnector, "");
         };
     }
 
@@ -432,6 +434,16 @@ public class AbstractTest
         {
             if (connector instanceof QuicServerConnector)
                 ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxRequestsPerConnection);
+        }
+    }
+
+    public static int freePort() throws IOException
+    {
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.setReuseAddress(true);
+            server.bind(new InetSocketAddress("localhost", 0));
+            return server.getLocalPort();
         }
     }
 

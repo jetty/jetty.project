@@ -33,8 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class GzipModuleTests extends AbstractJettyHomeTest
 {
     @ParameterizedTest
-    //@ValueSource(strings = {"ee9", "ee10"})
-    @ValueSource(strings = {"ee10"})
+    //@ValueSource(strings = {"ee9", "ee10", "ee11"})
+    @ValueSource(strings = {"ee11"})
     public void testGzipDefault(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -59,7 +59,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
                 "jetty.http.port=" + httpPort
             };
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion);
             distribution.installWar(war, "demo");
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -76,7 +76,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testGzipDefaultExcludedMimeType(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -101,7 +101,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
                 "jetty.http.port=" + httpPort
             };
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion);
             distribution.installWar(war, "demo");
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -119,7 +119,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee9", "ee10"})
+    @ValueSource(strings = {"ee9", "ee10", "ee11"})
     public void testGzipAddWebappSpecificExcludeMimeType(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -145,7 +145,7 @@ public class GzipModuleTests extends AbstractJettyHomeTest
                 "jetty.gzip.excludedMimeTypeList=image/vnd.microsoft.icon"
             };
 
-            Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-simple-webapp:war:" + jettyVersion);
             distribution.installWar(war, "demo");
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))

@@ -1520,9 +1520,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
         try
         {
-            // addPath with accept non-canonical paths that don't go above the root,
-            // but will treat them as aliases. So unless allowed by an AliasChecker
-            // they will be rejected below.
             return baseResource.resolve(pathInContext);
         }
         catch (Exception e)
@@ -1913,10 +1910,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             if (path.length() == 0)
@@ -1960,10 +1957,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             Resource resource = ContextHandler.this.getResource(path);
@@ -1996,10 +1993,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
             // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             return ContextHandler.this.getResourcePaths(path);
@@ -2468,7 +2465,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         private ManagedSession _managedSession;
         private List<ManagedSession> _managedSessions;
 
-        AbstractSessionManager.RequestedSession _requestedSession;
+        AbstractSessionManager.RequestedSession _requestedSession = AbstractSessionManager.RequestedSession.NO_REQUESTED_SESSION;
 
         protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
                                      ScopedContext context,
@@ -2568,7 +2565,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
          */
         public void setRequestedSession(AbstractSessionManager.RequestedSession requestedSession)
         {
-            _requestedSession = requestedSession;
+            _requestedSession = requestedSession == null ? AbstractSessionManager.RequestedSession.NO_REQUESTED_SESSION : requestedSession;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (AbstractSessionManager.RequestedSession.class.getName().equals(name))
+                return _requestedSession;
+            return super.getAttribute(name);
         }
 
         /**
@@ -2655,7 +2660,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             if (_sessionManager == null)
                 throw new IllegalStateException("No SessionManager");
 
-            _sessionManager.newSession(this, _requestedSession == null ? null : _requestedSession.sessionId(), this::setManagedSession);
+            _sessionManager.newSession(this, _requestedSession.sessionId(), this::setManagedSession);
 
             if (_managedSession == null)
                 throw new IllegalStateException("Create session failed");

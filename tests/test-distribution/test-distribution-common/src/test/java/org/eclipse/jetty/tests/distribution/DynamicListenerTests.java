@@ -33,7 +33,7 @@ public class DynamicListenerTests extends AbstractJettyHomeTest
 {
 
     @ParameterizedTest
-    @ValueSource(strings = {"ee8", "ee9", "ee10"})
+    @ValueSource(strings = {"ee8", "ee9", "ee10", "ee11"})
     public void testSimpleWebAppWithJSP(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

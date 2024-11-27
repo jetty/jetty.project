@@ -14,43 +14,18 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 
 public class ContentTest
 {
-    @Test
-    public void testAsReadOnly()
-    {
-        assertThat(Content.Chunk.EOF.asReadOnly(), sameInstance(Content.Chunk.EOF));
-        assertThat(Content.Chunk.EMPTY.asReadOnly(), sameInstance(Content.Chunk.EMPTY));
-
-        assertThat(Content.Chunk.from(BufferUtil.EMPTY_BUFFER, true).asReadOnly(), sameInstance(Content.Chunk.EOF));
-        assertThat(Content.Chunk.from(BufferUtil.EMPTY_BUFFER, false).asReadOnly(), sameInstance(Content.Chunk.EMPTY));
-
-        Content.Chunk failureChunk = Content.Chunk.from(new NumberFormatException());
-        assertThat(failureChunk.asReadOnly(), sameInstance(failureChunk));
-
-        Content.Chunk chunk = Content.Chunk.from(ByteBuffer.wrap(new byte[1]).asReadOnlyBuffer(), false);
-        assertThat(chunk.asReadOnly(), sameInstance(chunk));
-
-        Content.Chunk rwChunk = Content.Chunk.from(ByteBuffer.wrap("abc".getBytes(StandardCharsets.US_ASCII)), false);
-        Content.Chunk roChunk = rwChunk.asReadOnly();
-        assertThat(rwChunk, not(sameInstance(roChunk)));
-        assertThat(BufferUtil.toString(rwChunk.getByteBuffer(), StandardCharsets.US_ASCII), equalTo(BufferUtil.toString(roChunk.getByteBuffer(), StandardCharsets.US_ASCII)));
-    }
-
     @Test
     public void testFromEmptyByteBufferWithoutReleaser()
     {
@@ -89,13 +64,15 @@ public class ContentTest
     @Test
     public void testFromEmptyByteBufferWithRetainableReleaser()
     {
-        Retainable.ReferenceCounter referenceCounter1 = new Retainable.ReferenceCounter(2);
+        Retainable.ReferenceCounter referenceCounter1 = new Retainable.ReferenceCounter();
+        referenceCounter1.retain();
         assertThat(referenceCounter1.isRetained(), is(true));
         assertThat(Content.Chunk.asChunk(ByteBuffer.wrap(new byte[0]), true, referenceCounter1), sameInstance(Content.Chunk.EOF));
         assertThat(referenceCounter1.isRetained(), is(false));
         assertThat(referenceCounter1.release(), is(true));
 
-        Retainable.ReferenceCounter referenceCounter2 = new Retainable.ReferenceCounter(2);
+        Retainable.ReferenceCounter referenceCounter2 = new Retainable.ReferenceCounter();
+        referenceCounter2.retain();
         assertThat(referenceCounter2.isRetained(), is(true));
         assertThat(Content.Chunk.asChunk(ByteBuffer.wrap(new byte[0]), false, referenceCounter2), sameInstance(Content.Chunk.EMPTY));
         assertThat(referenceCounter2.isRetained(), is(false));

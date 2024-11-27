@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 
 /**
  * <p>A pool for {@link RetainableByteBuffer} instances.</p>
@@ -56,18 +57,16 @@ public interface ByteBufferPool
      * @param direct true if a direct memory buffer is needed, false otherwise.
      * @return a {@link RetainableByteBuffer} with position and limit set to 0.
      */
-    RetainableByteBuffer acquire(int size, boolean direct);
+    RetainableByteBuffer.Mutable acquire(int size, boolean direct);
 
     /**
      * {@link RetainableByteBuffer#release() Release} the buffer in a way that will remove it from any pool that it may be in.
      * If the buffer is not in a pool, calling this method is equivalent to calling {@link RetainableByteBuffer#release()}.
      * Calling this method satisfies any contract that requires a call to {@link RetainableByteBuffer#release()}.
      * @return {@code true} if a call to {@link RetainableByteBuffer#release()} would have returned {@code true}.
-     * @see RetainableByteBuffer#release()
-     * @deprecated This API is experimental and may be removed in future releases
+     * @see RetainableByteBuffer#releaseAndRemove()
      */
-    @Deprecated
-    default boolean removeAndRelease(RetainableByteBuffer buffer)
+    default boolean releaseAndRemove(RetainableByteBuffer buffer)
     {
         return buffer != null && buffer.release();
     }
@@ -96,7 +95,13 @@ public interface ByteBufferPool
         }
 
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public boolean releaseAndRemove(RetainableByteBuffer buffer)
+        {
+            return getWrapped().releaseAndRemove(buffer);
+        }
+
+        @Override
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
             return getWrapped().acquire(size, direct);
         }
@@ -136,7 +141,7 @@ public interface ByteBufferPool
         {
             super(Objects.requireNonNullElse(wrapped, NON_POOLING));
             _direct = direct;
-            _size = size > 0 ? size : 4096;
+            _size = size >= 0 ? size : IO.DEFAULT_BUFFER_SIZE;
         }
 
         public boolean isDirect()
@@ -150,11 +155,29 @@ public interface ByteBufferPool
         }
 
         /**
-         * @return A {@link RetainableByteBuffer} suitable for the specified preconfigured size and type.
+         * @return A {@link RetainableByteBuffer.Mutable} suitable for the specified preconfigured size and type.
          */
-        public RetainableByteBuffer acquire()
+        public RetainableByteBuffer.Mutable acquire()
         {
             return getWrapped().acquire(_size, _direct);
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer.Mutable} suitable for the specified preconfigured type.
+         * @param size The specified size in bytes of the buffer
+         */
+        public RetainableByteBuffer.Mutable acquire(int size)
+        {
+            return getWrapped().acquire(size, _direct);
+        }
+
+        /**
+         * @return A {@link RetainableByteBuffer.Mutable} suitable for the specified preconfigured type.
+         * @param direct true for a direct byte buffer, false otherwise
+         */
+        public RetainableByteBuffer.Mutable acquire(boolean direct)
+        {
+            return getWrapped().acquire(_size, direct);
         }
     }
 
@@ -173,23 +196,14 @@ public interface ByteBufferPool
     class NonPooling implements ByteBufferPool
     {
         @Override
-        public RetainableByteBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
-            return new Buffer(BufferUtil.allocate(size, direct));
+            return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
         }
 
         @Override
         public void clear()
         {
-        }
-
-        private static class Buffer extends AbstractRetainableByteBuffer
-        {
-            private Buffer(ByteBuffer byteBuffer)
-            {
-                super(byteBuffer);
-                acquire();
-            }
         }
     }
 
@@ -201,7 +215,9 @@ public interface ByteBufferPool
      * or {@link #insert(int, RetainableByteBuffer) inserted} at a
      * specific position in the sequence, and then
      * {@link #release() released} when they are consumed.</p>
+     * @deprecated use {@link RetainableByteBuffer.DynamicCapacity}
      */
+    @Deprecated (forRemoval = true, since = "12.1.0")
     class Accumulator
     {
         private final List<RetainableByteBuffer> buffers = new ArrayList<>();

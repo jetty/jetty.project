@@ -25,7 +25,7 @@ public class ServletMapping
     private String[] _pathSpecs;
     private String _servletName;
     private boolean _default;
-    private Source _source;
+    private final Source _source;
 
     public ServletMapping()
     {
@@ -71,7 +71,7 @@ public class ServletMapping
      */
     public boolean containsPathSpec(String pathSpec)
     {
-        if (_pathSpecs == null || _pathSpecs.length == 0)
+        if (_pathSpecs == null)
             return false;
 
         for (String p : _pathSpecs)

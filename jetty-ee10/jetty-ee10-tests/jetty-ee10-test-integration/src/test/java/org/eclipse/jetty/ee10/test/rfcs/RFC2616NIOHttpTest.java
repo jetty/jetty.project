@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.test.rfcs;
 
-import java.nio.file.Path;
-
 import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.ee10.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.ee10.test.support.rawhttp.HttpSocketImpl;

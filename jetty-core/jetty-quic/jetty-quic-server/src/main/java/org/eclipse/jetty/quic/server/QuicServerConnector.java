@@ -37,7 +37,6 @@ import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -57,36 +56,9 @@ public class QuicServerConnector extends AbstractNetworkConnector
     private volatile DatagramChannel datagramChannel;
     private volatile int localPort = -1;
 
-    /**
-     * @param server the {@link Server}
-     * @param sslContextFactory the {@link SslContextFactory.Server}
-     * @param factories the {@link ConnectionFactory}s of the protocols transported by QUIC
-     * @deprecated use {@link #QuicServerConnector(Server, ServerQuicConfiguration, ConnectionFactory...)} instead
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
-    {
-        this(server, new ServerQuicConfiguration(sslContextFactory, null), factories);
-    }
-
     public QuicServerConnector(Server server, ServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)
     {
         this(server, null, null, null, quicConfiguration, factories);
-    }
-
-    /**
-     * @param server the {@link Server}
-     * @param executor the {@link Executor}
-     * @param scheduler the {@link Scheduler}
-     * @param bufferPool the {@link ByteBufferPool}
-     * @param sslContextFactory the {@link SslContextFactory.Server}
-     * @param factories the {@link ConnectionFactory}s of the protocols transported by QUIC
-     * @deprecated use {@link #QuicServerConnector(Server, Executor, Scheduler, ByteBufferPool, ServerQuicConfiguration, ConnectionFactory...)} instead
-     */
-    @Deprecated(since = "12.0.7", forRemoval = true)
-    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
-    {
-        this(server, executor, scheduler, bufferPool, new ServerQuicConfiguration(sslContextFactory, null), factories);
     }
 
     public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, ServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)

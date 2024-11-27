@@ -85,7 +85,7 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
@@ -596,7 +596,7 @@ public class Request implements HttpServletRequest
      * <dl>
      * <dt>org.eclipse.jetty.server.Server</dt><dd>The Jetty Server instance</dd>
      * <dt>org.eclipse.jetty.server.HttpChannel</dt><dd>The HttpChannel for this request</dd>
-     * <dt>org.eclipse.jetty.server.HttpConnection</dt><dd>The HttpConnection or null if another transport is used</dd>
+     * <dt>org.eclipse.jetty.io.Connection</dt><dd>The Connection or null if another transport is used</dd>
      * </dl>
      * While these attributes may look like security problems, they are exposing nothing that is not already
      * available via reflection from a Request instance.
@@ -1245,7 +1245,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
+        RequestedSession requestedSession = _coreRequest.getRequestedSession();
         return requestedSession == null ? null : requestedSession.sessionId();
     }
 
@@ -1522,8 +1522,7 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.sessionIdFromCookie();
+        return _coreRequest.getRequestedSession().isSessionIdFrom(RequestedSession.ID_FROM_COOKIE);
     }
 
     @Override
@@ -1536,14 +1535,13 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
+        return _coreRequest.getRequestedSession().isSessionIdFrom(RequestedSession.ID_FROM_URI_PARAMETER);
     }
 
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _coreRequest.getRequestedSession();
+        RequestedSession requestedSession = _coreRequest.getRequestedSession();
         SessionManager sessionManager = _coreRequest.getSessionManager();
         ManagedSession managedSession = _coreRequest.getManagedSession();
         return requestedSession != null &&

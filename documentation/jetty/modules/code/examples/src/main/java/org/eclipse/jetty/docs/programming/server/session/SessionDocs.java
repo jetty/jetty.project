@@ -18,8 +18,8 @@ import java.io.FileInputStream;
 import java.net.InetSocketAddress;
 import java.util.Properties;
 
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
@@ -95,7 +95,7 @@ public class SessionDocs
             org.eclipse.jetty.session.SessionHandler sessionHandler = new org.eclipse.jetty.session.SessionHandler();
             sessionHandler.setSessionCookie("SIMPLE");
             sessionHandler.setUsingCookies(true);
-            sessionHandler.setUsingURLs(false);
+            sessionHandler.setUsingUriParameters(false);
             sessionHandler.setSessionPath("/");
             server.setHandler(sessionHandler);
             sessionHandler.setHandler(new Handler.Abstract()

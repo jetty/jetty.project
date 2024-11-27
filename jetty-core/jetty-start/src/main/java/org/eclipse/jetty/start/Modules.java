@@ -97,7 +97,7 @@ public class Modules implements Iterable<Module>
             String label;
             Set<String> provides = module.getProvides();
             provides.remove(module.getName());
-            out.printf("%n     Module: %s %s%n", module.getName(), provides.size() > 0 ? provides : "");
+            out.printf("%n     Module: %s %s%n", module.getName(), !provides.isEmpty() ? provides : "");
             for (String description : module.getDescription())
             {
                 out.printf("           : %s%n", description);
@@ -182,12 +182,13 @@ public class Modules implements Iterable<Module>
 
         tags = new ArrayList<>(tags);
 
-        boolean wild = tags.contains("*");
+        boolean wild = tags.remove("*");
+        boolean showDeprecated = tags.remove("deprecated") || wild;
+
         Set<String> included = new HashSet<>();
-        if (wild)
-            tags.remove("*");
-        else
+        if (!wild)
             tags.stream().filter(t -> !t.startsWith("-")).forEach(included::add);
+
         Set<String> excluded = new HashSet<>();
         tags.stream().filter(t -> t.startsWith("-")).map(t -> t.substring(1)).forEach(excluded::add);
         if (!included.contains("internal"))
@@ -199,12 +200,14 @@ public class Modules implements Iterable<Module>
         Optional<Integer> max = _modules.stream().filter(filter).map(Module::getName).map(String::length).max(Integer::compareTo);
         if (max.isEmpty())
             return;
-        String format = "%" + max.get() + "s - %s%n";
+        String format = "%" + max.get() + "s - %s%s%n";
 
         Comparator<Module> comparator = wild ? Comparator.comparing(Module::getName) : Module::compareTo;
         AtomicReference<String> tag = new AtomicReference<>();
         _modules.stream().filter(filter).sorted(comparator).forEach(module ->
         {
+            if (module.isDeprecated() && !showDeprecated)
+                return;
             if (!wild && !module.getPrimaryTag().equals(tag.get()))
             {
                 tag.set(module.getPrimaryTag());
@@ -213,7 +216,7 @@ public class Modules implements Iterable<Module>
             }
 
             List<String> description = module.getDescription();
-            out.printf(format, module.getName(), description != null && description.size() > 0 ? description.get(0) : "");
+            out.printf(format, module.getName(), module.isDeprecated() ? "DEPRECATED " : "", description != null && !description.isEmpty() ? description.get(0) : "");
         });
     }
 
@@ -229,7 +232,7 @@ public class Modules implements Iterable<Module>
         {
             String index = (i++) + ")";
             String name = module.getName();
-            if (!module.getDeprecated().isEmpty())
+            if (module.isDeprecated())
                 name += " (deprecated)";
             for (String s : module.getEnableSources())
             {
@@ -424,10 +427,9 @@ public class Modules implements Iterable<Module>
             return;
         }
 
-        List<String> deprecated = module.getDeprecated();
-        if (!deprecated.isEmpty())
+        if (module.isDeprecated())
         {
-            String reason = deprecated.stream().collect(Collectors.joining(System.lineSeparator()));
+            String reason = module.getDeprecated().stream().collect(Collectors.joining(System.lineSeparator()));
             StartLog.warn(reason);
         }
 
@@ -635,7 +637,7 @@ public class Modules implements Iterable<Module>
                     Set<Module> providers = getAvailableProviders(d);
                     if (providers.stream().noneMatch(Module::isEnabled))
                     {
-                        if (unsatisfied.length() > 0)
+                        if (!unsatisfied.isEmpty())
                             unsatisfied.append(',');
                         unsatisfied.append(m.getName());
                         StartLog.error("Module [%s] requires a module providing [%s] from one of %s%n", m.getName(), d, providers);
@@ -643,7 +645,7 @@ public class Modules implements Iterable<Module>
                 });
         });
 
-        if (unsatisfied.length() > 0)
+        if (!unsatisfied.isEmpty())
             throw new UsageException(-1, "Unsatisfied module dependencies: " + unsatisfied);
     }
 }

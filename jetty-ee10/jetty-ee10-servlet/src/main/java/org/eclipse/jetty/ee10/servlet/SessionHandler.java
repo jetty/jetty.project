@@ -107,6 +107,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     public final class CookieConfig implements SessionCookieConfig
     {
         @Override
+        @Deprecated(forRemoval = true, since = "12.0.1")
         public String getComment()
         {
             return getSessionComment();
@@ -205,6 +206,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         }
 
         @Override
+        @Deprecated(forRemoval = true, since = "12.1.0")
         public void setComment(String comment)
         {
             checkState();
@@ -720,27 +722,33 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     private class NonServletSessionRequest extends Request.Wrapper
     {
         private final Response _response;
-        private RequestedSession _session;
+        private RequestedSession _requestedSession;
 
         public NonServletSessionRequest(Request request, Response response, RequestedSession requestedSession)
         {
             super(request);
             _response = response;
-            _session = requestedSession;
+            _requestedSession = requestedSession;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (AbstractSessionManager.RequestedSession.isApplicableAttribute(name))
+                return _requestedSession.getAttribute(name);
+            return super.getAttribute(name);
         }
 
         @Override
         public Session getSession(boolean create)
         {
-            ManagedSession session = _session.session();
+            ManagedSession session = _requestedSession.session();
 
             if (session != null || !create)
                 return session;
 
-            newSession(getWrapped(), _session.sessionId(), ms ->
-                _session = new RequestedSession(ms, _session.sessionId(), true));
-
-            session = _session.session();
+            newSession(getWrapped(), _requestedSession.sessionId(), ms -> _requestedSession = new RequestedSession(ms, _requestedSession.sessionId(), _requestedSession.sessionIdFrom()));
+            session = _requestedSession.session();
             if (session == null)
                 throw new IllegalStateException("Create session failed");
 
@@ -752,7 +760,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
         ManagedSession getManagedSession()
         {
-            return _session.session();
+            return _requestedSession.session();
         }
     }
 }

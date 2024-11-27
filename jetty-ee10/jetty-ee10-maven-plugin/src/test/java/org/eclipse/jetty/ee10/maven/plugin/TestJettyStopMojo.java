@@ -14,8 +14,6 @@
 package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.LineNumberReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;

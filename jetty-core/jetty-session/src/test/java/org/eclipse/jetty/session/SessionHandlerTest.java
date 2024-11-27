@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.session.AbstractSessionManager.RequestedSession;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -151,8 +152,21 @@ public class SessionHandlerTest
                     {
                         if (session.isNew())
                             out.append("New\n");
+
+                        RequestedSession requestedSession = RequestedSession.byAttribute(request);
+
+                        out.append("RequestedSessionIdFromCookie: ")
+                            .append(requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_COOKIE))
+                            .append('\n');
+                        out.append("RequestedSessionIdFromURL: ")
+                            .append(requestedSession.isSessionIdFrom(RequestedSession.ID_FROM_URI_PARAMETER))
+                            .append('\n');
                         for (String name : session.getAttributeNameSet())
-                            out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
+                            out.append("Attribute ")
+                                .append(name)
+                                .append(" = ")
+                                .append(session.getAttribute(name))
+                                .append('\n');
                         out.append("URI [")
                             .append(session.encodeURI(request, "/some/path", request.getHeaders().contains(HttpHeader.COOKIE)))
                             .append("]");
@@ -502,6 +516,8 @@ public class SessionHandlerTest
             assertThat(response.getStatus(), equalTo(200));
             content = response.getContent();
             assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+            assertThat(content, containsString("RequestedSessionIdFromCookie: true"));
+            assertThat(content, containsString("RequestedSessionIdFromURL: false"));
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
 
             // Get with parameter
@@ -516,6 +532,8 @@ public class SessionHandlerTest
             assertThat(response.getStatus(), equalTo(200));
             content = response.getContent();
             assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+            assertThat(content, containsString("RequestedSessionIdFromCookie: false"));
+            assertThat(content, containsString("RequestedSessionIdFromURL: true"));
             assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id))); // Cookies not in use
 
             // Get with both, but param wrong

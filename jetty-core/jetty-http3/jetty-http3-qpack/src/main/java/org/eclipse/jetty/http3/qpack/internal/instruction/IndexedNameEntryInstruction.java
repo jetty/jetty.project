@@ -53,7 +53,7 @@ public class IndexedNameEntryInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
+    public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + NBitStringEncoder.octetsNeeded(8, _value, _huffman);
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
@@ -66,7 +66,7 @@ public class IndexedNameEntryInstruction implements Instruction
 
         NBitStringEncoder.encode(buffer, 8, _value, _huffman);
         BufferUtil.flipToFlush(buffer, 0);
-        accumulator.append(retainableByteBuffer);
+        accumulator.add(retainableByteBuffer);
     }
 
     @Override

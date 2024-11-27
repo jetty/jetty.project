@@ -20,7 +20,6 @@ import javax.naming.LinkRef;
 import javax.naming.Name;
 import javax.naming.NameParser;
 
-import org.eclipse.jetty.ee10.jndi.factories.MailSessionReference;
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.junit.jupiter.api.Test;
 

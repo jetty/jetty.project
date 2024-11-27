@@ -26,7 +26,7 @@ import org.eclipse.jetty.xml.XmlParser;
 public abstract class IterativeDescriptorProcessor implements DescriptorProcessor
 {
     public static final Class<?>[] __signature = new Class[]{WebAppContext.class, Descriptor.class, XmlParser.Node.class};
-    protected Map<String, Method> _visitors = new HashMap<String, Method>();
+    protected Map<String, Method> _visitors = new HashMap<>();
 
     public abstract void start(WebAppContext context, Descriptor descriptor);
 

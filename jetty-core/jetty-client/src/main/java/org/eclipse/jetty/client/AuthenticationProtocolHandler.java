@@ -321,7 +321,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         public void onSuccess(Response response)
         {
             int status = response.getStatus();
-            if (HttpStatus.isSuccess(status) || HttpStatus.isRedirection(status))
+            if (HttpStatus.isSuccess(status) || HttpStatus.isRedirectionWithLocation(status))
                 client.getAuthenticationStore().addAuthenticationResult(authenticationResult);
         }
     }

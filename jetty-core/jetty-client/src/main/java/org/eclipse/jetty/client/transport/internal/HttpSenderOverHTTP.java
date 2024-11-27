@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -49,6 +50,7 @@ public class HttpSenderOverHTTP extends HttpSender
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
+        generator.setMaxHeaderBytes(channel.getHttpDestination().getHttpClient().getMaxRequestHeadersSize());
     }
 
     @Override
@@ -157,6 +159,7 @@ public class HttpSenderOverHTTP extends HttpSender
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             HttpExchange exchange = getHttpExchange();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+            int requestHeadersSize = httpClient.getRequestBufferSize();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -173,14 +176,24 @@ public class HttpSenderOverHTTP extends HttpSender
                 {
                     case NEED_HEADER:
                     {
-                        headerBuffer = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
+                        headerBuffer = bufferPool.acquire(requestHeadersSize, useDirectByteBuffers);
                         break;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        headerBuffer.release();
-                        headerBuffer = null;
-                        throw new IllegalArgumentException("Request header too large");
+                        int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
+                        if (maxRequestHeadersSize > requestHeadersSize)
+                        {
+                            generator.reset();
+                            headerBuffer.release();
+                            headerBuffer = bufferPool.acquire(maxRequestHeadersSize, useDirectByteBuffers);
+                            requestHeadersSize = maxRequestHeadersSize;
+                            break;
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException("Request headers too large");
+                        }
                     }
                     case NEED_CHUNK:
                     {
@@ -237,7 +250,9 @@ public class HttpSenderOverHTTP extends HttpSender
         @Override
         protected void onSuccess()
         {
-            release();
+            headerBuffer = Retainable.release(headerBuffer);
+            chunkBuffer = Retainable.release(chunkBuffer);
+            contentByteBuffer = null;
         }
 
         @Override
@@ -248,21 +263,16 @@ public class HttpSenderOverHTTP extends HttpSender
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onFailure(Throwable cause)
         {
-            super.onCompleteFailure(cause);
-            release();
             callback.failed(cause);
         }
 
-        private void release()
+        @Override
+        protected void onCompleteFailure(Throwable cause)
         {
-            if (headerBuffer != null)
-                headerBuffer.release();
-            headerBuffer = null;
-            if (chunkBuffer != null)
-                chunkBuffer.release();
-            chunkBuffer = null;
+            headerBuffer = Retainable.release(headerBuffer);
+            chunkBuffer = Retainable.release(chunkBuffer);
             contentByteBuffer = null;
         }
     }
@@ -335,10 +345,15 @@ public class HttpSenderOverHTTP extends HttpSender
         }
 
         @Override
+        protected void onFailure(Throwable cause)
+        {
+            callback.failed(cause);
+        }
+
+        @Override
         protected void onCompleteFailure(Throwable cause)
         {
             release();
-            callback.failed(cause);
         }
 
         private void release()

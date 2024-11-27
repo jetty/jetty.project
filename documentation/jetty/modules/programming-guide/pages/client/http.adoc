@@ -541,7 +541,7 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 ----
 
 [[connection-information]]
-=== Request Connection Information
+=== Connection Information
 
 In order to send a request, it is necessary to obtain a connection, as explained in the xref:request-processing[request processing section].
 
@@ -561,6 +561,25 @@ The connection information is only available when the request is associated with
 This means that the connection is not available in the _request queued_ event, but only starting from the _request begin_ event.
 For more information about request events, see xref:non-blocking[this section].
 ====
+
+[[connection-events]]
+=== Connection Events
+
+In order to send HTTP requests, a connection is necessary, as explained in the xref:request-processing[request processing section].
+
+HTTP/1.1 and HTTP/2 use `SocketChannel.connect(SocketAddress)` to establish a connection with the server, either via the TCP transport or via the Unix-Domain transport.
+
+You can listen to these `connect` events using a `ClientConnector.ConnectListener`, for example to record connection establishment times:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=connectListener]
+----
+
+This could be particularly useful when you notice that your client application seem "slow" to send requests.
+The `connect begin` and `connect success` events, along with the `request queued` and `request begin` event (detailed xref:non-blocking[here]), allow you to understand whether it is the server being slow at accepting connections, or it is the client being slow at processing queued requests.
+
+Once the low-level connection has been established, you can be notified of connection events using a `Connection.Listener`, or more concretely `ConnectionStatistics`, as described in xref:arch/io.adoc#connection-listener[this section].
 
 [[configuration]]
 == HttpClient Configuration

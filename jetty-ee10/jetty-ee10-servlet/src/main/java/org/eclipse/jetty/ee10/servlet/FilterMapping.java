@@ -69,21 +69,14 @@ public class FilterMapping implements Dumpable
      */
     public static int dispatch(DispatcherType type)
     {
-        switch (type)
+        return switch (type)
         {
-            case REQUEST:
-                return REQUEST;
-            case ASYNC:
-                return ASYNC;
-            case FORWARD:
-                return FORWARD;
-            case INCLUDE:
-                return INCLUDE;
-            case ERROR:
-                return ERROR;
-            default:
-                throw new IllegalStateException(type.toString());
-        }
+            case REQUEST -> REQUEST;
+            case ASYNC -> ASYNC;
+            case FORWARD -> FORWARD;
+            case INCLUDE -> INCLUDE;
+            case ERROR -> ERROR;
+        };
     }
 
     /**
@@ -94,21 +87,15 @@ public class FilterMapping implements Dumpable
      */
     public static DispatcherType dispatch(int type)
     {
-        switch (type)
+        return switch (type)
         {
-            case REQUEST:
-                return DispatcherType.REQUEST;
-            case ASYNC:
-                return DispatcherType.ASYNC;
-            case FORWARD:
-                return DispatcherType.FORWARD;
-            case INCLUDE:
-                return DispatcherType.INCLUDE;
-            case ERROR:
-                return DispatcherType.ERROR;
-            default:
-                throw new IllegalArgumentException(Integer.toString(type));
-        }
+            case REQUEST -> DispatcherType.REQUEST;
+            case ASYNC -> DispatcherType.ASYNC;
+            case FORWARD -> DispatcherType.FORWARD;
+            case INCLUDE -> DispatcherType.INCLUDE;
+            case ERROR -> DispatcherType.ERROR;
+            default -> throw new IllegalArgumentException(Integer.toString(type));
+        };
     }
 
     private int _dispatches = DEFAULT;
@@ -132,9 +119,9 @@ public class FilterMapping implements Dumpable
     {
         if (appliesTo(type))
         {
-            for (int i = 0; i < _pathSpecs.length; i++)
+            for (String pathSpec : _pathSpecs)
             {
-                if (_pathSpecs[i] != null && ServletPathSpec.match(_pathSpecs[i], path, true))
+                if (pathSpec != null && ServletPathSpec.match(pathSpec, path, true))
                     return true;
             }
         }
@@ -152,10 +139,10 @@ public class FilterMapping implements Dumpable
     boolean appliesTo(int type)
     {
         FilterHolder holder = _holder;
-        if (_holder == null)
+        if (holder == null)
             return false;
         if (_dispatches == 0)
-            return type == REQUEST || type == ASYNC && (_holder != null && _holder.isAsyncSupported());
+            return type == REQUEST || type == ASYNC && holder.isAsyncSupported();
         return (_dispatches & type) != 0;
     }
 

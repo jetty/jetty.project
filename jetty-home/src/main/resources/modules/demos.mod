@@ -19,3 +19,4 @@ core-demos
 ee8-demos
 ee9-demos
 ee10-demos
+ee11-demos

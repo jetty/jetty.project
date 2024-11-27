@@ -772,7 +772,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @param sci the ServletContainerIntializer
      * @return true if the ServletContainerIntializer is excluded
      */
-    public boolean matchesExclusionPattern(State state, ServletContainerInitializer sci)
+    protected boolean matchesExclusionPattern(State state, ServletContainerInitializer sci)
     {
         //no exclusion pattern, no SCI is excluded by it
         if (state._sciExcludePattern == null)

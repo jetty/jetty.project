@@ -52,7 +52,9 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
-    private ByteBufferPool _bufferPool;
+    private ByteBufferPool.Sized _byteBufferPool;
+    private int _byteBufferSize = 32768;
+    private boolean _useDirectByteBuffers = true;
     Resource _baseResource;
     ContextHandler _context;
     Resource _defaultStyleSheet;
@@ -103,7 +105,7 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? MimeTypes.DEFAULTS : _context.getMimeTypes();
 
-        _bufferPool = getByteBufferPool(_context);
+        _byteBufferPool = new ByteBufferPool.Sized(getByteBufferPool(_context), _useDirectByteBuffers, _byteBufferSize);
         if (_resourceService.getHttpContentFactory() == null)
             _resourceService.setHttpContentFactory(newHttpContentFactory());
         _resourceService.setWelcomeFactory(this);
@@ -129,11 +131,11 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
     protected HttpContent.Factory newHttpContentFactory()
     {
         Resource baseResource = getBaseResource();
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(baseResource, _mimeTypes);
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(baseResource, _mimeTypes, _byteBufferPool);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
-        contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
+        contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", _byteBufferPool);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
-        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _bufferPool);
+        contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
         return contentFactory;
     }
 
@@ -283,6 +285,22 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
     }
 
     /**
+     * @return The size of the byte buffers used to serve static resources.
+     */
+    public int getByteBufferSize()
+    {
+        return _byteBufferSize;
+    }
+
+    /**
+     * @return whether to use direct byte buffers to serve static resources.
+     */
+    public boolean isUseDirectByteBuffers()
+    {
+        return _useDirectByteBuffers;
+    }
+
+    /**
      * @param acceptRanges If true, range requests and responses are supported
      */
     public void setAcceptRanges(boolean acceptRanges)
@@ -383,6 +401,22 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
     public void setRedirectWelcome(boolean redirectWelcome)
     {
         _resourceService.setRedirectWelcome(redirectWelcome);
+    }
+
+    /**
+     * @param byteBufferSize The size of the byte buffers used to serve static resources.
+     */
+    public void setByteBufferSize(int byteBufferSize)
+    {
+        _byteBufferSize = byteBufferSize;
+    }
+
+    /**
+     * @param useDirectByteBuffers whether to use direct byte buffers to serve static resources.
+     */
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    {
+        _useDirectByteBuffers = useDirectByteBuffers;
     }
 
     /**

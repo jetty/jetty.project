@@ -523,14 +523,16 @@ public class WebSocketDocs
             @Override
             public void succeed()
             {
-                // When the send succeeds, succeed this IteratingCallback.
+                // Map the o.e.j.websocket.api.Callback to o.e.j.util.Callback.
+                // When the send() succeeds, succeed this IteratingCallback.
                 succeeded();
             }
 
             @Override
             public void fail(Throwable x)
             {
-                // When the send fails, fail this IteratingCallback.
+                // Map the o.e.j.websocket.api.Callback to o.e.j.util.Callback.
+                // When the send() fails, fail this IteratingCallback.
                 failed(x);
             }
 

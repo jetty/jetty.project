@@ -19,7 +19,6 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,7 +50,7 @@ public class ServletTest
     private LocalConnector _connector;
 
     @BeforeEach
-    public void beforeEach() throws Exception
+    public void beforeEach()
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
@@ -76,7 +75,7 @@ public class ServletTest
         _context.addServlet(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.getWriter().println("Hello!");
             }
@@ -99,7 +98,7 @@ public class ServletTest
         _context.addServlet(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 try
                 {
@@ -217,7 +216,7 @@ public class ServletTest
         _context.addServlet(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.getWriter().println("Hello!");
             }
@@ -232,7 +231,7 @@ public class ServletTest
             String request = """
                 GET /ctx/get HTTP/1.1
                 Host: local
-                     
+                
                 """;
             endPoint.addInput(request);
             String response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
@@ -255,7 +254,7 @@ public class ServletTest
         _context.addServlet(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 HttpServletMapping mapping = req.getHttpServletMapping();
                 assertThat(mapping.getMappingMatch(), is(MappingMatch.EXACT));

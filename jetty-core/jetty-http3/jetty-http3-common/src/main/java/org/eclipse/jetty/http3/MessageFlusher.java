@@ -118,18 +118,22 @@ public class MessageFlusher extends IteratingCallback
     }
 
     @Override
-    protected void onCompleteFailure(Throwable cause)
+    protected void onFailure(Throwable cause)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write {} on {}", entry, this, cause);
-
-        accumulator.release();
 
         if (entry != null)
         {
             entry.callback.failed(cause);
             entry = null;
         }
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
+        accumulator.release();
     }
 
     @Override

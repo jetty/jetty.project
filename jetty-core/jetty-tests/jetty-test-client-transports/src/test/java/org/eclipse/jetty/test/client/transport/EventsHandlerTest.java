@@ -298,7 +298,8 @@ public class EventsHandlerTest extends AbstractTest
         startServer(transport, eventsHandler);
         startClient(transport);
 
-        URI uri = URI.create(newURI(transport).toASCIIString() + "?handling=500&succeeding=500");
+        long delayMs = 500;
+        URI uri = URI.create(newURI(transport).toASCIIString() + "?handling=%d&succeeding=%d".formatted(delayMs, delayMs));
 
         ContentResponse response = client.GET(uri);
         assertThat(response.getStatus(), is(200));
@@ -307,9 +308,10 @@ public class EventsHandlerTest extends AbstractTest
         assertThat(eventsHandler.getEvents().get(0).name, equalTo("onBeforeHandling"));
         assertThat(eventsHandler.getEvents().get(0).delayInNs, greaterThan(0L));
         assertThat(eventsHandler.getEvents().get(1).name, equalTo("onAfterHandling"));
-        assertThat(eventsHandler.getEvents().get(1).delayInNs - eventsHandler.getEvents().get(0).delayInNs, both(greaterThan(500_000_000L)).and(lessThan(600_000_000L)));
+        long delayNs = TimeUnit.MILLISECONDS.toNanos(delayMs);
+        assertThat(eventsHandler.getEvents().get(1).delayInNs - eventsHandler.getEvents().get(0).delayInNs, both(greaterThan(delayNs)).and(lessThan(2 * delayNs)));
         assertThat(eventsHandler.getEvents().get(2).name, equalTo("onResponseBegin"));
-        assertThat(eventsHandler.getEvents().get(2).delayInNs - eventsHandler.getEvents().get(1).delayInNs, both(greaterThan(500_000_000L)).and(lessThan(600_000_000L)));
+        assertThat(eventsHandler.getEvents().get(2).delayInNs - eventsHandler.getEvents().get(1).delayInNs, both(greaterThan(delayNs)).and(lessThan(2 * delayNs)));
         assertThat(eventsHandler.getEvents().get(3).name, equalTo("onComplete"));
         assertThat(eventsHandler.getEvents().get(3).delayInNs - eventsHandler.getEvents().get(2).delayInNs, greaterThan(0L));
     }

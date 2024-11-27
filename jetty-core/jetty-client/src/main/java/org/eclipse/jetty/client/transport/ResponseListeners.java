@@ -567,7 +567,7 @@ public class ResponseListeners
 
         private class ContentSource implements Content.Source
         {
-            private static final Content.Chunk ALREADY_READ_CHUNK = new Content.Chunk()
+            private static final Content.Chunk ALREADY_READ_CHUNK = new Content.Chunk.Empty()
             {
                 @Override
                 public ByteBuffer getByteBuffer()

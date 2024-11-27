@@ -19,9 +19,11 @@ import java.net.URI;
 import java.nio.channels.ReadPendingException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 
 /**
  * Represents the outgoing Frames.
@@ -191,6 +193,19 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
      */
     boolean isRsv3Used();
 
+    /**
+     * <p>Adds a listener for websocket idle timeouts.</p>
+     * <p>The listener is a predicate function that should return {@code true} to indicate
+     * that the timeout should be handled as a fatal failure or {@code false} to ignore
+     * that specific timeout and for another timeout to occur after another idle period.</p>
+     * <p>Listeners are processed in the same order they are added, and the first that
+     * returns {@code true} stops the processing of subsequent listeners, which are
+     * therefore not invoked.</p>
+     *
+     * @param onIdleTimeout the idle timeout listener as a predicate function
+     */
+    void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout);
+
     class Empty extends ConfigurationCustomizer implements CoreSession
     {
         @Override
@@ -340,6 +355,11 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
         public boolean isRsv3Used()
         {
             return false;
+        }
+
+        @Override
+        public void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout)
+        {
         }
     }
 }

@@ -277,7 +277,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(tp.getQueueSize(), is(0));
 
         // Check no short term change
-        Thread.sleep(100);
+        Thread.sleep(tp.getIdleTimeout() / 10);
         assertThat(tp.getThreads(), is(4));
         assertThat(tp.getIdleThreads(), is(0));
         assertThat(tp.getQueueSize(), is(0));
@@ -315,16 +315,11 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job4._stopped.await(10, TimeUnit.SECONDS));
 
         // At beginning of the test we waited 1.5*idleTimeout, but
-        // never actually shrunk the pool because it was at minThreads.
-        // Now that all jobs are finished, one thread will figure out
-        // that it will go idle and will shrink itself out of the pool.
-        // Give it some time to detect that, but not too much to shrink
-        // two threads.
-        Thread.sleep(tp.getIdleTimeout() / 4);
-
-        // Now we have 3 idle threads.
-        waitForIdle(tp, 3);
-        assertThat(tp.getThreads(), is(3));
+        // it is not possible to guarantee only one thread shrinks
+        // itself out of the pool. So let's just wait until we
+        // shrink down to the minimum number (i.e.: 2) of idle threads.
+        waitForIdle(tp, 2);
+        assertThat(tp.getThreads(), is(tp.getIdleThreads()));
 
         tp.stop();
     }

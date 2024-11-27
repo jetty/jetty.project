@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -54,7 +53,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -76,7 +74,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -496,7 +493,7 @@ public class DefaultServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
-        assertThat(response.getField("content-type").getValue(), is("text/html;charset=UTF-8"));
+        assertThat(response.getField("content-type").getValue(), is("text/html;charset=utf-8"));
         String body = response.getContent();
         assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
     }
@@ -1971,47 +1968,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(scenario.expectedStatus));
         if (scenario.extraAsserts != null)
             scenario.extraAsserts.accept(response);
-    }
-
-    @Disabled("Disabled until fix for HttpContent merged")
-    @Test
-    public void testDirectFromResourceHttpContent() throws Exception
-    {
-        FS.ensureDirExists(docRoot);
-        Path index = docRoot.resolve("index.html");
-        Files.writeString(index, "<h1>Hello World</h1>", UTF_8);
-
-        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-        defholder.setInitParameter("dirAllowed", "true");
-        defholder.setInitParameter("redirectWelcome", "false");
-        defholder.setInitParameter("useFileMappedBuffer", "true");
-        defholder.setInitParameter("welcomeServlets", "exact");
-        defholder.setInitParameter("gzip", "false");
-        defholder.setInitParameter("resourceCache", "resourceCache");
-
-        String rawResponse;
-        HttpTester.Response response;
-
-        rawResponse = connector.getResponse("""
-            GET /context/index.html HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            \r
-            """);
-        response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), containsString("<h1>Hello World</h1>"));
-
-        /*
-        TODO: fix after HttpContent changes.
-        ResourceHttpContentFactory factory = (ResourceHttpContentFactory)context.getServletContext().getAttribute("resourceCache");
-        HttpContent content = factory.getContent("/index.html", 200);
-        ByteBuffer buffer = content.getDirectBuffer();
-        assertThat("Buffer is direct", buffer.isDirect(), is(true));
-        content = factory.getContent("/index.html", 5);
-        buffer = content.getDirectBuffer();
-        assertThat("Direct buffer", buffer, is(nullValue()));
-         */
     }
 
     @SuppressWarnings("Duplicates")
@@ -3508,7 +3464,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3529,16 +3485,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
-        {
-            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
-
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return buffer;
-            }
-        });
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3559,7 +3506,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3583,16 +3530,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
-        {
-            final ByteBuffer buffer = IOResources.toRetainableByteBuffer(getResource(), ByteBufferPool.NON_POOLING, false).getByteBuffer();
-
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return buffer;
-            }
-        });
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
 
         String rawResponse = connector.getResponse("""
             GET /context/ HTTP/1.1\r
@@ -3616,7 +3554,7 @@ public class DefaultServletTest
         Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         DefaultServlet defaultServlet = new DefaultServlet();
         context.addServlet(new ServletHolder(defaultServlet), "/");
-        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
         defaultServlet.getResourceService().setAcceptRanges(false);
 
         String rawResponse = connector.getResponse("""

@@ -1242,6 +1242,7 @@ public interface HttpURI
                             case '#':
                                 // must have been in a path
                                 _path = uri.substring(mark, i);
+                                addViolation(Violation.FRAGMENT);
                                 state = State.FRAGMENT;
                                 break;
                             default:
@@ -1303,7 +1304,11 @@ public interface HttpURI
                                     state = switch (c)
                                     {
                                         case '?' -> State.QUERY;
-                                        case '#' -> State.FRAGMENT;
+                                        case '#' ->
+                                        {
+                                            addViolation(Violation.FRAGMENT);
+                                            yield State.FRAGMENT;
+                                        }
                                         default -> throw new IllegalArgumentException("Bad authority");
                                     };
                                 }
@@ -1411,7 +1416,11 @@ public interface HttpURI
                                 state = switch (c)
                                 {
                                     case '?' -> State.QUERY;
-                                    case '#' -> State.FRAGMENT;
+                                    case '#' ->
+                                    {
+                                        addViolation(Violation.FRAGMENT);
+                                        yield State.FRAGMENT;
+                                    }
                                     default -> throw new IllegalStateException();
                                 };
                             }
@@ -1494,6 +1503,7 @@ public interface HttpURI
                                     checkSegment(uri, dot || encoded, segment, i, false);
                                     _path = uri.substring(pathMark, i);
                                     mark = i + 1;
+                                    addViolation(Violation.FRAGMENT);
                                     state = State.FRAGMENT;
                                     break;
                                 case '/':
@@ -1536,6 +1546,7 @@ public interface HttpURI
                                 _path = uri.substring(pathMark, i);
                                 _param = uri.substring(mark, i);
                                 mark = i + 1;
+                                addViolation(Violation.FRAGMENT);
                                 state = State.FRAGMENT;
                                 break;
                             case '/':
@@ -1557,6 +1568,7 @@ public interface HttpURI
                         {
                             _query = uri.substring(mark, i);
                             mark = i + 1;
+                            addViolation(Violation.FRAGMENT);
                             state = State.FRAGMENT;
                         }
                         break;

@@ -33,11 +33,11 @@ import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee10.servlet.DefaultServlet;
-import org.eclipse.jetty.ee10.servlet.ResourceServlet;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee11.servlet.DefaultServlet;
+import org.eclipse.jetty.ee11.servlet.ResourceServlet;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee11.servlet.ServletHolder;
+import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -83,7 +83,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.DoSHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
@@ -92,6 +94,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
@@ -1205,6 +1208,48 @@ public class HTTPServerDocs
         // end::webAppContextHandler[]
     }
 
+    public void webAppContextClassLoader() throws Exception
+    {
+        // tag::webAppContextClassLoader[]
+        Server server = new Server();
+        Connector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create a WebAppContext.
+        WebAppContext context = new WebAppContext();
+
+        // Keep Servlet specification behaviour
+        context.setParentLoaderPriority(false);
+
+        // Add hidden classes by package (with exclusion) and by location
+        context.addHiddenClassMatcher(new ClassMatcher(
+            "org.example.package.",
+            "-org.example.package.SpecificClass",
+            "file:/usr/local/server/lib/some.jar"
+        ));
+
+        // Add protected classes by class name and JPMS module
+        context.addProtectedClassMatcher(new ClassMatcher(
+            "org.example.package.SpecificClass",
+            "jrt:/modulename"
+        ));
+
+        // Add addition class path items to the context loader
+        context.setExtraClasspath("file:/usr/local/server/context/lib/context.jar;file:/usr/local/server/context/classes/");
+
+        // end::webAppContextClassLoader[]
+
+        // Link the context to the server.
+        server.setHandler(context);
+
+        // Configure the path of the packaged web application (file or directory).
+        context.setWar("/path/to/webapp.war");
+        // Configure the contextPath.
+        context.setContextPath("/app");
+
+        server.start();
+    }
+
     public void resourceHandler() throws Exception
     {
         // tag::resourceHandler[]
@@ -1637,6 +1682,38 @@ public class HTTPServerDocs
         // end::defaultHandler[]
     }
 
+    public void gracefulHandler() throws Exception
+    {
+        // tag::gracefulHandler[]
+        Server server = new Server();
+
+        // Install the GracefulHandler.
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        server.setHandler(gracefulHandler);
+
+        // Set the Server stopTimeout to wait at most
+        // 10 seconds for existing requests to complete.
+        server.setStopTimeout(10_000);
+
+        // Add one web application.
+        class MyWebApp extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Implement your web application.
+                callback.succeeded();
+                return true;
+            }
+        }
+
+        ContextHandler contextHandler = new ContextHandler(new MyWebApp(), "/app");
+        gracefulHandler.setHandler(contextHandler);
+
+        server.start();
+        // end::gracefulHandler[]
+    }
+
     public void continue100()
     {
         // tag::continue100[]
@@ -1703,5 +1780,43 @@ public class HTTPServerDocs
 
         server.start();
         // end::requestCustomizer[]
+    }
+
+    public void dosHandler() throws Exception
+    {
+        // tag::dosHandler[]
+        class CatalogHandler extends Handler.Abstract
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Implement the catalog application.
+                callback.succeeded();
+                return true;
+            }
+        }
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Create and configure DoSHandler.
+        DoSHandler dosHandler = new DoSHandler(
+            // Identify remote clients by IP address.
+            DoSHandler.ID_FROM_REMOTE_ADDRESS,
+            // Allow 50 requests/s per remote client.
+            new DoSHandler.LeakingBucketTrackerFactory(50),
+            // When the request rate is exceeded, delay for 10s and then respond with 429.
+            new DoSHandler.DelayedRejectHandler(10000, -1, new DoSHandler.StatusRejectHandler()),
+            // Limit the number of remote clients.
+            5000
+        );
+        server.setHandler(dosHandler);
+
+        // Protect the catalog application by wrapping CatalogHandler with DoSHandler.
+        dosHandler.setHandler(new CatalogHandler());
+
+        server.start();
+        // end::dosHandler[]
     }
 }

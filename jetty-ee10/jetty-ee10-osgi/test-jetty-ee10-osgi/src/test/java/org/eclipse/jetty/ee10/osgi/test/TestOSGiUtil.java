@@ -122,7 +122,7 @@ public class TestOSGiUtil
         //sort out logging from the pax-exam environment
         List<Option> options = new ArrayList<>();
         options.add(systemProperty("pax.exam.logging").value("none"));
-        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
+        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "INFO");
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
         return options;
     }

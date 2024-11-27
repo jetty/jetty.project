@@ -73,7 +73,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -755,7 +754,7 @@ public class HttpClientTLSTest
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
         ArrayByteBufferPool bufferPool = (ArrayByteBufferPool)server.getByteBufferPool();
-        Pool<RetainableByteBuffer> bucket = bufferPool.poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
+        Pool<RetainableByteBuffer.Pooled> bucket = bufferPool.poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
         assertEquals(1, bucket.size());
         assertEquals(1, bucket.getIdleCount());
 
@@ -773,7 +772,7 @@ public class HttpClientTLSTest
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer acquire(int size, boolean direct)
+            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
             {
                 RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
                 {
@@ -843,7 +842,7 @@ public class HttpClientTLSTest
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer acquire(int size, boolean direct)
+            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
             {
                 RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
                 {
@@ -928,7 +927,7 @@ public class HttpClientTLSTest
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer acquire(int size, boolean direct)
+            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
             {
                 RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
                 {
@@ -1364,7 +1363,6 @@ public class HttpClientTLSTest
     }
 
     @Test
-    @Disabled("fix this test: investigate the difference between client and server bytes")
     public void testBytesInBytesOut() throws Exception
     {
         // Two connections will be closed: SslConnection and HttpConnection.

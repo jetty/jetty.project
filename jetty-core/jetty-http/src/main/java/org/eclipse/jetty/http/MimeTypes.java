@@ -61,7 +61,11 @@ public class MimeTypes
     public enum Type
     {
         FORM_ENCODED("application/x-www-form-urlencoded"),
+        FORM_ENCODED_UTF_8("application/x-www-form-urlencoded;charset=utf-8", FORM_ENCODED),
+        FORM_ENCODED_8859_1("application/x-www-form-urlencoded;charset=iso-8859-1", FORM_ENCODED),
+
         MESSAGE_HTTP("message/http"),
+
         MULTIPART_BYTERANGES("multipart/byteranges"),
         MULTIPART_FORM_DATA("multipart/form-data"),
 
@@ -77,6 +81,10 @@ public class MimeTypes
                     return super.getContentTypeField(charset);
                 }
             },
+
+        TEXT_HTML_8859_1("text/html;charset=iso-8859-1", TEXT_HTML),
+        TEXT_HTML_UTF_8("text/html;charset=utf-8", TEXT_HTML),
+
         TEXT_PLAIN("text/plain")
             {
                 @Override
@@ -89,6 +97,9 @@ public class MimeTypes
                     return super.getContentTypeField(charset);
                 }
             },
+        TEXT_PLAIN_8859_1("text/plain;charset=iso-8859-1", TEXT_PLAIN),
+        TEXT_PLAIN_UTF_8("text/plain;charset=utf-8", TEXT_PLAIN),
+
         TEXT_XML("text/xml")
             {
                 @Override
@@ -101,21 +112,14 @@ public class MimeTypes
                     return super.getContentTypeField(charset);
                 }
             },
-        TEXT_JSON("text/json", StandardCharsets.UTF_8),
-        APPLICATION_JSON("application/json", StandardCharsets.UTF_8),
-
-        TEXT_HTML_8859_1("text/html;charset=iso-8859-1", TEXT_HTML),
-        TEXT_HTML_UTF_8("text/html;charset=utf-8", TEXT_HTML),
-
-        TEXT_PLAIN_8859_1("text/plain;charset=iso-8859-1", TEXT_PLAIN),
-        TEXT_PLAIN_UTF_8("text/plain;charset=utf-8", TEXT_PLAIN),
-
         TEXT_XML_8859_1("text/xml;charset=iso-8859-1", TEXT_XML),
         TEXT_XML_UTF_8("text/xml;charset=utf-8", TEXT_XML),
 
+        TEXT_JSON("text/json", StandardCharsets.UTF_8),
         TEXT_JSON_8859_1("text/json;charset=iso-8859-1", TEXT_JSON),
         TEXT_JSON_UTF_8("text/json;charset=utf-8", TEXT_JSON),
 
+        APPLICATION_JSON("application/json", StandardCharsets.UTF_8),
         APPLICATION_JSON_8859_1("application/json;charset=iso-8859-1", APPLICATION_JSON),
         APPLICATION_JSON_UTF_8("application/json;charset=utf-8", APPLICATION_JSON);
 
@@ -124,7 +128,7 @@ public class MimeTypes
         private final Charset _charset;
         private final String _charsetString;
         private final boolean _assumedCharset;
-        private final HttpField _field;
+        private final ContentTypeField _field;
 
         Type(String name)
         {
@@ -133,18 +137,18 @@ public class MimeTypes
             _charset = null;
             _charsetString = null;
             _assumedCharset = false;
-            _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
+            _field = new ContentTypeField(this);
         }
 
         Type(String name, Type base)
         {
             _string = name;
-            _base = base;
+            _base = Objects.requireNonNull(base);
             int i = name.indexOf(";charset=");
             _charset = Charset.forName(name.substring(i + 9));
             _charsetString = _charset.toString().toLowerCase(Locale.ENGLISH);
             _assumedCharset = false;
-            _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
+            _field = new ContentTypeField(this);
         }
 
         Type(String name, Charset cs)
@@ -154,9 +158,12 @@ public class MimeTypes
             _charset = cs;
             _charsetString = _charset == null ? null : _charset.toString().toLowerCase(Locale.ENGLISH);
             _assumedCharset = true;
-            _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
+            _field = new ContentTypeField(this);
         }
 
+        /**
+         * @return The {@link Charset} for this type or {@code null} if it is not known
+         */
         public Charset getCharset()
         {
             return _charset;
@@ -167,6 +174,11 @@ public class MimeTypes
             return _charsetString;
         }
 
+        /**
+         * Check if this type is equal to the type passed as a string
+         * @param type The type to compare to
+         * @return {@code true} if this is the same type
+         */
         public boolean is(String type)
         {
             return _string.equalsIgnoreCase(type);
@@ -183,6 +195,9 @@ public class MimeTypes
             return _string;
         }
 
+        /**
+         * @return {@code true} If the {@link Charset} for this type is assumed rather than being explicitly declared.
+         */
         public boolean isCharsetAssumed()
         {
             return _assumedCharset;
@@ -200,6 +215,10 @@ public class MimeTypes
             return new HttpField(HttpHeader.CONTENT_TYPE, getContentTypeWithoutCharset(_string) + ";charset=" + charset.name());
         }
 
+        /**
+         * Get the base type of this type, which is the type without a charset specified
+         * @return The base type or this type if it is a base type
+         */
         public Type getBaseType()
         {
             return _base;
@@ -227,23 +246,34 @@ public class MimeTypes
         })
         .build();
 
+    /**
+     * Get the base value, stripped of any parameters
+     * @param value The value
+     * @return A string with any semicolon separated parameters removed
+     */
+    public static String getBase(String value)
+    {
+        int index = value.indexOf(';');
+        return index == -1 ? value : value.substring(0, index);
+    }
+
+    /**
+     * Get the base type of this type, which is the type without a charset specified
+     * @param contentType The mimetype as a string
+     * @return The base type or this type if it is a base type
+     */
     public static Type getBaseType(String contentType)
     {
         if (StringUtil.isEmpty(contentType))
             return null;
         Type type = CACHE.getBest(contentType);
         if (type == null)
-            return null;
-        if (type.asString().length() == contentType.length())
-            return type.getBaseType();
-        if (contentType.charAt(type.asString().length()) == ';')
-            return type.getBaseType();
-        contentType = contentType.replace(" ", "");
-        if (type.asString().length() == contentType.length())
-            return type.getBaseType();
-        if (contentType.charAt(type.asString().length()) == ';')
-            return type.getBaseType();
-        return null;
+        {
+            type = CACHE.get(getBase(contentType));
+            if (type == null)
+                return null;
+        }
+        return type.getBaseType();
     }
 
     public static boolean isKnownLocale(Locale locale)
@@ -324,6 +354,23 @@ public class MimeTypes
             _assumedEncodings.putAll(defaults._assumedEncodings);
             _inferredEncodings.putAll(defaults._inferredEncodings);
         }
+    }
+
+    /**
+     * Get the explicit, assumed, or inferred Charset for a HttpField containing a mime type value
+     * @param field HttpField with a mime type value (e.g. Content-Type)
+     * @return A {@link Charset} or null;
+     * @throws  IllegalCharsetNameException
+     *          If the given charset name is illegal
+     * @throws  UnsupportedCharsetException
+     *          If no support for the named charset is available
+     *          in this instance of the Java virtual machine
+     */
+    public Charset getCharset(HttpField field) throws IllegalCharsetNameException, UnsupportedCharsetException
+    {
+        if (field instanceof ContentTypeField contentTypeField)
+            return contentTypeField.getMimeType().getCharset();
+        return getCharset(field.getValue());
     }
 
     /**
@@ -638,6 +685,64 @@ public class MimeTypes
         return StringUtil.asciiToLowerCase(type);
     }
 
+    public static MimeTypes.Type getMimeTypeFromContentType(HttpField field)
+    {
+        if (field == null)
+            return null;
+
+        assert field.getHeader() == HttpHeader.CONTENT_TYPE;
+
+        if (field instanceof MimeTypes.ContentTypeField contentTypeField)
+            return contentTypeField.getMimeType();
+
+        String contentType = field.getValue();
+        int semicolon = contentType.indexOf(';');
+        if (semicolon >= 0)
+            contentType = contentType.substring(0, semicolon).trim();
+
+        return MimeTypes.CACHE.get(contentType);
+    }
+
+    public static String getMimeTypeAsStringFromContentType(HttpField field)
+    {
+        if (field == null)
+            return null;
+
+        assert field.getHeader() == HttpHeader.CONTENT_TYPE;
+
+        if (field instanceof MimeTypes.ContentTypeField contentTypeField)
+            return contentTypeField.getMimeType().asString();
+
+        return getBase(field.getValue());
+    }
+
+    /**
+     * Efficiently extract the charset value from a {@code Content-Type} {@link HttpField}.
+     * @param field A {@code Content-Type} field.
+     * @return The {@link Charset}
+     */
+    public static Charset getCharsetFromContentType(HttpField field)
+    {
+        if (field == null)
+            return null;
+
+        assert field.getHeader() == HttpHeader.CONTENT_TYPE;
+
+        if (field instanceof ContentTypeField contentTypeField)
+            return contentTypeField._type.getCharset();
+
+        String charset = getCharsetFromContentType(field.getValue());
+        if (charset == null)
+            return null;
+
+        return Charset.forName(charset);
+    }
+
+    /**
+     * Efficiently extract the charset value from a {@code Content-Type} string
+     * @param value A content-type value (e.g. {@code text/plain; charset=utf8}).
+     * @return The charset value (e.g. {@code utf-8}).
+     */
     public static String getCharsetFromContentType(String value)
     {
         if (value == null)
@@ -751,6 +856,11 @@ public class MimeTypes
         return null;
     }
 
+    /**
+     * Efficiently extract the base mime-type from a content-type value
+     * @param value A content-type value (e.g. {@code text/plain; charset=utf8}).
+     * @return The base mime-type value (e.g. {@code text/plain}).
+     */
     public static String getContentTypeWithoutCharset(String value)
     {
         int end = value.length();
@@ -875,5 +985,30 @@ public class MimeTypes
         if (builder == null)
             return value;
         return builder.toString();
+    }
+
+    /**
+     * A {@link PreEncodedHttpField} for `Content-Type` that can hold a {@link MimeTypes.Type} field
+     * for later recovery.
+     */
+    static class ContentTypeField extends PreEncodedHttpField
+    {
+        private final Type _type;
+
+        public ContentTypeField(MimeTypes.Type type)
+        {
+            this(type, type.toString());
+        }
+
+        public ContentTypeField(MimeTypes.Type type, String value)
+        {
+            super(HttpHeader.CONTENT_TYPE, value);
+            _type = type;
+        }
+
+        public Type getMimeType()
+        {
+            return _type;
+        }
     }
 }

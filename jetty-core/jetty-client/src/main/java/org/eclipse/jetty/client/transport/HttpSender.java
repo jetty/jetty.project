@@ -620,20 +620,22 @@ public abstract class HttpSender
         }
 
         @Override
-        protected void onCompleteFailure(Throwable x)
+        protected void onFailure(Throwable x)
         {
-            if (chunk != null)
-            {
-                chunk.release();
-                chunk = Content.Chunk.next(chunk);
-            }
-
             failRequest(x);
             internalAbort(x);
 
             Promise<Boolean> promise = abort;
             if (promise != null)
                 promise.succeeded(true);
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            if (chunk != null)
+                chunk.release();
+            chunk = Content.Chunk.next(chunk);
         }
 
         @Override

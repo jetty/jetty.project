@@ -366,6 +366,7 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
+    @Deprecated(forRemoval = true)
     public void testQuadraticPool()
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic();
@@ -439,15 +440,15 @@ public class ArrayByteBufferPoolTest
         Collections.reverse(buffers);
         buffers.forEach(RetainableByteBuffer::release);
 
-        Pool<RetainableByteBuffer> bucketPool = pool.poolFor(maxCapacity, true);
+        Pool<RetainableByteBuffer.Pooled> bucketPool = pool.poolFor(maxCapacity, true);
         assertThat(bucketPool, instanceOf(CompoundPool.class));
-        CompoundPool<RetainableByteBuffer> compoundPool = (CompoundPool<RetainableByteBuffer>)bucketPool;
+        CompoundPool<RetainableByteBuffer.Pooled> compoundPool = (CompoundPool<RetainableByteBuffer.Pooled>)bucketPool;
         assertThat(compoundPool.getPrimaryPool().size(), is(ConcurrentPool.OPTIMAL_MAX_SIZE));
         assertThat(compoundPool.getSecondaryPool().size(), is(0));
     }
 
     @Test
-    public void testRemoveAndRelease()
+    public void testReleaseAndRemove()
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool();
 
@@ -470,9 +471,9 @@ public class ArrayByteBufferPoolTest
         retained1 = pool.acquire(1024, false);
         retained1.retain();
 
-        assertTrue(pool.removeAndRelease(reserved1));
-        assertTrue(pool.removeAndRelease(acquired1));
-        assertFalse(pool.removeAndRelease(retained1));
+        assertTrue(reserved1.releaseAndRemove());
+        assertTrue(acquired1.releaseAndRemove());
+        assertFalse(retained1.releaseAndRemove());
         assertTrue(retained1.release());
 
         assertThat(pool.getHeapByteBufferCount(), is(2L));

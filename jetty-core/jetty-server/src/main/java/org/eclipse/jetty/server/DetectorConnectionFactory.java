@@ -137,7 +137,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         return configure(new DetectorConnection(endPoint, connector), connector, endPoint);
     }
 
-    private class DetectorConnection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+    private class DetectorConnection extends AbstractConnection.NonBlocking implements Connection.UpgradeFrom, Connection.UpgradeTo
     {
         private final Connector _connector;
         private final RetainableByteBuffer _buffer;
@@ -238,7 +238,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
          */
         private boolean detectAndUpgrade()
         {
-            if (!_buffer.hasRemaining())
+            if (_buffer.isEmpty())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Detector {} skipping detection on an empty buffer", getProtocol());

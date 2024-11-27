@@ -126,7 +126,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      *
      * @param context the WebAppContext being deployed
      */
-    public void findAndFilterContainerPaths(final WebAppContext context) throws Exception
+    public void findAndFilterContainerPaths(final WebAppContext context)
     {
         String pattern = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
         if (LOG.isDebugEnabled())
@@ -391,7 +391,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (isEmptyResource(dir))
             return;
 
-        Resource resourcesDir = null;
+        Resource resourcesDir;
 
         if (cache != null && cache.containsKey(dir))
         {
@@ -433,7 +433,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Set<Resource> dirs = (Set<Resource>)context.getAttribute(METAINF_RESOURCES);
         if (dirs == null)
         {
-            dirs = new HashSet<Resource>();
+            dirs = new HashSet<>();
             context.setAttribute(METAINF_RESOURCES, dirs);
         }
         if (LOG.isDebugEnabled())
@@ -456,7 +456,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public void scanForFragment(WebAppContext context, Resource dir, ConcurrentHashMap<Resource, Resource> cache)
     {
-        Resource webFrag = null;
+        Resource webFrag;
         if (cache != null && cache.containsKey(dir))
         {
             webFrag = cache.get(dir);
@@ -500,7 +500,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         Map<Resource, Resource> fragments = (Map<Resource, Resource>)context.getAttribute(METAINF_FRAGMENTS);
         if (fragments == null)
         {
-            fragments = new HashMap<Resource, Resource>();
+            fragments = new HashMap<>();
             context.setAttribute(METAINF_FRAGMENTS, fragments);
         }
 
@@ -552,8 +552,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         else
         {
             //not using caches or not in the cache so find all tlds
-            tlds = new HashSet<>();
-            tlds.addAll(getTlds(context, dir));
+            tlds = new HashSet<>(getTlds(context, dir));
 
             if (cache != null)
             {

@@ -32,6 +32,9 @@ etc/jetty.xml
 ## Port to use to build URIs for secure redirects
 # jetty.httpConfig.securePort=8443
 
+## Input buffer size (in bytes), used if not overridden by TLS or other concerns
+# jetty.httpConfig.inputBufferSize=8192
+
 ## Response content buffer size (in bytes)
 # jetty.httpConfig.outputBufferSize=32768
 
@@ -65,9 +68,15 @@ etc/jetty.xml
 ## Relative Redirect Locations allowed
 # jetty.httpConfig.relativeRedirectAllowed=true
 
+## Redirect body generated
+# jetty.httpConfig.generateRedirectBody=false
+
 ## Whether to use direct ByteBuffers for reading or writing
 # jetty.httpConfig.useInputDirectByteBuffers=true
 # jetty.httpConfig.useOutputDirectByteBuffers=true
+
+## The minimum space available in a retained input buffer before allocating a new one.
+# jetty.httpConfig.minInputBufferSpace=1024
 # end::documentation-http-config[]
 
 # tag::documentation-server-compliance[]
@@ -88,9 +97,6 @@ etc/jetty.xml
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
 # jetty.server.stopAtShutdown=true
-
-## Timeout in ms to apply when stopping the server gracefully
-# jetty.server.stopTimeout=5000
 
 ## Dump the state of the Jetty server, components, and webapps after startup
 # jetty.server.dumpAfterStart=false
@@ -123,3 +129,4 @@ etc/jetty.xml
 
 ## Should the DefaultHandler show a list of known contexts in a root 404 response.
 # jetty.server.default.showContexts=true
+

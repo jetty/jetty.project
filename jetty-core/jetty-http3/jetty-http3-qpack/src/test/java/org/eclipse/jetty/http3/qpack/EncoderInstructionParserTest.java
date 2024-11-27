@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.qpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
-import org.eclipse.jetty.http3.qpack.util.QpackTestUtil;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.BeforeEach;
