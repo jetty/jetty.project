@@ -290,8 +290,11 @@ public class BaseBuilder
                     }
                     else
                     {
-                        // if (explicitly added and ini file modified)
-                        if (startArgs.getStartModules().contains(module.getName()))
+                        // Figure out which modules need *.ini files created.
+                        // Modules declared in --add-modules are explicitlyAdded
+                        boolean explicitlyAdded = startArgs.getStartModules().contains(module.getName());
+                        // Modules that are transitive and have an ini-template
+                        if (explicitlyAdded || (module.isTransitive() && module.hasIniTemplate()))
                         {
                             ini = builder.get().addModule(module, startArgs.getJettyEnvironment().getProperties());
                             if (ini != null)
@@ -317,18 +320,6 @@ public class BaseBuilder
                 }
                 else if (module.isTransitive())
                 {
-                    if (module.hasIniTemplate())
-                    {
-                        try
-                        {
-                            builder.get().addModule(module, startArgs.getJettyEnvironment().getProperties());
-                        }
-                        catch (IOException e)
-                        {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
                     StartLog.info("%-15s transitively enabled", module.getName());
                 }
                 else
