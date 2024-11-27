@@ -319,14 +319,17 @@ public class BaseBuilder
                 {
                     if (module.hasIniTemplate())
                     {
-                        StartLog.info("%-15s transitively enabled, ini template available with --add-modules=%s",
-                            module.getName(),
-                            module.getName());
+                        try
+                        {
+                            builder.get().addModule(module, startArgs.getJettyEnvironment().getProperties());
+                        }
+                        catch (IOException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
                     }
-                    else
-                    {
-                        StartLog.info("%-15s transitively enabled", module.getName());
-                    }
+
+                    StartLog.info("%-15s transitively enabled", module.getName());
                 }
                 else
                 {

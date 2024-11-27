@@ -240,8 +240,6 @@ public class Modules implements Iterable<Module>
                 index = "";
                 name = "";
             }
-            if (module.isTransitive() && module.hasIniTemplate())
-                out.printf(" ".repeat(31) + "ini template available with --add-modules=%s%n", module.getName());
         }
     }
 
