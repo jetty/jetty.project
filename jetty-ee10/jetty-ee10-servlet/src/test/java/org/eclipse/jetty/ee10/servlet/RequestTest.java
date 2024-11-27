@@ -663,7 +663,7 @@ public class RequestTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(parameterMap.get(), is("{a=[1, 2, 3],b=[one, two, three],c=[],d=[xyz]}"));
-        assertThat(response.getContent().replaceAll("\r\n","\n"), is("""
+        assertThat(response.getContent().replaceAll("\r\n", "\n"), is("""
             1
             2
             3
