@@ -2,7 +2,7 @@
 Enables secure remote RMI access to platform MBeans.
 
 [depend]
-ssl
+ssl-context
 jmx-remote
 
 [files]

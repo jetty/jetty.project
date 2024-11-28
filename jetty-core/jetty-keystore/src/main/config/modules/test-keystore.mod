@@ -7,7 +7,7 @@ demo
 ssl
 
 [before]
-ssl
+ssl-context
 
 [files]
 maven://org.bouncycastle/bcpkix-jdk15to18/${bouncycastle.version}|lib/bouncycastle/bcpkix-jdk15to18-${bouncycastle.version}.jar

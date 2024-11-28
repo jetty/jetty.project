@@ -6,7 +6,7 @@ connector
 ssl
 
 [depend]
-ssl
+ssl-context
 
 [xml]
 etc/jetty-ssl-context-reload.xml
