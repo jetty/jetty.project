@@ -311,9 +311,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("read error={} {}", error, this);
             if (error != null)
-            {
                 ExceptionUtil.ifExceptionThrowAs(IOException.class, error);
-            }
 
             if (content.isEof())
             {

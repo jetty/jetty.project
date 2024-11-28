@@ -22,6 +22,7 @@ import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -276,9 +277,7 @@ public class HttpInput extends ServletInputStream
                 Throwable failure = chunk.getFailure();
                 if (LOG.isDebugEnabled())
                     LOG.debug("read failure={} {}", failure, this);
-                if (failure instanceof IOException)
-                    throw (IOException)failure;
-                throw new IOException(failure);
+                throw IO.rethrow(failure);
             }
 
             // Empty and not a failure; can only be EOF as per ContentProducer.nextChunk() contract.
