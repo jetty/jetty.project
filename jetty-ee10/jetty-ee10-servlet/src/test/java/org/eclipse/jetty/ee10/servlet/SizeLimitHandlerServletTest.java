@@ -196,7 +196,6 @@ public class SizeLimitHandlerServletTest
         assertThat(response.getStatus(), equalTo(HttpStatus.PAYLOAD_TOO_LARGE_413));
     }
 
-
     @Test
     public void testGzipEchoNoAcceptEncoding() throws Exception
     {
