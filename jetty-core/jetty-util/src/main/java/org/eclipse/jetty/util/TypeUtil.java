@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
@@ -864,4 +865,39 @@ public class TypeUtil
             return false;
         }
     }
+
+    /**
+     * Pretty print a map. Specifically expanding Array values.
+     * @param map The map to render as a String
+     * @return A String representation of the map
+     */
+    public static String toString(Map<?, ?> map)
+    {
+        if (map.isEmpty())
+            return "{}";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('{');
+        for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext();)
+        {
+            Map.Entry<?, ?> e = i.next();
+            Object key = e.getKey();
+            sb.append(key);
+            sb.append('=');
+
+            Object value = e.getValue();
+
+            if (value == null)
+                sb.append("null");
+            else if (value.getClass().isArray())
+                sb.append(Arrays.asList((Object[])value));
+            else
+                sb.append(value);
+            if (i.hasNext())
+                sb.append(',');
+        }
+        sb.append('}');
+        return sb.toString();
+    }
+
 }

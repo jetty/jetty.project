@@ -15,7 +15,6 @@ package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -330,33 +329,7 @@ public class MultiMap<V> extends LinkedHashMap<String, List<V>>
     @Override
     public String toString()
     {
-        Iterator<Map.Entry<String, List<V>>> iter = entrySet().iterator();
-        StringBuilder sb = new StringBuilder();
-        sb.append('{');
-        boolean delim = false;
-        while (iter.hasNext())
-        {
-            Map.Entry<String, List<V>> e = iter.next();
-            if (delim)
-            {
-                sb.append(", ");
-            }
-            String key = e.getKey();
-            List<V> vals = e.getValue();
-            sb.append(key);
-            sb.append('=');
-            if (vals.size() == 1)
-            {
-                sb.append(vals.get(0));
-            }
-            else
-            {
-                sb.append(vals);
-            }
-            delim = true;
-        }
-        sb.append('}');
-        return sb.toString();
+        return TypeUtil.toString(this);
     }
 
     /**
