@@ -87,7 +87,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private String _serverInfo = __serverInfo;
     private boolean _openEarly = true;
-    private boolean _stopAtShutdown = false;
+    private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
     private Handler _defaultHandler;
@@ -95,7 +95,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private RequestLog _requestLog;
     private boolean _dryRun;
     private volatile DateField _dateField;
-    private long _stopTimeout = 0;
+    private long _stopTimeout;
     private InvocationType _invocationType = InvocationType.NON_BLOCKING;
     private File _tempDirectory;
 
