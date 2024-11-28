@@ -155,18 +155,22 @@ Before you <<deploy,deploy your first web application>>, take a moment to see wh
 $JETTY_BASE
 ├── resources
 │   └── jetty-logging.properties <1>
-└── start.d <2>
-    └── http.ini <3>
+└── start.d                      <2>
+    ├── bytebufferpool.ini
+    ├── http-config.ini
+    ├── http.ini                 <3>
+    ├── scheduler.ini
+    ├── server.ini
+    └── threadpool.ini
 ----
 
 <1> The `resources/jetty-logging.properties` file configures the server's logging level; this file was auto-generated when the `jetty-logging` module was activated as a transitive dependency of the `http` module.
-<2> The `start.d/` directory contains the `+*.ini+` configuration files for any modules you have explicitly activated.
+<2> The `start.d/` directory contains the `+*.ini+` configuration files for any modules you have enabled, either explicitly or transitively.
 <3> The `start.d/http.ini` file is the `http` module configuration file, where you can specify values for the xref:modules/standard.adoc#http[`http` module properties].
 
 [NOTE]
 ====
-By default, Jetty does *not* generate `+*.ini+` configuration files in `start.d/` for modules activated as transitive dependencies.
-To manually configure such modules, you should activate them directly via Jetty's `--add-modules` flag.
+Jetty generates `+*.ini+` configuration files in `start.d/` also for modules enabled as transitive dependencies that have an xref:modules/index.adoc#directive-ini-template[`+[ini-template]+` directive].
 ====
 
 In the `http.ini` file you can find the following (among other contents):

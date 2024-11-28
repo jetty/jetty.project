@@ -710,8 +710,6 @@ For example, it is the <<https,`https` module>> that configures the wrapped prot
 Similarly, it is the <<http2,`http2` module>> that configures the wrapped protocol to be HTTP/2.
 If you enable _both_ the `https` and the `http2` module, you will have a single secure connector that will be able to interpret both HTTP/1.1 and HTTP/2.
 
-TIP: Recall from the xref:modules/index.adoc[section about modules], that only modules that are explicitly enabled get their module configuration file (`+*.ini+`) saved in `$JETTY_BASE/start.d/`, and you want `$JETTY_BASE/start.d/ssl.ini` to be present so that you can configure the connector properties, the KeyStore properties and the TLS properties.
-
 [[ssl-customize]]
 === Customizing KeyStore and SSL/TLS Configuration
 
