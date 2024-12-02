@@ -1338,6 +1338,14 @@
           <version>${njord.version}</version>
         </plugin>
         <plugin>
+          <groupId>net.webtide.tools</groupId>
+          <artifactId>webtide-release-tools-plugin</artifactId>
+          <version>1.0-SNAPSHOT</version>
+          <configuration>
+            <configFile>${basedir}/config-12.0.x.json</configFile>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
