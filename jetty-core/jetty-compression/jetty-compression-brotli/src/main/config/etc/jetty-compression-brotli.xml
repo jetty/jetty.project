@@ -7,7 +7,7 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Ref refid="CompressionHandler">
-    <Call name="addCompression">
+    <Call name="registerCompression">
       <Arg>
         <New id="brotliCompression" class="org.eclipse.jetty.compression.brotli.BrotliCompression">
           <Set name="minCompressSize" property="jetty.brotli.minCompressSize"/>

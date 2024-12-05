@@ -104,7 +104,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         byte[] resourceBody = Files.readAllBytes(resourcePath);
 
         CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(compression);
+        compressionHandler.registerCompression(compression);
         CompressionConfig config = CompressionConfig.builder()
             .compressIncludeEncoding("br")
             .compressIncludeEncoding("gzip")
@@ -188,7 +188,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         byte[] resourceBody = Files.readAllBytes(resourcePath);
 
         CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(compression);
+        compressionHandler.registerCompression(compression);
         CompressionConfig config = CompressionConfig.builder()
             .compressIncludeMimeType("text/plain")
             .compressIncludeMimeType("image/svg+xml")
@@ -249,7 +249,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         String message = "Hello Jetty!";
 
         CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(compression);
+        compressionHandler.registerCompression(compression);
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -295,7 +295,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         String resourceBody = Files.readString(resourcePath, UTF_8);
 
         CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(compression);
+        compressionHandler.registerCompression(compression);
         compressionHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -396,7 +396,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         byte[] resourceBody = Files.readAllBytes(resourcePath);
 
         CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(compression);
+        compressionHandler.registerCompression(compression);
         CompressionConfig config = CompressionConfig.builder()
             .compressIncludePath("/path/*")
             .compressExcludePath("*.png")
@@ -473,7 +473,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         byte[] resourceBody = Files.readAllBytes(resourcePath);
 
         CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(compression);
+        compressionHandler.registerCompression(compression);
         CompressionConfig config = CompressionConfig.builder()
             .decompressIncludeMethod("GET")
             .decompressIncludeMethod("POST")
@@ -611,9 +611,9 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         byte[] resourceBody = Files.readAllBytes(resourcePath);
 
         CompressionHandler compressionHandler = new CompressionHandler();
-        compressionHandler.addCompression(gzipCompression);
-        compressionHandler.addCompression(brotliCompression);
-        compressionHandler.addCompression(zstdCompression);
+        compressionHandler.registerCompression(gzipCompression);
+        compressionHandler.registerCompression(brotliCompression);
+        compressionHandler.registerCompression(zstdCompression);
 
         QuotedQualityCSV qcsv = new QuotedQualityCSV();
         qcsv.addValue(preferredEncodingCsv);

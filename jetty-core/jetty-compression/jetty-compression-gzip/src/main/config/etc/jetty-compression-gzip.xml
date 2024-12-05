@@ -7,7 +7,7 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Ref refid="CompressionHandler">
-    <Call name="addCompression">
+    <Call name="registerCompression">
       <Arg>
         <New id="gzipCompression" class="org.eclipse.jetty.compression.gzip.GzipCompression">
           <Set name="minCompressSize" property="jetty.gzip.minCompressSize"/>
