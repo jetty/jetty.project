@@ -247,10 +247,12 @@ public class HttpExchange implements CyclicTimeouts.Expirable
     {
         // Atomically change the state of this exchange to be completed.
         // This will avoid that this exchange can be associated to a channel.
+        HttpChannel channel;
         boolean abortRequest;
         boolean abortResponse;
         try (AutoLock ignored = lock.lock())
         {
+            channel = _channel;
             abortRequest = lockedCompleteRequest(failure);
             abortResponse = lockedCompleteResponse(failure);
         }
@@ -265,11 +267,6 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             LOG.debug("Failed {}: req={}/rsp={}", this, abortRequest, abortResponse, failure);
 
         // We failed this exchange, deal with it.
-
-        // Retrieve the channel before other code
-        // may cause disassociation, so we can tell
-        // whether this exchange was ever associated.
-        HttpChannel channel = getHttpChannel();
 
         // Applications could be blocked providing
         // request content, notify them of the failure.
