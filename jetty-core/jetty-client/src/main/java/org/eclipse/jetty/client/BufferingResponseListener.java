@@ -24,7 +24,10 @@ import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferPool;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * <p>Implementation of {@link Listener} that buffers the content up to a maximum length
@@ -36,7 +39,8 @@ import org.eclipse.jetty.util.BufferUtil;
 public abstract class BufferingResponseListener implements Listener
 {
     private final int maxLength;
-    private ByteBuffer buffer;
+    private final ByteBufferAccumulator buffer;
+    private byte[] result;
     private String mediaType;
     private String encoding;
 
@@ -55,6 +59,18 @@ public abstract class BufferingResponseListener implements Listener
      */
     public BufferingResponseListener(int maxLength)
     {
+        this(ByteBufferPool.NON_POOLING, maxLength);
+    }
+
+    /**
+     * Creates an instance with the given and byte buffer pool and maximum length.
+     *
+     * @param maxLength the maximum length of the content
+     * @param byteBufferPool the byte buffer pool to use
+     */
+    public BufferingResponseListener(ByteBufferPool byteBufferPool, int maxLength)
+    {
+        this.buffer = new ByteBufferAccumulator(requireNonNull(byteBufferPool, "byteBufferPool is null"), true);
         if (maxLength < 0)
             throw new IllegalArgumentException("Invalid max length " + maxLength);
         this.maxLength = maxLength;
@@ -109,16 +125,7 @@ public abstract class BufferingResponseListener implements Listener
         int length = content.remaining();
         if (length == 0)
             return;
-        if (length > BufferUtil.space(buffer))
-        {
-            int remaining = buffer == null ? 0 : buffer.remaining();
-            if (remaining + length > maxLength)
-                response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
-            int requiredCapacity = buffer == null ? length : buffer.capacity() + length;
-            int newCapacity = Math.min(Integer.highestOneBit(requiredCapacity) << 1, maxLength);
-            buffer = BufferUtil.ensureCapacity(buffer, newCapacity);
-        }
-        BufferUtil.append(buffer, content);
+        buffer.copyBuffer(content);
     }
 
     @Override
@@ -140,9 +147,7 @@ public abstract class BufferingResponseListener implements Listener
      */
     public byte[] getContent()
     {
-        if (buffer == null)
-            return new byte[0];
-        return BufferUtil.toArray(buffer);
+        return toByteArray();
     }
 
     /**
@@ -165,9 +170,7 @@ public abstract class BufferingResponseListener implements Listener
      */
     public String getContentAsString(String encoding)
     {
-        if (buffer == null)
-            return null;
-        return BufferUtil.toString(buffer, Charset.forName(encoding));
+        return getContentAsString(Charset.forName(encoding));
     }
 
     /**
@@ -177,9 +180,9 @@ public abstract class BufferingResponseListener implements Listener
      */
     public String getContentAsString(Charset encoding)
     {
-        if (buffer == null)
+        if (buffer.getLength() == 0)
             return null;
-        return BufferUtil.toString(buffer, encoding);
+        return new String(toByteArray(), encoding);
     }
 
     /**
@@ -187,8 +190,21 @@ public abstract class BufferingResponseListener implements Listener
      */
     public InputStream getContentAsInputStream()
     {
-        if (buffer == null)
-            return new ByteArrayInputStream(new byte[0]);
-        return new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), buffer.remaining());
+        return new ByteArrayInputStream(toByteArray());
+    }
+
+    private byte[] toByteArray()
+    {
+        synchronized (buffer)
+        {
+            try (ByteBufferAccumulator buffer = this.buffer)
+            {
+                if (buffer.getLength() == 0)
+                    result = new byte[0];
+                else
+                    result = buffer.toByteArray();
+            }
+        }
+        return result;
     }
 }
