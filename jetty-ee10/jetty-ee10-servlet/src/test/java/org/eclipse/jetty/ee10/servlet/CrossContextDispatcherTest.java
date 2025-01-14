@@ -115,8 +115,8 @@ public class CrossContextDispatcherTest
     private Server _server;
     private LocalConnector _connector;
     private ServletContextHandler _contextHandler;
-
     private ServletContextHandler _targetServletContextHandler;
+    private ServletContextHandler _rootContextHandler;
 
     @BeforeEach
     public void init() throws Exception
@@ -145,6 +145,13 @@ public class CrossContextDispatcherTest
         resourceContextHandler.setHandler(resourceHandler);
         resourceContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(resourceContextHandler);
+
+        _rootContextHandler = new ServletContextHandler();
+        _rootContextHandler.setContextPath("/");
+        _rootContextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("docroot"));
+        _rootContextHandler.setCrossContextDispatchSupported(true);
+        contextCollection.addHandler(_rootContextHandler);
+
         _server.setHandler(contextCollection);
         _server.addConnector(_connector);
 
@@ -156,6 +163,91 @@ public class CrossContextDispatcherTest
     {
         _server.stop();
         _server.join();
+    }
+
+    @Test
+    public void testForwardToRoot() throws Exception
+    {
+        _rootContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+
+        String rawResponse = _connector.getResponse("""
+            GET /context/dispatch/?forward=/verify&ctx=/ HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        String content = response.getContent();
+        String[] contentLines = content.split("\\n");
+
+        //verify forward attributes
+        assertThat(content, containsString("Verified!"));
+        assertThat(content, containsString("jakarta.servlet.forward.context_path=/context"));
+        assertThat(content, containsString("jakarta.servlet.forward.servlet_path=/dispatch"));
+        assertThat(content, containsString("jakarta.servlet.forward.path_info=/"));
+
+        String forwardMapping = extractLine(contentLines, "jakarta.servlet.forward.mapping=");
+        assertNotNull(forwardMapping);
+        assertThat(forwardMapping, containsString("CrossContextDispatchServlet"));
+        assertThat(content, containsString("jakarta.servlet.forward.query_string=forward=/verify&ctx=/"));
+        assertThat(content, containsString("jakarta.servlet.forward.request_uri=/context/dispatch/"));
+        //verify request values
+        assertThat(content, containsString("REQUEST_URL=http://localhost/"));
+        assertThat(content, containsString("CONTEXT_PATH="));
+        assertThat(content, containsString("SERVLET_PATH=/verify"));
+        assertThat(content, containsString("PATH_INFO=/pinfo"));
+        String mapping = extractLine(contentLines, "MAPPING=");
+        assertNotNull(mapping);
+        assertThat(mapping, containsString("VerifyForwardServlet"));
+        String params = extractLine(contentLines, "PARAMS=");
+        assertNotNull(params);
+        params = params.substring(params.indexOf("=") + 1);
+        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward", "ctx"));
+        assertThat(content, containsString("REQUEST_URI=/verify/pinfo"));
+    }
+
+    @Test
+    public void testIncludeToRoot() throws Exception
+    {
+        _rootContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+
+         String rawResponse = _connector.getResponse("""
+            GET /context/dispatch/?include=/verify&ctx=/ HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        String content = response.getContent();
+        String[] contentLines = content.split("\\n");
+
+        //verify include attributes
+        assertThat(content, containsString("Verified!"));
+        assertThat(content, containsString("jakarta.servlet.include.context_path=/"));
+        assertThat(content, containsString("jakarta.servlet.include.servlet_path=/verify"));
+        assertThat(content, containsString("jakarta.servlet.include.path_info=/pinfo"));
+        String includeMapping = extractLine(contentLines, "jakarta.servlet.include.mapping=");
+        assertThat(includeMapping, containsString("VerifyIncludeServlet"));
+        assertThat(content, containsString("jakarta.servlet.include.request_uri=/verify/pinfo"));
+        //verify request values
+        assertThat(content, containsString("CONTEXT_PATH=/context"));
+        assertThat(content, containsString("SERVLET_PATH=/dispatch"));
+        assertThat(content, containsString("PATH_INFO=/"));
+        String mapping = extractLine(contentLines, "MAPPING=");
+        assertThat(mapping, containsString("CrossContextDispatchServlet"));
+        assertThat(content, containsString("QUERY_STRING=include=/verify"));
+        assertThat(content, containsString("REQUEST_URI=/context/dispatch/"));
+        String params = extractLine(contentLines, "PARAMS=");
+        assertNotNull(params);
+        params = params.substring(params.indexOf("=") + 1);
+        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include", "ctx"));
     }
 
     @Test
@@ -732,10 +824,12 @@ public class CrossContextDispatcherTest
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             RequestDispatcher dispatcher;
-
+            String ctx = request.getParameter("ctx");
+            if (StringUtil.isBlank(ctx))
+                ctx = "/foreign";
             if (request.getParameter("forward") != null)
             {
-                ServletContext foreign = getServletContext().getContext("/foreign");
+                ServletContext foreign = getServletContext().getContext(ctx);
                 assertNotNull(foreign);
                 dispatcher = foreign.getRequestDispatcher(request.getParameter("forward") + "/pinfo?a=b");
 
@@ -746,7 +840,7 @@ public class CrossContextDispatcherTest
             }
             else if (request.getParameter("include") != null)
             {
-                ServletContext foreign = getServletContext().getContext("/foreign");
+                ServletContext foreign = getServletContext().getContext(ctx);
                 assertNotNull(foreign);
                 dispatcher = foreign.getRequestDispatcher(request.getParameter("include") + "/pinfo?a=b");
 

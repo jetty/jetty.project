@@ -70,6 +70,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     private final ConcurrentHashMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
     private final AtomicLong _cachedSize = new AtomicLong();
     private final ByteBufferPool.Sized _bufferPool;
+    private final AtomicBoolean _shrinking = new AtomicBoolean();
     private int _maxCachedFileSize = DEFAULT_MAX_CACHED_FILE_SIZE;
     private int _maxCachedFiles = DEFAULT_MAX_CACHED_FILES;
     private long _maxCacheSize = DEFAULT_MAX_CACHE_SIZE;
@@ -138,35 +139,46 @@ public class CachingHttpContentFactory implements HttpContent.Factory
 
     private void shrinkCache()
     {
-        // While we need to shrink
-        int numCacheEntries = _cache.size();
-        while (numCacheEntries > 0 && (numCacheEntries > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
+        // Only 1 thread shrinking at once
+        if (_shrinking.compareAndSet(false, true))
         {
-            // Scan the entire cache and generate an ordered list by last accessed time.
-            SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
+            try
             {
-                long delta = NanoTime.elapsed(c2.getLastAccessedNanos(), c1.getLastAccessedNanos());
-                if (delta != 0)
-                    return delta < 0 ? -1 : 1;
+                // While we need to shrink
+                int numCacheEntries = _cache.size();
+                while (numCacheEntries > 0 && (numCacheEntries > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
+                {
+                    // Scan the entire cache and generate an ordered list by last accessed time.
+                    SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
+                    {
+                        long delta = NanoTime.elapsed(c2.getLastAccessedNanos(), c1.getLastAccessedNanos());
+                        if (delta != 0)
+                            return delta < 0 ? -1 : 1;
 
-                delta = c1.getContentLengthValue() - c2.getContentLengthValue();
-                if (delta != 0)
-                    return delta < 0 ? -1 : 1;
+                        delta = c1.getContentLengthValue() - c2.getContentLengthValue();
+                        if (delta != 0)
+                            return delta < 0 ? -1 : 1;
 
-                return c1.getKey().compareTo(c2.getKey());
-            });
-            sorted.addAll(_cache.values());
+                        return c1.getKey().compareTo(c2.getKey());
+                    });
+                    sorted.addAll(_cache.values());
 
-            // TODO: Can we remove the buffers from the content before evicting.
-            // Invalidate least recently used first
-            for (CachingHttpContent content : sorted)
-            {
-                if (_cache.size() <= _maxCachedFiles && _cachedSize.get() <= _maxCacheSize)
-                    break;
-                removeFromCache(content);
+                    // TODO: Can we remove the buffers from the content before evicting.
+                    // Invalidate least recently used first
+                    for (CachingHttpContent content : sorted)
+                    {
+                        if (_cache.size() <= _maxCachedFiles && _cachedSize.get() <= _maxCacheSize)
+                            break;
+                        removeFromCache(content);
+                    }
+
+                    numCacheEntries = _cache.size();
+                }
             }
-
-            numCacheEntries = _cache.size();
+            finally
+            {
+                _shrinking.set(false);
+            }
         }
     }
 

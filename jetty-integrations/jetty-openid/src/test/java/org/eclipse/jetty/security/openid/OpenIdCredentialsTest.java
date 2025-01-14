@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.openid;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -28,7 +27,7 @@ public class OpenIdCredentialsTest
     {
         String issuer = "myIssuer123";
         String clientId = "myClientId456";
-        OpenIdConfiguration configuration = new OpenIdConfiguration(issuer, "", "", clientId, "", new HttpClient());
+        OpenIdConfiguration configuration = new OpenIdConfiguration.Builder(issuer, clientId, "secret").build();
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("iss", issuer);

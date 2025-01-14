@@ -25,6 +25,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
@@ -38,6 +39,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ArrayByteBufferPoolTest
 {
+    @Test
+    public void testDump()
+    {
+        ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 100, Integer.MAX_VALUE, 200, 200);
+        pool.setStatisticsEnabled(true);
+
+        List<RetainableByteBuffer> buffers = new ArrayList<>();
+
+        for (int i = 1; i < 151; i++)
+            buffers.add(pool.acquire(i, true));
+
+        buffers.forEach(RetainableByteBuffer::release);
+
+        String dump = pool.dump();
+        assertThat(dump, containsString("direct non-pooled acquisitions size=5\n"));
+        assertThat(dump, containsString("110: 10\n"));
+        assertThat(dump, containsString("120: 10\n"));
+        assertThat(dump, containsString("130: 10\n"));
+        assertThat(dump, containsString("140: 10\n"));
+        assertThat(dump, containsString("150: 10\n"));
+        pool.clear();
+        assertThat(pool.dump(), containsString("direct non-pooled acquisitions size=0\n"));
+    }
+
     @Test
     public void testMaxMemoryEviction()
     {

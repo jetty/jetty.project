@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +68,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final long _maxHeapMemory;
     private final long _maxDirectMemory;
     private final IntUnaryOperator _bucketIndexFor;
+    private final IntUnaryOperator _bucketCapacity;
     private final AtomicBoolean _evictor = new AtomicBoolean(false);
     private final AtomicLong _reserved = new AtomicLong();
+    private final ConcurrentMap<Integer, Long> _noBucketDirectAcquires = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, Long> _noBucketIndirectAcquires = new ConcurrentHashMap<>();
     private boolean _statisticsEnabled;
 
     /**
@@ -166,6 +171,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         _maxHeapMemory = maxMemory(maxHeapMemory);
         _maxDirectMemory = maxMemory(maxDirectMemory);
         _bucketIndexFor = bucketIndexFor;
+        _bucketCapacity = bucketCapacity;
     }
 
     private long maxMemory(long maxMemory)
@@ -213,7 +219,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         // No bucket, return non-pooled.
         if (bucket == null)
+        {
+            recordNoBucketAcquire(size, direct);
             return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
+        }
 
         bucket.recordAcquire();
 
@@ -230,6 +239,22 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         RetainableByteBuffer.Pooled buffer = entry.getPooled();
         ((PooledBuffer)buffer).acquire();
         return buffer;
+    }
+
+    private void recordNoBucketAcquire(int size, boolean direct)
+    {
+        if (isStatisticsEnabled())
+        {
+            ConcurrentMap<Integer, Long> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
+            int idx = _bucketIndexFor.applyAsInt(size);
+            int key = _bucketCapacity.applyAsInt(idx);
+            map.compute(key, (k, v) ->
+            {
+                if (v == null)
+                    return 1L;
+                return v + 1L;
+            });
+        }
     }
 
     @Override
@@ -437,7 +462,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     public void clear()
     {
         clearBuckets(_direct);
+        _noBucketDirectAcquires.clear();
         clearBuckets(_indirect);
+        _noBucketIndirectAcquires.clear();
     }
 
     private void clearBuckets(RetainedBucket[] buckets)
@@ -456,7 +483,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             indent,
             this,
             DumpableCollection.fromArray("direct", _direct),
-            DumpableCollection.fromArray("indirect", _indirect));
+            new DumpableMap("direct non-pooled acquisitions", _noBucketDirectAcquires),
+            DumpableCollection.fromArray("indirect", _indirect),
+            new DumpableMap("indirect non-pooled acquisitions", _noBucketIndirectAcquires)
+        );
     }
 
     @Override

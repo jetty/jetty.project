@@ -464,9 +464,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating {} max header list size to {} for {}", local ? "decoder" : "encoder", value, this);
                     if (local)
+                    {
                         parser.getHpackDecoder().setMaxHeaderListSize(value);
+                    }
                     else
-                        generator.getHpackEncoder().setMaxHeaderListSize(value);
+                    {
+                        HpackEncoder hpackEncoder = generator.getHpackEncoder();
+                        hpackEncoder.setMaxHeaderListSize(Math.min(value, hpackEncoder.getMaxHeaderListSize()));
+                    }
                 }
                 case SettingsFrame.ENABLE_CONNECT_PROTOCOL ->
                 {

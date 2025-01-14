@@ -1315,6 +1315,7 @@ public class HTTP2Test extends AbstractTest
         }, httpConfig);
         connector.getBean(AbstractHTTP2ServerConnectionFactory.class).setMaxFrameSize(17 * 1024);
         http2Client.setMaxFrameSize(18 * 1024);
+        http2Client.setMaxRequestHeadersSize(2 * maxHeadersSize);
 
         // Wait for the SETTINGS frame to be exchanged.
         CountDownLatch settingsLatch = new CountDownLatch(1);
