@@ -1392,6 +1392,7 @@ public class ServletHandler extends Handler.Wrapper
         {
             List<FilterMapping> mappings = filterMappings == null ? Collections.emptyList() : Arrays.asList(filterMappings);
             updateAndSet(_filterMappings, mappings);
+            _matchAfterIndex = mappings.size() - 1;
             if (isRunning())
                 updateMappings();
             invalidateChainsCache();
