@@ -22,6 +22,7 @@ import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
+import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.session.SessionData;
@@ -34,8 +35,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * MongoSessionDataStoreTest
@@ -112,6 +115,85 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
         {
             Thread.currentThread().setContextClassLoader(old);
         }
+    }
+
+    @Test
+    public void testBadWorkerName() throws Exception
+    {
+        Server server = new Server();
+        DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
+        idMgr.setWorkerName("b-a-d");
+        server.addBean(idMgr);
+
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/ctx");
+
+        server.setHandler(context);
+        context.getSessionHandler().setSessionIdManager(idMgr);
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setSaveOnCreate(true);
+        server.addBean(cacheFactory);
+
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        server.addBean(factory);
+
+        assertThrows(IllegalStateException.class, () ->
+        {
+            server.start();
+        });
+    }
+
+    @Test
+    public void testGoodWorkerName() throws Exception
+    {
+        Server server = new Server();
+        DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
+        idMgr.setWorkerName("NODE_99");
+        server.addBean(idMgr);
+
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/ctx");
+
+        server.setHandler(context);
+        context.getSessionHandler().setSessionIdManager(idMgr);
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setSaveOnCreate(true);
+        server.addBean(cacheFactory);
+
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        server.addBean(factory);
+
+        assertDoesNotThrow(() ->
+            server.start());
+    }
+
+    @Test
+    public void testDefaultWorkerName() throws Exception
+    {
+        Server server = new Server();
+        DefaultSessionIdManager idMgr = new DefaultSessionIdManager(server);
+        server.addBean(idMgr);
+
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/ctx");
+
+        server.setHandler(context);
+        context.getSessionHandler().setSessionIdManager(idMgr);
+
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setSaveOnCreate(true);
+        server.addBean(cacheFactory);
+
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        server.addBean(factory);
+
+        assertDoesNotThrow(() ->
+            server.start());
     }
 
     /**

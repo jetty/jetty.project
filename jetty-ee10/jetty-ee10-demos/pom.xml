@@ -13,7 +13,6 @@
   <name>EE10 :: Demos</name>
 
   <modules>
-    <!-- module>jetty-ee10-demo-embedded</module -->
     <module>jetty-ee10-demo-jetty-websocket-webapp</module>
     <module>jetty-ee10-demo-proxy-webapp</module>
     <module>jetty-ee10-demo-template</module>

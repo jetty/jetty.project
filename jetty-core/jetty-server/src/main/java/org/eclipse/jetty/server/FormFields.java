@@ -129,8 +129,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * Calls to {@code onFields} and {@code getFields} methods are idempotent, and
      * can be called multiple times, with subsequent calls returning the results of the first call.
      * @param request The request to get or read the Fields from
-     * @param maxFields The maximum number of fields to accept
-     * @param maxLength The maximum length of fields
+     * @param maxFields The maximum number of fields to accept or -1 for unlimited
+     * @param maxLength The maximum length of fields or -1 for unlimited.
      * @return the Fields
      * @see #onFields(Request, Promise.Invocable)
      * @see #onFields(Request, Charset, Promise.Invocable)
@@ -274,8 +274,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      * @param request The {@link Request} in which to look for an existing {@link FormFields} attribute,
      *                using the classname as the attribute name, else the request is used
      *                as a {@link Content.Source} from which to read the fields and set the attribute.
-     * @param maxFields The maximum number of fields to be parsed
-     * @param maxLength The maximum total size of the fields
+     * @param maxFields The maximum number of fields to be parsed or -1 for unlimited
+     * @param maxLength The maximum total size of the fields or -1 for unlimited
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
      * @deprecated use {@link #onFields(Request, Charset, int, int, Promise.Invocable)} instead.
      */
@@ -291,8 +291,8 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
      *                using the classname as the attribute name, else the request is used
      *                as a {@link Content.Source} from which to read the fields and set the attribute.
      * @param charset the {@link Charset} to use for byte to string conversion.
-     * @param maxFields The maximum number of fields to be parsed
-     * @param maxLength The maximum total size of the fields
+     * @param maxFields The maximum number of fields to be parsed or -1 for unlimited
+     * @param maxLength The maximum total size of the fields or -1 for unlimited
      * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
      * @deprecated use {@link #onFields(Request, Charset, int, int, Promise.Invocable)} instead.
      */

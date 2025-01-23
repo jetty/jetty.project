@@ -68,7 +68,6 @@ public class TestJettyOSGiBootWithJsp
     }
 
     @Test
-    @Disabled("TODO servlet6.1 jstl not ported to servlet 6 jars yet")
     public void testJspDump() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))

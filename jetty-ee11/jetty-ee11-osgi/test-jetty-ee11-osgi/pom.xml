@@ -56,8 +56,8 @@
       <artifactId>jetty-http2-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.glassfish.web</groupId>
-      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+      <groupId>org.glassfish.wasp</groupId>
+      <artifactId>wasp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>

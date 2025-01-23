@@ -163,7 +163,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
                     });
                     sorted.addAll(_cache.values());
 
-                    // TODO: Can we remove the buffers from the content before evicting.
                     // Invalidate least recently used first
                     for (CachingHttpContent content : sorted)
                     {
@@ -242,7 +241,6 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         if (!isCacheable(httpContent))
             return httpContent;
 
-        // The re-mapping function may be run multiple times by compute.
         AtomicBoolean added = new AtomicBoolean();
         cachingHttpContent = _cache.computeIfAbsent(path, key ->
         {
@@ -366,17 +364,37 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         @Override
         public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
+            boolean retained = false;
             try
             {
-                _buffer.retain();
-                sink.write(true, BufferUtil.slice(_buffer.getByteBuffer(), (int)offset, (int)length), Callback.from(_buffer::release, callback));
+                retained = tryRetain();
+                if (retained)
+                    sink.write(true, BufferUtil.slice(_buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length)), Callback.from(this::release, callback));
+                else
+                    getWrapped().writeTo(sink, offset, length, callback);
             }
             catch (Throwable x)
             {
-                // BufferUtil.slice() may fail if offset and/or length are out of bounds.
-                _buffer.release();
+                // BufferUtil.slice() may fail if offset and/or length are out of bounds,
+                // Math.toIntExact may fail too if offset or length are > Integer.MAX_VALUE.
+                if (retained)
+                    release();
                 callback.failed(x);
             }
+        }
+
+        /**
+         * Atomically checks that this content still is in cache (so it hasn't been released yet and is still usable) and retain
+         * its internal buffer if it is.
+         * @return true if this content can be used and has been retained, false otherwise.
+         */
+        private boolean tryRetain()
+        {
+            return _cache.computeIfPresent(_cacheKey, (s, cachingHttpContent) ->
+            {
+                _buffer.retain();
+                return cachingHttpContent;
+            }) != null;
         }
 
         @Override

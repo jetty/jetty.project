@@ -1,0 +1,38 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[limit-form-content]]
+= Limiting Form Content
+
+Forms can be a vector for denial-of-service attacks, like explained in xref:programming-guide:security/configuring-form-size.adoc[this section] of the Programming Guide.
+
+== Configuring Form Limits for a Web Application
+
+To configure the form limits for a single web application, the `WebAppContext` instance can be configured from a context XML file or `WEB-INF/jetty-web.xml` file:
+
+[,xml,subs=attributes+]
+----
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
+
+  ...
+
+  <Set name="maxFormContentSize">200000</Set>
+  <Set name="maxFormKeys">200</Set>
+</Configure>
+
+----
+
+These settings can also be set via the following `ServletContext` attributes.
+
+- `org.eclipse.jetty.server.Request.maxFormKeys`
+- `org.eclipse.jetty.server.Request.maxFormContentSize`

@@ -387,8 +387,8 @@
         <version>${jersey.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.glassfish.web</groupId>
-        <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+        <groupId>org.glassfish.wasp</groupId>
+        <artifactId>wasp</artifactId>
         <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
       </dependency>
       <dependency>
@@ -672,13 +672,13 @@
                         </ignoreVersions>
                       </rule>
                       <rule>
-                        <!-- for ee11, we need to stay on 3.0.x of jsp-jstl impl -->
-                        <groupId>org.glassfish.web</groupId>
-                        <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+                        <!-- for ee11, we need to be on 4.0.x of jsp-jstl impl -->
+                        <groupId>org.glassfish.wasp</groupId>
+                        <artifactId>wasp</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
-                            <version>^(?!3.0.).+</version>
+                            <version>^(?!4.0.).+</version>
                           </ignoreVersion>
                         </ignoreVersions>
                       </rule>

@@ -101,6 +101,8 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
             if (path == null)
                 throw new IOException("Cannot memory map Content whose Resource is not backed by a Path: " + content.getResource());
             _buffer = BufferUtil.toMappedBuffer(path);
+            if (_buffer == null)
+                throw new IOException("Cannot memory map Content (not supported by underlying FileSystem): " + content.getResource());
             _contentLength = new HttpField(HttpHeader.CONTENT_LENGTH, Integer.toString(_buffer.remaining()));
             _lastModified = content.getLastModified();
             _lastModifiedInstant = content.getLastModifiedInstant();
@@ -176,6 +178,8 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
             {
                 long len = Math.min(contentLength - currentPos, maxBufferSize);
                 _buffers[i] = BufferUtil.toMappedBuffer(path, currentPos, len);
+                if (_buffers[i] == null)
+                    throw new IOException("Cannot memory map Content (not supported by underlying FileSystem): " + content.getResource());
                 currentPos += len;
                 total += _buffers[i].remaining();
             }
