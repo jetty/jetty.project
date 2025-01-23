@@ -20,6 +20,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -32,6 +33,7 @@ public class RedirectRegexRule extends RegexRule
 {
     protected String _location;
     private int _statusCode = HttpStatus.FOUND_302;
+    private boolean _addQueries = false;
 
     public RedirectRegexRule()
     {
@@ -63,6 +65,27 @@ public class RedirectRegexRule extends RegexRule
         _location = location;
     }
 
+    /**
+     * <p>Is the input URI query merged with replacement URI query</p>
+     *
+     * @return true to merge input query with replacement query.
+     */
+    public boolean isAddQueries()
+    {
+        return _addQueries;
+    }
+
+    /**
+     * <p>Set if input query should be preserved, and merged with replacement query</p>
+     *
+     * @param flag true to have input query merged with replacement query, false to have query
+     *    from input or output just be treated as a string, and not merged.
+     */
+    public void setAddQueries(boolean flag)
+    {
+        _addQueries = flag;
+    }
+
     public int getStatusCode()
     {
         return _statusCode;
@@ -84,6 +107,26 @@ public class RedirectRegexRule extends RegexRule
             protected boolean handle(Response response, Callback callback)
             {
                 String target = matcher.replaceAll(getLocation());
+
+                if (isAddQueries())
+                {
+                    String inputQuery = input.getHttpURI().getQuery();
+                    String targetPath = null;
+                    String targetQuery = null;
+                    int targetQueryIdx = target.indexOf("?");
+                    if (targetQueryIdx != (-1))
+                    {
+                        targetPath = target.substring(0, targetQueryIdx);
+                        targetQuery = target.substring(targetQueryIdx);
+                    }
+                    else
+                    {
+                        targetPath = target;
+                    }
+                    String resultingQuery = URIUtil.addQueries(inputQuery, targetQuery);
+                    target = targetPath + "?" + resultingQuery;
+                }
+
                 response.setStatus(_statusCode);
                 response.getHeaders().put(HttpHeader.LOCATION, Response.toRedirectURI(this, target));
                 callback.succeeded();
