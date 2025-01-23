@@ -148,7 +148,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
-        assertEquals("http://www.mortbay.org/api/rest/foo?v=old&id=100&sort=date", response.get(HttpHeader.LOCATION));
+        assertEquals("http://www.mortbay.org/api/rest/foo?id=100&sort=date&v=old", response.get(HttpHeader.LOCATION));
     }
 
     @Test

@@ -117,7 +117,7 @@ public class RedirectRegexRule extends RegexRule
                     if (targetQueryIdx != (-1))
                     {
                         targetPath = target.substring(0, targetQueryIdx);
-                        targetQuery = target.substring(targetQueryIdx);
+                        targetQuery = target.substring(targetQueryIdx + 1);
                     }
                     else
                     {
