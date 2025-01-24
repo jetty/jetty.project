@@ -468,12 +468,17 @@ public class ExceptionUtil
         }
     }
 
-    public static String toString(Throwable x)
+    /**
+     * <p>Convert a {@link Throwable} to a string equivalent to what {@link Throwable#printStackTrace()} prints.</p>
+     * @param throwable The {@link Throwable} or null
+     * @return a string containing the throwable's full stack trace
+     */
+    public static String toString(Throwable throwable)
     {
-        if (x == null)
+        if (throwable == null)
             return "null";
         StringWriter sw = new StringWriter();
-        x.printStackTrace(new PrintWriter(sw));
+        throwable.printStackTrace(new PrintWriter(sw));
         return sw.toString();
     }
 
