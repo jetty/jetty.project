@@ -254,6 +254,19 @@ public class HttpOutput extends ServletOutputStream
         _servletChannel.getResponse().write(last, content, callback);
     }
 
+    private void channelWrite(RetainableByteBuffer content, boolean last, Callback callback)
+    {
+        if (_firstByteNanoTime == -1)
+        {
+            long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
+            if (minDataRate > 0)
+                _firstByteNanoTime = NanoTime.now();
+            else
+                _firstByteNanoTime = Long.MAX_VALUE;
+        }
+        content.writeTo(_servletChannel.getResponse(), last, callback);
+    }
+
     private void onWriteComplete(boolean last, Throwable failure)
     {
         String state = null;
@@ -516,8 +529,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void close() throws IOException
     {
-        RetainableByteBuffer aggregate = null;
-        ByteBuffer content = null;
+        RetainableByteBuffer content = null;
         Blocker.Callback blocker = null;
         try (AutoLock ignored = _channelState.lock())
         {
@@ -558,6 +570,7 @@ public class HttpOutput extends ServletOutputStream
                     break;
 
                 case OPEN:
+                    RetainableByteBuffer aggregate;
                     switch (_apiState)
                     {
                         case BLOCKING:
@@ -569,11 +582,11 @@ public class HttpOutput extends ServletOutputStream
                             if (aggregate != null && aggregate.hasRemaining())
                             {
                                 aggregate.retain();
-                                content = aggregate.getByteBuffer();
+                                content = aggregate;
                             }
                             else
                             {
-                                content = BufferUtil.EMPTY_BUFFER;
+                                content = RetainableByteBuffer.EMPTY;
                             }
                             break;
 
@@ -596,11 +609,11 @@ public class HttpOutput extends ServletOutputStream
                             if (aggregate != null && aggregate.hasRemaining())
                             {
                                 aggregate.retain();
-                                content = aggregate.getByteBuffer();
+                                content = aggregate;
                             }
                             else
                             {
-                                content = BufferUtil.EMPTY_BUFFER;
+                                content = RetainableByteBuffer.EMPTY;
                             }
                             break;
 
@@ -616,7 +629,7 @@ public class HttpOutput extends ServletOutputStream
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("close() {} c={} b={}", lockedStateString(), BufferUtil.toDetailString(content), blocker);
+                LOG.debug("close() {} c={} b={}", lockedStateString(), content, blocker);
         }
 
         if (content == null)
@@ -637,8 +650,7 @@ public class HttpOutput extends ServletOutputStream
             {
                 // Do an async close
                 Callback callback = new WriteCompleteCB();
-                if (aggregate != null)
-                    callback = Callback.from(callback, aggregate::release);
+                callback = Callback.from(callback, content::release);
                 channelWrite(content, true, callback);
             }
             else
@@ -648,8 +660,7 @@ public class HttpOutput extends ServletOutputStream
                 {
                     channelWrite(content, true, blocker);
                     b.block();
-                    if (aggregate != null)
-                        aggregate.release();
+                    content.release();
                     onWriteComplete(true, null);
                 }
                 catch (Throwable t)
