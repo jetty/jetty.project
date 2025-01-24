@@ -1207,7 +1207,8 @@ public class ServletApiRequest implements HttpServletRequest
         }
         catch (IllegalStateException ise)
         {
-            throw new IOException(ise);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ise);
         }
         return getServletRequestInfo().getHttpInput();
     }
