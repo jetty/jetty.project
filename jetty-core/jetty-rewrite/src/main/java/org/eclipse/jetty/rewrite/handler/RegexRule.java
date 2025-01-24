@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 public abstract class RegexRule extends Rule
 {
     private Pattern _regex;
-    private boolean _matchOnQuery = true;
+    private boolean _matchQuery = true;
 
     public RegexRule()
     {
@@ -58,9 +58,9 @@ public abstract class RegexRule extends Rule
      *
      * @return true to match against URI path with query (default), false to match only against URI path.
      */
-    public boolean isMatchOnQuery()
+    public boolean isMatchQuery()
     {
-        return _matchOnQuery;
+        return _matchQuery;
     }
 
     /**
@@ -69,15 +69,15 @@ public abstract class RegexRule extends Rule
      * @param flag true to have regex match against URI path with query, false
      *   to have match against only URI path.
      */
-    public void setMatchOnQuery(boolean flag)
+    public void setMatchQuery(boolean flag)
     {
-        _matchOnQuery = flag;
+        _matchQuery = flag;
     }
 
     @Override
     public Handler matchAndApply(Handler input) throws IOException
     {
-        String target = isMatchOnQuery() ? input.getHttpURI().getPathQuery() : input.getHttpURI().getPath();
+        String target = isMatchQuery() ? input.getHttpURI().getPathQuery() : input.getHttpURI().getPath();
         Matcher matcher = _regex.matcher(target);
         if (matcher.matches())
             return apply(input, matcher);

@@ -40,9 +40,9 @@ public class RewriteRegexRule extends RegexRule
     }
 
     /**
-     * <p>Is the input URI query merged with replacement URI query</p>
+     * <p>Is the input URI query added with replacement URI query</p>
      *
-     * @return true to merge input query with replacement query.
+     * @return true to add input query with replacement query.
      */
     public boolean isAddQueries()
     {
@@ -50,9 +50,13 @@ public class RewriteRegexRule extends RegexRule
     }
 
     /**
-     * <p>Set if input query should be preserved, and merged with replacement query</p>
+     * <p>Set if input query should be preserved, and added together with replacement query</p>
      *
-     * @param flag true to have input query merged with replacement query, false to have query
+     * <p>
+     *     This is especially useful when used in combination with a disabled {@link #setMatchQuery(boolean)}
+     * </p>
+     *
+     * @param flag true to have input query added with replacement query, false (default) to have query
      *    from input or output just be treated as a string, and not merged.
      */
     public void setAddQueries(boolean flag)

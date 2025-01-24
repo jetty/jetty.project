@@ -161,7 +161,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         String regex = "^/([^/]*)/([^/]*)/?.*$";
         String replacement = "/test?p2=$2&p1=$1";
         RewriteRegexRule rule = new RewriteRegexRule(regex, replacement);
-        rule.setMatchOnQuery(false);
+        rule.setMatchQuery(false);
         rule.setAddQueries(true);
         start(rule);
 

@@ -115,7 +115,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
     public void testMatchOnlyPathLocationWithoutQuery() throws Exception
     {
         RedirectRegexRule rule = new RedirectRegexRule("/my/dir/file/(.*)/foo$", "http://www.mortbay.org/$1/foo");
-        rule.setMatchOnQuery(false);
+        rule.setMatchQuery(false);
         rule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
         start(rule);
 
@@ -135,7 +135,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
     public void testMatchOnlyPathLocationWithQueryAddQueries() throws Exception
     {
         RedirectRegexRule rule = new RedirectRegexRule("/my/dir/file/(.*)/foo$", "http://www.mortbay.org/$1/foo?v=old");
-        rule.setMatchOnQuery(false);
+        rule.setMatchQuery(false);
         rule.setAddQueries(true);
         rule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
         start(rule);
