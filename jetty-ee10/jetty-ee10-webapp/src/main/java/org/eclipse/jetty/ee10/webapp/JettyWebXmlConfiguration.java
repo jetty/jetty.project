@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 import org.eclipse.jetty.util.resource.Resource;
@@ -132,7 +133,11 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     {
         jettyConfig.setJettyStandardIdsAndProperties(context.getServer(), null);
         Map<String, String> props = jettyConfig.getProperties();
-        props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(webInf.getURI().toString()));
-        props.put(PROPERTY_WEB_INF, webInf.toString());
+        URI uri = webInf.getURI();
+        if (uri != null)
+        {
+            props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(uri.toString()));
+            props.put(PROPERTY_WEB_INF, webInf.toString());
+        }
     }
 }
