@@ -14,8 +14,10 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
@@ -34,11 +36,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Handler that delegates to other handlers through a configured {@link PathMappings}.
+ * <p>A Handler that delegates to other handlers through a configured {@link PathMappings}.</p>
+ *
+ * {@code
+ * PathMappingHandler pathMappingsHandler = new PathMappingsHandler();
+ * pathMappingsHandler.addMapping(new ServletPathSpec("/"), new MyRootHandler());
+ * pathMappingsHandler.addMapping(new ServletPathSpec("/index.html"), new MyIndexHandler());
+ * pathMappingsHandler.addMapping(new ServletPathSpec("/static/*"), new ResourceHandler());
+ * pathMappingsHandler.addMapping(new RegexPathSpec("/rest/.*\\.api$"), new RestHandler());
+ * pathMappingsHandler.addMapping(new UriTemplatePathSpec("/chat/{channel}/{mode}"), new ChatHandler());
+ * }
+ *
+ * <p>
+ * Request handling can access the {@link PathSpec} used via the {@code Request#getAttribute} on
+ * the name {@link #PATHSPEC_ATTR}
+ * </p>
  */
 public class PathMappingsHandler extends Handler.AbstractContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappingsHandler.class);
+    public static final String PATHSPEC_ATTR = PathMappingsHandler.class.getName() + ".pathSpec";
 
     private final PathMappings<Handler> mappings = new PathMappings<>();
 
@@ -58,6 +75,12 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         return mappings.streamResources().map(MappedResource::getResource).toList();
     }
 
+    /**
+     * Add a mapping of a {@link PathSpec} to a {@link Handler}.
+     *
+     * @param pathSpec the PathSpec to match against incoming Requests.
+     * @param handler the handler for requests that match the incoming PathSpec.
+     */
     public void addMapping(PathSpec pathSpec, Handler handler)
     {
         Objects.requireNonNull(pathSpec, "PathSpec cannot be null");
@@ -117,14 +140,30 @@ public class PathMappingsHandler extends Handler.AbstractContainer
         if (LOG.isDebugEnabled())
             LOG.debug("Matched {} to {} -> {}", pathInContext, matchedResource.getPathSpec(), handler);
 
-        PathSpecRequest pathSpecRequest = new PathSpecRequest(request, pathSpec);
+        Request pathSpecRequest = newPathSpecRequest(request, pathSpec);
         boolean handled = handler.handle(pathSpecRequest, response, callback);
         if (LOG.isDebugEnabled())
             LOG.debug("Handled {} {} by {}", handled, pathInContext, handler);
         return handled;
     }
 
-    private static class PathSpecRequest extends Request.Wrapper
+    protected Request newPathSpecRequest(Request request, PathSpec pathSpec)
+    {
+        return new PathSpecRequest(request, pathSpec);
+    }
+
+    /**
+     * <p>
+     * A custom {@link Request.Wrapper} that provides a {@link Context} based on the results
+     * of a {@link PathSpec}.
+     * </p>
+     *
+     * <p>
+     * Also provides the {@link PathSpec} used for this Request in the Attribute with
+     * the name {@link PathMappingsHandler#PATHSPEC_ATTR}
+     * </p>
+     */
+    public static class PathSpecRequest extends Request.Wrapper
     {
         private final PathSpec pathSpec;
         private final Context context;
@@ -150,6 +189,22 @@ public class PathMappingsHandler extends Handler.AbstractContainer
                     return matchedPath.getPathInfo();
                 }
             };
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (name.equals(PATHSPEC_ATTR))
+                return pathSpec;
+            return super.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
+            names.add(PATHSPEC_ATTR);
+            return names;
         }
 
         @Override
