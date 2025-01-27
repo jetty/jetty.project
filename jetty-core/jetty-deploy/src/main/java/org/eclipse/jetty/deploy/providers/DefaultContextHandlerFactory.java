@@ -169,12 +169,6 @@ public class DefaultContextHandlerFactory
                     context = applyXml(provider, context, mainPath, environment, deployAttributes);
             }
 
-            // Set a backup value for the path to the war in case it hasn't already been set
-            // via a different means.  This is especially important for a deployable App
-            // that is only a <name>.war file (no XML).  The eventual WebInfConfiguration
-            // will use this attribute.
-            deployAttributes.setAttribute(Deployable.WAR, mainPath.toString());
-
             return getContextHandler(context);
         }
         finally
@@ -426,18 +420,24 @@ public class DefaultContextHandlerFactory
 
             initializeContextPath(contextHandler, path);
             initializeContextHandler(contextHandler, path, attributes);
-
-            // Initialize any deployable
-            if (context instanceof Deployable deployable)
-                deployable.initializeDefaults(attributes);
         }
+
+        // Allow context created from CONTEXT_HANDLER_CLASS to be initialized
+        // before the XML executes, and possibly references content that only
+        // the context will know about (such as from a classloader)
+        initializeDeployable(context, attributes);
 
         if (FileID.isXml(path))
         {
+            // track if context is created from XML or an existing one is just being configured by XML
+            boolean createdContext = (context == null);
             context = applyXml(provider, context, path, environment, attributes);
             ContextHandler contextHandler = getContextHandler(context);
             if (contextHandler == null)
                 throw new IllegalStateException("Unknown context type of " + context);
+
+            if (createdContext)
+                initializeDeployable(context, attributes);
             return context;
         }
 
@@ -446,7 +446,6 @@ public class DefaultContextHandlerFactory
 
         // fallback to default from environment.
         context = newInstance((String)environment.getAttribute(Deployable.CONTEXT_HANDLER_CLASS_DEFAULT));
-
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);
@@ -455,10 +454,32 @@ public class DefaultContextHandlerFactory
 
             initializeContextPath(contextHandler, path);
             initializeContextHandler(contextHandler, path, attributes);
+            initializeDeployable(context, attributes);
             return context;
         }
 
         return null;
+    }
+
+    private void initializeDeployable(Object context, Attributes attributes)
+    {
+        // Ensure that WAR fallback String (that WebInfConfiguration needs) is
+        // only created once.
+        if (attributes.getAttribute(Deployable.WAR) == null)
+        {
+            Path mainPath = (Path)attributes.getAttribute(Deployable.MAIN_PATH);
+            if (FileID.isWebArchive(mainPath))
+            {
+                // Set a backup value for the path to the war in case it hasn't already been set
+                // via a different means.  This is especially important for a deployable App
+                // that is only a <name>.war file (no XML).  The eventual WebInfConfiguration
+                // will use this attribute.
+                attributes.setAttribute(Deployable.WAR, mainPath.toString());
+            }
+        }
+
+        if (context instanceof Deployable deployable)
+            deployable.initializeDefaults(attributes);
     }
 
     private Object newInstance(String className) throws Exception
