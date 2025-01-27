@@ -504,17 +504,31 @@ class AsyncContentProducer implements ContentProducer
             this._condition = _lock.newCondition();
         }
 
+        /**
+         * Checks that the {@link HttpInput} lock scope is correct.
+         * @throws IllegalStateException if the {@link HttpInput} lock is not held
+         */
         void assertLocked()
         {
             if (!_lock.isHeldByCurrentThread())
                 throw new IllegalStateException("LockedSemaphore must be called within lock scope");
         }
 
+        /**
+         * Resets the semaphore's permit count to 0.
+         */
         void drainPermits()
         {
             _permits = 0;
         }
 
+        /**
+         * Acquires a permit from the semaphore by decreasing the permit count by 1 without ever going negative.
+         * This method returns immediately when the permit count is >= 1 or it blocks until {@link #release} or {@link #fail()}
+         * is called to increase the permit count.
+         * @throws InterruptedException if this call was blocked waiting for the permit count to go above 0 and the thread
+         * got interrupted.
+         */
         void acquire() throws InterruptedException
         {
             while (_permits == 0)
@@ -522,6 +536,10 @@ class AsyncContentProducer implements ContentProducer
             _permits--;
         }
 
+        /**
+         * Releases a permit to the semaphore by increasing the permit count by 1, potentially unblocking one thread
+         * blocked in {@link #acquire()}.
+         */
         void release()
         {
             _permits++;

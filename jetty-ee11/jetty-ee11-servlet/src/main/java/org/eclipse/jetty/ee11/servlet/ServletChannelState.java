@@ -223,6 +223,11 @@ public class ServletChannelState
         return _lock.lock();
     }
 
+    AutoLock tryLock()
+    {
+        return _lock.tryLock();
+    }
+
     boolean isLockHeldByCurrentThread()
     {
         return _lock.isHeldByCurrentThread();

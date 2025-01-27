@@ -80,6 +80,12 @@ public class Blocker
         {
             return this;
         }
+
+        @Override
+        public String toString()
+        {
+            return "ACQUIRED";
+        }
     };
     private static final Throwable SUCCEEDED = new Throwable()
     {
@@ -87,6 +93,12 @@ public class Blocker
         public Throwable fillInStackTrace()
         {
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "SUCCEEDED";
         }
     };
 
@@ -433,6 +445,12 @@ public class Blocker
             {
                 _lock.unlock();
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[c=%s]".formatted(getClass().getSimpleName(), hashCode(), _completed);
         }
     }
 }

@@ -1200,8 +1200,16 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = ServletContextRequest.INPUT_STREAM;
-        // Try to write a 100 continue, ignoring failure result if it was not necessary.
-        _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+        try
+        {
+            // Try to write a 100 continue, ignoring failure result if it was not necessary.
+            _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+        }
+        catch (IllegalStateException ise)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ise);
+        }
         return getServletRequestInfo().getHttpInput();
     }
 
