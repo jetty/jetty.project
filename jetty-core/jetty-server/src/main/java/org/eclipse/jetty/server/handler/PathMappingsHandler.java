@@ -24,12 +24,14 @@ import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -180,13 +182,52 @@ public class PathMappingsHandler extends Handler.AbstractContainer
                 @Override
                 public String getContextPath()
                 {
-                    return matchedPath.getPathMatch();
+                    // Start with wrapper context path, and add onto it.
+                    String contextPath = getWrapped().getContext().getContextPath();
+
+                    if (pathSpec instanceof ServletPathSpec servletPathSpec)
+                    {
+                        return appendContextPath(contextPath, servletPathSpec.getPrefix());
+                    }
+                    else
+                    {
+                        return appendContextPath(contextPath, matchedPath.getPathMatch());
+                    }
+                }
+
+                private String appendContextPath(String contextPath1, String contextPath2)
+                {
+                    if (StringUtil.isBlank(contextPath2))
+                        return contextPath1;
+
+                    if (contextPath2.charAt(0) != '/')
+                    {
+                        if (contextPath1.endsWith("/"))
+                            return contextPath1 + contextPath2;
+                        else
+                            return contextPath1 + "/" + contextPath2;
+                    }
+                    else
+                    {
+                        if (contextPath1.equals("/"))
+                            return contextPath2;
+                        if (contextPath1.endsWith("/"))
+                            return contextPath1.substring(contextPath1.length() - 1) + contextPath2;
+                        else
+                            return contextPath1 + contextPath2;
+                    }
                 }
 
                 @Override
                 public String getPathInContext(String canonicallyEncodedPath)
                 {
-                    return matchedPath.getPathInfo();
+                    if (pathSpec instanceof ServletPathSpec)
+                    {
+                        return Context.getPathInContext(getContextPath(), canonicallyEncodedPath);
+                    }
+
+                    String pathInfo = matchedPath.getPathInfo();
+                    return pathInfo == null ? "" : pathInfo;
                 }
             };
         }

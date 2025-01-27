@@ -185,14 +185,14 @@ public class PathMappingsHandlerTest
     public static Stream<Arguments> pathInContextInput()
     {
         return Stream.of(
-            Arguments.of("/", "/", "null", ServletPathSpec.class.getSimpleName(), "/"),
+            Arguments.of("/", "/", "/", ServletPathSpec.class.getSimpleName(), "/"),
             Arguments.of("/foo/test", "/foo", "/test", ServletPathSpec.class.getSimpleName(), "/foo/*"),
-            Arguments.of("/index.html", "/index.html", "null", ServletPathSpec.class.getSimpleName(), "/index.html"),
-            Arguments.of("/does-not-exist", "/does-not-exist", "null", ServletPathSpec.class.getSimpleName(), "/"),
-            Arguments.of("/deep/path/foo.php", "/deep/path/foo.php", "null", ServletPathSpec.class.getSimpleName(), "*.php"),
-            Arguments.of("/re/1234/baz", "/re/1234/baz", "null", ServletPathSpec.class.getSimpleName(), "/"),
-            Arguments.of("/re/ABC/baz", "/re/ABC/baz", "null", RegexPathSpec.class.getSimpleName(), "/re/[A-Z]*/.*"),
-            Arguments.of("/rest/api/users/ver-1/groupfoo/baruser", "api/users", "groupfoo/baruser", RegexPathSpec.class.getSimpleName(), "^/rest/(?<name>.*)/ver-[0-9]+/(?<info>.*)$"),
+            Arguments.of("/index.html", "/index.html", "", ServletPathSpec.class.getSimpleName(), "/index.html"),
+            Arguments.of("/does-not-exist", "/", "/does-not-exist", ServletPathSpec.class.getSimpleName(), "/"),
+            Arguments.of("/deep/path/foo.php", "/", "/deep/path/foo.php", ServletPathSpec.class.getSimpleName(), "*.php"),
+            Arguments.of("/re/1234/baz", "/", "/re/1234/baz", ServletPathSpec.class.getSimpleName(), "/"),
+            Arguments.of("/re/ABC/baz", "/re/ABC/baz", "", RegexPathSpec.class.getSimpleName(), "/re/[A-Z]*/.*"),
+            Arguments.of("/rest/api/users/ver-1/groupfoo/baruser", "/api/users", "groupfoo/baruser", RegexPathSpec.class.getSimpleName(), "^/rest/(?<name>.*)/ver-[0-9]+/(?<info>.*)$"),
             Arguments.of("/zed/test.txt", "/zed", "/test.txt", null, null)
         );
     }
