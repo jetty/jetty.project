@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -37,7 +36,6 @@ import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -66,34 +64,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         EndPoint endPoint = session.getEndPoint();
         boolean direct = endPoint != null && endPoint.getConnection() instanceof HTTP2Connection http2Connection && http2Connection.isUseOutputDirectByteBuffers();
         this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getGenerator().getByteBufferPool(), direct, -1);
-    }
-
-    public Callback cancel(HTTP2Stream http2Stream, Throwable cause, Callback callback)
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            entries.removeIf(entry -> entry.isFor(http2Stream));
-            pendingEntries.removeIf(entry -> entry.isFor(http2Stream));
-
-            boolean processed = false;
-            for (HTTP2Session.Entry entry : processedEntries)
-            {
-                if (entry.isFor(http2Stream))
-                {
-                    processed = true;
-                    break;
-                }
-            }
-
-            // If no frames for the stream have been processed, then we are done!
-            if (!processed)
-                return callback;
-
-            CancelCallback cancelCallback = new CancelCallback(callback, cause);
-            processedEntries.add(cancelCallback);
-            iterate();
-            return cancelCallback.asCancelCallback();
-        }
     }
 
     @Override
@@ -375,6 +345,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private void finish()
     {
         accumulator.clear();
+        // TODO grab lock
         processedEntries.forEach(HTTP2Session.Entry::succeeded);
         processedEntries.clear();
         invocationType = InvocationType.NON_BLOCKING;
@@ -507,50 +478,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 processedEntries.size(),
                 pendingEntries.size()
             );
-        }
-    }
-
-    private static class CancelCallback extends HTTP2Session.Entry
-    {
-        private final Throwable _cause;
-        private final AtomicBoolean _completed = new AtomicBoolean();
-
-        public CancelCallback(Callback callback, Throwable cause)
-        {
-            super(null, null, callback);
-            _cause = cause;
-        }
-
-        public Callback asCancelCallback()
-        {
-            return Callback.from(this::cancelCallbackCompleted);
-        }
-
-        private void cancelCallbackCompleted()
-        {
-            // If the Entry callback has completed we can run the nested callback
-            if (!_completed.compareAndSet(false, true))
-                super.failed(_cause);
-        }
-
-        @Override
-        public void completed()
-        {
-            // If the cancelCallback completed, then we must run the nested here
-            if (!_completed.compareAndSet(false, true))
-                super.failed(_cause); // TODO execute immediately?
-        }
-
-        @Override
-        public int getFrameBytesGenerated()
-        {
-            return 0;
-        }
-
-        @Override
-        public boolean generate(RetainableByteBuffer.Mutable accumulator) throws HpackException
-        {
-            throw new UnsupportedOperationException();
         }
     }
 

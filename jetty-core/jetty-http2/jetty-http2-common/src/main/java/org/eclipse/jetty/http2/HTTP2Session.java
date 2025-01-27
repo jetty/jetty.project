@@ -838,11 +838,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }
     }
 
-    public Callback cancel(HTTP2Stream http2Stream, Throwable cause, Callback callback)
-    {
-        return flusher.cancel(http2Stream, cause, callback);
-    }
-
     protected HTTP2Stream createLocalStream(int streamId, MetaData.Request request, Consumer<Throwable> failFn)
     {
         while (true)

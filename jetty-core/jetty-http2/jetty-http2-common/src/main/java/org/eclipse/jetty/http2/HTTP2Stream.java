@@ -47,6 +47,7 @@ import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
@@ -209,31 +210,31 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         return false;
     }
 
-    public Callback cancelWrite(Throwable cause, Callback callback)
+    /**
+     * Cancel the stream with a reset
+     * @param cause The cause of the cancellation
+     * @param callback The {@link Callback} to invoke once the reset and the callback returned from this method have completed
+     * @return A {@link Callback} that is completed to cancel the stream.
+     */
+    public Callback cancel(Throwable cause, Callback callback)
     {
-        try (AutoLock ignored = lock.lock())
+        CountingCallback counting = new CountingCallback(new Nested(callback)
         {
-            if (failure != null)
+            @Override
+            public void succeeded()
             {
-                ExceptionUtil.addSuppressedIfNotAssociated(failure, cause);
-                return callback;
+                super.failed(cause);
             }
 
-            if (this.sendCallback == null || dataQueue.isEmpty())
-                return callback;
-
-            return session.cancel(this,
-                cause, Callback.from(() ->
-                {
-                    try (AutoLock ignored2 = lock.lock())
-                    {
-                        // Drain flow control after write is complete
-                        int flowControlLength = drain();
-                        session.dataConsumed(this, flowControlLength);
-                    }
-
-                }, callback));
-        }
+            @Override
+            public void failed(Throwable x)
+            {
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
+                super.failed(cause);
+            }
+        }, 2);
+        reset(new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code), counting);
+        return counting;
     }
 
     @Override
