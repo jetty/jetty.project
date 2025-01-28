@@ -770,7 +770,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 // be multiples of the largest configured capacity;
                 // this logic is only meant for recordNoBucketAcquire().
                 int remainder = capacity % largestCapacity != 0 ? 1 : 0;
-                return capacity / largestCapacity - 1 + remainder + capacities.length - 1;
+                int overLargestCapacityFactor = (capacity / largestCapacity) + remainder;
+                return overLargestCapacityFactor - 1 + capacities.length - 1;
             }
 
             int previous = -1;
