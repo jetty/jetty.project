@@ -734,7 +734,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize)
         {
-            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+            this(minCapacity, maxCapacity, maxBucketSize, 0L, 0L);
         }
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
