@@ -734,7 +734,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public WithBucketCapacities(long maxHeapMemory, long maxDirectMemory, int... capacities)
         {
             super(sort(capacities)[0], 1, capacities[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
-                c -> floorBucketIndexFor(c, capacities), i -> capacityOfIndex(i, capacities));
+                c -> floorBucketIndexFor(c, capacities), i -> bucketCapacityForIndex(i, capacities));
         }
 
         private static int[] sort(int... values)
@@ -745,7 +745,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return values;
         }
 
-        private static int capacityOfIndex(int idx, int... capacities)
+        private static int bucketCapacityForIndex(int idx, int... capacities)
         {
             if (idx >= capacities.length)
             {
@@ -753,7 +753,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 // to refer to a multiple of the largest configured capacity;
                 // this logic is only meant for recordNoBucketAcquire().
                 int largestCapacity = capacities[capacities.length - 1];
-                return (idx - capacities.length + 2) * largestCapacity;
+                int virtualIdx = idx - (capacities.length - 1);
+                return (virtualIdx + 1) * largestCapacity;
             }
             return capacities[idx];
         }
