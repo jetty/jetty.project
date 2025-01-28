@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
@@ -30,13 +28,4 @@ public interface AppProvider extends LifeCycle
      */
     void setDeploymentManager(DeploymentManager deploymentManager);
 
-    /**
-     * Create a ContextHandler for an App
-     *
-     * @param app The App
-     * @return A ContextHandler
-     * @throws IOException if unable to create context
-     * @throws Exception if unable to create context
-     */
-    // ContextHandler createContextHandler(App app) throws Exception;
 }
