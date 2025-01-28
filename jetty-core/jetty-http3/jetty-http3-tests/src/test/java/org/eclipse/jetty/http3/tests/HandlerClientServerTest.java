@@ -33,8 +33,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -43,11 +43,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HandlerClientServerTest extends AbstractClientServerTest
 {
-    @Test
-    public void testGet() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testGet(TransportType transportType) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -78,12 +79,12 @@ public class HandlerClientServerTest extends AbstractClientServerTest
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Disabled
-    @Test
-    public void testPost() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testPost(TransportType transportType) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)

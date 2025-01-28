@@ -14,14 +14,13 @@
 package org.eclipse.jetty.http3.client.internal;
 
 import org.eclipse.jetty.http3.HTTP3StreamConnection;
-import org.eclipse.jetty.http3.client.ClientHTTP3Session;
 import org.eclipse.jetty.http3.parser.MessageParser;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 
 public class ClientHTTP3StreamConnection extends HTTP3StreamConnection
 {
-    public ClientHTTP3StreamConnection(QuicStreamEndPoint endPoint, ClientHTTP3Session session, MessageParser parser)
+    public ClientHTTP3StreamConnection(StreamEndPoint endPoint, ClientHTTP3Session session, MessageParser parser)
     {
-        super(endPoint, session.getQuicSession().getExecutor(), session.getQuicSession().getByteBufferPool(), parser);
+        super(endPoint, session.getExecutor(), session.getByteBufferPool(), parser);
     }
 }

@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.io.IOException;
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -37,10 +38,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,7 +70,6 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndIdleTimeoutListener")
-    @Tag("flaky")
     public void testIdleTimeout(TransportType transportType, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
@@ -78,18 +81,34 @@ public class ServerTimeoutsTest extends AbstractTest
                 if (addIdleTimeoutListener)
                     request.addIdleTimeoutListener(t -> listenerCalled.compareAndSet(false, true));
                 request.addFailureListener(callback::failed);
-
                 // Do not complete the callback, so it idle times out.
                 return true;
             }
         });
 
-        ContentResponse response = client.newRequest(newURI(transportType))
-            .timeout(5 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS)
-            .send();
+        // HTTP/2 receives the response headers, but may fail the response content.
+        List<TransportType> transportTypesThatFail = List.of(TransportType.H2C, TransportType.H2);
+        try
+        {
+            ContentResponse response = client.newRequest(newURI(transportType))
+                .onResponseHeaders(r ->
+                {
+                    int status = r.getStatus();
+                    if (status != HttpStatus.INTERNAL_SERVER_ERROR_500)
+                        r.abort(new AssertionError("unexpected status " + status));
+                })
+                .timeout(5 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS)
+                .send();
 
-        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
+            assertThat(transportType, not(in(transportTypesThatFail)));
+            assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
+        }
+        catch (ExecutionException x)
+        {
+            assertThat(x.getCause(), instanceOf(IOException.class));
+            assertThat(transportType, in(transportTypesThatFail));
+        }
+
         if (addIdleTimeoutListener)
             assertTrue(listenerCalled.get());
     }
@@ -117,17 +136,19 @@ public class ServerTimeoutsTest extends AbstractTest
             }
         });
 
-        // The response will not be completed, so use a specialized listener.
         AsyncRequestContent content = new AsyncRequestContent();
-        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transportType))
+        client.newRequest(newURI(transportType))
             .timeout(IDLE_TIMEOUT * 5, TimeUnit.MILLISECONDS)
             .headers(f -> f.put(HttpHeader.CONTENT_LENGTH, 10))
-            .onResponseSuccess(s ->
-                content.close())
-            .body(content);
-        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
+            .onResponseHeaders(r ->
+            {
+                assertThat(r.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+                content.close();
+            })
+            .body(content)
+            .send(null);
 
-        // Demand is invoked by the idle timeout
+        // Demand is invoked by the idle timeout.
         assertTrue(demanded.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
 
         // Reads should yield the idle timeout.
@@ -136,18 +157,17 @@ public class ServerTimeoutsTest extends AbstractTest
         Throwable cause = chunk.getFailure();
         assertThat(cause, instanceOf(TimeoutException.class));
 
-        // Can read again
+        // Can read again.
         assertNull(requestRef.get().read());
 
-        // Complete the callback as the error listener promised.
+        // The idle timeout listener is not called as the timeout is delivered via demand callback.
+        assertFalse(listenerCalled.get());
+
+        // Complete the callback as the idle timeout listener promised.
         callbackRef.get().failed(cause);
 
-        ContentResponse response = completable.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
-        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
-
-        // listener is never called as timeout always delivered via demand
-        assertFalse(listenerCalled.get());
+        // The response must arrive to the client.
+        await().atMost(5, TimeUnit.SECONDS).until(content::isClosed);
     }
 
     // TODO write side tests

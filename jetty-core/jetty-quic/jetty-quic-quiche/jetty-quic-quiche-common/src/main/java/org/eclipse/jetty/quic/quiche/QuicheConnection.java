@@ -13,185 +13,83 @@
 
 package org.eclipse.jetty.quic.quiche;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Comparator;
-import java.util.List;
-import java.util.ServiceLoader;
-import java.util.stream.Collectors;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.DatagramChannelEndPoint;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Scheduler;
 
-public abstract class QuicheConnection
+/**
+ * <p>A {@link Connection} implementation that receives and sends datagram packets via its associated {@link DatagramChannelEndPoint}.</p>
+ * <p>On the client, there is one datagram endpoint for every connection initiated by the client.</p>
+ * <p>On the server, there is one datagram endpoint only for all connections from all clients.</p>
+ * <p>The received bytes are peeked to obtain the QUIC connection ID; each QUIC connection ID has an associated
+ * {@link QuicheSession}, and the received bytes are then passed to the {@link QuicheSession} for processing.</p>
+ * <p>On the receive side, one QuicheConnection <em>fans-out</em> to multiple {@link QuicheSession}s.</p>
+ * <p>On the send side, many {@link QuicheSession}s <em>fan-in</em> to one QuicheConnection.</p>
+ */
+public abstract class QuicheConnection extends AbstractConnection
 {
-    private static final Logger LOG = LoggerFactory.getLogger(QuicheConnection.class);
-    static final QuicheBinding QUICHE_BINDING;
+    private final Callback fillableCallback = new FillableCallback();
+    private final Scheduler scheduler;
+    private final ByteBufferPool bufferPool;
 
-    static
+    protected QuicheConnection(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, EndPoint endPoint)
     {
-        // This code is safe even if trying to load a QuicheBinding instance throws an error,
-        // as in that case a warning would be logged and the binding ignored.
-        if (LOG.isDebugEnabled())
+        super(endPoint, executor);
+        this.scheduler = scheduler;
+        this.bufferPool = bufferPool;
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return bufferPool;
+    }
+
+    @Override
+    public void fillInterested()
+    {
+        getEndPoint().fillInterested(fillableCallback);
+    }
+
+    public abstract void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers);
+
+    @Override
+    public abstract boolean onIdleExpired(TimeoutException timeoutException);
+
+    public abstract void disconnect(QuicheSession session, ConnectionCloseFrame frame, Throwable failure);
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
         {
-            List<QuicheBinding> bindings = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
-                .sorted(Comparator.comparingInt(QuicheBinding::priority))
-                .collect(Collectors.toList());
-            LOG.debug("found quiche binding implementations: {}", bindings);
-        }
-        QUICHE_BINDING = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
-            .filter(QuicheBinding::isUsable)
-            .min(Comparator.comparingInt(QuicheBinding::priority))
-            .orElseThrow(() -> new IllegalStateException("no quiche binding implementation found"));
-        if (LOG.isDebugEnabled())
-            LOG.debug("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
-    }
-
-    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer) throws IOException
-    {
-        return connect(quicheConfig, local, peer, Quiche.QUICHE_MAX_CONN_ID_LEN);
-    }
-
-    public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
-    {
-        return QUICHE_BINDING.connect(quicheConfig, local, peer, connectionIdLength);
-    }
-
-    /**
-     * Fully consumes the {@code packetRead} buffer.
-     * @return true if a negotiation packet was written to the {@code packetToSend} buffer, false if negotiation failed
-     * and the {@code packetRead} buffer can be dropped.
-     */
-    public static boolean negotiate(TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
-    {
-        return QUICHE_BINDING.negotiate(tokenMinter, packetRead, packetToSend);
-    }
-
-    /**
-     * Fully consumes the {@code packetRead} buffer if the connection was accepted.
-     * @return an established connection if accept succeeded, null if accept failed and negotiation should be tried.
-     */
-    public static QuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
-    {
-        return QUICHE_BINDING.tryAccept(quicheConfig, tokenValidator, packetRead, local, peer);
-    }
-
-    public final List<Long> readableStreamIds()
-    {
-        return iterableStreamIds(false);
-    }
-
-    public final List<Long> writableStreamIds()
-    {
-        return iterableStreamIds(true);
-    }
-
-    protected abstract List<Long> iterableStreamIds(boolean write);
-
-    /**
-     * Read the buffer of cipher text coming from the network.
-     * @param buffer the buffer to read.
-     * @param local the local address on which the buffer was received.
-     * @param peer the address of the peer from which the buffer was received.
-     * @return how many bytes were consumed.
-     */
-    public abstract int feedCipherBytes(ByteBuffer buffer, SocketAddress local, SocketAddress peer) throws IOException;
-
-    /**
-     * Fill the given buffer with cipher text to be sent.
-     * @param buffer the buffer to fill.
-     * @return how many bytes were added to the buffer.
-     */
-    public abstract int drainCipherBytes(ByteBuffer buffer) throws IOException;
-
-    public abstract boolean isConnectionClosed();
-
-    public abstract boolean isConnectionEstablished();
-
-    public abstract long nextTimeout();
-
-    public abstract void onTimeout();
-
-    public abstract String getNegotiatedProtocol();
-
-    public abstract boolean close(long error, String reason);
-
-    public abstract void dispose();
-
-    public abstract boolean isDraining();
-
-    public abstract int maxLocalStreams();
-
-    public abstract long windowCapacity();
-
-    public abstract long windowCapacity(long streamId) throws IOException;
-
-    public abstract void shutdownStream(long streamId, boolean writeSide, long error) throws IOException;
-
-    public final void feedFinForStream(long streamId) throws IOException
-    {
-        feedClearBytesForStream(streamId, BufferUtil.EMPTY_BUFFER, true);
-    }
-
-    public final int feedClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
-    {
-        return feedClearBytesForStream(streamId, buffer, false);
-    }
-
-    public abstract int feedClearBytesForStream(long streamId, ByteBuffer buffer, boolean last) throws IOException;
-
-    public abstract int drainClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException;
-
-    public abstract boolean isStreamFinished(long streamId);
-
-    public abstract CloseInfo getRemoteCloseInfo();
-
-    public abstract CloseInfo getLocalCloseInfo();
-
-    public abstract byte[] getPeerCertificate();
-
-    public static class CloseInfo
-    {
-        private final long error;
-        private final String reason;
-
-        public CloseInfo(long error, String reason)
-        {
-            this.error = error;
-            this.reason = reason;
+            onFillable();
         }
 
-        public long error()
+        @Override
+        public void failed(Throwable x)
         {
-            return error;
+            onFillInterestedFailed(x);
         }
 
-        public String reason()
+        @Override
+        public InvocationType getInvocationType()
         {
-            return reason;
-        }
-    }
-
-    public interface TokenMinter
-    {
-        int MAX_TOKEN_LENGTH = 48;
-        byte[] mint(byte[] dcid, int len);
-    }
-
-    public interface TokenValidator
-    {
-        byte[] validate(byte[] token, int len);
-    }
-
-    public static class TokenValidationException extends IOException
-    {
-        public TokenValidationException(String msg)
-        {
-            super(msg);
+            return InvocationType.EITHER;
         }
     }
 }

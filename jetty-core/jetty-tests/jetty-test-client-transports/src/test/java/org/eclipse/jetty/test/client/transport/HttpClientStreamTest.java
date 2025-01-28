@@ -515,7 +515,6 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
-    @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
     @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     @Tag("flaky")
@@ -883,7 +882,7 @@ public class HttpClientStreamTest extends AbstractTest
         byte[] data = new byte[512];
         CountDownLatch latch = new CountDownLatch(1);
         OutputStreamRequestContent content = new OutputStreamRequestContent();
-        String uri = "http://0.0.0.1";
+        String uri = "https://0.0.0.1";
         client.newRequest(uri)
             .body(content)
             .send(result ->

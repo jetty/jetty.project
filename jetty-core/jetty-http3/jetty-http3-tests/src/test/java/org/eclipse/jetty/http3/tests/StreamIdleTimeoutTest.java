@@ -32,7 +32,8 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,15 +56,16 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         sll.close();
     }
 
-    @Test
-    public void testClientStreamIdleTimeout() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientStreamIdleTimeout(TransportType transportType) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 serverSessionRef.set(session);
             }
@@ -135,16 +137,17 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         await().atMost(1, TimeUnit.SECONDS).until(() -> serverSessionRef.get().getStreams().isEmpty());
     }
 
-    @Test
-    public void testServerStreamIdleTimeout() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerStreamIdleTimeout(TransportType transportType) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         long idleTimeout = 1000;
         CountDownLatch serverIdleLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 serverSessionRef.set(session);
             }
@@ -177,7 +180,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         assertNotNull(h3);
         h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
 
-        Session.Client clientSession = http3Client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+        Session.Client clientSession = http3Client.connect(transport, new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
             .get(5, TimeUnit.SECONDS);
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);

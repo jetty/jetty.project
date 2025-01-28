@@ -936,7 +936,7 @@ public interface RetainableByteBuffer extends Retainable
             builder.append(",d=");
             builder.append(isDirect());
             addExtraStringInfo(builder);
-            builder.append(",r=");
+            builder.append(",rc=");
             builder.append(getRetained());
             builder.append("]");
         }

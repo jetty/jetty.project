@@ -35,6 +35,7 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -53,7 +54,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
-    private MetaData.Request requestMetaData;
     private MetaData.Response responseMetaData;
     private Content.Chunk chunk;
     private boolean committed;
@@ -75,7 +75,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         try
         {
-            requestMetaData = (MetaData.Request)frame.getMetaData();
+            MetaData.Request requestMetaData = (MetaData.Request)frame.getMetaData();
 
             // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
             ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
@@ -163,12 +163,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             // The data instance should be released after readData() above;
             // the chunk is stored below for later use, so should be retained;
             // the two actions cancel each other, no need to further retain or release.
-            chunk = createChunk(data);
-
-            try (AutoLock ignored = lock.lock())
-            {
-                this.chunk = chunk;
-            }
+            storeAsChunk(data);
         }
     }
 
@@ -185,7 +180,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             Runnable task = httpChannel.onContentAvailable();
             if (task != null)
-                connection.offer(task);
+            {
+                ProtocolSession protocolSession = stream.getSession().getProtocolSession();
+                protocolSession.offerTask(task);
+            }
         }
         else
         {
@@ -211,14 +209,26 @@ public class HttpStreamOverHTTP3 implements HttpStream
         // The data instance should be released after readData() above;
         // the chunk is stored below for later use, so should be retained;
         // the two actions cancel each other, no need to further retain or release.
-        Content.Chunk chunk = createChunk(data);
-
-        try (AutoLock ignored = lock.lock())
-        {
-            this.chunk = chunk;
-        }
+        storeAsChunk(data);
 
         return httpChannel.onContentAvailable();
+    }
+
+    private void storeAsChunk(Stream.Data data)
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            if (data == Stream.Data.EOF)
+            {
+                if (chunk instanceof Trailers)
+                    return;
+                chunk = Content.Chunk.EOF;
+            }
+            else
+            {
+                chunk = Content.Chunk.asChunk(data.getByteBuffer(), data.isLast(), data);
+            }
+        }
     }
 
     public Runnable onTrailer(HeadersFrame frame)
@@ -509,7 +519,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP3 Response #{}/{}: unconsumed request content, resetting stream", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-            stream.reset(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED);
+            stream.disconnect(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED);
         }
     }
 
@@ -519,7 +529,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         HTTP3ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode, x);
-        stream.reset(errorCode.code(), x);
+        stream.disconnect(errorCode.code(), x);
     }
 
     public void onIdleTimeout(TimeoutException failure, BiConsumer<Runnable, Boolean> consumer)

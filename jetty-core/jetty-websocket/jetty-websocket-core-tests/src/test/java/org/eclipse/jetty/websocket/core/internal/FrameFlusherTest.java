@@ -226,7 +226,7 @@ public class FrameFlusherTest
         assertTrue(succeededCloseFrame.await(1, TimeUnit.SECONDS));
     }
 
-    public static class CapturingEndPoint extends MockEndpoint
+    public static class CapturingEndPoint extends MockEndPoint
     {
         public Parser parser;
         public LinkedBlockingQueue<Frame> incomingFrames = new LinkedBlockingQueue<>();

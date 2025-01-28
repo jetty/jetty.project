@@ -76,18 +76,18 @@ public interface Session
     /**
      * <p>The client-side HTTP/3 API representing a connection with a server.</p>
      * <p>Once a {@link Session} has been obtained, it can be used to make HTTP/3 requests:</p>
-     * <pre>
+     * <pre>{@code
      * Session session = ...;
      * HeadersFrame headersFrame = ...;
-     * session.newRequest(headersFrame, new Stream.Listener()
+     * session.newRequest(headersFrame, new Stream.Client.Listener()
      * {
-     *     &#64;Override
-     *     public void onResponse(Stream stream, HeadersFrame frame)
+     *     @Override
+     *     public void onResponse(Stream.Client stream, HeadersFrame frame)
      *     {
      *         // Response headers received.
      *     }
      * });
-     * </pre>
+     * }</pre>
      *
      * @see Stream
      */
@@ -126,7 +126,7 @@ public interface Session
              *
              * @param session the session
              */
-            public default void onAccept(Session session)
+            public default void onAccept(Session.Server session)
             {
             }
 

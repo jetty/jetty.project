@@ -17,9 +17,9 @@ public class QuicheConfig
 {
     public enum CongestionControl
     {
-        RENO(Quiche.quiche_cc_algorithm.QUICHE_CC_RENO),
-        CUBIC(Quiche.quiche_cc_algorithm.QUICHE_CC_CUBIC),
-        BBR(Quiche.quiche_cc_algorithm.QUICHE_CC_BBR);
+        RENO(QuicheConstants.quiche_cc_algorithm.QUICHE_CC_RENO),
+        CUBIC(QuicheConstants.quiche_cc_algorithm.QUICHE_CC_CUBIC),
+        BBR(QuicheConstants.quiche_cc_algorithm.QUICHE_CC_BBR);
 
         private final int value;
         CongestionControl(int value)
@@ -33,7 +33,7 @@ public class QuicheConfig
         }
     }
 
-    private int version = Quiche.QUICHE_PROTOCOL_VERSION;
+    private int version = QuicheConstants.QUICHE_PROTOCOL_VERSION;
     private Boolean verifyPeer;
     private String trustedCertsPemPath;
     private String certChainPemPath;

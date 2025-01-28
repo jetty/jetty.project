@@ -36,19 +36,21 @@ import org.eclipse.jetty.http3.client.transport.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.quic.client.QuicTransport;
+import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.common.ProtocolSession;
-import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport implements ProtocolSession.Factory
 {
     private final HTTP3ClientConnectionFactory factory = new HTTP3ClientConnectionFactory();
     private final HTTP3Client http3Client;
+    private final Transport transport;
 
-    public HttpClientTransportOverHTTP3(HTTP3Client http3Client)
+    public HttpClientTransportOverHTTP3(HTTP3Client http3Client, Transport transport)
     {
         this.http3Client = Objects.requireNonNull(http3Client);
         installBean(http3Client);
+        this.transport = Objects.requireNonNull(transport);
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();
@@ -90,9 +92,9 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     @Override
     public Origin newOrigin(Request request)
     {
-        Transport transport = request.getTransport();
-        if (transport == null)
-            request.transport(new QuicTransport(http3Client.getQuicConfiguration()));
+        Transport provided = request.getTransport();
+        if (provided == null)
+            request.transport(transport);
         return getHttpClient().createOrigin(request, new Origin.Protocol(List.of("h3"), false));
     }
 
@@ -105,18 +107,17 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     @Override
     public void connect(SocketAddress address, Map<String, Object> context)
     {
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, destination.getClientConnectionFactory());
-
+        Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
+        SslContextFactory.Client sslContextFactory = (SslContextFactory.Client)context.get(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
         SessionClientListener listener = new TransportSessionClientListener(context);
-        getHTTP3Client().connect(destination.getOrigin().getTransport(), address, listener, context)
+        getHTTP3Client().connect(transport, sslContextFactory, address, listener, context)
             .whenComplete(listener::onConnect);
     }
 
     @Override
-    public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
+    public ProtocolSession newProtocolSession(Session session, Map<String, Object> context)
     {
-        return factory.newProtocolSession(quicSession, context);
+        return factory.newProtocolSession(session, context);
     }
 
     @Override

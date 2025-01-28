@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
@@ -117,6 +118,11 @@ public class Origin
     public Transport getTransport()
     {
         return transport;
+    }
+
+    public boolean isSecure()
+    {
+        return HttpScheme.HTTPS.is(getScheme());
     }
 
     @Override

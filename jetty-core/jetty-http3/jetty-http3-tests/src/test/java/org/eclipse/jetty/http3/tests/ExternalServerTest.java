@@ -30,9 +30,9 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -51,14 +51,16 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHttpClient() throws Exception
     {
-        SslContextFactory.Client sslClient = new SslContextFactory.Client();
-        ClientQuicConfiguration quicConfig = new ClientQuicConfiguration(sslClient, null);
+        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
         HTTP3Client client = new HTTP3Client(quicConfig);
-        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client)))
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, new QuicheTransport(quicConfig))))
         {
             httpClient.start();
             URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
-            ContentResponse response = httpClient.newRequest(uri).send();
+            ContentResponse response = httpClient.newRequest(uri)
+                .transport(new QuicheTransport(quicConfig))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
             assertThat(response.getContentAsString(), containsString("<artifactId>maven-parent</artifactId>"));
         }
     }
@@ -67,8 +69,7 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHTTP3Client() throws Exception
     {
-        SslContextFactory.Client sslClient = new SslContextFactory.Client();
-        ClientQuicConfiguration quicConfig = new ClientQuicConfiguration(sslClient, null);
+        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
         try (HTTP3Client client = new HTTP3Client(quicConfig))
         {
             client.start();
@@ -80,7 +81,7 @@ public class ExternalServerTest
 //            HostPort hostPort = new HostPort("quic.tech:8443");
 //            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
 //            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
-            Session.Client session = client.connect(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {})
+            Session.Client session = client.connect(new QuicheTransport(quicConfig), new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {})
                 .get(5, TimeUnit.SECONDS);
 
             CountDownLatch requestLatch = new CountDownLatch(1);

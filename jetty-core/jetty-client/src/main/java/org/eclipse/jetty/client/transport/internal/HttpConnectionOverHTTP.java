@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -76,13 +75,13 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
 
     private static HttpDestination destinationFrom(Map<String, Object> context)
     {
-        return (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+        return (HttpDestination)context.get(Destination.CONTEXT_KEY);
     }
 
     @SuppressWarnings("unchecked")
     private static Promise<Connection> promiseFrom(Map<String, Object> context)
     {
-        return (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+        return (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
     }
 
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)

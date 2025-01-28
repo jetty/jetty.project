@@ -121,15 +121,15 @@ A server application can send a response in this way:
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http3/HTTP3ServerDocs.java[tags=response;!exclude]
 ----
 
-[[reset]]
-== Resetting a Request
+[[terminate]]
+== Terminating a Request
 
 A server application may decide that it does not want to accept the request.
 For example, it may throttle the client because it sent too many requests in a time window, or the request is invalid (and does not deserve a proper HTTP response), etc.
 
-A request can be reset in this way:
+A request can be abruptly terminated in this way:
 
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http3/HTTP3ServerDocs.java[tags=reset;!exclude]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http3/HTTP3ServerDocs.java[tags=terminate;!exclude]
 ----

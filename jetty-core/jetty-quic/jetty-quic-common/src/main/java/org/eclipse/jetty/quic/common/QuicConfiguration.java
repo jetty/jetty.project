@@ -13,36 +13,25 @@
 
 package org.eclipse.jetty.quic.common;
 
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-/**
- * <p>A record that captures QUIC configuration parameters.</p>
- */
-public class QuicConfiguration extends ContainerLifeCycle
+public abstract class QuicConfiguration extends ContainerLifeCycle
 {
-    public static final String CONTEXT_KEY = QuicConfiguration.class.getName();
-    public static final String PRIVATE_KEY_PEM_PATH_KEY = CONTEXT_KEY + ".privateKeyPemPath";
-    public static final String CERTIFICATE_CHAIN_PEM_PATH_KEY = CONTEXT_KEY + ".certificateChainPemPath";
-    public static final String TRUSTED_CERTIFICATES_PEM_PATH_KEY = CONTEXT_KEY + ".trustedCertificatesPemPath";
-
+    private final Map<Object, Object> implementationConfiguration = new ConcurrentHashMap<>();
     private int inputBufferSize = 2048;
-    private int outputBufferSize = 2048;
     private boolean useInputDirectByteBuffers = true;
+    private int outputBufferSize = 2048;
     private boolean useOutputDirectByteBuffers = true;
-    private List<String> protocols = List.of();
-    private boolean disableActiveMigration;
-    private int maxBidirectionalRemoteStreams;
-    private int maxUnidirectionalRemoteStreams;
-    private int sessionRecvWindow;
-    private int bidirectionalStreamRecvWindow;
-    private int unidirectionalStreamRecvWindow;
-    private Path pemWorkDirectory;
-    private final Map<String, Object> implementationConfiguration = new HashMap<>();
+    private long streamIdleTimeout;
+    private long sessionMaxData;
+    private long localBidirectionalStreamMaxData;
+    private long remoteBidirectionalStreamMaxData;
+    private long unidirectionalStreamMaxData;
+    private long bidirectionalMaxStreams;
+    private long unidirectionalMaxStreams;
 
     public int getInputBufferSize()
     {
@@ -52,16 +41,6 @@ public class QuicConfiguration extends ContainerLifeCycle
     public void setInputBufferSize(int inputBufferSize)
     {
         this.inputBufferSize = inputBufferSize;
-    }
-
-    public int getOutputBufferSize()
-    {
-        return outputBufferSize;
-    }
-
-    public void setOutputBufferSize(int outputBufferSize)
-    {
-        this.outputBufferSize = outputBufferSize;
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -74,6 +53,16 @@ public class QuicConfiguration extends ContainerLifeCycle
         this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
+    public int getOutputBufferSize()
+    {
+        return outputBufferSize;
+    }
+
+    public void setOutputBufferSize(int outputBufferSize)
+    {
+        this.outputBufferSize = outputBufferSize;
+    }
+
     public boolean isUseOutputDirectByteBuffers()
     {
         return useOutputDirectByteBuffers;
@@ -84,89 +73,77 @@ public class QuicConfiguration extends ContainerLifeCycle
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
-    public List<String> getProtocols()
+    public long getStreamIdleTimeout()
     {
-        return protocols;
+        return streamIdleTimeout;
     }
 
-    public void setProtocols(List<String> protocols)
+    public void setStreamIdleTimeout(long streamIdleTimeout)
     {
-        this.protocols = protocols;
+        this.streamIdleTimeout = streamIdleTimeout;
     }
 
-    public boolean isDisableActiveMigration()
+    public long getSessionMaxData()
     {
-        return disableActiveMigration;
+        return sessionMaxData;
     }
 
-    public void setDisableActiveMigration(boolean disableActiveMigration)
+    public void setSessionMaxData(long sessionMaxData)
     {
-        this.disableActiveMigration = disableActiveMigration;
+        this.sessionMaxData = sessionMaxData;
     }
 
-    public int getMaxBidirectionalRemoteStreams()
+    public long getLocalBidirectionalStreamMaxData()
     {
-        return maxBidirectionalRemoteStreams;
+        return localBidirectionalStreamMaxData;
     }
 
-    public void setMaxBidirectionalRemoteStreams(int maxBidirectionalRemoteStreams)
+    public void setLocalBidirectionalStreamMaxData(long localBidirectionalStreamMaxData)
     {
-        this.maxBidirectionalRemoteStreams = maxBidirectionalRemoteStreams;
+        this.localBidirectionalStreamMaxData = localBidirectionalStreamMaxData;
     }
 
-    public int getMaxUnidirectionalRemoteStreams()
+    public long getRemoteBidirectionalStreamMaxData()
     {
-        return maxUnidirectionalRemoteStreams;
+        return remoteBidirectionalStreamMaxData;
     }
 
-    public void setMaxUnidirectionalRemoteStreams(int maxUnidirectionalRemoteStreams)
+    public void setRemoteBidirectionalStreamMaxData(long remoteBidirectionalStreamMaxData)
     {
-        this.maxUnidirectionalRemoteStreams = maxUnidirectionalRemoteStreams;
+        this.remoteBidirectionalStreamMaxData = remoteBidirectionalStreamMaxData;
     }
 
-    public int getSessionRecvWindow()
+    public long getUnidirectionalStreamMaxData()
     {
-        return sessionRecvWindow;
+        return unidirectionalStreamMaxData;
     }
 
-    public void setSessionRecvWindow(int sessionRecvWindow)
+    public void setUnidirectionalStreamMaxData(long unidirectionalStreamMaxData)
     {
-        this.sessionRecvWindow = sessionRecvWindow;
+        this.unidirectionalStreamMaxData = unidirectionalStreamMaxData;
     }
 
-    public int getBidirectionalStreamRecvWindow()
+    public long getBidirectionalMaxStreams()
     {
-        return bidirectionalStreamRecvWindow;
+        return bidirectionalMaxStreams;
     }
 
-    public void setBidirectionalStreamRecvWindow(int bidirectionalStreamRecvWindow)
+    public void setBidirectionalMaxStreams(long bidirectionalMaxStreams)
     {
-        this.bidirectionalStreamRecvWindow = bidirectionalStreamRecvWindow;
+        this.bidirectionalMaxStreams = bidirectionalMaxStreams;
     }
 
-    public int getUnidirectionalStreamRecvWindow()
+    public long getUnidirectionalMaxStreams()
     {
-        return unidirectionalStreamRecvWindow;
+        return unidirectionalMaxStreams;
     }
 
-    public void setUnidirectionalStreamRecvWindow(int unidirectionalStreamRecvWindow)
+    public void setUnidirectionalMaxStreams(long unidirectionalMaxStreams)
     {
-        this.unidirectionalStreamRecvWindow = unidirectionalStreamRecvWindow;
+        this.unidirectionalMaxStreams = unidirectionalMaxStreams;
     }
 
-    public Path getPemWorkDirectory()
-    {
-        return pemWorkDirectory;
-    }
-
-    public void setPemWorkDirectory(Path pemWorkDirectory)
-    {
-        if (isStarted())
-            throw new IllegalStateException("cannot change PEM working directory after start");
-        this.pemWorkDirectory = pemWorkDirectory;
-    }
-
-    public Map<String, Object> getImplementationConfiguration()
+    public Map<Object, Object> getImplementationConfiguration()
     {
         return implementationConfiguration;
     }

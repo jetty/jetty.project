@@ -1,0 +1,553 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.quic.common;
+
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadPendingException;
+import java.nio.channels.WritePendingException;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * <p>An {@link EndPoint} implementation on top of a QUIC stream.</p>
+ * <p>The correspondent {@link Connection} associated to this StreamEndPoint
+ * parses and generates the protocol specific bytes transported by QUIC.</p>
+ */
+public class StreamEndPoint implements EndPoint
+{
+    private static final Logger LOG = LoggerFactory.getLogger(StreamEndPoint.class);
+    private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
+
+    private final long created = System.currentTimeMillis();
+    private final AtomicReference<Stream.Data> data = new AtomicReference<>();
+    private final AtomicReference<Callback> fillInterest = new AtomicReference<>();
+    private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.IDLE);
+    private final AtomicReference<Throwable> writeFailure = new AtomicReference<>();
+    private final ProtocolSession protocolSession;
+    private final Stream stream;
+    private Connection connection;
+
+    public StreamEndPoint(ProtocolSession protocolSession, Stream stream)
+    {
+        this.protocolSession = protocolSession;
+        this.stream = stream;
+    }
+
+    public ProtocolSession getProtocolSession()
+    {
+        return protocolSession;
+    }
+
+    public Stream getStream()
+    {
+        return stream;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return stream.getSession().getLocalSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return stream.getSession().getRemoteSocketAddress();
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return !stream.isClosed();
+    }
+
+    @Override
+    public long getCreatedTimeStamp()
+    {
+        return created;
+    }
+
+    @Override
+    public Object getTransport()
+    {
+        return stream;
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return stream.getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        stream.setIdleTimeout(idleTimeout);
+    }
+
+    @Override
+    public void shutdownOutput()
+    {
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current)
+            {
+                case IDLE:
+                case CLOSING:
+                    if (!writeState.compareAndSet(current, WriteState.CLOSED))
+                        break;
+                    shutdownOutput(ErrorCode.NO_ERROR.code());
+                    return;
+                case PENDING:
+                    if (!writeState.compareAndSet(current, WriteState.CLOSING))
+                        break;
+                    return;
+                case CLOSED:
+                case FAILED:
+                    return;
+            }
+        }
+    }
+
+    @Override
+    public boolean isOutputShutdown()
+    {
+        WriteState state = writeState.get();
+        return state != WriteState.IDLE && state != WriteState.PENDING;
+    }
+
+    @Override
+    public boolean isInputShutdown()
+    {
+        Stream.Data current = data.get();
+        return current == Stream.Data.EOF;
+    }
+
+    public void shutdownInput(long appError)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("shutting down input with error 0x{} on {}", Long.toHexString(appError), this);
+        stream.stopSending(appError);
+    }
+
+    public void shutdownOutput(long appError)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("shutting down output with error 0x{} on {}", Long.toHexString(appError), this);
+        stream.reset(appError);
+    }
+
+    @Override
+    public void close(Throwable failure)
+    {
+        // Implemented from EndPoint, must have blocking semantic.
+        disconnect(ErrorCode.NO_ERROR.code(), failure, true)
+            .whenComplete((r, x) -> onClose(failure))
+            .join();
+    }
+
+    public CompletableFuture<StreamEndPoint> disconnect(long appError, Throwable failure, boolean disconnectStream)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("disconnecting with error 0x{} disconnectStream={} {} {}", Long.toHexString(appError), disconnectStream, this, String.valueOf(failure));
+
+        // TODO: drain queue, store failure, and update write state.
+
+        getProtocolSession().removeStreamEndPoint(this);
+
+        if (!disconnectStream)
+            return CompletableFuture.completedFuture(this);
+
+        // Propagate outwards.
+        return stream.disconnect(appError, failure).thenApply(s -> this);
+    }
+
+    @Override
+    public void onClose(Throwable failure)
+    {
+        getConnection().onClose(failure);
+    }
+
+    public boolean onIdleTimeout(TimeoutException timeout)
+    {
+        return true;
+    }
+
+    @Override
+    public int fill(ByteBuffer sink) throws IOException
+    {
+        while (true)
+        {
+            Stream.Data current = data.get();
+            if (current != null)
+            {
+                ByteBuffer source = current.getByteBuffer();
+                if (source.hasRemaining())
+                {
+                    int filled = copy(current, sink);
+                    if (!source.hasRemaining())
+                    {
+                        data.set(current.isLast() ? Stream.Data.EOF : null);
+                        current.release();
+                    }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("filled {} bytes on {}", filled, this);
+
+                    return filled;
+                }
+
+                if (current.isLast())
+                {
+                    if (current instanceof StreamDataFailure f)
+                        throw IO.rethrow(f.failure);
+                    if (current != Stream.Data.EOF)
+                    {
+                        data.set(Stream.Data.EOF);
+                        current.release();
+                    }
+                    return -1;
+                }
+            }
+
+            current = read();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("read {} from {} on {}", current, stream, this);
+
+            if (current == null)
+                return 0;
+
+            data.set(current);
+        }
+    }
+
+    private Stream.Data read()
+    {
+        try
+        {
+            return stream.read();
+        }
+        catch (Throwable x)
+        {
+            return new StreamDataFailure(IO.rethrow(x));
+        }
+    }
+
+    private int copy(Stream.Data data, ByteBuffer sink)
+    {
+        int length = 0;
+        ByteBuffer source = data.getByteBuffer();
+        if (source.hasRemaining())
+        {
+            int sinkPosition = BufferUtil.flipToFill(sink);
+            int sourceLength = source.remaining();
+            length = Math.min(sourceLength, sink.remaining());
+            int sourceLimit = source.limit();
+            source.limit(source.position() + length);
+            sink.put(source);
+            source.limit(sourceLimit);
+            BufferUtil.flipToFlush(sink, sinkPosition);
+        }
+        return length;
+    }
+
+    @Override
+    public boolean flush(ByteBuffer... buffers) throws IOException
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("flushing {} on {}", BufferUtil.toDetailString(buffers), this);
+        if (buffers == null || buffers.length == 0 || BufferUtil.remaining(buffers) == 0)
+            return true;
+
+        // Differently from other EndPoint implementations, where write() calls
+        // flush(), in this implementation all the work is done in write(), and
+        // flush() is mostly a no-operation.
+        // This is because the flush() semantic is that it must not leave pending
+        // operations if it cannot write the buffers; therefore we cannot call
+        // stream.data() from flush() because if the stream is congested, the
+        // buffers would not be fully written, we would return false from flush(),
+        // but stream.data() would remain as a pending operation and possibly
+        // operate on the buffers concurrently.
+
+        return switch (writeState.get())
+        {
+            case IDLE, PENDING -> false;
+            case CLOSING, CLOSED -> throw new EofException("output shutdown");
+            case FAILED -> throw IO.rethrow(writeFailure.get());
+        };
+    }
+
+    public void write(Callback callback, List<ByteBuffer> buffers, boolean last)
+    {
+        ByteBuffer[] array;
+        if (last)
+        {
+            int size = buffers.size();
+            array = new ByteBuffer[size + 1];
+            IntStream.range(0, size).forEach(i -> array[i] = buffers.get(i));
+            array[size] = LAST_FLAG;
+        }
+        else
+        {
+            array = buffers.toArray(ByteBuffer[]::new);
+        }
+        write(callback, array);
+    }
+
+    @Override
+    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("writing {} on {}", BufferUtil.toDetailString(buffers), this);
+        if (buffers == null || buffers.length == 0 || BufferUtil.remaining(buffers) == 0)
+        {
+            callback.succeeded();
+        }
+        else
+        {
+            while (true)
+            {
+                WriteState current = writeState.get();
+                switch (current)
+                {
+                    case IDLE ->
+                    {
+                        if (!writeState.compareAndSet(current, WriteState.PENDING))
+                            continue;
+
+                        boolean last = buffers[buffers.length - 1] == LAST_FLAG;
+                        stream.data(last, buffers).whenComplete((r, x) ->
+                        {
+                            if (x == null)
+                                writeSuccess(callback);
+                            else
+                                writeFailure(x, callback);
+                        });
+                    }
+                    case PENDING -> callback.failed(new WritePendingException());
+                    case CLOSING, CLOSED -> callback.failed(new EofException("output shutdown"));
+                    case FAILED -> callback.failed(writeFailure.get());
+                    default -> callback.failed(new IllegalStateException("unexpected state: " + current));
+                }
+                return;
+            }
+        }
+    }
+
+    private void writeSuccess(Callback callback)
+    {
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current)
+            {
+                case PENDING ->
+                {
+                    if (!writeState.compareAndSet(current, WriteState.IDLE))
+                        continue;
+                    callback.succeeded();
+                }
+                case CLOSING ->
+                {
+                    // TODO: no state change?
+                    callback.succeeded();
+                    shutdownOutput();
+                }
+                case FAILED -> callback.failed(writeFailure.get());
+                default -> callback.failed(new IllegalStateException("unexpected state: " + current));
+            }
+            return;
+        }
+    }
+
+    private void writeFailure(Throwable failure, Callback callback)
+    {
+        while (true)
+        {
+            WriteState current = writeState.get();
+            switch (current)
+            {
+                case PENDING, CLOSING ->
+                {
+                    writeFailure.compareAndSet(null, failure);
+                    if (!writeState.compareAndSet(current, WriteState.FAILED))
+                        continue;
+                    callback.failed(failure);
+                }
+                case FAILED ->
+                {
+                    // Already failed.
+                }
+                default -> callback.failed(new IllegalStateException("unexpected state: " + current));
+            }
+            return;
+        }
+    }
+
+    @Override
+    public boolean isFillInterested()
+    {
+        return fillInterest.get() != null;
+    }
+
+    @Override
+    public void fillInterested(Callback callback)
+    {
+        if (!tryFillInterested(callback))
+            throw new ReadPendingException();
+    }
+
+    @Override
+    public boolean tryFillInterested(Callback callback)
+    {
+        boolean set = fillInterest.compareAndSet(null, Objects.requireNonNull(callback));
+        if (LOG.isDebugEnabled())
+            LOG.debug("setting ({}) fill interest on {}", set, this);
+        if (set)
+            stream.demand();
+        return set;
+    }
+
+    public void fillable()
+    {
+        Callback callback = fillInterest.getAndSet(null);
+        if (LOG.isDebugEnabled())
+            LOG.debug("notifying fillable via {} on {}", callback, this);
+        if (callback != null)
+            callback.succeeded();
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return connection;
+    }
+
+    @Override
+    public void setConnection(Connection connection)
+    {
+        this.connection = connection;
+    }
+
+    @Override
+    public void onOpen()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("opened {}", this);
+    }
+
+    @Override
+    public void upgrade(Connection newConnection)
+    {
+        Connection oldConnection = getConnection();
+
+        ByteBuffer byteBuffer = null;
+        if (oldConnection instanceof Connection.UpgradeFrom from)
+            byteBuffer = from.onUpgradeFrom();
+
+        oldConnection.onClose(null);
+        setConnection(newConnection);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} upgrading from {} to {} with {}",
+                this, oldConnection, newConnection, BufferUtil.toDetailString(byteBuffer));
+
+        if (BufferUtil.hasContent(byteBuffer))
+        {
+            if (newConnection instanceof Connection.UpgradeTo to)
+                to.onUpgradeTo(byteBuffer);
+            else
+                throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
+        }
+
+        newConnection.onOpen();
+    }
+
+    @Override
+    public SslSessionData getSslSessionData()
+    {
+        // TODO
+        return EndPoint.super.getSslSessionData();
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        // TODO
+        return EndPoint.super.isSecure();
+    }
+
+    private String toConnectionString()
+    {
+        Connection connection = getConnection();
+        if (connection == null)
+            return "<null>";
+        if (connection instanceof AbstractConnection c)
+            return c.toConnectionString();
+        return "%s@%x".formatted(TypeUtil.toShortName(connection.getClass()), connection.hashCode());
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x#%d[d=%s,%s]", TypeUtil.toShortName(getClass()), hashCode(), getStream().getId(), data, toConnectionString());
+    }
+
+    private enum WriteState
+    {
+        IDLE, PENDING, CLOSING, CLOSED, FAILED
+    }
+
+    private record StreamDataFailure(Throwable failure) implements Stream.Data
+    {
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return BufferUtil.EMPTY_BUFFER;
+        }
+
+        @Override
+        public int getLength()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean isLast()
+        {
+            return true;
+        }
+    }
+}

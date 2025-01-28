@@ -14,7 +14,7 @@
 module org.eclipse.jetty.quic.quiche.jna
 {
     requires com.sun.jna;
-    requires org.eclipse.jetty.quic.quiche;
+    requires org.eclipse.jetty.quic.quiche.common;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 

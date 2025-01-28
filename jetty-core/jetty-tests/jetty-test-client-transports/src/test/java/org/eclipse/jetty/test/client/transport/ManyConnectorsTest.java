@@ -17,8 +17,8 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.ServerSocketChannel;
 
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -60,8 +60,8 @@ public class ManyConnectorsTest
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslContextFactory.setKeyStorePassword("storepwd");
-        ServerQuicConfiguration quicConfig = new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
-        QuicServerConnector connector2 = new QuicServerConnector(server, quicConfig, new HTTP3ServerConnectionFactory(quicConfig, httpConfig));
+        QuicheServerQuicConfiguration quicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
+        QuicheServerConnector connector2 = new QuicheServerConnector(server, sslContextFactory, quicConfig, new HTTP3ServerConnectionFactory(httpConfig));
         server.addConnector(connector2);
 
         connector1.addEventListener(new NetworkConnector.Listener()

@@ -142,14 +142,14 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 // TODO: flow control?
 //include::../../http3.adoc[tag=apiFlowControl]
 
-[[reset]]
-== Resetting a Request or Response
+[[terminate]]
+== Terminating a Request or Response
 
-In HTTP/3, clients and servers have the ability to tell to the other peer that they are not interested anymore in either the request or the response, by resetting the stream.
+In HTTP/3, clients and servers have the ability to tell to the other peer that they are not interested anymore in either the request or the response, by terminating the stream.
 
-The `HTTP3Client` APIs allow client applications to send and receive this "reset" event:
+The `HTTP3Client` APIs allow client applications to send and receive this event:
 
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=reset]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=terminate]
 ----

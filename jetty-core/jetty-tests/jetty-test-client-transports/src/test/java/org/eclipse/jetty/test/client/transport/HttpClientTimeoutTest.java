@@ -28,13 +28,14 @@ import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
@@ -43,10 +44,10 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -225,9 +226,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         startServer(transportType, new TimeoutHandler(2 * timeout));
 
         AtomicBoolean sslIdle = new AtomicBoolean();
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        client = new HttpClient(newHttpClientTransport(transportType))
+        ClientConnector clientConnector = new ClientConnector()
         {
             @Override
             public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
@@ -252,7 +251,7 @@ public class HttpClientTimeoutTest extends AbstractTest
                 };
             }
         };
-        client.setExecutor(clientThreads);
+        prepareClient(transportType, clientConnector);
         client.setIdleTimeout(timeout);
         client.start();
 
@@ -456,6 +455,9 @@ public class HttpClientTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestQueuedDoesNotCancelTimeoutOfQueuedRequests(TransportType transportType) throws Exception
     {
+        // This test relies on limiting *concurrent* requests per connection,
+        // but with QUIC it is only possible to control the *total* streams.
+        Assumptions.assumeFalse(transportType == TransportType.H3_QUICHE);
 
         CountDownLatch serverLatch = new CountDownLatch(1);
         start(transportType, new Handler.Abstract()
@@ -469,7 +471,9 @@ public class HttpClientTimeoutTest extends AbstractTest
                 return true;
             }
         });
-        setMaxRequestsPerConnection(1);
+        AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
+        if (h2 != null)
+            h2.setMaxConcurrentStreams(1);
         client.setMaxConnectionsPerDestination(1);
 
         // Send the first request so that the others get queued.

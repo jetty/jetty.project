@@ -16,20 +16,19 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ControlStreamConnection extends AbstractConnection implements Connection.UpgradeTo
 {
-    // SPEC: Control Stream Type.
-    public static final long STREAM_TYPE = 0x00;
     private static final Logger LOG = LoggerFactory.getLogger(ControlStreamConnection.class);
 
     private final ByteBufferPool bufferPool;
@@ -37,11 +36,17 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
 
-    public ControlStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ControlParser parser)
+    public ControlStreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ControlParser parser)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.parser = parser;
+    }
+
+    @Override
+    public StreamEndPoint getEndPoint()
+    {
+        return (StreamEndPoint)super.getEndPoint();
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -104,7 +109,7 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
                 {
                     buffer.release();
                     buffer = null;
-                    getEndPoint().close();
+                    getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), null, true);
                     break;
                 }
             }
@@ -115,7 +120,7 @@ public class ControlStreamConnection extends AbstractConnection implements Conne
                 LOG.debug("could not process control stream {}", getEndPoint(), x);
             buffer.release();
             buffer = null;
-            getEndPoint().close(x);
+            getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), x, true);
         }
     }
 }

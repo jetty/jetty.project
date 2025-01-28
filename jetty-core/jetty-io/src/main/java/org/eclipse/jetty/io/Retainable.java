@@ -244,7 +244,7 @@ public interface Retainable
         @Override
         public String toString()
         {
-            return String.format("%s@%x[r=%d]", getClass().getSimpleName(), hashCode(), get());
+            return String.format("%s@%x[rc=%d]", getClass().getSimpleName(), hashCode(), get());
         }
     }
 

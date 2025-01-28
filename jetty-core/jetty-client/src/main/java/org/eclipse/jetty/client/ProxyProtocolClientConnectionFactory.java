@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * <p>Use the {@link V1} or {@link V2} versions of this class to specify what version of the
  * PROXY protocol you want to use.</p>
  */
-public abstract class ProxyProtocolClientConnectionFactory implements ClientConnectionFactory
+public abstract class ProxyProtocolClientConnectionFactory extends ClientConnectionFactory.Wrapper
 {
     /**
      * A ClientConnectionFactory for the PROXY protocol version 1.
@@ -57,7 +57,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         @Override
         protected ProxyProtocolConnection newProxyProtocolConnection(EndPoint endPoint, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
             Tag tag = (Tag)destination.getOrigin().getTag();
             if (tag == null)
@@ -75,7 +75,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                     remoteAddress == null ? null : remoteAddress.getHostAddress(),
                     inetRemote == null ? 0 : inetRemote.getPort());
             }
-            return new ProxyProtocolConnectionV1(endPoint, executor, getClientConnectionFactory(), context, tag);
+            return new ProxyProtocolConnectionV1(endPoint, executor, getWrapped(), context, tag);
         }
 
         /**
@@ -203,7 +203,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         @Override
         protected ProxyProtocolConnection newProxyProtocolConnection(EndPoint endPoint, Map<String, Object> context)
         {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
             Tag tag = (Tag)destination.getOrigin().getTag();
             if (tag == null)
@@ -224,7 +224,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                     inetRemote == null ? 0 : inetRemote.getPort(),
                     null);
             }
-            return new ProxyProtocolConnectionV2(endPoint, executor, getClientConnectionFactory(), context, tag);
+            return new ProxyProtocolConnectionV2(endPoint, executor, getWrapped(), context, tag);
         }
 
         /**
@@ -439,16 +439,9 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         }
     }
 
-    private final ClientConnectionFactory factory;
-
     private ProxyProtocolClientConnectionFactory(ClientConnectionFactory factory)
     {
-        this.factory = factory;
-    }
-
-    public ClientConnectionFactory getClientConnectionFactory()
-    {
-        return factory;
+        super(factory);
     }
 
     @Override
@@ -504,7 +497,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         public void failed(Throwable x)
         {
             close();
-            Promise<?> promise = (Promise<?>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+            Promise<?> promise = (Promise<?>)context.get(org.eclipse.jetty.client.Connection.PROMISE_CONTEXT_KEY);
             promise.failed(x);
         }
 

@@ -108,10 +108,10 @@ public class InputStreamResponseListener implements Listener
 
         try (AutoLock.WithCondition l = lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} chunk {}", closed ? "Dropping" : "Queueing", chunk);
             if (!closed)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Queueing chunk {}", chunk);
                 chunk.retain();
                 chunkCallbacks.add(new ChunkCallback(chunk, demander, response::abort));
                 l.signalAll();
@@ -119,8 +119,6 @@ public class InputStreamResponseListener implements Listener
             }
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("InputStream closed, ignored chunk {}", chunk);
         response.abort(new AsynchronousCloseException());
     }
 

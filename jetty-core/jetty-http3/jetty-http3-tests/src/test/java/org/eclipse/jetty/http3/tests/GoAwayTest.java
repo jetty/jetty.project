@@ -30,32 +30,36 @@ import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
-import org.eclipse.jetty.quic.client.ClientQuicSession;
-import org.eclipse.jetty.quic.common.QuicConnection;
-import org.eclipse.jetty.quic.server.ServerQuicSession;
+import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.common.SessionContainer;
+import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GoAwayTest extends AbstractClientServerTest
 {
-    @Test
-    public void testClientGoAwayServerReplies() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientGoAwayServerReplies(TransportType transportType) throws Exception
     {
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         AtomicReference<HTTP3SessionServer> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -114,28 +118,27 @@ public class GoAwayTest extends AbstractClientServerTest
         HTTP3SessionServer serverSession = serverSessionRef.get();
         assertTrue(serverSession.isClosed());
         assertTrue(serverSession.getStreams().isEmpty());
-        ServerQuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
+        ServerHTTP3Session serverProtocolSession = serverSession.getProtocolSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
-        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> serverProtocolSession.getStreamEndPoints().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> serverProtocolSession.getSession().getStreams().isEmpty());
 
         assertTrue(clientSession.isClosed());
         assertTrue(clientSession.getStreams().isEmpty());
-        ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
+        ClientHTTP3Session clientProtocolSession = clientSession.getProtocolSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(3, TimeUnit.SECONDS).until(() -> clientQuicSession.getQuicStreamEndPoints().isEmpty());
-        QuicConnection quicConnection = clientQuicSession.getQuicConnection();
-        await().atMost(3, TimeUnit.SECONDS).until(() -> quicConnection.getQuicSessions().isEmpty());
-        await().atMost(3, TimeUnit.SECONDS).until(() -> quicConnection.getEndPoint().isOpen(), is(false));
+        await().atMost(3, TimeUnit.SECONDS).until(() -> clientProtocolSession.getStreamEndPoints().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> clientProtocolSession.getSession().getStreams().isEmpty());
     }
 
-    @Test
-    public void testServerGoAwayWithInFlightStreamClientFailsStream() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerGoAwayWithInFlightStreamClientFailsStream(TransportType transportType) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -208,13 +211,14 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(((HTTP3Session)serverSessionRef.get()).isClosed());
     }
 
-    @Test
-    public void testServerGracefulGoAway() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerGracefulGoAway(TransportType transportType) throws Exception
     {
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -286,14 +290,15 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(((HTTP3Session)clientSession).isClosed());
     }
 
-    @Test
-    public void testServerGracefulGoAwayWithStreamsServerClosesWhenLastStreamCloses() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerGracefulGoAwayWithStreamsServerClosesWhenLastStreamCloses(TransportType transportType) throws Exception
     {
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         AtomicReference<Stream.Server> serverStreamRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -381,14 +386,15 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(((HTTP3Session)clientSession).isClosed());
     }
 
-    @Test
-    public void testClientGoAwayWithStreamsServerClosesWhenLastStreamCloses() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientGoAwayWithStreamsServerClosesWhenLastStreamCloses(TransportType transportType) throws Exception
     {
         AtomicReference<Stream.Server> serverStreamRef = new AtomicReference<>();
         CountDownLatch serverStreamLatch = new CountDownLatch(1);
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -464,14 +470,15 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(((HTTP3Session)clientSession).isClosed());
     }
 
-    @Test
-    public void testServerGracefulGoAwayWithStreamsClientGoAwayServerClosesWhenLastStreamCloses() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerGracefulGoAwayWithStreamsClientGoAwayServerClosesWhenLastStreamCloses(TransportType transportType) throws Exception
     {
         AtomicReference<Stream.Server> serverStreamRef = new AtomicReference<>();
         CountDownLatch serverStreamLatch = new CountDownLatch(1);
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -556,14 +563,15 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(((HTTP3Session)clientSession).isClosed());
     }
 
-    @Test
-    public void testClientGracefulGoAwayWithStreamsServerGracefulGoAwayServerClosesWhenLastStreamCloses() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientGracefulGoAwayWithStreamsServerGracefulGoAwayServerClosesWhenLastStreamCloses(TransportType transportType) throws Exception
     {
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
         CountDownLatch serverRequestLatch = new CountDownLatch(1);
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server serverStream, HeadersFrame frame)
@@ -657,13 +665,14 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(((HTTP3Session)clientSession).isClosed());
     }
 
-    @Test
-    public void testClientDisconnectServerCloses() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientDisconnectServerCloses(TransportType transportType) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch settingsLatch = new CountDownLatch(2);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -679,7 +688,6 @@ public class GoAwayTest extends AbstractClientServerTest
             }
         });
 
-        CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         HTTP3SessionClient clientSession = (HTTP3SessionClient)newSession(new Session.Client.Listener()
         {
             @Override
@@ -687,33 +695,27 @@ public class GoAwayTest extends AbstractClientServerTest
             {
                 settingsLatch.countDown();
             }
-
-            @Override
-            public void onDisconnect(Session session, long error, String reason)
-            {
-                clientDisconnectLatch.countDown();
-            }
         });
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         // Issue a network disconnection.
-        clientSession.getProtocolSession().getQuicSession().getQuicConnection().close();
+        ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "disconnect");
+        clientSession.getProtocolSession().getSession().disconnect(disconnect, null);
 
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
 
         assertTrue(((HTTP3Session)serverSessionRef.get()).isClosed());
-        assertTrue(clientSession.isClosed());
     }
 
-    @Test
-    public void testServerGracefulGoAwayClientDisconnectServerCloses() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerGracefulGoAwayClientDisconnectServerCloses(TransportType transportType) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch settingsLatch = new CountDownLatch(2);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -729,7 +731,6 @@ public class GoAwayTest extends AbstractClientServerTest
             }
         });
 
-        CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         Session.Client clientSession = newSession(new Session.Client.Listener()
         {
             @Override
@@ -742,13 +743,8 @@ public class GoAwayTest extends AbstractClientServerTest
             public void onGoAway(Session session, GoAwayFrame frame)
             {
                 // Reply to the graceful GOAWAY from the server with a network disconnection.
-                ((HTTP3Session)session).getProtocolSession().getQuicSession().getQuicConnection().close();
-            }
-
-            @Override
-            public void onDisconnect(Session session, long error, String reason)
-            {
-                clientDisconnectLatch.countDown();
+                ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "disconnect");
+                ((HTTP3Session)session).getProtocolSession().getSession().disconnect(disconnect, null);
             }
         });
 
@@ -758,24 +754,23 @@ public class GoAwayTest extends AbstractClientServerTest
         serverSessionRef.get().goAway(true);
 
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
 
         assertTrue(((HTTP3Session)serverSessionRef.get()).isClosed());
-        assertTrue(((HTTP3Session)clientSession).isClosed());
     }
 
-    @Test
-    public void testClientIdleTimeout() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientIdleTimeout(TransportType transportType) throws Exception
     {
         long idleTimeout = 1000;
 
         AtomicReference<HTTP3Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 serverSessionRef.set((HTTP3Session)session);
             }
@@ -821,22 +816,21 @@ public class GoAwayTest extends AbstractClientServerTest
         HTTP3Session serverSession = serverSessionRef.get();
         assertTrue(serverSession.isClosed());
         assertTrue(clientSession.isClosed());
-
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
     }
 
-    @Test
-    public void testServerIdleTimeout() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerIdleTimeout(TransportType transportType) throws Exception
     {
         long idleTimeout = 1000;
 
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverIdleTimeoutLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 serverSessionRef.set(session);
             }
@@ -885,18 +879,19 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(((HTTP3Session)clientSession).isClosed());
     }
 
-    @Test
-    public void testServerGracefulGoAwayWithStreamsServerIdleTimeout() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerGracefulGoAwayWithStreamsServerIdleTimeout(TransportType transportType) throws Exception
     {
         long idleTimeout = 1000;
 
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 serverSessionRef.set(session);
             }
@@ -964,23 +959,22 @@ public class GoAwayTest extends AbstractClientServerTest
         HTTP3SessionServer serverSession = (HTTP3SessionServer)serverSessionRef.get();
         assertTrue(serverSession.isClosed());
         assertTrue(serverSession.getStreams().isEmpty());
-        ServerQuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
+        ServerHTTP3Session serverProtocolSession = serverSession.getProtocolSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS).until(() -> serverProtocolSession.getStreamEndPoints().isEmpty());
+        await().atMost(1, TimeUnit.SECONDS).until(() -> serverProtocolSession.getSession().getStreams().isEmpty());
 
         assertTrue(clientSession.isClosed());
         assertTrue(clientSession.getStreams().isEmpty());
-        ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
+        ClientHTTP3Session clientProtocolSession = clientSession.getProtocolSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientQuicSession.getQuicStreamEndPoints().isEmpty());
-        QuicConnection quicConnection = clientQuicSession.getQuicConnection();
-        await().atMost(1, TimeUnit.SECONDS).until(() -> quicConnection.getQuicSessions().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> quicConnection.getEndPoint().isOpen(), is(false));
+        await().atMost(1, TimeUnit.SECONDS).until(() -> clientProtocolSession.getStreamEndPoints().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> clientProtocolSession.getSession().getStreams().isEmpty());
     }
 
-    @Test
-    public void testClientGracefulGoAwayWithStreamsServerIdleTimeout() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientGracefulGoAwayWithStreamsServerIdleTimeout(TransportType transportType) throws Exception
     {
         long idleTimeout = 1000;
 
@@ -988,10 +982,10 @@ public class GoAwayTest extends AbstractClientServerTest
         CountDownLatch serverRequestLatch = new CountDownLatch(1);
         CountDownLatch serverGracefulGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 serverSessionRef.set(session);
             }
@@ -1059,13 +1053,13 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(clientSession.isClosed());
     }
 
-    @Test
-    public void testServerGoAwayWithStreamsThenDisconnect() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerGoAwayWithStreamsThenDisconnect(TransportType transportType) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
-        CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -1080,12 +1074,6 @@ public class GoAwayTest extends AbstractClientServerTest
             public void onGoAway(Session session, GoAwayFrame frame)
             {
                 serverGoAwayLatch.countDown();
-            }
-
-            @Override
-            public void onDisconnect(Session session, long error, String reason)
-            {
-                serverDisconnectLatch.countDown();
             }
         });
 
@@ -1121,24 +1109,23 @@ public class GoAwayTest extends AbstractClientServerTest
         // Neither the client nor the server are finishing
         // the pending stream, so force the disconnect on the server.
         HTTP3Session serverSession = (HTTP3Session)serverSessionRef.get();
-        serverSession.getProtocolSession().getQuicSession().getQuicConnection().close();
+        ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "disconnect");
+        serverSession.getProtocolSession().getSession().disconnect(disconnect, null);
 
-        // The server should reset all the pending streams.
         assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
 
-        assertTrue(serverSession.isClosed());
         assertTrue(clientSession.isClosed());
     }
 
-    @Test
-    public void testClientStop() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientStop(TransportType transportType) throws Exception
     {
         CountDownLatch settingsLatch = new CountDownLatch(2);
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -1160,7 +1147,7 @@ public class GoAwayTest extends AbstractClientServerTest
         });
 
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
-        HTTP3Session clientSession = (HTTP3Session)newSession(new Session.Client.Listener()
+        newSession(new Session.Client.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -1186,22 +1173,19 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
-
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
     }
 
-    @Test
-    public void testServerStop() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerStop(TransportType transportType) throws Exception
     {
-        AtomicReference<HTTP3Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch settingsLatch = new CountDownLatch(2);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
             {
-                serverSessionRef.set((HTTP3Session)session);
                 settingsLatch.countDown();
             }
 
@@ -1214,7 +1198,7 @@ public class GoAwayTest extends AbstractClientServerTest
 
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
-        HTTP3Session clientSession = (HTTP3Session)newSession(new Session.Client.Listener()
+        newSession(new Session.Client.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -1242,19 +1226,17 @@ public class GoAwayTest extends AbstractClientServerTest
 
         server.stop();
 
-        assertTrue(clientGoAwayLatch.await(30, TimeUnit.SECONDS));
-        assertTrue(clientDisconnectLatch.await(30, TimeUnit.SECONDS));
-        assertTrue(serverDisconnectLatch.await(30, TimeUnit.SECONDS));
-
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverSessionRef.get().getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientSession.getProtocolSession().getQuicSession().getQuicConnection().getEndPoint().isOpen(), is(false));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testClientShutdown() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientShutdown(TransportType transportType) throws Exception
     {
         AtomicReference<HTTP3Stream> serverStreamRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -1306,13 +1288,20 @@ public class GoAwayTest extends AbstractClientServerTest
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
         shutdown.get(5, TimeUnit.SECONDS);
+
+        await().atMost(5, TimeUnit.SECONDS).until(http3Client::isStopped);
+
+        SessionContainer container = http3Client.getBean(SessionContainer.class);
+        assertNotNull(container);
+        await().atMost(5, TimeUnit.SECONDS).until(container::isEmpty);
     }
 
-    @Test
-    public void testServerShutdown() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerShutdown(TransportType transportType) throws Exception
     {
         AtomicReference<HTTP3Stream> serverStreamRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -1363,5 +1352,11 @@ public class GoAwayTest extends AbstractClientServerTest
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
         shutdown.get(5, TimeUnit.SECONDS);
+
+        await().atMost(5, TimeUnit.SECONDS).until(() -> connector.isStopped());
+
+        SessionContainer container = connector.getBean(SessionContainer.class);
+        assertNotNull(container);
+        await().atMost(5, TimeUnit.SECONDS).until(container::isEmpty);
     }
 }

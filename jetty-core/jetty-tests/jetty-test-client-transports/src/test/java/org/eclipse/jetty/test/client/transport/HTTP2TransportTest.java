@@ -39,10 +39,10 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.client.QuicTransport;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.server.ServerConnector;
@@ -155,7 +155,7 @@ public class HTTP2TransportTest extends AbstractTransportTest
     }
 
     @Test
-    public void testQUICTransportWithH2C(WorkDir workDir) throws Exception
+    public void testQuicheTransportWithH2C(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
         sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
@@ -164,20 +164,19 @@ public class HTTP2TransportTest extends AbstractTransportTest
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, quicConfiguration, new HTTP2CServerConnectionFactory());
+        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(pemServerDir);
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, quicConfiguration, new HTTP2CServerConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         httpClient.setSslContextFactory(sslClient);
-        ClientQuicConfiguration clientQuicConfig = new ClientQuicConfiguration(sslClient, null);
-        httpClient.addBean(clientQuicConfig);
+        http2Client.setApplicationProtocols(List.of("h2c"));
 
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transport(new QuicTransport(clientQuicConfig))
+            .transport(new QuicheTransport(new QuicheClientQuicConfiguration()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -185,7 +184,7 @@ public class HTTP2TransportTest extends AbstractTransportTest
     }
 
     @Test
-    public void testQUICTransportWithH2(WorkDir workDir) throws Exception
+    public void testQuicheTransportWithH2(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
         sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
@@ -194,23 +193,20 @@ public class HTTP2TransportTest extends AbstractTransportTest
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, quicConfiguration, new HTTP2ServerConnectionFactory());
+        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(pemServerDir);
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, quicConfiguration, new HTTP2ServerConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         httpClient.setSslContextFactory(sslClient);
-        HttpClientTransportOverHTTP2 httpClientTransport = (HttpClientTransportOverHTTP2)httpClient.getHttpClientTransport();
-        // ALPN is negotiated by QUIC.
-        httpClientTransport.setUseALPN(false);
-        ClientQuicConfiguration clientQuicConfig = new ClientQuicConfiguration(sslClient, null);
-        httpClient.addBean(clientQuicConfig);
+        // ALPN is negotiated by Quiche.
+        http2Client.setUseALPN(false);
 
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transport(new QuicTransport(clientQuicConfig))
+            .transport(new QuicheTransport(new QuicheClientQuicConfiguration()))
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -308,21 +304,21 @@ public class HTTP2TransportTest extends AbstractTransportTest
         Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
         Files.createDirectories(pemServerDir);
 
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslServer, pemServerDir);
-        QuicServerConnector connector = new QuicServerConnector(server, quicConfiguration, new HTTP2CServerConnectionFactory());
+        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(pemServerDir);
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, quicConfiguration, new HTTP2CServerConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         http2Client.getClientConnector().setSslContextFactory(sslClient);
-        ClientQuicConfiguration clientQuicConfig = new ClientQuicConfiguration(sslClient, null);
-        clientQuicConfig.setProtocols(List.of("h2c"));
+        http2Client.setApplicationProtocols(List.of("h2c"));
+        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
         http2Client.addBean(clientQuicConfig);
 
         server.start();
 
         SocketAddress socketAddress = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session session = http2Client.connect(new QuicTransport(clientQuicConfig), null, socketAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session session = http2Client.connect(new QuicheTransport(clientQuicConfig), null, socketAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);

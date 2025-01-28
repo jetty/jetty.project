@@ -19,11 +19,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data within a {@link Session}.</p>
@@ -47,13 +49,13 @@ public interface Stream
      * Get the stream id.
      * @return the stream id
      */
-    public long getId();
+    long getId();
 
     /**
      * Get the session this stream is associated to.
      * @return the session this stream is associated to
      */
-    public Session getSession();
+    Session getSession();
 
     /**
      * <p>Sends the given DATA frame containing some or all the bytes
@@ -62,7 +64,7 @@ public interface Stream
      * @param frame the DATA frame containing some or all the bytes of the request or of the response.
      * @return the {@link CompletableFuture} that gets notified when the frame has been sent
      */
-    public CompletableFuture<Stream> data(DataFrame frame);
+    CompletableFuture<Stream> data(DataFrame frame);
 
     /**
      * <p>Reads request content bytes or response content bytes.</p>
@@ -89,7 +91,7 @@ public interface Stream
      * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
      * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
      */
-    public Stream.Data readData();
+    Stream.Data readData();
 
     /**
      * <p>Demands more {@code DATA} frames for this stream.</p>
@@ -112,7 +114,7 @@ public interface Stream
      * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
      * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
      */
-    public void demand();
+    void demand();
 
     /**
      * <p>Sends the given HEADERS frame containing the trailer headers.</p>
@@ -120,20 +122,23 @@ public interface Stream
      * @param frame the HEADERS frame containing the trailer headers
      * @return the {@link CompletableFuture} that gets notified when the frame has been sent
      */
-    public CompletableFuture<Stream> trailer(HeadersFrame frame);
+    CompletableFuture<Stream> trailer(HeadersFrame frame);
 
     /**
      * <p>Abruptly terminates this stream with the given error.</p>
+     * <p>This method removes this stream from its session and
+     * then terminates the QUIC stream, via {@code STOP_SENDING}
+     * and {@code RESET} frames, if necessary.</p>
      *
-     * @param error the error code
-     * @param failure the failure that caused the reset of the stream
+     * @param appErrorCode the error code
+     * @param failure the failure that caused the close of the stream, if any
      */
-    public void reset(long error, Throwable failure);
+    CompletableFuture<Stream> disconnect(long appErrorCode, Throwable failure);
 
     /**
      * <p>The client side version of {@link Stream}.</p>
      */
-    public interface Client extends Stream
+    interface Client extends Stream
     {
         /**
          * <p>A {@link Stream.Client.Listener} is the passive counterpart of a {@link Stream.Client}
@@ -141,7 +146,7 @@ public interface Stream
          *
          * @see Stream.Client
          */
-        public interface Listener
+        interface Listener
         {
             /**
              * <p>Callback method invoked when a stream is created locally by
@@ -149,7 +154,7 @@ public interface Stream
              *
              * @param stream the newly created stream
              */
-            public default void onNewStream(Stream.Client stream)
+            default void onNewStream(Stream.Client stream)
             {
             }
 
@@ -163,7 +168,7 @@ public interface Stream
              * @param frame the HEADERS frame containing the response headers
              * @see Stream.Client.Listener#onDataAvailable(Client)
              */
-            public default void onResponse(Stream.Client stream, HeadersFrame frame)
+            default void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 stream.demand();
             }
@@ -219,8 +224,27 @@ public interface Stream
              *
              * @param stream the stream
              */
-            public default void onDataAvailable(Stream.Client stream)
+            default void onDataAvailable(Stream.Client stream)
             {
+                try
+                {
+                    while (true)
+                    {
+                        Data data = stream.readData();
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        data.release();
+                        if (data.isLast())
+                            return;
+                    }
+                }
+                catch (Throwable x)
+                {
+                    onFailure(stream, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                }
             }
 
             /**
@@ -229,7 +253,7 @@ public interface Stream
              * @param stream the stream
              * @param frame the HEADERS frame containing the trailer headers
              */
-            public default void onTrailer(Stream.Client stream, HeadersFrame frame)
+            default void onTrailer(Stream.Client stream, HeadersFrame frame)
             {
             }
 
@@ -241,7 +265,7 @@ public interface Stream
              * @param promise the promise to complete with true to reset the stream,
              *                false to ignore the idle timeout
              */
-            public default void onIdleTimeout(Client stream, Throwable failure, Promise<Boolean> promise)
+            default void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
             {
                 promise.succeeded(true);
             }
@@ -256,7 +280,7 @@ public interface Stream
              * @param error the failure error
              * @param failure the cause of the failure
              */
-            public default void onFailure(Stream.Client stream, long error, Throwable failure)
+            default void onFailure(Stream.Client stream, long error, Throwable failure)
             {
             }
         }
@@ -265,7 +289,7 @@ public interface Stream
     /**
      * <p>The server side version of {@link Stream}.</p>
      */
-    public interface Server extends Stream
+    interface Server extends Stream
     {
         /**
          * <p>Responds to a request performed via {@link Session.Client#newRequest(HeadersFrame, Client.Listener)},
@@ -274,7 +298,7 @@ public interface Stream
          * @param frame the HEADERS frame containing the response headers
          * @return the {@link CompletableFuture} that gets notified when the frame has been sent
          */
-        public CompletableFuture<Stream> respond(HeadersFrame frame);
+        CompletableFuture<Stream> respond(HeadersFrame frame);
 
         /**
          * <p>A {@link Stream.Server.Listener} is the passive counterpart of a {@link Stream.Server}
@@ -282,7 +306,7 @@ public interface Stream
          *
          * @see Stream.Server
          */
-        public interface Listener
+        interface Listener
         {
             /**
              * <p>Callback method invoked if the application has expressed
@@ -335,8 +359,27 @@ public interface Stream
              *
              * @param stream the stream
              */
-            public default void onDataAvailable(Stream.Server stream)
+            default void onDataAvailable(Stream.Server stream)
             {
+                try
+                {
+                    while (true)
+                    {
+                        Data data = stream.readData();
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        data.release();
+                        if (data.isLast())
+                            return;
+                    }
+                }
+                catch (Throwable x)
+                {
+                    onFailure(stream, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                }
             }
 
             /**
@@ -345,7 +388,7 @@ public interface Stream
              * @param stream the stream
              * @param frame the HEADERS frame containing the trailer headers
              */
-            public default void onTrailer(Stream.Server stream, HeadersFrame frame)
+            default void onTrailer(Stream.Server stream, HeadersFrame frame)
             {
             }
 
@@ -357,7 +400,7 @@ public interface Stream
              * @param promise the promise to complete with true to reset the stream,
              *                false to ignore the idle timeout
              */
-            public default void onIdleTimeout(Server stream, TimeoutException failure, Promise<Boolean> promise)
+            default void onIdleTimeout(Stream.Server stream, TimeoutException failure, Promise<Boolean> promise)
             {
                 promise.succeeded(true);
             }
@@ -372,7 +415,7 @@ public interface Stream
              * @param error the failure error
              * @param failure the cause of the failure
              */
-            public default void onFailure(Stream.Server stream, long error, Throwable failure)
+            default void onFailure(Stream.Server stream, long error, Throwable failure)
             {
             }
         }
@@ -415,7 +458,7 @@ public interface Stream
         @Override
         public String toString()
         {
-            return String.format("%s[%s]", getClass().getSimpleName(), frame);
+            return String.format("%s[%s]", TypeUtil.toShortName(getClass()), frame);
         }
 
         private static class EOFData extends Data

@@ -78,8 +78,8 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
         responseFailure(failure, Promise.from(failed ->
         {
             if (failed)
-                stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
-        }, x -> stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure)));
+                stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
+        }, x -> stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure)));
     }
 
     @Override

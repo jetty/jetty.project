@@ -24,6 +24,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -101,7 +102,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
         Stream stream = getStream();
         if (stream != null && result.isFailed())
-            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), result.getFailure());
+            stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), result.getFailure());
         else
             release();
     }
@@ -128,7 +129,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
         private Listener()
         {
-            invoker = new SerializedInvoker(getClass().getName(), getHttpDestination().getHttpClient().getExecutor());
+            invoker = new SerializedInvoker(TypeUtil.toShortName(getClass()), getHttpDestination().getHttpClient().getExecutor());
         }
 
         @Override
@@ -162,14 +163,14 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
         {
             Runnable task = receiver.onIdleTimeout(failure, promise);
-            ThreadPool.executeImmediately(session.getProtocolSession().getQuicSession().getExecutor(), invoker.offer(task));
+            ThreadPool.executeImmediately(session.getProtocolSession().getExecutor(), invoker.offer(task));
         }
 
         @Override
         public void onFailure(Stream.Client stream, long error, Throwable failure)
         {
             Runnable task = receiver.onFailure(failure);
-            ThreadPool.executeImmediately(session.getProtocolSession().getQuicSession().getExecutor(), invoker.offer(task));
+            ThreadPool.executeImmediately(session.getProtocolSession().getExecutor(), invoker.offer(task));
         }
     }
 }

@@ -61,7 +61,6 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -294,12 +293,9 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
     public void testRequestAfterFailedRequest(TransportType transportType) throws Exception
     {
-        // TODO find and fix the leaks
-
         int length = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         start(transportType, new Handler.Abstract()
         {
@@ -312,15 +308,15 @@ public class HttpClientTest extends AbstractTest
         });
 
         // Make a request with a large enough response buffer.
-        var request = client.newRequest(newURI(transportType));
+        var request = client.newRequest(newURI(transportType, "/path1"));
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length).send();
         ContentResponse response = completable.get(15, TimeUnit.SECONDS);
-        assertEquals(response.getStatus(), 200);
+        assertEquals(200, response.getStatus());
 
         // Make a request with a small response buffer, should fail.
         try
         {
-            request = client.newRequest(newURI(transportType));
+            request = client.newRequest(newURI(transportType, "/path2"));
             completable = new CompletableResponseListener(request, length / 10).send();
             completable.get(15, TimeUnit.SECONDS);
             fail("Expected ExecutionException");
@@ -331,10 +327,10 @@ public class HttpClientTest extends AbstractTest
         }
 
         // Verify that we can make another request.
-        request = client.newRequest(newURI(transportType));
+        request = client.newRequest(newURI(transportType, "/path3"));
         completable = new CompletableResponseListener(request, length).send();
         response = completable.get(15, TimeUnit.SECONDS);
-        assertEquals(response.getStatus(), 200);
+        assertEquals(200, response.getStatus());
     }
 
     @ParameterizedTest
@@ -730,8 +726,6 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestWithDifferentDestination(TransportType transportType) throws Exception
     {
-        // TODO fix for H3
-        Assumptions.assumeFalse(transportType == TransportType.H3_QUICHE);
         String requestScheme = newURI(transportType).getScheme();
         String requestHost = "otherHost.com";
         int requestPort = 8888;
@@ -752,12 +746,13 @@ public class HttpClientTest extends AbstractTest
         if (transportType.isSecure())
             httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
 
-        Origin origin = new Origin(requestScheme, "localhost", ((NetworkConnector)connector).getLocalPort());
-        Destination destination = client.resolveDestination(origin);
-
         var request = client.newRequest(requestHost, requestPort)
             .scheme(requestScheme)
             .path("/path");
+
+        Origin origin = client.resolveDestination(request).getOrigin();
+        Origin.Address address = new Origin.Address("localhost", ((NetworkConnector)connector).getLocalPort());
+        Destination destination = client.resolveDestination(new Origin(requestScheme, address, origin.getTag(), origin.getProtocol(), origin.getTransport()));
 
         CountDownLatch resultLatch = new CountDownLatch(1);
         destination.send(request, result ->
@@ -799,7 +794,6 @@ public class HttpClientTest extends AbstractTest
             client.newRequest(newURI(transportType))
                 .path("/1")
                 .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
                 .send());
         latch.countDown();
 

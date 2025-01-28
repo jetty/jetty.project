@@ -67,7 +67,8 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -1235,9 +1236,10 @@ public class DistributionTests extends AbstractJettyHomeTest
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
-                SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
-                HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
-                this.client = new HttpClient(new HttpClientTransportOverHTTP3(http3Client));
+                QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+                HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+                http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
+                this.client = new HttpClient(new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig)));
                 this.client.start();
                 ContentResponse response = this.client.newRequest("localhost", h3Port)
                     .scheme(HttpScheme.HTTPS.asString())

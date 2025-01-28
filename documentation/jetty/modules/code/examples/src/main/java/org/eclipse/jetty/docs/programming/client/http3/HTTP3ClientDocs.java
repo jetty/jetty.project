@@ -33,8 +33,8 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -45,8 +45,7 @@ public class HTTP3ClientDocs
     {
         // tag::start[]
         // Instantiate HTTP3Client.
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        HTTP3Client http3Client = new HTTP3Client(new QuicheClientQuicConfiguration());
 
         // Configure HTTP3Client, for example:
         http3Client.getHTTP3Configuration().setStreamIdleTimeout(15000);
@@ -58,8 +57,7 @@ public class HTTP3ClientDocs
 
     public void stop() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        HTTP3Client http3Client = new HTTP3Client(new QuicheClientQuicConfiguration());
         http3Client.start();
         // tag::stop[]
         // Stop HTTP3Client.
@@ -69,8 +67,8 @@ public class HTTP3ClientDocs
 
     public void connect() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
+        HTTP3Client http3Client = new HTTP3Client(quicConfig);
         http3Client.start();
         // tag::connect[]
         // Address of the server's port.
@@ -78,7 +76,7 @@ public class HTTP3ClientDocs
 
         // Connect to the server, the CompletableFuture will be
         // notified when the connection is succeeded (or failed).
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
 
         // Block to obtain the Session.
         // Alternatively you can use the CompletableFuture APIs to avoid blocking.
@@ -88,13 +86,13 @@ public class HTTP3ClientDocs
 
     public void configure() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
+        HTTP3Client http3Client = new HTTP3Client(quicConfig);
         http3Client.start();
 
         // tag::configure[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        http3Client.connect(serverAddress, new Session.Client.Listener()
+        http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -111,12 +109,12 @@ public class HTTP3ClientDocs
 
     public void newStream() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
+        HTTP3Client http3Client = new HTTP3Client(quicConfig);
         http3Client.start();
         // tag::newStream[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
         Session.Client session = sessionCF.get();
 
         // Configure the request headers.
@@ -137,12 +135,12 @@ public class HTTP3ClientDocs
 
     public void newStreamWithData() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
+        HTTP3Client http3Client = new HTTP3Client(quicConfig);
         http3Client.start();
         // tag::newStreamWithData[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
         Session.Client session = sessionCF.get();
 
         // Configure the request headers.
@@ -181,11 +179,11 @@ public class HTTP3ClientDocs
 
     public void responseListener() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
+        HTTP3Client http3Client = new HTTP3Client(quicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
         Session.Client session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -238,13 +236,13 @@ public class HTTP3ClientDocs
     {
     }
 
-    public void reset() throws Exception
+    public void terminate() throws Exception
     {
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        HTTP3Client http3Client = new HTTP3Client(new ClientQuicConfiguration(sslContextFactory, null));
+        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
+        HTTP3Client http3Client = new HTTP3Client(quicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(serverAddress, new Session.Client.Listener() {});
+        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
         Session.Client session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
@@ -252,20 +250,20 @@ public class HTTP3ClientDocs
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
-        // tag::reset[]
+        // tag::terminate[]
         // Open a Stream by sending the HEADERS frame.
         CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener()
         {
             @Override
             public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
-                // The server reset this stream.
+                // The server terminated this stream.
             }
         });
         Stream stream = streamCF.get();
 
-        // Reset this stream (for example, the user closed the application).
-        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new ClosedChannelException());
-        // end::reset[]
+        // Terminate this stream (for example, the user closed the application).
+        stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new ClosedChannelException());
+        // end::terminate[]
     }
 }

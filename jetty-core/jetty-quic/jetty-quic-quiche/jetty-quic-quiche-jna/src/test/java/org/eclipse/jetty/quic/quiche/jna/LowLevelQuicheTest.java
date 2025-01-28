@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.quic.quiche.PemExporter;
+import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
-import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
+import static org.eclipse.jetty.quic.quiche.QuicheConstants.QUICHE_MIN_CLIENT_INITIAL_LEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -308,7 +308,7 @@ public class LowLevelQuicheTest
         return entry;
     }
 
-    private static class TestTokenMinter implements QuicheConnection.TokenMinter
+    private static class TestTokenMinter implements Quiche.TokenMinter
     {
         @Override
         public byte[] mint(byte[] dcid, int len)
@@ -317,7 +317,7 @@ public class LowLevelQuicheTest
         }
     }
 
-    private static class TestTokenValidator implements QuicheConnection.TokenValidator
+    private static class TestTokenValidator implements Quiche.TokenValidator
     {
         @Override
         public byte[] validate(byte[] token, int len)

@@ -316,7 +316,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-client</artifactId>
+      <artifactId>jetty-quic-quiche-client</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

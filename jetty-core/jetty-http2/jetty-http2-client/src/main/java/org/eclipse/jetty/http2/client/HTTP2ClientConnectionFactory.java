@@ -38,20 +38,17 @@ import org.eclipse.jetty.util.Promise;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 {
-    public static final String CLIENT_CONTEXT_KEY = "org.eclipse.jetty.client.http2";
-    public static final String SESSION_LISTENER_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionListener";
-    public static final String SESSION_PROMISE_CONTEXT_KEY = "org.eclipse.jetty.client.http2.sessionPromise";
 
     private final Connection.Listener connectionListener = new ConnectionListener();
 
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
-        HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
+        HTTP2Client client = (HTTP2Client)context.get(HTTP2Client.CONTEXT_KEY);
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
+        Session.Listener listener = (Session.Listener)context.get(HTTP2Client.SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
+        Promise<Session> sessionPromise = (Promise<Session>)context.get(HTTP2Client.SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(bufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
         generator.getHpackEncoder().setMaxHeaderListSize(client.getMaxRequestHeadersSize());

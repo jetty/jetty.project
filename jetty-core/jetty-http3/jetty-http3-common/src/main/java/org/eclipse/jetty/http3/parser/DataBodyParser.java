@@ -66,27 +66,26 @@ public class DataBodyParser extends BodyParser
                 {
                     int size = (int)Math.min(buffer.remaining(), length);
                     int position = buffer.position();
-                    int limit = buffer.limit();
-                    buffer.limit(position + size);
-                    ByteBuffer slice = buffer.slice();
-                    buffer.limit(limit);
+                    ByteBuffer slice = buffer.slice(position, size);
                     buffer.position(position + size);
-
-                    // If the buffer contains another frame that
-                    // needs to be parsed, then it's not the last frame.
-                    boolean last = isLast.getAsBoolean() && !buffer.hasRemaining();
 
                     length -= size;
                     if (length == 0)
                     {
                         reset();
+                        // Only HEADERS, DATA or PUSH_PROMISE can be received.
+                        // If the buffer contains more frames that need
+                        // to be parsed, then it's not the last frame.
+                        // TODO: the sequence: DATA(last=true)+PUSH_PROMISE
+                        //  would break the logic in the line below.
+                        boolean last = isLast.getAsBoolean() && !buffer.hasRemaining();
                         onData(slice, last, false);
                         return Result.WHOLE_FRAME;
                     }
                     else
                     {
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        onData(slice, last, true);
+                        onData(slice, false, true);
                         return Result.FRAGMENT_FRAME;
                     }
                 }

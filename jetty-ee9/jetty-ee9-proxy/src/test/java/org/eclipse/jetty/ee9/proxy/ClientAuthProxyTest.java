@@ -35,7 +35,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -535,7 +534,7 @@ public class ClientAuthProxyTest
             return (endPoint, context) ->
             {
                 Connection connection = factory.newConnection(endPoint, context);
-                SSLEngine sslEngine = (SSLEngine)context.get(SslClientConnectionFactory.SSL_ENGINE_CONTEXT_KEY);
+                SSLEngine sslEngine = (SSLEngine)context.get(SSLEngine.class.getName());
                 sslEngine.getSession().putValue("user", user);
                 return connection;
             };
@@ -592,7 +591,7 @@ public class ClientAuthProxyTest
         @Override
         public SSLEngine newSslEngine(String host, int port, Map<String, Object> context)
         {
-            Destination destination = (Destination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            Destination destination = (Destination)context.get(Destination.CONTEXT_KEY);
             String user = (String)destination.getOrigin().getTag();
             return factories.compute(user, (key, value) -> value != null ? value : this).newSSLEngine(host, port);
         }

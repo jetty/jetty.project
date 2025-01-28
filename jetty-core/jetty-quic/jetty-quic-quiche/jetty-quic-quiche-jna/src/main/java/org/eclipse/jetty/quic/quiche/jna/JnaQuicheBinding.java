@@ -18,9 +18,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheBinding;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
-import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,19 +57,19 @@ public class JnaQuicheBinding implements QuicheBinding
     }
 
     @Override
-    public QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
+    public Quiche connect(QuicheConfig quicheConfig, InetSocketAddress local, InetSocketAddress peer, int connectionIdLength) throws IOException
     {
         return JnaQuicheConnection.connect(quicheConfig, local, peer, connectionIdLength);
     }
 
     @Override
-    public boolean negotiate(QuicheConnection.TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
+    public boolean negotiate(Quiche.TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
     {
         return JnaQuicheConnection.negotiate(tokenMinter, packetRead, packetToSend);
     }
 
     @Override
-    public QuicheConnection tryAccept(QuicheConfig quicheConfig, QuicheConnection.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
+    public Quiche tryAccept(QuicheConfig quicheConfig, Quiche.TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress local, SocketAddress peer) throws IOException
     {
         return JnaQuicheConnection.tryAccept(quicheConfig, tokenValidator, packetRead, local, peer);
     }

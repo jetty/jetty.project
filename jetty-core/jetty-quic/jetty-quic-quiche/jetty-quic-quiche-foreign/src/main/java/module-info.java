@@ -11,14 +11,12 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.quic.quiche.foreign.ForeignQuicheBinding;
-
 module org.eclipse.jetty.quic.quiche.foreign
 {
-    requires org.eclipse.jetty.quic.quiche;
+    requires org.eclipse.jetty.quic.quiche.common;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 
     provides org.eclipse.jetty.quic.quiche.QuicheBinding with
-        ForeignQuicheBinding;
+        org.eclipse.jetty.quic.quiche.foreign.ForeignQuicheBinding;
 }

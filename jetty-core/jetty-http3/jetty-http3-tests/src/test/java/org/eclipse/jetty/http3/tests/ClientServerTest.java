@@ -20,6 +20,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -27,39 +28,38 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3Configuration;
-import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
+import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
-import org.eclipse.jetty.quic.client.ClientQuicSession;
-import org.eclipse.jetty.quic.common.QuicErrorCode;
-import org.eclipse.jetty.quic.common.QuicSession;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.quic.util.ErrorCode;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientServerTest extends AbstractClientServerTest
 {
-    @Test
-    public void testConnectTriggersSettingsFrame() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testConnectTriggersSettingsFrame(TransportType transportType) throws Exception
     {
         CountDownLatch serverPrefaceLatch = new CountDownLatch(1);
         CountDownLatch serverSettingsLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -98,15 +98,16 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testSettings() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testSettings(TransportType transportType) throws Exception
     {
         Map.Entry<Long, Long> maxTableCapacity = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_TABLE_CAPACITY, 1024L);
         Map.Entry<Long, Long> maxHeaderSize = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_FIELD_SECTION_SIZE, 2048L);
         Map.Entry<Long, Long> maxBlockedStreams = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_BLOCKED_STREAMS, 16L);
         CountDownLatch settingsLatch = new CountDownLatch(2);
         AtomicReference<HTTP3SessionServer> serverSessionRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -151,12 +152,13 @@ public class ClientServerTest extends AbstractClientServerTest
         assertEquals(maxHeaderSize.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxHeadersSize());
     }
 
-    @Test
-    public void testGETThenResponseWithoutContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testGETThenResponseWithoutContent(TransportType transportType) throws Exception
     {
         AtomicReference<HTTP3Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverRequestLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -192,20 +194,21 @@ public class ClientServerTest extends AbstractClientServerTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> serverSession.getStreams().isEmpty()); // onRequest is called *before* the serverSession's streams collection is cleaned up -> racy
         await().atMost(5, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty()); // onResponse is called *before* the clientSession's streams collection is cleaned up -> racy
 
-        QuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
-        assertTrue(serverQuicSession.getQuicStreamEndPoints().stream()
-            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+        ProtocolSession serverProtocolSession = serverSession.getProtocolSession();
+        assertTrue(serverProtocolSession.getStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStream().getId() == stream.getId()));
 
-        ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
-        assertTrue(clientQuicSession.getQuicStreamEndPoints().stream()
-            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+        ClientHTTP3Session clientProtocolSession = clientSession.getProtocolSession();
+        assertTrue(clientProtocolSession.getStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStream().getId() == stream.getId()));
     }
 
-    @Test
-    public void testDiscardRequestContent() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testDiscardRequestContent(TransportType transportType) throws Exception
     {
         AtomicReference<CountDownLatch> serverLatch = new AtomicReference<>(new CountDownLatch(1));
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -269,12 +272,19 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
     }
 
+    public static java.util.stream.Stream<Arguments> transportsAndLengths()
+    {
+        return transports().stream()
+            .flatMap(transportType -> IntStream.of(1024, 10 * 1024, 100 * 1024, 1000 * 1024)
+                .mapToObj(length -> Arguments.of(transportType, length)));
+    }
+
     @ParameterizedTest
-    @ValueSource(ints = {1024, 10 * 1024, 100 * 1024, 1000 * 1024})
-    public void testEchoRequestContentAsResponseContent(int length) throws Exception
+    @MethodSource("transportsAndLengths")
+    public void testEchoRequestContentAsResponseContent(TransportType transportType, int length) throws Exception
     {
         AtomicReference<HTTP3Session> serverSessionRef = new AtomicReference<>();
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -357,20 +367,20 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(serverSession.getStreams().isEmpty());
         assertTrue(clientSession.getStreams().isEmpty());
 
-        QuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
-        assertTrue(serverQuicSession.getQuicStreamEndPoints().stream()
-            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+        ProtocolSession serverProtocolSession = serverSession.getProtocolSession();
+        assertTrue(serverProtocolSession.getStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStream().getId() == stream.getId()));
 
-        ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
-        assertTrue(clientQuicSession.getQuicStreamEndPoints().stream()
-            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+        ClientHTTP3Session clientProtocolSession = clientSession.getProtocolSession();
+        assertTrue(clientProtocolSession.getStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStream().getId() == stream.getId()));
     }
 
-    @Test
-    @Tag("flaky")
-    public void testRequestHeadersTooLarge() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestHeadersTooLarge(TransportType transportType) throws Exception
     {
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -426,14 +436,15 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testResponseHeadersTooLarge() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testResponseHeadersTooLarge(TransportType transportType) throws Exception
     {
         int maxResponseHeadersSize = 256;
         CountDownLatch settingsLatch = new CountDownLatch(2);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch responseFailureLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -452,15 +463,8 @@ public class ClientServerTest extends AbstractClientServerTest
                     stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, largeHeaders), true))
                         .whenComplete((s, x) ->
                         {
-                            // The response could not be generated, but the stream is still valid.
-                            // Applications may try to send a smaller response here,
-                            // so the implementation must not remove the stream.
                             if (x != null)
-                            {
-                                // In this test, we give up if there is an error.
-                                stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
                                 responseFailureLatch.countDown();
-                            }
                         });
                 }
                 else
@@ -491,13 +495,13 @@ public class ClientServerTest extends AbstractClientServerTest
 
         CountDownLatch streamFailureLatch = new CountDownLatch(1);
         clientSession.newRequest(new HeadersFrame(newRequest("/large"), true), new Stream.Client.Listener()
+        {
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
-                @Override
-                public void onFailure(Stream.Client stream, long error, Throwable failure)
-                {
-                    streamFailureLatch.countDown();
-                }
-            });
+                streamFailureLatch.countDown();
+            }
+        });
 
         assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(streamFailureLatch.await(5, TimeUnit.SECONDS));
@@ -518,12 +522,13 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testHeadersThenTrailers() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHeadersThenTrailers(TransportType transportType) throws Exception
     {
         CountDownLatch requestLatch = new CountDownLatch(1);
         CountDownLatch trailerLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -536,9 +541,15 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // Calling readData() triggers the read+parse
-                        // of the trailer, and returns no data.
+                        // of the trailer, and returns EOF.
                         Stream.Data data = stream.readData();
-                        assertNull(data);
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        assertTrue(data.isLast());
+                        assertFalse(data.getByteBuffer().hasRemaining());
                     }
 
                     @Override
@@ -574,11 +585,12 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testReadDataFromOnRequestWithoutDemanding() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testReadDataFromOnRequestWithoutDemanding(TransportType transportType) throws Exception
     {
         CountDownLatch requestLatch = new CountDownLatch(1);
-        start(new Session.Server.Listener()
+        start(transportType, new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
@@ -642,11 +654,12 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testMissingNeededClientCertificateDeniesConnection() throws Exception
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMissingNeededClientCertificateDeniesConnection(TransportType transportType) throws Exception
     {
-        start(new Session.Server.Listener() {});
-        connector.getQuicConfiguration().getSslContextFactory().setNeedClientAuth(true);
+        start(transportType, new Session.Server.Listener() {});
+        serverSslContextFactory.setNeedClientAuth(true);
 
         CountDownLatch latch = new CountDownLatch(1);
         newSession(new Session.Client.Listener()
@@ -654,8 +667,8 @@ public class ClientServerTest extends AbstractClientServerTest
             @Override
             public void onDisconnect(Session session, long error, String reason)
             {
-                assertEquals(QuicErrorCode.CONNECTION_REFUSED.code(), error);
-                assertEquals("missing_client_certificate_chain", reason);
+                assertEquals(ErrorCode.CONNECTION_REFUSED_ERROR.code(), error);
+                assertEquals("missing_peer_certificates", reason);
                 latch.countDown();
             }
         });

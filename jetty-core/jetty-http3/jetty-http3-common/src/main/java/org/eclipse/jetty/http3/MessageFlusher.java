@@ -22,7 +22,7 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -33,6 +33,7 @@ public class MessageFlusher extends IteratingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(MessageFlusher.class);
 
+    private final Callback writeCallback = Callback.from(InvocationType.NON_BLOCKING, this::onWriteSuccess, this::onWriteFailure);
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
     private final ByteBufferPool.Accumulator accumulator;
@@ -45,7 +46,7 @@ public class MessageFlusher extends IteratingCallback
         this.generator = new MessageGenerator(bufferPool, encoder, useDirectByteBuffers);
     }
 
-    public boolean offer(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
+    public boolean offer(StreamEndPoint endPoint, Frame frame, Callback callback)
     {
         try (AutoLock ignored = lock.lock())
         {
@@ -69,22 +70,16 @@ public class MessageFlusher extends IteratingCallback
 
         Frame frame = entry.frame;
 
-        if (frame instanceof FlushFrame)
-        {
-            succeeded();
-            return Action.SCHEDULED;
-        }
-
-        int generated = generator.generate(accumulator, entry.endPoint.getStreamId(), frame, this::onGenerateFailure);
+        int generated = generator.generate(accumulator, entry.endPoint.getStream().getId(), frame, this::onGenerateFailure);
         if (generated < 0)
             return Action.SCHEDULED;
 
-        QuicStreamEndPoint endPoint = entry.endPoint;
+        StreamEndPoint endPoint = entry.endPoint;
         List<ByteBuffer> buffers = accumulator.getByteBuffers();
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} buffers ({} bytes) for stream #{} on {}", buffers.size(), accumulator.getTotalLength(), endPoint.getStreamId(), this);
+            LOG.debug("writing {} buffers ({} bytes) for stream #{} on {}", buffers.size(), accumulator.getTotalLength(), endPoint.getStream().getId(), this);
 
-        endPoint.write(this, buffers, Frame.isLast(frame));
+        endPoint.write(writeCallback, buffers, Frame.isLast(frame));
         return Action.SCHEDULED;
     }
 
@@ -102,38 +97,32 @@ public class MessageFlusher extends IteratingCallback
         succeeded();
     }
 
-    @Override
-    protected void onSuccess()
+    private void onWriteSuccess()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entry, this);
 
         accumulator.release();
 
-        if (entry != null)
-        {
-            entry.callback.succeeded();
-            entry = null;
-        }
+        entry.callback.succeeded();
+        entry = null;
+
+        succeeded();
     }
 
-    @Override
-    protected void onFailure(Throwable cause)
+    private void onWriteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to write {} on {}", entry, this, cause);
+            LOG.debug("failed to write {} on {}", entry, this, failure);
 
-        if (entry != null)
-        {
-            entry.callback.failed(cause);
-            entry = null;
-        }
-    }
-
-    @Override
-    protected void onCompleteFailure(Throwable cause)
-    {
         accumulator.release();
+
+        entry.callback.failed(failure);
+        entry = null;
+
+        // Failure to write to one StreamEndPoint
+        // must not impact other StreamEndPoints.
+        succeeded();
     }
 
     @Override
@@ -142,31 +131,12 @@ public class MessageFlusher extends IteratingCallback
         return entry.callback.getInvocationType();
     }
 
-    private static class Entry
+    private record Entry(StreamEndPoint endPoint, Frame frame, Callback callback)
     {
-        private final QuicStreamEndPoint endPoint;
-        private final Frame frame;
-        private final Callback callback;
-
-        private Entry(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
-        {
-            this.endPoint = endPoint;
-            this.frame = frame;
-            this.callback = callback;
-        }
-
         @Override
         public String toString()
         {
-            return String.format("%s#%d", frame, endPoint.getStreamId());
-        }
-    }
-
-    public static class FlushFrame extends Frame
-    {
-        public FlushFrame()
-        {
-            super(null);
+            return String.format("%s#%d", frame, endPoint.getStream().getId());
         }
     }
 }

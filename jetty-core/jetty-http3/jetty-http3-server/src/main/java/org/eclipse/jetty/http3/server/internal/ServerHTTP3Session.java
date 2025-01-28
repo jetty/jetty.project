@@ -13,29 +13,34 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http3.ControlFlusher;
-import org.eclipse.jetty.http3.DecoderStreamConnection;
-import org.eclipse.jetty.http3.EncoderStreamConnection;
 import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.InstructionFlusher;
 import org.eclipse.jetty.http3.InstructionHandler;
 import org.eclipse.jetty.http3.MessageFlusher;
+import org.eclipse.jetty.http3.StreamType;
 import org.eclipse.jetty.http3.UnidirectionalStreamConnection;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
-import org.eclipse.jetty.quic.common.StreamType;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
-import org.eclipse.jetty.quic.server.ServerQuicSession;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -52,43 +57,45 @@ public class ServerHTTP3Session extends ServerProtocolSession
     private final ControlFlusher controlFlusher;
     private final MessageFlusher messageFlusher;
 
-    public ServerHTTP3Session(HTTP3Configuration configuration, ServerQuicSession quicSession, Session.Server.Listener listener)
+    public ServerHTTP3Session(Connector connector, org.eclipse.jetty.quic.api.Session quicSession, ConnectionFactory connectionFactory, HTTP3Configuration configuration, Session.Server.Listener listener)
     {
-        super(quicSession);
+        super(connector, quicSession, connectionFactory);
         this.configuration = configuration;
-        session = new HTTP3SessionServer(this, listener);
+        session = new HTTP3SessionServer(connector.getScheduler(), this, listener);
         installBean(session);
         session.setStreamIdleTimeout(configuration.getStreamIdleTimeout());
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
 
-        long encoderStreamId = newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
-        QuicStreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
-        InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
+        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
+
+        long encoderStreamId = quicSession.newStreamId(false);
+        StreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
+        InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(byteBufferPool, encoderEndPoint, StreamType.ENCODER_STREAM);
         encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher));
         encoder.setMaxHeadersSize(configuration.getMaxResponseHeadersSize());
-        addBean(encoder);
+        installBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
 
-        long decoderStreamId = newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
-        QuicStreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
-        InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
+        long decoderStreamId = quicSession.newStreamId(false);
+        StreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
+        InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(byteBufferPool, decoderEndPoint, StreamType.DECODER_STREAM);
         decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher));
-        addBean(decoder);
+        installBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
 
-        long controlStreamId = newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
-        QuicStreamEndPoint controlEndPoint = openControlEndPoint(controlStreamId);
-        controlFlusher = new ControlFlusher(quicSession, controlEndPoint, configuration.isUseOutputDirectByteBuffers());
-        addBean(controlFlusher);
+        long controlStreamId = quicSession.newStreamId(false);
+        StreamEndPoint controlEndPoint = openControlEndPoint(controlStreamId);
+        controlFlusher = new ControlFlusher(byteBufferPool, controlEndPoint, configuration.isUseOutputDirectByteBuffers());
+        installBean(controlFlusher);
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
-        messageFlusher = new MessageFlusher(quicSession.getByteBufferPool(), encoder, configuration.isUseOutputDirectByteBuffers());
-        addBean(messageFlusher);
+        messageFlusher = new MessageFlusher(byteBufferPool, encoder, configuration.isUseOutputDirectByteBuffers());
+        installBean(messageFlusher);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -104,11 +111,6 @@ public class ServerHTTP3Session extends ServerProtocolSession
     public HTTP3SessionServer getSessionServer()
     {
         return session;
-    }
-
-    public long newStreamId(StreamType streamType)
-    {
-        return getQuicSession().newStreamId(streamType);
     }
 
     @Override
@@ -167,6 +169,14 @@ public class ServerHTTP3Session extends ServerProtocolSession
             controlFlusher.iterate();
     }
 
+    @Override
+    protected Connection newConnection(StreamEndPoint endPoint) throws IOException
+    {
+        if (endPoint.getStream().isBidirectional())
+            return super.newConnection(endPoint);
+        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session);
+    }
+
     public void onSettings(SettingsFrame frame)
     {
         Map<Long, Long> settings = frame.getSettings();
@@ -206,57 +216,42 @@ public class ServerHTTP3Session extends ServerProtocolSession
         onFailure(error, "control_stream_failure", failure);
     }
 
-    private QuicStreamEndPoint openInstructionEndPoint(long streamId)
+    private StreamEndPoint openInstructionEndPoint(long streamId)
     {
+        // TODO: add a Stream.Listener for failure/close events.
         // This is a write-only stream, so no need to link a Connection.
-        return getOrCreateStreamEndPoint(streamId, QuicStreamEndPoint::opened);
+        Stream stream = getSession().newStream(streamId, null);
+        return getOrCreateStreamEndPoint(stream, StreamEndPoint::onOpen);
     }
 
-    private QuicStreamEndPoint openControlEndPoint(long streamId)
+    private StreamEndPoint openControlEndPoint(long streamId)
     {
+        // TODO: add a Stream.Listener for failure/close events.
         // This is a write-only stream, so no need to link a Connection.
-        return getOrCreateStreamEndPoint(streamId, QuicStreamEndPoint::opened);
+        Stream stream = getSession().newStream(streamId, null);
+        return getOrCreateStreamEndPoint(stream, StreamEndPoint::onOpen);
     }
 
     @Override
-    protected boolean onReadable(long readableStreamId)
-    {
-        StreamType streamType = StreamType.from(readableStreamId);
-        if (streamType == StreamType.CLIENT_BIDIRECTIONAL)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("bidirectional stream #{} selected for read", readableStreamId);
-            return super.onReadable(readableStreamId);
-        }
-        else
-        {
-            QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::openUnidirectionalStreamEndPoint);
-            if (LOG.isDebugEnabled())
-                LOG.debug("unidirectional stream #{} selected for read: {}", readableStreamId, streamEndPoint);
-            return streamEndPoint.onReadable();
-        }
-    }
-
-    @Override
-    protected boolean onIdleTimeout()
+    public boolean onIdleTimeout(TimeoutException timeout)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("idle timeout {} ms expired for {}", getQuicSession().getIdleTimeout(), this);
-        return session.onIdleTimeout();
+            LOG.debug("idle timeout {} ms expired for {}", getSession().getIdleTimeout(), this);
+        return session.onIdleTimeout(timeout);
     }
 
     @Override
+    public CompletableFuture<Void> close(ConnectionCloseFrame frame)
+    {
+        // Propagate the close inwards.
+        return session.close(frame.getErrorCode(), frame.getReason());
+    }
+
+    // TODO
+//    @Override
     protected void onFailure(long error, String reason, Throwable failure)
     {
         session.onSessionFailure(HTTP3ErrorCode.NO_ERROR.code(), "failure", failure);
-    }
-
-    @Override
-    public void inwardClose(long error, String reason)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("inward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        session.inwardClose(error, reason);
     }
 
     @Override
@@ -266,18 +261,12 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    protected void onClose(long error, String reason)
+    public void onClose(ConnectionCloseFrame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("session closed remotely 0x{}/{} {}", Long.toHexString(error), reason, this);
-        session.onClose(error, reason);
-    }
-
-    private void openUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
-    {
-        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, session);
-        endPoint.setConnection(connection);
-        endPoint.opened();
+            LOG.debug("session closed remotely {} {}", frame, this);
+        // Forward the close inwards.
+        session.onClose(frame.getErrorCode(), frame.getReason());
     }
 
     void writeControlFrame(Frame frame, Callback callback)
@@ -286,10 +275,9 @@ public class ServerHTTP3Session extends ServerProtocolSession
             controlFlusher.iterate();
     }
 
-    void writeMessageFrame(long streamId, Frame frame, Callback callback)
+    void writeMessageFrame(StreamEndPoint streamEndPoint, Frame frame, Callback callback)
     {
-        QuicStreamEndPoint endPoint = getOrCreateStreamEndPoint(streamId, this::openProtocolEndPoint);
-        if (messageFlusher.offer(endPoint, frame, callback))
+        if (messageFlusher.offer(streamEndPoint, frame, callback))
             messageFlusher.iterate();
     }
 }

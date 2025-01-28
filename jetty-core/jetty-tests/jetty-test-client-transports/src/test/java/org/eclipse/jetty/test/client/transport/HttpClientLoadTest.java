@@ -42,7 +42,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -96,9 +95,6 @@ public class HttpClientLoadTest extends AbstractTest
     @MethodSource("transports")
     public void testConcurrent(TransportType transportType) throws Exception
     {
-        // TODO: cannot run HTTP/3 (or UDP) in Jenkins.
-        Assumptions.assumeTrue(transportType != TransportType.H3_QUICHE);
-
         start(transportType, new LoadHandler());
         client.stop();
         ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();

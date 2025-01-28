@@ -56,7 +56,7 @@ public class IndexedNameEntryInstruction implements Instruction
     public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + NBitStringEncoder.octetsNeeded(8, _value, _huffman);
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
+        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, true);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);
 

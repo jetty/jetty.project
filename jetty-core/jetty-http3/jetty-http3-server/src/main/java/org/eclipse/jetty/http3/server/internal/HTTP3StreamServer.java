@@ -14,17 +14,16 @@
 package org.eclipse.jetty.http3.server.internal;
 
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.HTTP3Stream;
-import org.eclipse.jetty.http3.MessageFlusher;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +31,18 @@ import org.slf4j.LoggerFactory;
 public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3StreamServer.class);
+    private static final Listener DEFAULT_LISTENER = new Listener() {};
 
     private Stream.Server.Listener listener;
 
-    public HTTP3StreamServer(HTTP3Session session, QuicStreamEndPoint endPoint, boolean local)
+    public HTTP3StreamServer(HTTP3Session session, StreamEndPoint endPoint, boolean local)
     {
         super(session, endPoint, local);
+    }
+
+    private Listener getListener()
+    {
+        return this.listener;
     }
 
     public void onRequest(HeadersFrame frame)
@@ -45,10 +50,8 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
         if (validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.HEADER))
         {
             onHeaders(frame);
-            Listener listener = this.listener = notifyRequest(frame);
-            if (listener == null)
-                getSession().writeMessageFrame(getId(), new MessageFlusher.FlushFrame(), Callback.NOOP);
             updateClose(frame.isLast(), false);
+            this.listener = notifyRequest(frame);
         }
     }
 
@@ -57,7 +60,9 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
         Session.Server.Listener listener = (Session.Server.Listener)getSession().getListener();
         try
         {
-            return listener.onRequest(this, frame);
+            if (listener != null)
+                return listener.onRequest(this, frame);
+            return null;
         }
         catch (Throwable x)
         {
@@ -74,11 +79,10 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
 
     protected void notifyDataAvailable()
     {
-        Stream.Server.Listener listener = this.listener;
+        Stream.Server.Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
         try
         {
-            if (listener != null)
-                listener.onDataAvailable(this);
+            listener.onDataAvailable(this);
         }
         catch (Throwable x)
         {
@@ -89,7 +93,7 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
     @Override
     protected void notifyTrailer(HeadersFrame frame)
     {
-        Listener listener = this.listener;
+        Listener listener = getListener();
         try
         {
             if (listener != null)
@@ -104,7 +108,7 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
     @Override
     protected void notifyIdleTimeout(TimeoutException timeout, Promise<Boolean> promise)
     {
-        Listener listener = this.listener;
+        Listener listener = getListener();
         try
         {
             if (listener != null)
@@ -122,7 +126,7 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
     @Override
     protected void notifyFailure(long error, Throwable failure)
     {
-        Listener listener = this.listener;
+        Listener listener = getListener();
         try
         {
             if (listener != null)

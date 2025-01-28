@@ -24,6 +24,7 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
@@ -59,6 +60,8 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     @Override
     public Origin newOrigin(Request request)
     {
+        if (request.getTransport() == null)
+            request.transport(Transport.TCP_IP);
         return getHttpClient().createOrigin(request, HTTP11);
     }
 

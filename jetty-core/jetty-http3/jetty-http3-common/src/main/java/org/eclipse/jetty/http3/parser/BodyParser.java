@@ -59,8 +59,7 @@ public abstract class BodyParser
      * the buffer may contain unconsumed bytes, for example for other frames.</p>
      *
      * @param buffer the buffer to parse
-     * @return true if all the frame body bytes were parsed;
-     * false if not enough frame body bytes were present in the buffer
+     * @return the result of the parsing
      */
     public abstract Result parse(ByteBuffer buffer);
 

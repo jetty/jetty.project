@@ -19,9 +19,9 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
-import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class DataGenerator extends FrameGenerator

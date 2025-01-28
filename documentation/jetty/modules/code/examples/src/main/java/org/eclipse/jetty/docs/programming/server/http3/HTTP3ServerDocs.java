@@ -31,8 +31,8 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -55,16 +55,16 @@ public class HTTP3ServerDocs
         // The listener for session events.
         Session.Server.Listener sessionListener = new Session.Server.Listener() {};
 
-        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, Path.of("/path/to/pem/dir"));
+        QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(Path.of("/path/to/pem/dir"));
         // Configure the max number of requests per QUIC connection.
-        quicConfiguration.setMaxBidirectionalRemoteStreams(1024);
+        quicConfiguration.setBidirectionalMaxStreams(1024);
 
         // Create and configure the RawHTTP3ServerConnectionFactory.
-        RawHTTP3ServerConnectionFactory http3 = new RawHTTP3ServerConnectionFactory(quicConfiguration, sessionListener);
+        RawHTTP3ServerConnectionFactory http3 = new RawHTTP3ServerConnectionFactory(sessionListener);
         http3.getHTTP3Configuration().setStreamIdleTimeout(15000);
 
         // Create and configure the QuicServerConnector.
-        QuicServerConnector connector = new QuicServerConnector(server, quicConfiguration, http3);
+        QuicheServerConnector connector = new QuicheServerConnector(server, sslContextFactory, quicConfiguration, http3);
 
         // Add the Connector to the Server.
         server.addConnector(connector);
@@ -80,7 +80,7 @@ public class HTTP3ServerDocs
         Session.Server.Listener sessionListener = new Session.Server.Listener()
         {
             @Override
-            public void onAccept(Session session)
+            public void onAccept(Session.Server session)
             {
                 SocketAddress remoteAddress = session.getRemoteSocketAddress();
                 System.getLogger("http3").log(INFO, "Connection from {0}", remoteAddress);
@@ -254,10 +254,10 @@ public class HTTP3ServerDocs
         // end::response[]
     }
 
-    public void reset()
+    public void terminate()
     {
         float maxRequestRate = 0F;
-        // tag::reset[]
+        // tag::terminate[]
         Session.Server.Listener sessionListener = new Session.Server.Listener()
         {
             @Override
@@ -267,7 +267,7 @@ public class HTTP3ServerDocs
 
                 if (requestRate > maxRequestRate)
                 {
-                    stream.reset(HTTP3ErrorCode.REQUEST_REJECTED_ERROR.code(), new RejectedExecutionException());
+                    stream.disconnect(HTTP3ErrorCode.REQUEST_REJECTED_ERROR.code(), new RejectedExecutionException());
                     return null;
                 }
                 else
@@ -286,7 +286,7 @@ public class HTTP3ServerDocs
             }
             // end::exclude[]
         };
-        // end::reset[]
+        // end::terminate[]
     }
 
     // TODO: push not yet implemented in HTTP/3.

@@ -25,7 +25,7 @@ import org.eclipse.jetty.http3.HTTP3StreamConnection;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -41,7 +41,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     private final HttpConfiguration httpConfiguration;
     private final ServerHTTP3Session session;
 
-    public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, QuicStreamEndPoint endPoint, ServerHTTP3Session session, MessageParser parser)
+    public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, StreamEndPoint endPoint, ServerHTTP3Session session, MessageParser parser)
     {
         super(endPoint, connector.getExecutor(), connector.getByteBufferPool(), parser, httpConfiguration.getMinInputBufferSpace());
         this.connector = connector;
@@ -84,11 +84,6 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         return httpStream.onFailure(failure);
     }
 
-    void offer(Runnable task)
-    {
-        session.offer(task, false);
-    }
-
     private class MetaData implements ConnectionMetaData
     {
         private final SocketAddress localSocketAddress;
@@ -103,7 +98,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         @Override
         public String getId()
         {
-            return session.getQuicSession().getConnectionId().toString();
+            return session.getSession().getId();
         }
 
         @Override

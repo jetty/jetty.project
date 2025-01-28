@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.internal.ControlStreamConnection;
-import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
@@ -26,8 +25,8 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
-import org.eclipse.jetty.quic.common.StreamType;
+import org.eclipse.jetty.quic.common.StreamEndPoint;
+import org.eclipse.jetty.quic.util.VarLenInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +42,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
 
-    public UnidirectionalStreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
+    public UnidirectionalStreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -53,9 +52,9 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
     }
 
     @Override
-    public QuicStreamEndPoint getEndPoint()
+    public StreamEndPoint getEndPoint()
     {
-        return (QuicStreamEndPoint)super.getEndPoint();
+        return (StreamEndPoint)super.getEndPoint();
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -81,8 +80,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         int remaining = buffer.remaining();
         ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(remaining) : ByteBuffer.allocate(remaining);
         copy.put(buffer.getByteBuffer());
-        buffer.release();
-        buffer = null;
+        releaseBuffer();
         copy.flip();
         return copy;
     }
@@ -93,7 +91,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         try
         {
             if (buffer == null)
-                buffer = bufferPool.acquire(2048, isUseInputDirectByteBuffers());
+                buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             while (true)
             {
@@ -103,19 +101,23 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
 
                 if (filled > 0)
                 {
-                    if (parser.decode(byteBuffer, this::detectAndUpgrade))
+                    boolean parsed = parser.tryDecode(byteBuffer, value ->
+                    {
+                        if (!detectAndUpgrade(value))
+                            releaseBuffer();
+                    });
+                    if (parsed)
                         break;
                 }
                 else if (filled == 0)
                 {
-                    buffer.release();
+                    releaseBuffer();
                     fillInterested();
                     break;
                 }
                 else
                 {
-                    buffer.release();
-                    buffer = null;
+                    releaseBuffer();
                     getEndPoint().close();
                     break;
                 }
@@ -125,56 +127,78 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("could not process stream {}", getEndPoint(), x);
-            buffer.release();
-            buffer = null;
+            releaseBuffer();
             getEndPoint().close(x);
         }
     }
 
-    private void detectAndUpgrade(long streamType)
+    private void releaseBuffer()
     {
-        if (streamType == ControlStreamConnection.STREAM_TYPE)
+        buffer.release();
+        buffer = null;
+    }
+
+    private boolean detectAndUpgrade(long type)
+    {
+        StreamType streamType = StreamType.from(type);
+        if (streamType != null)
         {
-            ControlParser parser = new ControlParser(listener);
-            ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), bufferPool, parser);
-            newConnection.setInputBufferSize(getInputBufferSize());
-            newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("upgrading to {}", newConnection);
-            getEndPoint().upgrade(newConnection);
-        }
-        else if (streamType == EncoderStreamConnection.STREAM_TYPE)
-        {
-            EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, decoder, listener);
-            newConnection.setInputBufferSize(getInputBufferSize());
-            newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("upgrading to {}", newConnection);
-            getEndPoint().upgrade(newConnection);
-        }
-        else if (streamType == DecoderStreamConnection.STREAM_TYPE)
-        {
-            DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, encoder, listener);
-            newConnection.setInputBufferSize(getInputBufferSize());
-            newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("upgrading to {}", newConnection);
-            getEndPoint().upgrade(newConnection);
+            return switch (streamType)
+            {
+                case CONTROL_STREAM ->
+                {
+                    ControlParser parser = new ControlParser(listener);
+                    ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), bufferPool, parser);
+                    newConnection.setInputBufferSize(getInputBufferSize());
+                    newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("upgrading to {}", newConnection);
+                    getEndPoint().upgrade(newConnection);
+                    yield true;
+                }
+                case ENCODER_STREAM ->
+                {
+                    EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, decoder, listener);
+                    newConnection.setInputBufferSize(getInputBufferSize());
+                    newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("upgrading to {}", newConnection);
+                    getEndPoint().upgrade(newConnection);
+                    yield true;
+                }
+                case DECODER_STREAM ->
+                {
+                    DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, encoder, listener);
+                    newConnection.setInputBufferSize(getInputBufferSize());
+                    newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("upgrading to {}", newConnection);
+                    getEndPoint().upgrade(newConnection);
+                    yield true;
+                }
+                default ->
+                {
+                    Throwable failure = new IllegalArgumentException("unsupported stream type: " + streamType);
+                    getEndPoint().disconnect(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), failure, true);
+                    yield false;
+                }
+            };
         }
         else
         {
-            if (StreamType.isReserved(streamType))
+            if (StreamType.isReserved(type))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("reserved stream type {}, closing {}", Long.toHexString(streamType), this);
-                getEndPoint().close(HTTP3ErrorCode.randomReservedCode(), null);
+                    LOG.debug("reserved stream type {}, closing {}", Long.toHexString(type), this);
+                getEndPoint().disconnect(HTTP3ErrorCode.randomReservedCode(), null, true);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("unsupported stream type {}, closing {}", Long.toHexString(streamType), this);
-                getEndPoint().close(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), null);
+                    LOG.debug("invalid stream type {}, closing {}", Long.toHexString(type), this);
+                getEndPoint().disconnect(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), null, true);
             }
+            return false;
         }
     }
 }

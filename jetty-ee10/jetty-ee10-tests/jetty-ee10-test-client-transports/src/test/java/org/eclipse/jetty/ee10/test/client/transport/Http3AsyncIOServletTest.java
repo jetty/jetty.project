@@ -36,9 +36,10 @@ import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
+import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -65,7 +66,7 @@ public class Http3AsyncIOServletTest
     public WorkDir workDir;
     private final HttpConfiguration httpConfig = new HttpConfiguration();
     private Server server;
-    private QuicServerConnector connector;
+    private QuicheServerConnector connector;
     private HTTP3Client client;
 
     private void start(HttpServlet httpServlet) throws Exception
@@ -74,15 +75,16 @@ public class Http3AsyncIOServletTest
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         serverSslContextFactory.setKeyStorePassword("storepwd");
-        ServerQuicConfiguration serverQuicConfiguration = new ServerQuicConfiguration(serverSslContextFactory, workDir.getEmptyPathDir());
-        connector = new QuicServerConnector(server, serverQuicConfiguration, new HTTP3ServerConnectionFactory(serverQuicConfiguration, httpConfig));
+        QuicheServerQuicConfiguration serverQuicConfiguration = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
+        connector = new QuicheServerConnector(server, serverSslContextFactory, serverQuicConfiguration, new HTTP3ServerConnectionFactory(httpConfig));
         server.addConnector(connector);
         ServletContextHandler servletContextHandler = new ServletContextHandler("/");
         servletContextHandler.addServlet(new ServletHolder(httpServlet), "/*");
         server.setHandler(servletContextHandler);
         server.start();
 
-        client = new HTTP3Client(new ClientQuicConfiguration(new SslContextFactory.Client(true), null));
+        client = new HTTP3Client(new QuicheClientQuicConfiguration());
+        client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
         client.start();
     }
 
@@ -136,7 +138,7 @@ public class Http3AsyncIOServletTest
         });
 
         InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-        Client session = client.connect(address, new Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Client session = client.connect(new QuicheTransport((QuicheClientQuicConfiguration)client.getQuicConfiguration()), address, new Client.Listener() {}).get(5, TimeUnit.SECONDS);
         MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, false);
         Stream stream = session.newRequest(frame, null).get(5, TimeUnit.SECONDS);
@@ -145,7 +147,7 @@ public class Http3AsyncIOServletTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         Thread.sleep(500);
 
-        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new Exception());
+        stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new Exception());
 
         if (notify)
             // Wait for the reset to be notified to the async context listener.

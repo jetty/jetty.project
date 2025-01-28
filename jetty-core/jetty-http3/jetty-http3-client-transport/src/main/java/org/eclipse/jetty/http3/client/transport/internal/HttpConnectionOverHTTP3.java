@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousCloseException;
+import java.security.cert.X509Certificate;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,22 +73,24 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     @Override
     public EndPoint.SslSessionData getSslSessionData()
     {
-        QuicSession quicSession = getSession().getProtocolSession().getQuicSession();
-        return EndPoint.SslSessionData.from(null, null, null, quicSession.getPeerCertificates());
+        Session quicSession = getSession().getProtocolSession().getSession();
+        // TODO
+        X509Certificate[] peerCertificates = null; // quicSession.getPeerCertificates();
+        return EndPoint.SslSessionData.from(null, null, null, null);
     }
 
     @Override
     public int getMaxMultiplex()
     {
-        // As weird as this is, RFC 9000 specifies a *cumulative* number
-        // for the number of streams that can be opened in a connection.
+        // RFC 9000 specifies a *cumulative* number for the
+        // number of streams that can be opened in a connection.
         return getMaxUsage();
     }
 
     @Override
     public int getMaxUsage()
     {
-        return session.getMaxLocalStreams();
+        return (int)session.getMaxLocalStreams();
     }
 
     @Override
@@ -176,6 +179,6 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     void offerTask(Runnable task)
     {
         if (task != null)
-            session.getProtocolSession().offer(task, false);
+            getSession().getProtocolSession().offerTask(task);
     }
 }
