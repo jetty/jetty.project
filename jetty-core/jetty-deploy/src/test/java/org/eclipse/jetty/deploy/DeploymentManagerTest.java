@@ -61,9 +61,10 @@ public class DeploymentManagerTest
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
+        mockProvider.setDeploymentManager(depman);
 
         depman.addLifeCycleBinding(pathtracker);
-        depman.addAppProvider(mockProvider);
+        depman.addBean(mockProvider);
 
         // Start DepMan
         depman.start();

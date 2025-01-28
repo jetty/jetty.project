@@ -10,7 +10,7 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
     <Arg>
-      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+      <New id="deploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
           <Ref refid="Contexts" />
         </Set>

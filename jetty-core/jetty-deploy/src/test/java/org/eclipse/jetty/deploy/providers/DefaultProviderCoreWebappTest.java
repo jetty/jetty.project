@@ -64,7 +64,9 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
 
         DeploymentManager deploymentManager = new DeploymentManager();
         deploymentManager.setContexts(contexts);
-        deploymentManager.addAppProvider(provider);
+
+        deploymentManager.addBean(provider);
+        provider.setDeploymentManager(deploymentManager);
         server.addBean(deploymentManager);
 
         server.start();

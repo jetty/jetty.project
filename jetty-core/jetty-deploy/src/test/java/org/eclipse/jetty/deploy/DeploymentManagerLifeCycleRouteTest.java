@@ -33,10 +33,11 @@ public class DeploymentManagerLifeCycleRouteTest
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
+        mockProvider.setDeploymentManager(depman);
 
         depman.addLifeCycleBinding(pathtracker);
-        depman.addAppProvider(mockProvider);
         depman.setContexts(new ContextHandlerCollection());
+        depman.addBean(mockProvider);
 
         // Start DepMan
         depman.start();
@@ -65,9 +66,10 @@ public class DeploymentManagerLifeCycleRouteTest
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
+        mockProvider.setDeploymentManager(depman);
 
         depman.addLifeCycleBinding(pathtracker);
-        depman.addAppProvider(mockProvider);
+        depman.addBean(mockProvider);
 
         // Start DepMan
         depman.start();
@@ -90,13 +92,14 @@ public class DeploymentManagerLifeCycleRouteTest
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
+        mockProvider.setDeploymentManager(depman);
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         depman.addBean(mbContainer);
 
         depman.addLifeCycleBinding(pathtracker);
-        depman.addAppProvider(mockProvider);
+        depman.addBean(mockProvider);
         depman.setContexts(new ContextHandlerCollection());
 
         // Start DepMan

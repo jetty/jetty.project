@@ -102,7 +102,8 @@ public class DeploymentErrorTest
         appProvider.configureEnvironment("ee9");
         appProvider.addMonitoredDirectory(docroots);
         appProvider.setScanInterval(1);
-        deploymentManager.addAppProvider(appProvider);
+        appProvider.setDeploymentManager(deploymentManager);
+        deploymentManager.addBean(appProvider);
         server.addBean(deploymentManager);
 
         // Server handlers

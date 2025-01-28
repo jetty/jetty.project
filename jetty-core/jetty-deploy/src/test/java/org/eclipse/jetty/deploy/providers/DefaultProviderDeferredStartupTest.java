@@ -22,7 +22,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.deploy.AbstractCleanEnvironmentTest;
-import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.Server;
@@ -45,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link ContextProvider} behaviors when in Deferred Startup mode
+ * Tests {@link DefaultProvider} behaviors when in Deferred Startup mode
  */
 @ExtendWith(WorkDirExtension.class)
 public class DefaultProviderDeferredStartupTest extends AbstractCleanEnvironmentTest
@@ -112,27 +111,19 @@ public class DefaultProviderDeferredStartupTest extends AbstractCleanEnvironment
 
             server.addEventListener(eventCaptureListener);
 
-            DefaultProvider scanningAppProvider = null;
             DeploymentManager deploymentManager = server.getBean(DeploymentManager.class);
-            for (AppProvider appProvider : deploymentManager.getAppProviders())
-            {
-                if (appProvider instanceof DefaultProvider)
-                {
-                    scanningAppProvider = (DefaultProvider)appProvider;
-                }
-            }
-            assertNotNull(scanningAppProvider, "Should have found ScanningAppProvider");
-            assertTrue(scanningAppProvider.isDeferInitialScan(), "The DeferInitialScan configuration should be true");
+            DefaultProvider defaultProvider = deploymentManager.getBean(DefaultProvider.class);
+            assertNotNull(defaultProvider, "Should have found DefaultProvider");
+            assertTrue(defaultProvider.isDeferInitialScan(), "The DeferInitialScan configuration should be true");
 
-            scanningAppProvider.addEventListener(eventCaptureListener);
-            scanningAppProvider.addEventListener(new Container.InheritedListener()
+            defaultProvider.addEventListener(eventCaptureListener);
+            defaultProvider.addEventListener(new Container.InheritedListener()
             {
                 @Override
                 public void beanAdded(Container parent, Object child)
                 {
-                    if (child instanceof Scanner)
+                    if (child instanceof Scanner scanner)
                     {
-                        Scanner scanner = (Scanner)child;
                         scanner.addEventListener(eventCaptureListener);
                         scanner.addListener(new Scanner.ScanCycleListener()
                         {

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
@@ -148,7 +147,10 @@ public class EE10Activator implements BundleActivator
 
             if (deployer.isPresent())
             {
-                for (AppProvider provider : deployer.get().getAppProviders())
+                DeploymentManager deploymentManager = deployer.get();
+                Collection<AbstractContextProvider> osgiProviders = deploymentManager.getBeans(AbstractContextProvider.class);
+
+                for (AbstractContextProvider provider : osgiProviders)
                 {
                     if (provider instanceof BundleContextProvider bundleContextProvider)
                     {
@@ -161,16 +163,17 @@ public class EE10Activator implements BundleActivator
                             webAppProvider = bundleWebAppProvider;
                     }
                 }
+
                 if (contextProvider == null)
                 {
                     contextProvider = new BundleContextProvider(ENVIRONMENT, server, new EE10ContextFactory(_myBundle));
-                    deployer.get().addAppProvider(contextProvider);
+                    contextProvider.setDeploymentManager(deploymentManager);
                 }
 
                 if (webAppProvider == null)
                 {
                     webAppProvider = new BundleWebAppProvider(ENVIRONMENT, server, new EE10WebAppFactory(_myBundle));
-                    deployer.get().addAppProvider(webAppProvider);
+                    contextProvider.setDeploymentManager(deploymentManager);
                 }
 
                 //ensure the providers are configured with the extra bundles that must be scanned from the container classpath

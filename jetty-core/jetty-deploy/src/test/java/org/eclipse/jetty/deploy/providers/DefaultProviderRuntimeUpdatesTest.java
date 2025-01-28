@@ -17,11 +17,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.deploy.AbstractCleanEnvironmentTest;
-import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -95,22 +95,20 @@ public class DefaultProviderRuntimeUpdatesTest extends AbstractCleanEnvironmentT
 
         // monitor tick
         DeploymentManager dm = jetty.getServer().getBean(DeploymentManager.class);
-        for (AppProvider provider : dm.getAppProviders())
+        Collection<DefaultProvider> defaultProviders = dm.getBeans(DefaultProvider.class);
+        for (DefaultProvider provider : defaultProviders)
         {
-            if (provider instanceof DefaultProvider scanningAppProvider)
+            _providerCount++;
+            provider.addScannerListener(new Scanner.ScanCycleListener()
             {
-                _providerCount++;
-                scanningAppProvider.addScannerListener(new Scanner.ScanCycleListener()
+                @Override
+                public void scanEnded(int cycle)
                 {
-                    @Override
-                    public void scanEnded(int cycle)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Scan ended: {}", cycle);
-                        _scans.incrementAndGet();
-                    }
-                });
-            }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Scan ended: {}", cycle);
+                    _scans.incrementAndGet();
+                }
+            });
         }
     }
 

@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
  * <img alt="deployment manager roles graph" src="doc-files/DeploymentManager_Roles.png">
  * <ol>
  * <li>Tracking Apps and their LifeCycle Location</li>
- * <li>Managing AppProviders and the Apps that they provide.</li>
  * <li>Executing AppLifeCycle on App based on current and desired LifeCycle Location.</li>
  * </ol>
  * <p>
@@ -93,7 +92,6 @@ public class DeploymentManager extends ContainerLifeCycle
 
     private final AutoLock _lock = new AutoLock();
     private Throwable _onStartupErrors;
-    private final List<AppProvider> _providers = new ArrayList<>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
     private ContextHandlerCollection _contexts;
@@ -102,8 +100,6 @@ public class DeploymentManager extends ContainerLifeCycle
 
     /**
      * Receive an app for processing.
-     *
-     * Most commonly used by the various {@link AppProvider} implementations.
      *
      * @param app the app
      */
@@ -121,40 +117,6 @@ public class DeploymentManager extends ContainerLifeCycle
             // Immediately attempt to go to default lifecycle state
             this.requestAppGoal(entry, _defaultLifeCycleGoal);
         }
-    }
-
-    /**
-     * Set the AppProviders.
-     * The providers passed are added via {@link #addBean(Object)} so that
-     * their lifecycles may be managed as a {@link ContainerLifeCycle}.
-     *
-     * @param providers the app provider list
-     */
-    public void setAppProviders(Collection<AppProvider> providers)
-    {
-        if (isRunning())
-            throw new IllegalStateException();
-
-        _providers.clear();
-        removeBeans();
-        for (AppProvider provider : providers)
-        {
-            if (_providers.add(provider))
-                addBean(provider, true);
-        }
-    }
-
-    public Collection<AppProvider> getAppProviders()
-    {
-        return Collections.unmodifiableList(_providers);
-    }
-
-    public void addAppProvider(AppProvider provider)
-    {
-        if (isRunning())
-            throw new IllegalStateException();
-        _providers.add(provider);
-        addBean(provider, true);
     }
 
     public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
@@ -211,36 +173,12 @@ public class DeploymentManager extends ContainerLifeCycle
             addLifeCycleBinding(new StandardUndeployer());
         }
 
-        // Start all of the AppProviders
-        for (AppProvider provider : _providers)
-        {
-            startAppProvider(provider);
-        }
-
         try (AutoLock l = _lock.lock())
         {
             ExceptionUtil.ifExceptionThrow(_onStartupErrors);
         }
 
         super.doStart();
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        // Stop all of the AppProviders
-        for (AppProvider provider : _providers)
-        {
-            try
-            {
-                provider.stop();
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to start AppProvider", e);
-            }
-        }
-        super.doStop();
     }
 
     private AppEntry findAppEntry(String appId)
@@ -347,21 +285,6 @@ public class DeploymentManager extends ContainerLifeCycle
                     requestAppGoal(entry.app, AppLifeCycle.UNDEPLOYED);
                 it.remove();
             }
-        }
-    }
-
-    public void removeAppProvider(AppProvider provider)
-    {
-        if (_providers.remove(provider))
-            removeBean(provider);
-
-        try
-        {
-            provider.stop();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to stop Provider", e);
         }
     }
 
@@ -481,19 +404,6 @@ public class DeploymentManager extends ContainerLifeCycle
     public void setDefaultLifeCycleGoal(String defaultLifeCycleState)
     {
         this._defaultLifeCycleGoal = defaultLifeCycleState;
-    }
-
-    private void startAppProvider(AppProvider provider)
-    {
-        try
-        {
-            provider.setDeploymentManager(this);
-            provider.start();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to start AppProvider", e);
-        }
     }
 
     public void undeployAll()

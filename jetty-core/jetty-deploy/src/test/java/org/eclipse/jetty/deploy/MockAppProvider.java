@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 
-public class MockAppProvider extends AbstractLifeCycle implements AppProvider
+public class MockAppProvider extends AbstractLifeCycle
 {
     private DeploymentManager deployMan;
     private Path webappsDir;
@@ -31,7 +31,6 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         return Environment.ensure("mock").getName();
     }
 
-    @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         this.deployMan = deploymentManager;

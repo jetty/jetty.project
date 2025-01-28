@@ -215,8 +215,11 @@ public class DefaultContextHandlerFactory
                     !k.startsWith("jetty.webapps"))
                 .forEach(k ->
                 {
-                    String v = Objects.toString(attributes.getAttribute(k));
-                    xmlc.getProperties().put(k, v);
+                    Object v = attributes.getAttribute(k);
+                    if (v == null)
+                        xmlc.getProperties().remove(k);
+                    else
+                        xmlc.getProperties().put(k, Objects.toString(v));
                 });
 
             // Run configure against appropriate classloader.

@@ -92,12 +92,6 @@ public class DeploymentManagerMBean extends ObjectMBean
         return apps;
     }
 
-    @ManagedAttribute("Registered AppProviders")
-    public List<String> getAppProviders()
-    {
-        return _manager.getAppProviders().stream().map(String::valueOf).collect(Collectors.toList());
-    }
-
     public void requestAppGoal(String appId, String nodeName)
     {
         _manager.requestAppGoal(appId, nodeName);

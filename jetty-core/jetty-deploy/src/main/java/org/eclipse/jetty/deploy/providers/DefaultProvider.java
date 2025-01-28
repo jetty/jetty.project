@@ -36,7 +36,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
@@ -111,7 +110,7 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
-public class DefaultProvider extends ContainerLifeCycle implements AppProvider, Scanner.ChangeSetListener
+public class DefaultProvider extends ContainerLifeCycle implements Scanner.ChangeSetListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultProvider.class);
 
@@ -222,7 +221,6 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
         return deploymentManager;
     }
 
-    @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         this.deploymentManager = deploymentManager;
@@ -504,6 +502,10 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} doStart()", this);
+
+        if (getDeploymentManager() == null)
+            throw new IllegalStateException("No DeploymentManager defined");
+
         if (monitoredDirs.isEmpty())
             throw new IllegalStateException("No monitored dir specified");
 

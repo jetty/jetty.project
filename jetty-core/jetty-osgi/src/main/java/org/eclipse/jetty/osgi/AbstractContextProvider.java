@@ -16,7 +16,6 @@ package org.eclipse.jetty.osgi;
 import java.util.Objects;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -36,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * Jetty that have been discovered via OSGI either as bundles or services.
  * </p>
  */
-public abstract class AbstractContextProvider extends AbstractLifeCycle implements AppProvider
+public abstract class AbstractContextProvider extends AbstractLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
 
@@ -73,7 +72,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
         return h;
     }
 
-    @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         _deploymentManager = deploymentManager;
