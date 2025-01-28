@@ -88,6 +88,8 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                     for (Resource r : fromBase)
                     {
                         p = r.getPath();
+                        if (!Files.exists(p))
+                            continue;
 
                         // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
                         // This allows symlinks like /other->/WEB-INF and /external->/var/lib/docroot
