@@ -724,17 +724,17 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * A variant of the {@link ArrayByteBufferPool} that
      * uses a predefined set of buckets of buffers.
      */
-    public static class Predefined extends ArrayByteBufferPool
+    public static class WithBucketCapacities extends ArrayByteBufferPool
     {
-        public Predefined(int... capacities)
+        public WithBucketCapacities(int... capacities)
         {
             this(0L, 0L, capacities);
         }
 
-        public Predefined(long maxHeapMemory, long maxDirectMemory, int... capacities)
+        public WithBucketCapacities(long maxHeapMemory, long maxDirectMemory, int... capacities)
         {
             super(sort(capacities)[0], 1, capacities[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
-                c -> indexOfClosestBelow(c, capacities), i -> capacityOfIndex(i, capacities));
+                c -> floorBucketIndexFor(c, capacities), i -> capacityOfIndex(i, capacities));
         }
 
         private static int[] sort(int... values)
@@ -749,17 +749,25 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             if (idx >= capacities.length)
             {
+                // An index over the capacities array's length is considered
+                // to refer to a multiple of the largest configured capacity;
+                // this logic is only meant for recordNoBucketAcquire().
                 int largestCapacity = capacities[capacities.length - 1];
                 return (idx - capacities.length + 2) * largestCapacity;
             }
             return capacities[idx];
         }
 
-        private static int indexOfClosestBelow(int capacity, int... capacities)
+        private static int floorBucketIndexFor(int capacity, int... capacities)
         {
             int largestCapacity = capacities[capacities.length - 1];
             if (capacity > largestCapacity)
             {
+                // A capacity over the largest configured capacity returns an
+                // index that corresponds to where in the capacities array it
+                // would stand if the latter had more entries that would all
+                // be multiples of the largest configured capacity;
+                // this logic is only meant for recordNoBucketAcquire().
                 int remainder = capacity % largestCapacity != 0 ? 1 : 0;
                 return capacity / largestCapacity - 1 + remainder + capacities.length - 1;
             }

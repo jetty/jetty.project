@@ -427,24 +427,24 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
-    public void testPredefinedPoolBucketSizes()
+    public void testWithBucketCapacitiesBucketSizes()
     {
         {
-            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(1024, 65536);
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1024, 65536);
             String dump = pool.dump();
             assertThat(dump, containsString("direct size=2\n"));
             assertThat(dump, containsString("{capacity=1024,"));
             assertThat(dump, containsString("{capacity=65536,"));
         }
         {
-            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(30, 24);
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(30, 24);
             String dump = pool.dump();
             assertThat(dump, containsString("direct size=2\n"));
             assertThat(dump, containsString("{capacity=24,"));
             assertThat(dump, containsString("{capacity=30,"));
         }
         {
-            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(3, 7, 100);
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(3, 7, 100);
             String dump = pool.dump();
             assertThat(dump, containsString("direct size=3\n"));
             assertThat(dump, containsString("{capacity=3,"));
@@ -454,10 +454,10 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
-    public void testPredefinedPoolNoBucketSizes()
+    public void testWithBucketCapacitiesNoBucketSizes()
     {
         {
-            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(1, 100);
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1, 100);
             pool.setStatisticsEnabled(true);
             pool.acquire(200, false).release();
             pool.acquire(300, false).release();
@@ -469,7 +469,7 @@ public class ArrayByteBufferPoolTest
             assertThat(dump, containsString("800: 1\n"));
         }
         {
-            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(1, 7, 50, 100);
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1, 7, 50, 100);
             pool.setStatisticsEnabled(true);
             pool.acquire(200, false).release();
             pool.acquire(300, false).release();
@@ -479,6 +479,13 @@ public class ArrayByteBufferPoolTest
             assertThat(dump, containsString("200: 2\n"));
             assertThat(dump, containsString("300: 1\n"));
             assertThat(dump, containsString("800: 1\n"));
+        }
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(128, 512, 2048);
+            pool.setStatisticsEnabled(true);
+            pool.acquire(8192, false).release();
+            String dump = pool.dump();
+            assertThat(dump, containsString("8192: 1\n"));
         }
     }
 
