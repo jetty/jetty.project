@@ -24,7 +24,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.deploy.ContextHandlerFactory;
 import org.eclipse.jetty.server.Deployable;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
@@ -36,12 +38,14 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultContextHandlerFactory
+public class DefaultContextHandlerFactory implements ContextHandlerFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultContextHandlerFactory.class);
-    private static final String ENV_XML_PATHS = "jetty.deploy.defaultApp.envXmls";
-
-    private String _defaultEnvironmentName;
+    public static final String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
+    public static final String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
+    public static final String ENVIRONMENT = "jetty.deploy.environment";
+    public static final String ENV_XML_PATHS = "jetty.deploy.defaultApp.envXMLs";
+    public static final String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
 
     private static Map<String, String> asProperties(Attributes attributes)
     {
@@ -68,40 +72,13 @@ public class DefaultContextHandlerFactory
         attributes.setAttribute(ENV_XML_PATHS, paths);
     }
 
-    /**
-     * Get the default {@link Environment} name for discovered web applications that
-     * do not declare the {@link Environment} that they belong to.
-     *
-     * <p>
-     * Falls back to {@link Environment#getAll()} list, and returns
-     * the first name returned after sorting with {@link Deployable#ENVIRONMENT_COMPARATOR}
-     * </p>
-     *
-     * @return the default environment name.
-     */
-    public String getDefaultEnvironmentName()
+    @Override
+    public ContextHandler newContextHandler(Server server, App app, Attributes deployAttributes) throws Exception
     {
-        if (_defaultEnvironmentName == null)
-        {
-            return Environment.getAll().stream()
-                .map(Environment::getName)
-                .max(Deployable.ENVIRONMENT_COMPARATOR)
-                .orElse(null);
-        }
-        return _defaultEnvironmentName;
-    }
-
-    public void setDefaultEnvironmentName(String name)
-    {
-        this._defaultEnvironmentName = name;
-    }
-
-    public ContextHandler newContextHandler(DefaultProvider provider, DefaultApp app, Attributes deployAttributes) throws Exception
-    {
-        Path mainPath = app.getMainPath();
+        Path mainPath = (Path)deployAttributes.getAttribute(Deployable.MAIN_PATH);
         if (mainPath == null)
         {
-            LOG.warn("Unable to create ContextHandler for app with no main path: {}", app);
+            LOG.warn("Unable to create ContextHandler for app with no main path defined: {}", app);
             return null;
         }
 
@@ -113,23 +90,10 @@ public class DefaultContextHandlerFactory
         if (!Files.exists(mainPath))
             throw new IllegalStateException("App path does not exist " + mainPath);
 
-        deployAttributes.setAttribute(Deployable.MAIN_PATH, mainPath);
-        deployAttributes.setAttribute(Deployable.OTHER_PATHS, app.getPaths().keySet());
-
-        String envName = app.getEnvironmentName();
-        if (StringUtil.isBlank(envName))
-        {
-            envName = getDefaultEnvironmentName();
-            app.setEnvironmentName(envName);
-        }
-
-        // Verify that referenced Environment even exists.
-        Environment environment = Environment.get(envName);
-
+        Environment environment = app.getEnvironment();
         if (environment == null)
         {
-            LOG.warn("Environment [{}] does not exist (referenced in app [{}]).  The available environments are: {}",
-                app.getEnvironmentName(),
+            LOG.warn("Environment not declared for app [{}].  The available environments are: {}",
                 app,
                 Environment.getAll().stream()
                     .map(Environment::getName)
@@ -149,12 +113,12 @@ public class DefaultContextHandlerFactory
             /*
              * The process now is to figure out the context object to use.
              * This can come from a number of places.
-             * 1. If an XML deployable, this is the <Configure class="contextclass"> entry.
+             * 1. If an XML deployable, this is the <Configure class="contextClass"> entry.
              * 2. If another deployable (like a web archive, or directory), then check attributes.
              *    a. use the app attributes to figure out the context handler class.
              *    b. use the environment attributes default context handler class.
              */
-            Object context = newContextInstance(provider, environment, app, deployAttributes, mainPath);
+            Object context = newContextInstance(server, environment, app, deployAttributes, mainPath);
             if (context == null)
                 throw new IllegalStateException("unable to create ContextHandler for " + app);
 
@@ -162,11 +126,11 @@ public class DefaultContextHandlerFactory
                 LOG.debug("Context {} created from app {}", context.getClass().getName(), app);
 
             // Apply environment properties and XML to context
-            if (applyEnvironmentXml(provider, app, context, environment, deployAttributes))
+            if (applyEnvironmentXml(server, context, environment, deployAttributes))
             {
                 // If an XML deployable, apply full XML over environment XML changes
                 if (FileID.isXml(mainPath))
-                    context = applyXml(provider, context, mainPath, environment, deployAttributes);
+                    context = applyXml(server, context, mainPath, environment, deployAttributes);
             }
 
             return getContextHandler(context);
@@ -177,14 +141,14 @@ public class DefaultContextHandlerFactory
         }
     }
 
-    protected Object applyXml(DefaultProvider provider, Object context, Path xml, Environment environment, Attributes attributes) throws Exception
+    protected Object applyXml(Server server, Object context, Path xml, Environment environment, Attributes attributes) throws Exception
     {
         if (!FileID.isXml(xml))
             return null;
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            XmlConfiguration xmlc = new XmlConfiguration(resourceFactory.newResource(xml), null, asProperties(attributes))
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(resourceFactory.newResource(xml), null, asProperties(attributes))
             {
                 @Override
                 public void initializeDefaults(Object context)
@@ -204,8 +168,8 @@ public class DefaultContextHandlerFactory
                 }
             };
 
-            xmlc.getIdMap().put("Environment", environment.getName());
-            xmlc.setJettyStandardIdsAndProperties(provider.getDeploymentManager().getServer(), xml);
+            xmlConfiguration.getIdMap().put("Environment", environment.getName());
+            xmlConfiguration.setJettyStandardIdsAndProperties(server, xml);
 
             // Put all Environment attributes into XmlConfiguration as properties that can be used.
             attributes.getAttributeNameSet()
@@ -217,9 +181,9 @@ public class DefaultContextHandlerFactory
                 {
                     Object v = attributes.getAttribute(k);
                     if (v == null)
-                        xmlc.getProperties().remove(k);
+                        xmlConfiguration.getProperties().remove(k);
                     else
-                        xmlc.getProperties().put(k, Objects.toString(v));
+                        xmlConfiguration.getProperties().put(k, Objects.toString(v));
                 });
 
             // Run configure against appropriate classloader.
@@ -231,9 +195,9 @@ public class DefaultContextHandlerFactory
             {
                 // Create or configure the context
                 if (context == null)
-                    return xmlc.configure();
+                    return xmlConfiguration.configure();
 
-                return xmlc.configure(context);
+                return xmlConfiguration.configure(context);
             }
             finally
             {
@@ -332,15 +296,14 @@ public class DefaultContextHandlerFactory
     /**
      * Apply optional environment specific XML to context.
      *
-     * @param provider the DefaultProvider responsible for this context creation
-     * @param app the default app
+     * @param server the Server instance for referencing in XML
      * @param context the context to apply environment specific behavior to
      * @param environment the environment to use
      * @param attributes the attributes used to deploy the app
      * @return true if environment specific XML was applied.
      * @throws Exception if unable to apply environment configuration.
      */
-    private boolean applyEnvironmentXml(DefaultProvider provider, DefaultApp app, Object context, Environment environment, Attributes attributes) throws Exception
+    private boolean applyEnvironmentXml(Server server, Object context, Environment environment, Attributes attributes) throws Exception
     {
         // Collect the optional environment context xml files.
         // Order them according to the name of their property key names.
@@ -350,18 +313,14 @@ public class DefaultContextHandlerFactory
             // nothing to do here
             return false;
 
-        boolean xmlApplied = false;
-
         // apply each context environment xml file
         for (Path envXmlPath : sortedEnvXmlPaths)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Applying environment specific context file {}", envXmlPath);
-            context = applyXml(provider, context, envXmlPath, environment, attributes);
-            xmlApplied = true;
+            context = applyXml(server, context, envXmlPath, environment, attributes);
         }
-
-        return xmlApplied;
+        return true;
     }
 
     /**
@@ -397,9 +356,9 @@ public class DefaultContextHandlerFactory
      * The search order is:
      * </p>
      * <ol>
-     * <li>If app attribute {@link Deployable#CONTEXT_HANDLER_CLASS} is specified, use it, and initialize context</li>
+     * <li>If app attribute {@link #CONTEXT_HANDLER_CLASS} is specified, use it, and initialize context</li>
      * <li>If App deployable path is XML, apply XML {@code <Configuration>}</li>
-     * <li>Fallback to environment attribute {@link Deployable#CONTEXT_HANDLER_CLASS_DEFAULT}, and initialize context.</li>
+     * <li>Fallback to environment attribute {@link #CONTEXT_HANDLER_CLASS_DEFAULT}, and initialize context.</li>
      * </ol>
      *
      * @param environment the environment context applies to
@@ -409,12 +368,12 @@ public class DefaultContextHandlerFactory
      * @return the Context Object.
      * @throws Exception if unable to create Object instance.
      */
-    private Object newContextInstance(DefaultProvider provider, Environment environment, App app, Attributes attributes, Path path) throws Exception
+    private Object newContextInstance(Server server, Environment environment, App app, Attributes attributes, Path path) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("newContextInstance({}, {}, {}, {})", provider, environment, app, path);
+            LOG.debug("newContextInstance({}, {}, {}, {})", server, environment, app, path);
 
-        Object context = newInstance((String)attributes.getAttribute(Deployable.CONTEXT_HANDLER_CLASS));
+        Object context = newInstance((String)attributes.getAttribute(CONTEXT_HANDLER_CLASS));
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);
@@ -434,7 +393,7 @@ public class DefaultContextHandlerFactory
         {
             // track if context is created from XML or an existing one is just being configured by XML
             boolean createdContext = (context == null);
-            context = applyXml(provider, context, path, environment, attributes);
+            context = applyXml(server, context, path, environment, attributes);
             ContextHandler contextHandler = getContextHandler(context);
             if (contextHandler == null)
                 throw new IllegalStateException("Unknown context type of " + context);
@@ -448,7 +407,7 @@ public class DefaultContextHandlerFactory
             return context;
 
         // fallback to default from environment.
-        context = newInstance((String)environment.getAttribute(Deployable.CONTEXT_HANDLER_CLASS_DEFAULT));
+        context = newInstance((String)environment.getAttribute(CONTEXT_HANDLER_CLASS_DEFAULT));
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);

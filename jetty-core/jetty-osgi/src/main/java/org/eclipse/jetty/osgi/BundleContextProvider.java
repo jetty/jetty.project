@@ -190,7 +190,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             _appMap.put(app.getPath(), app);
             List<OSGiApp> apps = _bundleMap.computeIfAbsent(bundle, b -> new ArrayList<>());
             apps.add(app);
-            getDeploymentManager().addApp(app);
+            getManager().addApp(app);
             added = true;
         }
 
@@ -214,7 +214,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             {
                 if (_appMap.remove(app.getPath()) != null)
                 {
-                    getDeploymentManager().removeApp(app);
+                    getManager().removeApp(app);
                     removed = true;
                 }
             }

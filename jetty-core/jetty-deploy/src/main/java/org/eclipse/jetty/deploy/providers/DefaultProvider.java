@@ -36,7 +36,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.AppLifeCycle;
+import org.eclipse.jetty.deploy.AppProvider;
+import org.eclipse.jetty.deploy.ContextHandlerFactory;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -110,7 +112,7 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  */
 @ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
-public class DefaultProvider extends ContainerLifeCycle implements Scanner.ChangeSetListener
+public class DefaultProvider extends ContainerLifeCycle implements AppProvider, Scanner.ChangeSetListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultProvider.class);
 
@@ -118,14 +120,16 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
 
     private Map<String, DefaultApp> apps = new HashMap<>();
-    private DeploymentManager deploymentManager;
+    private AppProvider.Manager manager;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
-    private DefaultContextHandlerFactory contextHandlerFactory = new DefaultContextHandlerFactory();
+    private ContextHandlerFactory contextHandlerFactory = new DefaultContextHandlerFactory();
+    private Map<String, Attributes> environmentAttributesMap = new HashMap<>();
     private Path environmentsDir;
     private int scanInterval = 10;
     private Scanner scanner;
     private boolean useRealPaths;
     private boolean deferInitialScan = false;
+    private String defaultEnvironmentName;
 
     public DefaultProvider()
     {
@@ -135,6 +139,12 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
     public DefaultProvider(FilenameFilter filter)
     {
         filenameFilter = filter;
+    }
+
+    @Override
+    public void setManager(Manager manager)
+    {
+        this.manager = manager;
     }
 
     /**
@@ -180,12 +190,12 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         return apps.values();
     }
 
-    public DefaultContextHandlerFactory getContextHandlerFactory()
+    public ContextHandlerFactory getContextHandlerFactory()
     {
         return contextHandlerFactory;
     }
 
-    public void setContextHandlerFactory(DefaultContextHandlerFactory contextHandlerFactory)
+    public void setContextHandlerFactory(ContextHandlerFactory contextHandlerFactory)
     {
         this.contextHandlerFactory = contextHandlerFactory;
     }
@@ -203,27 +213,19 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
      */
     public String getDefaultEnvironmentName()
     {
-        return this.contextHandlerFactory.getDefaultEnvironmentName();
+        if (defaultEnvironmentName == null)
+        {
+            return Environment.getAll().stream()
+                .map(Environment::getName)
+                .max(Deployable.ENVIRONMENT_COMPARATOR)
+                .orElse(null);
+        }
+        return defaultEnvironmentName;
     }
 
     public void setDefaultEnvironmentName(String name)
     {
-        this.contextHandlerFactory.setDefaultEnvironmentName(name);
-    }
-
-    /**
-     * Get the deploymentManager.
-     *
-     * @return the deploymentManager
-     */
-    public DeploymentManager getDeploymentManager()
-    {
-        return deploymentManager;
-    }
-
-    public void setDeploymentManager(DeploymentManager deploymentManager)
-    {
-        this.deploymentManager = deploymentManager;
+        this.defaultEnvironmentName = name;
     }
 
     public Path getEnvironmentsDirectory()
@@ -389,26 +391,23 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
             }
         }
 
-        // Now we know the DefaultApp instances that are changed by the incoming
-        // Scanner changes alone.
+        // Now we know the DefaultApp instances that are changed by processing
+        // the incoming Scanner changes.
+        // Now we want to convert this list of changes to a DeployAction list
+        // that will perform the add/remove logic in a consistent way.
 
         List<DefaultApp> changedApps = changedBaseNames
             .stream()
             .map(name -> apps.get(name))
             .collect(Collectors.toList());
 
-        if (changedEnvironments.isEmpty())
-        {
-            // We have a set of changes, with no environment configuration
-            // changes present.
-            List<DeployAction> actions = buildActionList(changedApps);
-            performActions(actions);
-        }
-        else
+        if (!changedEnvironments.isEmpty())
         {
             // We have incoming environment configuration changes
             // We need to add any missing DefaultApp that have changed
-            // due to incoming environment configuration changes.
+            // due to incoming environment configuration changes,
+            // along with loading any ${jetty.base}/environments/<name>-*.properties
+            // into a layer for that Environment.
 
             for (String changedEnvName : changedEnvironments)
             {
@@ -427,14 +426,12 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
                     }
                 }
 
-                // Load any Environment properties files into Environment attributes.
+                // Replace current tracked Environment Attributes, with a new Attributes.Layer.
+                this.environmentAttributesMap.remove(changedEnvName);
                 try
                 {
-                    Properties envProps = loadEnvironmentProperties(changedEnvName);
-                    Environment environment = Environment.get(changedEnvName);
-                    envProps.stringPropertyNames().forEach(
-                        k -> environment.setAttribute(k, envProps.getProperty(k))
-                    );
+                    Attributes envAttributes = loadEnvironmentAttributes(changedEnvName);
+                    this.environmentAttributesMap.put(changedEnvName, envAttributes);
                 }
                 catch (IOException e)
                 {
@@ -442,10 +439,14 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
                         LOG.debug("Unable to load environment properties for environment [{}]", changedEnvName, e);
                 }
             }
-
-            List<DeployAction> actions = buildActionList(changedApps);
-            performActions(actions);
         }
+        else
+        {
+            Environment.getAll().forEach((env) -> environmentAttributesMap.put(env.getName(), env));
+        }
+
+        List<DeployAction> actions = buildActionList(changedApps);
+        performActions(actions);
     }
 
     @ManagedOperation(value = "Scan the monitored directories", impact = "ACTION")
@@ -503,8 +504,8 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         if (LOG.isDebugEnabled())
             LOG.debug("{} doStart()", this);
 
-        if (getDeploymentManager() == null)
-            throw new IllegalStateException("No DeploymentManager defined");
+        if (this.manager == null)
+            throw new IllegalStateException("No " + AppProvider.Manager.class.getName() + " defined");
 
         if (monitoredDirs.isEmpty())
             throw new IllegalStateException("No monitored dir specified");
@@ -556,7 +557,7 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         {
             // Setup listener to wait for Server in STARTED state, which
             // triggers the first scan of the monitored directories
-            getDeploymentManager().getServer().addEventListener(
+            manager.getServer().addEventListener(
                 new LifeCycle.Listener()
                 {
                     @Override
@@ -643,7 +644,7 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
                     case REMOVE ->
                     {
                         apps.remove(step.getName());
-                        deploymentManager.removeApp(step.getApp());
+                        manager.removeApp(step.getApp());
                     }
                     case ADD ->
                     {
@@ -654,12 +655,14 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
                         String appEnvironment = step.getApp().getEnvironmentName();
                         if (StringUtil.isBlank(appEnvironment))
                             appEnvironment = getDefaultEnvironmentName();
-                        step.getApp().setEnvironmentName(appEnvironment);
+                        step.getApp().setEnvironment(Environment.get(appEnvironment));
 
-                        // Create a new Attributes for the App, which is the
-                        // combination of Environment Attributes with App Attributes overlaying them.
-                        Environment environment = Environment.get(appEnvironment);
-                        Attributes deployAttributes = initAttributes(environment, step.getApp());
+                        // Create a new Attributes layer for the App deployment, which is the
+                        // combination of layered Environment Attributes with App Attributes overlaying them.
+                        Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
+                        Attributes.Layer deployAttributes = new Attributes.Layer(envAttributes, step.getApp().getAttributes());
+                        deployAttributes.setAttribute(Deployable.MAIN_PATH, step.getApp().getMainPath());
+                        deployAttributes.setAttribute(Deployable.OTHER_PATHS, step.getApp().getPaths().keySet());
 
                         // Ensure that Environment configuration XMLs are listed in deployAttributes
                         List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
@@ -667,11 +670,12 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
                         DefaultContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
-                        ContextHandler contextHandler = getContextHandlerFactory().newContextHandler(this, step.getApp(), deployAttributes);
+                        Server server = manager.getServer();
+                        ContextHandler contextHandler = getContextHandlerFactory().newContextHandler(server, step.getApp(), deployAttributes);
                         step.getApp().setContextHandler(contextHandler);
 
                         // Introduce the App to the DeploymentManager
-                        deploymentManager.addApp(step.getApp());
+                        manager.addApp(step.getApp(), AppLifeCycle.STARTED);
                     }
                 }
             }
@@ -704,7 +708,7 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
     {
         List<Path> rawEnvXmlPaths = deployAttributes.getAttributeNameSet()
             .stream()
-            .filter(k -> k.startsWith(Deployable.ENVIRONMENT_XML))
+            .filter(k -> k.startsWith(DefaultContextHandlerFactory.ENVIRONMENT_XML))
             .map(k -> Path.of((String)deployAttributes.getAttribute(k)))
             .toList();
 
@@ -762,20 +766,6 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         return ret;
     }
 
-    private Attributes initAttributes(Environment environment, DefaultApp app) throws IOException
-    {
-        Attributes attributes = new Attributes.Mapped();
-
-        // Grab Environment attributes first
-        copyAttributes(environment, attributes);
-
-        // Overlay the app attributes
-        copyAttributes(app.getAttributes(), attributes);
-
-        // The now merged attributes
-        return attributes;
-    }
-
     /**
      * Load all of the {@link Environment} specific {@code <env-name>[-<name>].properties} files
      * found in the directory provided.
@@ -787,21 +777,26 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
      *
      * @param env the environment name
      */
-    private Properties loadEnvironmentProperties(String env) throws IOException
+    private Attributes loadEnvironmentAttributes(String env) throws IOException
     {
-        Properties props = new Properties();
+        Attributes envAttributes = Environment.get(env);
+        if (envAttributes == null)
+        {
+            LOG.warn("Not an environment: {}", env);
+            return Attributes.NULL;
+        }
 
         Path dir = getEnvironmentsDirectory();
         if (dir == null)
         {
             // nothing to load
-            return props;
+            return envAttributes;
         }
 
         if (!Files.isDirectory(dir))
         {
             LOG.warn("Not an environments directory: {}", dir);
-            return props;
+            return envAttributes;
         }
 
         List<Path> envPropertyFiles;
@@ -824,6 +819,8 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         if (LOG.isDebugEnabled())
             LOG.debug("Environment property files {}", envPropertyFiles);
 
+        Attributes attributesLayer = envAttributes;
+
         // Load each *.properties file
         for (Path file : envPropertyFiles)
         {
@@ -831,12 +828,15 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
             {
                 Properties tmp = new Properties();
                 tmp.load(stream);
+
+                Attributes.Layer layer = new Attributes.Layer(attributesLayer);
                 //put each property into our substitution pool
-                tmp.stringPropertyNames().forEach(k -> props.put(k, tmp.getProperty(k)));
+                tmp.stringPropertyNames().forEach(k -> layer.setAttribute(k, tmp.getProperty(k)));
+                attributesLayer = layer;
             }
         }
 
-        return props;
+        return attributesLayer;
     }
 
     /**
@@ -935,11 +935,11 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
          * </p>
          *
          * @param classname the classname for this environment's context deployable.
-         * @see Deployable#CONTEXT_HANDLER_CLASS
+         * @see DefaultContextHandlerFactory#CONTEXT_HANDLER_CLASS
          */
         public void setContextHandlerClass(String classname)
         {
-            _environment.setAttribute(Deployable.CONTEXT_HANDLER_CLASS, classname);
+            _environment.setAttribute(DefaultContextHandlerFactory.CONTEXT_HANDLER_CLASS, classname);
         }
 
         /**
@@ -952,11 +952,11 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
          * </p>
          *
          * @param classname the default classname for this environment's context deployable.
-         * @see Deployable#CONTEXT_HANDLER_CLASS_DEFAULT
+         * @see DefaultContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT
          */
         public void setDefaultContextHandlerClass(String classname)
         {
-            _environment.setAttribute(Deployable.CONTEXT_HANDLER_CLASS_DEFAULT, classname);
+            _environment.setAttribute(DefaultContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT, classname);
         }
 
         /**

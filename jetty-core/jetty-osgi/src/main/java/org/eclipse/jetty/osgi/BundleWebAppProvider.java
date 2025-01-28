@@ -189,7 +189,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 app.setPathToResourceBase(staticResourcesLocation);
                 app.setContextHandler(createContextHandler(app));
                 _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);
+                getManager().addApp(app);
                 return true;
             }
 
@@ -201,7 +201,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 app.setContextHandler(createContextHandler(app));
                 app.setPathToResourceBase(base);
                 _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);
+                getManager().addApp(app);
                 return true;
             }
 
@@ -214,7 +214,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 app.setPathToResourceBase(base);
                 app.setContextHandler(createContextHandler(app));
                 _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);
+                getManager().addApp(app);
                 return true;
             }
 
@@ -239,7 +239,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         App app = _bundleMap.remove(bundle);
         if (app != null)
         {
-            getDeploymentManager().removeApp(app);
+            getManager().removeApp(app);
             return true;
         }
         return false;

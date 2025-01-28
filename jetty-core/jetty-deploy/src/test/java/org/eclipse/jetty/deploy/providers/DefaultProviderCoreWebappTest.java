@@ -28,7 +28,7 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.CoreWebAppContext;
+import org.eclipse.jetty.server.handler.CoreContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -64,9 +64,7 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
 
         DeploymentManager deploymentManager = new DeploymentManager();
         deploymentManager.setContexts(contexts);
-
-        deploymentManager.addBean(provider);
-        provider.setDeploymentManager(deploymentManager);
+        deploymentManager.addAppProvider(provider);
         server.addBean(deploymentManager);
 
         server.start();
@@ -101,7 +99,7 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
         String demoXmlStr = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure class="org.eclipse.jetty.server.handler.CoreWebAppContext">
+            <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
               <Set name="contextPath">/demo</Set>
               <Set name="handler">
                 <New class="org.example.ExampleHandler" />
@@ -113,7 +111,7 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
         DefaultProvider defaultProvider = new DefaultProvider();
         defaultProvider.addMonitoredDirectory(webapps);
         DefaultProvider.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
-        coreConfig.setContextHandlerClass(CoreWebAppContext.class.getName());
+        coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
         startServer(defaultProvider);
 

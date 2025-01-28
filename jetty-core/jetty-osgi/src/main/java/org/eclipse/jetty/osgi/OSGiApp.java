@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 public class OSGiApp implements App
 {
     private static final Logger LOG = LoggerFactory.getLogger(OSGiApp.class);
+    private static final String ENVIRONMENT = "environment";
 
     private final String _bundleName;
     private final Path _bundlePath;
@@ -132,9 +133,9 @@ public class OSGiApp implements App
         {
             String key = keys.nextElement();
             String val = headers.get(key);
-            if (Deployable.ENVIRONMENT.equalsIgnoreCase(key) || OSGiWebappConstants.JETTY_ENVIRONMENT.equalsIgnoreCase(key))
+            if (ENVIRONMENT.equalsIgnoreCase(key) || OSGiWebappConstants.JETTY_ENVIRONMENT.equalsIgnoreCase(key))
             {
-                getProperties().put(Deployable.ENVIRONMENT, val);
+                getProperties().put(ENVIRONMENT, val);
             }
             else if (Deployable.DEFAULTS_DESCRIPTOR.equalsIgnoreCase(key) || OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH.equalsIgnoreCase(key))
             {

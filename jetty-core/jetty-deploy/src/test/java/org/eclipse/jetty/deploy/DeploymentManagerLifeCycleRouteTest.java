@@ -30,24 +30,23 @@ public class DeploymentManagerLifeCycleRouteTest
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
-        depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
-        mockProvider.setDeploymentManager(depman);
+        depman.addAppProvider(mockProvider);
 
         depman.addLifeCycleBinding(pathtracker);
         depman.setContexts(new ContextHandlerCollection());
-        depman.addBean(mockProvider);
 
         // Start DepMan
         depman.start();
 
         // Trigger new App
-        mockProvider.createWebapp("foo-webapp-1");
-        App app = depman.getApp("foo-webapp-1");
+        App foo = mockProvider.createWebapp("foo-webapp-1");
+        mockProvider.getManager().addApp(foo, AppLifeCycle.UNDEPLOYED);
 
         // Request Deploy of App
-        depman.requestAppGoal(app, "deployed");
+        App app = depman.getApp("foo-webapp-1");
+        depman.requestAppGoal(app, AppLifeCycle.DEPLOYED);
 
         // Setup Expectations.
         List<String> expected = new ArrayList<String>();
@@ -63,19 +62,17 @@ public class DeploymentManagerLifeCycleRouteTest
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
-        depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
-        mockProvider.setDeploymentManager(depman);
-
+        depman.addAppProvider(mockProvider);
         depman.addLifeCycleBinding(pathtracker);
-        depman.addBean(mockProvider);
 
         // Start DepMan
         depman.start();
 
-        // Trigger new App
-        mockProvider.createWebapp("foo-webapp-1.war");
+        // Create new App
+        App app = mockProvider.createWebapp("foo-webapp-1.war");
+        mockProvider.getManager().addApp(app, AppLifeCycle.UNDEPLOYED);
 
         // Perform no goal request.
 
@@ -89,28 +86,27 @@ public class DeploymentManagerLifeCycleRouteTest
     public void testStateTransitionDeployedToUndeployed() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
-        depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
-        mockProvider.setDeploymentManager(depman);
+        depman.addAppProvider(mockProvider);
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         depman.addBean(mbContainer);
 
         depman.addLifeCycleBinding(pathtracker);
-        depman.addBean(mockProvider);
         depman.setContexts(new ContextHandlerCollection());
 
         // Start DepMan
         depman.start();
 
-        // Trigger new App
+        // Create new App
         App foo = mockProvider.createWebapp("foo-webapp-1");
-        App app = depman.getApp(foo.getName());
+        mockProvider.getManager().addApp(foo, AppLifeCycle.UNDEPLOYED);
 
         // Request Deploy of App
-        depman.requestAppGoal(app, "deployed");
+        App app = depman.getApp(foo.getName());
+        depman.requestAppGoal(app, AppLifeCycle.DEPLOYED);
 
         JmxServiceConnection jmxConnection = new JmxServiceConnection();
         jmxConnection.connect();

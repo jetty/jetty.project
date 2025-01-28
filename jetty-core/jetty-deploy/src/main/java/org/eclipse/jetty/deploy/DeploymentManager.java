@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * <img alt="deployment manager graph" src="doc-files/DeploymentManager.png">
  */
 @ManagedObject("Deployment Manager")
-public class DeploymentManager extends ContainerLifeCycle
+public class DeploymentManager extends ContainerLifeCycle implements AppProvider.Manager
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentManager.class);
 
@@ -96,27 +96,38 @@ public class DeploymentManager extends ContainerLifeCycle
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
-    private String _defaultLifeCycleGoal = AppLifeCycle.STARTED;
 
     /**
-     * Receive an app for processing.
+     * Receive an app for processing, and
      *
      * @param app the app
      */
-    public void addApp(App app)
+    @Override
+    public void addApp(App app, String nodeName)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("addApp: {}", app);
+            LOG.debug("addApp: {} -> {}", app, nodeName);
         AppEntry entry = new AppEntry();
         entry.app = app;
-        entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
+        entry.setLifeCycleNode(_lifecycle.getNodeByName(AppLifeCycle.UNDEPLOYED));
         _apps.add(entry);
 
-        if (isRunning() && _defaultLifeCycleGoal != null)
+        if (isRunning())
         {
             // Immediately attempt to go to default lifecycle state
-            this.requestAppGoal(entry, _defaultLifeCycleGoal);
+            this.requestAppGoal(entry, nodeName);
         }
+    }
+
+    public void addAppProvider(AppProvider provider)
+    {
+        provider.setManager(this);
+        addBean(provider);
+    }
+
+    public Collection<AppProvider> getAppProviders()
+    {
+        return getBeans(AppProvider.class);
     }
 
     public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
@@ -248,11 +259,6 @@ public class DeploymentManager extends ContainerLifeCycle
         return _contexts;
     }
 
-    public String getDefaultLifeCycleGoal()
-    {
-        return _defaultLifeCycleGoal;
-    }
-
     public AppLifeCycle getLifeCycle()
     {
         return _lifecycle;
@@ -357,10 +363,10 @@ public class DeploymentManager extends ContainerLifeCycle
             {
                 _lifecycle.runBindings(failed, appentry.app, this);
             }
-            catch (Throwable ignore)
+            catch (Throwable cause)
             {
                 // The runBindings failed for 'failed' node
-                LOG.trace("IGNORED", ignore);
+                LOG.trace("IGNORED", cause);
             }
 
             if (isStarting())
@@ -401,17 +407,12 @@ public class DeploymentManager extends ContainerLifeCycle
         this._contexts = contexts;
     }
 
-    public void setDefaultLifeCycleGoal(String defaultLifeCycleState)
-    {
-        this._defaultLifeCycleGoal = defaultLifeCycleState;
-    }
-
     public void undeployAll()
     {
         LOG.debug("Undeploy All");
         for (AppEntry appentry : _apps)
         {
-            requestAppGoal(appentry, "undeployed");
+            requestAppGoal(appentry, AppLifeCycle.UNDEPLOYED);
         }
     }
 

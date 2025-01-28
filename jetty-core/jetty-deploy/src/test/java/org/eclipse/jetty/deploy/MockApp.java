@@ -14,6 +14,7 @@
 package org.eclipse.jetty.deploy;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.component.Environment;
 
 public class MockApp implements App
 {
@@ -40,6 +41,12 @@ public class MockApp implements App
     public ContextHandler getContextHandler()
     {
         return contextHandler;
+    }
+
+    @Override
+    public Environment getEnvironment()
+    {
+        return null;
     }
 
     @Override

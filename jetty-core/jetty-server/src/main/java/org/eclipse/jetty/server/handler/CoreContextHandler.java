@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * A classloader isolated Core WebApp.
  *
  * <p>
- * The Base Resource represents the metadata base that defines this {@code CoreWebAppContext}.
+ * The Base Resource represents the metadata base that defines this {@code CoreContextHandler}.
  * </p>
  * <p>
  * The metadata base can be a directory on disk, or a non-traditional {@code war} file with the following contents.
@@ -59,20 +59,21 @@ import org.slf4j.LoggerFactory;
  *     unpacked into the temp directory defined by this core webapp.
  * </p>
  */
-public class CoreWebAppContext extends ContextHandler implements Deployable
+// TODO: rename CoreContextHandler
+public class CoreContextHandler extends ContextHandler implements Deployable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CoreWebAppContext.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CoreContextHandler.class);
     private static final String ORIGINAL_BASE_RESOURCE = "org.eclipse.jetty.webapp.originalBaseResource";
     private boolean _initialized = false;
     private List<Resource> _extraClasspath;
     private boolean _builtClassLoader = false;
 
-    public CoreWebAppContext()
+    public CoreContextHandler()
     {
         this("/");
     }
 
-    public CoreWebAppContext(String contextPath)
+    public CoreContextHandler(String contextPath)
     {
         super();
         setContextPath(contextPath);
@@ -92,7 +93,7 @@ public class CoreWebAppContext extends ContextHandler implements Deployable
     {
         try
         {
-            // This CoreWebAppContext is arriving via a Deployer
+            // This CoreContextHandler is arriving via a Deployer
             for (String keyName : attributes.getAttributeNameSet())
             {
                 Object value = attributes.getAttribute(keyName);

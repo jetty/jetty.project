@@ -26,10 +26,10 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.PathCollators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,14 +95,24 @@ public class DefaultApp implements App
         this.contextHandler = contextHandler;
     }
 
-    public String getEnvironmentName()
+    @Override
+    public Environment getEnvironment()
     {
-        return (String)getAttributes().getAttribute(Deployable.ENVIRONMENT);
+        return (Environment)getAttributes().getAttribute(DefaultContextHandlerFactory.ENVIRONMENT);
     }
 
-    public void setEnvironmentName(String name)
+    public String getEnvironmentName()
     {
-        getAttributes().setAttribute(Deployable.ENVIRONMENT, name);
+        Environment env = getEnvironment();
+        if (env == null)
+            return "";
+        else
+            return env.getName();
+    }
+
+    public void setEnvironment(Environment env)
+    {
+        getAttributes().setAttribute(DefaultContextHandlerFactory.ENVIRONMENT, env);
     }
 
     /**

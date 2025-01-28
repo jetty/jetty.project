@@ -16,7 +16,7 @@ package org.eclipse.jetty.osgi;
 import java.util.Objects;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -35,11 +35,11 @@ import org.slf4j.LoggerFactory;
  * Jetty that have been discovered via OSGI either as bundles or services.
  * </p>
  */
-public abstract class AbstractContextProvider extends AbstractLifeCycle
+public abstract class AbstractContextProvider extends AbstractLifeCycle implements AppProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
 
-    private DeploymentManager _deploymentManager;
+    private AppProvider.Manager _deploymentManager;
     private Server _server;
     private ContextFactory _contextFactory;
     private String _environment;
@@ -68,13 +68,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
             return null;
 
         //Create a ContextHandler suitable to deploy in OSGi
-        ContextHandler h = _contextFactory.createContextHandler(this, app);
-        return h;
-    }
-
-    public void setDeploymentManager(DeploymentManager deploymentManager)
-    {
-        _deploymentManager = deploymentManager;
+        return _contextFactory.createContextHandler(this, app);
     }
 
     public String getEnvironmentName()
@@ -82,11 +76,17 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
         return _environment;
     }
 
-    public DeploymentManager getDeploymentManager()
+    @Override
+    public void setManager(Manager manager)
+    {
+        _deploymentManager = manager;
+    }
+
+    public AppProvider.Manager getManager()
     {
         return _deploymentManager;
     }
-    
+
     /**
      * @param tldBundles Comma separated list of bundles that contain tld jars
      * that should be setup on the context instances created here.

@@ -58,13 +58,10 @@ public class DeploymentManagerTest
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
-        depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
         MockAppProvider mockProvider = new MockAppProvider();
-        mockProvider.setDeploymentManager(depman);
-
+        depman.addAppProvider(mockProvider);
         depman.addLifeCycleBinding(pathtracker);
-        depman.addBean(mockProvider);
 
         // Start DepMan
         depman.start();
@@ -72,7 +69,8 @@ public class DeploymentManagerTest
         try
         {
             // Trigger new App
-            mockProvider.createWebapp("foo-webapp-1.war");
+            App foo = mockProvider.createWebapp("foo-webapp-1.war");
+            mockProvider.getManager().addApp(foo, AppLifeCycle.UNDEPLOYED);
 
             // Test app tracking
             Collection<App> apps = depman.getApps();

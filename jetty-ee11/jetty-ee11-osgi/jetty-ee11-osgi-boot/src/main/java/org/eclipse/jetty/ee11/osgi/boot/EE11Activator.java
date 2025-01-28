@@ -167,13 +167,13 @@ public class EE11Activator implements BundleActivator
                 if (contextProvider == null)
                 {
                     contextProvider = new BundleContextProvider(ENVIRONMENT, server, new EE11ContextFactory(_myBundle));
-                    contextProvider.setDeploymentManager(deploymentManager);
+                    deploymentManager.addAppProvider(contextProvider);
                 }
 
                 if (webAppProvider == null)
                 {
                     webAppProvider = new BundleWebAppProvider(ENVIRONMENT, server, new EE11WebAppFactory(_myBundle));
-                    webAppProvider.setDeploymentManager(deploymentManager);
+                    deploymentManager.addAppProvider(webAppProvider);
                 }
 
                 //ensure the providers are configured with the extra bundles that must be scanned from the container classpath
@@ -272,7 +272,7 @@ public class EE11Activator implements BundleActivator
         throws Exception
         {
             OSGiApp osgiApp = OSGiApp.class.cast(app);
-            String jettyHome = (String)provider.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+            String jettyHome = (String)provider.getManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
             Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
 
             ContextHandler contextHandler = new ContextHandler();
@@ -281,7 +281,7 @@ public class EE11Activator implements BundleActivator
             contextHandler.setBaseResource(osgiApp.getBundleResource());
             
             // provides access to core classes
-            ClassLoader coreLoader = (ClassLoader)provider.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
+            ClassLoader coreLoader = (ClassLoader)provider.getManager().getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
             if (LOG.isDebugEnabled())
                 LOG.debug("Core classloader = {}", coreLoader.getClass());
             
@@ -308,9 +308,9 @@ public class EE11Activator implements BundleActivator
                         WebAppClassLoader.runWithHiddenClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
-                            xmlConfiguration.getIdMap().put("Server", provider.getDeploymentManager().getServer());
+                            xmlConfiguration.getIdMap().put("Server", provider.getManager().getServer());
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, osgiApp.getPath().toUri().toString());
-                            properties.put(OSGiServerConstants.JETTY_HOME, (String)provider.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
+                            properties.put(OSGiServerConstants.JETTY_HOME, (String)provider.getManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(contextHandler);
                             return null;
@@ -367,7 +367,7 @@ public class EE11Activator implements BundleActivator
             if (!(app instanceof OSGiApp osgiApp))
                 throw new IllegalArgumentException("App is not OSGi");
 
-            String jettyHome = (String)provider.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+            String jettyHome = (String)provider.getManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
             Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : ResourceFactory.of(provider.getServer()).newResource(jettyHome).getPath();
 
             WebAppContext webApp = new WebAppContext();
@@ -376,7 +376,7 @@ public class EE11Activator implements BundleActivator
             webApp.initializeDefaults(provider.getAttributes());
             
             // provides access to core classes
-            ClassLoader coreLoader = (ClassLoader)provider.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
+            ClassLoader coreLoader = (ClassLoader)provider.getManager().getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
             if (LOG.isDebugEnabled())
                 LOG.debug("Core classloader = {}", coreLoader);
             
@@ -483,9 +483,9 @@ public class EE11Activator implements BundleActivator
                         WebAppClassLoader.runWithHiddenClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
-                            xmlConfiguration.getIdMap().put("Server", provider.getDeploymentManager().getServer());
+                            xmlConfiguration.getIdMap().put("Server", provider.getManager().getServer());
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, osgiApp.getPath().toUri().toString());
-                            properties.put(OSGiServerConstants.JETTY_HOME, (String)provider.getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
+                            properties.put(OSGiServerConstants.JETTY_HOME, (String)provider.getManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(webApp);
                             return null;

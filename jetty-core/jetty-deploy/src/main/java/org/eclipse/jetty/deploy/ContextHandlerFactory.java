@@ -13,35 +13,13 @@
 
 package org.eclipse.jetty.deploy;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.component.Environment;
+import org.eclipse.jetty.util.Attributes;
 
-/**
- * An abstract App, the component that moves through the DeploymentManager.
- */
-public interface App
+public interface ContextHandlerFactory
 {
-    /**
-     * The application name.
-     *
-     * @return the application name.
-     */
-    String getName();
+    // TODO: document Attributes that are needed vs optional and provided.
 
-    /**
-     * Get the active ContextHandler for this App.
-     *
-     * @return the ContextHandler for this App.
-     */
-    ContextHandler getContextHandler();
-
-    /**
-     * The Environment this App belongs to.
-     *
-     * @return the Environment for this App, null if App has no Environment.
-     */
-    default Environment getEnvironment()
-    {
-        return null;
-    }
+    ContextHandler newContextHandler(Server server, App app, Attributes deployAttributes) throws Exception;
 }
