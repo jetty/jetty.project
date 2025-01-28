@@ -85,6 +85,11 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
         ServletContextHandler.ServletScopedContext context = servletContextRequest.getErrorContext();
         Integer errorStatus = (Integer)request.getAttribute(ERROR_STATUS);
         Throwable errorCause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
+
+        // Error page mapping can only be supported from within the ServletChannel handling.
+        // If an error that may be mapped to an error page occurs before entering ServletChannel,
+        // then the ErrorHandler#writeError(...) method should be used to delay
+        // invoking sendError until the handling is within the ServletChannel.
         boolean enteredServletChannel = servletContextRequest.getServletChannel().getCallback() != null;
         if (this instanceof ErrorPageMapper mapper && enteredServletChannel)
         {
