@@ -263,6 +263,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
             sendContent(request, content, last, callback);
     }
 
+    @Override
+    public Callback cancelSend(Throwable cause, Callback callback)
+    {
+        return stream.cancel(cause, callback);
+    }
+
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
         this.responseMetaData = response;
