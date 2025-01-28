@@ -427,6 +427,62 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
+    public void testPredefinedPoolBucketSizes()
+    {
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(1024, 65536);
+            String dump = pool.dump();
+            assertThat(dump, containsString("direct size=2\n"));
+            assertThat(dump, containsString("{capacity=1024,"));
+            assertThat(dump, containsString("{capacity=65536,"));
+        }
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(30, 24);
+            String dump = pool.dump();
+            assertThat(dump, containsString("direct size=2\n"));
+            assertThat(dump, containsString("{capacity=24,"));
+            assertThat(dump, containsString("{capacity=30,"));
+        }
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(3, 7, 100);
+            String dump = pool.dump();
+            assertThat(dump, containsString("direct size=3\n"));
+            assertThat(dump, containsString("{capacity=3,"));
+            assertThat(dump, containsString("{capacity=7,"));
+            assertThat(dump, containsString("{capacity=100,"));
+        }
+    }
+
+    @Test
+    public void testPredefinedPoolNoBucketSizes()
+    {
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(1, 100);
+            pool.setStatisticsEnabled(true);
+            pool.acquire(200, false).release();
+            pool.acquire(300, false).release();
+            pool.acquire(800, false).release();
+            pool.acquire(150, false).release();
+            String dump = pool.dump();
+            assertThat(dump, containsString("200: 2\n"));
+            assertThat(dump, containsString("300: 1\n"));
+            assertThat(dump, containsString("800: 1\n"));
+        }
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.Predefined(1, 7, 50, 100);
+            pool.setStatisticsEnabled(true);
+            pool.acquire(200, false).release();
+            pool.acquire(300, false).release();
+            pool.acquire(800, false).release();
+            pool.acquire(150, false).release();
+            String dump = pool.dump();
+            assertThat(dump, containsString("200: 2\n"));
+            assertThat(dump, containsString("300: 1\n"));
+            assertThat(dump, containsString("800: 1\n"));
+        }
+    }
+
+    @Test
     public void testEndiannessResetOnRelease()
     {
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool();

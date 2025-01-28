@@ -722,6 +722,62 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     /**
      * A variant of the {@link ArrayByteBufferPool} that
+     * uses a predefined set of buckets of buffers.
+     */
+    public static class Predefined extends ArrayByteBufferPool
+    {
+        public Predefined(int... capacities)
+        {
+            this(0L, 0L, capacities);
+        }
+
+        public Predefined(long maxHeapMemory, long maxDirectMemory, int... capacities)
+        {
+            super(sort(capacities)[0], 1, capacities[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
+                c -> indexOfClosestBelow(c, capacities), i -> capacityOfIndex(i, capacities));
+        }
+
+        private static int[] sort(int... values)
+        {
+            if (values.length == 0)
+                throw new IllegalArgumentException("At least one capacity is needed");
+            Arrays.sort(values);
+            return values;
+        }
+
+        private static int capacityOfIndex(int idx, int... capacities)
+        {
+            if (idx >= capacities.length)
+            {
+                int largestCapacity = capacities[capacities.length - 1];
+                return (idx - capacities.length + 2) * largestCapacity;
+            }
+            return capacities[idx];
+        }
+
+        private static int indexOfClosestBelow(int capacity, int... capacities)
+        {
+            int largestCapacity = capacities[capacities.length - 1];
+            if (capacity > largestCapacity)
+            {
+                int remainder = capacity % largestCapacity != 0 ? 1 : 0;
+                return capacity / largestCapacity - 1 + remainder + capacities.length - 1;
+            }
+
+            int previous = -1;
+            for (int i = 0; i < capacities.length; i++)
+            {
+                int cap = capacities[i];
+                if (cap > capacity)
+                    break;
+                previous = i;
+            }
+            return previous;
+        }
+    }
+
+    /**
+     * A variant of the {@link ArrayByteBufferPool} that
      * uses buckets of buffers that increase in size by a power of
      * 2 (e.g. 1k, 2k, 4k, 8k, etc.).
      */
