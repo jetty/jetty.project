@@ -274,7 +274,7 @@ public class DefaultApp implements App
 
     /**
      * <p>
-     * Calculate the State of the overall Unit based on the States in the Paths.
+     * Calculate the State of the overall State based on the States in the Paths.
      * </p>
      * <dl>
      * <dt>UNCHANGED</dt>
@@ -287,7 +287,7 @@ public class DefaultApp implements App
      * <dd>All Path states are in REMOVED state, or there are no Paths being tracked</dd>
      * </dl>
      *
-     * @return the state of the Unit.
+     * @return the state of the App.
      */
     private DefaultApp.State calcState()
     {

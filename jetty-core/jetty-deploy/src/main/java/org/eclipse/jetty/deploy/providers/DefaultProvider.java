@@ -271,16 +271,6 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
         this.scanInterval = scanInterval;
     }
 
-    public Comparator<DeployAction> getUnitComparator()
-    {
-        return actionComparator;
-    }
-
-    public void setUnitComparator(Comparator<DeployAction> comparator)
-    {
-        this.actionComparator = comparator;
-    }
-
     /**
      * Test if initial scan should be deferred.
      *

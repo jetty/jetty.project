@@ -127,7 +127,7 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
 
         defaultProvider.assertActionList = (actions) ->
         {
-            assertThat("changedUnits.size", actions.size(), is(1));
+            assertThat("actions.size", actions.size(), is(1));
             Iterator<DeployAction> iterator = actions.iterator();
             DeployAction action;
 

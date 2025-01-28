@@ -179,7 +179,7 @@ public class DefaultAppTest
         // Then it gets processed, which results in a state reset.
         app.resetStates();
 
-        // The resulting Unit should have no paths, and be flagged as removed.
+        // The resulting app should have no paths, and be flagged as removed.
         assertThat(app.getPaths().size(), is(0));
         assertThat(app.getState(), is(DefaultApp.State.REMOVED));
     }
