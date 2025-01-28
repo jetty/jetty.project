@@ -52,7 +52,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
         String request = """
             GET /my/dir/file/ HTTP/1.1
             Host: localhost
-                        
+            
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -69,7 +69,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
         String request = """
             GET /documentation/top.html HTTP/1.1
             Host: localhost
-                        
+            
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -86,7 +86,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
         String request = """
             GET /my/dir/file/image.png HTTP/1.1
             Host: localhost
-                        
+            
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -104,12 +104,52 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
         String request = """
             GET /my/dir/file/api/rest/foo?id=100&sort=date HTTP/1.1
             Host: localhost
-                        
+            
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
         assertEquals("http://www.mortbay.org/api/rest/foo?id=100&sort=date", response.get(HttpHeader.LOCATION));
+    }
+
+    @Test
+    public void testMatchOnlyPathLocationWithoutQuery() throws Exception
+    {
+        RedirectRegexRule rule = new RedirectRegexRule("/my/dir/file/(.*)/foo$", "http://www.mortbay.org/$1/foo");
+        rule.setMatchQuery(false);
+        rule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
+        start(rule);
+
+        String request = """
+            GET /my/dir/file/api/rest/foo?id=100&sort=date HTTP/1.1
+            Host: localhost
+            
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
+        // This configuration, with RedirectRegexRule.isAddQueries(false), will drop the input query section
+        assertEquals("http://www.mortbay.org/api/rest/foo", response.get(HttpHeader.LOCATION));
+    }
+
+    @Test
+    public void testMatchOnlyPathLocationWithQueryAddQueries() throws Exception
+    {
+        RedirectRegexRule rule = new RedirectRegexRule("/my/dir/file/(.*)/foo$", "http://www.mortbay.org/$1/foo?v=old");
+        rule.setMatchQuery(false);
+        rule.setAddQueries(true);
+        rule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
+        start(rule);
+
+        String request = """
+            GET /my/dir/file/api/rest/foo?id=100&sort=date HTTP/1.1
+            Host: localhost
+            
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
+        assertEquals("http://www.mortbay.org/api/rest/foo?id=100&sort=date&v=old", response.get(HttpHeader.LOCATION));
     }
 
     @Test
@@ -121,7 +161,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
         String request = """
             GET /%0A.evil.com HTTP/1.1
             Host: localhost
-                        
+            
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));

@@ -1032,12 +1032,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private void send(MetaData.Request ignored, MetaData.Response response, ByteBuffer content, boolean complete, Callback callback)
     {
+        org.eclipse.jetty.server.Response coreResponse = _coreResponse;
+        if (coreResponse == null)
+        {
+            callback.failed(new IOException());
+            return;
+        }
+
         if (response != null)
         {
-            _coreResponse.setStatus(response.getStatus());
-            _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
+            coreResponse.setStatus(response.getStatus());
+            coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
-        _coreResponse.write(complete, content, callback);
+        coreResponse.write(complete, content, callback);
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException

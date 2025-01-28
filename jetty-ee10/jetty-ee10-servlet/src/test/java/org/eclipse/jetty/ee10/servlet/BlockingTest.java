@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.nested;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,6 +30,7 @@ import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
@@ -38,7 +39,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -58,7 +58,7 @@ public class BlockingTest
 {
     private Server server;
     private ServerConnector connector;
-    private ContextHandler context;
+    private ServletContextHandler context;
 
     @BeforeEach
     public void setUp()
@@ -67,7 +67,8 @@ public class BlockingTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        context = new ContextHandler(server, "/ctx");
+        context = new ServletContextHandler("/ctx");
+        server.setHandler(context);
     }
 
     @AfterEach
@@ -82,21 +83,21 @@ public class BlockingTest
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch stopped = new CountDownLatch(1);
         AtomicReference<Throwable> readException = new AtomicReference<>();
-        AbstractHandler handler = new AbstractHandler()
+        AtomicReference<Thread> threadRef = new AtomicReference<>();
+        HttpServlet servlet = new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                baseRequest.setHandled(true);
                 Thread thread = new Thread(() ->
                 {
                     try
                     {
-                        int b = baseRequest.getHttpInput().read();
+                        int b = req.getInputStream().read();
                         if (b == '1')
                         {
                             started.countDown();
-                            if (baseRequest.getHttpInput().read() > Integer.MIN_VALUE)
+                            if (req.getInputStream().read() > Integer.MIN_VALUE)
                                 throw new IllegalStateException();
                         }
                     }
@@ -106,6 +107,7 @@ public class BlockingTest
                         stopped.countDown();
                     }
                 });
+                threadRef.set(thread);
                 thread.start();
 
                 try
@@ -124,12 +126,12 @@ public class BlockingTest
                     throw new ServletException(e);
                 }
 
-                response.setStatus(200);
-                response.setContentType("text/plain");
-                response.getOutputStream().print("OK\r\n");
+                resp.setStatus(200);
+                resp.setContentType("text/plain");
+                resp.getOutputStream().print("OK\r\n");
             }
         };
-        context.setHandler(handler);
+        context.addServlet(servlet, "/*");
         server.start();
 
         StringBuilder request = new StringBuilder();
@@ -153,26 +155,33 @@ public class BlockingTest
             assertThat(response.getContent(), containsString("OK"));
 
             // Async thread should have stopped
-            assertTrue(stopped.await(10, TimeUnit.SECONDS));
+            boolean await = stopped.await(10, TimeUnit.SECONDS);
+            if (!await)
+            {
+                StackTraceElement[] stackTrace = threadRef.get().getStackTrace();
+                for (StackTraceElement stackTraceElement : stackTrace)
+                {
+                    System.err.println(stackTraceElement);
+                }
+            }
+            assertTrue(await);
             assertThat(readException.get(), instanceOf(IOException.class));
         }
     }
 
     @Test
-    @Tag("flaky")
     public void testBlockingCloseWhileReading() throws Exception
     {
         AtomicReference<Thread> threadRef = new AtomicReference<>();
         AtomicReference<Throwable> threadFailure = new AtomicReference<>();
 
-        Handler handler = new AbstractHandler()
+        HttpServlet servlet = new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest req, HttpServletResponse resp)
+            protected void service(HttpServletRequest req, HttpServletResponse resp)
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     AsyncContext asyncContext = req.startAsync();
                     ServletOutputStream outputStream = resp.getOutputStream();
                     resp.setStatus(200);
@@ -240,8 +249,8 @@ public class BlockingTest
                 }
             }
         };
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setHandler(handler);
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.addServlet(servlet, "/*");
 
         server.setHandler(contextHandler);
         server.start();
@@ -275,6 +284,7 @@ public class BlockingTest
             }
             fail("handler thread should not be alive anymore");
         }
+        assertThat("handler thread should not be alive anymore", threadRef.get().isAlive(), is(false));
         assertThat("handler thread failed: " + ExceptionUtil.toString(threadFailure.get()), threadFailure.get(), nullValue());
     }
 
@@ -286,22 +296,21 @@ public class BlockingTest
         CountDownLatch stopped = new CountDownLatch(1);
         AtomicReference<Throwable> readException = new AtomicReference<>();
         AtomicReference<Thread> threadRef = new AtomicReference<>();
-        AbstractHandler handler = new AbstractHandler()
+        HttpServlet handler = new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                baseRequest.setHandled(true);
                 Thread thread = new Thread(() ->
                 {
                     try
                     {
-                        int b = baseRequest.getHttpInput().read();
+                        int b = req.getInputStream().read();
                         if (b == '1')
                         {
                             started.countDown();
                             assertTrue(completed.await(10, TimeUnit.SECONDS));
-                            if (baseRequest.getHttpInput().read() > Integer.MIN_VALUE)
+                            if (req.getInputStream().read() > Integer.MIN_VALUE)
                                 throw new IllegalStateException();
                         }
                     }
@@ -330,12 +339,12 @@ public class BlockingTest
                     throw new ServletException(e);
                 }
 
-                response.setStatus(200);
-                response.setContentType("text/plain");
-                response.getOutputStream().print("OK\r\n");
+                resp.setStatus(200);
+                resp.setContentType("text/plain");
+                resp.getOutputStream().print("OK\r\n");
             }
         };
-        context.setHandler(handler);
+        context.addServlet(handler, "/*");
         server.start();
 
         StringBuilder request = new StringBuilder();
@@ -375,27 +384,26 @@ public class BlockingTest
         CountDownLatch stopped = new CountDownLatch(1);
         AtomicReference<Thread> threadRef = new AtomicReference<>();
         AtomicReference<Throwable> readException = new AtomicReference<>();
-        AbstractHandler handler = new AbstractHandler()
+        HttpServlet servlet = new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                baseRequest.setHandled(true);
-                if (baseRequest.getDispatcherType() != DispatcherType.ERROR)
+                if (req.getDispatcherType() != DispatcherType.ERROR)
                 {
-                    AsyncContext async = request.startAsync();
+                    AsyncContext async = req.startAsync();
                     async.setTimeout(100);
 
                     Thread thread = new Thread(() ->
                     {
                         try
                         {
-                            int b = baseRequest.getHttpInput().read();
+                            int b = req.getInputStream().read();
                             if (b == '1')
                             {
                                 started.countDown();
                                 assertTrue(completed.await(10, TimeUnit.SECONDS));
-                                if (baseRequest.getHttpInput().read() > Integer.MIN_VALUE)
+                                if (req.getInputStream().read() > Integer.MIN_VALUE)
                                     throw new IllegalStateException();
                             }
                         }
@@ -426,7 +434,7 @@ public class BlockingTest
                 }
             }
         };
-        context.setHandler(handler);
+        context.addServlet(servlet, "/*");
         server.start();
 
         StringBuilder request = new StringBuilder();
@@ -464,23 +472,23 @@ public class BlockingTest
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch stopped = new CountDownLatch(1);
         AtomicReference<Throwable> readException = new AtomicReference<>();
-        AbstractHandler handler = new AbstractHandler()
+        AtomicReference<Thread> threadRef = new AtomicReference<>();
+        HttpServlet servlet = new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                baseRequest.setHandled(true);
-                if (baseRequest.getDispatcherType() != DispatcherType.ERROR)
+                if (req.getDispatcherType() != DispatcherType.ERROR)
                 {
                     Thread thread = new Thread(() ->
                     {
                         try
                         {
-                            int b = baseRequest.getHttpInput().read();
+                            int b = req.getInputStream().read();
                             if (b == '1')
                             {
                                 started.countDown();
-                                if (baseRequest.getHttpInput().read() > Integer.MIN_VALUE)
+                                if (req.getInputStream().read() > Integer.MIN_VALUE)
                                     throw new IllegalStateException();
                             }
                         }
@@ -490,6 +498,7 @@ public class BlockingTest
                             stopped.countDown();
                         }
                     });
+                    threadRef.set(thread);
                     thread.start();
 
                     try
@@ -508,11 +517,11 @@ public class BlockingTest
                         throw new ServletException(e);
                     }
 
-                    response.sendError(499);
+                    resp.sendError(499);
                 }
             }
         };
-        context.setHandler(handler);
+        context.addServlet(servlet, "/*");
         server.start();
 
         StringBuilder request = new StringBuilder();
@@ -526,7 +535,7 @@ public class BlockingTest
         int port = connector.getLocalPort();
         try (Socket socket = new Socket("localhost", port))
         {
-            socket.setSoTimeout(10000);
+            socket.setSoTimeout(5000);
             OutputStream out = socket.getOutputStream();
             out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
 
@@ -535,7 +544,16 @@ public class BlockingTest
             assertThat(response.getStatus(), is(499));
 
             // Async thread should have stopped
-            assertTrue(stopped.await(10, TimeUnit.SECONDS));
+            boolean await = stopped.await(10, TimeUnit.SECONDS);
+            if (!await)
+            {
+                StackTraceElement[] stackTrace = threadRef.get().getStackTrace();
+                for (StackTraceElement stackTraceElement : stackTrace)
+                {
+                    System.err.println(stackTraceElement.toString());
+                }
+            }
+            assertTrue(await);
             assertThat(readException.get(), instanceOf(IOException.class));
         }
     }
@@ -546,14 +564,13 @@ public class BlockingTest
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch stopped = new CountDownLatch(1);
         AtomicReference<Throwable> readException = new AtomicReference<>();
-        AbstractHandler handler = new AbstractHandler()
+        HttpServlet servlet = new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                baseRequest.setHandled(true);
-                response.setStatus(200);
-                response.setContentType("text/plain");
+                resp.setStatus(200);
+                resp.setContentType("text/plain");
                 Thread thread = new Thread(() ->
                 {
                     try
@@ -562,7 +579,7 @@ public class BlockingTest
                         Arrays.fill(data, (byte)'X');
                         data[data.length - 2] = '\r';
                         data[data.length - 1] = '\n';
-                        OutputStream out = response.getOutputStream();
+                        OutputStream out = resp.getOutputStream();
                         started.countDown();
                         while (true)
                             out.write(data);
@@ -592,7 +609,7 @@ public class BlockingTest
                 }
             }
         };
-        context.setHandler(handler);
+        context.addServlet(servlet, "/*");
         server.start();
 
         StringBuilder request = new StringBuilder();
@@ -642,6 +659,7 @@ public class BlockingTest
 
             // last line is not empty chunk, ie abnormal completion
             assertThat(last, startsWith("XXXXX"));
+            assertThat(readException.get(), notNullValue());
         }
     }
 }

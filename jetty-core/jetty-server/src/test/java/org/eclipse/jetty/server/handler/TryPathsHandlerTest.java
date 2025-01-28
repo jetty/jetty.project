@@ -199,7 +199,7 @@ public class TryPathsHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                assertThat(Request.getPathInContext(request), equalTo("/forward"));
+                assertThat(Request.getPathInContext(request), equalTo(""));
                 assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
                 response.setStatus(HttpStatus.NO_CONTENT_204);
                 callback.succeeded();

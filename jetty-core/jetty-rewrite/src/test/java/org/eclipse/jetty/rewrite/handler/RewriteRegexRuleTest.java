@@ -95,7 +95,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         String request = """
             GET $T HTTP/1.1
             Host: localhost
-                        
+            
             """.replace("$T", scenario.pathQuery);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -129,7 +129,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         String request = """
             GET $T HTTP/1.1
             Host: localhost
-                        
+            
             """.replace("$T", target);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
@@ -142,7 +142,46 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         assertThat(result, is(expectedResult));
     }
 
-    private record Scenario(String pathQuery, String regex, String replacement, String expectedPath, String expectedQuery)
+    public static Stream<Arguments> matchPathOnlyWithQueries()
+    {
+        return Stream.of(
+            Arguments.of("/foo/bar", "/test?p2=bar&p1=foo"),
+            Arguments.of("/foo/bar/", "/test?p2=bar&p1=foo"),
+            Arguments.of("/foo/bar?", "/test?p2=bar&p1=foo"),
+            Arguments.of("/foo/bar/?", "/test?p2=bar&p1=foo"),
+            Arguments.of("/foo/bar?a=b", "/test?a=b&p2=bar&p1=foo"),
+            Arguments.of("/foo/bar/?a=b", "/test?a=b&p2=bar&p1=foo")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("matchPathOnlyWithQueries")
+    public void testMatchOnlyOnPathAddQueries(String target, String expectedResult) throws Exception
+    {
+        String regex = "^/([^/]*)/([^/]*)/?.*$";
+        String replacement = "/test?p2=$2&p1=$1";
+        RewriteRegexRule rule = new RewriteRegexRule(regex, replacement);
+        rule.setMatchQuery(false);
+        rule.setAddQueries(true);
+        start(rule);
+
+        String request = """
+            GET $T HTTP/1.1
+            Host: localhost
+            
+            """.replace("$T", target);
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
+        String result = response.get("X-Path");
+        String query = response.get("X-Query");
+        if (StringUtil.isNotBlank(query))
+            result = result + '?' + query;
+
+        assertThat(result, is(expectedResult));
+    }
+
+    public record Scenario(String pathQuery, String regex, String replacement, String expectedPath, String expectedQuery)
     {
     }
 }

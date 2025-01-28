@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,7 +32,6 @@ import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
@@ -47,9 +44,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class AliasCheckerSymlinkTest
+public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
 {
     private static Server _server;
     private static ServerConnector _connector;
@@ -60,31 +56,16 @@ public class AliasCheckerSymlinkTest
 
     private static final List<Path> _createdFiles = new ArrayList<>();
 
-    private static Path getResource(String path) throws Exception
-    {
-        URL url = AliasCheckerSymlinkTest.class.getClassLoader().getResource(path);
-        assertNotNull(url);
-        return new File(url.toURI()).toPath();
-    }
-
-    private static void delete(Path path)
-    {
-        IO.delete(path.toFile());
-    }
-
-    private static void setAliasChecker(ContextHandler contextHandler, AliasCheck aliasChecker) throws Exception
+    private static void init(ContextHandler contextHandler, AliasCheck aliasChecker)
     {
         _hotSwapHandler.setHandler(contextHandler);
-        contextHandler.clearAliasChecks();
-        if (aliasChecker != null)
-            contextHandler.addAliasCheck(aliasChecker);
+        setAliasCheckers(contextHandler, aliasChecker);
     }
 
-    private static void createSymbolicLink(Path symlinkFile, Path target) throws IOException
+    public static void createSymbolicLink(Path symlinkFile, Path target) throws IOException
     {
-        delete(symlinkFile);
+        AliasCheckerTestBase.createSymbolicLink(symlinkFile, target);
         _createdFiles.add(symlinkFile);
-        Files.createSymbolicLink(symlinkFile, target).toFile().deleteOnExit();
     }
 
     @BeforeAll
@@ -284,7 +265,7 @@ public class AliasCheckerSymlinkTest
     @MethodSource("testCases")
     public void test(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
     {
-        setAliasChecker(_context1, aliasChecker);
+        init(_context1, aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), is(httpStatus));
@@ -296,7 +277,7 @@ public class AliasCheckerSymlinkTest
     @MethodSource("combinedResourceTestCases")
     public void testCombinedResource(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
     {
-        setAliasChecker(_context2, aliasChecker);
+        init(_context2, aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), is(httpStatus));
