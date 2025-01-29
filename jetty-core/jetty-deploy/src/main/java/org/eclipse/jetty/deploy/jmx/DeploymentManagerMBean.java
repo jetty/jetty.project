@@ -74,8 +74,8 @@ public class DeploymentManagerMBean extends ObjectMBean
         return Collections.unmodifiableCollection(_manager.getContextHandlers());
     }
 
-    public void requestAppGoal(String appId, String nodeName)
+    public void requestContextHandlerGoal(String id, String nodeName)
     {
-        _manager.requestContextHandlerGoal(appId, nodeName);
+        _manager.requestContextHandlerGoal(id, nodeName);
     }
 }

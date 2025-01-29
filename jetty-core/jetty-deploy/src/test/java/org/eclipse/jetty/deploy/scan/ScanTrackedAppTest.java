@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
-public class DefaultAppTest
+public class ScanTrackedAppTest
 {
     public WorkDir workDir;
 

@@ -40,7 +40,7 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
-        AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
+        ContextHandlerLifeCyclePathCollector pathtracker = new ContextHandlerLifeCyclePathCollector();
         PhonyContextProvider provider = new PhonyContextProvider(depman);
         depman.addLifeCycleBinding(pathtracker);
 
@@ -74,7 +74,7 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
     @Test
     public void testBinding()
     {
-        AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
+        ContextHandlerLifeCyclePathCollector pathtracker = new ContextHandlerLifeCyclePathCollector();
         DeploymentManager depman = new DeploymentManager();
         depman.addLifeCycleBinding(pathtracker);
 

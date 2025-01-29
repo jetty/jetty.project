@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Binds to all lifecycle nodes, and tracks the order of the lifecycle nodes for testing purposes.
  */
-public class AppLifeCyclePathCollector implements ContextHandlerLifeCycle.Binding
+public class ContextHandlerLifeCyclePathCollector implements ContextHandlerLifeCycle.Binding
 {
     List<Node> actualOrder = new ArrayList<Node>();
 

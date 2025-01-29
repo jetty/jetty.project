@@ -31,7 +31,7 @@ public class DeploymentManagerLifeCycleRouteTest
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
-        AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
+        ContextHandlerLifeCyclePathCollector pathtracker = new ContextHandlerLifeCyclePathCollector();
         PhonyContextProvider provider = new PhonyContextProvider(depman);
 
         depman.addLifeCycleBinding(pathtracker);
@@ -63,7 +63,7 @@ public class DeploymentManagerLifeCycleRouteTest
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
-        AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
+        ContextHandlerLifeCyclePathCollector pathtracker = new ContextHandlerLifeCyclePathCollector();
         PhonyContextProvider provider = new PhonyContextProvider(depman);
         depman.addLifeCycleBinding(pathtracker);
 
@@ -86,7 +86,7 @@ public class DeploymentManagerLifeCycleRouteTest
     public void testStateTransitionDeployedToUndeployed() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
-        AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
+        ContextHandlerLifeCyclePathCollector pathtracker = new ContextHandlerLifeCyclePathCollector();
         PhonyContextProvider mockProvider = new PhonyContextProvider(depman);
 
         // Setup JMX
