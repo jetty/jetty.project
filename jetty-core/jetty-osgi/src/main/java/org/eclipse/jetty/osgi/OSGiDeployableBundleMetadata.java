@@ -52,58 +52,19 @@ public class OSGiDeployableBundleMetadata
         this.contextPath = getContextPath(bundle);
     }
 
-    /**
-     * Convert a bundle installed location into a Resource, taking account of
-     * any locations that are actually packed jars, but without a ".jar" extension, eg
-     * as found on equinox. Eg file:///a/b/c/org.eclipse.osgi/89/0/bundleFile
-     *
-     * @param resourceFactory the ResourceFactory to create Resource from
-     * @return a Resource representing the bundle's installed location
-     */
-    public Resource getBundleResource(ResourceFactory resourceFactory) throws Exception
+    public static void deregisterAsOSGiService(ContextHandler contextHandler)
     {
-        String bundleOverrideLocation = bundle.getHeaders().get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
-        File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
-        File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
-        // Fix some osgiPaths.get( locations which point to an archive, but that doesn't end in .jar
-        URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(root.toURI().toURL());
+        ServiceRegistration<?> serviceRegistration = (ServiceRegistration<?>)contextHandler.getAttribute(REGISTRATION);
+        if (serviceRegistration == null)
+            return;
 
-        return resourceFactory.newResource(url);
+        serviceRegistration.unregister();
+        contextHandler.removeAttribute(REGISTRATION);
     }
 
-    public String getID()
+    public static Bundle getBundle(ContextHandler contextHandler)
     {
-        return bundle.getSymbolicName();
-    }
-
-    public Bundle getBundle()
-    {
-        return bundle;
-    }
-
-    public Properties getProperties()
-    {
-        return properties;
-    }
-
-    public Path getPath()
-    {
-        return bundlePath;
-    }
-
-    public String getContextPath()
-    {
-        return contextPath;
-    }
-
-    public String getPathToResourceBase()
-    {
-        return pathToResourceBase;
-    }
-
-    public void setPathToResourceBase(String resourceBase)
-    {
-        this.pathToResourceBase = resourceBase;
+        return (Bundle)contextHandler.getAttribute(BUNDLE);
     }
 
     /**
@@ -118,6 +79,25 @@ public class OSGiDeployableBundleMetadata
         File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
         return Paths.get(root.toURI());
+    }
+
+    public static String getBundleSymbolicName(ContextHandler contextHandler)
+    {
+        Bundle bundle = getBundle(contextHandler);
+        if (bundle == null)
+            return null;
+        return bundle.getSymbolicName();
+    }
+
+    public static String getBundleVersionAsString(ContextHandler contextHandler)
+    {
+        Bundle bundle = getBundle(contextHandler);
+        if (bundle == null)
+            return null;
+        Version version = bundle.getVersion();
+        if (version == null)
+            return null;
+        return version.toString();
     }
 
     /**
@@ -150,35 +130,6 @@ public class OSGiDeployableBundleMetadata
         return contextPath;
     }
 
-    public static void setBundle(ContextHandler contextHandler, Bundle bundle)
-    {
-        contextHandler.setAttribute(BUNDLE, bundle);
-    }
-
-    public static Bundle getBundle(ContextHandler contextHandler)
-    {
-        return (Bundle)contextHandler.getAttribute(BUNDLE);
-    }
-
-    public static String getBundleSymbolicName(ContextHandler contextHandler)
-    {
-        Bundle bundle = getBundle(contextHandler);
-        if (bundle == null)
-            return null;
-        return bundle.getSymbolicName();
-    }
-
-    public static String getBundleVersionAsString(ContextHandler contextHandler)
-    {
-        Bundle bundle = getBundle(contextHandler);
-        if (bundle == null)
-            return null;
-        Version version = bundle.getVersion();
-        if (version == null)
-            return null;
-        return version.toString();
-    }
-
     /**
      * Register the Jetty deployed context/webapp as a service, as
      * according to the OSGi Web Application Specification.
@@ -206,13 +157,62 @@ public class OSGiDeployableBundleMetadata
         }
     }
 
-    public static void deregisterAsOSGiService(ContextHandler contextHandler)
+    public static void setBundle(ContextHandler contextHandler, Bundle bundle)
     {
-        ServiceRegistration<?> serviceRegistration = (ServiceRegistration<?>)contextHandler.getAttribute(REGISTRATION);
-        if (serviceRegistration == null)
-            return;
+        contextHandler.setAttribute(BUNDLE, bundle);
+    }
 
-        serviceRegistration.unregister();
-        contextHandler.removeAttribute(REGISTRATION);
+    public Bundle getBundle()
+    {
+        return bundle;
+    }
+
+    /**
+     * Convert a bundle installed location into a Resource, taking account of
+     * any locations that are actually packed jars, but without a ".jar" extension, eg
+     * as found on equinox. Eg file:///a/b/c/org.eclipse.osgi/89/0/bundleFile
+     *
+     * @param resourceFactory the ResourceFactory to create Resource from
+     * @return a Resource representing the bundle's installed location
+     */
+    public Resource getBundleResource(ResourceFactory resourceFactory) throws Exception
+    {
+        String bundleOverrideLocation = bundle.getHeaders().get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
+        File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
+        File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
+        // Fix some osgiPaths.get( locations which point to an archive, but that doesn't end in .jar
+        URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(root.toURI().toURL());
+
+        return resourceFactory.newResource(url);
+    }
+
+    public String getContextPath()
+    {
+        return contextPath;
+    }
+
+    public String getID()
+    {
+        return bundle.getSymbolicName();
+    }
+
+    public Path getPath()
+    {
+        return bundlePath;
+    }
+
+    public String getPathToResourceBase()
+    {
+        return pathToResourceBase;
+    }
+
+    public void setPathToResourceBase(String resourceBase)
+    {
+        this.pathToResourceBase = resourceBase;
+    }
+
+    public Properties getProperties()
+    {
+        return properties;
     }
 }
