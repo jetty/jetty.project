@@ -29,6 +29,7 @@ import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
@@ -61,7 +62,7 @@ public class Util
             return null;
 
         if (path.startsWith("file:/"))
-            return new URI(path);
+            return URIUtil.correctURI(new URI(path));
 
         if (path.startsWith("/") && File.separatorChar != '/')
             return new URI("file:" + path);
