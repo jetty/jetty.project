@@ -19,6 +19,7 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -225,7 +226,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
         }
 
-        bucket.recordAcquire();
+        bucket.recordAcquire(size);
 
         // Try to acquire a pooled entry.
         Pool.Entry<RetainableByteBuffer.Pooled> entry = bucket.getPool().acquire();
@@ -504,6 +505,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private class RetainedBucket
     {
         private final LongAdder _acquires = new LongAdder();
+        private final LongAdder _totalAcquired = new LongAdder();
         private final LongAdder _pooled = new LongAdder();
         private final LongAdder _nonPooled = new LongAdder();
         private final LongAdder _evicts = new LongAdder();
@@ -524,10 +526,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             _capacity = capacity;
         }
 
-        public void recordAcquire()
+        public void recordAcquire(int size)
         {
             if (isStatisticsEnabled())
+            {
                 _acquires.increment();
+                _totalAcquired.add(size);
+            }
         }
 
         public void recordEvict()
@@ -590,6 +595,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public void clear()
         {
             _acquires.reset();
+            _totalAcquired.reset();
             _pooled.reset();
             _nonPooled.reset();
             _evicts.reset();
@@ -603,8 +609,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             int entries = 0;
             int inUse = 0;
-            for (Pool.Entry<RetainableByteBuffer.Pooled> entry : getPool().stream().toList())
+            Iterator<Pool.Entry<RetainableByteBuffer.Pooled>> iterator = getPool().stream().iterator();
+            while (iterator.hasNext())
             {
+                Pool.Entry<RetainableByteBuffer.Pooled> entry = iterator.next();
                 entries++;
                 if (entry.isInUse())
                     inUse++;
@@ -612,8 +620,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
             long pooled = _pooled.longValue();
             long acquires = _acquires.longValue();
-            float hitRatio = acquires == 0 ? Float.NaN : pooled * 100F / acquires;
-            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d(%.3f%%),non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
+            float hitRatio = acquires == 0L ? Float.NaN : pooled * 100F / acquires;
+            long avgSize = acquires == 0L ? 0L : _totalAcquired.longValue() / acquires;
+            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d(%.3f%%),avgsize=%d,non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
                 super.toString(),
                 getCapacity(),
                 inUse,
@@ -621,6 +630,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 pooled,
                 acquires,
                 hitRatio,
+                avgSize,
                 _nonPooled.longValue(),
                 _evicts.longValue(),
                 _removes.longValue(),
@@ -733,7 +743,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         public WithBucketCapacities(long maxHeapMemory, long maxDirectMemory, int... capacities)
         {
-            super(sort(capacities)[0], 1, capacities[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
+            super(-1, 1, sort(capacities)[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
                 c -> floorBucketIndexFor(c, capacities), i -> bucketCapacityForIndex(i, capacities));
         }
 
@@ -774,15 +784,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 return overLargestCapacityFactor - 1 + capacities.length - 1;
             }
 
-            int previous = -1;
+            int idx = 0;
             for (int i = 0; i < capacities.length; i++)
             {
-                int cap = capacities[i];
-                if (cap > capacity)
+                idx = i;
+                if (capacities[i] > capacity)
                     break;
-                previous = i;
             }
-            return previous;
+            return idx;
         }
     }
 

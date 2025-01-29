@@ -490,6 +490,30 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
+    public void testWithBucketCapacitiesStats()
+    {
+        ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1024, 65536);
+        pool.setStatisticsEnabled(true);
+        for (int i = 0; i < 5; i++)
+        {
+            pool.acquire(1023, false).release();
+        }
+        pool.acquire(2048, false).release();
+        pool.acquire(4096, false).release();
+        pool.acquire(4096, false).release();
+        pool.acquire(6144, false).release();
+        pool.acquire(65536 + 1, false).release();
+        pool.acquire(65536 + 2, false).release();
+        pool.acquire(65536 * 2 + 1, false).release();
+        pool.acquire(65536 * 3 - 1, false).release();
+        String dump = pool.dump();
+        assertThat(dump, containsString("{capacity=1024,in-use=0/1,pooled/acquires=4/5(80.000%),avgsize=1023,non-pooled/evicts/removes/releases=0/0/0/5}"));
+        assertThat(dump, containsString("{capacity=65536,in-use=0/1,pooled/acquires=3/4(75.000%),avgsize=4096,non-pooled/evicts/removes/releases=0/0/0/4}"));
+        assertThat(dump, containsString("131072: 2\n"));
+        assertThat(dump, containsString("196608: 2\n"));
+    }
+
+    @Test
     public void testEndiannessResetOnRelease()
     {
         ArrayByteBufferPool bufferPool = new ArrayByteBufferPool();
