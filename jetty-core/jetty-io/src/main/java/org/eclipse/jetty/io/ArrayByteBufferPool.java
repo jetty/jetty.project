@@ -19,6 +19,7 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentPool;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -224,7 +226,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
         }
 
-        bucket.recordAcquire();
+        bucket.recordAcquire(size);
 
         // Try to acquire a pooled entry.
         Pool.Entry<RetainableByteBuffer.Pooled> entry = bucket.getPool().acquire();
@@ -503,6 +505,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private class RetainedBucket
     {
         private final LongAdder _acquires = new LongAdder();
+        private final LongAdder _totalAcquired = new LongAdder();
         private final LongAdder _pooled = new LongAdder();
         private final LongAdder _nonPooled = new LongAdder();
         private final LongAdder _evicts = new LongAdder();
@@ -523,10 +526,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             _capacity = capacity;
         }
 
-        public void recordAcquire()
+        public void recordAcquire(int size)
         {
             if (isStatisticsEnabled())
+            {
                 _acquires.increment();
+                _totalAcquired.add(size);
+            }
         }
 
         public void recordEvict()
@@ -589,6 +595,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public void clear()
         {
             _acquires.reset();
+            _totalAcquired.reset();
             _pooled.reset();
             _nonPooled.reset();
             _evicts.reset();
@@ -602,8 +609,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             int entries = 0;
             int inUse = 0;
-            for (Pool.Entry<RetainableByteBuffer.Pooled> entry : getPool().stream().toList())
+            Iterator<Pool.Entry<RetainableByteBuffer.Pooled>> iterator = getPool().stream().iterator();
+            while (iterator.hasNext())
             {
+                Pool.Entry<RetainableByteBuffer.Pooled> entry = iterator.next();
                 entries++;
                 if (entry.isInUse())
                     inUse++;
@@ -611,8 +620,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
             long pooled = _pooled.longValue();
             long acquires = _acquires.longValue();
-            float hitRatio = acquires == 0 ? Float.NaN : pooled * 100F / acquires;
-            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d(%.3f%%),non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
+            float hitRatio = acquires == 0L ? Float.NaN : pooled * 100F / acquires;
+            long avgSize = acquires == 0L ? 0L : _totalAcquired.longValue() / acquires;
+            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d(%.3f%%),avgsize=%d,non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
                 super.toString(),
                 getCapacity(),
                 inUse,
@@ -620,6 +630,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 pooled,
                 acquires,
                 hitRatio,
+                avgSize,
                 _nonPooled.longValue(),
                 _evicts.longValue(),
                 _removes.longValue(),
@@ -721,35 +732,110 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     /**
      * A variant of the {@link ArrayByteBufferPool} that
+     * uses a predefined set of buckets of buffers.
+     */
+    public static class WithBucketCapacities extends ArrayByteBufferPool
+    {
+        public WithBucketCapacities(int... capacities)
+        {
+            this(0L, 0L, capacities);
+        }
+
+        public WithBucketCapacities(long maxHeapMemory, long maxDirectMemory, int... capacities)
+        {
+            super(-1, 1, sort(capacities)[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
+                c -> floorBucketIndexFor(c, capacities), i -> bucketCapacityForIndex(i, capacities));
+        }
+
+        private static int[] sort(int... values)
+        {
+            if (values.length == 0)
+                throw new IllegalArgumentException("At least one capacity is needed");
+            Arrays.sort(values);
+            return values;
+        }
+
+        private static int bucketCapacityForIndex(int idx, int... capacities)
+        {
+            if (idx >= capacities.length)
+            {
+                // An index over the capacities array's length is considered
+                // to refer to a multiple of the largest configured capacity;
+                // this logic is only meant for recordNoBucketAcquire().
+                int largestCapacity = capacities[capacities.length - 1];
+                int virtualIdx = idx - (capacities.length - 1);
+                return (virtualIdx + 1) * largestCapacity;
+            }
+            return capacities[idx];
+        }
+
+        private static int floorBucketIndexFor(int capacity, int... capacities)
+        {
+            int largestCapacity = capacities[capacities.length - 1];
+            if (capacity > largestCapacity)
+            {
+                // A capacity over the largest configured capacity returns an
+                // index that corresponds to where in the capacities array it
+                // would stand if the latter had more entries that would all
+                // be multiples of the largest configured capacity;
+                // this logic is only meant for recordNoBucketAcquire().
+                int remainder = capacity % largestCapacity != 0 ? 1 : 0;
+                int overLargestCapacityFactor = (capacity / largestCapacity) + remainder;
+                return overLargestCapacityFactor - 1 + capacities.length - 1;
+            }
+
+            int idx = 0;
+            for (int i = 0; i < capacities.length; i++)
+            {
+                idx = i;
+                if (capacities[i] > capacity)
+                    break;
+            }
+            return idx;
+        }
+    }
+
+    /**
+     * A variant of the {@link ArrayByteBufferPool} that
      * uses buckets of buffers that increase in size by a power of
      * 2 (e.g. 1k, 2k, 4k, 8k, etc.).
-     * @deprecated Usage of {@code Quadratic} is often wasteful of additional space and can increase contention on
-     * the larger buffers.
      */
-    @Deprecated(forRemoval = true, since = "12.1.0")
     public static class Quadratic extends ArrayByteBufferPool
     {
         public Quadratic()
         {
-            this(0, -1, Integer.MAX_VALUE);
+            this(-1, -1, Integer.MAX_VALUE);
         }
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize)
         {
-            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+            this(minCapacity, maxCapacity, maxBucketSize, 0L, 0L);
         }
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
             super(minCapacity,
-                -1,
-                maxCapacity,
+                computeMinCapacity(minCapacity),
+                computeMaxCapacity(maxCapacity),
                 maxBucketSize,
                 maxHeapMemory,
                 maxDirectMemory,
-                c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-                i -> 1 << i
+                // The bucket indices are the powers of 2, but those powers up to minCapacity are skipped so they must be
+                // substracted when computing the index and added when computing the capacity; so if minCapacity is 1024, any
+                // number from 0 to 1024 must return index 0, and index 0 must return capacity 1024.
+                c -> Integer.SIZE - Integer.numberOfLeadingZeros(c - 1) - MathUtils.ceilLog2(computeMinCapacity(minCapacity)),
+                i -> 1 << i + MathUtils.ceilLog2(computeMinCapacity(minCapacity))
             );
+        }
+
+        private static int computeMinCapacity(int minCapacity)
+        {
+            return minCapacity <= 0 ? 1024 : minCapacity;
+        }
+
+        private static int computeMaxCapacity(int maxCapacity)
+        {
+            return maxCapacity <= 0 ? 65536 : maxCapacity;
         }
     }
 

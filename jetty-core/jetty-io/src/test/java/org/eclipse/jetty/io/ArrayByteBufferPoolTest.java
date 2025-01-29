@@ -391,44 +391,126 @@ public class ArrayByteBufferPoolTest
     }
 
     @Test
-    @Deprecated(forRemoval = true)
-    public void testQuadraticPool()
+    public void testQuadraticPoolBucketSizes()
     {
-        ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic();
+        ArrayByteBufferPool pool1 = new ArrayByteBufferPool.Quadratic();
+        String dump1 = pool1.dump();
+        assertThat(dump1, containsString("direct size=7\n"));
+        assertThat(dump1, containsString("{capacity=1024,"));
+        assertThat(dump1, containsString("{capacity=2048,"));
+        assertThat(dump1, containsString("{capacity=4096,"));
+        assertThat(dump1, containsString("{capacity=8192,"));
+        assertThat(dump1, containsString("{capacity=16384,"));
+        assertThat(dump1, containsString("{capacity=32768,"));
+        assertThat(dump1, containsString("{capacity=65536,"));
 
-        RetainableByteBuffer retain5 = pool.acquire(5, false);
-        retain5.release();
-        RetainableByteBuffer retain6 = pool.acquire(6, false);
-        assertThat(retain6, not(sameInstance(retain5)));
-        assertThat(retain6.getByteBuffer(), sameInstance(retain5.getByteBuffer()));
-        retain6.release();
-        RetainableByteBuffer retain9 = pool.acquire(9, false);
-        assertThat(retain9, not(sameInstance(retain5)));
-        retain9.release();
+        ArrayByteBufferPool pool2 = new ArrayByteBufferPool.Quadratic(100, 800, Integer.MAX_VALUE);
+        String dump2 = pool2.dump();
+        assertThat(dump2, containsString("direct size=4\n"));
+        assertThat(dump2, containsString("{capacity=128,"));
+        assertThat(dump2, containsString("{capacity=256,"));
+        assertThat(dump2, containsString("{capacity=512,"));
+        assertThat(dump2, containsString("{capacity=800,"));
 
-        assertThat(pool.acquire(1, false).capacity(), is(1));
-        assertThat(pool.acquire(2, false).capacity(), is(2));
-        RetainableByteBuffer b3 = pool.acquire(3, false);
-        assertThat(b3.capacity(), is(4));
-        RetainableByteBuffer b4 = pool.acquire(4, false);
-        assertThat(b4.capacity(), is(4));
+        ArrayByteBufferPool pool3 = new ArrayByteBufferPool.Quadratic(1, 200, Integer.MAX_VALUE);
+        String dump3 = pool3.dump();
+        assertThat(dump3, containsString("direct size=9\n"));
+        assertThat(dump3, containsString("{capacity=1,"));
+        assertThat(dump3, containsString("{capacity=2,"));
+        assertThat(dump3, containsString("{capacity=4,"));
+        assertThat(dump3, containsString("{capacity=8,"));
+        assertThat(dump3, containsString("{capacity=16,"));
+        assertThat(dump3, containsString("{capacity=32,"));
+        assertThat(dump3, containsString("{capacity=64,"));
+        assertThat(dump3, containsString("{capacity=128,"));
+        assertThat(dump3, containsString("{capacity=200,"));
+    }
 
-        int capacity = 4;
-        while (true)
+    @Test
+    public void testWithBucketCapacitiesBucketSizes()
+    {
         {
-            RetainableByteBuffer b = pool.acquire(capacity - 1, false);
-            assertThat(b.capacity(), Matchers.is(capacity));
-            b = pool.acquire(capacity, false);
-            assertThat(b.capacity(), Matchers.is(capacity));
-
-            if (capacity >= pool.getMaxCapacity())
-                break;
-
-            b = pool.acquire(capacity + 1, false);
-            assertThat(b.capacity(), Matchers.is(capacity * 2));
-
-            capacity = capacity * 2;
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1024, 65536);
+            String dump = pool.dump();
+            assertThat(dump, containsString("direct size=2\n"));
+            assertThat(dump, containsString("{capacity=1024,"));
+            assertThat(dump, containsString("{capacity=65536,"));
         }
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(30, 24);
+            String dump = pool.dump();
+            assertThat(dump, containsString("direct size=2\n"));
+            assertThat(dump, containsString("{capacity=24,"));
+            assertThat(dump, containsString("{capacity=30,"));
+        }
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(3, 7, 100);
+            String dump = pool.dump();
+            assertThat(dump, containsString("direct size=3\n"));
+            assertThat(dump, containsString("{capacity=3,"));
+            assertThat(dump, containsString("{capacity=7,"));
+            assertThat(dump, containsString("{capacity=100,"));
+        }
+    }
+
+    @Test
+    public void testWithBucketCapacitiesNoBucketSizes()
+    {
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1, 100);
+            pool.setStatisticsEnabled(true);
+            pool.acquire(200, false).release();
+            pool.acquire(300, false).release();
+            pool.acquire(800, false).release();
+            pool.acquire(150, false).release();
+            String dump = pool.dump();
+            assertThat(dump, containsString("200: 2\n"));
+            assertThat(dump, containsString("300: 1\n"));
+            assertThat(dump, containsString("800: 1\n"));
+        }
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1, 7, 50, 100);
+            pool.setStatisticsEnabled(true);
+            pool.acquire(200, false).release();
+            pool.acquire(300, false).release();
+            pool.acquire(800, false).release();
+            pool.acquire(150, false).release();
+            String dump = pool.dump();
+            assertThat(dump, containsString("200: 2\n"));
+            assertThat(dump, containsString("300: 1\n"));
+            assertThat(dump, containsString("800: 1\n"));
+        }
+        {
+            ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(128, 512, 2048);
+            pool.setStatisticsEnabled(true);
+            pool.acquire(8192, false).release();
+            String dump = pool.dump();
+            assertThat(dump, containsString("8192: 1\n"));
+        }
+    }
+
+    @Test
+    public void testWithBucketCapacitiesStats()
+    {
+        ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1024, 65536);
+        pool.setStatisticsEnabled(true);
+        for (int i = 0; i < 5; i++)
+        {
+            pool.acquire(1023, false).release();
+        }
+        pool.acquire(2048, false).release();
+        pool.acquire(4096, false).release();
+        pool.acquire(4096, false).release();
+        pool.acquire(6144, false).release();
+        pool.acquire(65536 + 1, false).release();
+        pool.acquire(65536 + 2, false).release();
+        pool.acquire(65536 * 2 + 1, false).release();
+        pool.acquire(65536 * 3 - 1, false).release();
+        String dump = pool.dump();
+        assertThat(dump, containsString("{capacity=1024,in-use=0/1,pooled/acquires=4/5(80.000%),avgsize=1023,non-pooled/evicts/removes/releases=0/0/0/5}"));
+        assertThat(dump, containsString("{capacity=65536,in-use=0/1,pooled/acquires=3/4(75.000%),avgsize=4096,non-pooled/evicts/removes/releases=0/0/0/4}"));
+        assertThat(dump, containsString("131072: 2\n"));
+        assertThat(dump, containsString("196608: 2\n"));
     }
 
     @Test
