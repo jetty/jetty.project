@@ -21,9 +21,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.MemoryUtils;
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,7 @@ public class ThreadIdPool<E> implements Dumpable
     {
         if (capacity >= 0)
             return capacity;
-        return 2 * TypeUtil.ceilToNextPowerOfTwo(ProcessorUtils.availableProcessors());
+        return 2 * MathUtils.ceilToNextPowerOfTwo(ProcessorUtils.availableProcessors());
     }
 
     private static int toSlot(int index)

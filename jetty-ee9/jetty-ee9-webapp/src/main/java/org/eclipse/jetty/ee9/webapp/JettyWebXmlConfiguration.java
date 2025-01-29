@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 import org.eclipse.jetty.util.resource.Resource;
@@ -131,7 +132,15 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     {
         jettyConfig.setJettyStandardIdsAndProperties(context.getServer(), null);
         Map<String, String> props = jettyConfig.getProperties();
-        props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(webInf.getURI().toString()));
+        URI uri = webInf.getURI();
+        if (uri == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to obtain unique URI for location of WEB-INF from {}", webInf.toString());
+            return;
+        }
+
+        props.put(PROPERTY_WEB_INF_URI, XmlConfiguration.normalizeURI(uri.toString()));
         props.put(PROPERTY_WEB_INF, webInf.toString());
     }
 }

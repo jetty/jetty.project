@@ -31,7 +31,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.22.0";
+    String EXPECTED_QUICHE_VERSION = "0.23.2";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
@@ -84,7 +84,7 @@ public interface LibQuiche extends Library
     int quiche_config_load_priv_key_from_pem_file(quiche_config config, String path);
 
     // Configures whether to verify the peer's certificate.
-    void quiche_config_verify_peer(quiche_config config, boolean v);
+    void quiche_config_verify_peer(quiche_config config, bool v);
 
     // Specifies a file where trusted CA certificates are stored for the purposes of certificate verification.
     int quiche_config_load_verify_locations_from_file(quiche_config config, String path);
@@ -123,7 +123,7 @@ public interface LibQuiche extends Library
     void quiche_config_set_max_ack_delay(quiche_config config, uint64_t v);
 
     // Sets the `disable_active_migration` transport parameter.
-    void quiche_config_set_disable_active_migration(quiche_config config, boolean v);
+    void quiche_config_set_disable_active_migration(quiche_config config, bool v);
 
     // Sets the maximum connection window.
     void quiche_config_set_max_connection_window(quiche_config config, uint64_t v);
@@ -187,7 +187,7 @@ public interface LibQuiche extends Library
         public uint64_t peer_max_ack_delay;
 
         // Whether active migration is disabled.
-        public boolean peer_disable_active_migration;
+        public bool peer_disable_active_migration;
 
         // The active connection ID limit.
         public uint64_t peer_active_conn_id_limit;
@@ -245,8 +245,8 @@ public interface LibQuiche extends Library
     @Structure.FieldOrder({
         "local_addr", "local_addr_len", "peer_addr", "peer_addr_len",
         "validation_state", "active", "recv", "sent", "lost", "retrans",
-        "rtt", "cwnd", "sent_bytes", "recv_bytes", "lost_bytes",
-        "stream_retrans_bytes", "pmtu", "delivery_rate"
+        "rtt", "min_rtt", "rttvar", "cwnd", "sent_bytes", "recv_bytes",
+        "lost_bytes", "stream_retrans_bytes", "pmtu", "delivery_rate"
     })
     class quiche_path_stats extends Structure
     {
@@ -262,7 +262,7 @@ public interface LibQuiche extends Library
         public ssize_t validation_state;
 
         // Whether this path is active.
-        public boolean active;
+        public bool active;
 
         // The number of QUIC packets received on this path.
         public size_t recv;
@@ -278,6 +278,12 @@ public interface LibQuiche extends Library
 
         // The estimated round-trip time of the path (in nanoseconds).
         public uint64_t rtt;
+
+        // The minimum round-trip time observed (in nanoseconds).
+        public uint64_t min_rtt;
+
+        // The estimated round-trip time variation (in nanoseconds).
+        public uint64_t rttvar;
 
         // The size of the path's congestion window in bytes.
         public size_t cwnd;
@@ -351,10 +357,10 @@ public interface LibQuiche extends Library
                            byte[] token, size_t_pointer token_len);
 
     // Returns true if the given protocol version is supported.
-    boolean quiche_version_is_supported(uint32_t version);
+    bool quiche_version_is_supported(uint32_t version);
 
     // Enables qlog to the specified file path. Returns true on success.
-    boolean quiche_conn_set_qlog_path(quiche_conn conn, String path,
+    bool quiche_conn_set_qlog_path(quiche_conn conn, String path,
                                       String log_title, String log_desc);
 
     // Writes a version negotiation packet.
@@ -392,10 +398,10 @@ public interface LibQuiche extends Library
 
     // Returns the peer's transport parameters in |out|. Returns false if we have
     // not yet processed the peer's transport parameters.
-    boolean quiche_conn_peer_transport_params(quiche_conn conn, quiche_transport_params out);
+    bool quiche_conn_peer_transport_params(quiche_conn conn, quiche_transport_params out);
 
     // Returns whether or not this is a server-side connection.
-    boolean quiche_conn_is_server(quiche_conn conn);
+    bool quiche_conn_is_server(quiche_conn conn);
 
     // Schedule an ack-eliciting packet on the active path.
     ssize_t quiche_conn_send_ack_eliciting(quiche_conn conn);
@@ -445,27 +451,27 @@ public interface LibQuiche extends Library
     void quiche_conn_application_proto(quiche_conn conn, char_pointer out, size_t_pointer out_len);
 
     // Returns true if the connection handshake is complete.
-    boolean quiche_conn_is_established(quiche_conn conn);
+    bool quiche_conn_is_established(quiche_conn conn);
 
     // Returns true if the connection has a pending handshake that has progressed
     // enough to send or receive early data.
-    boolean quiche_conn_is_in_early_data(quiche_conn conn);
+    bool quiche_conn_is_in_early_data(quiche_conn conn);
 
     // Returns true if the connection is draining.
-    boolean quiche_conn_is_draining(quiche_conn conn);
+    bool quiche_conn_is_draining(quiche_conn conn);
 
     // Returns true if the connection is closed.
-    boolean quiche_conn_is_closed(quiche_conn conn);
+    bool quiche_conn_is_closed(quiche_conn conn);
 
     // Returns true if the connection was closed due to the idle timeout.
-    boolean quiche_conn_is_timed_out(quiche_conn conn);
+    bool quiche_conn_is_timed_out(quiche_conn conn);
 
     // Returns the peer's leaf certificate (if any) as a DER-encoded buffer.
     void quiche_conn_peer_cert(quiche_conn conn, char_pointer out, size_t_pointer out_len);
 
     // Returns true if a connection error was received, and updates the provided
     // parameters accordingly.
-    boolean quiche_conn_peer_error(quiche_conn conn,
+    bool quiche_conn_peer_error(quiche_conn conn,
                                    bool_pointer is_app,
                                    uint64_t_pointer error_code,
                                    char_pointer reason,
@@ -473,14 +479,14 @@ public interface LibQuiche extends Library
 
     // Returns true if a connection error was queued or sent, and updates the provided
     // parameters accordingly.
-    boolean quiche_conn_local_error(quiche_conn conn,
+    bool quiche_conn_local_error(quiche_conn conn,
                                     bool_pointer is_app,
                                     uint64_t_pointer error_code,
                                     char_pointer reason,
                                     size_t_pointer reason_len);
 
     // Closes the connection with the given error and reason.
-    int quiche_conn_close(quiche_conn conn, boolean app, uint64_t err,
+    int quiche_conn_close(quiche_conn conn, bool app, uint64_t err,
                           String reason, size_t reason_len);
 
     @Structure.FieldOrder({"dummy"})
@@ -498,7 +504,7 @@ public interface LibQuiche extends Library
 
     // Sets the priority for a stream.
     int quiche_conn_stream_priority(quiche_conn conn, uint64_t stream_id,
-                                    uint8_t urgency, boolean incremental);
+                                    uint8_t urgency, bool incremental);
 
     // Shuts down reading or writing from/to the specified stream.
     int quiche_conn_stream_shutdown(quiche_conn conn, uint64_t stream_id,
@@ -508,7 +514,7 @@ public interface LibQuiche extends Library
     ssize_t quiche_conn_stream_capacity(quiche_conn conn, uint64_t stream_id);
 
     // Returns true if the stream has data that can be read.
-    boolean quiche_conn_stream_readable(quiche_conn conn, uint64_t stream_id);
+    bool quiche_conn_stream_readable(quiche_conn conn, uint64_t stream_id);
 
     // Returns the next stream that has data to read, or -1 if no such stream is
     // available.
@@ -524,7 +530,7 @@ public interface LibQuiche extends Library
     int64_t quiche_conn_stream_writable_next(quiche_conn conn);
 
     // Returns true if all the data has been read from the specified stream.
-    boolean quiche_conn_stream_finished(quiche_conn conn, uint64_t stream_id);
+    bool quiche_conn_stream_finished(quiche_conn conn, uint64_t stream_id);
 
     // Returns an iterator over streams that have outstanding data to read.
     quiche_stream_iter quiche_conn_readable(quiche_conn conn);
@@ -534,7 +540,7 @@ public interface LibQuiche extends Library
 
     // Fetches the next stream from the given iterator. Returns false if there are
     // no more elements in the iterator.
-    boolean quiche_stream_iter_next(quiche_stream_iter iter, uint64_t_pointer stream_id);
+    bool quiche_stream_iter_next(quiche_stream_iter iter, uint64_t_pointer stream_id);
 
     // Frees the given stream iterator object.
     void quiche_stream_iter_free(quiche_stream_iter iter);
@@ -550,7 +556,7 @@ public interface LibQuiche extends Library
     // out_error_code is only set when STREAM_STOPPED or STREAM_RESET are returned.
     // Set to the reported error code associated with STOP_SENDING or STREAM_RESET.
     ssize_t quiche_conn_stream_send(quiche_conn conn, uint64_t stream_id,
-                                    ByteBuffer buf, size_t buf_len, boolean fin,
+                                    ByteBuffer buf, size_t buf_len, bool fin,
                                     uint64_t_pointer out_error_code);
 
     // Frees the connection object.

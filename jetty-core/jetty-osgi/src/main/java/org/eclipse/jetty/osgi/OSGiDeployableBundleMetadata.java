@@ -24,6 +24,7 @@ import java.util.Properties;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.osgi.framework.Bundle;
@@ -181,7 +182,7 @@ public class OSGiDeployableBundleMetadata
         File bundleLocation = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         File root = (bundleOverrideLocation == null ? bundleLocation : new File(bundleOverrideLocation));
         // Fix some osgiPaths.get( locations which point to an archive, but that doesn't end in .jar
-        URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(root.toURI().toURL());
+        URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(URIUtil.correctURI(root.toURI()).toURL());
 
         return resourceFactory.newResource(url);
     }
