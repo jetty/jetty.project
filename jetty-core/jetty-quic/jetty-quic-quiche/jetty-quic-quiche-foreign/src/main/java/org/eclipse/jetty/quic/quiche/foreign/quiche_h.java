@@ -30,7 +30,7 @@ import static org.eclipse.jetty.quic.quiche.foreign.NativeHelper.C_POINTER;
 
 public class quiche_h
 {
-    private static final String EXPECTED_QUICHE_VERSION = "0.22.0";
+    private static final String EXPECTED_QUICHE_VERSION = "0.23.2";
     private static final Logger LOG = LoggerFactory.getLogger(quiche_h.class);
 
     private static class LoggingCallback
@@ -1092,7 +1092,7 @@ public class quiche_h
     {
         try
         {
-            DowncallHandles.quiche_config_verify_peer.invokeExact(config, v);
+            DowncallHandles.quiche_config_verify_peer.invokeExact(config, (byte)(v ? 1 : 0));
         }
         catch (Throwable x)
         {
@@ -1104,7 +1104,7 @@ public class quiche_h
     {
         try
         {
-            DowncallHandles.quiche_config_grease.invokeExact(config, v);
+            DowncallHandles.quiche_config_grease.invokeExact(config, (byte)(v ? 1 : 0));
         }
         catch (Throwable x)
         {
@@ -1284,7 +1284,7 @@ public class quiche_h
     {
         try
         {
-            DowncallHandles.quiche_config_set_disable_active_migration.invokeExact(config, v);
+            DowncallHandles.quiche_config_set_disable_active_migration.invokeExact(config, (byte)(v ? 1 : 0));
         }
         catch (Throwable x)
         {
@@ -1332,7 +1332,7 @@ public class quiche_h
     {
         try
         {
-            DowncallHandles.quiche_config_enable_hystart.invokeExact(config, v);
+            DowncallHandles.quiche_config_enable_hystart.invokeExact(config, (byte)(v ? 1 : 0));
         }
         catch (Throwable x)
         {
@@ -1344,7 +1344,7 @@ public class quiche_h
     {
         try
         {
-            DowncallHandles.quiche_config_enable_pacing.invokeExact(config, v);
+            DowncallHandles.quiche_config_enable_pacing.invokeExact(config, (byte)(v ? 1 : 0));
         }
         catch (Throwable x)
         {
@@ -1368,7 +1368,7 @@ public class quiche_h
     {
         try
         {
-            DowncallHandles.quiche_config_enable_dgram.invokeExact(config, enabled, recv_queue_len, send_queue_len);
+            DowncallHandles.quiche_config_enable_dgram.invokeExact(config, (byte)(enabled ? 1 : 0), recv_queue_len, send_queue_len);
         }
         catch (Throwable x)
         {
@@ -1428,7 +1428,7 @@ public class quiche_h
     {
         try
         {
-            DowncallHandles.quiche_config_set_disable_dcid_reuse.invokeExact(config, v);
+            DowncallHandles.quiche_config_set_disable_dcid_reuse.invokeExact(config, (byte)(v ? 1 : 0));
         }
         catch (Throwable x)
         {
@@ -1524,7 +1524,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_version_is_supported.invokeExact(version);
+            return (byte)DowncallHandles.quiche_version_is_supported.invokeExact(version) != 0;
         }
         catch (Throwable x)
         {
@@ -1536,7 +1536,7 @@ public class quiche_h
     {
         try
         {
-            return (MemorySegment)DowncallHandles.quiche_conn_new_with_tls.invokeExact(scid, scid_len, odcid, odcid_len, local, local_len, peer, peer_len, config, ssl, is_server);
+            return (MemorySegment)DowncallHandles.quiche_conn_new_with_tls.invokeExact(scid, scid_len, odcid, odcid_len, local, local_len, peer, peer_len, config, ssl, (byte)(is_server ? 1 : 0));
         }
         catch (Throwable x)
         {
@@ -1548,7 +1548,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_set_keylog_path.invokeExact(conn, path);
+            return (byte)DowncallHandles.quiche_conn_set_keylog_path.invokeExact(conn, path) != 0;
         }
         catch (Throwable x)
         {
@@ -1572,7 +1572,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_set_qlog_path.invokeExact(conn, path, log_title, log_desc);
+            return (byte)DowncallHandles.quiche_conn_set_qlog_path.invokeExact(conn, path, log_title, log_desc) != 0;
         }
         catch (Throwable x)
         {
@@ -1680,7 +1680,7 @@ public class quiche_h
     {
         try
         {
-            return (long)DowncallHandles.quiche_conn_stream_send.invokeExact(conn, stream_id, buf, buf_len, fin, out_error_code);
+            return (long)DowncallHandles.quiche_conn_stream_send.invokeExact(conn, stream_id, buf, buf_len, (byte)(fin ? 1 : 0), out_error_code);
         }
         catch (Throwable x)
         {
@@ -1692,7 +1692,7 @@ public class quiche_h
     {
         try
         {
-            return (int)DowncallHandles.quiche_conn_stream_priority.invokeExact(conn, stream_id, urgency, incremental);
+            return (int)DowncallHandles.quiche_conn_stream_priority.invokeExact(conn, stream_id, urgency, (byte)(incremental ? 1 : 0));
         }
         catch (Throwable x)
         {
@@ -1734,7 +1734,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_stream_readable.invokeExact(conn, stream_id);
+            return (byte)DowncallHandles.quiche_conn_stream_readable.invokeExact(conn, stream_id) != 0;
         }
         catch (Throwable x)
         {
@@ -1782,7 +1782,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_stream_finished.invokeExact(conn, stream_id);
+            return (byte)DowncallHandles.quiche_conn_stream_finished.invokeExact(conn, stream_id) != 0;
         }
         catch (Throwable x)
         {
@@ -1866,7 +1866,7 @@ public class quiche_h
     {
         try
         {
-            return (int)DowncallHandles.quiche_conn_close.invokeExact(conn, app, err, reason, reason_len);
+            return (int)DowncallHandles.quiche_conn_close.invokeExact(conn, (byte)(app ? 1 : 0), err, reason, reason_len);
         }
         catch (Throwable x)
         {
@@ -1914,7 +1914,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_connection_id_iter_next.invokeExact(iter, out, out_len);
+            return (byte)DowncallHandles.quiche_connection_id_iter_next.invokeExact(iter, out, out_len) != 0;
         }
         catch (Throwable x)
         {
@@ -1986,7 +1986,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_is_established.invokeExact(conn);
+            return (byte)DowncallHandles.quiche_conn_is_established.invokeExact(conn) != 0;
         }
         catch (Throwable x)
         {
@@ -1998,7 +1998,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_is_resumed.invokeExact(conn);
+            return (byte)DowncallHandles.quiche_conn_is_resumed.invokeExact(conn) != 0;
         }
         catch (Throwable x)
         {
@@ -2010,7 +2010,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_is_in_early_data.invokeExact(conn);
+            return (byte)DowncallHandles.quiche_conn_is_in_early_data.invokeExact(conn) != 0;
         }
         catch (Throwable x)
         {
@@ -2022,7 +2022,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_is_readable.invokeExact(conn);
+            return (byte)DowncallHandles.quiche_conn_is_readable.invokeExact(conn) != 0;
         }
         catch (Throwable x)
         {
@@ -2034,7 +2034,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_is_draining.invokeExact(conn);
+            return (byte)DowncallHandles.quiche_conn_is_draining.invokeExact(conn) != 0;
         }
         catch (Throwable x)
         {
@@ -2070,7 +2070,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_is_closed.invokeExact(conn);
+            return (byte)DowncallHandles.quiche_conn_is_closed.invokeExact(conn) != 0;
         }
         catch (Throwable x)
         {
@@ -2082,7 +2082,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_is_timed_out.invokeExact(conn);
+            return (byte)DowncallHandles.quiche_conn_is_timed_out.invokeExact(conn) != 0;
         }
         catch (Throwable x)
         {
@@ -2094,7 +2094,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_peer_error.invokeExact(conn, is_app, error_code, reason, reason_len);
+            return (byte)DowncallHandles.quiche_conn_peer_error.invokeExact(conn, is_app, error_code, reason, reason_len) != 0;
         }
         catch (Throwable x)
         {
@@ -2106,7 +2106,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_local_error.invokeExact(conn, is_app, error_code, reason, reason_len);
+            return (byte)DowncallHandles.quiche_conn_local_error.invokeExact(conn, is_app, error_code, reason, reason_len) != 0;
         }
         catch (Throwable x)
         {
@@ -2118,7 +2118,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_stream_iter_next.invokeExact(iter, stream_id);
+            return (byte)DowncallHandles.quiche_stream_iter_next.invokeExact(iter, stream_id) != 0;
         }
         catch (Throwable x)
         {
@@ -2154,7 +2154,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_peer_transport_params.invokeExact(conn, out);
+            return (byte)DowncallHandles.quiche_conn_peer_transport_params.invokeExact(conn, out) != 0;
         }
         catch (Throwable x)
         {
@@ -2178,7 +2178,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_is_server.invokeExact(conn);
+            return (byte)DowncallHandles.quiche_conn_is_server.invokeExact(conn) != 0;
         }
         catch (Throwable x)
         {
@@ -2214,7 +2214,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_conn_retired_scid_next.invokeExact(conn, out, out_len);
+            return (byte)DowncallHandles.quiche_conn_retired_scid_next.invokeExact(conn, out, out_len) != 0;
         }
         catch (Throwable x)
         {
@@ -2274,7 +2274,7 @@ public class quiche_h
     {
         try
         {
-            return (int)DowncallHandles.quiche_conn_new_scid.invokeExact(conn, scid, scid_len, reset_token, retire_if_needed, scid_seq);
+            return (int)DowncallHandles.quiche_conn_new_scid.invokeExact(conn, scid, scid_len, reset_token, (byte)(retire_if_needed ? 1 : 0), scid_seq);
         }
         catch (Throwable x)
         {
@@ -2454,7 +2454,7 @@ public class quiche_h
     {
         try
         {
-            return (boolean)DowncallHandles.quiche_socket_addr_iter_next.invokeExact(iter, peer, peer_len);
+            return (byte)DowncallHandles.quiche_socket_addr_iter_next.invokeExact(iter, peer, peer_len) != 0;
         }
         catch (Throwable x)
         {
