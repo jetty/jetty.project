@@ -18,9 +18,9 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.App;
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerManagement;
 import org.eclipse.jetty.osgi.util.Util;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -43,7 +43,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.
      */
-    private Map<Bundle, App> _bundleMap = new HashMap<>();
+    private Map<Bundle, OSGiApp> _bundleMap = new HashMap<>();
 
     private ServiceRegistration _serviceRegForBundles;
 
@@ -94,9 +94,9 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         }
     }
 
-    public BundleWebAppProvider(String environment, Server server, ContextFactory contextFactory)
+    public BundleWebAppProvider(ContextHandlerManagement contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
-        super(environment, server, contextFactory);
+        super(contextHandlerManagement, environment, contextFactory);
     }
 
     @Override
@@ -189,7 +189,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 app.setPathToResourceBase(staticResourcesLocation);
                 app.setContextHandler(createContextHandler(app));
                 _bundleMap.put(bundle, app);
-                getManager().addApp(app);
+                getContextHandlerManagement().addContextHandler(app.getContextHandler(), ContextHandlerLifeCycle.STARTED);
                 return true;
             }
 
@@ -201,7 +201,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 app.setContextHandler(createContextHandler(app));
                 app.setPathToResourceBase(base);
                 _bundleMap.put(bundle, app);
-                getManager().addApp(app);
+                getContextHandlerManagement().addContextHandler(app.getContextHandler(), ContextHandlerLifeCycle.STARTED);
                 return true;
             }
 
@@ -214,7 +214,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 app.setPathToResourceBase(base);
                 app.setContextHandler(createContextHandler(app));
                 _bundleMap.put(bundle, app);
-                getManager().addApp(app);
+                getContextHandlerManagement().addContextHandler(app.getContextHandler(), ContextHandlerLifeCycle.STARTED);
                 return true;
             }
 
@@ -236,10 +236,10 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
     @Override
     public boolean bundleRemoved(Bundle bundle) throws Exception
     {
-        App app = _bundleMap.remove(bundle);
+        OSGiApp app = _bundleMap.remove(bundle);
         if (app != null)
         {
-            getManager().removeApp(app);
+            getContextHandlerManagement().removeContextHandler(app.getContextHandler(), ContextHandlerLifeCycle.UNDEPLOYED);
             return true;
         }
         return false;

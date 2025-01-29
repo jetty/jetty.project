@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,8 +23,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.ContextHandlerFactory;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -38,7 +36,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultContextHandlerFactory implements ContextHandlerFactory
+public class DefaultContextHandlerFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultContextHandlerFactory.class);
     public static final String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
@@ -72,14 +70,21 @@ public class DefaultContextHandlerFactory implements ContextHandlerFactory
         attributes.setAttribute(ENV_XML_PATHS, paths);
     }
 
-    @Override
-    public ContextHandler newContextHandler(Server server, App app, Attributes deployAttributes) throws Exception
+    /**
+     * TODO: DOCUMENT THIS
+     *
+     * @param server the server reference (used by XML configurations)
+     * @param app the tracked app
+     * @param deployAttributes the attributes to use for creation of this ContextHandler
+     * @return the ContextHandler
+     * @throws Exception if unable to create the ContextHandler
+     */
+    public ContextHandler newContextHandler(Server server, ScanTrackedApp app, Attributes deployAttributes) throws Exception
     {
-        Path mainPath = (Path)deployAttributes.getAttribute(Deployable.MAIN_PATH);
+        Path mainPath = app.getMainPath();
         if (mainPath == null)
         {
-            LOG.warn("Unable to create ContextHandler for app with no main path defined: {}", app);
-            return null;
+            throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
         }
 
         // Resolve real file (hopefully eliminating alias issues)
@@ -90,16 +95,19 @@ public class DefaultContextHandlerFactory implements ContextHandlerFactory
         if (!Files.exists(mainPath))
             throw new IllegalStateException("App path does not exist " + mainPath);
 
+        deployAttributes.setAttribute(Deployable.MAIN_PATH, mainPath);
+        deployAttributes.setAttribute(Deployable.OTHER_PATHS, app.getPaths().keySet());
+
         Environment environment = app.getEnvironment();
         if (environment == null)
         {
-            LOG.warn("Environment not declared for app [{}].  The available environments are: {}",
+            String error = String.format("Environment not declared for app [%s].  The available environments are: %s",
                 app,
                 Environment.getAll().stream()
                     .map(Environment::getName)
                     .collect(Collectors.joining(", ", "[", "]"))
             );
-            return null;
+            throw new IllegalStateException(error);
         }
 
         if (LOG.isDebugEnabled())
@@ -133,7 +141,15 @@ public class DefaultContextHandlerFactory implements ContextHandlerFactory
                     context = applyXml(server, context, mainPath, environment, deployAttributes);
             }
 
-            return getContextHandler(context);
+            // Get the ContextHandler out from the constructed context.
+            ContextHandler contextHandler = getContextHandler(context);
+
+            // Copy non-deploy attributes into ContextHandler attributes for context use
+            deployAttributes.getAttributeNameSet().stream()
+                .filter(k -> !k.startsWith("jetty.deploy."))
+                .forEach(k -> contextHandler.setAttribute(k, deployAttributes.getAttribute(k)));
+
+            return contextHandler;
         }
         finally
         {
@@ -169,7 +185,7 @@ public class DefaultContextHandlerFactory implements ContextHandlerFactory
             };
 
             xmlConfiguration.getIdMap().put("Environment", environment.getName());
-            xmlConfiguration.setJettyStandardIdsAndProperties(server, xml);
+            xmlConfiguration.setJettyStandardIdsAndProperties(server, xml.getParent());
 
             // Put all Environment attributes into XmlConfiguration as properties that can be used.
             attributes.getAttributeNameSet()
@@ -208,14 +224,12 @@ public class DefaultContextHandlerFactory implements ContextHandlerFactory
 
     private ClassLoader getClassLoader(Object context, Environment environment)
     {
+        ContextHandler contextHandler = getContextHandler(context);
         if (context != null)
         {
-            if (context instanceof ContextHandler contextHandler)
-            {
-                ClassLoader classLoader = contextHandler.getClassLoader();
-                if (classLoader != null)
-                    return classLoader;
-            }
+            ClassLoader classLoader = contextHandler.getClassLoader();
+            if (classLoader != null)
+                return classLoader;
         }
 
         return environment.getClassLoader();
@@ -368,7 +382,7 @@ public class DefaultContextHandlerFactory implements ContextHandlerFactory
      * @return the Context Object.
      * @throws Exception if unable to create Object instance.
      */
-    private Object newContextInstance(Server server, Environment environment, App app, Attributes attributes, Path path) throws Exception
+    private Object newContextInstance(Server server, Environment environment, ScanTrackedApp app, Attributes attributes, Path path) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("newContextInstance({}, {}, {}, {})", server, environment, app, path);

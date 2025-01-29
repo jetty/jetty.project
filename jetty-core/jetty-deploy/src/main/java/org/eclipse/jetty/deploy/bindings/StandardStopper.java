@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
-public class StandardStopper implements AppLifeCycle.Binding
+public class StandardStopper implements ContextHandlerLifeCycle.Binding
 {
     @Override
     public String[] getBindingTargets()
@@ -28,14 +27,12 @@ public class StandardStopper implements AppLifeCycle.Binding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
-        ContextHandler handler = app.getContextHandler();
-
         // Before stopping, take back management from the context
-        deploymentManager.getContexts().unmanage(handler);
+        deploymentManager.getContexts().unmanage(contextHandler);
 
         // Stop it
-        handler.stop();
+        contextHandler.stop();
     }
 }

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.test;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +25,10 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.providers.DefaultProvider;
+import org.eclipse.jetty.deploy.scan.DefaultProvider;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
@@ -61,7 +59,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
@@ -103,11 +103,10 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        DefaultProvider appProvider = new DefaultProvider();
+        DefaultProvider appProvider = new DefaultProvider(deploymentManager);
         appProvider.configureEnvironment("ee10");
         appProvider.setScanInterval(1);
         appProvider.addMonitoredDirectory(docroots);
-        deploymentManager.addAppProvider(appProvider);
 
         server.addBean(deploymentManager);
 
@@ -127,7 +126,7 @@ public class DeploymentErrorTest
     }
 
     @AfterEach
-    public void tearDownServer() throws Exception
+    public void tearDownServer()
     {
         if (stacklessLogging != null)
             stacklessLogging.close();
@@ -175,11 +174,11 @@ public class DeploymentErrorTest
     {
         startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots));
 
-        List<App> apps = new ArrayList<>(deploymentManager.getApps());
-        assertThat("Apps tracked", apps.size(), is(1));
+        List<ContextHandler> contexts = deploymentManager.getContextHandlers().stream().toList();
+        assertThat("Contexts tracked", contexts.size(), is(1));
         String contextPath = "/badapp-uaf";
-        App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
+        ContextHandler context = findContext(contextPath, contexts);
+        assertNotNull(context);
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
@@ -219,12 +218,12 @@ public class DeploymentErrorTest
         copyBadApp("badapp.xml", docroots);
 
         // Wait for deployment manager to do its thing
-        assertThat("AppLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
+        assertThat("ContextHandlerLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
 
-        List<App> apps = new ArrayList<>(deploymentManager.getApps());
-        assertThat("Apps tracked", apps.size(), is(1));
-        App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
+        List<ContextHandler> apps = deploymentManager.getContextHandlers().stream().toList();
+        assertThat("Contexts tracked", apps.size(), is(1));
+        ContextHandler context = findContext(contextPath, apps);
+        assertNotNull(context);
         assertThat("ContextHandler.isStarted", context.isStarted(), is(false));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(true));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
@@ -264,12 +263,12 @@ public class DeploymentErrorTest
         copyBadApp("badapp-unavailable-false.xml", docroots);
 
         // Wait for deployment manager to do its thing
-        startTracking.startedLatch.await(3, TimeUnit.SECONDS);
+        assertTrue(startTracking.startedLatch.await(3, TimeUnit.SECONDS));
 
-        List<App> apps = new ArrayList<>(deploymentManager.getApps());
-        assertThat("Apps tracked", apps.size(), is(1));
-        App app = findApp(contextPath, apps);
-        ContextHandler context = app.getContextHandler();
+        List<ContextHandler> apps = deploymentManager.getContextHandlers().stream().toList();
+        assertThat("Contexts tracked", apps.size(), is(1));
+        ContextHandler context = findContext(contextPath, apps);
+        assertNotNull(context);
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
@@ -292,28 +291,20 @@ public class DeploymentErrorTest
     private void assertHttpState(String contextPath, int expectedStatusCode) throws Exception
     {
         URI destURI = server.getURI().resolve(contextPath);
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
             ContentResponse response = client.newRequest(destURI).method(HttpMethod.GET).send();
             assertThat("GET Response: " + destURI, response.getStatus(), is(expectedStatusCode));
         }
-        finally
-        {
-            client.stop();
-        }
     }
 
-    private App findApp(String contextPath, List<App> apps)
+    private ContextHandler findContext(String contextPath, List<ContextHandler> apps)
     {
-        for (App app : apps)
+        for (ContextHandler contextHandler : apps)
         {
-            ContextHandler contextHandler = app.getContextHandler();
-            if (contextHandler == null)
-                continue; // skip
             if (contextPath.equals(contextHandler.getContextPath()))
-                return app;
+                return contextHandler;
         }
         return null;
     }
@@ -359,7 +350,7 @@ public class DeploymentErrorTest
         }
     }
 
-    public static class AppLifeCycleTrackingBinding implements AppLifeCycle.Binding
+    public static class AppLifeCycleTrackingBinding implements ContextHandlerLifeCycle.Binding
     {
         public final CountDownLatch startingLatch = new CountDownLatch(1);
         public final CountDownLatch startedLatch = new CountDownLatch(1);
@@ -374,27 +365,25 @@ public class DeploymentErrorTest
         @Override
         public String[] getBindingTargets()
         {
-            return new String[]{AppLifeCycle.STARTING, AppLifeCycle.STARTED, AppLifeCycle.FAILED};
+            return new String[]{
+                ContextHandlerLifeCycle.STARTING, ContextHandlerLifeCycle.STARTED, ContextHandlerLifeCycle.FAILED
+            };
         }
 
         @Override
-        public void processBinding(DeploymentManager deploymentManager, Node node, App app)
+        public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler)
         {
-            ContextHandler contextHandler = app.getContextHandler();
-            if (contextHandler == null)
-                return;
-
             if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
             {
-                if (node.getName().equalsIgnoreCase(AppLifeCycle.STARTING))
+                if (node.getName().equalsIgnoreCase(ContextHandlerLifeCycle.STARTING))
                 {
                     startingLatch.countDown();
                 }
-                else if (node.getName().equalsIgnoreCase(AppLifeCycle.STARTED))
+                else if (node.getName().equalsIgnoreCase(ContextHandlerLifeCycle.STARTED))
                 {
                     startedLatch.countDown();
                 }
-                else if (node.getName().equalsIgnoreCase(AppLifeCycle.FAILED))
+                else if (node.getName().equalsIgnoreCase(ContextHandlerLifeCycle.FAILED))
                 {
                     failedLatch.countDown();
                 }

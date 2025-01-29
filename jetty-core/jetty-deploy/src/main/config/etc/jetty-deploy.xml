@@ -8,7 +8,7 @@
 <!-- provided directories for web applications and hot deploying     -->
 <!-- through the DeploymentManager.                                  -->
 <!-- =============================================================== -->
-<Configure id="defaultDeployer" class="org.eclipse.jetty.deploy.providers.DefaultProvider">
+<Configure id="defaultProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
   <Call name="addMonitoredDirectory">
     <Arg>
       <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
@@ -37,7 +37,7 @@
   <Ref refid="deploymentManager">
     <Call name="addAppProvider">
       <Arg>
-        <Ref refid="defaultDeployer" />
+        <Ref refid="defaultProvider" />
       </Arg>
     </Call>
   </Ref>

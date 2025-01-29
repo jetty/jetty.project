@@ -24,7 +24,7 @@ module org.eclipse.jetty.deploy
     exports org.eclipse.jetty.deploy;
     exports org.eclipse.jetty.deploy.bindings;
     exports org.eclipse.jetty.deploy.graph;
-    exports org.eclipse.jetty.deploy.providers;
+    exports org.eclipse.jetty.deploy.scan;
 
     exports org.eclipse.jetty.deploy.jmx to
         org.eclipse.jetty.jmx;

@@ -3,7 +3,7 @@
 <!-- =============================================================== -->
 <!-- Configure the "core" environment deployment defaults            -->
 <!-- =============================================================== -->
-<Configure id="defaultDeployer" class="org.eclipse.jetty.deploy.providers.DefaultProvider">
+<Configure id="defaultProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
   <Call name="configureEnvironment">
     <Arg>core</Arg>
     <Set name="contextHandlerClass">

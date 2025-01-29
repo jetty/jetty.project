@@ -30,6 +30,7 @@ import org.eclipse.jetty.deploy.graph.Edge;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.graph.Route;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -49,34 +50,35 @@ import org.slf4j.LoggerFactory;
  * <img alt="deployment manager roles graph" src="doc-files/DeploymentManager_Roles.png">
  * <ol>
  * <li>Tracking Apps and their LifeCycle Location</li>
- * <li>Executing AppLifeCycle on App based on current and desired LifeCycle Location.</li>
+ * <li>Executing ContextHandlerLifeCycle on App based on current and desired LifeCycle Location.</li>
  * </ol>
  * <p>
  * <img alt="deployment manager graph" src="doc-files/DeploymentManager.png">
  */
+// TODO: fix dumpable to show things like context-handler-collection, contexts being tracked, etc...
 @ManagedObject("Deployment Manager")
-public class DeploymentManager extends ContainerLifeCycle implements AppProvider.Manager
+public class DeploymentManager extends ContainerLifeCycle implements ContextHandlerManagement
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentManager.class);
 
     /**
-     * Represents a single tracked app within the deployment manager.
+     * A mutable record tracking a single context within the deployment manager.
      */
-    public class AppEntry
+    private static class TrackedContext
     {
         /**
-         * The app being tracked.
+         * The context being tracked.
          */
-        private App app;
+        private ContextHandler contextHandler;
 
         /**
          * The lifecycle node location of this App
          */
         private Node lifecyleNode;
 
-        public App getApp()
+        public ContextHandler getContextHandler()
         {
-            return app;
+            return contextHandler;
         }
 
         public Node getLifecyleNode()
@@ -92,64 +94,54 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
 
     private final AutoLock _lock = new AutoLock();
     private Throwable _onStartupErrors;
-    private final AppLifeCycle _lifecycle = new AppLifeCycle();
-    private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
+    private final ContextHandlerLifeCycle _lifecycle = new ContextHandlerLifeCycle();
+    private final Queue<TrackedContext> _tracked = new ConcurrentLinkedQueue<>();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
 
     /**
-     * Receive an app for processing, and
+     * Add a ContextHandler to the tracking, and move it to the desired node name.
      *
-     * @param app the app
+     * @param contextHandler the context handler
+     * @param nodeName the requested node to reach
      */
     @Override
-    public void addApp(App app, String nodeName)
+    public void addContextHandler(ContextHandler contextHandler, String nodeName)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("addApp: {} -> {}", app, nodeName);
-        AppEntry entry = new AppEntry();
-        entry.app = app;
-        entry.setLifeCycleNode(_lifecycle.getNodeByName(AppLifeCycle.UNDEPLOYED));
-        _apps.add(entry);
+            LOG.debug("addContextHandler: {} -> {}", contextHandler, nodeName);
+        TrackedContext entry = new TrackedContext();
+        entry.contextHandler = contextHandler;
+        entry.setLifeCycleNode(_lifecycle.getNodeByName(ContextHandlerLifeCycle.UNDEPLOYED));
+        _tracked.add(entry);
 
         if (isRunning())
         {
             // Immediately attempt to go to default lifecycle state
-            this.requestAppGoal(entry, nodeName);
+            this.requestContextHandlerGoal(entry, nodeName);
         }
     }
 
-    public void addAppProvider(AppProvider provider)
-    {
-        provider.setManager(this);
-        addBean(provider);
-    }
-
-    public Collection<AppProvider> getAppProviders()
-    {
-        return getBeans(AppProvider.class);
-    }
-
-    public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
+    public void setLifeCycleBindings(Collection<ContextHandlerLifeCycle.Binding> bindings)
     {
         if (isRunning())
             throw new IllegalStateException();
-        for (AppLifeCycle.Binding b : _lifecycle.getBindings())
+        for (ContextHandlerLifeCycle.Binding b : _lifecycle.getBindings())
         {
             _lifecycle.removeBinding(b);
         }
-        for (AppLifeCycle.Binding b : bindings)
+        for (ContextHandlerLifeCycle.Binding b : bindings)
         {
             _lifecycle.addBinding(b);
         }
     }
 
-    public Collection<AppLifeCycle.Binding> getLifeCycleBindings()
+    public Collection<ContextHandlerLifeCycle.Binding> getLifeCycleBindings()
     {
         return Collections.unmodifiableSet(_lifecycle.getBindings());
     }
 
-    public void addLifeCycleBinding(AppLifeCycle.Binding binding)
+    public void addLifeCycleBinding(ContextHandlerLifeCycle.Binding binding)
     {
         _lifecycle.addBinding(binding);
     }
@@ -173,7 +165,7 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
     protected void doStart() throws Exception
     {
         if (getContexts() == null)
-            throw new IllegalStateException("No Contexts");
+            throw new IllegalStateException("No " + ContextHandlerCollection.class.getName() + " defined");
 
         if (_useStandardBindings)
         {
@@ -192,74 +184,65 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
         super.doStart();
     }
 
-    private AppEntry findAppEntry(String appId)
+    private TrackedContext findTrackedContext(String id)
     {
-        if (appId == null)
+        if (id == null)
             return null;
 
-        for (AppEntry entry : _apps)
+        for (TrackedContext entry : _tracked)
         {
-            String name = entry.app.getName();
-            if (appId.equals(name))
+            if (id.equals(entry.contextHandler.getID()))
                 return entry;
         }
         return null;
     }
 
-    public App getApp(String appId)
+    public ContextHandler findContextHandler(String id)
     {
-        AppEntry entry = findAppEntry(appId);
-        return entry == null ? null : entry.getApp();
+        TrackedContext entry = findTrackedContext(id);
+        return entry == null ? null : entry.getContextHandler();
     }
 
-    public Collection<AppEntry> getAppEntries()
+    public Collection<ContextHandler> getContextHandlers()
     {
-        return Collections.unmodifiableCollection(_apps);
-    }
-
-    public Collection<App> getApps()
-    {
-        List<App> ret = new ArrayList<>();
-        for (AppEntry entry : _apps)
-        {
-            ret.add(entry.app);
-        }
-        return ret;
+        return _tracked.stream()
+            .map((e) -> e.contextHandler)
+            .toList();
     }
 
     /**
-     * Get Set of {@link App}s by {@link Node}
+     * Get Set of {@link ContextHandler}s by {@link Node}
      *
      * @param node the node to look for.
-     * @return the collection of apps for the node
+     * @return the collection of ContextHandlers for the node
      */
-    public Collection<App> getApps(Node node)
+    public Collection<ContextHandler> getContextHandlers(Node node)
     {
         Objects.requireNonNull(node);
 
-        List<App> ret = new ArrayList<>();
-        for (AppEntry entry : _apps)
+        List<ContextHandler> ret = new ArrayList<>();
+        for (TrackedContext entry : _tracked)
         {
             if (node.equals(entry.lifecyleNode))
             {
-                ret.add(entry.app);
+                ret.add(entry.contextHandler);
             }
         }
         return ret;
     }
 
-    public Collection<App> getApps(String nodeName)
+    public Collection<ContextHandler> getContextHandlers(String nodeName)
     {
-        return getApps(_lifecycle.getNodeByName(nodeName));
+        return getContextHandlers(_lifecycle.getNodeByName(nodeName));
     }
 
-    @ManagedAttribute("Deployed Contexts")
+    @ManagedAttribute("The ContextHandlerCollection being managed")
     public ContextHandlerCollection getContexts()
     {
         return _contexts;
     }
 
-    public AppLifeCycle getLifeCycle()
+    public ContextHandlerLifeCycle getLifeCycle()
     {
         return _lifecycle;
     }
@@ -274,52 +257,56 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
     }
 
     /**
-     * Remove the app from the tracking of the DeploymentManager
+     * Remove the ContextHandler from the DeploymentManager tracking.
      *
-     * @param app if the app is Unavailable remove it from the deployment manager.
+     * @param contextHandler the contextHandler to remove it from the deployment manager.
+     * @param goalName the name of the node to attain before removal of contextHandler.
      */
-    public void removeApp(App app)
+    @Override
+    public void removeContextHandler(ContextHandler contextHandler, String goalName)
     {
-        LOG.info("removeApp: {}", app);
-        Iterator<AppEntry> it = _apps.iterator();
+        LOG.info("removeContextHandler: {}, {}", contextHandler, goalName);
+        Iterator<TrackedContext> it = _tracked.iterator();
         while (it.hasNext())
         {
-            AppEntry entry = it.next();
-            if (entry.app.equals(app))
+            TrackedContext entry = it.next();
+            if (entry.contextHandler.equals(contextHandler))
             {
-                if (!AppLifeCycle.UNDEPLOYED.equals(entry.lifecyleNode.getName()))
-                    requestAppGoal(entry.app, AppLifeCycle.UNDEPLOYED);
+                if (!goalName.equals(entry.lifecyleNode.getName()))
+                    requestContextHandlerGoal(entry.contextHandler, goalName);
                 it.remove();
             }
         }
     }
 
     /**
-     * Move an {@link App} through the {@link AppLifeCycle} to the desired {@link Node}, executing each lifecycle step
+     * Move an {@link ContextHandler} through the {@link ContextHandlerLifeCycle} to the desired {@link Node}, executing each lifecycle step
      * in the process to reach the desired state.
      *
-     * @param app the app to move through the process
+     * @param contextHandler the ContextHandler to move through the process
      * @param nodeName the name of the node to attain
      */
-    public void requestAppGoal(App app, String nodeName)
+    @Override
+    @ManagedOperation(value = "request the context handler to be moved to the specified lifecycle node", impact = "ACTION")
+    public void requestContextHandlerGoal(ContextHandler contextHandler, String nodeName)
     {
-        AppEntry appentry = findAppEntry(app.getName());
-        if (appentry == null)
+        TrackedContext tracked = findTrackedContext(contextHandler.getID());
+        if (tracked == null)
         {
-            throw new IllegalStateException("App not being tracked by Deployment Manager: " + app);
+            throw new IllegalStateException("ContextHandler not being tracked by Deployment Manager: " + contextHandler);
         }
 
-        requestAppGoal(appentry, nodeName);
+        requestContextHandlerGoal(tracked, nodeName);
     }
 
     /**
-     * Move an {@link App} through the {@link AppLifeCycle} to the desired {@link Node}, executing each lifecycle step
+     * Move a {@link TrackedContext} through the {@link ContextHandlerLifeCycle} to the desired {@link Node}, executing each lifecycle step
      * in the process to reach the desired state.
      *
-     * @param appentry the internal appentry to move through the process
+     * @param tracked the internal tracked context to move through the process
      * @param nodeName the name of the node to attain
      */
-    private void requestAppGoal(AppEntry appentry, String nodeName)
+    private void requestContextHandlerGoal(TrackedContext tracked, String nodeName)
     {
         Node destinationNode = _lifecycle.getNodeByName(nodeName);
         if (destinationNode == null)
@@ -327,7 +314,7 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
             throw new IllegalStateException("Node not present in Deployment Manager: " + nodeName);
         }
         // Compute lifecycle steps
-        Route path = _lifecycle.getPath(appentry.lifecyleNode, destinationNode);
+        Route path = _lifecycle.getPath(tracked.lifecyleNode, destinationNode);
         if (path.isEmpty())
         {
             // nothing to do. already there.
@@ -347,8 +334,8 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
                 {
                     Node node = it.next();
                     LOG.debug("Executing Node {}", node);
-                    _lifecycle.runBindings(node, appentry.app, this);
-                    appentry.setLifeCycleNode(node);
+                    _lifecycle.runBindings(node, tracked.contextHandler, this);
+                    tracked.setLifeCycleNode(node);
                 }
             }
         }
@@ -357,11 +344,11 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
             LOG.warn("Unable to reach node goal: {}", nodeName, t);
             
             // migrate to FAILED node
-            Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);
-            appentry.setLifeCycleNode(failed);
+            Node failed = _lifecycle.getNodeByName(ContextHandlerLifeCycle.FAILED);
+            tracked.setLifeCycleNode(failed);
             try
             {
-                _lifecycle.runBindings(failed, appentry.app, this);
+                _lifecycle.runBindings(failed, tracked.contextHandler, this);
             }
             catch (Throwable cause)
             {
@@ -384,22 +371,14 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
         }
     }
 
-    /**
-     * Move an {@link App} through the {@link AppLifeCycle} to the desired {@link Node}, executing each lifecycle step
-     * in the process to reach the desired state.
-     *
-     * @param appId the id of the app to move through the process
-     * @param nodeName the name of the node to attain
-     */
-    @ManagedOperation(value = "request the app to be moved to the specified lifecycle node", impact = "ACTION")
-    public void requestAppGoal(@Name("appId") String appId, @Name("nodeName") String nodeName)
+    public void requestContextHandlerGoal(@Name("contextId") String contextHandlerId, @Name("nodeName") String nodeName)
     {
-        AppEntry appentry = findAppEntry(appId);
-        if (appentry == null)
+        TrackedContext tracked = findTrackedContext(contextHandlerId);
+        if (tracked == null)
         {
-            throw new IllegalStateException("App not being tracked by Deployment Manager: " + appId);
+            throw new IllegalStateException("ContextHandler not being tracked by Deployment Manager: " + contextHandlerId);
         }
-        requestAppGoal(appentry, nodeName);
+        requestContextHandlerGoal(tracked, nodeName);
     }
 
     public void setContexts(ContextHandlerCollection contexts)
@@ -410,9 +389,9 @@ public class DeploymentManager extends ContainerLifeCycle implements AppProvider
     public void undeployAll()
     {
         LOG.debug("Undeploy All");
-        for (AppEntry appentry : _apps)
+        for (TrackedContext entry : _tracked)
         {
-            requestAppGoal(appentry, AppLifeCycle.UNDEPLOYED);
+            requestContextHandlerGoal(entry, ContextHandlerLifeCycle.UNDEPLOYED);
         }
     }
 

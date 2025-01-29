@@ -11,15 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy;
+/**
+ * Jetty Deploy : Default Hot-Deploy / Scanner Implementation
+ */
+package org.eclipse.jetty.deploy.scan;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Attributes;
-
-public interface ContextHandlerFactory
-{
-    // TODO: document Attributes that are needed vs optional and provided.
-
-    ContextHandler newContextHandler(Server server, App app, Attributes deployAttributes) throws Exception;
-}

@@ -4,7 +4,7 @@
 <!-- Configure the "ee11" environment deployment defaults            -->
 <!-- =============================================================== -->
 <Configure>
-  <Ref refid="defaultDeployer">
+  <Ref refid="defaultProvider">
     <Call name="configureEnvironment">
       <Arg>ee11</Arg>
       <Set name="defaultContextHandlerClass">

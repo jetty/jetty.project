@@ -23,7 +23,6 @@ import java.util.Hashtable;
 import java.util.Objects;
 import java.util.Properties;
 
-import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -33,17 +32,18 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.osgi.framework.Version;
 
 /**
  * OSGiApp
  *
  * Base class representing info about a WebAppContext/ContextHandler to be deployed into jetty.
  */
-public class OSGiApp implements App
+public class OSGiApp
 {
-    private static final Logger LOG = LoggerFactory.getLogger(OSGiApp.class);
+    public static final String BUNDLE = OSGiApp.class.getPackageName() + ".bundle";
+    public static final String REGISTRATION = OSGiApp.class.getPackageName() + ".registration";
+
     private static final String ENVIRONMENT = "environment";
 
     private final String _bundleName;
@@ -155,7 +155,6 @@ public class OSGiApp implements App
         setContextPath(getContextPath(bundle));
     }
 
-    @Override
     public String getName()
     {
         return _bundleName;
@@ -176,7 +175,6 @@ public class OSGiApp implements App
         return _bundleResource;
     }
 
-    @Override
     public ContextHandler getContextHandler()
     {
         return _contextHandler;
@@ -185,6 +183,9 @@ public class OSGiApp implements App
     public void setContextHandler(ContextHandler contextHandler)
     {
         _contextHandler = contextHandler;
+        _contextHandler.setID(_bundleName);
+        _contextHandler.setAttribute(BUNDLE, _bundle);
+        _contextHandler.setAttribute(REGISTRATION, _registration);
     }
 
     public String getPathToResourceBase()
@@ -224,42 +225,69 @@ public class OSGiApp implements App
         return _bundle;
     }
 
-    public void setRegistration(ServiceRegistration registration)
-    {
-        _registration = registration;
-    }
-
     public ServiceRegistration getRegistration()
     {
         return _registration;
+    }
+
+    public static Bundle getBundle(ContextHandler contextHandler)
+    {
+        return (Bundle)contextHandler.getAttribute(BUNDLE);
+    }
+
+    public static String getBundleSymbolicName(ContextHandler contextHandler)
+    {
+        Bundle bundle = getBundle(contextHandler);
+        if (bundle == null)
+            return null;
+        return bundle.getSymbolicName();
+    }
+
+    public static String getBundleVersionAsString(ContextHandler contextHandler)
+    {
+        Bundle bundle = getBundle(contextHandler);
+        if (bundle == null)
+            return null;
+        Version version = bundle.getVersion();
+        if (version == null)
+            return null;
+        return version.toString();
     }
 
     /**
      * Register the Jetty deployed context/webapp as a service, as
      * according to the OSGi Web Application Specification.
      */
-    public void registerAsOSGiService() throws Exception
+    public static void registerAsOSGiService(ContextHandler contextHandler)
     {
-        if (_registration == null)
+        ServiceRegistration<?> serviceRegistration = (ServiceRegistration<?>)contextHandler.getAttribute(REGISTRATION);
+        if (serviceRegistration == null)
         {
-            Dictionary<String, String> properties = new Hashtable<String, String>();
+            Dictionary<String, String> properties = new Hashtable<>();
             properties.put(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
-            if (getBundleSymbolicName() != null)
-                properties.put(OSGiWebappConstants.OSGI_WEB_SYMBOLICNAME, getBundleSymbolicName());
-            if (getBundleVersionAsString() != null)
-                properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, getBundleVersionAsString());
-            properties.put(OSGiWebappConstants.OSGI_WEB_CONTEXTPATH, getContextPath());
-            ServiceRegistration rego = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(ContextHandler.class.getName(), getContextHandler(), properties);
-            setRegistration(rego);
+
+            String bundleSymbolicName = getBundleSymbolicName(contextHandler);
+            if (StringUtil.isNotBlank(bundleSymbolicName))
+                properties.put(OSGiWebappConstants.OSGI_WEB_SYMBOLICNAME, bundleSymbolicName);
+
+            String bundleVersion = getBundleVersionAsString(contextHandler);
+            if (StringUtil.isNotBlank(bundleVersion))
+                properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, bundleVersion);
+
+            properties.put(OSGiWebappConstants.OSGI_WEB_CONTEXTPATH, contextHandler.getContextPath());
+
+            serviceRegistration = FrameworkUtil.getBundle(OSGiApp.class).getBundleContext().registerService(ContextHandler.class.getName(), contextHandler, properties);
+            contextHandler.setAttribute(REGISTRATION, serviceRegistration);
         }
     }
 
-    protected void deregisterAsOSGiService() throws Exception
+    public static void deregisterAsOSGiService(ContextHandler contextHandler)
     {
-        if (_registration == null)
+        ServiceRegistration<?> serviceRegistration = (ServiceRegistration<?>)contextHandler.getAttribute(REGISTRATION);
+        if (serviceRegistration == null)
             return;
 
-        _registration.unregister();
-        _registration = null;
+        serviceRegistration.unregister();
+        contextHandler.removeAttribute(REGISTRATION);
     }
 }

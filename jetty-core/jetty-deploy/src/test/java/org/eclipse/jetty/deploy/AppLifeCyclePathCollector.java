@@ -17,13 +17,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.server.handler.ContextHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Binds to all lifecycle nodes, and tracks the order of the lifecycle nodes for testing purposes.
  */
-public class AppLifeCyclePathCollector implements AppLifeCycle.Binding
+public class AppLifeCyclePathCollector implements ContextHandlerLifeCycle.Binding
 {
     List<Node> actualOrder = new ArrayList<Node>();
 
@@ -45,7 +46,7 @@ public class AppLifeCyclePathCollector implements AppLifeCycle.Binding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
         actualOrder.add(node);
     }

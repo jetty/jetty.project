@@ -23,8 +23,9 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerManagement;
 import org.eclipse.jetty.osgi.util.Util;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -105,9 +106,9 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         }
     }
 
-    public BundleContextProvider(String environment, Server server, ContextFactory contextFactory)
+    public BundleContextProvider(ContextHandlerManagement contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
-        super(environment, server, contextFactory);
+        super(contextHandlerManagement, environment, contextFactory);
     }
 
     @Override
@@ -190,7 +191,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             _appMap.put(app.getPath(), app);
             List<OSGiApp> apps = _bundleMap.computeIfAbsent(bundle, b -> new ArrayList<>());
             apps.add(app);
-            getManager().addApp(app);
+            getContextHandlerManagement().addContextHandler(app.getContextHandler(), ContextHandlerLifeCycle.STARTED);
             added = true;
         }
 
@@ -214,11 +215,11 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             {
                 if (_appMap.remove(app.getPath()) != null)
                 {
-                    getManager().removeApp(app);
+                    getContextHandlerManagement().removeContextHandler(app.getContextHandler(), ContextHandlerLifeCycle.UNDEPLOYED);
                     removed = true;
                 }
             }
         }
-        return removed; //true if even 1 context was removed associated with this bundle
+        return removed; // true if even 1 context was removed associated with this bundle
     }
 }

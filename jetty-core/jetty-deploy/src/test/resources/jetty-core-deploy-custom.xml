@@ -1,6 +1,6 @@
 <?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<Configure id="contextProvider" class="org.eclipse.jetty.deploy.providers.DefaultProvider">
+<Configure id="contextProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
   <Call id="coreEnv" class="org.eclipse.jetty.util.component.Environment" name="ensure">
     <Arg>core</Arg>
   </Call>

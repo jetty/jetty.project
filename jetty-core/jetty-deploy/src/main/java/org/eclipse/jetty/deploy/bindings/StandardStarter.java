@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 
-public class StandardStarter implements AppLifeCycle.Binding
+public class StandardStarter implements ContextHandlerLifeCycle.Binding
 {
     @Override
     public String[] getBindingTargets()
@@ -29,19 +28,17 @@ public class StandardStarter implements AppLifeCycle.Binding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
         ContextHandlerCollection contexts = deploymentManager.getContexts();
 
-        ContextHandler handler = app.getContextHandler();
-
-        if (contexts.isStarted() && handler.isStopped())
+        if (contexts.isStarted() && contextHandler.isStopped())
         {
             // start the handler manually
-            handler.start();
+            contextHandler.start();
 
             // After starting let the context manage state
-            contexts.manage(handler);
+            contexts.manage(contextHandler);
         }
     }
 }

@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.osgi;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 public interface ContextFactory
 {
-    ContextHandler createContextHandler(AbstractContextProvider provider, App app) throws Exception;
+    ContextHandler createContextHandler(AbstractContextProvider provider, OSGiApp app) throws Exception;
 }

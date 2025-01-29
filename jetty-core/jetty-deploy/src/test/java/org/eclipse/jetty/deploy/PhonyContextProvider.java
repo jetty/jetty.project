@@ -21,25 +21,24 @@ import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 
-public class MockAppProvider extends AbstractLifeCycle implements AppProvider
+public class PhonyContextProvider extends AbstractLifeCycle
 {
-    private AppProvider.Manager deployMan;
+    private final ContextHandlerManagement contextHandlerManagement;
     private Path webappsDir;
+
+    public PhonyContextProvider(ContextHandlerManagement contextHandlerManagement)
+    {
+        this.contextHandlerManagement = contextHandlerManagement;
+    }
 
     public String getEnvironmentName()
     {
-        return Environment.ensure("mock").getName();
+        return Environment.ensure("phony").getName();
     }
 
-    public Manager getManager()
+    public ContextHandlerManagement getContextHandlerManagement()
     {
-        return this.deployMan;
-    }
-
-    @Override
-    public void setManager(Manager manager)
-    {
-        this.deployMan = manager;
+        return contextHandlerManagement;
     }
 
     @Override
@@ -48,19 +47,18 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         this.webappsDir = MavenTestingUtils.getTestResourcePathDir("webapps");
     }
 
-    public App createWebapp(String name)
+    public ContextHandler createWebapp(String name)
     {
         String basename = FileID.getBasename(name);
-        MockApp app = new MockApp(basename);
-        app.setContextHandler(createContextHandler(app));
-        return app;
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setID(basename);
+        return contextHandler;
     }
 
-    public ContextHandler createContextHandler(App app)
+    public ContextHandler createContextHandler(String name)
     {
         ContextHandler contextHandler = new ContextHandler();
 
-        String name = app.getName();
         Path war = webappsDir.resolve(name + ".war");
 
         String contextPath = war.toString();
@@ -91,6 +89,6 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     @Override
     public String toString()
     {
-        return String.format("MockAppProvider@%x:%s", hashCode(), getEnvironmentName());
+        return String.format("%s@%x:%s", this.getClass().getSimpleName(), hashCode(), getEnvironmentName());
     }
 }

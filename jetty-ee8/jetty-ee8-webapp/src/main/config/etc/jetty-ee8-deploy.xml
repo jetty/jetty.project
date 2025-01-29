@@ -4,7 +4,7 @@
 <!-- Configure the "ee8" environment deployment defaults            -->
 <!-- =============================================================== -->
 <Configure>
-  <Ref refid="defaultDeployer">
+  <Ref refid="defaultProvider">
     <Call name="configureEnvironment">
       <Arg>ee8</Arg>
       <Set name="defaultContextHandlerClass">

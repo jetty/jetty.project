@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.deploy.AbstractCleanEnvironmentTest;
+import org.eclipse.jetty.deploy.ContextHandlerManagement;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
@@ -45,6 +48,36 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
     public static class AssertActionListDefaultProvider extends DefaultProvider
     {
         Consumer<List<DeployAction>> assertActionList;
+
+        public AssertActionListDefaultProvider()
+        {
+            super(new ContextHandlerManagement()
+            {
+                @Override
+                public Server getServer()
+                {
+                    return null;
+                }
+
+                @Override
+                public void addContextHandler(ContextHandler contextHandler, String goalName)
+                {
+                    // ignore
+                }
+
+                @Override
+                public void requestContextHandlerGoal(ContextHandler contextHandler, String goalName)
+                {
+                    // ignore
+                }
+
+                @Override
+                public void removeContextHandler(ContextHandler contextHandler, String goalName)
+                {
+                    // ignore
+                }
+            });
+        }
 
         @Override
         protected void performActions(List<DeployAction> actions)
@@ -81,7 +114,7 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.ADD));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.ADDED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), Matchers.contains(xml));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
         };
@@ -112,9 +145,9 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("foo"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.ADD));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.ADDED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), contains(xml));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.ADDED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
         };
 
@@ -134,9 +167,9 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("foo"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.REMOVE));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.REMOVED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.REMOVED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), contains(xml));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.REMOVED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.REMOVED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(nullValue()));
         };
 
@@ -170,10 +203,10 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
 
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.ADD));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.ADDED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.ADDED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.ADDED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.ADDED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
         };
 
@@ -206,10 +239,10 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.ADD));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.ADDED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.ADDED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.ADDED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.ADDED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
         };
 
@@ -228,19 +261,19 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.REMOVE));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.UNCHANGED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.UNCHANGED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
 
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.ADD));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.UNCHANGED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.UNCHANGED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
         };
 
@@ -273,10 +306,10 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.ADD));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.ADDED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.ADDED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.ADDED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.ADDED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.ADDED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
         };
 
@@ -296,19 +329,19 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.REMOVE));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.CHANGED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.CHANGED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
 
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.ADD));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.CHANGED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.CHANGED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(xml));
         };
 
@@ -328,19 +361,19 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.REMOVE));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.REMOVED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.UNCHANGED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.REMOVED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.UNCHANGED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(war));
 
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.ADD));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.CHANGED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.CHANGED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(DefaultApp.State.REMOVED));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.UNCHANGED));
+            assertThat("action.app.paths[xml].state", action.getApp().getPaths().get(xml), is(ScanTrackedApp.State.REMOVED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.UNCHANGED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(war));
         };
 
@@ -360,9 +393,9 @@ public class DefaultProviderTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.getName(), is("bar"));
             assertThat("action.type", action.getType(), is(DeployAction.Type.REMOVE));
-            assertThat("action.app.state", action.getApp().getState(), is(DefaultApp.State.REMOVED));
+            assertThat("action.app.state", action.getApp().getState(), is(ScanTrackedApp.State.REMOVED));
             assertThat("action.app.paths", action.getApp().getPaths().keySet(), containsInAnyOrder(war));
-            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(DefaultApp.State.REMOVED));
+            assertThat("action.app.paths[war].state", action.getApp().getPaths().get(war), is(ScanTrackedApp.State.REMOVED));
             assertThat("action.app.mainPath", action.getApp().getMainPath(), is(nullValue()));
         };
 

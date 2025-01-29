@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
@@ -35,11 +34,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Default {@link App} represents all the components that make up
+ * A Default represents all the components that make up
  * a from-file-system App deployment that the {@link DefaultProvider}
  * creates and uses.
  */
-public class DefaultApp implements App
+public class ScanTrackedApp
 {
     public enum State
     {
@@ -49,14 +48,14 @@ public class DefaultApp implements App
         REMOVED
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultApp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ScanTrackedApp.class);
     private final String name;
     private final Map<Path, State> paths = new HashMap<>();
     private final Attributes attributes = new Attributes.Mapped();
     private State state;
     private ContextHandler contextHandler;
 
-    public DefaultApp(String name)
+    public ScanTrackedApp(String name)
     {
         this.name = name;
         this.state = calcState();
@@ -75,7 +74,7 @@ public class DefaultApp implements App
     {
         if (o == null || getClass() != o.getClass())
             return false;
-        DefaultApp that = (DefaultApp)o;
+        ScanTrackedApp that = (ScanTrackedApp)o;
         return Objects.equals(name, that.name);
     }
 
@@ -84,7 +83,6 @@ public class DefaultApp implements App
         return this.attributes;
     }
 
-    @Override
     public ContextHandler getContextHandler()
     {
         return contextHandler;
@@ -95,7 +93,6 @@ public class DefaultApp implements App
         this.contextHandler = contextHandler;
     }
 
-    @Override
     public Environment getEnvironment()
     {
         return (Environment)getAttributes().getAttribute(DefaultContextHandlerFactory.ENVIRONMENT);
@@ -168,7 +165,6 @@ public class DefaultApp implements App
         return null;
     }
 
-    @Override
     public String getName()
     {
         return name;
@@ -196,7 +192,7 @@ public class DefaultApp implements App
     }
 
     /**
-     * Load all {@code properties} files belonging to this DefaultApp
+     * Load all {@code properties} files belonging to this ScanTrackedApp
      * into the {@link Attributes} for this App.
      *
      * @see #getAttributes()
@@ -299,10 +295,10 @@ public class DefaultApp implements App
      *
      * @return the state of the App.
      */
-    private DefaultApp.State calcState()
+    private ScanTrackedApp.State calcState()
     {
         if (paths.isEmpty())
-            return DefaultApp.State.REMOVED;
+            return ScanTrackedApp.State.REMOVED;
 
         // Calculate state of unit from Path states.
         State ret = null;
@@ -337,6 +333,6 @@ public class DefaultApp implements App
                 }
             }
         }
-        return ret != null ? ret : DefaultApp.State.UNCHANGED;
+        return ret != null ? ret : ScanTrackedApp.State.UNCHANGED;
     }
 }

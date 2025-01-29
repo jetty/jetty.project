@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.osgi;
 
-import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.osgi.util.EventSender;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.osgi.framework.Bundle;
 
 /**
  * OSGiDeployer
@@ -37,37 +37,36 @@ public class OSGiDeployer extends StandardDeployer
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
-        ContextHandler contextHandler = app.getContextHandler();
-        if (contextHandler == null)
-            return;
-
         //TODO  how to NOT send this event if its not a webapp:
         //OSGi Enterprise Spec only wants an event sent if its a webapp bundle (ie not a ContextHandler)
-        if (!(app instanceof OSGiApp))
+
+        Bundle bundle = (Bundle)contextHandler.getAttribute(OSGiApp.BUNDLE);
+        if (bundle == null)
         {
-            doProcessBinding(deploymentManager, node, app);
+            // Not an OSGI based ContextHandler
+            doProcessBinding(deploymentManager, node, contextHandler);
         }
         else
         {
             String contextPath = contextHandler.getContextPath();
-            EventSender.getInstance().send(EventSender.DEPLOYING_EVENT, ((OSGiApp)app).getBundle(), contextPath);
+            EventSender.getInstance().send(EventSender.DEPLOYING_EVENT, bundle, contextPath);
             try
             {
-                doProcessBinding(deploymentManager, node, app);
-                ((OSGiApp)app).registerAsOSGiService();
-                EventSender.getInstance().send(EventSender.DEPLOYED_EVENT, ((OSGiApp)app).getBundle(), contextPath);
+                doProcessBinding(deploymentManager, node, contextHandler);
+                OSGiApp.registerAsOSGiService(contextHandler);
+                EventSender.getInstance().send(EventSender.DEPLOYED_EVENT, bundle, contextPath);
             }
             catch (Exception e)
             {
-                EventSender.getInstance().send(EventSender.FAILED_EVENT, ((OSGiApp)app).getBundle(), contextPath);
+                EventSender.getInstance().send(EventSender.FAILED_EVENT, bundle, contextPath);
                 throw e;
             }
         }
     }
 
-    protected void doProcessBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    protected void doProcessBinding(DeploymentManager deploymentManager, Node node, ContextHandler app) throws Exception
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         ClassLoader cl = (ClassLoader)_server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);

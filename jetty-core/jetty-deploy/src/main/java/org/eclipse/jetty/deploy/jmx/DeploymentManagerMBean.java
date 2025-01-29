@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.deploy.jmx;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.jmx.ObjectMBean;
@@ -40,19 +39,17 @@ public class DeploymentManagerMBean extends ObjectMBean
         _manager = (DeploymentManager)managedObject;
     }
 
-    @ManagedAttribute(value = "list apps being tracked")
-    public Collection<String> getApps()
+    @ManagedAttribute(value = "list ContextHandlers being tracked")
+    public Collection<String> getContextHandler()
     {
-        List<String> ret = new ArrayList<>();
-        for (DeploymentManager.AppEntry entry : _manager.getAppEntries())
-        {
-            ret.add(toRef(entry.getApp()));
-        }
-        return ret;
+        return _manager.getContextHandlers()
+            .stream()
+            .map(Objects::toString)
+            .toList();
     }
 
-    @ManagedOperation(value = "list apps that are located at specified App LifeCycle nodes", impact = "ACTION")
-    public Collection<String> getApps(@Name("nodeName") String nodeName)
+    @ManagedOperation(value = "list ContextHandlers that are located at specified ContextHandlerLifeCycle nodes", impact = "ACTION")
+    public Collection<String> getContext(@Name("nodeName") String nodeName)
     {
         Node node = _manager.getLifeCycle().getNodeByName(nodeName);
         if (node == null)
@@ -60,15 +57,10 @@ public class DeploymentManagerMBean extends ObjectMBean
             throw new IllegalArgumentException("Unable to find node [" + nodeName + "]");
         }
 
-        List<String> ret = new ArrayList<>();
-        for (DeploymentManager.AppEntry entry : _manager.getAppEntries())
-        {
-            if (node.equals(entry.getLifecyleNode()))
-            {
-                ret.add(toRef(entry.getApp()));
-            }
-        }
-        return ret;
+        return _manager.getContextHandlers(node)
+            .stream()
+            .map(Objects::toString)
+            .toList();
     }
 
     @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
@@ -77,23 +69,13 @@ public class DeploymentManagerMBean extends ObjectMBean
         return _manager.getNodes().stream().map(Node::getName).collect(Collectors.toList());
     }
 
-    private String toRef(App app)
-    {
-        return String.format("%s,name=%s,%s", app.getClass().getSimpleName(), app.getName(), app.getContextHandler());
-    }
-
     public Collection<ContextHandler> getContexts() throws Exception
     {
-        List<ContextHandler> apps = new ArrayList<>();
-        for (App app : _manager.getApps())
-        {
-            apps.add(app.getContextHandler());
-        }
-        return apps;
+        return Collections.unmodifiableCollection(_manager.getContextHandlers());
     }
 
     public void requestAppGoal(String appId, String nodeName)
     {
-        _manager.requestAppGoal(appId, nodeName);
+        _manager.requestContextHandlerGoal(appId, nodeName);
     }
 }

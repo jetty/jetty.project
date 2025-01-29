@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DebugBinding implements AppLifeCycle.Binding
+public class DebugBinding implements ContextHandlerLifeCycle.Binding
 {
     private static final Logger LOG = LoggerFactory.getLogger(DebugBinding.class);
 
@@ -43,8 +43,8 @@ public class DebugBinding implements AppLifeCycle.Binding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
-        LOG.info("processBinding {} {}", node, app.getContextHandler());
+        LOG.info("processBinding {} {}", node, contextHandler);
     }
 }

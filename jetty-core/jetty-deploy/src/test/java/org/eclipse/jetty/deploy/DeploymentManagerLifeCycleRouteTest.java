@@ -20,6 +20,7 @@ import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.junit.jupiter.api.Test;
 
@@ -31,8 +32,7 @@ public class DeploymentManagerLifeCycleRouteTest
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        MockAppProvider mockProvider = new MockAppProvider();
-        depman.addAppProvider(mockProvider);
+        PhonyContextProvider provider = new PhonyContextProvider(depman);
 
         depman.addLifeCycleBinding(pathtracker);
         depman.setContexts(new ContextHandlerCollection());
@@ -40,16 +40,17 @@ public class DeploymentManagerLifeCycleRouteTest
         // Start DepMan
         depman.start();
 
-        // Trigger new App
-        App foo = mockProvider.createWebapp("foo-webapp-1");
-        mockProvider.getManager().addApp(foo, AppLifeCycle.UNDEPLOYED);
+        // Trigger new ContextHandler
+        ContextHandler foo = provider.createWebapp("foo-webapp-1.war");
+        String id = foo.getID();
+        provider.getContextHandlerManagement().addContextHandler(foo, ContextHandlerLifeCycle.UNDEPLOYED);
 
-        // Request Deploy of App
-        App app = depman.getApp("foo-webapp-1");
-        depman.requestAppGoal(app, AppLifeCycle.DEPLOYED);
+        // Request Deploy of ContextHandler
+        ContextHandler app = depman.findContextHandler(id);
+        depman.requestContextHandlerGoal(app, ContextHandlerLifeCycle.DEPLOYED);
 
         // Setup Expectations.
-        List<String> expected = new ArrayList<String>();
+        List<String> expected = new ArrayList<>();
         // SHOULD NOT SEE THIS NODE VISITED - expected.add("undeployed");
         expected.add("deploying");
         expected.add("deployed");
@@ -63,16 +64,15 @@ public class DeploymentManagerLifeCycleRouteTest
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        MockAppProvider mockProvider = new MockAppProvider();
-        depman.addAppProvider(mockProvider);
+        PhonyContextProvider provider = new PhonyContextProvider(depman);
         depman.addLifeCycleBinding(pathtracker);
 
         // Start DepMan
         depman.start();
 
         // Create new App
-        App app = mockProvider.createWebapp("foo-webapp-1.war");
-        mockProvider.getManager().addApp(app, AppLifeCycle.UNDEPLOYED);
+        ContextHandler contextHandler = provider.createWebapp("foo-webapp-1.war");
+        provider.getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.UNDEPLOYED);
 
         // Perform no goal request.
 
@@ -87,8 +87,7 @@ public class DeploymentManagerLifeCycleRouteTest
     {
         DeploymentManager depman = new DeploymentManager();
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        MockAppProvider mockProvider = new MockAppProvider();
-        depman.addAppProvider(mockProvider);
+        PhonyContextProvider mockProvider = new PhonyContextProvider(depman);
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -100,13 +99,14 @@ public class DeploymentManagerLifeCycleRouteTest
         // Start DepMan
         depman.start();
 
-        // Create new App
-        App foo = mockProvider.createWebapp("foo-webapp-1");
-        mockProvider.getManager().addApp(foo, AppLifeCycle.UNDEPLOYED);
+        // Create new ContextHandler
+        ContextHandler foo = mockProvider.createWebapp("foo-webapp-1");
+        String id = foo.getID();
+        mockProvider.getContextHandlerManagement().addContextHandler(foo, ContextHandlerLifeCycle.UNDEPLOYED);
 
-        // Request Deploy of App
-        App app = depman.getApp(foo.getName());
-        depman.requestAppGoal(app, AppLifeCycle.DEPLOYED);
+        // Request Deploy of ContextHandler
+        ContextHandler app = depman.findContextHandler(id);
+        depman.requestContextHandlerGoal(app, ContextHandlerLifeCycle.DEPLOYED);
 
         JmxServiceConnection jmxConnection = new JmxServiceConnection();
         jmxConnection.connect();

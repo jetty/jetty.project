@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 import java.io.IOException;
 import java.nio.file.Files;

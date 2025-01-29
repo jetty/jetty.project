@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.osgi;
 
-import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.osgi.util.EventSender;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.osgi.framework.Bundle;
 
 /**
  * OSGiUndeployer
@@ -37,27 +37,28 @@ public class OSGiUndeployer extends StandardUndeployer
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
-        ContextHandler contextHandler = app.getContextHandler();
-        if (contextHandler == null)
-            return;
-
         String contextPath = contextHandler.getContextPath();
 
-        EventSender.getInstance().send(EventSender.UNDEPLOYING_EVENT, ((OSGiApp)app).getBundle(), contextPath);
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        ClassLoader cl = (ClassLoader)_server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
-        Thread.currentThread().setContextClassLoader(cl);
-        try
+        Bundle bundle = (Bundle)contextHandler.getAttribute(OSGiApp.BUNDLE);
+        if (bundle != null)
         {
-            super.processBinding(deploymentManager, node, app);
+            // Only act on ContextHandler that is managed by OSGi
+            EventSender.getInstance().send(EventSender.UNDEPLOYING_EVENT, bundle, contextPath);
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            ClassLoader cl = (ClassLoader)_server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
+            Thread.currentThread().setContextClassLoader(cl);
+            try
+            {
+                super.processBinding(deploymentManager, node, contextHandler);
+            }
+            finally
+            {
+                Thread.currentThread().setContextClassLoader(old);
+            }
+            EventSender.getInstance().send(EventSender.UNDEPLOYED_EVENT, bundle, contextPath);
+            OSGiApp.deregisterAsOSGiService(contextHandler);
         }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(old);
-        }
-        EventSender.getInstance().send(EventSender.UNDEPLOYED_EVENT, ((OSGiApp)app).getBundle(), contextPath);
-        ((OSGiApp)app).deregisterAsOSGiService();
     }
 }

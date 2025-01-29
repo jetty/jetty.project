@@ -13,14 +13,15 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
+import java.util.Objects;
+
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 
-public class StandardDeployer implements AppLifeCycle.Binding
+public class StandardDeployer implements ContextHandlerLifeCycle.Binding
 {
     @Override
     public String[] getBindingTargets()
@@ -29,14 +30,11 @@ public class StandardDeployer implements AppLifeCycle.Binding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
-        ContextHandler handler = app.getContextHandler();
-        if (handler == null)
-            throw new NullPointerException("No Handler created for App: " + app);
-
+        Objects.requireNonNull(contextHandler);
         Callback.Completable blocker = new Callback.Completable();
-        deploymentManager.getContexts().deployHandler(handler, blocker);
+        deploymentManager.getContexts().deployHandler(contextHandler, blocker);
         blocker.get();
     }
 }

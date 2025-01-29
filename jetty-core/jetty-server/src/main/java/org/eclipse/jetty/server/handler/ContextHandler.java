@@ -134,6 +134,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
+    private String _id;
     private String _displayName;
     private String _contextPath = "/";
     private boolean _rootContext = true;
@@ -190,6 +191,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         _context = newContext();
         if (contextPath != null)
             setContextPath(contextPath);
+
+        // Copy ID if ContextHandler is wrapped (it can be overridden if needed)
+        if (handler instanceof ContextHandler contextHandler)
+            _id = contextHandler.getID();
 
         if (File.separatorChar == '/')
             addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
@@ -497,6 +502,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if ("/".equals(_contextPath))
             return "ROOT";
         return _contextPath;
+    }
+
+    /**
+     * The ID of the context.
+     *
+     * @return the ID of the context, or null if not defined
+     */
+    @ManagedAttribute(value = "ID of the Context")
+    public String getID()
+    {
+        return _id;
     }
 
     /**
@@ -1126,6 +1142,16 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     }
 
     /**
+     * A unique optional ID for this ContextHandler.
+     *
+     * @param id the id;
+     */
+    public void setID(String id)
+    {
+        _id = id;
+    }
+
+    /**
      * @return Returns the base resource as a string.
      */
     @ManagedAttribute(value = "document root for context", readonly = true)
@@ -1343,6 +1369,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
         b.append(TypeUtil.toShortName(getClass())).append('@').append(Integer.toString(hashCode(), 16));
         b.append('{');
+        if (getID() != null)
+            b.append("id=").append(getID()).append(",");
         if (getDisplayName() != null)
             b.append(getDisplayName()).append(',');
         b.append(getContextPath());

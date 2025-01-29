@@ -16,41 +16,41 @@ package org.eclipse.jetty.deploy.bindings;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * Provides a way of forcing the ordered execution of bindings within
  * a declared binding target.
  */
-public class OrderedGroupBinding implements AppLifeCycle.Binding
+public class OrderedGroupBinding implements ContextHandlerLifeCycle.Binding
 {
     private String[] _bindingTargets;
 
-    private LinkedList<AppLifeCycle.Binding> _orderedBindings;
+    private LinkedList<ContextHandlerLifeCycle.Binding> _orderedBindings;
 
     public OrderedGroupBinding(String[] bindingTargets)
     {
         _bindingTargets = bindingTargets;
     }
 
-    public void addBinding(AppLifeCycle.Binding binding)
+    public void addBinding(ContextHandlerLifeCycle.Binding binding)
     {
         if (_orderedBindings == null)
         {
-            _orderedBindings = new LinkedList<AppLifeCycle.Binding>();
+            _orderedBindings = new LinkedList<>();
         }
 
         _orderedBindings.add(binding);
     }
 
-    public void addBindings(AppLifeCycle.Binding[] bindings)
+    public void addBindings(ContextHandlerLifeCycle.Binding[] bindings)
     {
         if (_orderedBindings == null)
         {
-            _orderedBindings = new LinkedList<AppLifeCycle.Binding>();
+            _orderedBindings = new LinkedList<>();
         }
 
         _orderedBindings.addAll(Arrays.asList(bindings));
@@ -63,11 +63,11 @@ public class OrderedGroupBinding implements AppLifeCycle.Binding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
-        for (AppLifeCycle.Binding binding : _orderedBindings)
+        for (ContextHandlerLifeCycle.Binding binding : _orderedBindings)
         {
-            binding.processBinding(deploymentManager, node, app);
+            binding.processBinding(deploymentManager, node, contextHandler);
         }
     }
 }

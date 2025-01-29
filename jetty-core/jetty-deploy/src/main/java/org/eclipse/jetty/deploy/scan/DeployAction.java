@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 /**
  * <p>Represents a single step in one update as a result of a scanner event.</p>
@@ -25,9 +25,9 @@ public class DeployAction
     }
 
     private final Type type;
-    private final DefaultApp app;
+    private final ScanTrackedApp app;
 
-    public DeployAction(Type type, DefaultApp app)
+    public DeployAction(Type type, ScanTrackedApp app)
     {
         this.type = type;
         this.app = app;
@@ -38,7 +38,7 @@ public class DeployAction
         return app.getName();
     }
 
-    public DefaultApp getApp()
+    public ScanTrackedApp getApp()
     {
         return app;
     }

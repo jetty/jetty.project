@@ -34,14 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Just an overly picky test case to validate the potential paths.
  */
 @ExtendWith(WorkDirExtension.class)
-public class AppLifeCycleTest
+public class ContextHandlerLifeCycleTest
 {
     private void assertNoPath(String from, String to)
     {
         assertPath(from, to, new ArrayList<>());
     }
 
-    private void assertPath(AppLifeCycle lifecycle, String from, String to, List<String> expected)
+    private void assertPath(ContextHandlerLifeCycle lifecycle, String from, String to, List<String> expected)
     {
         Node fromNode = lifecycle.getNodeByName(from);
         Node toNode = lifecycle.getNodeByName(to);
@@ -75,7 +75,7 @@ public class AppLifeCycleTest
 
     private void assertPath(String from, String to, List<String> expected)
     {
-        AppLifeCycle lifecycle = new AppLifeCycle();
+        ContextHandlerLifeCycle lifecycle = new ContextHandlerLifeCycle();
         assertPath(lifecycle, from, to, expected);
     }
 
@@ -141,7 +141,7 @@ public class AppLifeCycleTest
 
     /**
      * Request multiple lifecycle paths with a single lifecycle instance. Just to ensure that there is no state
-     * maintained between {@link AppLifeCycle#getPath(Node, Node)} requests.
+     * maintained between {@link ContextHandlerLifeCycle#getPath(Node, Node)} requests.
      *
      * @throws IOException on test failure
      */
@@ -149,7 +149,7 @@ public class AppLifeCycleTest
     public void testFindPathMultiple(WorkDir workDir) throws IOException
     {
         Path tmpPath = workDir.getEmptyPathDir();
-        AppLifeCycle lifecycle = new AppLifeCycle();
+        ContextHandlerLifeCycle lifecycle = new ContextHandlerLifeCycle();
         List<String> expected = new ArrayList<>();
 
         File outputDir = tmpPath.toFile();

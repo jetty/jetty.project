@@ -15,8 +15,7 @@ package org.eclipse.jetty.osgi;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppProvider;
+import org.eclipse.jetty.deploy.ContextHandlerManagement;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -24,8 +23,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * AbstractContextProvider
@@ -35,40 +32,40 @@ import org.slf4j.LoggerFactory;
  * Jetty that have been discovered via OSGI either as bundles or services.
  * </p>
  */
-public abstract class AbstractContextProvider extends AbstractLifeCycle implements AppProvider
+public abstract class AbstractContextProvider extends AbstractLifeCycle
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
-
-    private AppProvider.Manager _deploymentManager;
-    private Server _server;
+    private final ContextHandlerManagement _contextHandlerManagement;
     private ContextFactory _contextFactory;
     private String _environment;
     private final Attributes _attributes = new Attributes.Mapped();
 
-    public AbstractContextProvider(String environment, Server server, ContextFactory contextFactory)
+    public AbstractContextProvider(ContextHandlerManagement contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
+        _contextHandlerManagement = contextHandlerManagement;
         _environment = Objects.requireNonNull(environment);
-        _server = Objects.requireNonNull(server);
         _contextFactory = Objects.requireNonNull(contextFactory);
     }
 
     public Server getServer()
     {
-        return _server;
+        return _contextHandlerManagement.getServer();
     }
 
     public Attributes getAttributes()
     {
         return _attributes;
     }
-    
-    public ContextHandler createContextHandler(App app) throws Exception
+
+    public ContextHandler createContextHandler(OSGiApp app) throws Exception
     {
         if (app == null)
             return null;
 
-        //Create a ContextHandler suitable to deploy in OSGi
-        return _contextFactory.createContextHandler(this, app);
+        // Create a ContextHandler suitable to deploy in OSGi
+        ContextHandler contextHandler = _contextFactory.createContextHandler(this, app);
+        contextHandler.setID(app.getName());
+        contextHandler.setAttribute(OSGiApp.BUNDLE, app.getBundle());
+        return contextHandler;
     }
 
     public String getEnvironmentName()
@@ -76,15 +73,9 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
         return _environment;
     }
 
-    @Override
-    public void setManager(Manager manager)
+    public ContextHandlerManagement getContextHandlerManagement()
     {
-        _deploymentManager = manager;
-    }
-
-    public AppProvider.Manager getManager()
-    {
-        return _deploymentManager;
+        return _contextHandlerManagement;
     }
 
     /**

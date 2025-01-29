@@ -14,7 +14,7 @@
 
         <Call name="addAppProvider">
           <Arg>
-            <New id="WebAppProvider" class="org.eclipse.jetty.deploy.providers.DefaultProvider">
+            <New id="WebAppProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
               <Call name="addMonitoredDirectory">
                 <Arg>
                   <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">

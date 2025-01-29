@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,8 +45,8 @@ public class DefaultAppTest
         Path xml = dir.resolve("bar.xml");
         Files.writeString(xml, "XML for bar", UTF_8);
 
-        DefaultApp app = new DefaultApp("bar");
-        app.putPath(xml, DefaultApp.State.UNCHANGED);
+        ScanTrackedApp app = new ScanTrackedApp("bar");
+        app.putPath(xml, ScanTrackedApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -67,9 +67,9 @@ public class DefaultAppTest
         Path war = dir.resolve("bar.war");
         Files.writeString(war, "WAR for bar", UTF_8);
 
-        DefaultApp app = new DefaultApp("bar");
-        app.putPath(xml, DefaultApp.State.UNCHANGED);
-        app.putPath(war, DefaultApp.State.UNCHANGED);
+        ScanTrackedApp app = new ScanTrackedApp("bar");
+        app.putPath(xml, ScanTrackedApp.State.UNCHANGED);
+        app.putPath(war, ScanTrackedApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -90,9 +90,9 @@ public class DefaultAppTest
         Path war = dir.resolve("bar.war");
         Files.writeString(war, "WAR for bar", UTF_8);
 
-        DefaultApp app = new DefaultApp("bar");
-        app.putPath(appDir, DefaultApp.State.UNCHANGED);
-        app.putPath(war, DefaultApp.State.UNCHANGED);
+        ScanTrackedApp app = new ScanTrackedApp("bar");
+        app.putPath(appDir, ScanTrackedApp.State.UNCHANGED);
+        app.putPath(war, ScanTrackedApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -113,9 +113,9 @@ public class DefaultAppTest
         Path xml = dir.resolve("bar.xml");
         Files.writeString(xml, "XML for bar", UTF_8);
 
-        DefaultApp app = new DefaultApp("bar");
-        app.putPath(appDir, DefaultApp.State.UNCHANGED);
-        app.putPath(xml, DefaultApp.State.UNCHANGED);
+        ScanTrackedApp app = new ScanTrackedApp("bar");
+        app.putPath(appDir, ScanTrackedApp.State.UNCHANGED);
+        app.putPath(xml, ScanTrackedApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -138,10 +138,10 @@ public class DefaultAppTest
         Path war = dir.resolve("bar.war");
         Files.writeString(war, "WAR for bar", UTF_8);
 
-        DefaultApp app = new DefaultApp("bar");
-        app.putPath(appDir, DefaultApp.State.UNCHANGED);
-        app.putPath(xml, DefaultApp.State.UNCHANGED);
-        app.putPath(war, DefaultApp.State.UNCHANGED);
+        ScanTrackedApp app = new ScanTrackedApp("bar");
+        app.putPath(appDir, ScanTrackedApp.State.UNCHANGED);
+        app.putPath(xml, ScanTrackedApp.State.UNCHANGED);
+        app.putPath(war, ScanTrackedApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -151,107 +151,107 @@ public class DefaultAppTest
     @Test
     public void testStateUnchanged()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.UNCHANGED);
-        app.putPath(Path.of("test-b"), DefaultApp.State.UNCHANGED);
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.UNCHANGED);
+        app.putPath(Path.of("test-b"), ScanTrackedApp.State.UNCHANGED);
 
-        assertThat(app.getState(), is(DefaultApp.State.UNCHANGED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.UNCHANGED));
     }
 
     @Test
     public void testStateInitialEmpty()
     {
-        DefaultApp app = new DefaultApp("test");
+        ScanTrackedApp app = new ScanTrackedApp("test");
         // intentionally empty of Paths
 
-        assertThat(app.getState(), is(DefaultApp.State.REMOVED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.REMOVED));
     }
 
     @Test
     public void testStatePutThenRemoveAll()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.ADDED);
-        assertThat(app.getState(), is(DefaultApp.State.ADDED));
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.ADDED);
+        assertThat(app.getState(), is(ScanTrackedApp.State.ADDED));
 
         // Now it gets flagged as removed. (eg: by a Scanner change)
-        app.putPath(Path.of("test-a"), DefaultApp.State.REMOVED);
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.REMOVED);
         // Then it gets processed, which results in a state reset.
         app.resetStates();
 
         // The resulting app should have no paths, and be flagged as removed.
         assertThat(app.getPaths().size(), is(0));
-        assertThat(app.getState(), is(DefaultApp.State.REMOVED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.REMOVED));
     }
 
     @Test
     public void testStateAddedOnly()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.ADDED);
-        app.putPath(Path.of("test-b"), DefaultApp.State.ADDED);
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.ADDED);
+        app.putPath(Path.of("test-b"), ScanTrackedApp.State.ADDED);
 
-        assertThat(app.getState(), is(DefaultApp.State.ADDED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.ADDED));
     }
 
     @Test
     public void testStateAddedRemoved()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.REMOVED); // existing file removed in this scan
-        app.putPath(Path.of("test-b"), DefaultApp.State.ADDED); // new file introduced in this scan event
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.REMOVED); // existing file removed in this scan
+        app.putPath(Path.of("test-b"), ScanTrackedApp.State.ADDED); // new file introduced in this scan event
 
-        assertThat(app.getState(), is(DefaultApp.State.CHANGED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.CHANGED));
     }
 
     @Test
     public void testStateAddedChanged()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.CHANGED); // existing file changed in this scan
-        app.putPath(Path.of("test-b"), DefaultApp.State.ADDED); // new file introduced in this scan event
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.CHANGED); // existing file changed in this scan
+        app.putPath(Path.of("test-b"), ScanTrackedApp.State.ADDED); // new file introduced in this scan event
 
-        assertThat(app.getState(), is(DefaultApp.State.CHANGED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.CHANGED));
     }
 
     @Test
     public void testStateUnchangedAdded()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.UNCHANGED); // existed in previous scan
-        app.putPath(Path.of("test-b"), DefaultApp.State.ADDED); // new file introduced in this scan event
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.UNCHANGED); // existed in previous scan
+        app.putPath(Path.of("test-b"), ScanTrackedApp.State.ADDED); // new file introduced in this scan event
 
-        assertThat(app.getState(), is(DefaultApp.State.CHANGED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.CHANGED));
     }
 
     @Test
     public void testStateUnchangedChanged()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.UNCHANGED); // existed in previous scan
-        app.putPath(Path.of("test-b"), DefaultApp.State.CHANGED); // existing file changed in this scan event
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.UNCHANGED); // existed in previous scan
+        app.putPath(Path.of("test-b"), ScanTrackedApp.State.CHANGED); // existing file changed in this scan event
 
-        assertThat(app.getState(), is(DefaultApp.State.CHANGED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.CHANGED));
     }
 
     @Test
     public void testStateUnchangedRemoved()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.UNCHANGED); // existed in previous scan
-        app.putPath(Path.of("test-b"), DefaultApp.State.REMOVED); // existing file removed in this scan event
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.UNCHANGED); // existed in previous scan
+        app.putPath(Path.of("test-b"), ScanTrackedApp.State.REMOVED); // existing file removed in this scan event
 
-        assertThat(app.getState(), is(DefaultApp.State.CHANGED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.CHANGED));
     }
 
     @Test
     public void testStateUnchangedRemovedAdded()
     {
-        DefaultApp app = new DefaultApp("test");
-        app.putPath(Path.of("test-a"), DefaultApp.State.UNCHANGED); // existed in previous scan
-        app.putPath(Path.of("test-b"), DefaultApp.State.REMOVED); // existing file changed in this scan event
-        app.putPath(Path.of("test-c"), DefaultApp.State.ADDED); // new file introduced in this scan event
+        ScanTrackedApp app = new ScanTrackedApp("test");
+        app.putPath(Path.of("test-a"), ScanTrackedApp.State.UNCHANGED); // existed in previous scan
+        app.putPath(Path.of("test-b"), ScanTrackedApp.State.REMOVED); // existing file changed in this scan event
+        app.putPath(Path.of("test-c"), ScanTrackedApp.State.ADDED); // new file introduced in this scan event
 
-        assertThat(app.getState(), is(DefaultApp.State.CHANGED));
+        assertThat(app.getState(), is(ScanTrackedApp.State.CHANGED));
     }
 }

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -36,9 +36,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.deploy.AppLifeCycle;
-import org.eclipse.jetty.deploy.AppProvider;
-import org.eclipse.jetty.deploy.ContextHandlerFactory;
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerManagement;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -92,7 +91,7 @@ import org.slf4j.LoggerFactory;
  * Context Deployment properties will be initialized with:
  * </p>
  * <ul>
- * <li>The properties set on the application via embedded calls modifying {@link DefaultApp#getAttributes()}</li>
+ * <li>The properties set on the application via embedded calls modifying {@link ScanTrackedApp#getAttributes()}</li>
  * <li>The app specific properties file {@code webapps/<webapp-name>.properties}</li>
  * <li>The environment specific properties file {@code webapps/<environment-name>[-zzz].properties}</li>
  * <li>The {@link Attributes} from the {@link Environment}</li>
@@ -105,24 +104,25 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * <pre>{@code
- * DefaultDeploymentAppProvider provider = new DefaultDeploymentAppProvider();
+ * DefaultProvider provider = new DefaultProvider();
  * EnvironmentConfig env10config = provider.configureEnvironment("ee10");
  * env10config.setExtractWars(true);
  * env10config.setParentLoaderPriority(false);
  * }</pre>
  */
+// TODO: fix dumpable to show details about monitored dirs, environments dir, configured environment attributes, scan interval, etc ...
 @ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
-public class DefaultProvider extends ContainerLifeCycle implements AppProvider, Scanner.ChangeSetListener
+public class DefaultProvider extends ContainerLifeCycle implements Scanner.ChangeSetListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultProvider.class);
 
+    private final ContextHandlerManagement contextManagement;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
+    private final DefaultContextHandlerFactory contextHandlerFactory = new DefaultContextHandlerFactory();
 
-    private Map<String, DefaultApp> apps = new HashMap<>();
-    private AppProvider.Manager manager;
+    private Map<String, ScanTrackedApp> apps = new HashMap<>();
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
-    private ContextHandlerFactory contextHandlerFactory = new DefaultContextHandlerFactory();
     private Map<String, Attributes> environmentAttributesMap = new HashMap<>();
     private Path environmentsDir;
     private int scanInterval = 10;
@@ -131,20 +131,15 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
     private boolean deferInitialScan = false;
     private String defaultEnvironmentName;
 
-    public DefaultProvider()
+    public DefaultProvider(ContextHandlerManagement contextManagement)
     {
-        filenameFilter = new MonitoredPathFilter(monitoredDirs);
+        this(contextManagement, null);
     }
 
-    public DefaultProvider(FilenameFilter filter)
+    public DefaultProvider(ContextHandlerManagement contextManagement, FilenameFilter filter)
     {
-        filenameFilter = filter;
-    }
-
-    @Override
-    public void setManager(Manager manager)
-    {
-        this.manager = manager;
+        this.contextManagement = Objects.requireNonNull(contextManagement);
+        this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
     }
 
     /**
@@ -183,21 +178,6 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
     public void setActionComparator(Comparator<DeployAction> actionComparator)
     {
         this.actionComparator = actionComparator;
-    }
-
-    public Collection<DefaultApp> getApps()
-    {
-        return apps.values();
-    }
-
-    public ContextHandlerFactory getContextHandlerFactory()
-    {
-        return contextHandlerFactory;
-    }
-
-    public void setContextHandlerFactory(ContextHandlerFactory contextHandlerFactory)
-    {
-        this.contextHandlerFactory = contextHandlerFactory;
     }
 
     /**
@@ -342,19 +322,19 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
         for (Map.Entry<Path, Scanner.Notification> entry : changeSet.entrySet())
         {
             Path path = entry.getKey();
-            DefaultApp.State state = switch (entry.getValue())
+            ScanTrackedApp.State state = switch (entry.getValue())
             {
                 case ADDED ->
                 {
-                    yield DefaultApp.State.ADDED;
+                    yield ScanTrackedApp.State.ADDED;
                 }
                 case CHANGED ->
                 {
-                    yield DefaultApp.State.CHANGED;
+                    yield ScanTrackedApp.State.CHANGED;
                 }
                 case REMOVED ->
                 {
-                    yield DefaultApp.State.REMOVED;
+                    yield ScanTrackedApp.State.REMOVED;
                 }
             };
 
@@ -371,7 +351,7 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
             {
                 // we have a normal path entry
                 changedBaseNames.add(basename);
-                DefaultApp app = apps.computeIfAbsent(basename, DefaultApp::new);
+                ScanTrackedApp app = apps.computeIfAbsent(basename, ScanTrackedApp::new);
                 app.putPath(path, state);
             }
             else if (isEnvironmentConfigPath(path))
@@ -391,12 +371,12 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
             }
         }
 
-        // Now we know the DefaultApp instances that are changed by processing
+        // Now we know the ScanTrackedApp instances that are changed by processing
         // the incoming Scanner changes.
         // Now we want to convert this list of changes to a DeployAction list
         // that will perform the add/remove logic in a consistent way.
 
-        List<DefaultApp> changedApps = changedBaseNames
+        List<ScanTrackedApp> changedApps = changedBaseNames
             .stream()
             .map(name -> apps.get(name))
             .collect(Collectors.toList());
@@ -404,7 +384,7 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
         if (!changedEnvironments.isEmpty())
         {
             // We have incoming environment configuration changes
-            // We need to add any missing DefaultApp that have changed
+            // We need to add any missing ScanTrackedApp that have changed
             // due to incoming environment configuration changes,
             // along with loading any ${jetty.base}/environments/<name>-*.properties
             // into a layer for that Environment.
@@ -412,15 +392,15 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
             for (String changedEnvName : changedEnvironments)
             {
                 // Add any missing apps to changedApps list
-                for (DefaultApp app : apps.values())
+                for (ScanTrackedApp app : apps.values())
                 {
                     if (changedBaseNames.contains(app.getName()))
                         continue; // skip app that's already in the change list.
 
                     if (changedEnvName.equalsIgnoreCase(app.getEnvironmentName()))
                     {
-                        if (app.getState() == DefaultApp.State.UNCHANGED)
-                            app.setState(DefaultApp.State.CHANGED);
+                        if (app.getState() == ScanTrackedApp.State.UNCHANGED)
+                            app.setState(ScanTrackedApp.State.CHANGED);
                         changedApps.add(app);
                         changedBaseNames.add(app.getName());
                     }
@@ -467,13 +447,13 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
         return String.format("%s@%x[dirs=%s]", this.getClass(), hashCode(), monitoredDirs);
     }
 
-    protected List<DeployAction> buildActionList(List<DefaultApp> changedApps)
+    protected List<DeployAction> buildActionList(List<ScanTrackedApp> changedApps)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("buildActionList: {}", changedApps);
 
         List<DeployAction> actions = new ArrayList<>();
-        for (DefaultApp app : changedApps)
+        for (ScanTrackedApp app : changedApps)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("changed app: {}", app);
@@ -503,9 +483,6 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} doStart()", this);
-
-        if (this.manager == null)
-            throw new IllegalStateException("No " + AppProvider.Manager.class.getName() + " defined");
 
         if (monitoredDirs.isEmpty())
             throw new IllegalStateException("No monitored dir specified");
@@ -557,7 +534,7 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
         {
             // Setup listener to wait for Server in STARTED state, which
             // triggers the first scan of the monitored directories
-            manager.getServer().addEventListener(
+            contextManagement.getServer().addEventListener(
                 new LifeCycle.Listener()
                 {
                     @Override
@@ -591,13 +568,6 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
     protected boolean exists(String path)
     {
         return scanner.exists(path);
-    }
-
-    protected List<DefaultApp> getAppsInEnvironment(String envName)
-    {
-        return apps.values().stream()
-            .filter((app) -> envName.equals(app.getEnvironmentName()))
-            .toList();
     }
 
     protected boolean isEnvironmentConfigPath(Path path)
@@ -644,7 +614,7 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
                     case REMOVE ->
                     {
                         apps.remove(step.getName());
-                        manager.removeApp(step.getApp());
+                        contextManagement.removeContextHandler(step.getApp().getContextHandler(), ContextHandlerLifeCycle.UNDEPLOYED);
                     }
                     case ADD ->
                     {
@@ -670,12 +640,13 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
                         DefaultContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
-                        Server server = manager.getServer();
-                        ContextHandler contextHandler = getContextHandlerFactory().newContextHandler(server, step.getApp(), deployAttributes);
+                        Server server = contextManagement.getServer();
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, step.getApp(), deployAttributes);
                         step.getApp().setContextHandler(contextHandler);
 
                         // Introduce the App to the DeploymentManager
-                        manager.addApp(step.getApp(), AppLifeCycle.STARTED);
+                        apps.put(step.getName(), step.getApp());
+                        contextManagement.addContextHandler(step.getApp().getContextHandler(), ContextHandlerLifeCycle.STARTED);
                     }
                 }
             }
@@ -696,12 +667,6 @@ public class DefaultProvider extends ContainerLifeCycle implements AppProvider, 
         if (deployActionComparator != null)
             actions.sort(deployActionComparator);
         return actions;
-    }
-
-    private void copyAttributes(Attributes sourceAttributes, Attributes destAttributes)
-    {
-        sourceAttributes.getAttributeNameSet().forEach((key) ->
-            destAttributes.setAttribute(key, sourceAttributes.getAttribute(key)));
     }
 
     private List<Path> findEnvironmentXmlPaths(Attributes deployAttributes)

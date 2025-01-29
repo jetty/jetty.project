@@ -13,35 +13,20 @@
 
 package org.eclipse.jetty.deploy;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.component.Environment;
 
 /**
- * An abstract App, the component that moves through the DeploymentManager.
+ * Deployment Manager specific methods that manage ContextHandler.
  */
-public interface App
+public interface ContextHandlerManagement
 {
-    /**
-     * The application name.
-     *
-     * @return the application name.
-     */
-    String getName();
+    Server getServer();
 
-    /**
-     * Get the active ContextHandler for this App.
-     *
-     * @return the ContextHandler for this App.
-     */
-    ContextHandler getContextHandler();
+    // TODO: document methods
+    void addContextHandler(ContextHandler contextHandler, String goalName);
 
-    /**
-     * The Environment this App belongs to.
-     *
-     * @return the Environment for this App, null if App has no Environment.
-     */
-    default Environment getEnvironment()
-    {
-        return null;
-    }
+    void requestContextHandlerGoal(ContextHandler contextHandler, String goalName);
+
+    void removeContextHandler(ContextHandler contextHandler, String goalName);
 }

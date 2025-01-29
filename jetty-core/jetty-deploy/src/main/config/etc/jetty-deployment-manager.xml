@@ -16,7 +16,7 @@
         </Set>
 
         <!-- Add a customize step to the deployment lifecycle -->
-        <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class
+        <!-- uncomment and replace DebugBinding with your extended ContextHandlerLifeCycle.Binding class
         <Call name="insertLifeCycleNode">
           <Arg>deployed</Arg>
           <Arg>starting</Arg>

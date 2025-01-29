@@ -22,10 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.deploy.AppLifeCycle;
+import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
@@ -158,7 +157,7 @@ public class JettyServerFactory
             //ensure DeploymentManager
             DeploymentManager deploymentManager = ensureDeploymentManager(server);
             deploymentManager.setUseStandardBindings(false);
-            List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<>();
+            List<ContextHandlerLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<>();
             deploymentLifeCycleBindings.add(new OSGiDeployer(server));
             deploymentLifeCycleBindings.add(new StandardStarter());
             deploymentLifeCycleBindings.add(new StandardStopper());

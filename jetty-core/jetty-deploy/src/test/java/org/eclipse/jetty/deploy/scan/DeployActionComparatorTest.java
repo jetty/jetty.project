@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,14 +28,14 @@ public class DeployActionComparatorTest
     @Test
     public void testAddOnly()
     {
-        DefaultApp appFoo = new DefaultApp("foo");
-        appFoo.putPath(Path.of("foo.xml"), DefaultApp.State.ADDED);
-        DefaultApp appBar = new DefaultApp("bar");
-        appBar.putPath(Path.of("bar.xml"), DefaultApp.State.ADDED);
+        ScanTrackedApp appFoo = new ScanTrackedApp("foo");
+        appFoo.putPath(Path.of("foo.xml"), ScanTrackedApp.State.ADDED);
+        ScanTrackedApp appBar = new ScanTrackedApp("bar");
+        appBar.putPath(Path.of("bar.xml"), ScanTrackedApp.State.ADDED);
 
         List<DeployAction> actions = new ArrayList<>();
-        actions.add(new DeployAction(DeployAction.Type.ADD, new DefaultApp("bar")));
-        actions.add(new DeployAction(DeployAction.Type.ADD, new DefaultApp("foo")));
+        actions.add(new DeployAction(DeployAction.Type.ADD, new ScanTrackedApp("bar")));
+        actions.add(new DeployAction(DeployAction.Type.ADD, new ScanTrackedApp("foo")));
 
         actions.sort(new DeployActionComparator());
 
@@ -56,11 +56,11 @@ public class DeployActionComparatorTest
     @Test
     public void testRemoveOnly()
     {
-        DefaultApp appFoo = new DefaultApp("foo");
-        appFoo.putPath(Path.of("foo.xml"), DefaultApp.State.REMOVED);
+        ScanTrackedApp appFoo = new ScanTrackedApp("foo");
+        appFoo.putPath(Path.of("foo.xml"), ScanTrackedApp.State.REMOVED);
 
-        DefaultApp appBar = new DefaultApp("bar");
-        appBar.putPath(Path.of("bar.xml"), DefaultApp.State.REMOVED);
+        ScanTrackedApp appBar = new ScanTrackedApp("bar");
+        appBar.putPath(Path.of("bar.xml"), ScanTrackedApp.State.REMOVED);
 
         List<DeployAction> actions = new ArrayList<>();
         actions.add(new DeployAction(DeployAction.Type.REMOVE, appFoo));
@@ -85,11 +85,11 @@ public class DeployActionComparatorTest
     @Test
     public void testRemoveTwoAndAddTwo()
     {
-        DefaultApp appFoo = new DefaultApp("foo");
-        appFoo.putPath(Path.of("foo.xml"), DefaultApp.State.REMOVED);
+        ScanTrackedApp appFoo = new ScanTrackedApp("foo");
+        appFoo.putPath(Path.of("foo.xml"), ScanTrackedApp.State.REMOVED);
 
-        DefaultApp appBar = new DefaultApp("bar");
-        appBar.putPath(Path.of("bar.xml"), DefaultApp.State.REMOVED);
+        ScanTrackedApp appBar = new ScanTrackedApp("bar");
+        appBar.putPath(Path.of("bar.xml"), ScanTrackedApp.State.REMOVED);
 
         List<DeployAction> actions = new ArrayList<>();
         actions.add(new DeployAction(DeployAction.Type.REMOVE, appFoo));
@@ -130,17 +130,17 @@ public class DeployActionComparatorTest
     @Test
     public void testRemoveFourAndAddTwo()
     {
-        DefaultApp appA = new DefaultApp("app-a");
-        appA.putPath(Path.of("app-a.xml"), DefaultApp.State.REMOVED);
+        ScanTrackedApp appA = new ScanTrackedApp("app-a");
+        appA.putPath(Path.of("app-a.xml"), ScanTrackedApp.State.REMOVED);
 
-        DefaultApp appB = new DefaultApp("app-b");
-        appB.putPath(Path.of("app-b.xml"), DefaultApp.State.REMOVED);
+        ScanTrackedApp appB = new ScanTrackedApp("app-b");
+        appB.putPath(Path.of("app-b.xml"), ScanTrackedApp.State.REMOVED);
 
-        DefaultApp appC = new DefaultApp("app-c");
-        appC.putPath(Path.of("app-c.xml"), DefaultApp.State.REMOVED);
+        ScanTrackedApp appC = new ScanTrackedApp("app-c");
+        appC.putPath(Path.of("app-c.xml"), ScanTrackedApp.State.REMOVED);
 
-        DefaultApp appD = new DefaultApp("app-d");
-        appD.putPath(Path.of("app-d.xml"), DefaultApp.State.REMOVED);
+        ScanTrackedApp appD = new ScanTrackedApp("app-d");
+        appD.putPath(Path.of("app-d.xml"), ScanTrackedApp.State.REMOVED);
 
         List<DeployAction> actions = new ArrayList<>();
         // app A is going through hot-reload

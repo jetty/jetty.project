@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.deploy.scan;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -52,7 +52,7 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
     public WorkDir workDir;
     private Server server;
 
-    public void startServer(DefaultProvider provider) throws Exception
+    public void startServer(DeploymentManager deploymentManager) throws Exception
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -62,9 +62,7 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        DeploymentManager deploymentManager = new DeploymentManager();
         deploymentManager.setContexts(contexts);
-        deploymentManager.addAppProvider(provider);
         server.addBean(deploymentManager);
 
         server.start();
@@ -108,12 +106,13 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        DefaultProvider defaultProvider = new DefaultProvider();
+        DeploymentManager deploymentManager = new DeploymentManager();
+        DefaultProvider defaultProvider = new DefaultProvider(deploymentManager);
         defaultProvider.addMonitoredDirectory(webapps);
         DefaultProvider.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
-        startServer(defaultProvider);
+        startServer(deploymentManager);
 
         URI destURI = server.getURI().resolve("/demo/");
         HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();

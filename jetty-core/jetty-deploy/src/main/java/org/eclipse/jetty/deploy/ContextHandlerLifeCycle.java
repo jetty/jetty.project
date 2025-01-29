@@ -22,20 +22,21 @@ import java.util.Set;
 
 import org.eclipse.jetty.deploy.graph.Graph;
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The lifecycle of an App in the {@link DeploymentManager}.
+ * The lifecycle of a {@link ContextHandler} in the {@link DeploymentManager}.
  * <p>
- * Setups a the default {@link Graph}, and manages the bindings to the life cycle via the {@link AppLifeCycle.Binding}
+ * Sets up the default {@link Graph}, and manages the bindings to the life cycle via the {@link ContextHandlerLifeCycle.Binding}
  * annotation.
  * <p>
- * <img alt="app lifecycle graph" src="doc-files/AppLifeCycle.png">
+ * <img alt="context-handler lifecycle graph" src="doc-files/ContextHandlerLifeCycle.png">
  */
-public class AppLifeCycle extends Graph
+public class ContextHandlerLifeCycle extends Graph
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AppLifeCycle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ContextHandlerLifeCycle.class);
 
     private static final String ALL_NODES = "*";
 
@@ -49,13 +50,13 @@ public class AppLifeCycle extends Graph
         String[] getBindingTargets();
 
         /**
-         * Event called to process a {@link AppLifeCycle} binding.
+         * Event called to process a {@link ContextHandlerLifeCycle} binding.
          *
          * @param node the node being processed
-         * @param app the app being processed
-         * @throws Exception if any problem severe enough to halt the AppLifeCycle processing
+         * @param contextHandler the contextHandler being processed
+         * @throws Exception if any problem severe enough to halt the ContextHandlerLifeCycle processing
          */
-        void processBinding(DeploymentManager deploymentManager, Node node, App app) throws Exception;
+        void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception;
     }
 
     // Well known existing lifecycle Nodes
@@ -70,7 +71,7 @@ public class AppLifeCycle extends Graph
 
     private Map<String, List<Binding>> lifecyclebindings = new HashMap<String, List<Binding>>();
 
-    public AppLifeCycle()
+    public ContextHandlerLifeCycle()
     {
         // Define Default Graph
 
@@ -94,14 +95,14 @@ public class AppLifeCycle extends Graph
         addNode(new Node(FAILED));
     }
 
-    public void addBinding(AppLifeCycle.Binding binding)
+    public void addBinding(ContextHandlerLifeCycle.Binding binding)
     {
         for (String nodeName : binding.getBindingTargets())
         {
             List<Binding> bindings = lifecyclebindings.get(nodeName);
             if (bindings == null)
             {
-                bindings = new ArrayList<Binding>();
+                bindings = new ArrayList<>();
             }
             bindings.add(binding);
 
@@ -109,7 +110,7 @@ public class AppLifeCycle extends Graph
         }
     }
 
-    public void removeBinding(AppLifeCycle.Binding binding)
+    public void removeBinding(ContextHandlerLifeCycle.Binding binding)
     {
         for (String nodeName : binding.getBindingTargets())
         {
@@ -124,9 +125,9 @@ public class AppLifeCycle extends Graph
      *
      * @return Set of Object(s) for all lifecycle bindings. never null.
      */
-    public Set<AppLifeCycle.Binding> getBindings()
+    public Set<ContextHandlerLifeCycle.Binding> getBindings()
     {
-        Set<Binding> boundset = new HashSet<Binding>();
+        Set<Binding> boundset = new HashSet<>();
 
         for (List<Binding> bindings : lifecyclebindings.values())
         {
@@ -142,7 +143,7 @@ public class AppLifeCycle extends Graph
      * @param node the deployment graph node
      * @return Set of Object(s) for specific lifecycle bindings. never null.
      */
-    public Set<AppLifeCycle.Binding> getBindings(Node node)
+    public Set<ContextHandlerLifeCycle.Binding> getBindings(Node node)
     {
         return getBindings(node.getName());
     }
@@ -153,7 +154,7 @@ public class AppLifeCycle extends Graph
      * @param nodeName the node name
      * @return Set of Object(s) for specific lifecycle bindings. never null.
      */
-    public Set<AppLifeCycle.Binding> getBindings(String nodeName)
+    public Set<ContextHandlerLifeCycle.Binding> getBindings(String nodeName)
     {
         Set<Binding> boundset = new HashSet<Binding>();
 
@@ -174,13 +175,13 @@ public class AppLifeCycle extends Graph
         return boundset;
     }
 
-    public void runBindings(Node node, App app, DeploymentManager deploymentManager) throws Throwable
+    public void runBindings(Node node, ContextHandler contextHandler, DeploymentManager deploymentManager) throws Throwable
     {
         for (Binding binding : getBindings(node))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Calling {} for {}", binding.getClass().getName(), app);
-            binding.processBinding(deploymentManager, node, app);
+                LOG.debug("Calling {} for {}", binding.getClass().getName(), contextHandler);
+            binding.processBinding(deploymentManager, node, contextHandler);
         }
     }
 }
