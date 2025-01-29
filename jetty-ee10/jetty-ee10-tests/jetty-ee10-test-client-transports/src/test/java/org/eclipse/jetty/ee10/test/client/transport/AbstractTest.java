@@ -200,7 +200,7 @@ public class AbstractTest
     {
         return switch (transportType)
         {
-            case HTTP, HTTPS, H2C, H2, H3_QUIC_STREAMS, FCGI ->
+            case HTTP, HTTPS, H2C, H2, FCGI ->
                 new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
             case H3_QUICHE ->
             {
@@ -244,7 +244,6 @@ public class AbstractTest
                 httpConfig.addCustomizer(new HostHeaderCustomizer());
                 yield List.of(new HTTP3ServerConnectionFactory(httpConfig));
             }
-            case H3_QUIC_STREAMS -> List.of(new HTTP3ServerConnectionFactory(httpConfig));
             case FCGI -> List.of(new ServerFCGIConnectionFactory(httpConfig));
         };
         return list.toArray(ConnectionFactory[]::new);
@@ -288,11 +287,6 @@ public class AbstractTest
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
                 yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
             }
-            case H3_QUIC_STREAMS ->
-            {
-                // TODO:
-                throw new UnsupportedOperationException();
-            }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");
         };
     }
@@ -325,13 +319,13 @@ public class AbstractTest
 
     public enum TransportType
     {
-        HTTP, HTTPS, H2C, H2, H3_QUICHE, H3_QUIC_STREAMS, FCGI;
+        HTTP, HTTPS, H2C, H2, H3_QUICHE, FCGI;
 
         public boolean isSecure()
         {
             return switch (this)
             {
-                case HTTP, H2C, H3_QUIC_STREAMS, FCGI -> false;
+                case HTTP, H2C, FCGI -> false;
                 case HTTPS, H2, H3_QUICHE -> true;
             };
         }
@@ -341,7 +335,7 @@ public class AbstractTest
             return switch (this)
             {
                 case HTTP, HTTPS, FCGI -> false;
-                case H2C, H2, H3_QUICHE, H3_QUIC_STREAMS -> true;
+                case H2C, H2, H3_QUICHE -> true;
             };
         }
     }

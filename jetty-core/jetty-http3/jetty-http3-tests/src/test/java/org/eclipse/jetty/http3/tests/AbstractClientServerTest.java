@@ -61,7 +61,6 @@ public class AbstractClientServerTest
 {
     public static List<TransportType> transports()
     {
-        // TODO: add QUIC_STREAMS when ready.
         return List.of(TransportType.H3_QUICHE);
     }
 
