@@ -44,7 +44,6 @@ import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,12 +99,13 @@ public class ServerTimeoutsTest extends AbstractTest
                 .timeout(5 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS)
                 .send();
 
-            assertThat(transportType, not(in(transportTypesThatFail)));
+            // HTTP/2 might succeed.
             assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
         }
         catch (ExecutionException x)
         {
             assertThat(x.getCause(), instanceOf(IOException.class));
+            // If it fails, it should be HTTP/2.
             assertThat(transportType, in(transportTypesThatFail));
         }
 
