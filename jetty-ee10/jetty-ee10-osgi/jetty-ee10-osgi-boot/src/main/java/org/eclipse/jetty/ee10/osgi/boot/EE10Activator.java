@@ -34,7 +34,7 @@ import org.eclipse.jetty.osgi.AbstractContextProvider;
 import org.eclipse.jetty.osgi.BundleContextProvider;
 import org.eclipse.jetty.osgi.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.ContextFactory;
-import org.eclipse.jetty.osgi.OSGiApp;
+import org.eclipse.jetty.osgi.OSGiDeployableBundleMetadata;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
@@ -265,16 +265,17 @@ public class EE10Activator implements BundleActivator
         }
         
         @Override
-        public ContextHandler createContextHandler(AbstractContextProvider provider, OSGiApp osgiApp)
+        public ContextHandler createContextHandler(AbstractContextProvider provider, OSGiDeployableBundleMetadata metadata)
         throws Exception
         {
             String jettyHome = (String)provider.getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
             Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
 
             ContextHandler contextHandler = new ContextHandler();
+            ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
 
             //Make base resource that of the bundle
-            contextHandler.setBaseResource(osgiApp.getBundleResource());
+            contextHandler.setBaseResource(metadata.getBundleResource(resourceFactory));
             
             // provides access to core classes
             ClassLoader coreLoader = (ClassLoader)provider.getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
@@ -285,12 +286,12 @@ public class EE10Activator implements BundleActivator
             ClassLoader environmentLoader = new OSGiClassLoader(coreLoader, _myBundle);
 
             //Use a classloader that knows about the common jetty parent loader, and also the bundle                  
-            OSGiClassLoader classLoader = new OSGiClassLoader(environmentLoader, osgiApp.getBundle());
+            OSGiClassLoader classLoader = new OSGiClassLoader(environmentLoader, metadata.getBundle());
             contextHandler.setClassLoader(classLoader);
 
             //Apply any context xml file
-            String tmp = osgiApp.getProperties().getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
-            final URI contextXmlURI = Util.resolvePathAsLocalizedURI(tmp, osgiApp.getBundle(), jettyHomePath);
+            String tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
+            final URI contextXmlURI = Util.resolvePathAsLocalizedURI(tmp, metadata.getBundle(), jettyHomePath);
 
             if (contextXmlURI != null)
             {
@@ -306,7 +307,7 @@ public class EE10Activator implements BundleActivator
                         WebAppClassLoader.runWithServerClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
-                            properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, osgiApp.getPath().toUri().toString());
+                            properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
                             properties.put(OSGiServerConstants.JETTY_HOME, (String)server.getAttribute(OSGiServerConstants.JETTY_HOME));
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(contextHandler);
@@ -327,7 +328,7 @@ public class EE10Activator implements BundleActivator
             }
 
             //osgi Enterprise Spec r4 p.427
-            contextHandler.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, osgiApp.getBundle().getBundleContext());
+            contextHandler.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, metadata.getBundle().getBundleContext());
 
             //make sure we protect also the osgi dirs specified by OSGi Enterprise spec
             String[] targets = contextHandler.getProtectedTargets();
@@ -358,13 +359,14 @@ public class EE10Activator implements BundleActivator
         }
         
         @Override
-        public ContextHandler createContextHandler(AbstractContextProvider provider, OSGiApp osgiApp)
+        public ContextHandler createContextHandler(AbstractContextProvider provider, OSGiDeployableBundleMetadata osgiApp)
             throws Exception
         {
             String jettyHome = (String)provider.getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
             Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : ResourceFactory.of(provider.getServer()).newResource(jettyHome).getPath();
 
             WebAppContext webApp = new WebAppContext();
+            ResourceFactory resourceFactory = ResourceFactory.of(webApp);
 
             //Apply defaults from the deployer providers
             webApp.initializeDefaults(provider.getAttributes());
@@ -521,10 +523,9 @@ public class EE10Activator implements BundleActivator
             System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, targets.length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
             webApp.setProtectedTargets(updatedTargets);
 
-
             Path bundlePath = osgiApp.getPath();
 
-            Resource bundleResource = osgiApp.getBundleResource();
+            Resource bundleResource = osgiApp.getBundleResource(resourceFactory);
             
             String pathToResourceBase = osgiApp.getPathToResourceBase();
             

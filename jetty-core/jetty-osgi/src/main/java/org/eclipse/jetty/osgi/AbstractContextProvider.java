@@ -56,15 +56,15 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
         return _attributes;
     }
 
-    public ContextHandler createContextHandler(OSGiApp app) throws Exception
+    public ContextHandler createContextHandler(OSGiDeployableBundleMetadata metadata) throws Exception
     {
-        if (app == null)
+        if (metadata == null)
             return null;
 
         // Create a ContextHandler suitable to deploy in OSGi
-        ContextHandler contextHandler = _contextFactory.createContextHandler(this, app);
-        contextHandler.setID(app.getName());
-        contextHandler.setAttribute(OSGiApp.BUNDLE, app.getBundle());
+        ContextHandler contextHandler = _contextFactory.createContextHandler(this, metadata);
+        contextHandler.setID(metadata.getID());
+        OSGiDeployableBundleMetadata.setBundle(contextHandler, metadata.getBundle());
         return contextHandler;
     }
 

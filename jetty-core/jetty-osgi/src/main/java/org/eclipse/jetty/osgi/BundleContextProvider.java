@@ -26,6 +26,7 @@ import java.util.Map;
 import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.ContextHandlerManagement;
 import org.eclipse.jetty.osgi.util.Util;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -45,9 +46,9 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
 
-    private Map<Path, OSGiApp> _appMap = new HashMap<>();
+    private Map<String, ContextHandler> _contextHandlerMap = new HashMap<>();
 
-    private Map<Bundle, List<OSGiApp>> _bundleMap = new HashMap<>();
+    private Map<Bundle, List<ContextHandler>> _bundleMap = new HashMap<>();
 
     private ServiceRegistration _serviceRegForBundles;
 
@@ -182,16 +183,19 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         String[] tmp = contextFiles.split("[,;]");
         for (String contextFile : tmp)
         {
-            OSGiApp app = new OSGiApp(bundle);
+            OSGiDeployableBundleMetadata app = new OSGiDeployableBundleMetadata(bundle);
             URI contextFilePath = Util.resolvePathAsLocalizedURI(contextFile, app.getBundle(), jettyHomePath);
-            
-            //set up the single context file for this deployment
-            app.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toString());
-            app.setContextHandler(createContextHandler(app));
-            _appMap.put(app.getPath(), app);
-            List<OSGiApp> apps = _bundleMap.computeIfAbsent(bundle, b -> new ArrayList<>());
-            apps.add(app);
-            getContextHandlerManagement().addContextHandler(app.getContextHandler(), ContextHandlerLifeCycle.STARTED);
+
+            if (contextFilePath != null)
+            {
+                // set up the single context file for this deployment
+                app.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toASCIIString());
+            }
+            ContextHandler contextHandler = createContextHandler(app);
+            _contextHandlerMap.put(contextHandler.getID(), contextHandler);
+            List<ContextHandler> contextHandlers = _bundleMap.computeIfAbsent(bundle, b -> new ArrayList<>());
+            contextHandlers.add(contextHandler);
+            getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.STARTED);
             added = true;
         }
 
@@ -205,19 +209,19 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
      * @return true if this was a context we had deployed, false otherwise
      */
     @Override
-    public boolean bundleRemoved(Bundle bundle) throws Exception
+    public boolean bundleRemoved(Bundle bundle)
     {
-        List<OSGiApp> apps = _bundleMap.remove(bundle);
+        List<ContextHandler> contexts = _bundleMap.remove(bundle);
+        if (contexts == null || contexts.isEmpty())
+            return false;
+
         boolean removed = false;
-        if (apps != null)
+        for (ContextHandler context : contexts)
         {
-            for (OSGiApp app : apps)
+            if (_contextHandlerMap.remove(context.getID()) != null)
             {
-                if (_appMap.remove(app.getPath()) != null)
-                {
-                    getContextHandlerManagement().removeContextHandler(app.getContextHandler(), ContextHandlerLifeCycle.UNDEPLOYED);
-                    removed = true;
-                }
+                getContextHandlerManagement().removeContextHandler(context, ContextHandlerLifeCycle.UNDEPLOYED);
+                removed = true;
             }
         }
         return removed; // true if even 1 context was removed associated with this bundle

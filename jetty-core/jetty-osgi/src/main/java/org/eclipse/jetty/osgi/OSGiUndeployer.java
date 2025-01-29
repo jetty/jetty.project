@@ -41,7 +41,7 @@ public class OSGiUndeployer extends StandardUndeployer
     {
         String contextPath = contextHandler.getContextPath();
 
-        Bundle bundle = (Bundle)contextHandler.getAttribute(OSGiApp.BUNDLE);
+        Bundle bundle = OSGiDeployableBundleMetadata.getBundle(contextHandler);
         if (bundle != null)
         {
             // Only act on ContextHandler that is managed by OSGi
@@ -58,7 +58,7 @@ public class OSGiUndeployer extends StandardUndeployer
                 Thread.currentThread().setContextClassLoader(old);
             }
             EventSender.getInstance().send(EventSender.UNDEPLOYED_EVENT, bundle, contextPath);
-            OSGiApp.deregisterAsOSGiService(contextHandler);
+            OSGiDeployableBundleMetadata.deregisterAsOSGiService(contextHandler);
         }
     }
 }
