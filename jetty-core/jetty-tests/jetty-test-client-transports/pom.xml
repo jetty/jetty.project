@@ -131,7 +131,9 @@
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <argLine>@{argLine} ${jetty.surefire.argLine} --enable-native-access=ALL-UNNAMED</argLine>
+              <argLine>@{argLine}
+                ${jetty.surefire.argLine}
+                --enable-native-access=org.eclipse.jetty.quic.quiche.foreign</argLine>
             </configuration>
           </plugin>
         </plugins>

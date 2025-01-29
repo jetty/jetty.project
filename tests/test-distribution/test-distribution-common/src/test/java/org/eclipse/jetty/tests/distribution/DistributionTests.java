@@ -1215,7 +1215,6 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @Tag("flaky")
     public void testH3() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

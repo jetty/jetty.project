@@ -3,10 +3,10 @@ Provides Java Native Access (JNA) support.
 https://github.com/java-native-access/jna
 
 [files]
-maven://net.java.dev.jna/jna-jpms/${jna.version}|lib/http3/jna-jpms-${jna.version}.jar
+maven://net.java.dev.jna/jna-jpms/${jna.version}|lib/jna-jpms-${jna.version}.jar
 
 [lib]
-lib/http3/jna-jpms-${jna.version}.jar
+lib/jna-jpms-${jna.version}.jar
 
 [ini]
 jna.version?=@jna.version@
