@@ -51,7 +51,7 @@ public class RegisteredEncoder
 
     public boolean isType(Type type)
     {
-        return isAssignableFrom(type, objectType);
+        return isAssignableFrom(objectType, type);
     }
 
     public void destroyInstance()

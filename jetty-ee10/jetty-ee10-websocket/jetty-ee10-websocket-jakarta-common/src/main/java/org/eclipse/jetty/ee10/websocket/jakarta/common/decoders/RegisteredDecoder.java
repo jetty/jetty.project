@@ -62,7 +62,7 @@ public class RegisteredDecoder
 
     public boolean isType(Type type)
     {
-        return isAssignableFrom(type, objectType);
+        return isAssignableFrom(objectType, type);
     }
 
     @SuppressWarnings("unchecked")
