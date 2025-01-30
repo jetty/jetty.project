@@ -20,6 +20,7 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +70,11 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         {
             throw new RuntimeException(e);
         }
+    }
+
+    static InvokerUtils.Arg[] getArgsFor(Type objectType)
+    {
+        return getArgsFor(ReflectUtils.getClassFromType(objectType));
     }
 
     static InvokerUtils.Arg[] getArgsFor(Class<?> objectType)
@@ -416,12 +422,13 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         msgMetadata.setRegisteredDecoders(decoders);
 
         // Get the general methodHandle which applies to all the decoders in the list.
-        Class<?> objectType = firstDecoder.objectType;
+        Type objectType = firstDecoder.objectType;
         for (RegisteredDecoder decoder : decoders)
         {
-            if (decoder.objectType.isAssignableFrom(objectType))
+            if (ReflectUtils.isAssignableFrom(objectType, decoder.objectType))
                 objectType = decoder.objectType;
         }
+
         MethodHandle methodHandle = getMethodHandle.apply(getArgsFor(objectType));
         msgMetadata.setMethodHandle(methodHandle);
 

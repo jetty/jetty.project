@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.websocket.jakarta.common.decoders;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -129,7 +130,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
 
     private void add(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceClass)
     {
-        Class<?> objectType = ReflectUtils.findGenericClassFor(decoder, interfaceClass);
+        Type objectType = ReflectUtils.findGenericTypeFor(decoder, interfaceClass);
         if (objectType == null)
         {
             String err = "Unknown Decoder Object type declared for interface " +

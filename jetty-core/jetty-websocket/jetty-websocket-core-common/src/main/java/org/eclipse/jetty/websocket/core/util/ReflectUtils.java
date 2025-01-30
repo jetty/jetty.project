@@ -15,7 +15,9 @@ package org.eclipse.jetty.websocket.core.util;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -168,6 +170,15 @@ public class ReflectUtils
         GenericRef ref = new GenericRef(baseClass, ifaceClass);
         if (resolveGenericRef(ref, baseClass))
             return ref.genericClass;
+
+        return null;
+    }
+
+    public static Type findGenericTypeFor(Class<?> baseClass, Class<?> ifaceClass)
+    {
+        GenericRef ref = new GenericRef(baseClass, ifaceClass);
+        if (resolveGenericRef(ref, baseClass))
+            return ref.genericType;
 
         return null;
     }
@@ -367,5 +378,59 @@ public class ReflectUtils
             delim = true;
         }
         str.append(")");
+    }
+
+    /**
+     * Check if a type is assignable from another type.
+     * This only handles Class, ParameterizedType, and GenericArrayType, and does not handle wildcard types or type variables.
+     *
+     * @param superType the superType.
+     * @param subType the subType.
+     * @return true if the superType is assignable from the subType.
+     */
+    public static boolean isAssignableFrom(Type superType, Type subType)
+    {
+        if (superType instanceof Class<?> superClass && subType instanceof Class<?> subClass)
+            return superClass.isAssignableFrom(subClass);
+
+        if (superType instanceof ParameterizedType pSuperType && subType instanceof ParameterizedType pSubType)
+        {
+            if (!((Class<?>)pSubType.getRawType()).isAssignableFrom((Class<?>)pSuperType.getRawType()))
+                return false;
+
+            Type[] subTypeArgs = pSubType.getActualTypeArguments();
+            Type[] superTypeArgs = pSuperType.getActualTypeArguments();
+            if (subTypeArgs.length != superTypeArgs.length)
+                return false;
+
+            for (int i = 0; i < subTypeArgs.length; i++)
+            {
+                if (!isAssignableFrom(subTypeArgs[i], superTypeArgs[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        if (superType instanceof GenericArrayType superTypeArray && subType instanceof GenericArrayType subTypeArray)
+            return isAssignableFrom(superTypeArray.getGenericComponentType(), subTypeArray.getGenericComponentType());
+
+        return false;
+    }
+
+    public static Class<?> getClassFromType(Type type)
+    {
+        if (type instanceof Class<?>)
+            return (Class<?>)type;
+
+        if (type instanceof ParameterizedType)
+            return (Class<?>)((ParameterizedType)type).getRawType();
+
+        if (type instanceof GenericArrayType gType)
+        {
+            Class<?> componentClass = getClassFromType(gType.getGenericComponentType());
+            return componentClass != null ? Array.newInstance(componentClass, 0).getClass() : null;
+        }
+
+        return null;
     }
 }

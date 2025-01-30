@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.websocket.jakarta.common.encoders;
 
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
@@ -149,7 +150,7 @@ public class AvailableEncoders implements Predicate<Class<?>>, Closeable
 
     private void add(Class<? extends Encoder> encoder, Class<? extends Encoder> interfaceClass)
     {
-        Class<?> objectType = ReflectUtils.findGenericClassFor(encoder, interfaceClass);
+        Type objectType = ReflectUtils.findGenericTypeFor(encoder, interfaceClass);
         if (objectType == null)
         {
             StringBuilder err = new StringBuilder();
