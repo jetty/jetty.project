@@ -74,6 +74,7 @@ public class DeploymentManagerMBean extends ObjectMBean
         return Collections.unmodifiableCollection(_manager.getContextHandlers());
     }
 
+    @ManagedOperation(value = "list ContextHandlers that are located at specified ContextHandlerLifeCycle nodes", impact = "ACTION")
     public void requestContextHandlerGoal(String id, String nodeName)
     {
         _manager.requestContextHandlerGoal(id, nodeName);

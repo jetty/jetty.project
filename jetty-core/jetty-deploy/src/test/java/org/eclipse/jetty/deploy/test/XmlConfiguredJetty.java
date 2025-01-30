@@ -98,11 +98,18 @@ public class XmlConfiguredJetty
         // Configure everything
         for (Resource xmlResource : xmls)
         {
-            XmlConfiguration configuration = new XmlConfiguration(xmlResource);
-            configuration.getIdMap().putAll(idMap);
-            configuration.getProperties().putAll(properties);
-            configuration.configure();
-            idMap.putAll(configuration.getIdMap());
+            try
+            {
+                XmlConfiguration configuration = new XmlConfiguration(xmlResource);
+                configuration.getIdMap().putAll(idMap);
+                configuration.getProperties().putAll(properties);
+                configuration.configure();
+                idMap.putAll(configuration.getIdMap());
+            }
+            catch (Exception e)
+            {
+                throw new IllegalStateException("Unable to configure XML: " + xmlResource, e);
+            }
         }
 
         return idMap;

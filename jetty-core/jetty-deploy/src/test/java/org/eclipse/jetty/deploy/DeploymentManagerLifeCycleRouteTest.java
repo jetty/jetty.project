@@ -115,7 +115,7 @@ public class DeploymentManagerLifeCycleRouteTest
         ObjectName dmObjName = new ObjectName("org.eclipse.jetty.deploy:type=deploymentmanager,id=0");
         String[] params = new String[]{"foo-webapp-1", "undeployed"};
         String[] signature = new String[]{"java.lang.String", "java.lang.String"};
-        mbsConnection.invoke(dmObjName, "requestAppGoal", params, signature);
+        mbsConnection.invoke(dmObjName, "requestContextHandlerGoal", params, signature);
 
         // Setup Expectations.
         List<String> expected = new ArrayList<>();

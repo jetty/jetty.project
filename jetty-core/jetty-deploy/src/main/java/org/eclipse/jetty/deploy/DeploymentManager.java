@@ -60,42 +60,10 @@ import org.slf4j.LoggerFactory;
 public class DeploymentManager extends ContainerLifeCycle implements ContextHandlerManagement
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentManager.class);
-
-    /**
-     * A mutable record tracking a single context within the deployment manager.
-     */
-    private static class TrackedContext
-    {
-        /**
-         * The context being tracked.
-         */
-        private ContextHandler contextHandler;
-
-        /**
-         * The lifecycle node location of this App
-         */
-        private Node lifecyleNode;
-
-        public ContextHandler getContextHandler()
-        {
-            return contextHandler;
-        }
-
-        public Node getLifecyleNode()
-        {
-            return lifecyleNode;
-        }
-
-        void setLifeCycleNode(Node node)
-        {
-            this.lifecyleNode = node;
-        }
-    }
-
     private final AutoLock _lock = new AutoLock();
-    private Throwable _onStartupErrors;
     private final ContextHandlerLifeCycle _lifecycle = new ContextHandlerLifeCycle();
     private final Queue<TrackedContext> _tracked = new ConcurrentLinkedQueue<>();
+    private Throwable _onStartupErrors;
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
 
@@ -122,79 +90,9 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
     }
 
-    public void setLifeCycleBindings(Collection<ContextHandlerLifeCycle.Binding> bindings)
-    {
-        if (isRunning())
-            throw new IllegalStateException();
-        for (ContextHandlerLifeCycle.Binding b : _lifecycle.getBindings())
-        {
-            _lifecycle.removeBinding(b);
-        }
-        for (ContextHandlerLifeCycle.Binding b : bindings)
-        {
-            _lifecycle.addBinding(b);
-        }
-    }
-
-    public Collection<ContextHandlerLifeCycle.Binding> getLifeCycleBindings()
-    {
-        return Collections.unmodifiableSet(_lifecycle.getBindings());
-    }
-
     public void addLifeCycleBinding(ContextHandlerLifeCycle.Binding binding)
     {
         _lifecycle.addBinding(binding);
-    }
-
-    /**
-     * Convenience method to allow for insertion of nodes into the lifecycle.
-     *
-     * @param existingFromNodeName the existing node start
-     * @param existingToNodeName the existing node end
-     * @param insertedNodeName the new node to create between the existing nodes
-     */
-    public void insertLifeCycleNode(String existingFromNodeName, String existingToNodeName, String insertedNodeName)
-    {
-        Node fromNode = _lifecycle.getNodeByName(existingFromNodeName);
-        Node toNode = _lifecycle.getNodeByName(existingToNodeName);
-        Edge edge = new Edge(fromNode, toNode);
-        _lifecycle.insertNode(edge, insertedNodeName);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (getContexts() == null)
-            throw new IllegalStateException("No " + ContextHandlerCollection.class.getName() + " defined");
-
-        if (_useStandardBindings)
-        {
-            LOG.debug("DeploymentManager using standard bindings");
-            addLifeCycleBinding(new StandardDeployer());
-            addLifeCycleBinding(new StandardStarter());
-            addLifeCycleBinding(new StandardStopper());
-            addLifeCycleBinding(new StandardUndeployer());
-        }
-
-        try (AutoLock l = _lock.lock())
-        {
-            ExceptionUtil.ifExceptionThrow(_onStartupErrors);
-        }
-
-        super.doStart();
-    }
-
-    private TrackedContext findTrackedContext(String id)
-    {
-        if (id == null)
-            return null;
-
-        for (TrackedContext entry : _tracked)
-        {
-            if (id.equals(entry.contextHandler.getID()))
-                return entry;
-        }
-        return null;
     }
 
     public ContextHandler findContextHandler(String id)
@@ -242,9 +140,38 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         return _contexts;
     }
 
+    public void setContexts(ContextHandlerCollection contexts)
+    {
+        this._contexts = contexts;
+    }
+
     public ContextHandlerLifeCycle getLifeCycle()
     {
         return _lifecycle;
+    }
+
+    public Collection<ContextHandlerLifeCycle.Binding> getLifeCycleBindings()
+    {
+        return Collections.unmodifiableSet(_lifecycle.getBindings());
+    }
+
+    public void setLifeCycleBindings(Collection<ContextHandlerLifeCycle.Binding> bindings)
+    {
+        if (isRunning())
+            throw new IllegalStateException();
+        for (ContextHandlerLifeCycle.Binding b : _lifecycle.getBindings())
+        {
+            _lifecycle.removeBinding(b);
+        }
+        for (ContextHandlerLifeCycle.Binding b : bindings)
+        {
+            _lifecycle.addBinding(b);
+        }
+    }
+
+    public Collection<Node> getNodes()
+    {
+        return _lifecycle.getNodes();
     }
 
     public Server getServer()
@@ -254,6 +181,31 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
             return null;
         }
         return _contexts.getServer();
+    }
+
+    /**
+     * Convenience method to allow for insertion of nodes into the lifecycle.
+     *
+     * @param existingFromNodeName the existing node start
+     * @param existingToNodeName the existing node end
+     * @param insertedNodeName the new node to create between the existing nodes
+     */
+    public void insertLifeCycleNode(String existingFromNodeName, String existingToNodeName, String insertedNodeName)
+    {
+        Node fromNode = _lifecycle.getNodeByName(existingFromNodeName);
+        Node toNode = _lifecycle.getNodeByName(existingToNodeName);
+        Edge edge = new Edge(fromNode, toNode);
+        _lifecycle.insertNode(edge, insertedNodeName);
+    }
+
+    public boolean isUseStandardBindings()
+    {
+        return _useStandardBindings;
+    }
+
+    public void setUseStandardBindings(boolean useStandardBindings)
+    {
+        this._useStandardBindings = useStandardBindings;
     }
 
     /**
@@ -287,7 +239,6 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
      * @param nodeName the name of the node to attain
      */
     @Override
-    @ManagedOperation(value = "request the context handler to be moved to the specified lifecycle node", impact = "ACTION")
     public void requestContextHandlerGoal(ContextHandler contextHandler, String nodeName)
     {
         TrackedContext tracked = findTrackedContext(contextHandler.getID());
@@ -297,6 +248,77 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
 
         requestContextHandlerGoal(tracked, nodeName);
+    }
+
+    /**
+     * Move an ContextHandler.ID through the {@link ContextHandlerLifeCycle} to the desired {@link Node}, executing each lifecycle step
+     * in the process to reach the desired state.
+     *
+     * @param contextHandlerId the ID of ContextHandler to move through the process
+     * @param nodeName the name of the node to attain
+     */
+    @ManagedOperation(value = "request the context handler to be moved to the specified lifecycle node", impact = "ACTION")
+    public void requestContextHandlerGoal(@Name("contextId") String contextHandlerId, @Name("nodeName") String nodeName)
+    {
+        TrackedContext tracked = findTrackedContext(contextHandlerId);
+        if (tracked == null)
+        {
+            throw new IllegalStateException("ContextHandler not being tracked by Deployment Manager: " + contextHandlerId);
+        }
+        requestContextHandlerGoal(tracked, nodeName);
+    }
+
+    public void undeployAll()
+    {
+        LOG.debug("Undeploy All");
+        for (TrackedContext entry : _tracked)
+        {
+            requestContextHandlerGoal(entry, ContextHandlerLifeCycle.UNDEPLOYED);
+        }
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (getContexts() == null)
+            throw new IllegalStateException("No " + ContextHandlerCollection.class.getName() + " defined");
+
+        if (_useStandardBindings)
+        {
+            LOG.debug("DeploymentManager using standard bindings");
+            addLifeCycleBinding(new StandardDeployer());
+            addLifeCycleBinding(new StandardStarter());
+            addLifeCycleBinding(new StandardStopper());
+            addLifeCycleBinding(new StandardUndeployer());
+        }
+
+        try (AutoLock l = _lock.lock())
+        {
+            ExceptionUtil.ifExceptionThrow(_onStartupErrors);
+        }
+
+        super.doStart();
+    }
+
+    private void addOnStartupError(Throwable cause)
+    {
+        try (AutoLock l = _lock.lock())
+        {
+            _onStartupErrors = ExceptionUtil.combine(_onStartupErrors, cause);
+        }
+    }
+
+    private TrackedContext findTrackedContext(String id)
+    {
+        if (id == null)
+            return null;
+
+        for (TrackedContext entry : _tracked)
+        {
+            if (id.equals(entry.contextHandler.getID()))
+                return entry;
+        }
+        return null;
     }
 
     /**
@@ -342,7 +364,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         catch (Throwable t)
         {
             LOG.warn("Unable to reach node goal: {}", nodeName, t);
-            
+
             // migrate to FAILED node
             Node failed = _lifecycle.getNodeByName(ContextHandlerLifeCycle.FAILED);
             tracked.setLifeCycleNode(failed);
@@ -363,50 +385,34 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
     }
 
-    private void addOnStartupError(Throwable cause)
+    /**
+     * A mutable record tracking a single context within the deployment manager.
+     */
+    private static class TrackedContext
     {
-        try (AutoLock l = _lock.lock())
+        /**
+         * The context being tracked.
+         */
+        private ContextHandler contextHandler;
+
+        /**
+         * The lifecycle node location of this App
+         */
+        private Node lifecyleNode;
+
+        public ContextHandler getContextHandler()
         {
-            _onStartupErrors = ExceptionUtil.combine(_onStartupErrors, cause);
+            return contextHandler;
         }
-    }
 
-    public void requestContextHandlerGoal(@Name("contextId") String contextHandlerId, @Name("nodeName") String nodeName)
-    {
-        TrackedContext tracked = findTrackedContext(contextHandlerId);
-        if (tracked == null)
+        public Node getLifecyleNode()
         {
-            throw new IllegalStateException("ContextHandler not being tracked by Deployment Manager: " + contextHandlerId);
+            return lifecyleNode;
         }
-        requestContextHandlerGoal(tracked, nodeName);
-    }
 
-    public void setContexts(ContextHandlerCollection contexts)
-    {
-        this._contexts = contexts;
-    }
-
-    public void undeployAll()
-    {
-        LOG.debug("Undeploy All");
-        for (TrackedContext entry : _tracked)
+        void setLifeCycleNode(Node node)
         {
-            requestContextHandlerGoal(entry, ContextHandlerLifeCycle.UNDEPLOYED);
+            this.lifecyleNode = node;
         }
-    }
-
-    public boolean isUseStandardBindings()
-    {
-        return _useStandardBindings;
-    }
-
-    public void setUseStandardBindings(boolean useStandardBindings)
-    {
-        this._useStandardBindings = useStandardBindings;
-    }
-
-    public Collection<Node> getNodes()
-    {
-        return _lifecycle.getNodes();
     }
 }

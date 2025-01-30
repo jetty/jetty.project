@@ -97,6 +97,8 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
             jetty = new XmlConfiguredJetty(testdir);
             jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty.xml"));
             jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-http.xml"));
+            jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-manager.xml"));
+            jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deploy.xml"));
             jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-core-deploy-custom.xml"));
 
             // Should not throw an Exception

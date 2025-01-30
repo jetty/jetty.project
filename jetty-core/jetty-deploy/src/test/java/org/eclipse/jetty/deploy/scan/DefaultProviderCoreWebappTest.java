@@ -111,7 +111,7 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
         defaultProvider.addMonitoredDirectory(webapps);
         DefaultProvider.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
-
+        deploymentManager.addBean(defaultProvider);
         startServer(deploymentManager);
 
         URI destURI = server.getURI().resolve("/demo/");

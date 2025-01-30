@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -131,12 +132,13 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
     private boolean deferInitialScan = false;
     private String defaultEnvironmentName;
 
-    public DefaultProvider(ContextHandlerManagement contextManagement)
+    public DefaultProvider(@Name("contextManagement") ContextHandlerManagement contextManagement)
     {
         this(contextManagement, null);
     }
 
-    public DefaultProvider(ContextHandlerManagement contextManagement, FilenameFilter filter)
+    public DefaultProvider(@Name("contextManagement") ContextHandlerManagement contextManagement,
+                           @Name("filenameFilter") FilenameFilter filter)
     {
         this.contextManagement = Objects.requireNonNull(contextManagement);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
@@ -642,6 +644,7 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
                         // Create the Context Handler
                         Server server = contextManagement.getServer();
                         ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, step.getApp(), deployAttributes);
+                        contextHandler.setID(step.getName()); // force ID to what we need (XML could have set it to something else)
                         step.getApp().setContextHandler(contextHandler);
 
                         // Introduce the App to the DeploymentManager
