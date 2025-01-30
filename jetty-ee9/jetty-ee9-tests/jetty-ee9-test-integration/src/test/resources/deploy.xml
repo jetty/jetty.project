@@ -15,6 +15,9 @@
         <Call name="addBean">
          <Arg>
            <New id="defaultProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
+             <Arg name="contextManagement">
+               <Ref refid="DeploymentManager" />
+             </Arg>
              <Call name="addMonitoredDirectory">
                <Arg>
                  <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">

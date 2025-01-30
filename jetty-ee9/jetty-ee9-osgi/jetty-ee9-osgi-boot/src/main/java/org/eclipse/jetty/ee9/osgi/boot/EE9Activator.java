@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.ee9.webapp.Configuration;
@@ -137,9 +138,9 @@ public class EE9Activator implements BundleActivator
             String containerScanBundlePattern = null;
             if (!contributedBundles.isEmpty())
             {
-                StringBuffer strbuff = new StringBuffer();
-                contributedBundles.forEach(b -> strbuff.append(b.getSymbolicName()).append("|"));
-                containerScanBundlePattern = strbuff.substring(0, strbuff.length() - 1);
+                containerScanBundlePattern = contributedBundles.stream()
+                    .map(Bundle::getSymbolicName)
+                    .collect(Collectors.joining("|"));
             }
 
             if (deployer.isPresent())
@@ -164,11 +165,13 @@ public class EE9Activator implements BundleActivator
                 if (contextProvider == null)
                 {
                     contextProvider = new BundleContextProvider(deploymentManager, ENVIRONMENT, new EE9ContextFactory(_myBundle));
+                    deploymentManager.addBean(contextProvider);
                 }
 
                 if (webAppProvider == null)
                 {
                     webAppProvider = new BundleWebAppProvider(deploymentManager, ENVIRONMENT, new EE9WebAppFactory(_myBundle));
+                    deploymentManager.addBean(webAppProvider);
                 }
 
                 //ensure the providers are configured with the extra bundles that must be scanned from the container classpath
@@ -519,8 +522,6 @@ public class EE9Activator implements BundleActivator
                 updatedTargets = new String[OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
             System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, targets.length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
             webApp.setProtectedTargets(updatedTargets);
-
-            Path bundlePath = metadata.getPath();
 
             Resource bundleResource = Util.newBundleResource(metadata.getBundle(), resourceFactory);
 

@@ -268,7 +268,7 @@ public class EE11Activator implements BundleActivator
         public ContextHandler createContextHandler(AbstractContextProvider provider, BundleMetadata metadata)
             throws Exception
         {
-            String jettyHome = (String)provider.getContextHandlerManagement().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+            String jettyHome = (String)provider.getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
             Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
 
             ContextHandler contextHandler = new ContextHandler();
@@ -278,7 +278,7 @@ public class EE11Activator implements BundleActivator
             contextHandler.setBaseResource(Util.newBundleResource(metadata.getBundle(), resourceFactory));
 
             // provides access to core classes
-            ClassLoader coreLoader = (ClassLoader)provider.getContextHandlerManagement().getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
+            ClassLoader coreLoader = (ClassLoader)provider.getServer().getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
             if (LOG.isDebugEnabled())
                 LOG.debug("Core classloader = {}", coreLoader.getClass());
 

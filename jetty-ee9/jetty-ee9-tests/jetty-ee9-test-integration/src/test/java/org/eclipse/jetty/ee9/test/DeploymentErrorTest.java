@@ -82,10 +82,9 @@ public class DeploymentErrorTest
         // Empty contexts collections
         contexts = new ContextHandlerCollection();
 
-        //Environment
-        Environment ee9 = Environment.ensure("ee9");
-        ee9.setAttribute("contextHandlerClass", "org.eclipse.jetty.ee9.webapp.WebAppContext");
-        
+        // Environment
+        Environment.ensure("ee9");
+
         // Deployment Manager
         deploymentManager = new DeploymentManager();
         deploymentManager.setContexts(contexts);
@@ -99,7 +98,8 @@ public class DeploymentErrorTest
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
         DefaultProvider appProvider = new DefaultProvider(deploymentManager);
-        appProvider.configureEnvironment("ee9");
+        DefaultProvider.EnvironmentConfig envConfig = appProvider.configureEnvironment("ee9");
+        envConfig.setContextHandlerClass("org.eclipse.jetty.ee9.webapp.WebAppContext");
         appProvider.setScanInterval(1);
         appProvider.addMonitoredDirectory(docroots);
         server.addBean(deploymentManager);
