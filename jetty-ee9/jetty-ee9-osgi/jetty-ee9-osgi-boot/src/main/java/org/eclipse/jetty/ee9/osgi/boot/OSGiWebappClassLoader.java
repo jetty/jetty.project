@@ -43,7 +43,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * @param parent The parent classloader.
      * @param context The WebAppContext
      * @param contributor The bundle that defines this web-application.
-     * @throws IOException if unable to cerate the OSGiWebappClassLoader
+     * @throws IOException if unable to create the OSGiWebappClassLoader
      */
     public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor)
         throws IOException
