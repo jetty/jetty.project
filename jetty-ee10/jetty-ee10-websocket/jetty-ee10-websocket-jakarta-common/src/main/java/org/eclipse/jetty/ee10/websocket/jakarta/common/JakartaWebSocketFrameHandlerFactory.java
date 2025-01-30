@@ -29,6 +29,7 @@ import java.util.function.Function;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Decoder;
+import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnClose;
@@ -116,11 +117,11 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         this.paramIdentifier = paramIdentifier == null ? InvokerUtils.PARAM_IDENTITY : paramIdentifier;
     }
 
-    public abstract JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
+    public abstract JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig) throws DeploymentException;
 
     public abstract EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass);
 
-    public JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest)
+    public JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest) throws DeploymentException
     {
         Object endpoint;
         EndpointConfig config;
@@ -276,7 +277,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         return metadata;
     }
 
-    protected JakartaWebSocketFrameHandlerMetadata discoverJakartaFrameHandlerMetadata(Class<?> endpointClass, JakartaWebSocketFrameHandlerMetadata metadata)
+    protected JakartaWebSocketFrameHandlerMetadata discoverJakartaFrameHandlerMetadata(Class<?> endpointClass, JakartaWebSocketFrameHandlerMetadata metadata) throws DeploymentException
     {
         MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;
@@ -351,7 +352,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
                     continue;
 
                 // Not a valid @OnMessage declaration signature.
-                throw InvalidSignatureException.build(endpointClass, OnMessage.class, onMsg);
+                throw new DeploymentException("Invalid @OnMessage method signature", InvalidSignatureException.build(endpointClass, OnMessage.class, onMsg));
             }
         }
 
@@ -457,7 +458,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         return true;
     }
 
-    private void assertSignatureValid(Class<?> endpointClass, Method method, Class<? extends Annotation> annotationClass)
+    private void assertSignatureValid(Class<?> endpointClass, Method method, Class<? extends Annotation> annotationClass) throws DeploymentException
     {
         // Test modifiers
         int mods = method.getModifiers();
@@ -467,7 +468,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             err.append("@").append(annotationClass.getSimpleName());
             err.append(" method must be public: ");
             ReflectUtils.append(err, endpointClass, method);
-            throw new InvalidSignatureException(err.toString());
+            throw new DeploymentException(err.toString());
         }
 
         if (Modifier.isStatic(mods))
@@ -476,7 +477,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             err.append("@").append(annotationClass.getSimpleName());
             err.append(" method must not be static: ");
             ReflectUtils.append(err, endpointClass, method);
-            throw new InvalidSignatureException(err.toString());
+            throw new DeploymentException(err.toString());
         }
 
         // Test return type
@@ -493,7 +494,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             err.append("@").append(annotationClass.getSimpleName());
             err.append(" return must be void: ");
             ReflectUtils.append(err, endpointClass, method);
-            throw new InvalidSignatureException(err.toString());
+            throw new DeploymentException(err.toString());
         }
     }
 

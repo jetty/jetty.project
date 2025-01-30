@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 
@@ -32,7 +33,7 @@ public class DummyFrameHandlerFactory extends JakartaWebSocketFrameHandlerFactor
     }
 
     @Override
-    public JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
+    public JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig) throws DeploymentException
     {
         if (jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass))
         {

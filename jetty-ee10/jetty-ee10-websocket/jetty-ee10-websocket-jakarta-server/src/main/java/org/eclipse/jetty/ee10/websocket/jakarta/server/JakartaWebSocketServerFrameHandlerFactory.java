@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.server;
 
+import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientFrameHandlerFactory;
@@ -22,6 +23,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.server.internal.JakartaServerUpg
 import org.eclipse.jetty.ee10.websocket.jakarta.server.internal.PathParamIdentifier;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
@@ -34,7 +36,7 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
     }
 
     @Override
-    public JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
+    public JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig) throws DeploymentException
     {
         if (jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass))
             return createEndpointMetadata(endpointConfig);
@@ -52,6 +54,13 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
-        return newJakartaWebSocketFrameHandler(websocketPojo, new JakartaServerUpgradeRequest(upgradeRequest));
+        try
+        {
+            return newJakartaWebSocketFrameHandler(websocketPojo, new JakartaServerUpgradeRequest(upgradeRequest));
+        }
+        catch (DeploymentException e)
+        {
+            throw new InvalidWebSocketException(e.getMessage(), e);
+        }
     }
 }
