@@ -181,6 +181,13 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return true;
     }
 
+    public void onStreamFailure(long streamId, Throwable failure)
+    {
+        StreamEndPoint streamEndPoint = getStreamEndPoint(streamId);
+        if (streamEndPoint != null)
+            streamEndPoint.disconnect(ErrorCode.NO_ERROR.code(), failure, true);
+    }
+
     /**
      * <p>Performs an inward close upon sending a {@code CONNECTION_CLOSE} frame.</p>
      * <p>This method closes all the {@link Connection}s associated with the
@@ -268,11 +275,4 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     {
         ProtocolSession newProtocolSession(Session session, Map<String, Object> context);
     }
-
-
-//    protected void onFailure(long error, String reason, Throwable failure)
-//    {
-//    }
-//
-//    protected abstract void onClose(long error, String reason);
 }

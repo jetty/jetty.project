@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,14 +48,15 @@ public class StreamEndPoint implements EndPoint
     private static final Logger LOG = LoggerFactory.getLogger(StreamEndPoint.class);
     private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
 
+    private final AutoLock lock = new AutoLock();
     private final long created = System.currentTimeMillis();
-    private final AtomicReference<Stream.Data> data = new AtomicReference<>();
-    private final AtomicReference<Callback> fillInterest = new AtomicReference<>();
     private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.IDLE);
     private final AtomicReference<Throwable> writeFailure = new AtomicReference<>();
     private final ProtocolSession protocolSession;
     private final Stream stream;
     private Connection connection;
+    private Stream.Data data;
+    private Callback fillInterest;
 
     public StreamEndPoint(ProtocolSession protocolSession, Stream stream)
     {
@@ -150,8 +151,10 @@ public class StreamEndPoint implements EndPoint
     @Override
     public boolean isInputShutdown()
     {
-        Stream.Data current = data.get();
-        return current == Stream.Data.EOF;
+        try (AutoLock ignored = lock.lock())
+        {
+            return data == Stream.Data.EOF;
+        }
     }
 
     public void shutdownInput(long appError)
@@ -199,28 +202,85 @@ public class StreamEndPoint implements EndPoint
         getConnection().onClose(failure);
     }
 
-    public boolean onIdleTimeout(TimeoutException timeout)
+    boolean onIdleTimeout(TimeoutException timeout)
     {
         return true;
+    }
+
+    void onFailure(Throwable failure)
+    {
+        Callback callback;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (data == null)
+            {
+                data = new StreamDataFailure(failure);
+            }
+            else
+            {
+                // Keep EOF or existing failure, otherwise release and replace.
+                if (!data.isLast() || data.getByteBuffer().hasRemaining())
+                {
+                    data.release();
+                    data = new StreamDataFailure(failure);
+                }
+            }
+
+            callback = fillInterest;
+            fillInterest = null;
+        }
+        if (callback != null)
+            callback.succeeded();
+        else
+            protocolSession.onStreamFailure(stream.getId(), failure);
     }
 
     @Override
     public int fill(ByteBuffer sink) throws IOException
     {
+        Stream.Data current;
+        try (AutoLock ignored = lock.lock())
+        {
+            current = data;
+            // Keep EOF or failure, otherwise null out to allow for concurrent failures.
+            if (current == null || !current.isLast() || current.getByteBuffer().hasRemaining())
+                data = null;
+        }
+
         while (true)
         {
-            Stream.Data current = data.get();
             if (current != null)
             {
                 ByteBuffer source = current.getByteBuffer();
                 if (source.hasRemaining())
                 {
                     int filled = copy(current, sink);
-                    if (!source.hasRemaining())
+
+                    boolean release = true;
+                    if (source.hasRemaining())
                     {
-                        data.set(current.isLast() ? Stream.Data.EOF : null);
-                        current.release();
+                        try (AutoLock ignored = lock.lock())
+                        {
+                            // Do not overwrite concurrent failures.
+                            if (data == null)
+                            {
+                                data = current;
+                                release = false;
+                            }
+                        }
                     }
+                    else
+                    {
+                        try (AutoLock ignored = lock.lock())
+                        {
+                            // Do not overwrite concurrent failures.
+                            if (data == null && current.isLast())
+                                data = Stream.Data.EOF;
+                        }
+                    }
+
+                    if (release)
+                        current.release();
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("filled {} bytes on {}", filled, this);
@@ -234,7 +294,12 @@ public class StreamEndPoint implements EndPoint
                         throw IO.rethrow(f.failure);
                     if (current != Stream.Data.EOF)
                     {
-                        data.set(Stream.Data.EOF);
+                        try (AutoLock ignored = lock.lock())
+                        {
+                            // Do not overwrite concurrent failures.
+                            if (data == null)
+                                data = Stream.Data.EOF;
+                        }
                         current.release();
                     }
                     return -1;
@@ -248,8 +313,6 @@ public class StreamEndPoint implements EndPoint
 
             if (current == null)
                 return 0;
-
-            data.set(current);
         }
     }
 
@@ -419,7 +482,10 @@ public class StreamEndPoint implements EndPoint
     @Override
     public boolean isFillInterested()
     {
-        return fillInterest.get() != null;
+        try (AutoLock ignored = lock.lock())
+        {
+            return fillInterest != null;
+        }
     }
 
     @Override
@@ -432,7 +498,13 @@ public class StreamEndPoint implements EndPoint
     @Override
     public boolean tryFillInterested(Callback callback)
     {
-        boolean set = fillInterest.compareAndSet(null, Objects.requireNonNull(callback));
+        boolean set;
+        try (AutoLock ignored = lock.lock())
+        {
+            set = fillInterest == null;
+            if (set)
+                fillInterest = callback;
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("setting ({}) fill interest on {}", set, this);
         if (set)
@@ -440,9 +512,14 @@ public class StreamEndPoint implements EndPoint
         return set;
     }
 
-    public void fillable()
+    void fillable()
     {
-        Callback callback = fillInterest.getAndSet(null);
+        Callback callback;
+        try (AutoLock ignored = lock.lock())
+        {
+            callback = fillInterest;
+            fillInterest = null;
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("notifying fillable via {} on {}", callback, this);
         if (callback != null)

@@ -344,6 +344,19 @@ public abstract class QuicheSession extends AbstractSession
         produce();
     }
 
+    Throwable peek(QuicheStream stream)
+    {
+        try
+        {
+            quiche.drainClearBytesForStream(stream.getId(), BufferUtil.EMPTY_BUFFER);
+            return null;
+        }
+        catch (Throwable x)
+        {
+            return x;
+        }
+    }
+
     Stream.Data read(QuicheStream stream) throws IOException
     {
         if (LOG.isDebugEnabled())
@@ -670,7 +683,19 @@ public abstract class QuicheSession extends AbstractSession
                         LOG.debug("readable stream #{} demand={} on {}", streamId, demand, QuicheSession.this);
 
                     if (demand)
+                    {
                         stream.notifyDataAvailable();
+                    }
+                    else
+                    {
+                        // Even if there is no demand, we want to know if the peer sent a RESET_STREAM.
+                        if (stream.isRemotelyClosed())
+                        {
+                            Throwable failure = stream.peek();
+                            if (failure != null)
+                                stream.notifyFailure(failure);
+                        }
+                    }
                 }
 
                 flush();

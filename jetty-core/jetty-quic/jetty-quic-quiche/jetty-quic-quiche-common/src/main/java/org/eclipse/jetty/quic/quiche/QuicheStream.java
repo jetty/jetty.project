@@ -82,6 +82,14 @@ public class QuicheStream extends AbstractStream
         return session;
     }
 
+    Throwable peek()
+    {
+        Throwable failure = session.peek(this);
+        if (failure != null)
+            updateCloseState(CloseState.REMOTELY_CLOSED);
+        return failure;
+    }
+
     @Override
     public Data read()
     {
@@ -367,6 +375,20 @@ public class QuicheStream extends AbstractStream
         {
             LOG.info("failure while notifying listener {}", listener, x);
             return true;
+        }
+    }
+
+    void notifyFailure(Throwable failure)
+    {
+        Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onFailure(this, failure);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
         }
     }
 

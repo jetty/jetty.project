@@ -17,8 +17,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.quic.api.Stream;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
-import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 
 public class ProtocolStreamListener implements Stream.Listener
 {
@@ -36,28 +34,6 @@ public class ProtocolStreamListener implements Stream.Listener
     }
 
     @Override
-    public void onStopSending(Stream stream, StopSendingFrame frame)
-    {
-        endPoint.get().shutdownOutput(frame.getApplicationErrorCode());
-    }
-
-    @Override
-    public void onReset(Stream stream, ResetFrame frame)
-    {
-        // TODO: I don't think this is necessary:
-        //  the peer is informing that *it* won't
-        //  send more, but *we* could still send.
-        endPoint.get().shutdownInput(frame.getApplicationErrorCode());
-    }
-
-    @Override
-    public void onClose(Stream stream)
-    {
-        // TODO
-        Stream.Listener.super.onClose(stream);
-    }
-
-    @Override
     public boolean onIdleTimeout(Stream stream, TimeoutException failure)
     {
         return endPoint.get().onIdleTimeout(failure);
@@ -66,7 +42,6 @@ public class ProtocolStreamListener implements Stream.Listener
     @Override
     public void onFailure(Stream stream, Throwable failure)
     {
-        // TODO: we should change the state.
-        endPoint.get().close(failure);
+        endPoint.get().onFailure(failure);
     }
 }

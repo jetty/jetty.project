@@ -314,7 +314,6 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     protected abstract void notifyIdleTimeout(TimeoutException timeout, Promise<Boolean> promise);
 
-    // TODO: review this method: close or disconnect?
     public void onFailure(long error, Throwable failure)
     {
         notifyFailure(error, failure);

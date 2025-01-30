@@ -35,6 +35,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
@@ -75,7 +76,7 @@ public class Http3AsyncIOServletTest
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         serverSslContextFactory.setKeyStorePassword("storepwd");
-        QuicheServerQuicConfiguration serverQuicConfiguration = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
+        QuicheServerQuicConfiguration serverQuicConfiguration = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
         connector = new QuicheServerConnector(server, serverSslContextFactory, serverQuicConfiguration, new HTTP3ServerConnectionFactory(httpConfig));
         server.addConnector(connector);
         ServletContextHandler servletContextHandler = new ServletContextHandler("/");

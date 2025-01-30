@@ -261,6 +261,12 @@ public class ClientHTTP3Session extends ClientProtocolSession
         return session.onIdleTimeout(timeout);
     }
 
+    @Override
+    public void onStreamFailure(long streamId, Throwable failure)
+    {
+        session.onStreamFailure(streamId, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
+    }
+
     private void onFailure(long error, String reason, Throwable failure)
     {
         session.onSessionFailure(error, reason, failure);

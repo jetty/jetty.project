@@ -241,6 +241,12 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
+    public void onStreamFailure(long streamId, Throwable failure)
+    {
+        session.onStreamFailure(streamId, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
+    }
+
+    @Override
     public CompletableFuture<Void> close(ConnectionCloseFrame frame)
     {
         // Propagate the close inwards.

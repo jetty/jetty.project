@@ -364,10 +364,10 @@ public interface Stream
         }
 
         /**
-         * <p>Invoked when the {@link Session} is closing either locally or remotely.</p>
+         * <p>Invoked when a stream failure is detected.</p>
          *
          * @param stream the stream
-         * @param failure the failure that caused the session to close
+         * @param failure the stream failure
          */
         default void onFailure(Stream stream, Throwable failure)
         {
