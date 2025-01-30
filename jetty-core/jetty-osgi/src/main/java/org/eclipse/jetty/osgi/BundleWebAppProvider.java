@@ -39,18 +39,18 @@ import org.slf4j.LoggerFactory;
  */
 public class BundleWebAppProvider extends AbstractContextProvider implements BundleProvider
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BundleWebAppProvider.class);
 
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.
      */
     private Map<Bundle, ContextHandler> _bundleMap = new HashMap<>();
 
-    private ServiceRegistration _serviceRegForBundles;
+    private ServiceRegistration<?> _serviceRegForBundles;
 
     private WebAppTracker _webappTracker;
 
-    public class WebAppTracker extends BundleTracker
+    public class WebAppTracker extends BundleTracker<Object>
     {
         protected String _managedServerName;
 
@@ -183,8 +183,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             String staticResourcesLocation = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
             if (staticResourcesLocation != null)
             {
-                OSGiDeployableBundleMetadata app = new OSGiDeployableBundleMetadata(bundle);
-                app.setPathToResourceBase(staticResourcesLocation);
+                BundleMetadata app = new BundleMetadata(bundle, staticResourcesLocation);
                 ContextHandler contextHandler = createContextHandler(app);
                 _bundleMap.put(bundle, contextHandler);
                 getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.STARTED);
@@ -195,9 +194,8 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             if (bundle.getEntry("/WEB-INF/web.xml") != null)
             {
                 String base = ".";
-                OSGiDeployableBundleMetadata app = new OSGiDeployableBundleMetadata(bundle);
+                BundleMetadata app = new BundleMetadata(bundle, base);
                 ContextHandler contextHandler = createContextHandler(app);
-                app.setPathToResourceBase(base);
                 _bundleMap.put(bundle, contextHandler);
                 getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.STARTED);
                 return true;
@@ -208,8 +206,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
             {
                 //Could be a static webapp with no web.xml
                 String base = ".";
-                OSGiDeployableBundleMetadata app = new OSGiDeployableBundleMetadata(bundle);
-                app.setPathToResourceBase(base);
+                BundleMetadata app = new BundleMetadata(bundle, base);
                 ContextHandler contextHandler = createContextHandler(app);
                 _bundleMap.put(bundle, contextHandler);
                 getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.STARTED);
@@ -218,6 +215,11 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
 
             //not a webapp
             return false;
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace(System.err);
+            throw t;
         }
         finally
         {

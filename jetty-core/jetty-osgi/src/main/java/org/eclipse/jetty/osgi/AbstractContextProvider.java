@@ -16,6 +16,7 @@ package org.eclipse.jetty.osgi;
 import java.util.Objects;
 
 import org.eclipse.jetty.deploy.ContextHandlerManagement;
+import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -56,15 +57,15 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
         return _attributes;
     }
 
-    public ContextHandler createContextHandler(OSGiDeployableBundleMetadata metadata) throws Exception
+    public ContextHandler createContextHandler(BundleMetadata metadata) throws Exception
     {
         if (metadata == null)
             return null;
 
         // Create a ContextHandler suitable to deploy in OSGi
         ContextHandler contextHandler = _contextFactory.createContextHandler(this, metadata);
-        contextHandler.setID(metadata.getID());
-        OSGiDeployableBundleMetadata.setBundle(contextHandler, metadata.getBundle());
+        contextHandler.setID(metadata.getID()); // force ID to what this context handler source needs (as XML might have set it)
+        Util.setBundle(contextHandler, metadata.getBundle());
         return contextHandler;
     }
 

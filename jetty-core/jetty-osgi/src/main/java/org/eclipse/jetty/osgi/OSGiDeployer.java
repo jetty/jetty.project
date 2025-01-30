@@ -17,6 +17,7 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.osgi.util.EventSender;
+import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.osgi.framework.Bundle;
@@ -42,7 +43,7 @@ public class OSGiDeployer extends StandardDeployer
         //TODO  how to NOT send this event if its not a webapp:
         //OSGi Enterprise Spec only wants an event sent if its a webapp bundle (ie not a ContextHandler)
 
-        Bundle bundle = OSGiDeployableBundleMetadata.getBundle(contextHandler);
+        Bundle bundle = Util.getBundle(contextHandler);
         if (bundle == null)
         {
             // Not an OSGI based ContextHandler
@@ -50,12 +51,13 @@ public class OSGiDeployer extends StandardDeployer
         }
         else
         {
+            // This is a ContextHandler that is managed by jetty-osgi.
             String contextPath = contextHandler.getContextPath();
             EventSender.getInstance().send(EventSender.DEPLOYING_EVENT, bundle, contextPath);
             try
             {
                 doProcessBinding(deploymentManager, node, contextHandler);
-                OSGiDeployableBundleMetadata.registerAsOSGiService(contextHandler);
+                Util.registerAsOSGiService(contextHandler);
                 EventSender.getInstance().send(EventSender.DEPLOYED_EVENT, bundle, contextPath);
             }
             catch (Exception e)

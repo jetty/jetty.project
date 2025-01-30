@@ -17,6 +17,7 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.osgi.util.EventSender;
+import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.osgi.framework.Bundle;
@@ -41,10 +42,10 @@ public class OSGiUndeployer extends StandardUndeployer
     {
         String contextPath = contextHandler.getContextPath();
 
-        Bundle bundle = OSGiDeployableBundleMetadata.getBundle(contextHandler);
+        Bundle bundle = Util.getBundle(contextHandler);
         if (bundle != null)
         {
-            // Only act on ContextHandler that is managed by OSGi
+            // This is a ContextHandler that is managed by jetty-osgi.
             EventSender.getInstance().send(EventSender.UNDEPLOYING_EVENT, bundle, contextPath);
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             ClassLoader cl = (ClassLoader)_server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
@@ -58,7 +59,7 @@ public class OSGiUndeployer extends StandardUndeployer
                 Thread.currentThread().setContextClassLoader(old);
             }
             EventSender.getInstance().send(EventSender.UNDEPLOYED_EVENT, bundle, contextPath);
-            OSGiDeployableBundleMetadata.deregisterAsOSGiService(contextHandler);
+            Util.deregisterAsOSGiService(contextHandler);
         }
     }
 }

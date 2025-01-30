@@ -44,22 +44,22 @@ import org.slf4j.LoggerFactory;
  */
 public class BundleContextProvider extends AbstractContextProvider implements BundleProvider
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BundleContextProvider.class);
 
-    private Map<String, ContextHandler> _contextHandlerMap = new HashMap<>();
+    private final Map<String, ContextHandler> _contextHandlerMap = new HashMap<>();
 
-    private Map<Bundle, List<ContextHandler>> _bundleMap = new HashMap<>();
+    private final Map<Bundle, List<ContextHandler>> _bundleMap = new HashMap<>();
 
-    private ServiceRegistration _serviceRegForBundles;
+    private ServiceRegistration<?> _serviceRegForBundles;
 
-    private BundleTracker _tracker;
+    private BundleTracker<Object> _tracker;
 
     /**
      * ContextBundleTracker
      *
      * Track deployment of Bundles that should be deployed to Jetty as contexts.
      */
-    public class ContextBundleTracker extends BundleTracker
+    public class ContextBundleTracker extends BundleTracker<Object>
     {
         protected String _serverName;
 
@@ -183,15 +183,15 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         String[] tmp = contextFiles.split("[,;]");
         for (String contextFile : tmp)
         {
-            OSGiDeployableBundleMetadata app = new OSGiDeployableBundleMetadata(bundle);
-            URI contextFilePath = Util.resolvePathAsLocalizedURI(contextFile, app.getBundle(), jettyHomePath);
+            BundleMetadata metadata = new BundleMetadata(bundle);
+            URI contextFilePath = Util.resolvePathAsLocalizedURI(contextFile, metadata.getBundle(), jettyHomePath);
 
             if (contextFilePath != null)
             {
                 // set up the single context file for this deployment
-                app.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toASCIIString());
+                metadata.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toASCIIString());
             }
-            ContextHandler contextHandler = createContextHandler(app);
+            ContextHandler contextHandler = createContextHandler(metadata);
             _contextHandlerMap.put(contextHandler.getID(), contextHandler);
             List<ContextHandler> contextHandlers = _bundleMap.computeIfAbsent(bundle, b -> new ArrayList<>());
             contextHandlers.add(contextHandler);
