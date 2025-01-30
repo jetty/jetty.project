@@ -9,6 +9,9 @@
 <!-- through the DeploymentManager.                                  -->
 <!-- =============================================================== -->
 <Configure id="defaultProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
+  <Arg name="contextManagement">
+    <Ref refid="deploymentManager" />
+  </Arg>
   <Call name="addMonitoredDirectory">
     <Arg>
       <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
@@ -35,7 +38,7 @@
   <Set name="scanInterval" property="jetty.deploy.scanInterval" />
 
   <Ref refid="deploymentManager">
-    <Call name="addAppProvider">
+    <Call name="addBean">
       <Arg>
         <Ref refid="defaultProvider" />
       </Arg>

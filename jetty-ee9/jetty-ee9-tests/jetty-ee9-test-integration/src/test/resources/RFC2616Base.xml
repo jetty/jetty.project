@@ -78,9 +78,9 @@
           <Ref refid="contexts" />
         </Set>
 
-        <Call name="addAppProvider">
+        <Call name="addBean">
          <Arg>
-           <New id="WebAppProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
+           <New id="defaultProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
              <Call name="addMonitoredDirectory">
                <Arg>
                  <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
