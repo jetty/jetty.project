@@ -340,10 +340,7 @@ public interface EndPoint extends Closeable, Content.Sink
      * @return The callback passed to {@link #write(Callback, ByteBuffer...)} or
      *         {@code null}
      */
-    default Callback cancelWrite()
-    {
-        return null;
-    }
+    Callback cancelWrite();
 
     /**
      * @return the {@link Connection} associated with this EndPoint

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -340,6 +341,14 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                 return;
             }
         }
+    }
+
+    @Override
+    public Callback cancelWrite()
+    {
+        // TODO this is wrong
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        return null;
     }
 
     private void writeSuccess(Callback callback)

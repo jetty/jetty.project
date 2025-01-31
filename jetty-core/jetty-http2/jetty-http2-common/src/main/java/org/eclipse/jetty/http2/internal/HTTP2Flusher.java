@@ -345,7 +345,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private void finish()
     {
         accumulator.clear();
-        // TODO grab lock
         processedEntries.forEach(HTTP2Session.Entry::succeeded);
         processedEntries.clear();
         invocationType = InvocationType.NON_BLOCKING;

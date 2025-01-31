@@ -195,29 +195,15 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
 
     private void addInterests(int operation)
     {
-        // This method runs from any thread, possibly
-        // concurrently with updateKey() and onSelected().
-
-        int oldInterestOps;
-        int newInterestOps;
-        boolean pending;
-        try (AutoLock l = _lock.lock())
-        {
-            pending = _updatePending;
-            oldInterestOps = _desiredInterestOps;
-            newInterestOps = oldInterestOps | operation;
-            if (newInterestOps != oldInterestOps)
-                _desiredInterestOps = newInterestOps;
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("addInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
-
-        if (!pending && _selector != null)
-            _selector.submit(_updateKeyAction);
+        updateInterests(operation, true);
     }
 
     private void removeInterests(int operation)
+    {
+        updateInterests(operation, false);
+    }
+
+    private void updateInterests(int operation, boolean add)
     {
         // This method runs from any thread, possibly
         // concurrently with updateKey() and onSelected().
@@ -229,7 +215,7 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         {
             pending = _updatePending;
             oldInterestOps = _desiredInterestOps;
-            newInterestOps = oldInterestOps & ~operation;
+            newInterestOps = add ? oldInterestOps | operation : oldInterestOps & ~operation;
             if (newInterestOps != oldInterestOps)
                 _desiredInterestOps = newInterestOps;
         }
