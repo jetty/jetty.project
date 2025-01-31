@@ -29,7 +29,6 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.internal.DeploymentGraph;
-import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.Configurations;
@@ -372,21 +371,15 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler)
+        public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler)
         {
             if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
             {
-                if (node.getName().equalsIgnoreCase(DeploymentGraph.STARTING))
+                switch (nodeName)
                 {
-                    startingLatch.countDown();
-                }
-                else if (node.getName().equalsIgnoreCase(DeploymentGraph.STARTED))
-                {
-                    startedLatch.countDown();
-                }
-                else if (node.getName().equalsIgnoreCase(DeploymentGraph.FAILED))
-                {
-                    failedLatch.countDown();
+                    case "starting" -> startingLatch.countDown();
+                    case "started" -> startedLatch.countDown();
+                    case "failed" -> failedLatch.countDown();
                 }
             }
         }
