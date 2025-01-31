@@ -1,0 +1,395 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.deploy;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
+import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
+import org.eclipse.jetty.deploy.internal.TrackedPaths;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Scanner;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+
+@ExtendWith(WorkDirExtension.class)
+public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
+{
+    public WorkDir workDir;
+
+    public static class AssertActionListDeploymentScanner extends DeploymentScanner
+    {
+        Consumer<List<DeployAction>> assertActionList;
+
+        public AssertActionListDeploymentScanner()
+        {
+            super(null, new AbstractContextHandlerDeployer());
+        }
+
+        @Override
+        protected void performActions(List<DeployAction> actions)
+        {
+            assertActionList.accept(actions);
+
+            // Perform post performActions cleanup that normally happens
+            for (DeployAction action : actions)
+            {
+                resetTrackedState(action.name());
+            }
+        }
+
+        public TrackedPaths findTracked(String name)
+        {
+            return super.findTracked(name);
+        }
+    }
+
+    @Test
+    public void testActionListNewXmlOnly() throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Path xml = dir.resolve("bar.xml");
+        Files.writeString(xml, "XML for bar", UTF_8);
+
+        AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
+        deploymentScanner.addMonitoredDirectory(dir);
+
+        Map<Path, Scanner.Notification> changeSet = new HashMap<>();
+        changeSet.put(xml, Scanner.Notification.ADDED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths", app.getPaths().keySet(), Matchers.contains(xml));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+    }
+
+    @Test
+    public void testActionListXmlThenRemoved() throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Path xml = dir.resolve("foo.xml");
+        Files.writeString(xml, "XML for foo", UTF_8);
+
+        AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
+        deploymentScanner.addMonitoredDirectory(dir);
+
+        // Initial deployment.
+        Map<Path, Scanner.Notification> changeSet = new HashMap<>();
+        changeSet.put(xml, Scanner.Notification.ADDED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("foo"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths", app.getPaths().keySet(), contains(xml));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+
+        // Removed only deployment file.
+        Files.deleteIfExists(xml);
+        changeSet.clear();
+        changeSet.put(xml, Scanner.Notification.REMOVED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("foo"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.REMOVED));
+            assertThat("action.app.paths", app.getPaths().keySet(), contains(xml));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.REMOVED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(nullValue()));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+    }
+
+    @Test
+    public void testActionListNewXmlAndWarOnly() throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Path xml = dir.resolve("bar.xml");
+        Files.writeString(xml, "XML for bar", UTF_8);
+        Path war = dir.resolve("bar.war");
+        Files.writeString(war, "WAR for bar", UTF_8);
+
+        AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
+        deploymentScanner.addMonitoredDirectory(dir);
+
+        // Initial deployment
+        Map<Path, Scanner.Notification> changeSet = new HashMap<>();
+        changeSet.put(xml, Scanner.Notification.ADDED);
+        changeSet.put(war, Scanner.Notification.ADDED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+    }
+
+    @Test
+    public void testActionListXmlAndWarWithXmlUpdate() throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Path xml = dir.resolve("bar.xml");
+        Files.writeString(xml, "XML for bar", UTF_8);
+        Path war = dir.resolve("bar.war");
+        Files.writeString(war, "WAR for bar", UTF_8);
+
+        AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
+        deploymentScanner.addMonitoredDirectory(dir);
+
+        // Initial deployment
+        Map<Path, Scanner.Notification> changeSet = new HashMap<>();
+        changeSet.put(xml, Scanner.Notification.ADDED);
+        changeSet.put(war, Scanner.Notification.ADDED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+
+        // Change/Touch war
+        changeSet = new HashMap<>();
+        changeSet.put(war, Scanner.Notification.CHANGED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(2));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.UNCHANGED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
+            app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.UNCHANGED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+    }
+
+    @Test
+    public void testActionListXmlAndWarWithXmlRemoved() throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Path xml = dir.resolve("bar.xml");
+        Files.writeString(xml, "XML for bar", UTF_8);
+        Path war = dir.resolve("bar.war");
+        Files.writeString(war, "WAR for bar", UTF_8);
+
+        AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
+        deploymentScanner.addMonitoredDirectory(dir);
+
+        // Initial deployment
+        Map<Path, Scanner.Notification> changeSet = new HashMap<>();
+        changeSet.put(xml, Scanner.Notification.ADDED);
+        changeSet.put(war, Scanner.Notification.ADDED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+
+        // Change/Touch war and xml
+        changeSet = new HashMap<>();
+        changeSet.put(war, Scanner.Notification.CHANGED);
+        changeSet.put(xml, Scanner.Notification.CHANGED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(2));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
+            app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+
+        // Delete XML (now only war exists)
+        Files.deleteIfExists(xml);
+        changeSet = new HashMap<>();
+        changeSet.put(xml, Scanner.Notification.REMOVED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(2));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.REMOVED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.UNCHANGED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(war));
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
+            app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.REMOVED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.UNCHANGED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(war));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+
+        // Delete WAR
+        Files.deleteIfExists(war);
+        changeSet = new HashMap<>();
+        changeSet.put(war, Scanner.Notification.REMOVED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            Iterator<DeployAction> iterator = actions.iterator();
+            DeployAction action;
+
+            action = iterator.next();
+            assertThat("action.name", action.name(), is("bar"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
+            TrackedPaths app = deploymentScanner.findTracked(action.name());
+            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.REMOVED));
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(war));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.REMOVED));
+            assertThat("action.app.mainPath", app.getMainPath(), is(nullValue()));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+    }
+}

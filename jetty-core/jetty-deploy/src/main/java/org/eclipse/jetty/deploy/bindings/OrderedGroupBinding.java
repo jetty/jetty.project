@@ -16,27 +16,27 @@ package org.eclipse.jetty.deploy.bindings;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * Provides a way of forcing the ordered execution of bindings within
  * a declared binding target.
  */
-public class OrderedGroupBinding implements ContextHandlerLifeCycle.Binding
+public class OrderedGroupBinding implements DeploymentNodeBinding
 {
     private String[] _bindingTargets;
 
-    private LinkedList<ContextHandlerLifeCycle.Binding> _orderedBindings;
+    private LinkedList<DeploymentNodeBinding> _orderedBindings;
 
     public OrderedGroupBinding(String[] bindingTargets)
     {
         _bindingTargets = bindingTargets;
     }
 
-    public void addBinding(ContextHandlerLifeCycle.Binding binding)
+    public void addBinding(DeploymentNodeBinding binding)
     {
         if (_orderedBindings == null)
         {
@@ -46,7 +46,7 @@ public class OrderedGroupBinding implements ContextHandlerLifeCycle.Binding
         _orderedBindings.add(binding);
     }
 
-    public void addBindings(ContextHandlerLifeCycle.Binding[] bindings)
+    public void addBindings(DeploymentNodeBinding[] bindings)
     {
         if (_orderedBindings == null)
         {
@@ -65,7 +65,7 @@ public class OrderedGroupBinding implements ContextHandlerLifeCycle.Binding
     @Override
     public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
     {
-        for (ContextHandlerLifeCycle.Binding binding : _orderedBindings)
+        for (DeploymentNodeBinding binding : _orderedBindings)
         {
             binding.processBinding(deploymentManager, node, contextHandler);
         }

@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
@@ -157,7 +157,7 @@ public class JettyServerFactory
             //ensure DeploymentManager
             DeploymentManager deploymentManager = ensureDeploymentManager(server);
             deploymentManager.setUseStandardBindings(false);
-            List<ContextHandlerLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<>();
+            List<DeploymentNodeBinding> deploymentLifeCycleBindings = new ArrayList<>();
             deploymentLifeCycleBindings.add(new OSGiDeployer(server));
             deploymentLifeCycleBindings.add(new StandardStarter());
             deploymentLifeCycleBindings.add(new StandardStopper());

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.scan;
+package org.eclipse.jetty.deploy.internal;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,7 +79,7 @@ public class DefaultContextHandlerFactory
      * @return the ContextHandler
      * @throws Exception if unable to create the ContextHandler
      */
-    public ContextHandler newContextHandler(Server server, ScanTrackedApp app, Attributes deployAttributes) throws Exception
+    public ContextHandler newContextHandler(Server server, TrackedPaths app, Attributes deployAttributes) throws Exception
     {
         Path mainPath = app.getMainPath();
         if (mainPath == null)
@@ -382,7 +382,7 @@ public class DefaultContextHandlerFactory
      * @return the Context Object.
      * @throws Exception if unable to create Object instance.
      */
-    private Object newContextInstance(Server server, Environment environment, ScanTrackedApp app, Attributes attributes, Path path) throws Exception
+    private Object newContextInstance(Server server, Environment environment, TrackedPaths app, Attributes attributes, Path path) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("newContextInstance({}, {}, {}, {})", server, environment, app, path);

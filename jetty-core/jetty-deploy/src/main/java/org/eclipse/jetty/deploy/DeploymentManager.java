@@ -13,22 +13,23 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
-import org.eclipse.jetty.deploy.graph.Edge;
-import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.graph.Route;
+import org.eclipse.jetty.deploy.internal.DeploymentGraph;
+import org.eclipse.jetty.deploy.internal.graph.Edge;
+import org.eclipse.jetty.deploy.internal.graph.Node;
+import org.eclipse.jetty.deploy.internal.graph.Route;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -49,58 +50,85 @@ import org.slf4j.LoggerFactory;
  * <p>
  * <img alt="deployment manager roles graph" src="doc-files/DeploymentManager_Roles.png">
  * <ol>
- * <li>Tracking Apps and their LifeCycle Location</li>
- * <li>Executing ContextHandlerLifeCycle on App based on current and desired LifeCycle Location.</li>
+ * <li>Tracking ContextHandlers and their location in the Deployment graph.</li>
+ * <li>Moving ContextHandlers through the Deployment graph (eg: DEPLOYED, STARTED, UNDEPLOYED, etc.).</li>
  * </ol>
  * <p>
  * <img alt="deployment manager graph" src="doc-files/DeploymentManager.png">
  */
 // TODO: fix dumpable to show things like context-handler-collection, contexts being tracked, etc...
 @ManagedObject("Deployment Manager")
-public class DeploymentManager extends ContainerLifeCycle implements ContextHandlerManagement
+public class DeploymentManager extends ContainerLifeCycle implements ContextHandlerDeployer
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentManager.class);
     private final AutoLock _lock = new AutoLock();
-    private final ContextHandlerLifeCycle _lifecycle = new ContextHandlerLifeCycle();
+    private final DeploymentGraph _lifecycle = new DeploymentGraph();
     private final Queue<TrackedContext> _tracked = new ConcurrentLinkedQueue<>();
     private Throwable _onStartupErrors;
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
 
     /**
-     * Add a ContextHandler to the tracking, and move it to the desired node name.
+     * Add a DeploymentNodeBinding to the graph.
      *
-     * @param contextHandler the context handler
-     * @param nodeName the requested node to reach
+     * @param binding the binding to add.
      */
-    @Override
-    public void addContextHandler(ContextHandler contextHandler, String nodeName)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("addContextHandler: {} -> {}", contextHandler, nodeName);
-        TrackedContext entry = new TrackedContext();
-        entry.contextHandler = contextHandler;
-        entry.setLifeCycleNode(_lifecycle.getNodeByName(ContextHandlerLifeCycle.UNDEPLOYED));
-        _tracked.add(entry);
-
-        if (isRunning())
-        {
-            // Immediately attempt to go to default lifecycle state
-            this.requestContextHandlerGoal(entry, nodeName);
-        }
-    }
-
-    public void addLifeCycleBinding(ContextHandlerLifeCycle.Binding binding)
+    // TODO: Rename
+    public void addLifeCycleBinding(DeploymentNodeBinding binding)
     {
         _lifecycle.addBinding(binding);
     }
 
-    public ContextHandler findContextHandler(String id)
+    /**
+     * Add a ContextHandler int the graph but perform no actions on it, leaving it in undeployed state.
+     *
+     * @param contextHandler the ContextHandler to add to the graph.
+     */
+    @Override
+    public void addUndeployed(ContextHandler contextHandler)
     {
-        TrackedContext entry = findTrackedContext(id);
-        return entry == null ? null : entry.getContextHandler();
+        if (LOG.isDebugEnabled())
+            LOG.debug("addUndeployed: {}", contextHandler);
+        startTracking(contextHandler);
     }
 
+    /**
+     * Add a ContextHandler to the graph and then move it a deployed state.
+     *
+     * @param contextHandler the ContextHandler to deploy.
+     */
+    @Override
+    public void deploy(ContextHandler contextHandler)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("deploy: {}", contextHandler);
+        TrackedContext trackedContext = startTracking(contextHandler);
+        requestContextHandlerGoal(trackedContext, DeploymentGraph.STARTED);
+    }
+
+    /**
+     * Get the bindings that exist
+     */
+    public Set<DeploymentNodeBinding> getBindings()
+    {
+        return _lifecycle.getBindings();
+    }
+
+    /**
+     * Get the bindings that exist for a specific node name.
+     *
+     * @param nodeName the node to get bindings from
+     */
+    public Set<DeploymentNodeBinding> getBindings(String nodeName)
+    {
+        return _lifecycle.getBindings(nodeName);
+    }
+
+    /**
+     * Get the list of tracked {@link ContextHandler} in the DeploymentManager graph.
+     *
+     * @return the list of tracked ContextHandlers
+     */
     public Collection<ContextHandler> getContextHandlers()
     {
         return _tracked.stream()
@@ -109,28 +137,23 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
     }
 
     /**
-     * Get Set of {@link ContextHandler}s by {@link Node}
+     * Get the list of ContextHandlers present at a specific graph node name.
      *
-     * @param node the node to look for.
-     * @return the collection of ContextHandlers for the node
+     * @param nodeName the node name to look in
+     * @return the list of {@link ContextHandler} present on that node
      */
-    public Collection<ContextHandler> getContextHandlers(Node node)
+    @ManagedOperation(value = "list ContextHandlers that are located at specified deployment manager graph node", impact = "ACTION")
+    public Collection<ContextHandler> getContextHandlers(@Name("nodeName") String nodeName)
     {
-        Objects.requireNonNull(node);
-
-        List<ContextHandler> ret = new ArrayList<>();
-        for (TrackedContext entry : _tracked)
+        Set<String> nodeNames = getNodeNames();
+        if (!nodeNames.contains(nodeName))
         {
-            if (node.equals(entry.lifecyleNode))
-            {
-                ret.add(entry.contextHandler);
-            }
+            throw new IllegalArgumentException("Unable to find node [" + nodeName + "] in " +
+                nodeNames.stream()
+                    .sorted()
+                    .collect(Collectors.joining(", ", "[", "]")));
         }
-        return ret;
-    }
 
-    public Collection<ContextHandler> getContextHandlers(String nodeName)
-    {
         return getContextHandlers(_lifecycle.getNodeByName(nodeName));
     }
 
@@ -145,33 +168,14 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         this._contexts = contexts;
     }
 
-    public ContextHandlerLifeCycle getLifeCycle()
+    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
+    public Set<String> getNodeNames()
     {
-        return _lifecycle;
-    }
-
-    public Collection<ContextHandlerLifeCycle.Binding> getLifeCycleBindings()
-    {
-        return Collections.unmodifiableSet(_lifecycle.getBindings());
-    }
-
-    public void setLifeCycleBindings(Collection<ContextHandlerLifeCycle.Binding> bindings)
-    {
-        if (isRunning())
-            throw new IllegalStateException();
-        for (ContextHandlerLifeCycle.Binding b : _lifecycle.getBindings())
-        {
-            _lifecycle.removeBinding(b);
-        }
-        for (ContextHandlerLifeCycle.Binding b : bindings)
-        {
-            _lifecycle.addBinding(b);
-        }
-    }
-
-    public Collection<Node> getNodes()
-    {
-        return _lifecycle.getNodes();
+        Set<String> names = new TreeSet<>(String::compareToIgnoreCase);
+        _lifecycle.getNodes().stream()
+            .map(Node::getName)
+            .forEach(names::add);
+        return names;
     }
 
     public Server getServer()
@@ -209,71 +213,56 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
     }
 
     /**
-     * Remove the ContextHandler from the DeploymentManager tracking.
+     * Advanced usage, move a ContextHandler through the DeploymentManager graph by name.
      *
-     * @param contextHandler the contextHandler to remove it from the deployment manager.
-     * @param goalName the name of the node to attain before removal of contextHandler.
+     * @param contextHandler the ContextHandler to move
+     * @param goalName the goal graph node by name
      */
     @Override
-    public void removeContextHandler(ContextHandler contextHandler, String goalName)
+    public void move(ContextHandler contextHandler, String goalName)
     {
-        LOG.info("removeContextHandler: {}, {}", contextHandler, goalName);
-        Iterator<TrackedContext> it = _tracked.iterator();
-        while (it.hasNext())
+        if (LOG.isDebugEnabled())
+            LOG.debug("move: {} -> {}", contextHandler, goalName);
+        TrackedContext trackedContext = findTrackedContext(contextHandler);
+        requestContextHandlerGoal(trackedContext, goalName);
+    }
+
+    public void setLifeCycleBindings(Collection<DeploymentNodeBinding> bindings)
+    {
+        if (isRunning())
+            throw new IllegalStateException();
+        for (DeploymentNodeBinding b : _lifecycle.getBindings())
         {
-            TrackedContext entry = it.next();
-            if (entry.contextHandler.equals(contextHandler))
-            {
-                if (!goalName.equals(entry.lifecyleNode.getName()))
-                    requestContextHandlerGoal(entry.contextHandler, goalName);
-                it.remove();
-            }
+            _lifecycle.removeBinding(b);
+        }
+        for (DeploymentNodeBinding b : bindings)
+        {
+            _lifecycle.addBinding(b);
         }
     }
 
     /**
-     * Move an {@link ContextHandler} through the {@link ContextHandlerLifeCycle} to the desired {@link Node}, executing each lifecycle step
-     * in the process to reach the desired state.
+     * Move a ContextHandler int the graph to an undeployed state, and then remove it from the graph.
      *
-     * @param contextHandler the ContextHandler to move through the process
-     * @param nodeName the name of the node to attain
+     * @param contextHandler the ContextHandler to undeploy.
      */
     @Override
-    public void requestContextHandlerGoal(ContextHandler contextHandler, String nodeName)
+    public void undeploy(ContextHandler contextHandler)
     {
-        TrackedContext tracked = findTrackedContext(contextHandler.getID());
-        if (tracked == null)
-        {
-            throw new IllegalStateException("ContextHandler not being tracked by Deployment Manager: " + contextHandler);
-        }
-
-        requestContextHandlerGoal(tracked, nodeName);
+        if (LOG.isDebugEnabled())
+            LOG.debug("undeploy: {}", contextHandler);
+        TrackedContext trackedContext = findTrackedContext(contextHandler);
+        requestContextHandlerGoal(trackedContext, DeploymentGraph.UNDEPLOYED);
+        stopTracking(trackedContext);
     }
 
-    /**
-     * Move an ContextHandler.ID through the {@link ContextHandlerLifeCycle} to the desired {@link Node}, executing each lifecycle step
-     * in the process to reach the desired state.
-     *
-     * @param contextHandlerId the ID of ContextHandler to move through the process
-     * @param nodeName the name of the node to attain
-     */
-    @ManagedOperation(value = "request the context handler to be moved to the specified lifecycle node", impact = "ACTION")
-    public void requestContextHandlerGoal(@Name("contextId") String contextHandlerId, @Name("nodeName") String nodeName)
-    {
-        TrackedContext tracked = findTrackedContext(contextHandlerId);
-        if (tracked == null)
-        {
-            throw new IllegalStateException("ContextHandler not being tracked by Deployment Manager: " + contextHandlerId);
-        }
-        requestContextHandlerGoal(tracked, nodeName);
-    }
-
+    @ManagedOperation(value = "undeploy all ContextHandlers being tracked by DeploymentManager")
     public void undeployAll()
     {
         LOG.debug("Undeploy All");
         for (TrackedContext entry : _tracked)
         {
-            requestContextHandlerGoal(entry, ContextHandlerLifeCycle.UNDEPLOYED);
+            undeploy(entry.contextHandler);
         }
     }
 
@@ -308,21 +297,32 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
     }
 
-    private TrackedContext findTrackedContext(String id)
+    private TrackedContext findTrackedContext(ContextHandler contextHandler)
     {
-        if (id == null)
-            return null;
-
-        for (TrackedContext entry : _tracked)
-        {
-            if (id.equals(entry.contextHandler.getID()))
-                return entry;
-        }
-        return null;
+        return _tracked.stream()
+            .filter((e) -> e.contextHandler.equals(contextHandler))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("ContextHandler[%s,%s] not being tracked".formatted(contextHandler.getContextPath(), contextHandler.getVirtualHosts())));
     }
 
     /**
-     * Move a {@link TrackedContext} through the {@link ContextHandlerLifeCycle} to the desired {@link Node}, executing each lifecycle step
+     * Get Set of {@link ContextHandler}s by {@link Node}
+     *
+     * @param node the node to look for.
+     * @return the collection of ContextHandlers for the node
+     */
+    private Collection<ContextHandler> getContextHandlers(Node node)
+    {
+        Objects.requireNonNull(node);
+
+        return _tracked.stream()
+            .filter(tracked -> node.equals(tracked.lifecyleNode))
+            .map(TrackedContext::getContextHandler)
+            .toList();
+    }
+
+    /**
+     * Move a {@link TrackedContext} through the {@link DeploymentGraph} to the desired {@link Node}, executing each lifecycle step
      * in the process to reach the desired state.
      *
      * @param tracked the internal tracked context to move through the process
@@ -366,7 +366,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
             LOG.warn("Unable to reach node goal: {}", nodeName, t);
 
             // migrate to FAILED node
-            Node failed = _lifecycle.getNodeByName(ContextHandlerLifeCycle.FAILED);
+            Node failed = _lifecycle.getNodeByName(DeploymentGraph.FAILED);
             tracked.setLifeCycleNode(failed);
             try
             {
@@ -383,6 +383,20 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
                 addOnStartupError(t);
             }
         }
+    }
+
+    private TrackedContext startTracking(ContextHandler contextHandler)
+    {
+        TrackedContext entry = new TrackedContext();
+        entry.contextHandler = contextHandler;
+        entry.setLifeCycleNode(_lifecycle.getNodeByName(DeploymentGraph.UNDEPLOYED));
+        _tracked.add(entry);
+        return entry;
+    }
+
+    private void stopTracking(TrackedContext trackedContext)
+    {
+        _tracked.remove(trackedContext);
     }
 
     /**

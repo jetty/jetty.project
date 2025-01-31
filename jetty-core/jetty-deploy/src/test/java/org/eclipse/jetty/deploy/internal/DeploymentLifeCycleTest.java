@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy;
+package org.eclipse.jetty.deploy.internal;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,9 +19,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.deploy.graph.GraphOutputDot;
-import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.graph.Route;
+import org.eclipse.jetty.deploy.internal.graph.GraphOutputDot;
+import org.eclipse.jetty.deploy.internal.graph.Node;
+import org.eclipse.jetty.deploy.internal.graph.Route;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -34,14 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Just an overly picky test case to validate the potential paths.
  */
 @ExtendWith(WorkDirExtension.class)
-public class ContextHandlerLifeCycleTest
+public class DeploymentLifeCycleTest
 {
     private void assertNoPath(String from, String to)
     {
         assertPath(from, to, new ArrayList<>());
     }
 
-    private void assertPath(ContextHandlerLifeCycle lifecycle, String from, String to, List<String> expected)
+    private void assertPath(DeploymentGraph lifecycle, String from, String to, List<String> expected)
     {
         Node fromNode = lifecycle.getNodeByName(from);
         Node toNode = lifecycle.getNodeByName(to);
@@ -75,7 +75,7 @@ public class ContextHandlerLifeCycleTest
 
     private void assertPath(String from, String to, List<String> expected)
     {
-        ContextHandlerLifeCycle lifecycle = new ContextHandlerLifeCycle();
+        DeploymentGraph lifecycle = new DeploymentGraph();
         assertPath(lifecycle, from, to, expected);
     }
 
@@ -141,7 +141,7 @@ public class ContextHandlerLifeCycleTest
 
     /**
      * Request multiple lifecycle paths with a single lifecycle instance. Just to ensure that there is no state
-     * maintained between {@link ContextHandlerLifeCycle#getPath(Node, Node)} requests.
+     * maintained between {@link DeploymentGraph#getPath(Node, Node)} requests.
      *
      * @throws IOException on test failure
      */
@@ -149,7 +149,7 @@ public class ContextHandlerLifeCycleTest
     public void testFindPathMultiple(WorkDir workDir) throws IOException
     {
         Path tmpPath = workDir.getEmptyPathDir();
-        ContextHandlerLifeCycle lifecycle = new ContextHandlerLifeCycle();
+        DeploymentGraph lifecycle = new DeploymentGraph();
         List<String> expected = new ArrayList<>();
 
         File outputDir = tmpPath.toFile();

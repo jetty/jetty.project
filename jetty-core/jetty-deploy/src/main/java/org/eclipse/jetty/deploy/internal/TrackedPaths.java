@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.scan;
+package org.eclipse.jetty.deploy.internal;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
@@ -35,10 +36,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A Default represents all the components that make up
- * a from-file-system App deployment that the {@link DefaultProvider}
+ * a from-file-system App deployment that the {@link DeploymentScanner}
  * creates and uses.
  */
-public class ScanTrackedApp
+public class TrackedPaths
 {
     public enum State
     {
@@ -48,14 +49,14 @@ public class ScanTrackedApp
         REMOVED
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(ScanTrackedApp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TrackedPaths.class);
     private final String name;
     private final Map<Path, State> paths = new HashMap<>();
     private final Attributes attributes = new Attributes.Mapped();
     private State state;
     private ContextHandler contextHandler;
 
-    public ScanTrackedApp(String name)
+    public TrackedPaths(String name)
     {
         this.name = name;
         this.state = calcState();
@@ -74,7 +75,7 @@ public class ScanTrackedApp
     {
         if (o == null || getClass() != o.getClass())
             return false;
-        ScanTrackedApp that = (ScanTrackedApp)o;
+        TrackedPaths that = (TrackedPaths)o;
         return Objects.equals(name, that.name);
     }
 
@@ -98,6 +99,11 @@ public class ScanTrackedApp
         return (Environment)getAttributes().getAttribute(DefaultContextHandlerFactory.ENVIRONMENT);
     }
 
+    public void setEnvironment(Environment env)
+    {
+        getAttributes().setAttribute(DefaultContextHandlerFactory.ENVIRONMENT, env);
+    }
+
     public String getEnvironmentName()
     {
         Environment env = getEnvironment();
@@ -107,16 +113,11 @@ public class ScanTrackedApp
             return env.getName();
     }
 
-    public void setEnvironment(Environment env)
-    {
-        getAttributes().setAttribute(DefaultContextHandlerFactory.ENVIRONMENT, env);
-    }
-
     /**
      * Get the main path used for deployment.
      * <p>
      * Applies the heuristics reference in the main
-     * javadoc for {@link DefaultProvider}
+     * javadoc for {@link DeploymentScanner}
      * </p>
      *
      * @return the main deployable path
@@ -295,10 +296,10 @@ public class ScanTrackedApp
      *
      * @return the state of the App.
      */
-    private ScanTrackedApp.State calcState()
+    private State calcState()
     {
         if (paths.isEmpty())
-            return ScanTrackedApp.State.REMOVED;
+            return State.REMOVED;
 
         // Calculate state of unit from Path states.
         State ret = null;
@@ -333,6 +334,6 @@ public class ScanTrackedApp
                 }
             }
         }
-        return ret != null ? ret : ScanTrackedApp.State.UNCHANGED;
+        return ret != null ? ret : State.UNCHANGED;
     }
 }

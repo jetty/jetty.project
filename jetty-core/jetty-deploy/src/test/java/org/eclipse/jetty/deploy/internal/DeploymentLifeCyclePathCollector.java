@@ -11,12 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy;
+package org.eclipse.jetty.deploy.internal;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Binds to all lifecycle nodes, and tracks the order of the lifecycle nodes for testing purposes.
  */
-public class ContextHandlerLifeCyclePathCollector implements ContextHandlerLifeCycle.Binding
+public class DeploymentLifeCyclePathCollector implements DeploymentNodeBinding
 {
-    List<Node> actualOrder = new ArrayList<Node>();
+    List<Node> actualOrder = new ArrayList<>();
 
     public void clear()
     {

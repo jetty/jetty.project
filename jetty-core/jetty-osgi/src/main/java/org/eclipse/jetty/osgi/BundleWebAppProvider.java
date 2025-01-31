@@ -18,8 +18,8 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
-import org.eclipse.jetty.deploy.ContextHandlerManagement;
+import org.eclipse.jetty.deploy.ContextHandlerDeployer;
+import org.eclipse.jetty.deploy.internal.DeploymentGraph;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -95,7 +95,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         }
     }
 
-    public BundleWebAppProvider(ContextHandlerManagement contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public BundleWebAppProvider(ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
         super(contextHandlerManagement, environment, contextFactory);
     }
@@ -186,7 +186,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 BundleMetadata app = new BundleMetadata(bundle, staticResourcesLocation);
                 ContextHandler contextHandler = createContextHandler(app);
                 _bundleMap.put(bundle, contextHandler);
-                getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.STARTED);
+                getContextHandlerManagement().addContextHandler(contextHandler, DeploymentGraph.STARTED);
                 return true;
             }
 
@@ -197,7 +197,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 BundleMetadata app = new BundleMetadata(bundle, base);
                 ContextHandler contextHandler = createContextHandler(app);
                 _bundleMap.put(bundle, contextHandler);
-                getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.STARTED);
+                getContextHandlerManagement().addContextHandler(contextHandler, DeploymentGraph.STARTED);
                 return true;
             }
 
@@ -209,7 +209,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
                 BundleMetadata app = new BundleMetadata(bundle, base);
                 ContextHandler contextHandler = createContextHandler(app);
                 _bundleMap.put(bundle, contextHandler);
-                getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.STARTED);
+                getContextHandlerManagement().addContextHandler(contextHandler, DeploymentGraph.STARTED);
                 return true;
             }
 
@@ -239,7 +239,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         ContextHandler contextHandler = _bundleMap.remove(bundle);
         if (contextHandler != null)
         {
-            getContextHandlerManagement().removeContextHandler(contextHandler, ContextHandlerLifeCycle.UNDEPLOYED);
+            getContextHandlerManagement().removeContextHandler(contextHandler, DeploymentGraph.UNDEPLOYED);
             return true;
         }
         return false;

@@ -15,13 +15,13 @@ package org.eclipse.jetty.deploy.bindings;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 
-public class StandardDeployer implements ContextHandlerLifeCycle.Binding
+public class StandardDeployer implements DeploymentNodeBinding
 {
     @Override
     public String[] getBindingTargets()

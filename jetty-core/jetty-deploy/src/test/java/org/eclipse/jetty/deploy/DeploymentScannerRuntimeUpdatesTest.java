@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.scan;
+package org.eclipse.jetty.deploy;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,8 +21,6 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.deploy.AbstractCleanEnvironmentTest;
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -45,13 +43,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
- * Similar in scope to {@link DefaultProviderStartupTest}, except is concerned with the modification of existing
- * deployed contexts due to incoming changes identified by the {@link DefaultProvider}.
+ * Similar in scope to {@link DeploymentScannerStartupTest}, except is concerned with the modification of existing
+ * deployed contexts due to incoming changes identified by the {@link DeploymentScanner}.
  */
 @ExtendWith(WorkDirExtension.class)
-public class DefaultProviderRuntimeUpdatesTest extends AbstractCleanEnvironmentTest
+public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmentTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultProviderRuntimeUpdatesTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeploymentScannerRuntimeUpdatesTest.class);
 
     private static XmlConfiguredJetty jetty;
     private final AtomicInteger _scans = new AtomicInteger();
@@ -95,8 +93,8 @@ public class DefaultProviderRuntimeUpdatesTest extends AbstractCleanEnvironmentT
 
         // monitor tick
         DeploymentManager dm = jetty.getServer().getBean(DeploymentManager.class);
-        Collection<DefaultProvider> defaultProviders = dm.getBeans(DefaultProvider.class);
-        for (DefaultProvider provider : defaultProviders)
+        Collection<DeploymentScanner> defaultProviders = dm.getBeans(DeploymentScanner.class);
+        for (DeploymentScanner provider : defaultProviders)
         {
             _providerCount++;
             provider.addScannerListener(new Scanner.ScanCycleListener()
@@ -127,7 +125,7 @@ public class DefaultProviderRuntimeUpdatesTest extends AbstractCleanEnvironmentT
     /**
      * Test that if a unit (called "simple" has both a war file and xml file), will be
      * redeployed if the war file is touched (note: the XML is the main deployable path)
-     *
+     * <p>
      * This addresses issue https://github.com/jetty/jetty.project/issues/12543
      */
     @Test

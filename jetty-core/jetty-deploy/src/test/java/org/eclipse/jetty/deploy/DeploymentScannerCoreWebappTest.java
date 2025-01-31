@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.scan;
+package org.eclipse.jetty.deploy;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -23,8 +23,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.AbstractCleanEnvironmentTest;
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -47,7 +45,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
-public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
+public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTest
 {
     public WorkDir workDir;
     private Server server;
@@ -107,9 +105,9 @@ public class DefaultProviderCoreWebappTest extends AbstractCleanEnvironmentTest
         Files.writeString(demoXml, demoXmlStr);
 
         DeploymentManager deploymentManager = new DeploymentManager();
-        DefaultProvider defaultProvider = new DefaultProvider(deploymentManager);
+        DeploymentScanner defaultProvider = new DeploymentScanner(server, deploymentManager);
         defaultProvider.addMonitoredDirectory(webapps);
-        DefaultProvider.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
+        DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
         deploymentManager.addBean(defaultProvider);
         startServer(deploymentManager);

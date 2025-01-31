@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.scan;
+package org.eclipse.jetty.deploy;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -36,8 +36,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
-import org.eclipse.jetty.deploy.ContextHandlerManagement;
+import org.eclipse.jetty.deploy.internal.DefaultContextHandlerFactory;
+import org.eclipse.jetty.deploy.internal.TrackedPaths;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -92,7 +92,7 @@ import org.slf4j.LoggerFactory;
  * Context Deployment properties will be initialized with:
  * </p>
  * <ul>
- * <li>The properties set on the application via embedded calls modifying {@link ScanTrackedApp#getAttributes()}</li>
+ * <li>The properties set on the application via embedded calls modifying {@link TrackedPaths#getAttributes()}</li>
  * <li>The app specific properties file {@code webapps/<webapp-name>.properties}</li>
  * <li>The environment specific properties file {@code webapps/<environment-name>[-zzz].properties}</li>
  * <li>The {@link Attributes} from the {@link Environment}</li>
@@ -105,24 +105,25 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * <pre>{@code
- * DefaultProvider provider = new DefaultProvider();
+ * DeploymentScanner provider = new DeploymentScanner();
  * EnvironmentConfig env10config = provider.configureEnvironment("ee10");
  * env10config.setExtractWars(true);
  * env10config.setParentLoaderPriority(false);
  * }</pre>
  */
 // TODO: fix dumpable to show details about monitored dirs, environments dir, configured environment attributes, scan interval, etc ...
-@ManagedObject("Provider for start-up deployment of webapps based on presence in directory")
-public class DefaultProvider extends ContainerLifeCycle implements Scanner.ChangeSetListener
+@ManagedObject("Provider for dynamic deployment of contexts (and webapps) based on presence in directory")
+public class DeploymentScanner extends ContainerLifeCycle implements Scanner.ChangeSetListener
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeploymentScanner.class);
 
-    private final ContextHandlerManagement contextManagement;
+    private final Server server;
+    private final ContextHandlerDeployer contextManagement;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
     private final DefaultContextHandlerFactory contextHandlerFactory = new DefaultContextHandlerFactory();
 
-    private Map<String, ScanTrackedApp> apps = new HashMap<>();
+    private Map<String, TrackedPaths> trackedPathsMap = new HashMap<>();
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
     private Map<String, Attributes> environmentAttributesMap = new HashMap<>();
     private Path environmentsDir;
@@ -132,14 +133,19 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
     private boolean deferInitialScan = false;
     private String defaultEnvironmentName;
 
-    public DefaultProvider(@Name("contextManagement") ContextHandlerManagement contextManagement)
+    public DeploymentScanner(
+        @Name("server") Server server,
+        @Name("contextManagement") ContextHandlerDeployer contextManagement)
     {
-        this(contextManagement, null);
+        this(server, contextManagement, null);
     }
 
-    public DefaultProvider(@Name("contextManagement") ContextHandlerManagement contextManagement,
-                           @Name("filenameFilter") FilenameFilter filter)
+    public DeploymentScanner(
+        @Name("server") Server server,
+        @Name("contextManagement") ContextHandlerDeployer contextManagement,
+        @Name("filenameFilter") FilenameFilter filter)
     {
+        this.server = server;
         this.contextManagement = Objects.requireNonNull(contextManagement);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
     }
@@ -324,19 +330,19 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         for (Map.Entry<Path, Scanner.Notification> entry : changeSet.entrySet())
         {
             Path path = entry.getKey();
-            ScanTrackedApp.State state = switch (entry.getValue())
+            TrackedPaths.State state = switch (entry.getValue())
             {
                 case ADDED ->
                 {
-                    yield ScanTrackedApp.State.ADDED;
+                    yield TrackedPaths.State.ADDED;
                 }
                 case CHANGED ->
                 {
-                    yield ScanTrackedApp.State.CHANGED;
+                    yield TrackedPaths.State.CHANGED;
                 }
                 case REMOVED ->
                 {
-                    yield ScanTrackedApp.State.REMOVED;
+                    yield TrackedPaths.State.REMOVED;
                 }
             };
 
@@ -353,7 +359,7 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
             {
                 // we have a normal path entry
                 changedBaseNames.add(basename);
-                ScanTrackedApp app = apps.computeIfAbsent(basename, ScanTrackedApp::new);
+                TrackedPaths app = trackedPathsMap.computeIfAbsent(basename, TrackedPaths::new);
                 app.putPath(path, state);
             }
             else if (isEnvironmentConfigPath(path))
@@ -378,9 +384,9 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         // Now we want to convert this list of changes to a DeployAction list
         // that will perform the add/remove logic in a consistent way.
 
-        List<ScanTrackedApp> changedApps = changedBaseNames
+        List<TrackedPaths> changedApps = changedBaseNames
             .stream()
-            .map(name -> apps.get(name))
+            .map(this::findTracked)
             .collect(Collectors.toList());
 
         if (!changedEnvironments.isEmpty())
@@ -394,15 +400,15 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
             for (String changedEnvName : changedEnvironments)
             {
                 // Add any missing apps to changedApps list
-                for (ScanTrackedApp app : apps.values())
+                for (TrackedPaths app : trackedPathsMap.values())
                 {
                     if (changedBaseNames.contains(app.getName()))
                         continue; // skip app that's already in the change list.
 
                     if (changedEnvName.equalsIgnoreCase(app.getEnvironmentName()))
                     {
-                        if (app.getState() == ScanTrackedApp.State.UNCHANGED)
-                            app.setState(ScanTrackedApp.State.CHANGED);
+                        if (app.getState() == TrackedPaths.State.UNCHANGED)
+                            app.setState(TrackedPaths.State.CHANGED);
                         changedApps.add(app);
                         changedBaseNames.add(app.getName());
                     }
@@ -443,19 +449,32 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         scanner.nudge();
     }
 
+    protected TrackedPaths findTracked(String name)
+    {
+        return trackedPathsMap.get(name);
+    }
+
+    public void resetTrackedState(String name)
+    {
+        TrackedPaths tracked = findTracked(name);
+        if (tracked == null)
+            return;
+        tracked.resetStates();
+    }
+
     @Override
     public String toString()
     {
         return String.format("%s@%x[dirs=%s]", this.getClass(), hashCode(), monitoredDirs);
     }
 
-    protected List<DeployAction> buildActionList(List<ScanTrackedApp> changedApps)
+    protected List<DeployAction> buildActionList(List<TrackedPaths> changedApps)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("buildActionList: {}", changedApps);
 
         List<DeployAction> actions = new ArrayList<>();
-        for (ScanTrackedApp app : changedApps)
+        for (TrackedPaths app : changedApps)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("changed app: {}", app);
@@ -464,16 +483,16 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
             {
                 case ADDED ->
                 {
-                    actions.add(new DeployAction(DeployAction.Type.ADD, app));
+                    actions.add(new DeployAction(DeployAction.Type.ADD, app.getName()));
                 }
                 case CHANGED ->
                 {
-                    actions.add(new DeployAction(DeployAction.Type.REMOVE, app));
-                    actions.add(new DeployAction(DeployAction.Type.ADD, app));
+                    actions.add(new DeployAction(DeployAction.Type.REMOVE, app.getName()));
+                    actions.add(new DeployAction(DeployAction.Type.ADD, app.getName()));
                 }
                 case REMOVED ->
                 {
-                    actions.add(new DeployAction(DeployAction.Type.REMOVE, app));
+                    actions.add(new DeployAction(DeployAction.Type.REMOVE, app.getName()));
                 }
             }
         }
@@ -534,9 +553,11 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
 
         if (isDeferInitialScan())
         {
+            if (server == null)
+                throw new IllegalStateException("Cannot defer initial scan with a null Server");
             // Setup listener to wait for Server in STARTED state, which
             // triggers the first scan of the monitored directories
-            contextManagement.getServer().addEventListener(
+            server.addEventListener(
                 new LifeCycle.Listener()
                 {
                     @Override
@@ -609,32 +630,33 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
     {
         for (DeployAction step : actions)
         {
+            TrackedPaths app = findTracked(step.name());
             try
             {
-                switch (step.getType())
+                switch (step.type())
                 {
                     case REMOVE ->
                     {
-                        apps.remove(step.getName());
-                        contextManagement.removeContextHandler(step.getApp().getContextHandler(), ContextHandlerLifeCycle.UNDEPLOYED);
+                        trackedPathsMap.remove(step.name());
+                        contextManagement.undeploy(app.getContextHandler());
                     }
                     case ADD ->
                     {
                         // Load <basename>.properties into app.
-                        step.getApp().loadProperties();
+                        app.loadProperties();
 
                         // Ensure Environment name is set
-                        String appEnvironment = step.getApp().getEnvironmentName();
+                        String appEnvironment = app.getEnvironmentName();
                         if (StringUtil.isBlank(appEnvironment))
                             appEnvironment = getDefaultEnvironmentName();
-                        step.getApp().setEnvironment(Environment.get(appEnvironment));
+                        app.setEnvironment(Environment.get(appEnvironment));
 
                         // Create a new Attributes layer for the App deployment, which is the
                         // combination of layered Environment Attributes with App Attributes overlaying them.
                         Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
-                        Attributes.Layer deployAttributes = new Attributes.Layer(envAttributes, step.getApp().getAttributes());
-                        deployAttributes.setAttribute(Deployable.MAIN_PATH, step.getApp().getMainPath());
-                        deployAttributes.setAttribute(Deployable.OTHER_PATHS, step.getApp().getPaths().keySet());
+                        Attributes.Layer deployAttributes = new Attributes.Layer(envAttributes, app.getAttributes());
+                        deployAttributes.setAttribute(Deployable.MAIN_PATH, app.getMainPath());
+                        deployAttributes.setAttribute(Deployable.OTHER_PATHS, app.getPaths().keySet());
 
                         // Ensure that Environment configuration XMLs are listed in deployAttributes
                         List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
@@ -642,24 +664,22 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
                         DefaultContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
-                        Server server = contextManagement.getServer();
-                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, step.getApp(), deployAttributes);
-                        contextHandler.setID(step.getName()); // force ID to what we need (XML could have set it to something else)
-                        step.getApp().setContextHandler(contextHandler);
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app, deployAttributes);
+                        app.setContextHandler(contextHandler);
 
                         // Introduce the App to the DeploymentManager
-                        apps.put(step.getName(), step.getApp());
-                        contextManagement.addContextHandler(step.getApp().getContextHandler(), ContextHandlerLifeCycle.STARTED);
+                        trackedPathsMap.put(step.name(), app);
+                        contextManagement.deploy(app.getContextHandler());
                     }
                 }
             }
             catch (Throwable t)
             {
-                LOG.warn("Failed to to perform action {} on {}", step.getType(), step.getApp(), t);
+                LOG.warn("Failed to to perform action {} on {}", step.type(), app, t);
             }
             finally
             {
-                step.getApp().resetStates();
+                app.resetStates();
             }
         }
     }
@@ -805,6 +825,56 @@ public class DefaultProvider extends ContainerLifeCycle implements Scanner.Chang
         }
 
         return attributesLayer;
+    }
+
+    public record DeployAction(DeployAction.Type type, String name)
+    {
+        public enum Type
+        {
+            REMOVE,
+            ADD;
+        }
+    }
+
+    /**
+     * <p>The List of {@link DeployAction} sort.</p>
+     *
+     * <ul>
+     *     <li>{@link DeployAction#type()} is sorted by all {@link DeployAction.Type#REMOVE}
+     *         actions first, followed by all {@link DeployAction.Type#ADD} actions.</li>
+     *     <li>{@link DeployAction.Type#REMOVE} type are in descending alphabetically order.</li>
+     *     <li>{@link DeployAction.Type#ADD} type are in ascending alphabetically order.</li>
+     * </ul>>
+     */
+    public static class DeployActionComparator implements Comparator<DeployAction>
+    {
+        private final Comparator<DeployAction> typeComparator;
+        private final Comparator<DeployAction> basenameComparator;
+
+        public DeployActionComparator()
+        {
+            typeComparator = Comparator.comparing(DeployAction::type);
+            basenameComparator = Comparator.comparing(DeployAction::name);
+        }
+
+        @Override
+        public int compare(DeployAction o1, DeployAction o2)
+        {
+            int diff = typeComparator.compare(o1, o2);
+            if (diff != 0)
+                return diff;
+            return switch (o1.type())
+            {
+                case REMOVE ->
+                {
+                    yield basenameComparator.compare(o2, o1);
+                }
+                case ADD ->
+                {
+                    yield basenameComparator.compare(o1, o2);
+                }
+            };
+        }
     }
 
     /**

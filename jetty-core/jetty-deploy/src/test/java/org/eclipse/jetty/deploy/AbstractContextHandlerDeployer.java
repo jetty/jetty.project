@@ -13,20 +13,34 @@
 
 package org.eclipse.jetty.deploy;
 
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
- * Deployment Manager specific methods that manage ContextHandler.
+ * Abstract ContextHandlerDeployer for testing purposes
  */
-public interface ContextHandlerManagement
+public class AbstractContextHandlerDeployer implements ContextHandlerDeployer
 {
-    Server getServer();
+    @Override
+    public void deploy(ContextHandler contextHandler)
+    {
+        // no default implementation
+    }
 
-    // TODO: document methods
-    void addContextHandler(ContextHandler contextHandler, String goalName);
+    @Override
+    public void undeploy(ContextHandler contextHandler)
+    {
+        // no default implementation
+    }
 
-    void requestContextHandlerGoal(ContextHandler contextHandler, String goalName);
+    @Override
+    public void addUndeployed(ContextHandler contextHandler)
+    {
+        // no default implementation
+    }
 
-    void removeContextHandler(ContextHandler contextHandler, String goalName);
+    @Override
+    public void move(ContextHandler contextHandler, String goalName)
+    {
+        // no default implementation
+    }
 }

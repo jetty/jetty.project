@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.graph;
+package org.eclipse.jetty.deploy.internal.graph;
 
 /**
  * Basic Graph Edge

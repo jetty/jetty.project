@@ -13,19 +13,11 @@
 
 package org.eclipse.jetty.deploy.jmx;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.annotation.Name;
 
 @SuppressWarnings("unused")
 @ManagedObject("MBean Wrapper for DeploymentManager")
@@ -39,44 +31,16 @@ public class DeploymentManagerMBean extends ObjectMBean
         _manager = (DeploymentManager)managedObject;
     }
 
-    @ManagedAttribute(value = "list ContextHandlers being tracked")
-    public Collection<String> getContextHandler()
-    {
-        return _manager.getContextHandlers()
-            .stream()
-            .map(Objects::toString)
-            .toList();
-    }
-
     @ManagedOperation(value = "list ContextHandlers that are located at specified ContextHandlerLifeCycle nodes", impact = "ACTION")
-    public Collection<String> getContext(@Name("nodeName") String nodeName)
+    public void requestContextHandlerGoal(String mbeanRef, String nodeName)
     {
-        Node node = _manager.getLifeCycle().getNodeByName(nodeName);
-        if (node == null)
-        {
-            throw new IllegalArgumentException("Unable to find node [" + nodeName + "]");
-        }
-
-        return _manager.getContextHandlers(node)
-            .stream()
-            .map(Objects::toString)
-            .toList();
+        ContextHandler contextHandler = findContextHandlerByMBeanRef(mbeanRef);
+        _manager.move(contextHandler, nodeName);
     }
 
-    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
-    public Collection<String> getNodes()
+    private ContextHandler findContextHandlerByMBeanRef(String mbeanRef)
     {
-        return _manager.getNodes().stream().map(Node::getName).collect(Collectors.toList());
-    }
-
-    public Collection<ContextHandler> getContexts() throws Exception
-    {
-        return Collections.unmodifiableCollection(_manager.getContextHandlers());
-    }
-
-    @ManagedOperation(value = "list ContextHandlers that are located at specified ContextHandlerLifeCycle nodes", impact = "ACTION")
-    public void requestContextHandlerGoal(String id, String nodeName)
-    {
-        _manager.requestContextHandlerGoal(id, nodeName);
+        // TODO: figure out how to do this
+        return null;
     }
 }

@@ -25,10 +25,11 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.scan.DefaultProvider;
+import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.DeploymentScanner;
+import org.eclipse.jetty.deploy.internal.DeploymentGraph;
+import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.Configurations;
@@ -102,8 +103,8 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        DefaultProvider appProvider = new DefaultProvider(deploymentManager);
-        DefaultProvider.EnvironmentConfig envConfig = appProvider.configureEnvironment("ee11");
+        DeploymentScanner appProvider = new DeploymentScanner(deploymentManager);
+        DeploymentScanner.EnvironmentConfig envConfig = appProvider.configureEnvironment("ee11");
         envConfig.setContextHandlerClass("org.eclipse.jetty.ee11.webapp.WebAppContext");
         appProvider.setScanInterval(1);
         appProvider.addMonitoredDirectory(docroots);
@@ -351,7 +352,7 @@ public class DeploymentErrorTest
         }
     }
 
-    public static class AppLifeCycleTrackingBinding implements ContextHandlerLifeCycle.Binding
+    public static class AppLifeCycleTrackingBinding implements DeploymentNodeBinding
     {
         public final CountDownLatch startingLatch = new CountDownLatch(1);
         public final CountDownLatch startedLatch = new CountDownLatch(1);
@@ -367,7 +368,7 @@ public class DeploymentErrorTest
         public String[] getBindingTargets()
         {
             return new String[]{
-                ContextHandlerLifeCycle.STARTING, ContextHandlerLifeCycle.STARTED, ContextHandlerLifeCycle.FAILED
+                DeploymentGraph.STARTING, DeploymentGraph.STARTED, DeploymentGraph.FAILED
             };
         }
 
@@ -376,15 +377,15 @@ public class DeploymentErrorTest
         {
             if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
             {
-                if (node.getName().equalsIgnoreCase(ContextHandlerLifeCycle.STARTING))
+                if (node.getName().equalsIgnoreCase(DeploymentGraph.STARTING))
                 {
                     startingLatch.countDown();
                 }
-                else if (node.getName().equalsIgnoreCase(ContextHandlerLifeCycle.STARTED))
+                else if (node.getName().equalsIgnoreCase(DeploymentGraph.STARTED))
                 {
                     startedLatch.countDown();
                 }
-                else if (node.getName().equalsIgnoreCase(ContextHandlerLifeCycle.FAILED))
+                else if (node.getName().equalsIgnoreCase(DeploymentGraph.FAILED))
                 {
                     failedLatch.countDown();
                 }

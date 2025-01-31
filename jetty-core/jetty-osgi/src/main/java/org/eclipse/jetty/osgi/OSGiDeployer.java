@@ -15,7 +15,7 @@ package org.eclipse.jetty.osgi;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
-import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.osgi.util.EventSender;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;

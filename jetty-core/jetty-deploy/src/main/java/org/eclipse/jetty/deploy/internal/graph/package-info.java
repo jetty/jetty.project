@@ -14,5 +14,5 @@
 /**
  * Jetty Deploy : Deployment Graph
  */
-package org.eclipse.jetty.deploy.graph;
+package org.eclipse.jetty.deploy.internal.graph;
 

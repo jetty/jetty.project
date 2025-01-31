@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.scan;
+package org.eclipse.jetty.deploy;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,8 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
-import org.eclipse.jetty.deploy.AbstractCleanEnvironmentTest;
-import org.eclipse.jetty.deploy.BarContextHandler;
+import org.eclipse.jetty.deploy.internal.DefaultContextHandlerFactory;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -40,10 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Tests {@link DefaultProvider} as it starts up for the first time.
+ * Tests {@link DeploymentScanner} as it starts up for the first time.
  */
 @ExtendWith(WorkDirExtension.class)
-public class DefaultProviderStartupTest extends AbstractCleanEnvironmentTest
+public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
 {
     public WorkDir testdir;
     private static XmlConfiguredJetty jetty;

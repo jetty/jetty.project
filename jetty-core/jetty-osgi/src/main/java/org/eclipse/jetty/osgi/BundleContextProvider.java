@@ -23,8 +23,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.ContextHandlerLifeCycle;
-import org.eclipse.jetty.deploy.ContextHandlerManagement;
+import org.eclipse.jetty.deploy.ContextHandlerDeployer;
+import org.eclipse.jetty.deploy.internal.DeploymentGraph;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -107,7 +107,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         }
     }
 
-    public BundleContextProvider(ContextHandlerManagement contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public BundleContextProvider(ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
         super(contextHandlerManagement, environment, contextFactory);
     }
@@ -195,7 +195,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             _contextHandlerMap.put(contextHandler.getID(), contextHandler);
             List<ContextHandler> contextHandlers = _bundleMap.computeIfAbsent(bundle, b -> new ArrayList<>());
             contextHandlers.add(contextHandler);
-            getContextHandlerManagement().addContextHandler(contextHandler, ContextHandlerLifeCycle.STARTED);
+            getContextHandlerManagement().addContextHandler(contextHandler, DeploymentGraph.STARTED);
             added = true;
         }
 
@@ -220,7 +220,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         {
             if (_contextHandlerMap.remove(context.getID()) != null)
             {
-                getContextHandlerManagement().removeContextHandler(context, ContextHandlerLifeCycle.UNDEPLOYED);
+                getContextHandlerManagement().removeContextHandler(context, DeploymentGraph.UNDEPLOYED);
                 removed = true;
             }
         }

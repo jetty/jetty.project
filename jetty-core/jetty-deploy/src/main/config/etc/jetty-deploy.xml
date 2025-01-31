@@ -8,7 +8,10 @@
 <!-- provided directories for web applications and hot deploying     -->
 <!-- through the DeploymentManager.                                  -->
 <!-- =============================================================== -->
-<Configure id="defaultProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
+<Configure id="defaultProvider" class="org.eclipse.jetty.deploy.DeploymentScanner">
+  <Arg name="server">
+    <Ref refid="Server" />
+  </Arg>
   <Arg name="contextManagement">
     <Ref refid="deploymentManager" />
   </Arg>

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.graph;
+package org.eclipse.jetty.deploy.internal.graph;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -245,7 +245,7 @@ public class Graph
     {
         for (Node node : _nodes)
         {
-            if (node.getName().equals(name))
+            if (node.getName().equalsIgnoreCase(name))
             {
                 return node;
             }

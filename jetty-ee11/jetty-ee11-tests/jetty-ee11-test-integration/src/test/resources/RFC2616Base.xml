@@ -96,7 +96,7 @@
 
         <Call name="addBean">
           <Arg>
-            <New id="defaultProvider" class="org.eclipse.jetty.deploy.scan.DefaultProvider">
+            <New id="defaultProvider" class="org.eclipse.jetty.deploy.DeploymentScanner">
               <Arg name="contextManagement">
                 <Ref refid="DeploymentManager" />
               </Arg>

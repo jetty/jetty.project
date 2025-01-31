@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.scan;
+package org.eclipse.jetty.deploy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,8 +21,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.deploy.AbstractCleanEnvironmentTest;
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -44,10 +42,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link DefaultProvider} behaviors when in Deferred Startup mode
+ * Tests {@link DeploymentScanner} behaviors when in Deferred Startup mode
  */
 @ExtendWith(WorkDirExtension.class)
-public class DefaultProviderDeferredStartupTest extends AbstractCleanEnvironmentTest
+public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironmentTest
 {
     public WorkDir testdir;
     private static XmlConfiguredJetty jetty;
@@ -98,7 +96,7 @@ public class DefaultProviderDeferredStartupTest extends AbstractCleanEnvironment
                     {
                         eventQueue.add("Server started");
                     }
-                    if (event instanceof DefaultProvider)
+                    if (event instanceof DeploymentScanner)
                     {
                         eventQueue.add("ScanningAppProvider started");
                     }
@@ -112,8 +110,8 @@ public class DefaultProviderDeferredStartupTest extends AbstractCleanEnvironment
             server.addEventListener(eventCaptureListener);
 
             DeploymentManager deploymentManager = server.getBean(DeploymentManager.class);
-            DefaultProvider defaultProvider = deploymentManager.getBean(DefaultProvider.class);
-            assertNotNull(defaultProvider, "Should have found DefaultProvider");
+            DeploymentScanner defaultProvider = deploymentManager.getBean(DeploymentScanner.class);
+            assertNotNull(defaultProvider, "Should have found DeploymentScanner");
             assertTrue(defaultProvider.isDeferInitialScan(), "The DeferInitialScan configuration should be true");
 
             defaultProvider.addEventListener(eventCaptureListener);
@@ -128,13 +126,13 @@ public class DefaultProviderDeferredStartupTest extends AbstractCleanEnvironment
                         scanner.addListener(new Scanner.ScanCycleListener()
                         {
                             @Override
-                            public void scanStarted(int cycle) throws Exception
+                            public void scanStarted(int cycle)
                             {
                                 eventQueue.add("Scan Started [" + cycle + "]");
                             }
 
                             @Override
-                            public void scanEnded(int cycle) throws Exception
+                            public void scanEnded(int cycle)
                             {
                                 eventQueue.add("Scan Ended [" + cycle + "]");
                             }

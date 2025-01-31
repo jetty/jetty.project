@@ -16,52 +16,26 @@ package org.eclipse.jetty.deploy;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.Environment;
 
-public class PhonyContextProvider extends AbstractLifeCycle
+/**
+ * Just some utility methods for Tests
+ */
+public class Util
 {
-    private final ContextHandlerManagement contextHandlerManagement;
-    private Path webappsDir;
-
-    public PhonyContextProvider(ContextHandlerManagement contextHandlerManagement)
-    {
-        this.contextHandlerManagement = contextHandlerManagement;
-    }
-
-    public String getEnvironmentName()
-    {
-        return Environment.ensure("phony").getName();
-    }
-
-    public ContextHandlerManagement getContextHandlerManagement()
-    {
-        return contextHandlerManagement;
-    }
-
-    @Override
-    public void doStart()
-    {
-        this.webappsDir = MavenTestingUtils.getTestResourcePathDir("webapps");
-    }
-
-    public ContextHandler createWebapp(String name)
+    public static ContextHandler createContextHandler(String name)
     {
         String basename = FileID.getBasename(name);
         ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setID(basename);
+        contextHandler.setContextPath("/" + basename);
         return contextHandler;
     }
 
-    public ContextHandler createContextHandler(String name)
+    public static ContextHandler createContextHandler(Path war)
     {
         ContextHandler contextHandler = new ContextHandler();
 
-        Path war = webappsDir.resolve(name + ".war");
-
-        String contextPath = war.toString();
+        String contextPath = war.getFileName().toString();
 
         if (FileID.isWebArchive(war))
         {
@@ -82,13 +56,6 @@ public class PhonyContextProvider extends AbstractLifeCycle
             contextPath = contextPath.substring(0, contextPath.length() - 1);
 
         contextHandler.setContextPath(contextPath);
-
         return contextHandler;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x:%s", this.getClass().getSimpleName(), hashCode(), getEnvironmentName());
     }
 }

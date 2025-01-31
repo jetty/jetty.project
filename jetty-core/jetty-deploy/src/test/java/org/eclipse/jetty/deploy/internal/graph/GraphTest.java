@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.graph;
+package org.eclipse.jetty.deploy.internal.graph;
 
 import org.junit.jupiter.api.Test;
 
