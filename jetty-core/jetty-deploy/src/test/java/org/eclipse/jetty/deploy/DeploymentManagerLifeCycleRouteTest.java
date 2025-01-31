@@ -20,7 +20,7 @@ import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 
 import org.eclipse.jetty.deploy.internal.DeploymentGraph;
-import org.eclipse.jetty.deploy.internal.DeploymentLifeCyclePathCollector;
+import org.eclipse.jetty.deploy.internal.DeploymentGraphNodeOrderCollector;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -38,7 +38,7 @@ public class DeploymentManagerLifeCycleRouteTest
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
-        DeploymentLifeCyclePathCollector pathtracker = new DeploymentLifeCyclePathCollector();
+        DeploymentGraphNodeOrderCollector pathtracker = new DeploymentGraphNodeOrderCollector();
 
         depman.addLifeCycleBinding(pathtracker);
         depman.setContexts(new ContextHandlerCollection());
@@ -77,7 +77,7 @@ public class DeploymentManagerLifeCycleRouteTest
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
-        DeploymentLifeCyclePathCollector pathtracker = new DeploymentLifeCyclePathCollector();
+        DeploymentGraphNodeOrderCollector pathtracker = new DeploymentGraphNodeOrderCollector();
         depman.addLifeCycleBinding(pathtracker);
 
         // Start DepMan
@@ -97,10 +97,10 @@ public class DeploymentManagerLifeCycleRouteTest
 
     @Test
     @Disabled("Not working yet, need to figure out how to reference the ContextHandler mbean")
-    public void testStateTransitionDeployedToUndeployed() throws Exception
+    public void testMBeanStateTransitionToUndeployed() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
-        DeploymentLifeCyclePathCollector pathtracker = new DeploymentLifeCyclePathCollector();
+        DeploymentGraphNodeOrderCollector pathtracker = new DeploymentGraphNodeOrderCollector();
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());

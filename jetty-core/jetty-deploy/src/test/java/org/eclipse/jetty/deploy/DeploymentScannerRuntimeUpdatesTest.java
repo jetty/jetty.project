@@ -126,13 +126,13 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
      * Test that if a unit (called "simple" has both a war file and xml file), will be
      * redeployed if the war file is touched (note: the XML is the main deployable path)
      * <p>
-     * This addresses issue https://github.com/jetty/jetty.project/issues/12543
+     * This addresses <a href="https://github.com/jetty/jetty.project/issues/12543">Issue 12543</a>
      */
     @Test
     public void testRedeployIfAnyTrackedPathChanges(WorkDir workDir) throws Exception
     {
-        Path testdir = workDir.getEmptyPathDir();
-        createJettyBase(testdir);
+        Path baseDir = workDir.getEmptyPathDir();
+        createJettyBase(baseDir);
         startJetty();
 
         Path webappsDir = jetty.getJettyBasePath().resolve("webapps");
@@ -163,8 +163,8 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
     @Test
     public void testWebAppsWithAddedEnvConfig(WorkDir workDir) throws Exception
     {
-        Path testdir = workDir.getEmptyPathDir();
-        createJettyBase(testdir);
+        Path baseDir = workDir.getEmptyPathDir();
+        createJettyBase(baseDir);
 
         Path environments = jetty.getJettyBasePath().resolve("environments");
         FS.ensureDirExists(environments);
@@ -241,8 +241,8 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
     @Test
     public void testAfterStartupThenUpdateContext(WorkDir workDir) throws Exception
     {
-        Path testdir = workDir.getEmptyPathDir();
-        createJettyBase(testdir);
+        Path baseDir = workDir.getEmptyPathDir();
+        createJettyBase(baseDir);
 
         startJetty();
 

@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
-public class TrackedPathsTest
+public class PathsAppTest
 {
     public WorkDir workDir;
 
@@ -45,8 +45,8 @@ public class TrackedPathsTest
         Path xml = dir.resolve("bar.xml");
         Files.writeString(xml, "XML for bar", UTF_8);
 
-        TrackedPaths app = new TrackedPaths("bar");
-        app.putPath(xml, TrackedPaths.State.UNCHANGED);
+        PathsApp app = new PathsApp("bar");
+        app.putPath(xml, PathsApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -67,9 +67,9 @@ public class TrackedPathsTest
         Path war = dir.resolve("bar.war");
         Files.writeString(war, "WAR for bar", UTF_8);
 
-        TrackedPaths app = new TrackedPaths("bar");
-        app.putPath(xml, TrackedPaths.State.UNCHANGED);
-        app.putPath(war, TrackedPaths.State.UNCHANGED);
+        PathsApp app = new PathsApp("bar");
+        app.putPath(xml, PathsApp.State.UNCHANGED);
+        app.putPath(war, PathsApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -90,9 +90,9 @@ public class TrackedPathsTest
         Path war = dir.resolve("bar.war");
         Files.writeString(war, "WAR for bar", UTF_8);
 
-        TrackedPaths app = new TrackedPaths("bar");
-        app.putPath(appDir, TrackedPaths.State.UNCHANGED);
-        app.putPath(war, TrackedPaths.State.UNCHANGED);
+        PathsApp app = new PathsApp("bar");
+        app.putPath(appDir, PathsApp.State.UNCHANGED);
+        app.putPath(war, PathsApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -113,9 +113,9 @@ public class TrackedPathsTest
         Path xml = dir.resolve("bar.xml");
         Files.writeString(xml, "XML for bar", UTF_8);
 
-        TrackedPaths app = new TrackedPaths("bar");
-        app.putPath(appDir, TrackedPaths.State.UNCHANGED);
-        app.putPath(xml, TrackedPaths.State.UNCHANGED);
+        PathsApp app = new PathsApp("bar");
+        app.putPath(appDir, PathsApp.State.UNCHANGED);
+        app.putPath(xml, PathsApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -138,10 +138,10 @@ public class TrackedPathsTest
         Path war = dir.resolve("bar.war");
         Files.writeString(war, "WAR for bar", UTF_8);
 
-        TrackedPaths app = new TrackedPaths("bar");
-        app.putPath(appDir, TrackedPaths.State.UNCHANGED);
-        app.putPath(xml, TrackedPaths.State.UNCHANGED);
-        app.putPath(war, TrackedPaths.State.UNCHANGED);
+        PathsApp app = new PathsApp("bar");
+        app.putPath(appDir, PathsApp.State.UNCHANGED);
+        app.putPath(xml, PathsApp.State.UNCHANGED);
+        app.putPath(war, PathsApp.State.UNCHANGED);
 
         Path main = app.getMainPath();
 
@@ -151,107 +151,107 @@ public class TrackedPathsTest
     @Test
     public void testStateUnchanged()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.UNCHANGED);
-        app.putPath(Path.of("test-b"), TrackedPaths.State.UNCHANGED);
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.UNCHANGED);
+        app.putPath(Path.of("test-b"), PathsApp.State.UNCHANGED);
 
-        assertThat(app.getState(), is(TrackedPaths.State.UNCHANGED));
+        assertThat(app.getState(), is(PathsApp.State.UNCHANGED));
     }
 
     @Test
     public void testStateInitialEmpty()
     {
-        TrackedPaths app = new TrackedPaths("test");
+        PathsApp app = new PathsApp("test");
         // intentionally empty of Paths
 
-        assertThat(app.getState(), is(TrackedPaths.State.REMOVED));
+        assertThat(app.getState(), is(PathsApp.State.REMOVED));
     }
 
     @Test
     public void testStatePutThenRemoveAll()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.ADDED);
-        assertThat(app.getState(), is(TrackedPaths.State.ADDED));
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.ADDED);
+        assertThat(app.getState(), is(PathsApp.State.ADDED));
 
         // Now it gets flagged as removed. (eg: by a Scanner change)
-        app.putPath(Path.of("test-a"), TrackedPaths.State.REMOVED);
+        app.putPath(Path.of("test-a"), PathsApp.State.REMOVED);
         // Then it gets processed, which results in a state reset.
         app.resetStates();
 
         // The resulting app should have no paths, and be flagged as removed.
         assertThat(app.getPaths().size(), is(0));
-        assertThat(app.getState(), is(TrackedPaths.State.REMOVED));
+        assertThat(app.getState(), is(PathsApp.State.REMOVED));
     }
 
     @Test
     public void testStateAddedOnly()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.ADDED);
-        app.putPath(Path.of("test-b"), TrackedPaths.State.ADDED);
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.ADDED);
+        app.putPath(Path.of("test-b"), PathsApp.State.ADDED);
 
-        assertThat(app.getState(), is(TrackedPaths.State.ADDED));
+        assertThat(app.getState(), is(PathsApp.State.ADDED));
     }
 
     @Test
     public void testStateAddedRemoved()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.REMOVED); // existing file removed in this scan
-        app.putPath(Path.of("test-b"), TrackedPaths.State.ADDED); // new file introduced in this scan event
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.REMOVED); // existing file removed in this scan
+        app.putPath(Path.of("test-b"), PathsApp.State.ADDED); // new file introduced in this scan event
 
-        assertThat(app.getState(), is(TrackedPaths.State.CHANGED));
+        assertThat(app.getState(), is(PathsApp.State.CHANGED));
     }
 
     @Test
     public void testStateAddedChanged()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.CHANGED); // existing file changed in this scan
-        app.putPath(Path.of("test-b"), TrackedPaths.State.ADDED); // new file introduced in this scan event
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.CHANGED); // existing file changed in this scan
+        app.putPath(Path.of("test-b"), PathsApp.State.ADDED); // new file introduced in this scan event
 
-        assertThat(app.getState(), is(TrackedPaths.State.CHANGED));
+        assertThat(app.getState(), is(PathsApp.State.CHANGED));
     }
 
     @Test
     public void testStateUnchangedAdded()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.UNCHANGED); // existed in previous scan
-        app.putPath(Path.of("test-b"), TrackedPaths.State.ADDED); // new file introduced in this scan event
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.UNCHANGED); // existed in previous scan
+        app.putPath(Path.of("test-b"), PathsApp.State.ADDED); // new file introduced in this scan event
 
-        assertThat(app.getState(), is(TrackedPaths.State.CHANGED));
+        assertThat(app.getState(), is(PathsApp.State.CHANGED));
     }
 
     @Test
     public void testStateUnchangedChanged()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.UNCHANGED); // existed in previous scan
-        app.putPath(Path.of("test-b"), TrackedPaths.State.CHANGED); // existing file changed in this scan event
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.UNCHANGED); // existed in previous scan
+        app.putPath(Path.of("test-b"), PathsApp.State.CHANGED); // existing file changed in this scan event
 
-        assertThat(app.getState(), is(TrackedPaths.State.CHANGED));
+        assertThat(app.getState(), is(PathsApp.State.CHANGED));
     }
 
     @Test
     public void testStateUnchangedRemoved()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.UNCHANGED); // existed in previous scan
-        app.putPath(Path.of("test-b"), TrackedPaths.State.REMOVED); // existing file removed in this scan event
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.UNCHANGED); // existed in previous scan
+        app.putPath(Path.of("test-b"), PathsApp.State.REMOVED); // existing file removed in this scan event
 
-        assertThat(app.getState(), is(TrackedPaths.State.CHANGED));
+        assertThat(app.getState(), is(PathsApp.State.CHANGED));
     }
 
     @Test
     public void testStateUnchangedRemovedAdded()
     {
-        TrackedPaths app = new TrackedPaths("test");
-        app.putPath(Path.of("test-a"), TrackedPaths.State.UNCHANGED); // existed in previous scan
-        app.putPath(Path.of("test-b"), TrackedPaths.State.REMOVED); // existing file changed in this scan event
-        app.putPath(Path.of("test-c"), TrackedPaths.State.ADDED); // new file introduced in this scan event
+        PathsApp app = new PathsApp("test");
+        app.putPath(Path.of("test-a"), PathsApp.State.UNCHANGED); // existed in previous scan
+        app.putPath(Path.of("test-b"), PathsApp.State.REMOVED); // existing file changed in this scan event
+        app.putPath(Path.of("test-c"), PathsApp.State.ADDED); // new file introduced in this scan event
 
-        assertThat(app.getState(), is(TrackedPaths.State.CHANGED));
+        assertThat(app.getState(), is(PathsApp.State.CHANGED));
     }
 }

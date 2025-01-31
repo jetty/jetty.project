@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * a from-file-system App deployment that the {@link DeploymentScanner}
  * creates and uses.
  */
-public class TrackedPaths
+public class PathsApp
 {
     public enum State
     {
@@ -49,14 +49,14 @@ public class TrackedPaths
         REMOVED
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(TrackedPaths.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathsApp.class);
     private final String name;
     private final Map<Path, State> paths = new HashMap<>();
     private final Attributes attributes = new Attributes.Mapped();
     private State state;
     private ContextHandler contextHandler;
 
-    public TrackedPaths(String name)
+    public PathsApp(String name)
     {
         this.name = name;
         this.state = calcState();
@@ -75,7 +75,7 @@ public class TrackedPaths
     {
         if (o == null || getClass() != o.getClass())
             return false;
-        TrackedPaths that = (TrackedPaths)o;
+        PathsApp that = (PathsApp)o;
         return Objects.equals(name, that.name);
     }
 

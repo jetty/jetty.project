@@ -80,7 +80,7 @@
 
         <Call name="addBean">
          <Arg>
-           <New id="defaultProvider" class="org.eclipse.jetty.deploy.DeploymentScanner">
+           <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
              <Arg name="contextManagement">
                <Ref refid="DeploymentManager" />
              </Arg>

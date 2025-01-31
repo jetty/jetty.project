@@ -8,7 +8,7 @@
 <!-- provided directories for web applications and hot deploying     -->
 <!-- through the DeploymentManager.                                  -->
 <!-- =============================================================== -->
-<Configure id="defaultProvider" class="org.eclipse.jetty.deploy.DeploymentScanner">
+<Configure id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
   <Arg name="server">
     <Ref refid="Server" />
   </Arg>
@@ -43,7 +43,7 @@
   <Ref refid="deploymentManager">
     <Call name="addBean">
       <Arg>
-        <Ref refid="defaultProvider" />
+        <Ref refid="deploymentScanner" />
       </Arg>
     </Call>
   </Ref>

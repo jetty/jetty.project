@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Just an overly picky test case to validate the potential paths.
  */
 @ExtendWith(WorkDirExtension.class)
-public class DeploymentLifeCycleTest
+public class DeploymentGraphTest
 {
     private void assertNoPath(String from, String to)
     {

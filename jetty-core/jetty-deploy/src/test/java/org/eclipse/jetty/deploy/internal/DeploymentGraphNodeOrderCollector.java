@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Binds to all lifecycle nodes, and tracks the order of the lifecycle nodes for testing purposes.
  */
-public class DeploymentLifeCyclePathCollector implements DeploymentNodeBinding
+public class DeploymentGraphNodeOrderCollector implements DeploymentNodeBinding
 {
     List<Node> actualOrder = new ArrayList<>();
 

@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.internal.DefaultContextHandlerFactory;
-import org.eclipse.jetty.deploy.internal.TrackedPaths;
+import org.eclipse.jetty.deploy.internal.PathsApp;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -92,7 +92,7 @@ import org.slf4j.LoggerFactory;
  * Context Deployment properties will be initialized with:
  * </p>
  * <ul>
- * <li>The properties set on the application via embedded calls modifying {@link TrackedPaths#getAttributes()}</li>
+ * <li>The properties set on the application via embedded calls modifying {@link PathsApp#getAttributes()}</li>
  * <li>The app specific properties file {@code webapps/<webapp-name>.properties}</li>
  * <li>The environment specific properties file {@code webapps/<environment-name>[-zzz].properties}</li>
  * <li>The {@link Attributes} from the {@link Environment}</li>
@@ -122,10 +122,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
     private final DefaultContextHandlerFactory contextHandlerFactory = new DefaultContextHandlerFactory();
+    private final Map<String, PathsApp> trackedApps = new HashMap<>();
+    private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
 
-    private Map<String, TrackedPaths> trackedPathsMap = new HashMap<>();
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
-    private Map<String, Attributes> environmentAttributesMap = new HashMap<>();
     private Path environmentsDir;
     private int scanInterval = 10;
     private Scanner scanner;
@@ -330,19 +330,19 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         for (Map.Entry<Path, Scanner.Notification> entry : changeSet.entrySet())
         {
             Path path = entry.getKey();
-            TrackedPaths.State state = switch (entry.getValue())
+            PathsApp.State state = switch (entry.getValue())
             {
                 case ADDED ->
                 {
-                    yield TrackedPaths.State.ADDED;
+                    yield PathsApp.State.ADDED;
                 }
                 case CHANGED ->
                 {
-                    yield TrackedPaths.State.CHANGED;
+                    yield PathsApp.State.CHANGED;
                 }
                 case REMOVED ->
                 {
-                    yield TrackedPaths.State.REMOVED;
+                    yield PathsApp.State.REMOVED;
                 }
             };
 
@@ -359,7 +359,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             {
                 // we have a normal path entry
                 changedBaseNames.add(basename);
-                TrackedPaths app = trackedPathsMap.computeIfAbsent(basename, TrackedPaths::new);
+                PathsApp app = trackedApps.computeIfAbsent(basename, PathsApp::new);
                 app.putPath(path, state);
             }
             else if (isEnvironmentConfigPath(path))
@@ -384,15 +384,15 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         // Now we want to convert this list of changes to a DeployAction list
         // that will perform the add/remove logic in a consistent way.
 
-        List<TrackedPaths> changedApps = changedBaseNames
+        List<PathsApp> changedApps = changedBaseNames
             .stream()
-            .map(this::findTracked)
+            .map(this::findApp)
             .collect(Collectors.toList());
 
         if (!changedEnvironments.isEmpty())
         {
             // We have incoming environment configuration changes
-            // We need to add any missing ScanTrackedApp that have changed
+            // We need to add any missing PathsApp that have changed
             // due to incoming environment configuration changes,
             // along with loading any ${jetty.base}/environments/<name>-*.properties
             // into a layer for that Environment.
@@ -400,15 +400,15 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             for (String changedEnvName : changedEnvironments)
             {
                 // Add any missing apps to changedApps list
-                for (TrackedPaths app : trackedPathsMap.values())
+                for (PathsApp app : trackedApps.values())
                 {
                     if (changedBaseNames.contains(app.getName()))
                         continue; // skip app that's already in the change list.
 
                     if (changedEnvName.equalsIgnoreCase(app.getEnvironmentName()))
                     {
-                        if (app.getState() == TrackedPaths.State.UNCHANGED)
-                            app.setState(TrackedPaths.State.CHANGED);
+                        if (app.getState() == PathsApp.State.UNCHANGED)
+                            app.setState(PathsApp.State.CHANGED);
                         changedApps.add(app);
                         changedBaseNames.add(app.getName());
                     }
@@ -449,17 +449,17 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         scanner.nudge();
     }
 
-    protected TrackedPaths findTracked(String name)
+    protected PathsApp findApp(String name)
     {
-        return trackedPathsMap.get(name);
+        return trackedApps.get(name);
     }
 
-    public void resetTrackedState(String name)
+    public void resetAppState(String name)
     {
-        TrackedPaths tracked = findTracked(name);
-        if (tracked == null)
+        PathsApp app = findApp(name);
+        if (app == null)
             return;
-        tracked.resetStates();
+        app.resetStates();
     }
 
     @Override
@@ -468,13 +468,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         return String.format("%s@%x[dirs=%s]", this.getClass(), hashCode(), monitoredDirs);
     }
 
-    protected List<DeployAction> buildActionList(List<TrackedPaths> changedApps)
+    protected List<DeployAction> buildActionList(List<PathsApp> changedApps)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("buildActionList: {}", changedApps);
 
         List<DeployAction> actions = new ArrayList<>();
-        for (TrackedPaths app : changedApps)
+        for (PathsApp app : changedApps)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("changed app: {}", app);
@@ -483,6 +483,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             {
                 case ADDED ->
                 {
+                    // new paths are not being tracked yet.
+                    startTracking(app);
                     actions.add(new DeployAction(DeployAction.Type.ADD, app.getName()));
                 }
                 case CHANGED ->
@@ -497,6 +499,16 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             }
         }
         return sortActions(actions);
+    }
+
+    private void startTracking(PathsApp app)
+    {
+        trackedApps.put(app.getName(), app);
+    }
+
+    private void stopTracking(PathsApp app)
+    {
+        trackedApps.remove(app.getName());
     }
 
     @Override
@@ -628,20 +640,32 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
 
     protected void performActions(List<DeployAction> actions)
     {
+        // Track apps that have been removed as a result of executing the
+        // full set of actions.
+        Set<PathsApp> removedApps = new HashSet<>();
+
+        // Process each step in the actions list
         for (DeployAction step : actions)
         {
-            TrackedPaths app = findTracked(step.name());
+            PathsApp app = findApp(step.name());
+            if (app == null)
+                throw new IllegalStateException("Unable to find app [" + step.name() + "]");
+
             try
             {
                 switch (step.type())
                 {
                     case REMOVE ->
                     {
-                        trackedPathsMap.remove(step.name());
+                        // Track removal
+                        removedApps.add(app);
                         contextManagement.undeploy(app.getContextHandler());
                     }
                     case ADD ->
                     {
+                        // Undo tracking for prior removal in this list of actions.
+                        removedApps.remove(app);
+
                         // Load <basename>.properties into app.
                         app.loadProperties();
 
@@ -667,8 +691,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
                         ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app, deployAttributes);
                         app.setContextHandler(contextHandler);
 
-                        // Introduce the App to the DeploymentManager
-                        trackedPathsMap.put(step.name(), app);
+                        // Introduce the ContextHandler to the DeploymentManager
+                        startTracking(app);
                         contextManagement.deploy(app.getContextHandler());
                     }
                 }
@@ -681,6 +705,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             {
                 app.resetStates();
             }
+        }
+
+        // Fully stop tracking apps that have been removed, but not re-added.
+        for (PathsApp removed : removedApps)
+        {
+            stopTracking(removed);
         }
     }
 
@@ -832,7 +862,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         public enum Type
         {
             REMOVE,
-            ADD;
+            ADD
         }
     }
 

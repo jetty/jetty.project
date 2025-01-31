@@ -4,7 +4,7 @@
 <!-- Configure the "ee9" environment deployment defaults            -->
 <!-- =============================================================== -->
 <Configure>
-  <Ref refid="defaultProvider">
+  <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
       <Arg>ee9</Arg>
       <Set name="defaultContextHandlerClass">

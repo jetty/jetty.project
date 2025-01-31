@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
-import org.eclipse.jetty.deploy.internal.TrackedPaths;
+import org.eclipse.jetty.deploy.internal.PathsApp;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,10 +30,10 @@ public class DeploymentScannerDeployActionComparatorTest
     @Test
     public void testAddOnly()
     {
-        TrackedPaths appFoo = new TrackedPaths("foo");
-        appFoo.putPath(Path.of("foo.xml"), TrackedPaths.State.ADDED);
-        TrackedPaths appBar = new TrackedPaths("bar");
-        appBar.putPath(Path.of("bar.xml"), TrackedPaths.State.ADDED);
+        PathsApp appFoo = new PathsApp("foo");
+        appFoo.putPath(Path.of("foo.xml"), PathsApp.State.ADDED);
+        PathsApp appBar = new PathsApp("bar");
+        appBar.putPath(Path.of("bar.xml"), PathsApp.State.ADDED);
 
         List<DeployAction> actions = new ArrayList<>();
         actions.add(new DeployAction(DeployAction.Type.ADD, "bar"));
@@ -58,11 +58,11 @@ public class DeploymentScannerDeployActionComparatorTest
     @Test
     public void testRemoveOnly()
     {
-        TrackedPaths appFoo = new TrackedPaths("foo");
-        appFoo.putPath(Path.of("foo.xml"), TrackedPaths.State.REMOVED);
+        PathsApp appFoo = new PathsApp("foo");
+        appFoo.putPath(Path.of("foo.xml"), PathsApp.State.REMOVED);
 
-        TrackedPaths appBar = new TrackedPaths("bar");
-        appBar.putPath(Path.of("bar.xml"), TrackedPaths.State.REMOVED);
+        PathsApp appBar = new PathsApp("bar");
+        appBar.putPath(Path.of("bar.xml"), PathsApp.State.REMOVED);
 
         List<DeployAction> actions = new ArrayList<>();
         actions.add(new DeployAction(DeployAction.Type.REMOVE, "foo"));
@@ -87,11 +87,11 @@ public class DeploymentScannerDeployActionComparatorTest
     @Test
     public void testRemoveTwoAndAddTwo()
     {
-        TrackedPaths appFoo = new TrackedPaths("foo");
-        appFoo.putPath(Path.of("foo.xml"), TrackedPaths.State.REMOVED);
+        PathsApp appFoo = new PathsApp("foo");
+        appFoo.putPath(Path.of("foo.xml"), PathsApp.State.REMOVED);
 
-        TrackedPaths appBar = new TrackedPaths("bar");
-        appBar.putPath(Path.of("bar.xml"), TrackedPaths.State.REMOVED);
+        PathsApp appBar = new PathsApp("bar");
+        appBar.putPath(Path.of("bar.xml"), PathsApp.State.REMOVED);
 
         List<DeployAction> actions = new ArrayList<>();
         actions.add(new DeployAction(DeployAction.Type.REMOVE, "foo"));
@@ -132,17 +132,17 @@ public class DeploymentScannerDeployActionComparatorTest
     @Test
     public void testRemoveFourAndAddTwo()
     {
-        TrackedPaths appA = new TrackedPaths("app-a");
-        appA.putPath(Path.of("app-a.xml"), TrackedPaths.State.REMOVED);
+        PathsApp appA = new PathsApp("app-a");
+        appA.putPath(Path.of("app-a.xml"), PathsApp.State.REMOVED);
 
-        TrackedPaths appB = new TrackedPaths("app-b");
-        appB.putPath(Path.of("app-b.xml"), TrackedPaths.State.REMOVED);
+        PathsApp appB = new PathsApp("app-b");
+        appB.putPath(Path.of("app-b.xml"), PathsApp.State.REMOVED);
 
-        TrackedPaths appC = new TrackedPaths("app-c");
-        appC.putPath(Path.of("app-c.xml"), TrackedPaths.State.REMOVED);
+        PathsApp appC = new PathsApp("app-c");
+        appC.putPath(Path.of("app-c.xml"), PathsApp.State.REMOVED);
 
-        TrackedPaths appD = new TrackedPaths("app-d");
-        appD.putPath(Path.of("app-d.xml"), TrackedPaths.State.REMOVED);
+        PathsApp appD = new PathsApp("app-d");
+        appD.putPath(Path.of("app-d.xml"), PathsApp.State.REMOVED);
 
         List<DeployAction> actions = new ArrayList<>();
         // app A is going through hot-reload

@@ -15,6 +15,7 @@ module org.eclipse.jetty.deploy
 {
     requires java.xml;
     requires org.eclipse.jetty.xml;
+    requires transitive org.eclipse.jetty.util;
     requires transitive org.eclipse.jetty.server;
     requires org.slf4j;
 

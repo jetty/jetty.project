@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
-import org.eclipse.jetty.deploy.internal.TrackedPaths;
+import org.eclipse.jetty.deploy.internal.PathsApp;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
@@ -60,13 +60,13 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             // Perform post performActions cleanup that normally happens
             for (DeployAction action : actions)
             {
-                resetTrackedState(action.name());
+                resetAppState(action.name());
             }
         }
 
-        public TrackedPaths findTracked(String name)
+        public PathsApp findApp(String name)
         {
-            return super.findTracked(name);
+            return super.findApp(name);
         }
     }
 
@@ -92,8 +92,8 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.ADDED));
             assertThat("action.app.paths", app.getPaths().keySet(), Matchers.contains(xml));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
         };
@@ -124,10 +124,10 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("foo"));
             assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.ADDED));
             assertThat("action.app.paths", app.getPaths().keySet(), contains(xml));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.ADDED));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
         };
 
@@ -147,10 +147,10 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("foo"));
             assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.REMOVED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.REMOVED));
             assertThat("action.app.paths", app.getPaths().keySet(), contains(xml));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.REMOVED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.REMOVED));
             assertThat("action.app.mainPath", app.getMainPath(), is(nullValue()));
         };
 
@@ -184,11 +184,11 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
 
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.ADDED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.ADDED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.ADDED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.ADDED));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
         };
 
@@ -221,11 +221,11 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.ADDED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.ADDED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.ADDED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.ADDED));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
         };
 
@@ -244,21 +244,21 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.CHANGED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.UNCHANGED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.UNCHANGED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.CHANGED));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
 
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
-            app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.CHANGED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.UNCHANGED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.UNCHANGED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.CHANGED));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
         };
 
@@ -291,11 +291,11 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.ADDED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.ADDED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.ADDED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.ADDED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.ADDED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.ADDED));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
         };
 
@@ -315,21 +315,21 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.CHANGED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.CHANGED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.CHANGED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.CHANGED));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
 
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
-            app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.CHANGED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.CHANGED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.CHANGED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.CHANGED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.CHANGED));
             assertThat("action.app.mainPath", app.getMainPath(), is(xml));
         };
 
@@ -349,21 +349,21 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.CHANGED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.REMOVED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.UNCHANGED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.REMOVED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.UNCHANGED));
             assertThat("action.app.mainPath", app.getMainPath(), is(war));
 
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.ADD));
-            app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.CHANGED));
+            app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.CHANGED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, war));
-            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(TrackedPaths.State.REMOVED));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.UNCHANGED));
+            assertThat("action.app.paths[xml].state", app.getPaths().get(xml), is(PathsApp.State.REMOVED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.UNCHANGED));
             assertThat("action.app.mainPath", app.getMainPath(), is(war));
         };
 
@@ -383,10 +383,10 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
             action = iterator.next();
             assertThat("action.name", action.name(), is("bar"));
             assertThat("action.type", action.type(), is(DeployAction.Type.REMOVE));
-            TrackedPaths app = deploymentScanner.findTracked(action.name());
-            assertThat("action.app.state", app.getState(), is(TrackedPaths.State.REMOVED));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.state", app.getState(), is(PathsApp.State.REMOVED));
             assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(war));
-            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(TrackedPaths.State.REMOVED));
+            assertThat("action.app.paths[war].state", app.getPaths().get(war), is(PathsApp.State.REMOVED));
             assertThat("action.app.mainPath", app.getMainPath(), is(nullValue()));
         };
 
