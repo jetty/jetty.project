@@ -163,13 +163,13 @@ public class EE10Activator implements BundleActivator
 
                 if (contextProvider == null)
                 {
-                    contextProvider = new BundleContextProvider(deploymentManager, ENVIRONMENT, new EE10ContextFactory(_myBundle));
+                    contextProvider = new BundleContextProvider(server, deploymentManager, ENVIRONMENT, new EE10ContextFactory(_myBundle));
                     deploymentManager.addBean(contextProvider);
                 }
 
                 if (webAppProvider == null)
                 {
-                    webAppProvider = new BundleWebAppProvider(deploymentManager, ENVIRONMENT, new EE10WebAppFactory(_myBundle));
+                    webAppProvider = new BundleWebAppProvider(server, deploymentManager, ENVIRONMENT, new EE10WebAppFactory(_myBundle));
                     deploymentManager.addBean(webAppProvider);
                 }
 

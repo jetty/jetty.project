@@ -164,13 +164,13 @@ public class EE9Activator implements BundleActivator
 
                 if (contextProvider == null)
                 {
-                    contextProvider = new BundleContextProvider(deploymentManager, ENVIRONMENT, new EE9ContextFactory(_myBundle));
+                    contextProvider = new BundleContextProvider(server, deploymentManager, ENVIRONMENT, new EE9ContextFactory(_myBundle));
                     deploymentManager.addBean(contextProvider);
                 }
 
                 if (webAppProvider == null)
                 {
-                    webAppProvider = new BundleWebAppProvider(deploymentManager, ENVIRONMENT, new EE9WebAppFactory(_myBundle));
+                    webAppProvider = new BundleWebAppProvider(server, deploymentManager, ENVIRONMENT, new EE9WebAppFactory(_myBundle));
                     deploymentManager.addBean(webAppProvider);
                 }
 

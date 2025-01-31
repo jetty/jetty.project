@@ -21,11 +21,13 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.ContextHandlerDeployer;
 import org.eclipse.jetty.deploy.internal.DeploymentGraph;
 import org.eclipse.jetty.osgi.util.Util;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
@@ -45,8 +47,6 @@ import org.slf4j.LoggerFactory;
 public class BundleContextProvider extends AbstractContextProvider implements BundleProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(BundleContextProvider.class);
-
-    private final Map<String, ContextHandler> _contextHandlerMap = new HashMap<>();
 
     private final Map<Bundle, List<ContextHandler>> _bundleMap = new HashMap<>();
 
@@ -107,9 +107,9 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         }
     }
 
-    public BundleContextProvider(ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public BundleContextProvider(Server server, ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
-        super(contextHandlerManagement, environment, contextFactory);
+        super(server, contextHandlerManagement, environment, contextFactory);
     }
 
     @Override
@@ -192,10 +192,9 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
                 metadata.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toASCIIString());
             }
             ContextHandler contextHandler = createContextHandler(metadata);
-            _contextHandlerMap.put(contextHandler.getID(), contextHandler);
             List<ContextHandler> contextHandlers = _bundleMap.computeIfAbsent(bundle, b -> new ArrayList<>());
             contextHandlers.add(contextHandler);
-            getContextHandlerManagement().addContextHandler(contextHandler, DeploymentGraph.STARTED);
+            getContextHandlerManagement().deploy(contextHandler);
             added = true;
         }
 
@@ -218,12 +217,9 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         boolean removed = false;
         for (ContextHandler context : contexts)
         {
-            if (_contextHandlerMap.remove(context.getID()) != null)
-            {
-                getContextHandlerManagement().removeContextHandler(context, DeploymentGraph.UNDEPLOYED);
-                removed = true;
-            }
+            getContextHandlerManagement().undeploy(context);
+            removed = true;
         }
-        return removed; // true if even 1 context was removed associated with this bundle
+        return removed;
     }
 }

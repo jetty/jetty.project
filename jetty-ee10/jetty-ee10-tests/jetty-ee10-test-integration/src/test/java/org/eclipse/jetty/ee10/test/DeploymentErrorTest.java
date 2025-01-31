@@ -103,7 +103,7 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        DeploymentScanner appProvider = new DeploymentScanner(deploymentManager);
+        DeploymentScanner appProvider = new DeploymentScanner(server, deploymentManager);
         DeploymentScanner.EnvironmentConfig envConfig = appProvider.configureEnvironment("ee10");
         envConfig.setContextHandlerClass("org.eclipse.jetty.ee10.webapp.WebAppContext");
         appProvider.setScanInterval(1);

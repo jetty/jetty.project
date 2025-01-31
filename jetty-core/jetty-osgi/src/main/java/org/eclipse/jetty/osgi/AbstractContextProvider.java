@@ -35,13 +35,15 @@ import org.osgi.framework.ServiceReference;
  */
 public abstract class AbstractContextProvider extends AbstractLifeCycle
 {
+    private final Server _server;
     private final ContextHandlerDeployer _contextHandlerManagement;
     private ContextFactory _contextFactory;
     private String _environment;
     private final Attributes _attributes = new Attributes.Mapped();
 
-    public AbstractContextProvider(ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public AbstractContextProvider(Server server, ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
+        _server = server;
         _contextHandlerManagement = contextHandlerManagement;
         _environment = Objects.requireNonNull(environment);
         _contextFactory = Objects.requireNonNull(contextFactory);
@@ -49,7 +51,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
 
     public Server getServer()
     {
-        return _contextHandlerManagement.getServer();
+        return _server;
     }
 
     public Attributes getAttributes()
@@ -64,7 +66,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
 
         // Create a ContextHandler suitable to deploy in OSGi
         ContextHandler contextHandler = _contextFactory.createContextHandler(this, metadata);
-        contextHandler.setID(metadata.getID()); // force ID to what this context handler source needs (as XML might have set it)
         Util.setBundle(contextHandler, metadata.getBundle());
         return contextHandler;
     }
