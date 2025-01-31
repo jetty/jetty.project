@@ -140,6 +140,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             closeHandle = InvokerUtils.bindTo(closeHandle, session);
             errorHandle = InvokerUtils.bindTo(errorHandle, session);
             pongHandle = InvokerUtils.bindTo(pongHandle, session);
+            if (pongHandle != null)
+                pongHandle = JakartaWebSocketFrameHandlerFactory.wrapNonVoidReturnType(pongHandle, session);
 
             JakartaWebSocketMessageMetadata actualTextMetadata = JakartaWebSocketMessageMetadata.copyOf(textMetadata);
             if (actualTextMetadata != null)
