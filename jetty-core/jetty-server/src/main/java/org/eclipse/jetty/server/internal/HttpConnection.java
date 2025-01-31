@@ -742,18 +742,25 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             // Cancel the IteratingCallback and take the nest Callback
             CancelSendException cancelSendException = new CancelSendException(cause);
-            abort(cancelSendException);
+            if (!abort(cancelSendException))
+                return null;
+
+            // We now know that we aborted this ICB with the CSE above, so onAbort will eventually be called
+            // in a serialized context and the callback will be set on the CSE.
 
             // If a write operation has been scheduled cancel it and fail its callback, otherwise complete ourselves
             Callback writeCallback = getEndPoint().cancelWrite();
-            if (writeCallback != null)
-                writeCallback.failed(cancelSendException);
-            else
-                cancelSendException.complete();
 
-            // wait for the cancellation to be complete
-            cancelSendException.join();
-            return cancelSendException.getCallback();
+            if (writeCallback == null)
+                // There was no write in operation, so we can complete the CSE ourselves
+                cancelSendException.complete();
+            else
+                // The write was cancelled and the callback is this ICB, so failing it will call onCompleted
+                writeCallback.failed(cancelSendException);
+
+            // wait for the cancellation to be complete and the callback to be set by onAbort.
+            // This should never block indefinitely, as onAborted only waits for active states like PROCESSING to complete.
+            return cancelSendException.join();
         }
 
         @Override
@@ -982,7 +989,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public void onFailure(final Throwable x)
         {
             Callback callback = resetCallback();
-            callback.failed(x);
+            if (callback != null)
+                callback.failed(x);
         }
 
         @Override
@@ -999,7 +1007,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         private static class CancelSendException extends IOException
         {
-            private final CountDownLatch _complete = new CountDownLatch(1);
+            private final CountDownLatch _complete = new CountDownLatch(2);
             private Callback _callback;
 
             public CancelSendException(Throwable cause)
@@ -1012,7 +1020,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _complete.countDown();
             }
 
-            public void join()
+            public Callback join()
             {
                 try
                 {
@@ -1024,16 +1032,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                     throw new RuntimeIOException(cause);
                 }
+
+                return _callback;
             }
 
             public void setCallback(Callback callback)
             {
                 _callback = callback;
-            }
-
-            public Callback getCallback()
-            {
-                return _callback;
+                _complete.countDown();
             }
         }
     }
@@ -1538,7 +1544,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public Callback cancelSend(Throwable cause, Callback callback)
         {
-            // We know that the SendCallback#cancel call will never block, so we can just combine here
+            // We know that the SendCallback#cancel call will never block on external events,
+            // so we can just combine here. At worst we may be deferred whilst another thread finishes
+            // processing a write before it notices the cancel.  It never blocks on IO itself
             return Callback.combine(_sendCallback.cancel(cause), callback);
         }
 

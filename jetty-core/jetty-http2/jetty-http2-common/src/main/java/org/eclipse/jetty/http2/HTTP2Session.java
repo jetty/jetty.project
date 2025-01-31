@@ -1291,11 +1291,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             return frame;
         }
 
-        public boolean isFor(HTTP2Stream stream)
-        {
-            return stream == this.stream;
-        }
-
         public abstract int getFrameBytesGenerated();
 
         public int getDataBytesRemaining()

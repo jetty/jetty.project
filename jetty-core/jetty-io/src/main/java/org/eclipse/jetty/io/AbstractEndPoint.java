@@ -355,7 +355,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public Callback cancelWrite()
     {
-        return _writeFlusher.cancel();
+        return _writeFlusher.cancelWrite();
     }
 
     protected abstract void onIncompleteFlush();

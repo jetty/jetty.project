@@ -46,7 +46,7 @@ public abstract class WriteFlusher
     private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
-    private static final State __WRITING = new WritingState();
+    private static final State __FLUSHING = new WritingState();
     private static final State __COMPLETING = new CompletingState();
     private static final State __CANCEL = new State(StateType.CANCEL);
     private static final State __CANCELLED = new State(StateType.CANCELLED);
@@ -56,27 +56,27 @@ public abstract class WriteFlusher
     static
     {
         // A write operation may either complete immediately:
-        //     IDLE-->WRITING-->IDLE
-        // Or it may not completely flush and go via the PENDING state
-        //     IDLE-->WRITING-->PENDING-->COMPLETING-->IDLE
+        //     IDLE-->FLUSHING-->IDLE
+        // Or it may not completely flush and go via the  state
+        //     IDLE-->FLUSHING-->PENDING-->COMPLETING-->IDLE
         // Or it may take several cycles to complete
-        //     IDLE-->WRITING-->PENDING-->COMPLETING-->PENDING-->COMPLETING-->IDLE
+        //     IDLE-->FLUSHING-->PENDING-->COMPLETING-->PENDING-->COMPLETING-->IDLE
         //
         // If a failure happens while in IDLE, it is a noop since there is no operation to tell of the failure.
         //     IDLE--(fail)-->IDLE
         //
         // If a cancel happens then:
         //     PENDING -> CANCELLED
-        //     COMPLETING/WRITING -> CANCEL
+        //     COMPLETING/FLUSHING -> CANCEL
         //     CANCELLING -> CANCELLED
         //     CANCEL -> CANCELLING
         //
         // From any other state than IDLE a failure will result in an FAILED state which is a terminal state, and
         // the callback is failed with the Throwable which caused the failure.
-        //     IDLE-->WRITING--(fail)-->FAILED
+        //     IDLE-->FLUSHING--(fail)-->FAILED
 
-        __stateTransitions.put(StateType.IDLE, EnumSet.of(StateType.WRITING));
-        __stateTransitions.put(StateType.WRITING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.CANCEL, StateType.FAILED));
+        __stateTransitions.put(StateType.IDLE, EnumSet.of(StateType.FLUSHING));
+        __stateTransitions.put(StateType.FLUSHING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.CANCEL, StateType.FAILED));
         __stateTransitions.put(StateType.PENDING, EnumSet.of(StateType.COMPLETING, StateType.IDLE, StateType.CANCELLED, StateType.FAILED));
         __stateTransitions.put(StateType.COMPLETING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.CANCEL, StateType.FAILED));
         __stateTransitions.put(StateType.CANCEL, EnumSet.of(StateType.CANCELLING));
@@ -93,13 +93,31 @@ public abstract class WriteFlusher
 
     private enum StateType
     {
+        /** No write is in progress */
         IDLE,
-        WRITING,
+
+        /** A flush is currently being attempted to progress the write */
+        FLUSHING,
+
+        /** The write was not able to be completed by a previous flush and {@link #onIncompleteFlush()} is waiting
+         *  for {@link #completeWrite()} to be called */
         PENDING,
+
+        /** The {@link #completeWrite()} method has been called and the write will be progressed */
         COMPLETING,
+
+        /** The {@link #cancelWrite()} method was called whilst in {@link StateType#FLUSHING} or {@link StateType#COMPLETING},
+         * so that when those operations complete, the next state will be {@link StateType#CANCELLING}*/
         CANCEL,
+
+        /** A flush operation has completed and seen the {@link StateType#CANCEL} state.  Entering this state indicates that
+         * the thread calling {@link #cancelWrite()} can continue to progress to the {@link StateType#CANCELLED} state. */
         CANCELLING,
+
+        /** The {@link #cancelWrite()} method was called and the cancellation of outstanding operations has completed */
         CANCELLED,
+
+        /** The write failed due to a failure from flushing */
         FAILED
     }
 
@@ -175,7 +193,7 @@ public abstract class WriteFlusher
     {
         private WritingState()
         {
-            super(StateType.WRITING);
+            super(StateType.FLUSHING);
         }
     }
 
@@ -241,7 +259,7 @@ public abstract class WriteFlusher
 
         private CancellingState(Callback callback)
         {
-            super(StateType.PENDING);
+            super(StateType.CANCELLING);
             _callback = callback;
         }
     }
@@ -261,7 +279,7 @@ public abstract class WriteFlusher
     protected abstract void onIncompleteFlush();
 
     /**
-     * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
+     * Tries to switch state to FLUSHING. If successful it writes the given buffers to the EndPoint. If state transition
      * fails it will fail the callback and leave the WriteFlusher in a terminal FAILED state.
      *
      * If not all buffers can be written in one go it creates a new {@code PendingState} object to preserve the state
@@ -291,7 +309,7 @@ public abstract class WriteFlusher
         if (DEBUG)
             LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
 
-        if (!updateState(__IDLE, __WRITING))
+        if (!updateState(__IDLE, __FLUSHING))
             throw new WritePendingException();
 
         try
@@ -303,7 +321,7 @@ public abstract class WriteFlusher
                 if (DEBUG)
                     LOG.debug("flush incomplete {}", this);
                 PendingState pending = new PendingState(callback, address, buffers);
-                if (updateState(__WRITING, pending))
+                if (updateState(__FLUSHING, pending))
                     onIncompleteFlush();
                 else
                     fail(callback);
@@ -311,7 +329,7 @@ public abstract class WriteFlusher
                 return;
             }
 
-            if (updateState(__WRITING, __IDLE))
+            if (updateState(__FLUSHING, __IDLE))
                 callback.succeeded();
             else
                 fail(callback);
@@ -320,7 +338,7 @@ public abstract class WriteFlusher
         {
             if (DEBUG)
                 LOG.debug("write exception", e);
-            if (updateState(__WRITING, new FailedState(e)))
+            if (updateState(__FLUSHING, new FailedState(e)))
                 callback.failed(e);
             else
                 fail(callback, e);
@@ -535,7 +553,7 @@ public abstract class WriteFlusher
                     }
                     break;
 
-                case WRITING:
+                case FLUSHING:
                 case COMPLETING:
                     if (DEBUG)
                         LOG.debug("failed: {}", this, cause);
@@ -549,7 +567,7 @@ public abstract class WriteFlusher
         }
     }
 
-    public Callback cancel()
+    public Callback cancelWrite()
     {
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while (true)
@@ -569,7 +587,7 @@ public abstract class WriteFlusher
                     break;
 
                 case COMPLETING:
-                case WRITING:
+                case FLUSHING:
                     updateState(current, __CANCEL);
                     break;
 
@@ -626,8 +644,8 @@ public abstract class WriteFlusher
     {
         switch (_state.get().getType())
         {
-            case WRITING:
-                return "W";
+            case FLUSHING:
+                return "F";
             case PENDING:
                 return "P";
             case COMPLETING:
@@ -636,6 +654,12 @@ public abstract class WriteFlusher
                 return "-";
             case FAILED:
                 return "F";
+            case CANCEL:
+                return "c";
+            case CANCELLING:
+                return ".";
+            case CANCELLED:
+                return "C";
             default:
                 return "?";
         }
