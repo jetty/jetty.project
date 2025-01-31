@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee;
 
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -24,12 +24,13 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,20 +50,22 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class WebAppClassLoaderTest
 {
     private Path _testWebappDir;
-    private WebAppContext _context;
+    private TestableWebAppClassLoaderContext _context;
     protected WebAppClassLoader _loader;
-    private Server _server;
+    private ContainerLifeCycle _container;
 
     @BeforeEach
     public void init() throws Exception
     {
-        _server = new Server();
+        TestableWebAppClassLoaderContext.initEnvironment();
+
+        _container = new ContainerLifeCycle();
+        ResourceFactory resourceFactory = ResourceFactory.of(_container);
+
+        _context = new TestableWebAppClassLoaderContext(resourceFactory);
 
         _testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        _context = new WebAppContext();
-        Resource webapp = _context.getResourceFactory().newResource(_testWebappDir);
-        _context.setBaseResource(webapp);
-        _context.setContextPath("/test");
+        Resource webapp = resourceFactory.newResource(_testWebappDir);
         _context.setExtraClasspath("src/test/resources/ext/*");
 
         _loader = new WebAppClassLoader(_context);
@@ -70,15 +73,14 @@ public class WebAppClassLoaderTest
         _loader.addClassPath(webapp.resolve("WEB-INF/classes"));
         _loader.setName("test");
 
-        _server.setHandler(_context);
-        _server.start();
+        _container.start();
     }
 
     @AfterEach
     public void afterEach() throws Exception
     {
         IO.close(_loader);
-        LifeCycle.stop(_server);
+        LifeCycle.stop(_container);
     }
 
     public void assertCanLoadClass(String clazz) throws ClassNotFoundException
@@ -116,7 +118,7 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.exttwo.Main");
         assertCantLoadClass("org.acme.extthree.Main");
 
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.Configuration");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         assertNotNull(clazzA.getField("FROM_PARENT"));
@@ -134,7 +136,7 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.exttwo.Main");
         assertCantLoadClass("org.acme.extthree.Main");
 
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.Configuration");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         assertThrows(NoSuchFieldException.class, () ->
@@ -182,7 +184,7 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
         assertCanLoadClass("java.lang.String");
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.Configuration");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
 
         assertThat("Classname Results", results, contains(
             _loader,
@@ -236,7 +238,7 @@ public class WebAppClassLoaderTest
     {
         String[] oldSC = _context.getHiddenClasses();
         String[] newSC = new String[oldSC.length + 1];
-        newSC[0] = "-org.eclipse.jetty.ee11.webapp.Configuration";
+        newSC[0] = "-org.eclipse.jetty.util.statistic.RateCounter";
         System.arraycopy(oldSC, 0, newSC, 1, oldSC.length);
         _context.setHiddenClassMatcher(new ClassMatcher(newSC));
 
@@ -244,21 +246,21 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
 
-        assertCanLoadClass("org.eclipse.jetty.ee11.webapp.Configuration");
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.JarScanner");
+        assertCanLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.SimpleStatistic");
     }
 
     @Test
     public void testExposedClass() throws Exception
     {
-        _context.getHiddenClassMatcher().exclude("org.eclipse.jetty.ee11.webapp.Configuration");
+        _context.getHiddenClassMatcher().exclude("org.eclipse.jetty.util.statistic.RateCounter");
 
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
 
-        assertCanLoadClass("org.eclipse.jetty.ee11.webapp.Configuration");
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.JarScanner");
+        assertCanLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.SimpleStatistic");
     }
 
     @Test
@@ -266,7 +268,7 @@ public class WebAppClassLoaderTest
     {
         String[] oldServC = _context.getHiddenClasses();
         String[] newServC = new String[oldServC.length + 1];
-        newServC[0] = "org.eclipse.jetty.ee11.webapp.Configuration";
+        newServC[0] = "org.eclipse.jetty.util.statistic.RateCounter";
         System.arraycopy(oldServC, 0, newServC, 1, oldServC.length);
 
         _context.setHiddenClassMatcher(new ClassMatcher(newServC));
@@ -280,8 +282,8 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.Configuration");
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.JarScanner");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.SimpleStatistic");
 
         oldSysC = _context.getProtectedClasses();
         newSysC = new String[oldSysC.length + 1];
@@ -303,14 +305,14 @@ public class WebAppClassLoaderTest
     @Test
     public void testSystemServerClass() throws Exception
     {
-        _context.getHiddenClassMatcher().add("org.eclipse.jetty.ee11.webapp.Configuration");
+        _context.getHiddenClassMatcher().add("org.eclipse.jetty.util.statistic.RateCounter");
         _context.getProtectedClassMatcher().add("org.eclipse.jetty.ee11.webapp.");
 
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.Configuration");
-        assertCantLoadClass("org.eclipse.jetty.ee11.webapp.JarScanner");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.SimpleStatistic");
 
         _context.getProtectedClassMatcher().add("org.acme.webapp.ClassInJarA");
         assertCanLoadResource("org/acme/webapp/ClassInJarA.class");

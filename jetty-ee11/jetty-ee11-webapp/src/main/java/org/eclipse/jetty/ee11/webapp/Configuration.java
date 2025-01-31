@@ -44,8 +44,8 @@ import org.eclipse.jetty.util.TopologicalSort;
  * (eg {@link JndiConfiguration}, {@link JaasConfiguration}} etc.) can be added or removed without concern
  * for ordering.
  * </p>
- * <p>Also since Jetty-9.4, Configurations are responsible for providing {@link #getHiddenClasses()} and
- * {@link #getProtectedClasses()} to configure the {@link WebAppClassLoader} for each context.
+ * <p>Configurations are responsible for providing {@link #getHiddenClasses()} and
+ * {@link #getProtectedClasses()} to configure the {@link org.eclipse.jetty.ee.WebAppClassLoader} for each context.
  * </p>
  */
 public interface Configuration

@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.annotation.HandlesTypes;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
 import org.eclipse.jetty.ee9.servlet.Source;
@@ -45,7 +46,6 @@ import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
 import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
 import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
@@ -347,7 +347,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         protected Set<Class<?>> resolveStartupClasses() throws Exception
         {
             final Set<Class<?>> classes = new HashSet<>();
-            WebAppClassLoader.runWithServerClassAccess(() ->
+            WebAppClassLoader.runWithHiddenClassAccess(() ->
             {
                 for (String name:_startupClassNames)
                 {

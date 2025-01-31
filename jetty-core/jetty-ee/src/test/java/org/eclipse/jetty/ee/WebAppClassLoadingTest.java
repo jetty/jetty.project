@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package orge.eclipse.jetty.ee;
+package org.eclipse.jetty.ee;
 
 import java.util.Arrays;
 

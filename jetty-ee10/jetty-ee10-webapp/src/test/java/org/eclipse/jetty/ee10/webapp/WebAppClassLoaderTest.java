@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ClassMatcher;
@@ -65,7 +66,7 @@ public class WebAppClassLoaderTest
         _context.setContextPath("/test");
         _context.setExtraClasspath("src/test/resources/ext/*");
 
-        _loader = new WebAppClassLoader(_context);
+        _loader = new org.eclipse.jetty.ee.WebAppClassLoader(_context);
         _loader.addJars(webapp.resolve("WEB-INF/lib"));
         _loader.addClassPath(webapp.resolve("WEB-INF/classes"));
         _loader.setName("test");
