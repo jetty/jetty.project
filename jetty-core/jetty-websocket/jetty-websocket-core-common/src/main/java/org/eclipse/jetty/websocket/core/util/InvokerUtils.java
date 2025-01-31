@@ -113,6 +113,16 @@ public class InvokerUtils
         {
             return required;
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("Arg[%s]",
+                type.getSimpleName() +
+                (name != null ? ", name=" + name : "") +
+                (required ? ", required" : "") +
+                (convertible ? ", convertible" : ""));
+        }
     }
 
     public interface ParamIdentifier
