@@ -35,6 +35,7 @@ public class InvokerUtils
         private boolean required = false;
         private boolean convertible = false;
         private Class<?> convertedType;
+        boolean toBeRemoved = false;
 
         public Arg(Class<?> type)
         {
@@ -217,45 +218,69 @@ public class InvokerUtils
         return mutatedInvoker(lookup, targetClass, true, method, paramIdentifier, namedVariables, callingArgs);
     }
 
-    private static MethodHandle mutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, boolean throwOnFailure,
-                                               Method method, ParamIdentifier paramIdentifier,
-                                               String[] namedVariables, Arg... rawCallingArgs)
+    private static MethodHandle mutatedInvoker(MethodHandles.Lookup lookup,
+                                               Class<?> targetClass,
+                                               boolean throwOnFailure,
+                                               Method method,
+                                               ParamIdentifier paramIdentifier,
+                                               String[] namedVariables,
+                                               Arg... rawCallingArgs)
     {
         Class<?>[] parameterTypes = method.getParameterTypes();
 
-        // Construct Actual Calling Args.
-        // This is the array of args, arriving as all the named variables (usually static in nature),
-        // then the raw calling arguments (very dynamic in nature)
-        Arg[] callingArgs = new Arg[rawCallingArgs.length + (namedVariables == null ? 0 : namedVariables.length)];
+        // Build "parameterArgs" to represent the method's actual parameters.
+        // Where parameterArgs[0] always represents the targetClass instance.
+        boolean hasNamedParamArgs = false;
+        Arg[] parameterArgs = new Arg[parameterTypes.length + 1];
+        parameterArgs[0] = new Arg(targetClass);
+        for (int i = 0; i < parameterTypes.length; i++)
         {
-            int callingArgIdx = 0;
-            if (namedVariables != null)
-            {
-                for (String namedVariable : namedVariables)
-                {
-                    callingArgs[callingArgIdx++] = new Arg(String.class, namedVariable).convertible();
-                }
-            }
+            Arg paramArg = paramIdentifier.getParamArg(method, parameterTypes[i], i);
+            if (paramArg.name != null)
+                hasNamedParamArgs = true;
+            parameterArgs[i + 1] = paramArg;
+        }
 
-            for (Arg rawCallingArg : rawCallingArgs)
+        // Construct the calling args array which combine namedVariables and rawCallingArgs.
+        int namedCount = (namedVariables == null) ? 0 : namedVariables.length;
+        Arg[] callingArgs = new Arg[namedCount + rawCallingArgs.length];
+        int idx = 0;
+
+        if (namedVariables != null)
+        {
+            for (String nv : namedVariables)
             {
-                callingArgs[callingArgIdx++] = rawCallingArg;
+                callingArgs[idx++] = new Arg(String.class, nv).convertible();
             }
         }
 
-        // Build up Arg list representing the MethodHandle parameters
-        // ParamIdentifier is used to find named parameters (like jakarta.websocket's @PathParam declaration)
-        boolean hasNamedParamArgs = false;
-        Arg[] parameterArgs = new Arg[parameterTypes.length + 1];
-        parameterArgs[0] = new Arg(targetClass); // first type is always the calling object instance type
-        for (int i = 0; i < parameterTypes.length; i++)
+        for (Arg rawArg : rawCallingArgs)
         {
-            Arg arg = paramIdentifier.getParamArg(method, parameterTypes[i], i);
-            if (arg.name != null)
+            callingArgs[idx++] = rawArg;
+        }
+
+        // If a parameter arg is named but does not match a calling arg, it should be added to calling args
+        // but marked that it should be removed and given a null value.
+        for (Arg paramArg : parameterArgs)
+        {
+            if (paramArg.name == null)
+                continue;
+
+            boolean found = false;
+            for (Arg callingArg : callingArgs)
             {
-                hasNamedParamArgs = true;
+                if (callingArg.matches(paramArg))
+                {
+                    found = true;
+                    break;
+                }
             }
-            parameterArgs[i + 1] = arg;
+            if (!found)
+            {
+                callingArgs = Arrays.copyOf(callingArgs, callingArgs.length + 1);
+                callingArgs[callingArgs.length - 1] = paramArg;
+                paramArg.toBeRemoved = true;
+            }
         }
 
         // Parameter to Calling Argument mapping.
@@ -273,20 +298,18 @@ public class InvokerUtils
             throw new InvalidSignatureException(err.toString());
         }
 
-        // Establish MethodType for supplied calling args
+        // Establish MethodType for supplied calling args.
         boolean hasNamedCallingArgs = false;
         boolean hasConvertibleTypes = false;
-        List<Class<?>> cTypes = new ArrayList<>();
+        List<Class<?>> callingTypes = new ArrayList<>(1 + callingArgs.length);
+        callingTypes.add(targetClass); // param0 = instance
+        for (Arg arg : callingArgs)
         {
-            cTypes.add(targetClass); // targetClass always at index 0
-            for (Arg arg : callingArgs)
-            {
-                if (arg.name != null)
-                    hasNamedCallingArgs = true;
-                if (arg.convertible)
-                    hasConvertibleTypes = true;
-                cTypes.add(arg.getType());
-            }
+            if (arg.name != null)
+                hasNamedCallingArgs = true;
+            if (arg.convertible)
+                hasConvertibleTypes = true;
+            callingTypes.add(arg.getType());
         }
 
         try
@@ -296,12 +319,12 @@ public class InvokerUtils
             // the calling 'refc' type of where the method is declared, not the targetClass.
             // That behavior of #unreflect() results in a MethodType referring to the
             // base/abstract/interface where the method is declared, and not the targetClass
-            MethodType callingType = MethodType.methodType(method.getReturnType(), cTypes);
-            MethodType rawType = MethodType.methodType(method.getReturnType(), method.getParameterTypes());
+            MethodType callingType = MethodType.methodType(method.getReturnType(), callingTypes);
+            MethodType rawType = MethodType.methodType(method.getReturnType(), parameterTypes);
             MethodHandle methodHandle = lookup.findVirtual(targetClass, method.getName(), rawType);
 
             // If callingType and rawType are the same (and there's no named args),
-            // then there's no need to reorder / permute / drop args
+            // then there's no need to reorder / permute / drop args.
             if (!hasNamedCallingArgs && !hasNamedParamArgs && rawType.equals(callingType))
                 return methodHandle;
 
@@ -318,24 +341,25 @@ public class InvokerUtils
             boolean[] usedCallingArgs = new boolean[callingArgs.length];
             Arrays.fill(usedCallingArgs, false);
 
-            // Iterate through each parameterArg and attempt to find an associated callingArg
+            // Iterate through each parameterArg and attempt to find an associated callingArg.
             for (int pi = 1; pi < parameterArgs.length; pi++)
             {
-                int ref = -1;
+                int matchIndex = -1;
+                Arg paramArg = parameterArgs[pi];
 
-                // Find a reference to argument in callArgs
+                // Look for an unused callingArg that matches this paramArg.
                 for (int ci = 0; ci < callingArgs.length; ci++)
                 {
-                    if (!usedCallingArgs[ci] && callingArgs[ci].matches(parameterArgs[pi]))
+                    if (!usedCallingArgs[ci] && callingArgs[ci].matches(paramArg))
                     {
-                        ref = ci + 1; // add 1 to compensate for parameter 0
+                        matchIndex = ci + 1; // add 1 to compensate for parameter 0
                         usedCallingArgs[ci] = true;
                         break;
                     }
                 }
 
                 // Didn't find an unused callingArg that fits this parameterArg
-                if (ref < 0)
+                if (matchIndex < 0)
                 {
                     if (!throwOnFailure)
                         return null;
@@ -350,12 +374,11 @@ public class InvokerUtils
 
                     throw new InvalidSignatureException(err.toString());
                 }
-
-                reorderMap[pi] = ref;
+                reorderMap[pi] = matchIndex;
             }
 
             // Remaining unused callingArgs are to be placed at end of specified reorderMap
-            for (int ri = parameterArgs.length; ri <= reorderMap.length; ri++)
+            for (int ri = parameterArgs.length; ri < reorderMap.length; )
             {
                 for (int uci = 0; uci < usedCallingArgs.length; uci++)
                 {
@@ -381,7 +404,7 @@ public class InvokerUtils
                 }
             }
 
-            // Drop excess (not mapped to a method parameter) calling args
+            // Drop excess (not mapped to a method parameter) calling args.
             int idxDrop = parameterArgs.length;
             int dropLength = reorderMap.length - idxDrop;
             if (dropLength > 0)
@@ -398,19 +421,42 @@ public class InvokerUtils
             if (hasConvertibleTypes)
             {
                 // Use converted Types for callingArgs
-                cTypes = new ArrayList<>();
-                cTypes.add(targetClass); // targetClass always at index 0
+                callingTypes = new ArrayList<>();
+                callingTypes.add(targetClass); // targetClass always at index 0
                 for (Arg arg : callingArgs)
                 {
-                    cTypes.add(arg.getConvertedType());
+                    callingTypes.add(arg.getConvertedType());
                 }
-                callingType = MethodType.methodType(method.getReturnType(), cTypes);
+                callingType = MethodType.methodType(method.getReturnType(), callingTypes);
             }
 
             // Reorder calling args to parameter args
             methodHandle = MethodHandles.permuteArguments(methodHandle, callingType, reorderMap);
 
-            // Return method handle
+            // Bind any named parameters not in the namedVariables list to be null.
+            // We go from the highest methodHandleIndex because insertArguments will remove that index.
+            for (int methodHandleIndex = reorderMap.length - 1; methodHandleIndex >= 0; methodHandleIndex--)
+            {
+                // find the index of the parameter arg
+                int parameterArgIndex = -1;
+                for (int j = 0; j < reorderMap.length; j++)
+                {
+                    if (reorderMap[j] == methodHandleIndex)
+                    {
+                        parameterArgIndex = j;
+                        break;
+                    }
+                }
+
+                // Now we know parameterArgIndex is the corresponding arg to this index on the methodHandle.
+                if (parameterArgIndex < parameterArgs.length)
+                {
+                    Arg arg = parameterArgs[parameterArgIndex];
+                    if (arg.toBeRemoved)
+                        methodHandle = MethodHandles.insertArguments(methodHandle, methodHandleIndex, (String)null);
+                }
+            }
+
             return methodHandle;
         }
         catch (IllegalAccessException | NoSuchMethodException e)
