@@ -15,6 +15,9 @@
         <Call name="addBean">
           <Arg>
             <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
+              <Arg name="server">
+                <Ref refid="Server" />
+              </Arg>
               <Arg name="contextManagement">
                 <Ref refid="DeploymentManager" />
               </Arg>
