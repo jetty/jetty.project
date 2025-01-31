@@ -18,7 +18,6 @@ import java.util.LinkedList;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
-import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
@@ -63,11 +62,11 @@ public class OrderedGroupBinding implements DeploymentNodeBinding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception
     {
         for (DeploymentNodeBinding binding : _orderedBindings)
         {
-            binding.processBinding(deploymentManager, node, contextHandler);
+            binding.processBinding(deploymentManager, nodeName, contextHandler);
         }
     }
 }

@@ -164,7 +164,7 @@ public class DeploymentGraph extends Graph
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Calling {} for {}", binding.getClass().getName(), contextHandler);
-            binding.processBinding(deploymentManager, node, contextHandler);
+            binding.processBinding(deploymentManager, node.getName(), contextHandler);
         }
     }
 }

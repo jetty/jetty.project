@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
-import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,14 +27,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class DeploymentGraphNodeOrderCollector implements DeploymentNodeBinding
 {
-    List<Node> actualOrder = new ArrayList<>();
+    List<String> actualOrder = new ArrayList<>();
 
     public void clear()
     {
         actualOrder.clear();
     }
 
-    public List<Node> getCapturedPath()
+    public List<String> getCapturedPath()
     {
         return actualOrder;
     }
@@ -48,9 +47,9 @@ public class DeploymentGraphNodeOrderCollector implements DeploymentNodeBinding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception
     {
-        actualOrder.add(node);
+        actualOrder.add(nodeName);
     }
 
     public void assertExpected(String msg, List<String> expectedOrder)
@@ -63,9 +62,9 @@ public class DeploymentGraphNodeOrderCollector implements DeploymentNodeBinding
                 System.out.println(path);
             }
             System.out.println("/* Actual Path */");
-            for (Node path : actualOrder)
+            for (String name : actualOrder)
             {
-                System.out.println(path.getName());
+                System.out.println(name);
             }
 
             assertEquals(expectedOrder.size(), actualOrder.size(), msg + " / count");
@@ -73,7 +72,7 @@ public class DeploymentGraphNodeOrderCollector implements DeploymentNodeBinding
 
         for (int i = 0, n = expectedOrder.size(); i < n; i++)
         {
-            assertEquals(expectedOrder.get(i), actualOrder.get(i).getName(), msg + "[" + i + "]");
+            assertEquals(expectedOrder.get(i), actualOrder.get(i), msg + "[" + i + "]");
         }
     }
 }

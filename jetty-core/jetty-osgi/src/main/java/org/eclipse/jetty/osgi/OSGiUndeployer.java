@@ -15,7 +15,6 @@ package org.eclipse.jetty.osgi;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
-import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.osgi.util.EventSender;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
@@ -38,7 +37,7 @@ public class OSGiUndeployer extends StandardUndeployer
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception
     {
         String contextPath = contextHandler.getContextPath();
 
@@ -52,7 +51,7 @@ public class OSGiUndeployer extends StandardUndeployer
             Thread.currentThread().setContextClassLoader(cl);
             try
             {
-                super.processBinding(deploymentManager, node, contextHandler);
+                super.processBinding(deploymentManager, nodeName, contextHandler);
             }
             finally
             {

@@ -15,7 +15,6 @@ package org.eclipse.jetty.deploy.bindings;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
-import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 
@@ -28,7 +27,7 @@ public class StandardStarter implements DeploymentNodeBinding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception
+    public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception
     {
         ContextHandlerCollection contexts = deploymentManager.getContexts();
 

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.deploy;
 
-import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
@@ -33,9 +32,9 @@ public interface DeploymentNodeBinding
      * Event called to perform an action when targeted node on the Deployment graph
      * has a ContextHandler move through it.
      *
-     * @param node the node being processed
+     * @param nodeName the node being processed
      * @param contextHandler the contextHandler being processed
      * @throws Exception if any problem severe enough to halt the ContextHandler  processing
      */
-    void processBinding(DeploymentManager deploymentManager, Node node, ContextHandler contextHandler) throws Exception;
+    void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception;
 }
