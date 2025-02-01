@@ -78,6 +78,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
                 super.failed(cause);
             }
         };
+        // TODO does this guarantee that all buffers previously passed will be immediately released?
         reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), cause);
         return nested;
     }

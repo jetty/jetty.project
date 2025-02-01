@@ -47,8 +47,6 @@ import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CountingCallback;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -218,23 +216,9 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
      */
     public Callback cancel(Throwable cause, Callback callback)
     {
-        CountingCallback counting = new CountingCallback(new Nested(callback)
-        {
-            @Override
-            public void succeeded()
-            {
-                super.failed(cause);
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                super.failed(cause);
-            }
-        }, 2);
-        reset(new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code), counting);
-        return counting;
+        List<Callback> callbacks = Callback.from(callback, cause, 2);
+        reset(new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code), callbacks.get(0));
+        return callbacks.get(1);
     }
 
     @Override
