@@ -189,7 +189,6 @@
     <flatten.maven.plugin.version>1.6.0</flatten.maven.plugin.version>
     <google.errorprone.version>2.35.1</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
-    <grpc.version>1.68.1</grpc.version>
     <gson.version>2.11.0</gson.version>
     <guava.version>33.3.1-jre</guava.version>
     <guice.version>7.0.0</guice.version>
@@ -440,11 +439,6 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${commons-io.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-core</artifactId>
-        <version>${grpc.version}</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
