@@ -35,12 +35,14 @@ import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.jar.Manifest;
 
+import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollators;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -49,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ClassLoader for HttpContext.
+ * ClassLoader for Http Context.
  * <p>
  * Specializes URLClassLoader with some utility and file mapping
  * methods.
@@ -60,8 +62,9 @@ import org.slf4j.LoggerFactory;
  * from being overridden by the context.
  * <p>
  * Java compliant loading, where the parent loader always has priority, can be selected with the
- * {@link WebAppContext#setParentLoaderPriority(boolean)} method.
+ * {@link Context#isParentLoaderPriority()} method.
  */
+@ManagedObject
 public class WebAppClassLoader extends URLClassLoader implements ClassVisibilityChecker
 {
     static
@@ -112,7 +115,15 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         boolean isHiddenResource(String name, URL parentUrl);
 
+        String[] getHiddenClasses();
+
+        ClassMatcher getHiddenClassMatcher();
+
         boolean isProtectedResource(String name, URL webappUrl);
+
+        String[] getProtectedClasses();
+
+        ClassMatcher getProtectedClassMatcher();
     }
 
     /**
@@ -281,7 +292,10 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     {
         if (!Resources.isReadableDirectory(libs))
             return;
-        libs.list().stream().filter(r -> isFileSupported(r.getName())).sorted(ResourceCollators.byName(true)).forEach(this::addClassPath);
+        libs.list().stream()
+            .filter(r -> isFileSupported(r.getName()))
+            .sorted(ResourceCollators.byName(true))
+            .forEach(this::addClassPath);
     }
 
     @Override
@@ -359,7 +373,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 // If found here then OK to use regardless of system or server classes
                 // If it is a system resource, we've already tried to load from parent, so
                 // would have returned it.
-                // If it is a server resource, doesn't matter as we have loaded it from the 
+                // If it is a server resource, doesn't matter as we have loaded it from the
                 // webapp
                 if (webappUrl != null)
                     resource = webappUrl;
@@ -482,8 +496,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     ex = e;
                 }
 
-                // We couldn't find a parent class, so OK to return a webapp one if it exists 
-                // and we just couldn't see it before 
+                // We couldn't find a parent class, so OK to return a webapp one if it exists
+                // and we just couldn't see it before
                 webappClass = loadAsResource(name, false);
                 if (webappClass != null)
                 {
@@ -517,7 +531,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     protected Class<?> loadAsResource(final String name, boolean checkSystemResource) throws ClassNotFoundException
     {
         // Try the webapp classloader first
-        // Look in the webapp classloader as a resource, to avoid 
+        // Look in the webapp classloader as a resource, to avoid
         // loading a system class.
         Class<?> webappClass = null;
         String path = TypeUtil.toClassReference(name);
