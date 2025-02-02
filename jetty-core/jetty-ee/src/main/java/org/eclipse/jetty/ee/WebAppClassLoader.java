@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollators;
@@ -99,11 +100,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         Resource newResource(String urlOrPath) throws IOException;
 
         /**
-         * @return Returns the permissions.
-         */
-        PermissionCollection getPermissions();
-
-        /**
          * @return True if the classloader should delegate first to the parent
          * classloader (standard java behaviour) or false if the classloader
          * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet
@@ -113,17 +109,49 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
         List<Resource> getExtraClasspath();
 
-        boolean isHiddenResource(String name, URL parentUrl);
-
-        String[] getHiddenClasses();
-
         ClassMatcher getHiddenClassMatcher();
 
-        boolean isProtectedResource(String name, URL webappUrl);
+        default boolean isHiddenClass(Class<?> clazz)
+        {
+            return getHiddenClassMatcher().match(clazz);
+        }
 
-        String[] getProtectedClasses();
+        default boolean isHiddenResource(String name, URL url)
+        {
+            return getHiddenClassMatcher().match(name, url);
+        }
+
+        @ManagedAttribute(value = "classes and packages hidden by the context classloader", readonly = true)
+        default String[] getHiddenClasses()
+        {
+            return getHiddenClassMatcher().getPatterns();
+        }
 
         ClassMatcher getProtectedClassMatcher();
+
+        default boolean isProtectedClass(Class<?> clazz)
+        {
+            return getProtectedClassMatcher().match(clazz);
+        }
+
+        default boolean isProtectedResource(String name, URL url)
+        {
+            return getProtectedClassMatcher().match(name, url);
+        }
+
+        @ManagedAttribute(value = "classes and packages protected by context classloader", readonly = true)
+        default String[] getProtectedClasses()
+        {
+            return getProtectedClassMatcher().getPatterns();
+        }
+
+        /**
+         * @return Returns the permissions.
+         */
+        default PermissionCollection getPermissions()
+        {
+            return null;
+        }
     }
 
     /**

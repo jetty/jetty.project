@@ -719,30 +719,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _hiddenClasses.getPatterns();
     }
 
-    @Override
-    public boolean isHiddenClass(Class<?> clazz)
-    {
-        return _hiddenClasses.match(clazz);
-    }
-
-    @Override
-    public boolean isProtectedClass(Class<?> clazz)
-    {
-        return _protectedClasses.match(clazz);
-    }
-
-    @Override
-    public boolean isHiddenResource(String name, URL url)
-    {
-        return _hiddenClasses.match(name, url);
-    }
-
-    @Override
-    public boolean isProtectedResource(String name, URL url)
-    {
-        return _protectedClasses.match(name, url);
-    }
-
     /**
      * @deprecated use {@link #setHiddenClassMatcher(ClassMatcher)}
      */

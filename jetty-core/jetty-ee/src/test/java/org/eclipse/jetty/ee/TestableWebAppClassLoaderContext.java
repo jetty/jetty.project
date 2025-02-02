@@ -14,8 +14,6 @@
 package org.eclipse.jetty.ee;
 
 import java.io.IOException;
-import java.net.URL;
-import java.security.PermissionCollection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -52,28 +50,9 @@ public class TestableWebAppClassLoaderContext implements WebAppClassLoader.Conte
     }
 
     @Override
-    public boolean isProtectedClass(Class<?> clazz)
-    {
-        return protectedClassMatcher.match(clazz);
-    }
-
-    @Override
-    public boolean isHiddenClass(Class<?> clazz)
-    {
-        return hiddenClassMatcher.match(clazz);
-    }
-
-    @Override
     public Resource newResource(String urlOrPath) throws IOException
     {
         return resourceFactory.newResource(urlOrPath);
-    }
-
-    @Override
-    public PermissionCollection getPermissions()
-    {
-        // always null in testing
-        return null;
     }
 
     @Override
@@ -89,36 +68,11 @@ public class TestableWebAppClassLoaderContext implements WebAppClassLoader.Conte
     }
 
     @Override
-    public boolean isHiddenResource(String name, URL url)
-    {
-        return hiddenClassMatcher.match(name, url);
-    }
-
-    @Override
-    public String[] getHiddenClasses()
-    {
-        return hiddenClassMatcher.getPatterns();
-    }
-
-    @Override
     public ClassMatcher getHiddenClassMatcher()
     {
         return hiddenClassMatcher;
     }
 
-    @Override
-    public boolean isProtectedResource(String name, URL url)
-    {
-        return protectedClassMatcher.match(name, url);
-    }
-
-    @Override
-    public String[] getProtectedClasses()
-    {
-        return protectedClassMatcher.getPatterns();
-    }
-
-    @Override
     public ClassMatcher getProtectedClassMatcher()
     {
         return protectedClassMatcher;

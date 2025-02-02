@@ -741,13 +741,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @ManagedAttribute(value = "classes and packages protected by context classloader", readonly = true)
     public String[] getSystemClasses()
     {
-        return _systemClasses.getPatterns();
+        return getProtectedClasses();
     }
 
     @ManagedAttribute(value = "classes and packages hidden by the context classloader", readonly = true)
     public String[] getServerClasses()
     {
-        return _serverClasses.getPatterns();
+        return getHiddenClasses();
     }
 
     @Override
@@ -757,57 +757,21 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    public String[] getHiddenClasses()
-    {
-        return getHiddenClassMatcher().getPatterns();
-    }
-
-    @Override
-    public boolean isHiddenClass(Class<?> clazz)
-    {
-        return isServerClass(clazz);
-    }
-
-    @Override
-    public boolean isHiddenResource(String name, URL url)
-    {
-        return getHiddenClassMatcher().match(name, url);
-    }
-
-    @Override
-    public boolean isProtectedClass(Class<?> clazz)
-    {
-        return isSystemClass(clazz);
-    }
-
-    @Override
-    public boolean isProtectedResource(String name, URL url)
-    {
-        return getProtectedClassMatcher().match(name, url);
-    }
-
-    @Override
     public org.eclipse.jetty.util.ClassMatcher getProtectedClassMatcher()
     {
         return _systemClasses;
     }
 
     @Override
-    public String[] getProtectedClasses()
-    {
-        return getProtectedClassMatcher().getPatterns();
-    }
-
-    @Override
     public boolean isServerClass(Class<?> clazz)
     {
-        return _serverClasses.match(clazz);
+        return isHiddenClass(clazz);
     }
 
     @Override
     public boolean isSystemClass(Class<?> clazz)
     {
-        return _systemClasses.match(clazz);
+        return isProtectedClass(clazz);
     }
 
     public boolean isServerResource(String name, URL url)
