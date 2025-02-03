@@ -60,6 +60,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -626,6 +627,48 @@ public class RequestTest
             assertThat(date, containsString(","));
             assertThat(date, containsString(":"));
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', useHeadersInDisplayName = false,
+        textBlock = """
+        # query         | expectedName | expectedValue
+        a=bad_%e0%b     | a            | bad_��
+        a=bad_%e0%ba    | a            | bad_�
+        b=short%a       | b            | short�
+        c=%%TOK%%       | c            | �OK�
+        """)
+    public void testBadUtf8Query(String query, String expectedName, String expectedValue) throws Exception
+    {
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse resp)
+            {
+                String param = request.getParameter(expectedName);
+                assertThat(param, is(expectedValue));
+                resp.setStatus(200);
+            }
+        };
+
+        startServer((server) ->
+                _connector.getConnectionFactory(HttpConnectionFactory.class)
+                    .getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING)),
+            servlet
+        );
+
+        //Send a request with query string with illegal hex code to cause
+        //an exception parsing the params
+        String request = """
+            GET /?@QUERY@ HTTP/1.1\r
+            Host: whatever\r
+            Connection: close
+            
+            """.replaceAll("@QUERY@", query);
+
+        String rawResponse = _connector.getResponse(request);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
     }
 
     @Test
