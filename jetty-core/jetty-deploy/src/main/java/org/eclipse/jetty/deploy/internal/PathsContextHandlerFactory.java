@@ -188,7 +188,7 @@ public class PathsContextHandlerFactory
             };
 
             xmlConfiguration.getIdMap().put("Environment", environment.getName());
-            xmlConfiguration.setJettyStandardIdsAndProperties(server, xml.getParent());
+            xmlConfiguration.setJettyStandardIdsAndProperties(server, xml);
 
             // Put all Environment attributes into XmlConfiguration as properties that can be used.
             attributes.getAttributeNameSet()
