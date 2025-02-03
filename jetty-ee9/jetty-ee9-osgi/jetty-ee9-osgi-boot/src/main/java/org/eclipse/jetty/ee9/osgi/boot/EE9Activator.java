@@ -290,7 +290,7 @@ public class EE9Activator implements BundleActivator
             contextHandler.setClassLoader(classLoader);
 
             //Apply any context xml file
-            String tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
+            String tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
             final URI contextXmlURI = Util.resolvePathAsLocalizedURI(tmp, metadata.getBundle(), jettyHomePath);
 
             if (contextXmlURI != null)
@@ -408,7 +408,7 @@ public class EE9Activator implements BundleActivator
             //Handle Require-TldBundle
             //This is a comma separated list of names of bundles that contain tlds that this webapp uses.
             //We add them to the webapp classloader.
-            String requireTldBundles = (String)metadata.getProperties().get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
+            String requireTldBundles = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
             List<Path> pathsToTldBundles = Util.getPathsToBundlesBySymbolicNames(requireTldBundles, metadata.getBundle().getBundleContext());
             for (Path p : pathsToTldBundles)
             {
@@ -417,7 +417,7 @@ public class EE9Activator implements BundleActivator
 
             //Set up configuration from manifest headers
             //extra classpath
-            String extraClasspath = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_EXTRA_CLASSPATH);
+            String extraClasspath = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_EXTRA_CLASSPATH);
             if (extraClasspath != null)
                 webApp.setExtraClasspath(extraClasspath);
 
@@ -457,7 +457,7 @@ public class EE9Activator implements BundleActivator
             //Then look in the property OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH and apply the first one
             if (contextXmlURL == null)
             {
-                String tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
+                String tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
                 if (tmp != null)
                 {
                     String[] filenames = tmp.split("[,;]");
@@ -555,7 +555,7 @@ public class EE9Activator implements BundleActivator
             }
 
             //web.xml
-            String tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_WEB_XML_PATH);
+            String tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_WEB_XML_PATH);
             if (!StringUtil.isBlank(tmp))
             {
                 URI webXml = Util.resolvePathAsLocalizedURI(tmp, metadata.getBundle(), jettyHomePath);
@@ -564,7 +564,7 @@ public class EE9Activator implements BundleActivator
             }
 
             // webdefault-ee9.xml
-            tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
+            tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
             if (tmp != null)
             {
                 URI defaultWebXml = Util.resolvePathAsLocalizedURI(tmp, metadata.getBundle(), jettyHomePath);

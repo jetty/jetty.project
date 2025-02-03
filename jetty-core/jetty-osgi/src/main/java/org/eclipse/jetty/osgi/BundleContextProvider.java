@@ -187,7 +187,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             if (contextFilePath != null)
             {
                 // set up the single context file for this deployment
-                metadata.getProperties().put(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toASCIIString());
+                metadata.getAttributes().setAttribute(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH, contextFilePath.toASCIIString());
             }
             ContextHandler contextHandler = createContextHandler(metadata);
             List<ContextHandler> contextHandlers = _bundleMap.computeIfAbsent(bundle, b -> new ArrayList<>());

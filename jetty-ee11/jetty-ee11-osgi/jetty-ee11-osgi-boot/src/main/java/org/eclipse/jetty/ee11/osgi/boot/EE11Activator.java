@@ -290,7 +290,7 @@ public class EE11Activator implements BundleActivator
             contextHandler.setClassLoader(classLoader);
 
             //Apply any context xml file
-            String tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
+            String tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
             final URI contextXmlURI = Util.resolvePathAsLocalizedURI(tmp, metadata.getBundle(), jettyHomePath);
 
             if (contextXmlURI != null)
@@ -399,7 +399,7 @@ public class EE11Activator implements BundleActivator
             }
 
             webApp.setConfigurations(Configurations.getKnown().stream()
-                .filter(c -> c.isEnabledByDefault())
+                .filter(Configuration::isEnabledByDefault)
                 .toArray(Configuration[]::new));
 
             //Make a webapp classloader
@@ -408,7 +408,7 @@ public class EE11Activator implements BundleActivator
             //Handle Require-TldBundle
             //This is a comma separated list of names of bundles that contain tlds that this webapp uses.
             //We add them to the webapp classloader.
-            String requireTldBundles = (String)metadata.getProperties().get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
+            String requireTldBundles = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
 
             List<Path> pathsToTldBundles = Util.getPathsToBundlesBySymbolicNames(requireTldBundles, metadata.getBundle().getBundleContext());
             for (Path p : pathsToTldBundles)
@@ -418,7 +418,7 @@ public class EE11Activator implements BundleActivator
 
             //Set up configuration from manifest headers
             //extra classpath
-            String extraClasspath = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_EXTRA_CLASSPATH);
+            String extraClasspath = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_EXTRA_CLASSPATH);
             if (extraClasspath != null)
                 webApp.setExtraClasspath(extraClasspath);
 
@@ -458,7 +458,7 @@ public class EE11Activator implements BundleActivator
             //Then look in the property OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH and apply the first one
             if (contextXmlURL == null)
             {
-                String tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
+                String tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
                 if (tmp != null)
                 {
                     String[] filenames = tmp.split("[,;]");
@@ -556,7 +556,7 @@ public class EE11Activator implements BundleActivator
             }
 
             //web.xml
-            String tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_WEB_XML_PATH);
+            String tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_WEB_XML_PATH);
             if (!StringUtil.isBlank(tmp))
             {
                 URI webXml = Util.resolvePathAsLocalizedURI(tmp, metadata.getBundle(), jettyHomePath);
@@ -565,7 +565,7 @@ public class EE11Activator implements BundleActivator
             }
 
             // webdefault-ee11.xml
-            tmp = metadata.getProperties().getProperty(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
+            tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
             if (tmp != null)
             {
                 URI defaultWebXml = Util.resolvePathAsLocalizedURI(tmp, metadata.getBundle(), jettyHomePath);

@@ -14,9 +14,12 @@
 package org.eclipse.jetty.osgi;
 
 import java.nio.file.Path;
-import java.util.Properties;
+import java.util.Dictionary;
+import java.util.Enumeration;
 
 import org.eclipse.jetty.osgi.util.Util;
+import org.eclipse.jetty.server.Deployable;
+import org.eclipse.jetty.util.Attributes;
 import org.osgi.framework.Bundle;
 
 /**
@@ -27,7 +30,7 @@ public class BundleMetadata
     private final Bundle bundle;
     private final Path bundlePath;
     private final String contextPath;
-    private final Properties properties = new Properties();
+    private final Attributes attributes = new Attributes.Mapped();
     private final String pathToResourceBase;
 
     public BundleMetadata(Bundle bundle) throws Exception
@@ -41,6 +44,27 @@ public class BundleMetadata
         this.bundlePath = Util.getBundlePath(bundle);
         this.contextPath = Util.getContextPath(bundle);
         this.pathToResourceBase = pathToResourceBase;
+
+        //copy selected bundle headers into the properties
+        Dictionary<String, String> headers = bundle.getHeaders();
+        Enumeration<String> keys = headers.keys();
+        while (keys.hasMoreElements())
+        {
+            String key = keys.nextElement();
+            String val = headers.get(key);
+            if (Deployable.DEFAULTS_DESCRIPTOR.equalsIgnoreCase(key) || OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH.equalsIgnoreCase(key))
+            {
+                getAttributes().setAttribute(Deployable.DEFAULTS_DESCRIPTOR, val);
+            }
+            else if (OSGiWebappConstants.JETTY_WEB_XML_PATH.equalsIgnoreCase(key))
+            {
+                getAttributes().setAttribute(key, val);
+            }
+            else if (OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH.equalsIgnoreCase(key))
+            {
+                getAttributes().setAttribute(key, val);
+            }
+        }
     }
 
     public Bundle getBundle()
@@ -68,8 +92,8 @@ public class BundleMetadata
         return pathToResourceBase;
     }
 
-    public Properties getProperties()
+    public Attributes getAttributes()
     {
-        return properties;
+        return attributes;
     }
 }
