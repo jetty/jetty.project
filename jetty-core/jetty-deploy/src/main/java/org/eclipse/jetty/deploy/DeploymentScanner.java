@@ -36,8 +36,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.deploy.internal.DefaultContextHandlerFactory;
 import org.eclipse.jetty.deploy.internal.PathsApp;
+import org.eclipse.jetty.deploy.internal.PathsContextHandlerFactory;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -118,10 +118,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentScanner.class);
 
     private final Server server;
-    private final ContextHandlerDeployer contextManagement;
+    private final ContextHandlerDeployer contextHandlerDeployer;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
-    private final DefaultContextHandlerFactory contextHandlerFactory = new DefaultContextHandlerFactory();
+    private final PathsContextHandlerFactory contextHandlerFactory = new PathsContextHandlerFactory();
     private final Map<String, PathsApp> trackedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
 
@@ -135,18 +135,18 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
 
     public DeploymentScanner(
         @Name("server") Server server,
-        @Name("contextManagement") ContextHandlerDeployer contextManagement)
+        @Name("contextHandlerDeployer") ContextHandlerDeployer contextHandlerDeployer)
     {
-        this(server, contextManagement, null);
+        this(server, contextHandlerDeployer, null);
     }
 
     public DeploymentScanner(
         @Name("server") Server server,
-        @Name("contextManagement") ContextHandlerDeployer contextManagement,
+        @Name("contextHandlerDeployer") ContextHandlerDeployer contextHandlerDeployer,
         @Name("filenameFilter") FilenameFilter filter)
     {
         this.server = server;
-        this.contextManagement = Objects.requireNonNull(contextManagement);
+        this.contextHandlerDeployer = Objects.requireNonNull(contextHandlerDeployer);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
     }
 
@@ -332,18 +332,9 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             Path path = entry.getKey();
             PathsApp.State state = switch (entry.getValue())
             {
-                case ADDED ->
-                {
-                    yield PathsApp.State.ADDED;
-                }
-                case CHANGED ->
-                {
-                    yield PathsApp.State.CHANGED;
-                }
-                case REMOVED ->
-                {
-                    yield PathsApp.State.REMOVED;
-                }
+                case ADDED -> PathsApp.State.ADDED;
+                case CHANGED -> PathsApp.State.CHANGED;
+                case REMOVED -> PathsApp.State.REMOVED;
             };
 
             // Using lower-case as defined by System Locale, as the files themselves from System FS.
@@ -659,7 +650,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
                     {
                         // Track removal
                         removedApps.add(app);
-                        contextManagement.undeploy(app.getContextHandler());
+                        contextHandlerDeployer.undeploy(app.getContextHandler());
                     }
                     case ADD ->
                     {
@@ -679,13 +670,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
                         // combination of layered Environment Attributes with App Attributes overlaying them.
                         Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
                         Attributes.Layer deployAttributes = new Attributes.Layer(envAttributes, app.getAttributes());
-                        deployAttributes.setAttribute(Deployable.MAIN_PATH, app.getMainPath());
-                        deployAttributes.setAttribute(Deployable.OTHER_PATHS, app.getPaths().keySet());
 
                         // Ensure that Environment configuration XMLs are listed in deployAttributes
                         List<Path> envXmlPaths = findEnvironmentXmlPaths(deployAttributes);
                         envXmlPaths.sort(PathCollators.byName(true));
-                        DefaultContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
+                        PathsContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
                         ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app, deployAttributes);
@@ -693,7 +682,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
 
                         // Introduce the ContextHandler to the DeploymentManager
                         startTracking(app);
-                        contextManagement.deploy(app.getContextHandler());
+                        contextHandlerDeployer.deploy(app.getContextHandler());
                     }
                 }
             }
@@ -726,7 +715,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
     {
         List<Path> rawEnvXmlPaths = deployAttributes.getAttributeNameSet()
             .stream()
-            .filter(k -> k.startsWith(DefaultContextHandlerFactory.ENVIRONMENT_XML))
+            .filter(k -> k.startsWith(PathsContextHandlerFactory.ENVIRONMENT_XML))
             .map(k -> Path.of((String)deployAttributes.getAttribute(k)))
             .toList();
 
@@ -1003,11 +992,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
          * </p>
          *
          * @param classname the classname for this environment's context deployable.
-         * @see DefaultContextHandlerFactory#CONTEXT_HANDLER_CLASS
+         * @see PathsContextHandlerFactory#CONTEXT_HANDLER_CLASS
          */
         public void setContextHandlerClass(String classname)
         {
-            _environment.setAttribute(DefaultContextHandlerFactory.CONTEXT_HANDLER_CLASS, classname);
+            _environment.setAttribute(PathsContextHandlerFactory.CONTEXT_HANDLER_CLASS, classname);
         }
 
         /**
@@ -1020,11 +1009,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
          * </p>
          *
          * @param classname the default classname for this environment's context deployable.
-         * @see DefaultContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT
+         * @see PathsContextHandlerFactory#CONTEXT_HANDLER_CLASS_DEFAULT
          */
         public void setDefaultContextHandlerClass(String classname)
         {
-            _environment.setAttribute(DefaultContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT, classname);
+            _environment.setAttribute(PathsContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT, classname);
         }
 
         /**

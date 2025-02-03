@@ -18,7 +18,7 @@
               <Arg name="server">
                 <Ref refid="Server" />
               </Arg>
-              <Arg name="contextManagement">
+              <Arg name="contextHandlerDeployer">
                 <Ref refid="DeploymentManager" />
               </Arg>
               <Call name="addMonitoredDirectory">

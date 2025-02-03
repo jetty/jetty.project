@@ -96,12 +96,12 @@ public class PathsApp
 
     public Environment getEnvironment()
     {
-        return (Environment)getAttributes().getAttribute(DefaultContextHandlerFactory.ENVIRONMENT);
+        return (Environment)getAttributes().getAttribute(PathsContextHandlerFactory.ENVIRONMENT);
     }
 
     public void setEnvironment(Environment env)
     {
-        getAttributes().setAttribute(DefaultContextHandlerFactory.ENVIRONMENT, env);
+        getAttributes().setAttribute(PathsContextHandlerFactory.ENVIRONMENT, env);
     }
 
     public String getEnvironmentName()

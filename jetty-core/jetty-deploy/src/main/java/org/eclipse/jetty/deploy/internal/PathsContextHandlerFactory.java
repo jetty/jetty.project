@@ -36,9 +36,12 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultContextHandlerFactory
+/**
+ * Creates a {@link ContextHandler} from a {@link PathsApp}.
+ */
+public class PathsContextHandlerFactory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultContextHandlerFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathsContextHandlerFactory.class);
     public static final String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
     public static final String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
     public static final String ENVIRONMENT = "jetty.deploy.environment";
@@ -178,8 +181,8 @@ public class DefaultContextHandlerFactory
                     }
                     else
                     {
-                        DefaultContextHandlerFactory.this.initializeContextPath(contextHandler, xml);
-                        DefaultContextHandlerFactory.this.initializeContextHandler(contextHandler, xml, attributes);
+                        PathsContextHandlerFactory.this.initializeContextPath(contextHandler, xml);
+                        PathsContextHandlerFactory.this.initializeContextHandler(contextHandler, xml, attributes);
                     }
                 }
             };
