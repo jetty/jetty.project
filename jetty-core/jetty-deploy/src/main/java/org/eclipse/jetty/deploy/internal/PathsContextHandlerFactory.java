@@ -44,9 +44,10 @@ public class PathsContextHandlerFactory
     private static final Logger LOG = LoggerFactory.getLogger(PathsContextHandlerFactory.class);
     public static final String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
     public static final String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
-    public static final String ENVIRONMENT = "jetty.deploy.environment";
+    public static final String ENVIRONMENT = "environment";
     public static final String ENV_XML_PATHS = "jetty.deploy.defaultApp.envXMLs";
     public static final String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
+    private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private static Map<String, String> asProperties(Attributes attributes)
     {
@@ -54,8 +55,11 @@ public class PathsContextHandlerFactory
         attributes.getAttributeNameSet().forEach((name) ->
         {
             Object value = attributes.getAttribute(name);
-            String key = name.startsWith(Deployable.ATTRIBUTE_PREFIX)
-                ? name.substring(Deployable.ATTRIBUTE_PREFIX.length())
+            // Strip old "jetty.deploy.attribute." prefix if found.
+            // We no longer limit the properties to only those
+            // prefixed keys, we allow all keys through now.
+            String key = name.startsWith(ATTRIBUTE_PREFIX)
+                ? name.substring(ATTRIBUTE_PREFIX.length())
                 : name;
             props.put(key, Objects.toString(value));
         });
@@ -256,11 +260,17 @@ public class PathsContextHandlerFactory
 
         // pass through properties as attributes directly
         attributes.getAttributeNameSet().stream()
-            .filter((name) -> name.startsWith(Deployable.ATTRIBUTE_PREFIX))
-            .forEach((name) ->
+            .map(key ->
             {
-                Object value = attributes.getAttribute(name);
-                String key = name.substring(Deployable.ATTRIBUTE_PREFIX.length());
+                // strip older attribute prefix from key names.
+                if (key.startsWith(ATTRIBUTE_PREFIX))
+                    return key.substring(ATTRIBUTE_PREFIX.length());
+                else
+                    return key;
+            })
+            .forEach((key) ->
+            {
+                Object value = attributes.getAttribute(key);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Setting attribute [{}] to [{}] in context {}", key, value, contextHandler);
                 contextHandler.setAttribute(key, value);

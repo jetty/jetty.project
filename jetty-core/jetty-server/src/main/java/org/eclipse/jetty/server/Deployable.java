@@ -55,8 +55,6 @@ public interface Deployable
         return e1.compareTo(e2);
     };
 
-    String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
-
     /**
      * <p>Attribute key name: Temp Directory for context.</p>
      *

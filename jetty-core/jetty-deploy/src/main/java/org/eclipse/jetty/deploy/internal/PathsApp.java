@@ -29,6 +29,7 @@ import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.PathCollators;
 import org.slf4j.Logger;
@@ -233,6 +234,13 @@ public class PathsApp
             {
                 LOG.warn("Unable to read properties file: {}", propFile, e);
             }
+        }
+
+        // Look for simple old school environment name.
+        String environmentName = (String)getAttributes().getAttribute(PathsContextHandlerFactory.ENVIRONMENT);
+        if (StringUtil.isNotBlank(environmentName))
+        {
+            setEnvironment(Environment.get(environmentName));
         }
     }
 
