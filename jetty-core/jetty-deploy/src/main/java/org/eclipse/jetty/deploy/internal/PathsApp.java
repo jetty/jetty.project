@@ -265,6 +265,7 @@ public class PathsApp
         str.append("[").append(name);
         str.append("|").append(getState());
         str.append(", env=").append(getEnvironmentName());
+        str.append(", mainPath=").append(getMainPath());
         str.append(", paths=");
         str.append(paths.entrySet().stream()
             .map((e) -> String.format("%s|%s", e.getKey(), e.getValue()))
