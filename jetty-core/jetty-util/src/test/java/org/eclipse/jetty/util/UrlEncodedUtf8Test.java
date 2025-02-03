@@ -38,6 +38,7 @@ public class UrlEncodedUtf8Test
         e=%%TOK%%       | e            | �OK�
         f=%aardvark     | f            | �rdvark
         g=b%ar          | g            | b�
+        h=end%          | h            | end�
         """)
     public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue)
     {
