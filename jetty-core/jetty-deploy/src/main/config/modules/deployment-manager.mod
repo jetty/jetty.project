@@ -1,6 +1,9 @@
 [description]
 This module enables the DeploymentManager
 
+[tags]
+deployment
+
 [depend]
 server
 

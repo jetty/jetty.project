@@ -3,6 +3,9 @@
 This module enables webapp deployment from the `$JETTY_BASE/webapps` directory.
 # end::description[]
 
+[tags]
+deployment
+
 [environment]
 ee11
 

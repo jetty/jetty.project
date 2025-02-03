@@ -1,6 +1,9 @@
 [description]
 This module enables web application context deployment from the `$JETTY_BASE/webapps` directory.
 
+[tags]
+deployment
+
 [depend]
 server
 deployment-manager
