@@ -474,9 +474,7 @@
             <configuration>
               <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
               <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
-              <excludePackageNames>
-                *.internal; *.internal.*; org.eclipse.jetty.quic.quiche; org.eclipse.jetty.quic.quiche.foreign.*; org.eclipse.jetty.quic.quiche.*;
-              </excludePackageNames>
+              <excludePackageNames>*.internal; *.internal.*; org.eclipse.jetty.quic.quiche; org.eclipse.jetty.quic.quiche.foreign.*; org.eclipse.jetty.quic.quiche.*;</excludePackageNames>
               <excludePackageNames>*.internal,*.internal.*</excludePackageNames>
             </configuration>
           </execution>
