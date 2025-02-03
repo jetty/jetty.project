@@ -32,9 +32,12 @@ public class UrlEncodedUtf8Test
         textBlock = """
         # query         | expectedName | expectedValue
         a=bad_%e0%b     | a            | bad_��
-        a=bad_%e0%ba    | a            | bad_�
-        b=short%a       | b            | short�
-        c=%%TOK%%       | c            | �OK�
+        b=bad_%e0%ba    | b            | bad_�
+        c=short%a       | c            | short�
+        d=b%aam         | d            | b�m
+        e=%%TOK%%       | e            | �OK�
+        f=%aardvark     | f            | �rdvark
+        g=b%ar          | g            | b�
         """)
     public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue)
     {
