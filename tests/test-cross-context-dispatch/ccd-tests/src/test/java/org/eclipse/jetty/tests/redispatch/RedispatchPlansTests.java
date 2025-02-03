@@ -76,6 +76,7 @@ public class RedispatchPlansTests extends AbstractRedispatchTest
         List<Arguments> plans = new ArrayList<>();
 
         List<String> disabledTests = new ArrayList<>();
+        disabledTests.add("disabled");
 
         Path testPlansDir = MavenPaths.findTestResourceDir("plans");
         try (Stream<Path> plansStream = Files.list(testPlansDir))
