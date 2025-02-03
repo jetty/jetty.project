@@ -1,6 +1,9 @@
 [description]
 Enables application based on core handlers deployed from the $JETTY_BASE/webapps/ directory.
 
+[tags]
+deployment
+
 [environment]
 core
 
