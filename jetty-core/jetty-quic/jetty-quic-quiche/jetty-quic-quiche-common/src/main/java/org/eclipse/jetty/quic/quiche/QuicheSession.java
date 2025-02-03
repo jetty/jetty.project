@@ -227,13 +227,14 @@ public abstract class QuicheSession extends AbstractSession
         quiche.close(frame.getErrorCode(), frame.getReason());
         flush();
 
-        LifeCycle.stop(this);
-
-        emitDisconnect();
-
-        // Propagate outwards.
-        getConnection().disconnect(this, frame, failure);
-        return CompletableFuture.completedFuture(null);
+        return flusher.disconnect()
+            .whenComplete((r, x) ->
+            {
+                LifeCycle.stop(this);
+                emitDisconnect();
+                // Propagate outwards.
+                getConnection().disconnect(this, frame, failure);
+            });
     }
 
     @Override
@@ -490,6 +491,7 @@ public abstract class QuicheSession extends AbstractSession
 
     private class Flusher extends IteratingCallback
     {
+        private final CompletableFuture<Void> disconnect = new CompletableFuture<>();
         private final CyclicTimeout timeout;
         private RetainableByteBuffer cipherBuffer;
 
@@ -557,7 +559,7 @@ public abstract class QuicheSession extends AbstractSession
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("connection closed {}", QuicheSession.this);
-            complete();
+            complete(null);
         }
 
         @Override
@@ -565,14 +567,23 @@ public abstract class QuicheSession extends AbstractSession
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failed to write cipher bytes, closing session on {}", QuicheSession.this, failure);
-            complete();
+            complete(failure);
         }
 
-        private void complete()
+        private void complete(Throwable failure)
         {
             cipherBuffer.release();
             timeout.destroy();
             quiche.dispose();
+            if (failure == null)
+                disconnect.complete(null);
+            else
+                disconnect.completeExceptionally(failure);
+        }
+
+        private CompletableFuture<Void> disconnect()
+        {
+            return disconnect;
         }
 
         @Override

@@ -42,6 +42,8 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,6 +72,11 @@ public class End2EndClientTest
     @BeforeEach
     public void setUp() throws Exception
     {
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        serverThreads.setDetailedDump(true);
+        server = new Server(serverThreads);
+
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
         {
@@ -78,8 +85,6 @@ public class End2EndClientTest
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStore(keyStore);
         sslContextFactory.setKeyStorePassword("storepwd");
-
-        server = new Server();
 
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
@@ -101,13 +106,16 @@ public class End2EndClientTest
 
         server.start();
 
-        transport = new QuicheTransport(new QuicheClientQuicConfiguration());
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientThreads.setDetailedDump(true);
         ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setExecutor(clientThreads);
+        transport = new QuicheTransport(new QuicheClientQuicConfiguration());
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
-        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(clientConnector, http1Info, http2Info);
-        client = new HttpClient(transport);
+        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, http1Info, http2Info));
         client.start();
     }
 
@@ -159,9 +167,12 @@ public class End2EndClientTest
     }
 
     @Test
-    public void testMultiThreadedHTTP1()
+    public void testMultiThreadedHTTP1() throws Exception
     {
-        int count = 1000;
+        // Quiche is very slow at closing connections.
+        client.setMaxConnectionsPerDestination(4);
+
+        int count = ((ThreadPool.SizedThreadPool)client.getExecutor()).getMaxThreads() / 2;
         CompletableFuture<?>[] futures = new CompletableFuture[count];
         for (int i = 0; i < count; ++i)
         {
