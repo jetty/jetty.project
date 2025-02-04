@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
@@ -689,6 +690,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             catch (Throwable t)
             {
                 LOG.warn("Failed to to perform action {} on {}", step.type(), app, t);
+                ExceptionUtil.ifExceptionThrowUnchecked(t);
             }
             finally
             {

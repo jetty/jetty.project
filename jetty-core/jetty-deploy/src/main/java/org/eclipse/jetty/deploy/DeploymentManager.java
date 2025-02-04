@@ -15,6 +15,7 @@ package org.eclipse.jetty.deploy;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -64,7 +65,6 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
     private final AutoLock _lock = new AutoLock();
     private final DeploymentGraph _lifecycle = new DeploymentGraph();
     private final Queue<TrackedContext> _tracked = new ConcurrentLinkedQueue<>();
-    private Throwable _onStartupErrors;
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
 
@@ -103,7 +103,17 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         if (LOG.isDebugEnabled())
             LOG.debug("deploy: {}", contextHandler);
         TrackedContext trackedContext = startTracking(contextHandler);
-        requestContextHandlerGoal(trackedContext, DeploymentGraph.STARTED);
+
+        if (getContexts().isRunning())
+        {
+            // Only move to STARTED state if the ContextHandlerCollection itself is started.
+            requestContextHandlerGoal(trackedContext, DeploymentGraph.STARTED);
+        }
+        else
+        {
+            // Otherwise, just make sure it reaches the deployed state.
+            requestContextHandlerGoal(trackedContext, DeploymentGraph.DEPLOYED);
+        }
     }
 
     /**
@@ -281,20 +291,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
             addLifeCycleBinding(new StandardUndeployer());
         }
 
-        try (AutoLock l = _lock.lock())
-        {
-            ExceptionUtil.ifExceptionThrow(_onStartupErrors);
-        }
-
         super.doStart();
-    }
-
-    private void addOnStartupError(Throwable cause)
-    {
-        try (AutoLock l = _lock.lock())
-        {
-            _onStartupErrors = ExceptionUtil.combine(_onStartupErrors, cause);
-        }
     }
 
     private TrackedContext findTrackedContext(ContextHandler contextHandler)
@@ -363,25 +360,25 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
         catch (Throwable t)
         {
-            LOG.warn("Unable to reach node goal: {}", nodeName, t);
+            String message = nodeName.toUpperCase(Locale.ENGLISH) + " Deployment failed for " + tracked.contextHandler;
+            LOG.warn(message, t);
+            fail(tracked);
+            ExceptionUtil.ifExceptionThrowUnchecked(t);
+        }
+    }
 
-            // migrate to FAILED node
-            Node failed = _lifecycle.getNodeByName(DeploymentGraph.FAILED);
-            tracked.setLifeCycleNode(failed);
-            try
-            {
-                _lifecycle.runBindings(failed, tracked.contextHandler, this);
-            }
-            catch (Throwable cause)
-            {
-                // The runBindings failed for 'failed' node
-                LOG.trace("IGNORED", cause);
-            }
-
-            if (isStarting())
-            {
-                addOnStartupError(t);
-            }
+    private void fail(TrackedContext tracked)
+    {
+        Node failed = _lifecycle.getNodeByName(DeploymentGraph.FAILED);
+        tracked.setLifeCycleNode(failed);
+        try
+        {
+            _lifecycle.runBindings(failed, tracked.contextHandler, this);
+        }
+        catch (Throwable cause)
+        {
+            // The runBindings failed for 'failed' node
+            LOG.trace("IGNORED", cause);
         }
     }
 
