@@ -15,37 +15,48 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ReadWriteFailuresTest
 {
     private Server server;
     private LocalConnector connector;
+    private ArrayByteBufferPool.Tracking bufferPool;
 
     private void start(Handler handler) throws Exception
     {
-        server = new Server();
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, bufferPool);
         connector = new LocalConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -55,7 +66,74 @@ public class ReadWriteFailuresTest
     @AfterEach
     public void destroy() throws Exception
     {
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
         LifeCycle.stop(server);
+    }
+
+    @Test
+    @Disabled
+    // TODO should test H2 and H3 too
+    public void testCancel() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                AtomicReference<HttpStream> streamRef = new AtomicReference<>();
+                request.addHttpStreamWrapper(stream ->
+                {
+                    HttpStream.Wrapper wrapper = new HttpStream.Wrapper(stream)
+                    {
+                        @Override
+                        public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                        {
+                            // Do nothing to make the write pending.
+                            // TODO no need to complete the callback?
+                        }
+                    };
+                    streamRef.set(wrapper);
+                    return wrapper;
+                });
+
+                Callback.Completable completableCb = new Callback.Completable();
+                RetainableByteBuffer.Mutable buffer = bufferPool.acquire(1000, false);
+                buffer.append(ByteBuffer.wrap("hello world".getBytes(StandardCharsets.UTF_8)));
+                Callback releaseCb = Callback.from(completableCb, buffer::release);
+
+                response.write(true, buffer.getByteBuffer(), releaseCb);
+
+                new Thread(() ->
+                {
+                    // TODO what callback gets failed with exception 1?
+                    Callback cancelCallback = streamRef.get().cancelSend(new ArithmeticException("1"), releaseCb);
+                    cancelCallback.failed(new ArithmeticException("2"));
+                }).start();
+
+                try
+                {
+                    completableCb.get(5, TimeUnit.SECONDS);
+                    fail("Expected exception");
+                }
+                catch (ExecutionException e)
+                {
+                    assertInstanceOf(ArithmeticException.class, e.getCause());
+                }
+
+                // TODO succeeding this callback should not throw ISE
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        String request = """
+            GET / HTTP/1.1
+            Host: localhost
+            
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
     }
 
     @Test
