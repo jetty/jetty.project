@@ -196,6 +196,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
+            Violation.BAD_UTF8_ENCODING,
             Violation.UTF16_ENCODINGS,
             Violation.USER_INFO));
 
