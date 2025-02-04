@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Scanner
- *
+ * <p>
  * Utility for scanning a directory for added, removed and changed
  * files and reporting these events via registered Listeners.
  * The scanner operates on the {@link Path#toRealPath(LinkOption...)} of the files scanned and
@@ -269,7 +269,6 @@ public class Scanner extends ContainerLifeCycle
          */
         default void pathChanged(Path path) throws Exception
         {
-            path.toString();
             fileChanged(path.toString());
         }
 
