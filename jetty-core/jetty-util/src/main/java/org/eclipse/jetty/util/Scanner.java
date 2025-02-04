@@ -904,7 +904,6 @@ public class Scanner extends ContainerLifeCycle
         if (path == null)
             return;
 
-        Throwable failure = null;
         for (Listener listener : _listeners)
         {
             try
@@ -914,11 +913,9 @@ public class Scanner extends ContainerLifeCycle
             }
             catch (Throwable e)
             {
-                failure = ExceptionUtil.combine(failure, e);
                 warn(listener, path, e);
             }
         }
-        ExceptionUtil.ifExceptionThrowUnchecked(failure);
     }
 
     /**
@@ -931,7 +928,6 @@ public class Scanner extends ContainerLifeCycle
         if (path == null)
             return;
 
-        Throwable failure = null;
         for (Listener listener : _listeners)
         {
             try
@@ -941,11 +937,9 @@ public class Scanner extends ContainerLifeCycle
             }
             catch (Throwable e)
             {
-                failure = ExceptionUtil.combine(failure, e);
                 warn(listener, path, e);
             }
         }
-        ExceptionUtil.ifExceptionThrowUnchecked(failure);
     }
 
     /**
@@ -958,7 +952,6 @@ public class Scanner extends ContainerLifeCycle
         if (path == null)
             return;
 
-        Throwable failure = null;
         for (Listener listener : _listeners)
         {
             try
@@ -968,11 +961,9 @@ public class Scanner extends ContainerLifeCycle
             }
             catch (Throwable e)
             {
-                failure = ExceptionUtil.combine(failure, e);
                 warn(listener, path, e);
             }
         }
-        ExceptionUtil.ifExceptionThrowUnchecked(failure);
     }
 
     /**
@@ -985,7 +976,6 @@ public class Scanner extends ContainerLifeCycle
         if (changes == null || changes.isEmpty())
             return;
 
-        Throwable failure = null;
         for (Listener l : _listeners)
         {
             try
@@ -995,11 +985,9 @@ public class Scanner extends ContainerLifeCycle
             }
             catch (Throwable e)
             {
-                failure = ExceptionUtil.combine(failure, e);
                 LOG.warn("{} failed on '{}'", l, changes, e);
             }
         }
-        ExceptionUtil.ifExceptionThrowUnchecked(failure);
     }
 
     /**
@@ -1012,7 +1000,6 @@ public class Scanner extends ContainerLifeCycle
         if (paths == null || paths.isEmpty())
             return;
 
-        Throwable failure = null;
         for (Listener listener : _listeners)
         {
             try
@@ -1022,11 +1009,9 @@ public class Scanner extends ContainerLifeCycle
             }
             catch (Throwable e)
             {
-                failure = ExceptionUtil.combine(failure, e);
                 LOG.warn("{} failed on '{}'", listener, paths, e);
             }
         }
-        ExceptionUtil.ifExceptionThrowUnchecked(failure);
     }
 
     /**
