@@ -15,6 +15,8 @@ package org.eclipse.jetty.ee10.websocket.jakarta.server.internal;
 
 import java.net.URI;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,13 +63,47 @@ public class JsrHandshakeRequest implements HandshakeRequest
     {
         if (parameterMap == null)
         {
-            Fields requestParams = Request.extractQueryParameters(delegate);
             parameterMap = new HashMap<>();
+
+            // Add query parameters to the parameter map.
+            Fields requestParams = Request.extractQueryParameters(delegate);
             for (String name : requestParams.getNames())
             {
-                parameterMap.put(name, requestParams.getValues(name));
+                parameterMap.compute(name, (key, values) ->
+                {
+                    if (values == null)
+                        values = new ArrayList<>();
+                    values.addAll(requestParams.getValues(name));
+                    return values;
+                });
             }
+
+            // Add path parameters to the parameter map.
+            Map<String, String> pathParams = getPathParams();
+            if (pathParams != null)
+            {
+                for (Map.Entry<String, String> entry : pathParams.entrySet())
+                {
+                    parameterMap.compute(entry.getKey(), (key, values) ->
+                    {
+                        if (values == null)
+                            values = new ArrayList<>();
+                        values.add(entry.getValue());
+                        return values;
+                    });
+                }
+            }
+
+            // Make the lists unmodifiable.
+            for (Map.Entry<String, List<String>> entry : parameterMap.entrySet())
+            {
+                entry.setValue(Collections.unmodifiableList(entry.getValue()));
+            }
+
+            // The map should be unmodifiable according to the spec.
+            parameterMap = Collections.unmodifiableMap(parameterMap);
         }
+
         return parameterMap;
     }
 

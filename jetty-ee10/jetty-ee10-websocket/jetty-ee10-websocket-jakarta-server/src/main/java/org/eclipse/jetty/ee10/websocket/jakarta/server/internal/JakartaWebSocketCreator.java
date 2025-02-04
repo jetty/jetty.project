@@ -26,6 +26,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.common.ConfiguredEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketExtension;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.ServerEndpointConfigWrapper;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -143,6 +144,7 @@ public class JakartaWebSocketCreator implements WebSocketCreator
 
             // Wrap the config with the path spec information.
             config = new PathParamServerEndpointConfig(config, pathParams);
+            request.setAttribute(JakartaWebSocketServerContainer.PATH_PARAM_ATTRIBUTE, pathParams);
         }
         else
         {
