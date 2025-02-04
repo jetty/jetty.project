@@ -45,8 +45,8 @@ public class PathsContextHandlerFactory
     public static final String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
     public static final String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
     public static final String ENVIRONMENT = "environment";
-    public static final String ENV_XML_PATHS = "jetty.deploy.defaultApp.envXMLs";
     public static final String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
+    public static final String ENVIRONMENT_XML_PATHS = ENVIRONMENT_XML + ".paths";
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private static Map<String, String> asProperties(Attributes attributes)
@@ -69,12 +69,12 @@ public class PathsContextHandlerFactory
     public static List<Path> getEnvironmentXmlPaths(Attributes attributes)
     {
         //noinspection unchecked
-        return (List<Path>)attributes.getAttribute(ENV_XML_PATHS);
+        return (List<Path>)attributes.getAttribute(ENVIRONMENT_XML_PATHS);
     }
 
     public static void setEnvironmentXmlPaths(Attributes attributes, List<Path> paths)
     {
-        attributes.setAttribute(ENV_XML_PATHS, paths);
+        attributes.setAttribute(ENVIRONMENT_XML_PATHS, paths);
     }
 
     /**
@@ -206,7 +206,7 @@ public class PathsContextHandlerFactory
                     if (v == null)
                         xmlConfiguration.getProperties().remove(k);
                     else
-                        xmlConfiguration.getProperties().put(k, Objects.toString(v));
+                        xmlConfiguration.getProperties().put(k, asPropertyValue(v));
                 });
 
             // Run configure against appropriate classloader.
@@ -227,6 +227,23 @@ public class PathsContextHandlerFactory
                 Thread.currentThread().setContextClassLoader(oldClassLoader);
             }
         }
+    }
+
+    /**
+     * Convert an Object into a String suitable for use as a Properties value.
+     *
+     * @param obj the object to convert
+     * @return the String representing the Object, or null if {@code obj} is null.
+     */
+    private static String asPropertyValue(Object obj)
+    {
+        if (obj == null)
+            return null;
+        if (obj instanceof Enum<?> en)
+            return en.name();
+        if (obj instanceof Environment env)
+            return env.getName();
+        return Objects.toString(obj);
     }
 
     private ClassLoader getClassLoader(Object context, Environment environment)
