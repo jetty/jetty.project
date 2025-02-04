@@ -79,7 +79,7 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
     }
 
     @AfterEach
-    public void teardownEnvironment() throws Exception
+    public void stopJetty() throws Exception
     {
         jetty.stop();
     }
@@ -243,7 +243,7 @@ public class DeploymentScannerStartupTest extends AbstractCleanEnvironmentTest
     private static void writeXmlDisplayName(Path filePath, String displayName) throws IOException
     {
         String content = """
-            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
             <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
               <Set name="displayName">@NAME@</Set>
             </Configure>

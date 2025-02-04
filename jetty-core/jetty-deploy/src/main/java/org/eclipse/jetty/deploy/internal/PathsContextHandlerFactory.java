@@ -46,7 +46,7 @@ public class PathsContextHandlerFactory
     public static final String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
     public static final String ENVIRONMENT = "environment";
     public static final String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
-    public static final String ENVIRONMENT_XML_PATHS = ENVIRONMENT_XML + ".paths";
+    public static final String ENVIRONMENT_XML_PATHS = "jetty.deploy.paths.environmentXmls";
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private static Map<String, String> asProperties(Attributes attributes)

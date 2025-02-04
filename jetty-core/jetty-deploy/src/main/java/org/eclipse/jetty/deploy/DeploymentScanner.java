@@ -42,7 +42,6 @@ import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
@@ -133,6 +132,14 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
     private boolean useRealPaths;
     private boolean deferInitialScan = false;
     private String defaultEnvironmentName;
+
+    public DeploymentScanner(
+        @Name("server") Server server,
+        @Name("deploymentManager") DeploymentManager deploymentManager)
+    {
+        this(server, deploymentManager, null);
+        deploymentManager.addBean(this);
+    }
 
     public DeploymentScanner(
         @Name("server") Server server,
@@ -690,7 +697,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             catch (Throwable t)
             {
                 LOG.warn("Failed to to perform action {} on {}", step.type(), app, t);
-                ExceptionUtil.ifExceptionThrowUnchecked(t);
+                if (isStarting())
+                    contextHandlerDeployer.reportStartupFailure(t);
             }
             finally
             {

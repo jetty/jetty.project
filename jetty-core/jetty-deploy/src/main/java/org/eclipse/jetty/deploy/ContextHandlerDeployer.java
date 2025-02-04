@@ -39,7 +39,9 @@ public interface ContextHandlerDeployer
      *
      * @param contextHandler the ContextHandler to add to the graph.
      */
-    void addUndeployed(ContextHandler contextHandler);
+    default void addUndeployed(ContextHandler contextHandler)
+    {
+    }
 
     /**
      * Advanced usage, move a ContextHandler through the DeploymentManager graph by name.
@@ -47,5 +49,16 @@ public interface ContextHandlerDeployer
      * @param contextHandler the ContextHandler to move
      * @param goalName the goal graph node by name
      */
-    void move(ContextHandler contextHandler, String goalName);
+    default void move(ContextHandler contextHandler, String goalName)
+    {
+    }
+
+    /**
+     * Report a failure to the ContextHandlerDeployer to fail startup.
+     *
+     * @param cause the cause of the failure
+     */
+    default void reportStartupFailure(Throwable cause)
+    {
+    }
 }

@@ -11,24 +11,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy;
+package org.example;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
- * Abstract ContextHandlerDeployer for testing purposes
+ * A Handler that will always fail to startup.
  */
-public class AbstractContextHandlerDeployer implements ContextHandlerDeployer
+public class ExampleBadStartHandler extends Handler.Abstract
 {
     @Override
-    public void deploy(ContextHandler contextHandler)
+    public boolean handle(Request request, Response response, Callback callback)
     {
-        // no default implementation
+        throw new IllegalStateException("This code should never have run, this Handler should have never started.");
     }
 
     @Override
-    public void undeploy(ContextHandler contextHandler)
+    protected void doStart()
     {
-        // no default implementation
+        throw new RuntimeException("Example of failing startup");
     }
 }

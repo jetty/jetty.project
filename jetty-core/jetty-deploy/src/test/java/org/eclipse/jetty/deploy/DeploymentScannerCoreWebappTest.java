@@ -22,7 +22,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -119,6 +122,183 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         assertThat(responseBody, containsString(Server.getVersion()));
         assertThat(responseBody, containsString(destURI.getPath()));
         assertThat(responseBody, containsString("it all looks so easy."));
+    }
+
+    /**
+     * Test of a core deployment that will fail the DeploymentManager startup due to an exception triggered from the XML.
+     * This is at a point in time before the Core app is even added to the ContextHandlerCollection
+     */
+    @Test
+    public void testFailureXml() throws Exception
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path webapps = baseDir.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path demoDir = webapps.resolve("demo.d");
+        FS.ensureDirExists(demoDir);
+
+        Path srcZip = MavenPaths.targetDir().resolve("core-webapps/jetty-test-core-example-webapp.zip");
+        Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
+        unpack(srcZip, demoDir);
+
+        // ensure that demo jar isn't in our test/server classpath.
+        // it should only exist in the jar file on disk.
+        assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
+
+        Path demoXml = webapps.resolve("demo.xml");
+        String demoXmlStr = """
+            <?xml version="1.0"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+            <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+              <Set name="contextPath">/demo</Set>
+              <Set name="handler">
+                <New class="org.example.BogusHandler" /> <!-- THIS DOESN'T EXIST -->
+              </Set>
+            </Configure>
+            """;
+        Files.writeString(demoXml, demoXmlStr);
+
+        DeploymentManager deploymentManager = new DeploymentManager();
+        DeploymentScanner defaultProvider = new DeploymentScanner(server, deploymentManager);
+        defaultProvider.addMonitoredDirectory(webapps);
+        DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
+        coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
+
+        try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class))
+        {
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(deploymentManager));
+
+            // unwrap any ExecutionExceptions
+            while (throwable instanceof ExecutionException ee)
+            {
+                throwable = ee.getCause();
+            }
+
+            // Verify that we saw the message
+            assertThat(throwable, instanceOf(ClassNotFoundException.class));
+            assertThat(throwable.getMessage(), is("org.example.BogusHandler"));
+        }
+    }
+
+    /**
+     * Test of a core deployment that will fail DeploymentManager startup due to an exception during the
+     * ContextHandlerCollection.deployHandler() step of the core app.
+     */
+    @Test
+    public void testFailureDeploy() throws IOException
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path webapps = baseDir.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path demoDir = webapps.resolve("demo.d");
+        FS.ensureDirExists(demoDir);
+
+        Path srcZip = MavenPaths.targetDir().resolve("core-webapps/jetty-test-core-example-webapp.zip");
+        Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
+        unpack(srcZip, demoDir);
+
+        // ensure that demo jar isn't in our test/server classpath.
+        // it should only exist in the jar file on disk.
+        assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
+
+        Path demoXml = webapps.resolve("demo.xml");
+        String demoXmlStr = """
+            <?xml version="1.0"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+            <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+              <Set name="contextPath">/demo</Set>
+              <Set name="handler">
+                <New class="org.example.ExampleBadSetServerHandler" />
+              </Set>
+            </Configure>
+            """;
+        Files.writeString(demoXml, demoXmlStr);
+
+        DeploymentManager deploymentManager = new DeploymentManager();
+        DeploymentScanner defaultProvider = new DeploymentScanner(server, deploymentManager);
+        defaultProvider.addMonitoredDirectory(webapps);
+        DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
+        coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
+
+        try (StacklessLogging ignore = new StacklessLogging(
+            // screwy name courtesy of SerializedInvoker.onError() logic
+            "org.eclipse.jetty.server.handler.ContextHandlerCollection$1",
+            DeploymentManager.class.getName()))
+        {
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(deploymentManager));
+
+            // unwrap any ExecutionExceptions
+            while (throwable instanceof ExecutionException ee)
+            {
+                throwable = ee.getCause();
+            }
+
+            // Verify that we saw the message
+            assertThat(throwable, instanceOf(RuntimeException.class));
+            assertThat(throwable.getMessage(), is("Example of failing startup"));
+        }
+    }
+
+    /**
+     * Test of a core deployment that will fail DeploymentManager startup due to an exception during the
+     * ContextHandler.doStart() step of the core app.
+     */
+    @Test
+    public void testFailureDoStart() throws IOException
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path webapps = baseDir.resolve("webapps");
+        FS.ensureDirExists(webapps);
+
+        Path demoDir = webapps.resolve("demo.d");
+        FS.ensureDirExists(demoDir);
+
+        Path srcZip = MavenPaths.targetDir().resolve("core-webapps/jetty-test-core-example-webapp.zip");
+        Assertions.assertTrue(Files.exists(srcZip), "Src Zip should exist: " + srcZip);
+        unpack(srcZip, demoDir);
+
+        // ensure that demo jar isn't in our test/server classpath.
+        // it should only exist in the jar file on disk.
+        assertThrows(ClassNotFoundException.class, () -> Class.forName("org.example.ExampleHandler"));
+
+        Path demoXml = webapps.resolve("demo.xml");
+        String demoXmlStr = """
+            <?xml version="1.0"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+            <Configure class="org.eclipse.jetty.server.handler.CoreContextHandler">
+              <Set name="contextPath">/demo</Set>
+              <Set name="handler">
+                <New class="org.example.ExampleBadStartHandler" />
+              </Set>
+            </Configure>
+            """;
+        Files.writeString(demoXml, demoXmlStr);
+
+        DeploymentManager deploymentManager = new DeploymentManager();
+        DeploymentScanner defaultProvider = new DeploymentScanner(server, deploymentManager);
+        defaultProvider.addMonitoredDirectory(webapps);
+        DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
+        coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
+
+        try (StacklessLogging ignore = new StacklessLogging(DeploymentManager.class))
+        {
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(deploymentManager));
+
+            // unwrap any ExecutionExceptions
+            while (throwable instanceof ExecutionException ee)
+            {
+                throwable = ee.getCause();
+            }
+
+            // Verify that we saw the message
+            assertThat(throwable, instanceOf(RuntimeException.class));
+            assertThat(throwable.getMessage(), is("Example of failing startup"));
+        }
     }
 
     private void unpack(Path srcPath, Path destPath) throws IOException

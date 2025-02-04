@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,11 +61,11 @@ import org.slf4j.LoggerFactory;
 public class DeploymentManager extends ContainerLifeCycle implements ContextHandlerDeployer
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentManager.class);
-    private final AutoLock _lock = new AutoLock();
     private final DeploymentGraph _lifecycle = new DeploymentGraph();
     private final Queue<TrackedContext> _tracked = new ConcurrentLinkedQueue<>();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
+    private Throwable _onStartupErrors;
 
     /**
      * Add a DeploymentNodeBinding to the graph.
@@ -292,6 +291,8 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
 
         super.doStart();
+
+        ExceptionUtil.ifExceptionThrow(_onStartupErrors);
     }
 
     private TrackedContext findTrackedContext(ContextHandler contextHandler)
@@ -363,8 +364,18 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
             String message = nodeName.toUpperCase(Locale.ENGLISH) + " Deployment failed for " + tracked.contextHandler;
             LOG.warn(message, t);
             fail(tracked);
-            ExceptionUtil.ifExceptionThrowUnchecked(t);
+
+            if (isStarting())
+            {
+                reportStartupFailure(t);
+            }
         }
+    }
+
+    @Override
+    public void reportStartupFailure(Throwable cause)
+    {
+        _onStartupErrors = ExceptionUtil.combine(_onStartupErrors, cause);
     }
 
     private void fail(TrackedContext tracked)
