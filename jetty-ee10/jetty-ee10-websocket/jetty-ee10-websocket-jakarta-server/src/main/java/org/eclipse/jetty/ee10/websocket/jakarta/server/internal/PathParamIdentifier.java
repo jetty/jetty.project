@@ -38,7 +38,11 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
                 {
                     validateType(paramType);
                     PathParam pathParam = (PathParam)anno;
-                    return new InvokerUtils.Arg(paramType, pathParam.value());
+                    String value = pathParam.value();
+                    // WebSocket TCK requires us to strip any remaining { and } from the value.
+                    if (value != null && value.startsWith("{") && value.endsWith("}"))
+                        value = value.substring(1, value.length() - 1);
+                    return new InvokerUtils.Arg(paramType, value);
                 }
             }
         }
