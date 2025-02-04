@@ -540,7 +540,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
     @Override
     public boolean isOpen()
     {
-        return coreSession.isOutputOpen();
+        return coreSession.isOutputOpen() || coreSession.isInputOpen();
     }
 
     /**
