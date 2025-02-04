@@ -46,7 +46,7 @@ public abstract class WriteFlusher
     private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
-    private static final State __FLUSHING = new WritingState();
+    private static final State __FLUSHING = new FlushingState();
     private static final State __COMPLETING = new CompletingState();
     private static final State __CANCEL = new State(StateType.CANCEL);
     private static final State __CANCELLED = new State(StateType.CANCELLED);
@@ -189,9 +189,9 @@ public abstract class WriteFlusher
     /**
      * In WritingState WriteFlusher is currently writing.
      */
-    private static class WritingState extends State
+    private static class FlushingState extends State
     {
-        private WritingState()
+        private FlushingState()
         {
             super(StateType.FLUSHING);
         }
@@ -592,6 +592,9 @@ public abstract class WriteFlusher
                     break;
 
                 case CANCEL:
+                    // A concurrent thread is racing to move from COMPLETING state and it will
+                    // soon discover the CANCEL state and instead move to CANCELLING.
+                    // This thread can stay in this method until that other thread leaves CANCEL.
                     Thread.onSpinWait();
                     break;
 
