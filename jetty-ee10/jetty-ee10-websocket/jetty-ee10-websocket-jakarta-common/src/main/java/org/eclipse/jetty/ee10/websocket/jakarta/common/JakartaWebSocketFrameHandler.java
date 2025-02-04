@@ -234,6 +234,23 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
+        Callback frameCallback = callback;
+        callback = Callback.from(frameCallback::succeeded, x ->
+        {
+            // If it is a recoverable error, we can continue processing frames.
+            if (session.isOpen())
+            {
+                if (x instanceof WebSocketException webSocketException)
+                    x = webSocketException.getCause();
+
+                onError(x, frameCallback);
+                coreSession.demand();
+                return;
+            }
+
+            frameCallback.failed(x);
+        });
+
         switch (frame.getOpCode())
         {
             case OpCode.TEXT:
