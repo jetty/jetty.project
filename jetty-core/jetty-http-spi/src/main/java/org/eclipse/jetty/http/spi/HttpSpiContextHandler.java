@@ -18,6 +18,7 @@ import java.util.Map;
 
 import com.sun.net.httpserver.Authenticator;
 import com.sun.net.httpserver.Authenticator.Result;
+import com.sun.net.httpserver.Filter.Chain;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -61,7 +62,7 @@ public class HttpSpiContextHandler extends ContextHandler
                     if (auth != null && handleAuthentication(request, response, callback, jettyHttpExchange, auth))
                         return true;
 
-                    _httpHandler.handle(jettyHttpExchange);
+                    new Chain(_httpContext.getFilters(), _httpHandler).doFilter(jettyHttpExchange);
                     callback.succeeded();
                 }
                 catch (Exception ex)
