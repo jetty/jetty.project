@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Scanner
- *
+ * <p>
  * Utility for scanning a directory for added, removed and changed
  * files and reporting these events via registered Listeners.
  * The scanner operates on the {@link Path#toRealPath(LinkOption...)} of the files scanned and
@@ -84,7 +84,7 @@ public class Scanner extends ContainerLifeCycle
         ADDED, CHANGED, REMOVED, STABLE
     }
 
-    enum Notification
+    public enum Notification
     {
         ADDED, CHANGED, REMOVED
     }
@@ -269,7 +269,6 @@ public class Scanner extends ContainerLifeCycle
          */
         default void pathChanged(Path path) throws Exception
         {
-            path.toString();
             fileChanged(path.toString());
         }
 
@@ -337,6 +336,14 @@ public class Scanner extends ContainerLifeCycle
         }
 
         void filesChanged(Set<String> filenames) throws Exception;
+    }
+
+    /**
+     * Listener that notifies of the complete path change set.
+     */
+    public interface ChangeSetListener extends Listener
+    {
+        void pathsChanged(Map<Path, Notification> changeSet);
     }
 
     /**
@@ -476,14 +483,12 @@ public class Scanner extends ContainerLifeCycle
         }
     }
 
-
     /**
      * Apply a filter to files found in the scan directory.
      * Only files matching the filter will be reported as added/changed/removed.
      *
      * @param filter the filename filter to use
      */
-    @Deprecated
     public void setFilenameFilter(FilenameFilter filter)
     {
         _filter = filter;
@@ -494,7 +499,6 @@ public class Scanner extends ContainerLifeCycle
      *
      * @return the filename filter
      */
-    @Deprecated
     public FilenameFilter getFilenameFilter()
     {
         return _filter;
@@ -665,7 +669,7 @@ public class Scanner extends ContainerLifeCycle
         }
         else
         {
-            //just register the list of existing files and only report changes
+            // just register the list of existing files and only report changes
             _prevScan = scanFiles();
         }
 
@@ -859,7 +863,7 @@ public class Scanner extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("scanned {}", _scannables.keySet());
 
-        //Call the DiscreteListeners
+        // Call the DiscreteListeners
         for (Map.Entry<Path, Notification> entry : changes.entrySet())
         {
             switch (entry.getValue())
@@ -878,7 +882,11 @@ public class Scanner extends ContainerLifeCycle
                     break;
             }
         }
-        //Call the BulkListeners
+
+        // Call the ChangeSetListeners
+        reportChangeSet(changes);
+
+        // Call the BulkListeners
         reportBulkChanges(changes.keySet());
     }
 
@@ -894,16 +902,19 @@ public class Scanner extends ContainerLifeCycle
      */
     private void reportAddition(Path path)
     {
-        for (Listener l : _listeners)
+        if (path == null)
+            return;
+
+        for (Listener listener : _listeners)
         {
             try
             {
-                if (l instanceof DiscreteListener)
-                    ((DiscreteListener)l).pathAdded(path);
+                if (listener instanceof DiscreteListener discreteListener)
+                    discreteListener.pathAdded(path);
             }
             catch (Throwable e)
             {
-                warn(l, path, e);
+                warn(listener, path, e);
             }
         }
     }
@@ -915,16 +926,19 @@ public class Scanner extends ContainerLifeCycle
      */
     private void reportRemoval(Path path)
     {
-        for (Object l : _listeners)
+        if (path == null)
+            return;
+
+        for (Listener listener : _listeners)
         {
             try
             {
-                if (l instanceof DiscreteListener)
-                    ((DiscreteListener)l).pathRemoved(path);
+                if (listener instanceof DiscreteListener discreteListener)
+                    discreteListener.pathRemoved(path);
             }
             catch (Throwable e)
             {
-                warn(l, path, e);
+                warn(listener, path, e);
             }
         }
     }
@@ -939,16 +953,40 @@ public class Scanner extends ContainerLifeCycle
         if (path == null)
             return;
 
+        for (Listener listener : _listeners)
+        {
+            try
+            {
+                if (listener instanceof DiscreteListener discreteListener)
+                    discreteListener.pathChanged(path);
+            }
+            catch (Throwable e)
+            {
+                warn(listener, path, e);
+            }
+        }
+    }
+
+    /**
+     * Report set of changes to the ChangeSetListener
+     *
+     * @param changes the changes that occurred.
+     */
+    private void reportChangeSet(Map<Path, Notification> changes)
+    {
+        if (changes == null || changes.isEmpty())
+            return;
+
         for (Listener l : _listeners)
         {
             try
             {
-                if (l instanceof DiscreteListener)
-                    ((DiscreteListener)l).pathChanged(path);
+                if (l instanceof ChangeSetListener changeSetListener)
+                    changeSetListener.pathsChanged(changes);
             }
             catch (Throwable e)
             {
-                warn(l, path, e);
+                LOG.warn("{} failed on '{}'", l, changes, e);
             }
         }
     }
@@ -963,16 +1001,16 @@ public class Scanner extends ContainerLifeCycle
         if (paths == null || paths.isEmpty())
             return;
 
-        for (Listener l : _listeners)
+        for (Listener listener : _listeners)
         {
             try
             {
-                if (l instanceof BulkListener)
-                    ((BulkListener)l).pathsChanged(paths);
+                if (listener instanceof BulkListener bulkListener)
+                    bulkListener.pathsChanged(paths);
             }
             catch (Throwable e)
             {
-                LOG.warn("{} failed on '{}'", l, paths, e);
+                LOG.warn("{} failed on '{}'", listener, paths, e);
             }
         }
     }
@@ -988,8 +1026,8 @@ public class Scanner extends ContainerLifeCycle
         {
             try
             {
-                if (listener instanceof ScanCycleListener)
-                    ((ScanCycleListener)listener).scanStarted(cycle);
+                if (listener instanceof ScanCycleListener scanCycleListener)
+                    scanCycleListener.scanStarted(cycle);
             }
             catch (Exception e)
             {
@@ -1009,8 +1047,8 @@ public class Scanner extends ContainerLifeCycle
         {
             try
             {
-                if (listener instanceof ScanCycleListener)
-                    ((ScanCycleListener)listener).scanEnded(cycle);
+                if (listener instanceof ScanCycleListener scanCycleListener)
+                    scanCycleListener.scanEnded(cycle);
 
             }
             catch (Exception e)
