@@ -21,7 +21,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ByteBufferRequestContent;
-import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Request;
@@ -63,7 +62,7 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
@@ -96,7 +95,7 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
         Request request = client.newRequest(URI.create("http://localhost/"));
         connection.send(request, null);
 
@@ -126,7 +125,7 @@ public class HttpSenderOverHTTPTest
         endPoint.shutdownOutput();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
         request.listener(new Request.Listener()
@@ -156,7 +155,7 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
         Request request = client.newRequest(URI.create("http://localhost/"));
         final CountDownLatch failureLatch = new CountDownLatch(2);
         request.listener(new Request.Listener()
@@ -192,7 +191,7 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content = "abcdef";
         request.body(new ByteBufferRequestContent(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8))));
@@ -227,7 +226,7 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "abcdef";
@@ -263,7 +262,7 @@ public class HttpSenderOverHTTPTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "ABCDEF";

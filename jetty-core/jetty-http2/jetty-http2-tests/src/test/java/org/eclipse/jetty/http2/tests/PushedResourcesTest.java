@@ -64,7 +64,7 @@ public class PushedResourcesTest extends AbstractTest
             {
                 HttpURI pushURI = HttpURI.from("http://localhost:" + connector.getLocalPort() + pushPath);
                 MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                stream.push(new PushPromiseFrame(stream.getId(), pushRequest), new Promise.Adapter<>()
+                stream.push(new PushPromiseFrame(stream.getId(), pushRequest), new Promise<>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
@@ -305,7 +305,7 @@ public class PushedResourcesTest extends AbstractTest
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
         CountDownLatch primaryResponseLatch = new CountDownLatch(1);
         CountDownLatch pushLatch = new CountDownLatch(1);
-        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener()
+        session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)

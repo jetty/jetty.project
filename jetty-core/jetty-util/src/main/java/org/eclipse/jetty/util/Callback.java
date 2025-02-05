@@ -28,8 +28,8 @@ import org.eclipse.jetty.util.thread.Invocable;
 public interface Callback extends Invocable
 {
     /**
-     * Instance of Adapter that can be used when the callback methods need an empty
-     * implementation without incurring in the cost of allocating a new Adapter object.
+     * Instance of Callback that can be used when the callback methods need an empty
+     * implementation without incurring in the cost of allocating a new Callback object.
      */
     Callback NOOP = new Callback()
     {

@@ -145,21 +145,21 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} on {}", frame, this);
 
-        writeFrame(frame, new Promise.Invocable.Wrapper<>(promise)
+        writeFrame(frame, new Promise.Invocable.Abstract<>(promise.getInvocationType())
         {
             @Override
             public void succeeded(Stream result)
             {
                 updateClose(Frame.isLast(frame), true);
-                super.succeeded(result);
+                promise.succeeded(result);
             }
 
             @Override
             public void failed(Throwable x)
             {
                 updateClose(Frame.isLast(frame), true);
-                super.failed(x);
-                disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, Promise.Invocable.noop());
+                Promise.Invocable<Stream> p = Promise.Invocable.from(getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
+                disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, p);
             }
         });
     }

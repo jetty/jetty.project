@@ -82,7 +82,7 @@ public class HttpReceiverOverHTTPTest
         destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
         endPoint = new ByteArrayEndPoint();
-        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>());
+        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
         endPoint.setConnection(connection);
     }
 
@@ -235,7 +235,7 @@ public class HttpReceiverOverHTTPTest
     public void testFillInterestedRacingWithBufferRelease(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>())
+        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {})
         {
             @Override
             protected HttpChannelOverHTTP newHttpChannel()

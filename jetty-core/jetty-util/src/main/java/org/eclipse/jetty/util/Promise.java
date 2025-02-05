@@ -15,7 +15,6 @@ package org.eclipse.jetty.util;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -27,6 +26,25 @@ import java.util.function.Function;
  */
 public interface Promise<C>
 {
+    /**
+     * <p>Callback method to invoke when the operation succeeds.</p>
+     *
+     * @param result the operation result
+     * @see #failed(Throwable)
+     */
+    default void succeeded(C result)
+    {
+    }
+
+    /**
+     * <p>Callback method to invoke when the operation fails.</p>
+     *
+     * @param x the operation failure
+     */
+    default void failed(Throwable x)
+    {
+    }
+
     /**
      * @return a promise that performs no operations.
      * @param <T> the type of the promise result
@@ -53,34 +71,6 @@ public interface Promise<C>
             else
                 promise.failed(x);
         });
-    }
-
-    /**
-     * <p>Callback method to invoke when the operation succeeds.</p>
-     *
-     * @param result the operation result
-     * @see #failed(Throwable)
-     */
-    default void succeeded(C result)
-    {
-    }
-
-    /**
-     * <p>Callback method to invoke when the operation fails.</p>
-     *
-     * @param x the operation failure
-     */
-    default void failed(Throwable x)
-    {
-    }
-
-    /**
-     * <p>Empty implementation of {@link Promise}.</p>
-     *
-     * @param <U> the type of the result
-     */
-    class Adapter<U> implements Promise<U>
-    {
     }
 
     /**
@@ -125,7 +115,7 @@ public interface Promise<C>
         if (completable instanceof Promise)
             return (Promise<T>)completable;
 
-        return new Promise<T>()
+        return new Promise<>()
         {
             @Override
             public void succeeded(T result)
@@ -204,15 +194,17 @@ public interface Promise<C>
     }
 
     /**
-     * An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise} that provides the
-     * {@link InvocationType} of calls to {@link Promise#succeeded(Object)}.
-     * Also provides the {@link BiConsumer} interface as a convenience for working
-     * with {@link CompletableFuture}s.
+     * An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise} that provides
+     * the {@link InvocationType} of calls to {@link Promise#succeeded(Object)}.
      *
      * @param <R> The result type
      */
     interface Invocable<R> extends org.eclipse.jetty.util.thread.Invocable, Promise<R>
     {
+        /**
+         * @return a promise that performs no operations.
+         * @param <T> the type of the promise result
+         */
         @SuppressWarnings("unchecked")
         static <T> Promise.Invocable<T> noop()
         {
@@ -258,9 +250,16 @@ public interface Promise<C>
             };
         }
 
+        /**
+         * <p>Returns a new promise that, when it is completed, completes the given {@link CompletableFuture}.</p>
+         *
+         * @param completable the {@link CompletableFuture} to complete
+         * @return a new promise
+         * @param <W> the result type
+         */
         static <W> Promise.Invocable<W> toPromise(CompletableFuture<W> completable)
         {
-            return new Abstract<W>(InvocationType.BLOCKING)
+            return new Abstract<>(InvocationType.BLOCKING)
             {
                 @Override
                 public void succeeded(W result)
@@ -299,9 +298,18 @@ public interface Promise<C>
             };
         }
 
+        /**
+         * <p>Factory method to create a promise from the given arguments.</p>
+         *
+         * @param invocationType the {@link InvocationType} of the promise
+         * @param success the consumer to run upon success
+         * @param failure the consumer to run upon failure
+         * @return a new promise
+         * @param <T> the type of the promise result
+         */
         static <T> Promise.Invocable<T> from(InvocationType invocationType, Consumer<T> success, Consumer<Throwable> failure)
         {
-            return new Abstract<T>(invocationType)
+            return new Abstract<>(invocationType)
             {
                 @Override
                 public void succeeded(T result)
@@ -317,6 +325,16 @@ public interface Promise<C>
             };
         }
 
+        /**
+         * <p>Returns a promise that, when it is completed, completes
+         * the given promise and then runs the given {@link Runnable}.</p>
+         *
+         * @param promise the promise to wrap
+         * @param afterComplete the {@link Runnable} to run after completion
+         * @return a new promise wrapping the given promise
+         * @param <T> the type of the promise result
+         * @see #from(Runnable, Invocable)
+         */
         static <T> Promise.Invocable<T> from(Promise.Invocable<T> promise, Runnable afterComplete)
         {
             return new Abstract<>(promise.getInvocationType())
@@ -349,6 +367,16 @@ public interface Promise<C>
             };
         }
 
+        /**
+         * <p>Returns a promise that, when it is completed, runs the
+         * given {@link Runnable} and then completes the given promise.</p>
+         *
+         * @param beforeComplete the {@link Runnable} to run before completion
+         * @param promise the promise to wrap
+         * @return a new promise wrapping the given promise
+         * @param <T> the type of the promise result
+         * @see #from(Invocable, Runnable)
+         */
         static <T> Promise.Invocable<T> from(Runnable beforeComplete, Promise.Invocable<T> promise)
         {
             return new Abstract<>(promise.getInvocationType())
@@ -381,6 +409,12 @@ public interface Promise<C>
             };
         }
 
+        /**
+         * <p>Abstract implementation of {@link Promise.Invocable}
+         * with the specified {@link InvocationType}.</p>
+         *
+         * @param <T> the type of the promise result
+         */
         abstract class Abstract<T> implements Invocable<T>
         {
             private final InvocationType invocationType;
@@ -397,6 +431,12 @@ public interface Promise<C>
             }
         }
 
+        /**
+         * <p>Abstract implementation of {@link Promise.Invocable} with
+         * {@link InvocationType} set to {@link InvocationType#NON_BLOCKING}.</p>
+         *
+         * @param <T> the type of the promise result
+         */
         abstract class NonBlocking<T> extends Abstract<T>
         {
             public NonBlocking()
@@ -404,89 +444,6 @@ public interface Promise<C>
                 super(InvocationType.NON_BLOCKING);
             }
         }
-
-        class Wrapper<W> extends Promise.Wrapper<W> implements Invocable<W>
-        {
-            public Wrapper(Promise.Invocable<W> promise)
-            {
-                super(promise);
-            }
-
-            @Override
-            public Promise.Invocable<W> getWrapped()
-            {
-                return (Invocable<W>)super.getWrapped();
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return getWrapped().getInvocationType();
-            }
-        }
-    }
-
-    /**
-     * Create an {@link Promise.Invocable}
-     * @param invocationType The {@link Invocable.InvocationType} of calls to the {@link Invocable}
-     * @param promise The promise on which to delegate calls to.
-     * @param <C> The type
-     * @return An {@link Invocable} {@link Promise}.
-     */
-    static <C> Invocable<C> from(Invocable.InvocationType invocationType, Promise<C> promise)
-    {
-        return new Invocable<>()
-        {
-            @Override
-            public void succeeded(C result)
-            {
-                promise.succeeded(result);
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                promise.failed(x);
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return invocationType;
-            }
-        };
-    }
-
-    /**
-     * Create an {@link Invocable} that is {@link org.eclipse.jetty.util.thread.Invocable.InvocationType#NON_BLOCKING} because
-     * it executes the callbacks
-     * @param promise The promise on which to delegate calls to.
-     * @param <C> The type
-     * @return An {@link org.eclipse.jetty.util.thread.Invocable} {@link Promise}.
-     */
-    static <C> Invocable<C> from(Executor executor, Promise<C> promise)
-    {
-        Objects.requireNonNull(executor);
-        return new Invocable<C>()
-        {
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return InvocationType.NON_BLOCKING;
-            }
-
-            @Override
-            public void succeeded(C result)
-            {
-                executor.execute(() -> promise.succeeded(result));
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                executor.execute(() -> promise.failed(x));
-            }
-        };
     }
 
     /**

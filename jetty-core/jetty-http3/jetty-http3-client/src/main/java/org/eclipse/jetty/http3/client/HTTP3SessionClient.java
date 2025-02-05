@@ -123,20 +123,20 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         stream.setListener(listener);
         stream.onOpen();
 
-        stream.writeFrame(frame, new Promise.Invocable.Wrapper<>(promise)
+        stream.writeFrame(frame, new Promise.Invocable.Abstract<>(promise.getInvocationType())
         {
             @Override
             public void succeeded(Stream result)
             {
                 stream.updateClose(frame.isLast(), true);
-                super.succeeded(result);
+                promise.succeeded(result);
             }
 
             @Override
             public void failed(Throwable x)
             {
                 stream.updateClose(frame.isLast(), true);
-                Promise.Invocable<Stream> p = Promise.Invocable.from(super.getInvocationType(), s -> super.failed(x), t -> super.failed(x));
+                Promise.Invocable<Stream> p = Promise.Invocable.from(getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
                 stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, p);
             }
         });
