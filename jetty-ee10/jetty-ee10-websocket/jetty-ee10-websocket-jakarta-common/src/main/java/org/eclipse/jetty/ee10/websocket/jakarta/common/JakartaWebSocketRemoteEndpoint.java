@@ -213,6 +213,9 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         if (LOG.isDebugEnabled())
             LOG.debug("sendPing({})", BufferUtil.toDetailString(data));
 
+        if (BufferUtil.remaining(data) > Frame.MAX_CONTROL_PAYLOAD)
+            throw new IllegalArgumentException("Pong payload is too large");
+
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
         b.block();
@@ -223,6 +226,9 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
     {
         if (LOG.isDebugEnabled())
             LOG.debug("sendPong({})", BufferUtil.toDetailString(data));
+
+        if (BufferUtil.remaining(data) > Frame.MAX_CONTROL_PAYLOAD)
+            throw new IllegalArgumentException("Pong payload is too large");
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);

@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 
-import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.SendHandler;
 import jakarta.websocket.SendResult;
@@ -86,6 +84,10 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         {
             sendObject(data, future);
         }
+        catch (IllegalArgumentException e)
+        {
+            throw e;
+        }
         catch (Throwable t)
         {
             future.failed(t);
@@ -113,9 +115,9 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
                 String msg = textEncoder.encode(data);
                 sendText(msg, handler);
             }
-            catch (EncodeException e)
+            catch (Throwable t)
             {
-                handler.onResult(new SendResult(e));
+                handler.onResult(new SendResult(t));
             }
             return;
         }
@@ -128,9 +130,9 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
                 textStreamEncoder.encode(data, writer);
                 writer.close();
             }
-            catch (EncodeException | IOException e)
+            catch (Throwable t)
             {
-                handler.onResult(new SendResult(e));
+                handler.onResult(new SendResult(t));
             }
             return;
         }
@@ -141,9 +143,9 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
                 ByteBuffer buf = binaryEncoder.encode(data);
                 sendBinary(buf, handler);
             }
-            catch (EncodeException e)
+            catch (Throwable t)
             {
-                handler.onResult(new SendResult(e));
+                handler.onResult(new SendResult(t));
             }
             return;
         }
@@ -157,9 +159,9 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
                 binaryStreamEncoder.encode(data, out);
                 out.close();
             }
-            catch (EncodeException | IOException e)
+            catch (Throwable t)
             {
-                handler.onResult(new SendResult(e));
+                handler.onResult(new SendResult(t));
             }
             return;
         }
