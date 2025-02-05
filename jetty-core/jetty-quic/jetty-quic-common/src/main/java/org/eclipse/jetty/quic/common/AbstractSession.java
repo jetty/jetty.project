@@ -25,6 +25,7 @@ import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
@@ -80,8 +81,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
 
     public abstract void offerTask(Runnable task);
 
-    @Override
-    public CompletableFuture<Void> shutdown()
+    public CompletableFuture<Session> shutdown()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("shutdown {}", this);
@@ -89,12 +89,12 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
     }
 
     @Override
-    public CompletableFuture<Void> close(ConnectionCloseFrame frame)
+    public void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closing {} {}", frame, this);
         // Propagate inwards.
-        return notifyLocalClose(frame);
+        notifyLocalClose(frame, promise);
     }
 
     protected void notifyOpen()
@@ -220,13 +220,13 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
     }
 
-    protected CompletableFuture<Void> notifyLocalShutdown()
+    private CompletableFuture<Session> notifyLocalShutdown()
     {
         try
         {
             if (listener instanceof AbstractSession.Listener extended)
                 return extended.onLocalShutdown(this);
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(this);
         }
         catch (Throwable x)
         {
@@ -250,19 +250,20 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
     }
 
-    protected CompletableFuture<Void> notifyLocalClose(ConnectionCloseFrame frame)
+    protected void notifyLocalClose(ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
     {
         try
         {
             if (listener instanceof AbstractSession.Listener extended)
-                return extended.onLocalClose(this, frame);
-            return CompletableFuture.completedFuture(null);
+                extended.onLocalClose(this, frame, promise);
+            else
+                promise.succeeded(this);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failure while notifying listener {}", listener, x);
-            return CompletableFuture.failedFuture(x);
+            promise.failed(x);
         }
     }
 
@@ -304,8 +305,8 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
 
     public interface Listener extends Session.Listener
     {
-        CompletableFuture<Void> onLocalShutdown(Session session);
+        CompletableFuture<Session> onLocalShutdown(Session session);
 
-        CompletableFuture<Void> onLocalClose(Session session, ConnectionCloseFrame frame);
+        void onLocalClose(Session session, ConnectionCloseFrame frame, Promise.Invocable<Session> promise);
     }
 }

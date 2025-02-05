@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,9 +194,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             // Notify the application that a failure happened.
             parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), error, x);
             if (stream != null)
-                stream.disconnect(error, x);
+                stream.disconnect(error, x, Promise.Invocable.noop());
             else
-                getEndPoint().disconnect(error, x, true);
+                getEndPoint().disconnect(error, x, true, Promise.Invocable.noop());
         }
     }
 
@@ -424,13 +424,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         getEndPoint().shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
     }
 
-    CompletableFuture<StreamEndPoint> disconnect(long appErrorCode, Throwable failure)
+    void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<StreamEndPoint> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} {} {}", Long.toHexString(appErrorCode), this, String.valueOf(failure));
         tryReleaseInputBuffer(true);
         // Propagate outwards.
-        return getEndPoint().disconnect(appErrorCode, failure, true);
+        getEndPoint().disconnect(appErrorCode, failure, true, promise);
     }
 
     @Override

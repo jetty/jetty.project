@@ -46,6 +46,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -139,16 +141,16 @@ public class Http3AsyncIOServletTest
         });
 
         InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-        Client session = client.connect(new QuicheTransport((QuicheClientQuicConfiguration)client.getQuicConfiguration()), address, new Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport((QuicheClientQuicConfiguration)client.getQuicConfiguration()), address, new Client.Listener() {}, p));
         MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, false);
-        Stream stream = session.newRequest(frame, null).get(5, TimeUnit.SECONDS);
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, null, p));
 
         // Wait for the server to be in ASYNC_WAIT.
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         Thread.sleep(500);
 
-        stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new Exception());
+        stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new Exception(), Promise.Invocable.noop());
 
         if (notify)
             // Wait for the reset to be notified to the async context listener.

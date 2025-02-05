@@ -37,11 +37,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,10 +249,10 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    public CompletableFuture<Void> close(ConnectionCloseFrame frame)
+    public void close(ConnectionCloseFrame frame, Promise.Invocable<ProtocolSession> promise)
     {
         // Propagate the close inwards.
-        return session.close(frame.getErrorCode(), frame.getReason());
+        session.close(frame.getErrorCode(), frame.getReason(), Promise.Invocable.toPromise(promise, s -> this));
     }
 
     // TODO
@@ -261,9 +263,10 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    public CompletableFuture<Void> shutdown()
+    public CompletableFuture<ProtocolSession> shutdown()
     {
-        return session.shutdown();
+        // Propagate inwards.
+        return session.shutdown().thenApply(s -> this);
     }
 
     @Override

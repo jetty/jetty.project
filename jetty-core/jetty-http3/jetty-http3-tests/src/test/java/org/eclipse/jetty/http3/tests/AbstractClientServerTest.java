@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -158,7 +159,7 @@ public class AbstractClientServerTest
     protected Session.Client newSession(Session.Client.Listener listener) throws Exception
     {
         InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-        return http3Client.connect(transport, address, listener).get(30, TimeUnit.SECONDS);
+        return Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(transport, address, listener, p));
     }
 
     protected MetaData.Request newRequest(String path)

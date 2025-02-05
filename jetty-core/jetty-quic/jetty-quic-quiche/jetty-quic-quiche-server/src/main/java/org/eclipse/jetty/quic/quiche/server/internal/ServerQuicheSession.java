@@ -31,6 +31,7 @@ import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -130,7 +131,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
             if (LOG.isDebugEnabled())
                 LOG.debug("process failure for {}", this, x);
             ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "session_failure");
-            disconnect(frame, x);
+            disconnect(frame, x, Promise.Invocable.noop());
             return null;
         }
     }
@@ -140,7 +141,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
         if (getConnection().getSslContextFactory().getNeedClientAuth() && getPeerCertificates() == null)
         {
             ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "missing_peer_certificates");
-            disconnect(frame, new SSLHandshakeException(frame.getReason()));
+            disconnect(frame, new SSLHandshakeException(frame.getReason()), Promise.Invocable.noop());
             return false;
         }
         return true;

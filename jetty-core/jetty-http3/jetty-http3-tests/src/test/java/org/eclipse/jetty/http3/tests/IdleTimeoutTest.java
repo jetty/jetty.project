@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,6 +46,8 @@ import org.eclipse.jetty.quic.quiche.server.internal.ServerQuicheSession;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -126,10 +127,10 @@ public class IdleTimeoutTest
                             }
 
                             @Override
-                            public CompletableFuture<Void> disconnect(ConnectionCloseFrame frame, Throwable failure)
+                            public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<org.eclipse.jetty.quic.api.Session> promise)
                             {
                                 closeLatch.countDown();
-                                return super.disconnect(frame, failure);
+                                super.disconnect(frame, failure, promise);
                             }
                         };
                     }
@@ -146,12 +147,11 @@ public class IdleTimeoutTest
             http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
             http3Client.start();
 
-            Session.Client session = http3Client.connect(new QuicheTransport(clientQuicConfiguration), new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-                .get(5, TimeUnit.SECONDS);
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(new QuicheTransport(clientQuicConfiguration), new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {}, p));
 
             MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:" + connector.getLocalPort() + "/path"), HttpVersion.HTTP_3, HttpFields.EMPTY);
             // The request will complete exceptionally.
-            session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener() {});
+            session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener() {}, Promise.Invocable.noop());
 
             assertTrue(closeLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
             assertTrue(disconnectLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));

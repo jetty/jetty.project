@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.client.ClientProtocolSession;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -65,7 +66,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         this.configuration = configuration;
         Session.Client.Listener listener = (Session.Client.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        Promise<Session.Client> promise = (Promise<Session.Client>)context.get(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY);
+        Promise.Invocable<Session.Client> promise = (Promise.Invocable<Session.Client>)context.get(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY);
         session = new HTTP3SessionClient(connector.getScheduler(), this, listener, promise);
         installBean(session);
         session.setStreamIdleTimeout(configuration.getStreamIdleTimeout());
@@ -220,12 +221,12 @@ public class ClientHTTP3Session extends ClientProtocolSession
     }
 
     @Override
-    public CompletableFuture<Void> close(ConnectionCloseFrame frame)
+    public void close(ConnectionCloseFrame frame, Promise.Invocable<ProtocolSession> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed locally {} {}", frame, this);
         // Propagate the close inwards.
-        return session.close(frame.getErrorCode(), frame.getReason());
+        session.close(frame.getErrorCode(), frame.getReason(), Promise.Invocable.toPromise(promise, s -> this));
     }
 
     @Override
@@ -273,10 +274,10 @@ public class ClientHTTP3Session extends ClientProtocolSession
     }
 
     @Override
-    public CompletableFuture<Void> shutdown()
+    public CompletableFuture<ProtocolSession> shutdown()
     {
         // Propagate inwards.
-        return session.shutdown();
+        return session.shutdown().thenApply(s -> this);
     }
 
     public void writeControlFrame(Frame frame, Callback callback)

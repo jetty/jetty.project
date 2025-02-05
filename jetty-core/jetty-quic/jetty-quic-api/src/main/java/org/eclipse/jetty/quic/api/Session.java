@@ -15,7 +15,6 @@ package org.eclipse.jetty.quic.api;
 
 import java.net.SocketAddress;
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
@@ -24,6 +23,8 @@ import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>Represents a QUIC connection to a remote peer.</p>
@@ -66,63 +67,63 @@ public interface Session
      * <p>Sends a MAX_STREAMS frame on this connection.</p>
      *
      * @param frame the frame to send
-     * @return a {@link CompletableFuture} that is notified of the frame send
+     * @param promise the {@link Promise.Invocable} that gets notified when the
+     * frame has been sent
      */
-    CompletableFuture<Session> maxStreams(MaxStreamsFrame frame);
+    void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise);
 
     /**
      * <p>Sends a PING frame on this connection.</p>
      *
-     * @return a {@link CompletableFuture} that is notified of the frame send
+     * @param promise the {@link Promise.Invocable} that gets notified when the
+     * frame has been sent
      */
-    CompletableFuture<Session> ping();
+    void ping(Promise.Invocable<Session> promise);
 
     /**
      * <p>Sends a MAX_DATA frame on this connection.</p>
      *
      * @param frame the frame to send
-     * @return a {@link CompletableFuture} that is notified of the frame send
+     * @param promise the {@link Promise.Invocable} that gets notified when the
+     * frame has been sent
      */
-    CompletableFuture<Session> maxData(MaxDataFrame frame);
-
-    /**
-     * <p>Shuts down this session gracefully.</p>
-     *
-     * @return a {@link CompletableFuture} that completes when the shutdown completes
-     */
-    CompletableFuture<Void> shutdown();
+    void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise);
 
     /**
      * <p>Closes this session with the given {@code CONNECTION_CLOSE} frame.</p>
      * <p>Applications should use this method in conjunction with
      * {@link ConnectionCloseFrame#ConnectionCloseFrame(long, String)}.</p>
-     * <p>Differently from {@link #disconnect(ConnectionCloseFrame, Throwable)},
+     * <p>Differently from {@link #disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)},
      * this method performs close actions inwards, towards the application,
      * that may perform additional actions such as writing to the network,
      * for example close frames for a protocol on top of QUIC.</p>
      * <p>After finishing the inward actions,
-     * {@link #disconnect(ConnectionCloseFrame, Throwable)} should be
+     * {@link #disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)} should be
      * called to perform close actions outwards and eventually send
-     * the QUIC close frame.</p>
+     * the QUIC close frame and finally disconnect at the network level,
+     * if necessary.</p>
      *
      * @param frame the frame carrying the error code and reason
-     * @return a {@link CompletableFuture} that completes when the frame send completes
+     * @param promise the {@link Callback} that gets notified when the
+     * close is complete
      */
-    CompletableFuture<Void> close(ConnectionCloseFrame frame);
+    void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise);
 
     /**
      * <p>Disconnects this session, with the given {@code CONNECTION_CLOSE}
      * and failure cause, if any.</p>
-     * <p>Differently from {@link #close(ConnectionCloseFrame)},
+     * <p>Differently from {@link #close(ConnectionCloseFrame, Promise.Invocable)},
      * this method performs disconnect actions outwards, towards the
      * network: typically clean-up actions and eventually sends the
-     * given QUIC close frame.</p>
+     * given QUIC close frame and finally disconnect at the network level,
+     * if necessary.</p>
      *
      * @param frame the frame carrying the error code and reason
      * @param failure the failure that caused the disconnect, or {@code null}
-     * @return a {@link CompletableFuture} that completes when the frame send completes
+     * @param promise the {@link Promise.Invocable} that gets notified when the
+     * disconnect is complete
      */
-    CompletableFuture<Void> disconnect(ConnectionCloseFrame frame, Throwable failure);
+    void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise);
 
     Collection<Stream> getStreams();
 

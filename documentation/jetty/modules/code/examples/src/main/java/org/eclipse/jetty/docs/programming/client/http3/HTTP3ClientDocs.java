@@ -20,7 +20,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -35,6 +34,8 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -74,13 +75,22 @@ public class HTTP3ClientDocs
         // Address of the server's port.
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
 
-        // Connect to the server, the CompletableFuture will be
+        // Connect to the server, the Promise will be
         // notified when the connection is succeeded (or failed).
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
+        http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {}, new Promise.Invocable.NonBlocking<>()
+        {
+            @Override
+            public void succeeded(Session.Client result)
+            {
+                // Connected successfully.
+            }
 
-        // Block to obtain the Session.
-        // Alternatively you can use the CompletableFuture APIs to avoid blocking.
-        Session session = sessionCF.get();
+            @Override
+            public void failed(Throwable x)
+            {
+                // Failed to connect.
+            }
+        });
         // end::connect[]
     }
 
@@ -103,7 +113,7 @@ public class HTTP3ClientDocs
 
                 return configuration;
             }
-        });
+        }, Promise.Invocable.noop());
         // end::configure[]
     }
 
@@ -114,8 +124,7 @@ public class HTTP3ClientDocs
         http3Client.start();
         // tag::newStream[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
-        Session.Client session = sessionCF.get();
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {}, p));
 
         // Configure the request headers.
         HttpFields requestHeaders = HttpFields.build()
@@ -129,7 +138,7 @@ public class HTTP3ClientDocs
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
         // Open a Stream by sending the HEADERS frame.
-        session.newRequest(headersFrame, new Stream.Client.Listener() {});
+        session.newRequest(headersFrame, new Stream.Client.Listener() {}, Promise.Invocable.noop());
         // end::newStream[]
     }
 
@@ -140,8 +149,7 @@ public class HTTP3ClientDocs
         http3Client.start();
         // tag::newStreamWithData[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
-        Session.Client session = sessionCF.get();
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {}, p));
 
         // Configure the request headers.
         HttpFields requestHeaders = HttpFields.build()
@@ -155,11 +163,8 @@ public class HTTP3ClientDocs
         HeadersFrame headersFrame = new HeadersFrame(request, false);
 
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener() {});
-
         // Block to obtain the Stream.
-        // Alternatively you can use the CompletableFuture APIs to avoid blocking.
-        Stream stream = streamCF.get();
+        Stream stream = Blocker.blockWithPromise(p -> session.newRequest(headersFrame, new Stream.Client.Listener() {}, p));
 
         // The request content, in two chunks.
         String content1 = "{\"greet\": \"hello world\"}";
@@ -169,11 +174,16 @@ public class HTTP3ClientDocs
 
         // Send the first DATA frame on the stream, with endStream=false
         // to signal that there are more frames in this stream.
-        CompletableFuture<Stream> dataCF1 = stream.data(new DataFrame(buffer1, false));
-
-        // Only when the first chunk has been sent we can send the second,
-        // with endStream=true to signal that there are no more frames.
-        dataCF1.thenCompose(s -> s.data(new DataFrame(buffer2, true)));
+        stream.data(new DataFrame(buffer1, false), new Promise.Invocable.NonBlocking<>()
+        {
+            @Override
+            public void succeeded(Stream result)
+            {
+                // Only when the first chunk has been sent we can send the second,
+                // with endStream=true to signal that there are no more frames.
+                result.data(new DataFrame(buffer2, true), Promise.Invocable.noop());
+            }
+        });
         // end::newStreamWithData[]
     }
 
@@ -183,8 +193,7 @@ public class HTTP3ClientDocs
         HTTP3Client http3Client = new HTTP3Client(quicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
-        Session.Client session = sessionCF.get();
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {}, p));
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
@@ -228,7 +237,7 @@ public class HTTP3ClientDocs
                     }
                 }
             }
-        });
+        }, Promise.Invocable.noop());
         // end::responseListener[]
     }
 
@@ -242,8 +251,7 @@ public class HTTP3ClientDocs
         HTTP3Client http3Client = new HTTP3Client(quicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        CompletableFuture<Session.Client> sessionCF = http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {});
-        Session.Client session = sessionCF.get();
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(quicConfig), serverAddress, new Session.Client.Listener() {}, p));
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
@@ -252,18 +260,17 @@ public class HTTP3ClientDocs
 
         // tag::terminate[]
         // Open a Stream by sending the HEADERS frame.
-        CompletableFuture<Stream> streamCF = session.newRequest(headersFrame, new Stream.Client.Listener()
+        Stream stream = Blocker.blockWithPromise(p -> session.newRequest(headersFrame, new Stream.Client.Listener()
         {
             @Override
             public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
                 // The server terminated this stream.
             }
-        });
-        Stream stream = streamCF.get();
+        }, p));
 
         // Terminate this stream (for example, the user closed the application).
-        stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new ClosedChannelException());
+        stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new ClosedChannelException(), Promise.Invocable.noop());
         // end::terminate[]
     }
 }

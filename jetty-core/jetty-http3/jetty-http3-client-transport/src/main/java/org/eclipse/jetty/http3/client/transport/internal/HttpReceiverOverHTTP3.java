@@ -78,8 +78,8 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
         responseFailure(failure, Promise.from(failed ->
         {
             if (failed)
-                stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
-        }, x -> stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure)));
+                stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure, Promise.Invocable.noop());
+        }, x -> stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure, Promise.Invocable.noop())));
     }
 
     @Override
@@ -153,7 +153,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
             promise.succeeded(false);
             return null;
         }
-        Runnable task = () -> promise.completeWith(exchange.getRequest().abort(failure));
+        Runnable task = () -> Promise.completeWith(promise, exchange.getRequest().abort(failure));
         return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
     }
 

@@ -102,7 +102,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
         Stream stream = getStream();
         if (stream != null && result.isFailed())
-            stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), result.getFailure());
+            stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), result.getFailure(), Promise.Invocable.noop());
         else
             release();
     }

@@ -14,15 +14,14 @@
 package org.eclipse.jetty.quic.common;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -30,9 +29,11 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -46,7 +47,6 @@ import org.slf4j.LoggerFactory;
 public class StreamEndPoint implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(StreamEndPoint.class);
-    private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
 
     private final AutoLock lock = new AutoLock();
     private final long created = System.currentTimeMillis();
@@ -128,7 +128,7 @@ public class StreamEndPoint implements EndPoint
                 case CLOSING:
                     if (!writeState.compareAndSet(current, WriteState.CLOSED))
                         break;
-                    shutdownOutput(ErrorCode.NO_ERROR.code());
+                    shutdownOutput(ErrorCode.NO_ERROR.code(), Promise.Invocable.noop());
                     return;
                 case PENDING:
                     if (!writeState.compareAndSet(current, WriteState.CLOSING))
@@ -161,26 +161,32 @@ public class StreamEndPoint implements EndPoint
     {
         if (LOG.isDebugEnabled())
             LOG.debug("shutting down input with error 0x{} on {}", Long.toHexString(appError), this);
-        stream.stopSending(appError);
+        stream.stopSending(appError, Promise.Invocable.noop());
     }
 
-    public void shutdownOutput(long appError)
+    public void shutdownOutput(long appError, Promise.Invocable<StreamEndPoint> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("shutting down output with error 0x{} on {}", Long.toHexString(appError), this);
-        stream.reset(appError);
+        stream.reset(appError, Promise.Invocable.toPromise(promise, stream -> this));
     }
 
     @Override
     public void close(Throwable failure)
     {
         // Implemented from EndPoint, must have blocking semantic.
-        disconnect(ErrorCode.NO_ERROR.code(), failure, true)
-            .whenComplete((r, x) -> onClose(failure))
-            .join();
+        try (Blocker.Promise<StreamEndPoint> promise = Blocker.promise())
+        {
+            disconnect(ErrorCode.NO_ERROR.code(), failure, true, Promise.Invocable.from(() -> onClose(failure), promise));
+            promise.block();
+        }
+        catch (IOException x)
+        {
+            throw new UncheckedIOException(x);
+        }
     }
 
-    public CompletableFuture<StreamEndPoint> disconnect(long appError, Throwable failure, boolean disconnectStream)
+    public void disconnect(long appError, Throwable failure, boolean disconnectStream, Promise.Invocable<StreamEndPoint> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} disconnectStream={} {} {}", Long.toHexString(appError), disconnectStream, this, String.valueOf(failure));
@@ -190,10 +196,13 @@ public class StreamEndPoint implements EndPoint
         getProtocolSession().removeStreamEndPoint(this);
 
         if (!disconnectStream)
-            return CompletableFuture.completedFuture(this);
+        {
+            promise.succeeded(this);
+            return;
+        }
 
         // Propagate outwards.
-        return stream.disconnect(appError, failure).thenApply(s -> this);
+        stream.disconnect(appError, failure, Promise.Invocable.toPromise(promise, s -> this));
     }
 
     @Override
@@ -372,29 +381,11 @@ public class StreamEndPoint implements EndPoint
         };
     }
 
-    public void write(Callback callback, List<ByteBuffer> buffers, boolean last)
-    {
-        ByteBuffer[] array;
-        if (last)
-        {
-            int size = buffers.size();
-            array = new ByteBuffer[size + 1];
-            IntStream.range(0, size).forEach(i -> array[i] = buffers.get(i));
-            array[size] = LAST_FLAG;
-        }
-        else
-        {
-            array = buffers.toArray(ByteBuffer[]::new);
-        }
-        write(callback, array);
-    }
-
-    @Override
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    public void write(boolean last, List<ByteBuffer> buffers, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0 || BufferUtil.remaining(buffers) == 0)
+            LOG.debug("writing {} on {}", BufferUtil.toDetailString(buffers.toArray(ByteBuffer[]::new)), this);
+        if (buffers == null || buffers.isEmpty() || remaining(buffers) == 0)
         {
             callback.succeeded();
         }
@@ -409,14 +400,19 @@ public class StreamEndPoint implements EndPoint
                     {
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
                             continue;
-
-                        boolean last = buffers[buffers.length - 1] == LAST_FLAG;
-                        stream.data(last, buffers).whenComplete((r, x) ->
+                        stream.data(last, buffers, new Promise.Invocable.Abstract<>(callback.getInvocationType())
                         {
-                            if (x == null)
+                            @Override
+                            public void succeeded(Stream result)
+                            {
                                 writeSuccess(callback);
-                            else
+                            }
+
+                            @Override
+                            public void failed(Throwable x)
+                            {
                                 writeFailure(x, callback);
+                            }
                         });
                     }
                     case PENDING -> callback.failed(new WritePendingException());
@@ -427,6 +423,16 @@ public class StreamEndPoint implements EndPoint
                 return;
             }
         }
+    }
+
+    private long remaining(List<ByteBuffer> buffers)
+    {
+        long remaining = 0;
+        for (ByteBuffer buffer : buffers)
+        {
+            remaining += buffer.remaining();
+        }
+        return remaining;
     }
 
     private void writeSuccess(Callback callback)

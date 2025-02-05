@@ -34,6 +34,7 @@ import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -234,13 +235,19 @@ public class HTTP3ServerDocs
 
                     // Send the HEADERS frame with the response status and headers,
                     // and a DATA frame with the response content bytes.
-                    stream.respond(new HeadersFrame(response, false))
-                        .thenCompose(s -> s.data(new DataFrame(resourceBytes, true)));
+                    stream.respond(new HeadersFrame(response, false), new Promise.Invocable.NonBlocking<>()
+                    {
+                        @Override
+                        public void succeeded(Stream result)
+                        {
+                            result.data(new DataFrame(resourceBytes, true), Promise.Invocable.noop());
+                        }
+                    });
                 }
                 else
                 {
                     // Send just the HEADERS frame with the response status and headers.
-                    stream.respond(new HeadersFrame(response, true));
+                    stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
                 }
             }
             // tag::exclude[]
@@ -267,7 +274,7 @@ public class HTTP3ServerDocs
 
                 if (requestRate > maxRequestRate)
                 {
-                    stream.disconnect(HTTP3ErrorCode.REQUEST_REJECTED_ERROR.code(), new RejectedExecutionException());
+                    stream.disconnect(HTTP3ErrorCode.REQUEST_REJECTED_ERROR.code(), new RejectedExecutionException(), Promise.Invocable.noop());
                     return null;
                 }
                 else

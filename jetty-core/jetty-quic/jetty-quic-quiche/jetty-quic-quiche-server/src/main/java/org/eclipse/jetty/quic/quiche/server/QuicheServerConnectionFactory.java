@@ -30,6 +30,7 @@ import org.eclipse.jetty.quic.server.ServerProtocolSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +96,7 @@ public class QuicheServerConnectionFactory extends AbstractQuicheServerConnectio
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("could not create ProtocolSession", x);
-                session.disconnect(new ConnectionCloseFrame(ErrorCode.APPLICATION_ERROR.code(), "invalid_protocol"), x);
+                session.disconnect(new ConnectionCloseFrame(ErrorCode.APPLICATION_ERROR.code(), "invalid_protocol"), x, Promise.Invocable.noop());
             }
         }
 
@@ -118,21 +119,22 @@ public class QuicheServerConnectionFactory extends AbstractQuicheServerConnectio
         }
 
         @Override
-        public CompletableFuture<Void> onLocalShutdown(Session session)
+        public CompletableFuture<Session> onLocalShutdown(Session session)
         {
             ProtocolSession pSession = protocolSession.get();
             if (pSession != null)
-                return pSession.shutdown();
-            return CompletableFuture.completedFuture(null);
+                return pSession.shutdown().thenApply(ps -> session);
+            return CompletableFuture.completedFuture(session);
         }
 
         @Override
-        public CompletableFuture<Void> onLocalClose(Session session, ConnectionCloseFrame frame)
+        public void onLocalClose(Session session, ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
         {
             ProtocolSession pSession = protocolSession.get();
             if (pSession != null)
-                return pSession.close(frame);
-            return CompletableFuture.completedFuture(null);
+                pSession.close(frame, Promise.Invocable.toPromise(promise, ps -> session));
+            else
+                promise.succeeded(session);
         }
 
         @Override

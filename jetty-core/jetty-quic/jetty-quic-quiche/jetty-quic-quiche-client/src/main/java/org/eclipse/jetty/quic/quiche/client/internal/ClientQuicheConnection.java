@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.quic.quiche.client.internal;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
@@ -20,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.quic.quiche.QuicheSession;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -262,19 +264,30 @@ public class ClientQuicheConnection extends QuicheConnection
     public void close()
     {
         // This method has blocking semantic.
-        close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close")).join();
+        try (Blocker.Promise<Session> promise = Blocker.promise())
+        {
+            close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close"), promise);
+            promise.block();
+        }
+        catch (IOException x)
+        {
+            throw new UncheckedIOException(x);
+        }
     }
 
-    private CompletableFuture<Void> close(ConnectionCloseFrame frame)
+    private void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
     {
         if (!closed.compareAndSet(false, true))
-            return CompletableFuture.completedFuture(null);
+        {
+            promise.succeeded(session);
+            return;
+        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("closing {}", this);
 
         // Propagate the close inwards.
-        return session.close(frame);
+        session.close(frame, promise);
     }
 
     @Override

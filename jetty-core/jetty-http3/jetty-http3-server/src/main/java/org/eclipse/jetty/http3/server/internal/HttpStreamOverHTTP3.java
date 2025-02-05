@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.server.internal;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -370,23 +370,32 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Response #{}/{}:{}{} {}{}{}",
+            LOG.debug("HTTP3 response #{}/{}:{}{} {}{}{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), HttpVersion.HTTP_3, response.getStatus(),
                 System.lineSeparator(), response.getHttpFields());
         }
 
-        CompletableFuture<Stream> cf = stream.respond(headersFrame);
-
         DataFrame df = dataFrame;
-        if (df != null)
-            cf = cf.thenCompose(s -> s.data(df));
-
         HeadersFrame tf = trailersFrame;
-        if (tf != null)
-            cf = cf.thenCompose(s -> s.trailer(tf));
 
-        callback.completeWith(cf);
+        stream.respond(headersFrame, Promise.Invocable.from(callback.getInvocationType(), s ->
+        {
+            if (df != null)
+            {
+                if (tf != null)
+                    sendDataAndTrailer(df, lastContent, tf, callback);
+                else
+                    sendData(df, lastContent, callback);
+            }
+            else
+            {
+                if (tf != null)
+                    sendTrailer(tf, callback);
+                else
+                    callback.succeeded();
+            }
+        }, callback::failed));
     }
 
     private void sendContent(MetaData.Request request, ByteBuffer content, boolean lastContent, Callback callback)
@@ -402,24 +411,28 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 HttpFields trailers = retrieveTrailers();
                 if (trailers == null)
                 {
-                    callback.completeWith(sendDataFrame(content, true, true));
+                    DataFrame df = new DataFrame(content, true);
+                    sendData(df, true, callback);
                 }
                 else
                 {
                     if (hasContent)
                     {
-                        callback.completeWith(sendDataFrame(content, lastContent, false)
-                            .thenCompose(s -> sendTrailerFrame(trailers)));
+                        DataFrame df = new DataFrame(content, false);
+                        HeadersFrame tf = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
+                        sendDataAndTrailer(df, true, tf, callback);
                     }
                     else
                     {
-                        callback.completeWith(sendTrailerFrame(trailers));
+                        HeadersFrame tf = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
+                        sendTrailer(tf, callback);
                     }
                 }
             }
             else
             {
-                callback.completeWith(sendDataFrame(content, false, false));
+                DataFrame df = new DataFrame(content, false);
+                sendData(df, false, callback);
             }
         }
         else
@@ -444,29 +457,31 @@ public class HttpStreamOverHTTP3 implements HttpStream
         return MetaData.isTunnel(request.getMethod(), response.getStatus());
     }
 
-    private CompletableFuture<Stream> sendDataFrame(ByteBuffer content, boolean lastContent, boolean endStream)
+    private void sendDataAndTrailer(DataFrame dataFrame, boolean lastContent, HeadersFrame trailersFrame, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("HTTP3 Response #{}/{}: {} content bytes{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                content.remaining(), lastContent ? " (last chunk)" : "");
-        }
-        DataFrame frame = new DataFrame(content, endStream);
-        return stream.data(frame);
+        sendData(dataFrame, lastContent, Callback.from(callback.getInvocationType(), () -> sendTrailer(trailersFrame, callback), callback::failed));
     }
 
-    private CompletableFuture<Stream> sendTrailerFrame(HttpFields trailers)
+    private void sendData(DataFrame dataFrame, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Response #{}/{}: trailer{}{}",
+            LOG.debug("HTTP3 response #{}/{}: {} content bytes{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), trailers);
+                dataFrame.getByteBuffer().remaining(), lastContent ? " (last chunk)" : "");
         }
+        stream.data(dataFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
+    }
 
-        HeadersFrame frame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
-        return stream.trailer(frame);
+    private void sendTrailer(HeadersFrame trailerFrame, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP3 response #{}/{}: trailer{}{}",
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                System.lineSeparator(), trailerFrame.getMetaData().getHttpFields());
+        }
+        stream.trailer(trailerFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
     }
 
     @Override
@@ -519,7 +534,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP3 Response #{}/{}: unconsumed request content, resetting stream", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-            stream.disconnect(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED);
+            stream.disconnect(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED, Promise.Invocable.noop());
         }
     }
 
@@ -529,7 +544,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         HTTP3ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode, x);
-        stream.disconnect(errorCode.code(), x);
+        stream.disconnect(errorCode.code(), x, Promise.Invocable.noop());
     }
 
     public void onIdleTimeout(TimeoutException failure, BiConsumer<Runnable, Boolean> consumer)

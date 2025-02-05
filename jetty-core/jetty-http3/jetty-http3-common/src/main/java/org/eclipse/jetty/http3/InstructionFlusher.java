@@ -27,6 +27,7 @@ import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,9 +130,9 @@ public class InstructionFlusher extends IteratingCallback
             queue.clear();
         }
 
-        // Cannot continue without the instruction stream, close the session.
+        // Cannot continue without the instruction stream, disconnect the session.
         ConnectionCloseFrame frame = new ConnectionCloseFrame(HTTP3ErrorCode.INTERNAL_ERROR.code(), "instruction_stream_failure");
-        endPoint.getProtocolSession().disconnect(frame, failure);
+        endPoint.getProtocolSession().disconnect(frame, failure, Promise.Invocable.noop());
     }
 
     @Override

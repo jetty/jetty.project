@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport implements ProtocolSession.Factory
@@ -110,8 +111,20 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
         Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
         SslContextFactory.Client sslContextFactory = (SslContextFactory.Client)context.get(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
         SessionClientListener listener = new TransportSessionClientListener(context);
-        getHTTP3Client().connect(transport, sslContextFactory, address, listener, context)
-            .whenComplete(listener::onConnect);
+        getHTTP3Client().connect(transport, sslContextFactory, address, listener, context, new Promise.Invocable.NonBlocking<>()
+        {
+            @Override
+            public void succeeded(org.eclipse.jetty.http3.api.Session.Client result)
+            {
+                listener.onConnect(result, null);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                listener.onConnect(null, x);
+            }
+        });
     }
 
     @Override

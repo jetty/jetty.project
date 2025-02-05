@@ -25,8 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.MetaData;
@@ -69,7 +67,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private GoAwayFrame goAwaySent;
     private GoAwayFrame goAwayRecv;
     private Runnable zeroStreamsAction;
-    private CompletableFuture<Void> shutdown;
+    private CompletableFuture<Session> shutdown;
 
     public HTTP3Session(Scheduler scheduler, ProtocolSession session, Session.Listener listener)
     {
@@ -117,12 +115,12 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     }
 
     @Override
-    public CompletableFuture<Void> goAway(boolean graceful)
+    public void goAway(boolean graceful, Promise.Invocable<Session> promise)
     {
-        return goAway(newGoAwayFrame(graceful));
+        goAway(newGoAwayFrame(graceful), promise);
     }
 
-    private CompletableFuture<Void> goAway(GoAwayFrame frame)
+    private void goAway(GoAwayFrame frame,  Promise.Invocable<Session> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("goAway with {} on {}", frame, this);
@@ -141,7 +139,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                     if (frame.isGraceful())
                     {
                         // Send the non-graceful GOAWAY when the last stream is destroyed.
-                        zeroStreamsAction = () -> goAway(false);
+                        zeroStreamsAction = () -> goAway(false, Promise.Invocable.noop());
                     }
                     break;
                 }
@@ -175,7 +173,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                     if (frame.isGraceful())
                     {
                         // Send the non-graceful GOAWAY when the last stream is destroyed.
-                        zeroStreamsAction = () -> goAway(false);
+                        zeroStreamsAction = () -> goAway(false, Promise.Invocable.noop());
                     }
                     else
                     {
@@ -208,9 +206,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         if (sendGoAway)
         {
-            Callback.Completable result = new Callback.Completable();
-            writeControlFrame(frame, result);
-            return result.whenComplete((r, x) -> tryRunZeroStreamsAction());
+            writeControlFrame(frame, Callback.from(this::tryRunZeroStreamsAction, Promise.Invocable.toCallback(promise, this)));
         }
         else
         {
@@ -218,9 +214,12 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             {
                 long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
                 failStreams(stream -> true, error, new ClosedChannelException());
-                return terminateAndDisconnect(error, "go_away");
+                terminateAndDisconnect(error, "go_away", promise);
             }
-            return CompletableFuture.completedFuture(null);
+            else
+            {
+                promise.succeeded(this);
+            }
         }
     }
 
@@ -229,16 +228,16 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         return new GoAwayFrame(lastStreamId.get());
     }
 
-    public CompletableFuture<Void> shutdown()
+    public CompletableFuture<Session> shutdown()
     {
-        CompletableFuture<Void> result;
+        CompletableFuture<Session> result;
         try (AutoLock ignored = lock.lock())
         {
             if (shutdown != null)
                 return shutdown;
-            shutdown = result = new Callback.Completable();
+            shutdown = result = new Promise.Completable<>();
         }
-        goAway(true);
+        goAway(true, Promise.Invocable.noop());
         return result;
     }
 
@@ -267,14 +266,14 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         streamTimeouts.schedule(stream);
     }
 
-    protected HTTP3Stream createStream(StreamEndPoint endPoint, Consumer<Throwable> fail)
+    protected HTTP3Stream createStream(StreamEndPoint endPoint)
     {
         long streamId = endPoint.getStream().getId();
         return streams.compute(streamId, (id, stream) ->
         {
             if (stream != null)
                 throw new IllegalStateException("duplicate stream id " + streamId);
-            return newHTTP3Stream(endPoint, fail, true);
+            return createHTTP3Stream(endPoint, true);
         });
     }
 
@@ -282,44 +281,32 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     {
         if (endPoint == null)
             return null;
-        return streams.computeIfAbsent(endPoint.getStream().getId(), id -> newHTTP3Stream(endPoint, null, false));
+        return streams.computeIfAbsent(endPoint.getStream().getId(), id -> createHTTP3Stream(endPoint, false));
     }
 
-    private HTTP3Stream newHTTP3Stream(StreamEndPoint endPoint, Consumer<Throwable> fail, boolean local)
+    private HTTP3Stream createHTTP3Stream(StreamEndPoint endPoint, boolean local)
     {
-        Throwable failure = null;
         try (AutoLock ignored = lock.lock())
         {
             if (closeState == CloseState.NOT_CLOSED)
                 streamCount.incrementAndGet();
             else
-                failure = new IllegalStateException("session_closed");
+                throw new IllegalStateException("session_closed");
         }
 
-        if (failure == null)
-        {
-            HTTP3Stream stream = newHTTP3Stream(endPoint, local);
-            ((HTTP3StreamConnection)endPoint.getConnection()).setStream(stream);
-            // Disable the stream idle timeout at the QUIC level,
-            // keep only the stream idle timeout at the HTTP/3 level.
-            endPoint.setIdleTimeout(0);
-            long idleTimeout = getStreamIdleTimeout();
-            if (idleTimeout > 0)
-                stream.setIdleTimeout(idleTimeout);
-            if (!local)
-                updateLastStreamId(stream.getId());
-            if (LOG.isDebugEnabled())
-                LOG.debug("created {}", stream);
-            return stream;
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("could not create stream for {} on {}", endPoint, this);
-            if (fail != null)
-                fail.accept(failure);
-            return null;
-        }
+        HTTP3Stream stream = newHTTP3Stream(endPoint, local);
+        ((HTTP3StreamConnection)endPoint.getConnection()).setStream(stream);
+        // Disable the stream idle timeout at the QUIC level,
+        // keep only the stream idle timeout at the HTTP/3 level.
+        endPoint.setIdleTimeout(0);
+        long idleTimeout = getStreamIdleTimeout();
+        if (idleTimeout > 0)
+            stream.setIdleTimeout(idleTimeout);
+        if (!local)
+            updateLastStreamId(stream.getId());
+        if (LOG.isDebugEnabled())
+            LOG.debug("created {}", stream);
+        return stream;
     }
 
     protected abstract HTTP3Stream newHTTP3Stream(StreamEndPoint endPoint, boolean local);
@@ -487,12 +474,12 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                             goAwaySent = newGoAwayFrame(false);
                             GoAwayFrame goAwayFrame = goAwaySent;
                             zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() ->
-                                terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away")
+                                terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away", Promise.Invocable.noop())
                             ));
                         }
                         else
                         {
-                            zeroStreamsAction = () -> terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away");
+                            zeroStreamsAction = () -> terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away", Promise.Invocable.noop());
                             failStreams = true;
                         }
                     }
@@ -567,7 +554,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("already closed, ignored idle timeout for {}", this);
-            terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "idle_timeout");
+            terminateAndDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "idle_timeout", Promise.Invocable.noop());
             return false;
         }
 
@@ -581,7 +568,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (!confirmed)
             return false;
 
-        close(HTTP3ErrorCode.NO_ERROR.code(), "idle_timeout");
+        close(HTTP3ErrorCode.NO_ERROR.code(), "idle_timeout", Promise.Invocable.noop());
 
         return false;
     }
@@ -594,9 +581,10 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
      *
      * @param error the close error
      * @param reason the close reason
+     * @param promise the {@link Promise.Invocable} that gets notified when the close is complete
      * @see #onClose(long, String)
      */
-    public CompletableFuture<Void> close(long error, String reason)
+    public void close(long error, String reason, Promise.Invocable<Session> promise)
     {
         GoAwayFrame goAwayFrame = null;
         try (AutoLock ignored = lock.lock())
@@ -615,11 +603,13 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                 }
                 case CLOSED:
                 {
-                    return CompletableFuture.completedFuture(null);
+                    promise.succeeded(this);
+                    return;
                 }
                 default:
                 {
-                    return CompletableFuture.failedFuture(new IllegalStateException());
+                    promise.failed(new IllegalStateException());
+                    return;
                 }
             }
         }
@@ -628,21 +618,19 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         if (goAwayFrame != null)
         {
-            Callback.Completable completable = new Callback.Completable();
-            writeControlFrame(goAwayFrame, completable);
-            return completable.handle((r, x) -> terminateAndDisconnect(error, reason))
-                .thenCompose(Function.identity());
+            Callback callback = Callback.from(() -> promise.succeeded(this), promise::failed);
+            writeControlFrame(goAwayFrame, Callback.from(() -> terminateAndDisconnect(error, reason, promise), callback));
         }
         else
         {
-            return terminateAndDisconnect(error, reason);
+            terminateAndDisconnect(error, reason, promise);
         }
     }
 
-    private CompletableFuture<Void> terminateAndDisconnect(long error, String reason)
+    private void terminateAndDisconnect(long error, String reason, Promise.Invocable<Session> promise)
     {
         terminate();
-        return disconnect(error, reason);
+        disconnect(error, reason, promise);
     }
 
     /**
@@ -652,16 +640,17 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
      *
      * @param error the close error
      * @param reason the close reason.
-     * @see ProtocolSession#disconnect(ConnectionCloseFrame, Throwable)
+     * @param promise the {@link Promise.Invocable} that gets notified when the disconnect is complete
+     * @see ProtocolSession#disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)
      */
-    private CompletableFuture<Void> disconnect(long error, String reason)
+    private void disconnect(long error, String reason, Promise.Invocable<Session> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        return getProtocolSession().disconnect(new ConnectionCloseFrame(error, reason), null)
-            // Since the disconnect() above is called by
-            // the implementation, notify the application.
-            .whenComplete((r, x) -> notifyDisconnect(error, reason));
+
+        // Since the disconnect() is called by the implementation, notify the application.
+        Promise.Invocable<ProtocolSession> p = Promise.Invocable.toPromise(promise, ps -> this);
+        getProtocolSession().disconnect(new ConnectionCloseFrame(error, reason), null, Promise.Invocable.from(p, () -> notifyDisconnect(error, reason)));
     }
 
     private void failStreams(Predicate<HTTP3Stream> predicate, long error, Throwable failure)
@@ -676,7 +665,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
      * Termination at the QUIC level may still be in progress.
      *
      * @see #onClose(long, String)
-     * @see #close(long, String)
+     * @see #close(long, String, Promise.Invocable)
      */
     private void terminate()
     {
@@ -684,7 +673,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             LOG.debug("terminating {}", this);
         streamTimeouts.destroy();
         // Notify the shutdown completable.
-        CompletableFuture<Void> shutdown;
+        CompletableFuture<Session> shutdown;
         try (AutoLock ignored = lock.lock())
         {
             shutdown = this.shutdown;
@@ -756,7 +745,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     /**
      * <p>Called when the local peer receives a close initiated by the remote peer.</p>
      * <p>The correspondent active event, where it's the local peer that initiates the close,
-     * it's delivered via {@link #close(long, String)}.</p>
+     * it's delivered via {@link #close(long, String, Promise.Invocable)}.</p>
      *
      * @param error the close error
      * @param reason the close reason
@@ -785,7 +774,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         // Nothing more inwards to propagate the
         // close to, start propagating outwards.
-        disconnect(error, reason);
+        disconnect(error, reason, Promise.Invocable.noop());
     }
 
     private void notifyDisconnect(long error, String reason)
@@ -816,7 +805,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (LOG.isDebugEnabled())
             LOG.debug("session failure 0x{}/{} on {}", Long.toHexString(error), failure.getMessage(), this);
         notifyFailure(error, reason, failure);
-        close(error, reason);
+        close(error, reason, Promise.Invocable.noop());
     }
 
     private void notifyFailure(long error, String reason, Throwable failure)
@@ -883,7 +872,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         private void disconnect(HTTP3Stream stream, Throwable failure)
         {
-            stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure);
+            stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), failure, Promise.Invocable.noop());
         }
     }
 }

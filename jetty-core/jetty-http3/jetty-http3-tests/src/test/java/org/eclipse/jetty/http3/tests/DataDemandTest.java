@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -40,8 +39,10 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -104,8 +105,8 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(ByteBuffer.allocate(8192), true));
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
+        stream.data(new DataFrame(ByteBuffer.allocate(8192), true), Promise.Invocable.noop());
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
         // Wait a little to be sure we do not spin.
@@ -175,8 +176,8 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(ByteBuffer.allocate(16), false));
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
+        stream.data(new DataFrame(ByteBuffer.allocate(16), false), Promise.Invocable.noop());
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
         // Wait a little to be sure we do not spin.
@@ -189,7 +190,7 @@ public class DataDemandTest extends AbstractClientServerTest
 
         await().atMost(1, TimeUnit.SECONDS).until(() -> onDataAvailableCalls.get() == 2 && ((HTTP3Stream)serverStream).hasDemand());
 
-        stream.data(new DataFrame(ByteBuffer.allocate(32), true));
+        stream.data(new DataFrame(ByteBuffer.allocate(32), true), Promise.Invocable.noop());
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
     }
@@ -254,8 +255,8 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(ByteBuffer.allocate(16), false));
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
+        stream.data(new DataFrame(ByteBuffer.allocate(16), false), Promise.Invocable.noop());
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
         // Wait a little to be sure we do not spin.
@@ -263,7 +264,7 @@ public class DataDemandTest extends AbstractClientServerTest
         assertEquals(1, onDataAvailableCalls.get());
 
         // Send a last empty frame.
-        stream.data(new DataFrame(BufferUtil.EMPTY_BUFFER, true));
+        stream.data(new DataFrame(BufferUtil.EMPTY_BUFFER, true), Promise.Invocable.noop());
 
         // Resume processing of data, this should call onDataAvailable().
         serverStreamRef.get().demand();
@@ -296,8 +297,8 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
-        stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true)).get(5, TimeUnit.SECONDS);
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true), p));
 
         assertTrue(serverTrailerLatch.await(5, TimeUnit.SECONDS));
     }
@@ -348,14 +349,13 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
-
-        stream.data(new DataFrame(ByteBuffer.allocate(dataLength), false)).get(5, TimeUnit.SECONDS);
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.data(new DataFrame(ByteBuffer.allocate(dataLength), false), p));
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
         long calls = onDataAvailableCalls.get();
 
-        stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true)).get(5, TimeUnit.SECONDS);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true), p));
 
         assertTrue(serverTrailerLatch.await(5, TimeUnit.SECONDS));
         // In order to detect that the trailer have arrived, we must call
@@ -405,11 +405,11 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
 
         byte[] bytesSent = new byte[16384];
         new Random().nextBytes(bytesSent);
-        stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true));
+        stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true), Promise.Invocable.noop());
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
 
@@ -462,9 +462,9 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
 
-        stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
+        stream.data(new DataFrame(ByteBuffer.allocate(4096), true), Promise.Invocable.noop());
 
         assertTrue(serverRequestLatch.await(5, TimeUnit.SECONDS));
 
@@ -541,17 +541,19 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
 
         // Send a first chunk of data.
-        CompletableFuture<Stream> firstData = stream.data(new DataFrame(ByteBuffer.allocate(16 * 1024), false));
-
-        // Wait some time until the server reads no data after the first chunk.
-        assertTrue(blockLatch.await(5, TimeUnit.SECONDS));
-        firstData.get(5, TimeUnit.SECONDS);
+        try (Blocker.Promise<Stream> promise = Blocker.promise())
+        {
+            stream.data(new DataFrame(ByteBuffer.allocate(16 * 1024), false), promise);
+            // Wait some time until the server reads no data after the first chunk.
+            assertTrue(blockLatch.await(5, TimeUnit.SECONDS));
+            promise.block(5, TimeUnit.SECONDS);
+        }
 
         // Send the last chunk of data.
-        stream.data(new DataFrame(ByteBuffer.allocate(32 * 1024), true)).get(5, TimeUnit.SECONDS);
+        stream.data(new DataFrame(ByteBuffer.allocate(32 * 1024), true), Promise.Invocable.noop());
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
@@ -618,15 +620,14 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(request, new Stream.Client.Listener() {}, p));
 
         // Send a first chunk to trigger reads.
-        stream.data(new DataFrame(ByteBuffer.allocate(16), false));
+        stream.data(new DataFrame(ByteBuffer.allocate(16), false), Promise.Invocable.noop());
 
         assertTrue(nullDataLatch.await(5, TimeUnit.SECONDS));
 
-        stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
+        stream.data(new DataFrame(ByteBuffer.allocate(4096), true), Promise.Invocable.noop());
 
         assertTrue(lastDataLatch.await(5, TimeUnit.SECONDS));
     }
@@ -681,7 +682,7 @@ public class DataDemandTest extends AbstractClientServerTest
                     latch.countDown();
                 }
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -696,8 +697,15 @@ public class DataDemandTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false))
-                    .thenCompose(s -> s.data(new DataFrame(ByteBuffer.allocate(1024), true)));
+                HeadersFrame responseFrame = new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false);
+                stream.respond(responseFrame, new Promise.Invocable.NonBlocking<>()
+                {
+                    @Override
+                    public void succeeded(Stream result)
+                    {
+                        result.data(new DataFrame(ByteBuffer.allocate(1024), true), Promise.Invocable.noop());
+                    }
+                });
                 return null;
             }
         });
@@ -734,7 +742,7 @@ public class DataDemandTest extends AbstractClientServerTest
                     }
                 }
             }
-        });
+        }, Promise.Invocable.noop());
 
         Stream.Client stream = await().atMost(5, TimeUnit.SECONDS).until(streamRef::get, Objects::nonNull);
 

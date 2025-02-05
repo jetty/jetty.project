@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.quiche.server.internal;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -42,9 +43,11 @@ import org.eclipse.jetty.quic.quiche.QuicheSession;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -320,23 +323,37 @@ public class ServerQuicheConnection extends QuicheConnection
     public void close()
     {
         // This method has blocking semantic.
-        close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close")).join();
+        try (Blocker.Promise<Void> promise = Blocker.promise())
+        {
+            close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close"), promise);
+            promise.block();
+        }
+        catch (IOException x)
+        {
+            throw new UncheckedIOException(x);
+        }
     }
 
-    private CompletableFuture<Void> close(ConnectionCloseFrame frame)
+    private void close(ConnectionCloseFrame frame, Promise.Invocable<Void> promise)
     {
         if (!closed.compareAndSet(false, true))
-            return CompletableFuture.completedFuture(null);
+        {
+            promise.succeeded(null);
+            return;
+        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("closing connection {}", this);
 
-        List<CompletableFuture<Void>> closes = new ArrayList<>();
+        List<CompletableFuture<Session>> closes = new ArrayList<>();
         for (ServerQuicheSession session : sessions.values())
         {
-            closes.add(session.close(frame));
+            CompletableFuture<Session> completable = new CompletableFuture<>();
+            session.close(frame, Promise.Invocable.toPromise(completable));
+            closes.add(completable);
         }
-        return CompletableFuture.allOf(closes.toArray(CompletableFuture[]::new));
+        CompletableFuture.allOf(closes.toArray(CompletableFuture[]::new))
+            .whenComplete(Promise.Invocable.toBiConsumer(promise));
     }
 
     @Override
@@ -351,17 +368,15 @@ public class ServerQuicheConnection extends QuicheConnection
         // listening DatagramChannelEndPoint, so it must not be closed.
     }
 
-    private CompletableFuture<Void> fail(Throwable failure)
+    private void fail(Throwable failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing connection {}", this, failure);
         ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure");
-        List<CompletableFuture<Void>> disconnects = new ArrayList<>();
         for (ServerQuicheSession session : sessions.values())
         {
-            disconnects.add(session.disconnect(frame, failure));
+            session.disconnect(frame, failure, Promise.Invocable.noop());
         }
-        return CompletableFuture.allOf(disconnects.toArray(CompletableFuture[]::new));
     }
 
     private class SessionTimeouts extends CyclicTimeouts<ServerQuicheSession>

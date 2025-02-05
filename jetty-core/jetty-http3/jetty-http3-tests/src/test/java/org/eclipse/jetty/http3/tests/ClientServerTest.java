@@ -40,6 +40,8 @@ import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -166,7 +168,7 @@ public class ClientServerTest extends AbstractClientServerTest
                 serverSessionRef.set((HTTP3Session)stream.getSession());
                 serverRequestLatch.countDown();
                 // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                 // Not interested in request data.
                 return null;
             }
@@ -176,15 +178,14 @@ public class ClientServerTest extends AbstractClientServerTest
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("/"), true);
-        Stream stream = clientSession.newRequest(frame, new Stream.Client.Listener()
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(frame, new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    clientResponseLatch.countDown();
-                }
-            })
-            .get(5, TimeUnit.SECONDS);
+                clientResponseLatch.countDown();
+            }
+        }, p));
         assertNotNull(stream);
 
         assertTrue(serverRequestLatch.await(5, TimeUnit.SECONDS));
@@ -214,7 +215,7 @@ public class ClientServerTest extends AbstractClientServerTest
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
                 stream.demand();
                 return new Stream.Server.Listener()
                 {
@@ -252,9 +253,8 @@ public class ClientServerTest extends AbstractClientServerTest
                 clientLatch.get().countDown();
             }
         };
-        Stream stream1 = session.newRequest(frame, streamListener)
-            .get(5, TimeUnit.SECONDS);
-        stream1.data(new DataFrame(ByteBuffer.allocate(8192), true));
+        Stream stream1 = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, streamListener, p));
+        stream1.data(new DataFrame(ByteBuffer.allocate(8192), true), Promise.Invocable.noop());
 
         assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
@@ -262,11 +262,11 @@ public class ClientServerTest extends AbstractClientServerTest
         // Send another request, but with 2 chunks of data separated by some time.
         serverLatch.set(new CountDownLatch(1));
         clientLatch.set(new CountDownLatch(1));
-        Stream stream2 = session.newRequest(frame, streamListener).get(5, TimeUnit.SECONDS);
-        stream2.data(new DataFrame(ByteBuffer.allocate(3 * 1024), false));
+        Stream stream2 = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, streamListener, p));
+        stream2.data(new DataFrame(ByteBuffer.allocate(3 * 1024), false), Promise.Invocable.noop());
         // Wait some time before sending the second chunk.
         Thread.sleep(500);
-        stream2.data(new DataFrame(ByteBuffer.allocate(5 * 1024), true));
+        stream2.data(new DataFrame(ByteBuffer.allocate(5 * 1024), true), Promise.Invocable.noop());
 
         assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
@@ -291,7 +291,7 @@ public class ClientServerTest extends AbstractClientServerTest
             {
                 serverSessionRef.set((HTTP3Session)stream.getSession());
                 // Send the response headers.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), false), Promise.Invocable.noop());
                 stream.demand();
                 return new Stream.Server.Listener()
                 {
@@ -305,16 +305,17 @@ public class ClientServerTest extends AbstractClientServerTest
                             stream.demand();
                             return;
                         }
-                        // Echo it back, then demand only when the write is finished.
-                        stream.data(new DataFrame(data.getByteBuffer(), data.isLast()))
-                            // Always release.
-                            .whenComplete((s, x) -> data.release())
-                            // Demand only if successful and not last.
-                            .thenRun(() ->
+                        // Echo it back, then release, then demand only when the write is finished.
+                        stream.data(new DataFrame(data.getByteBuffer(), data.isLast()), Promise.Invocable.from(data::release, new Promise.Invocable.NonBlocking<>()
+                        {
+                            @Override
+                            public void succeeded(Stream result)
                             {
+                                // Demand only if successful and not last.
                                 if (!data.isLast())
                                     stream.demand();
-                            });
+                            }
+                        }));
                     }
                 };
             }
@@ -329,7 +330,7 @@ public class ClientServerTest extends AbstractClientServerTest
         byte[] bytesReceived = new byte[bytesSent.length];
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytesReceived);
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        Stream stream = clientSession.newRequest(frame, new Stream.Client.Listener()
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(frame, new Stream.Client.Listener()
         {
             @Override
             public void onResponse(Stream.Client stream, HeadersFrame frame)
@@ -356,8 +357,8 @@ public class ClientServerTest extends AbstractClientServerTest
                 else
                     stream.demand();
             }
-        }).get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true));
+        }, p));
+        stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true), Promise.Invocable.noop());
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
@@ -385,7 +386,7 @@ public class ClientServerTest extends AbstractClientServerTest
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                 return null;
             }
         });
@@ -409,15 +410,17 @@ public class ClientServerTest extends AbstractClientServerTest
 
         CountDownLatch requestFailureLatch = new CountDownLatch(1);
         HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxRequestHeadersSize));
-        clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.GET, "/", largeHeaders), true), new Stream.Client.Listener() {})
-            .whenComplete((s, x) ->
+        clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.GET, "/", largeHeaders), true), new Stream.Client.Listener() {}, new Promise.Invocable.NonBlocking<>()
+        {
+            @Override
+            public void failed(Throwable x)
             {
                 // The HTTP3Stream was created, but the application cannot access
                 // it, so the implementation must remove it from the HTTP3Session.
                 // See below the difference with the server.
-                if (x != null)
-                    requestFailureLatch.countDown();
-            });
+                requestFailureLatch.countDown();
+            }
+        });
 
         assertTrue(requestFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientSession.getStreams().isEmpty());
@@ -431,7 +434,7 @@ public class ClientServerTest extends AbstractClientServerTest
             {
                 responseLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
@@ -460,16 +463,18 @@ public class ClientServerTest extends AbstractClientServerTest
                 if ("/large".equals(request.getHttpURI().getPath()))
                 {
                     HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxResponseHeadersSize));
-                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, largeHeaders), true))
-                        .whenComplete((s, x) ->
+                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, largeHeaders), true), new Promise.Invocable.NonBlocking<>()
+                    {
+                        @Override
+                        public void failed(Throwable x)
                         {
-                            if (x != null)
-                                responseFailureLatch.countDown();
-                        });
+                            responseFailureLatch.countDown();
+                        }
+                    });
                 }
                 else
                 {
-                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                 }
                 return null;
             }
@@ -501,7 +506,7 @@ public class ClientServerTest extends AbstractClientServerTest
             {
                 streamFailureLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(streamFailureLatch.await(5, TimeUnit.SECONDS));
@@ -517,7 +522,7 @@ public class ClientServerTest extends AbstractClientServerTest
             {
                 responseLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
@@ -556,7 +561,7 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onTrailer(Stream.Server stream, HeadersFrame frame)
                     {
                         trailerLatch.countDown();
-                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                     }
                 };
             }
@@ -565,21 +570,21 @@ public class ClientServerTest extends AbstractClientServerTest
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        Stream clientStream = clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+        Stream clientStream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    responseLatch.countDown();
-                }
-            })
-            .get(5, TimeUnit.SECONDS);
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                responseLatch.countDown();
+            }
+        }, p));
+
 
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
-        clientStream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+        clientStream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
 
         assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
@@ -620,7 +625,7 @@ public class ClientServerTest extends AbstractClientServerTest
                         data.release();
                         if (data.isLast())
                         {
-                            stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                            stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
                             break;
                         }
                     }
@@ -634,22 +639,21 @@ public class ClientServerTest extends AbstractClientServerTest
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch responseLatch = new CountDownLatch(1);
-        Stream clientStream = clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+        Stream clientStream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
-                @Override
-                public void onResponse(Stream.Client stream, HeadersFrame frame)
-                {
-                    responseLatch.countDown();
-                }
-            })
-            .get(5, TimeUnit.SECONDS);
+                responseLatch.countDown();
+            }
+        }, p));
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(500);
-        clientStream.data(new DataFrame(ByteBuffer.allocate(1024), false));
+        clientStream.data(new DataFrame(ByteBuffer.allocate(1024), false), Promise.Invocable.noop());
 
         Thread.sleep(500);
-        clientStream.data(new DataFrame(ByteBuffer.allocate(512), true));
+        clientStream.data(new DataFrame(ByteBuffer.allocate(512), true), Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }

@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.server.internal;
 
 import java.util.EnumSet;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http3.HTTP3Session;
@@ -72,9 +71,9 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
     }
 
     @Override
-    public CompletableFuture<Stream> respond(HeadersFrame frame)
+    public void respond(HeadersFrame frame, Promise.Invocable<Stream> promise)
     {
-        return write(frame);
+        write(frame, promise);
     }
 
     protected void notifyDataAvailable()

@@ -83,7 +83,7 @@ public class ServletMultiPartFormData
     static void onParts(ServletRequest servletRequest, String contentType, Promise.Invocable<Parts> promise)
     {
         CompletableFuture<Parts> futureParts = from(servletRequest, promise.getInvocationType(), contentType);
-        futureParts.whenComplete(promise);
+        futureParts.whenComplete(Promise.Invocable.toBiConsumer(promise));
     }
 
     /**

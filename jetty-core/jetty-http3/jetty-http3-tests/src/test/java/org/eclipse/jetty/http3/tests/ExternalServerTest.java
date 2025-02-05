@@ -32,7 +32,9 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -81,8 +83,7 @@ public class ExternalServerTest
 //            HostPort hostPort = new HostPort("quic.tech:8443");
 //            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
 //            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
-            Session.Client session = client.connect(new QuicheTransport(quicConfig), new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {})
-                .get(5, TimeUnit.SECONDS);
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport(quicConfig), new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {}, p));
 
             CountDownLatch requestLatch = new CountDownLatch(1);
             HttpURI uri = HttpURI.from(String.format("https://%s/", hostPort));
@@ -127,7 +128,7 @@ public class ExternalServerTest
                         LOG.debug("RESPONSE TRAILER = {}", frame);
                     requestLatch.countDown();
                 }
-            });
+            }, Promise.Invocable.noop());
 
             assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
         }

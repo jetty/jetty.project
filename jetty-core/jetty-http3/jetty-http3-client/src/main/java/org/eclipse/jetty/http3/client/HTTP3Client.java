@@ -58,9 +58,8 @@ import org.slf4j.LoggerFactory;
  * // Connect to host.
  * String host = "jetty.org";
  * int port = 443;
- * Session.Client session = http3Client
- *     .connect(new QuicheTransport(quicConfig), new InetSocketAddress(host, port), new Session.Client.Listener() {})
- *     .get(5, TimeUnit.SECONDS);
+ * Session.Client session = Blocker.blockWithPromise(p -> http3Client
+ *     .connect(new QuicheTransport(quicConfig), new InetSocketAddress(host, port), new Session.Client.Listener() {}, p));
  *
  * // Prepare the HTTP request headers.
  * HttpFields.Mutable requestFields = HttpFields.build();
@@ -73,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * HeadersFrame headersFrame = new HeadersFrame(request, false);
  *
  * // Send the HEADERS frame to create a request stream.
- * Stream.Client stream = session.newRequest(headersFrame, new Stream.Client.Listener()
+ * Stream.Client stream = Blocker.blockWithPromise(p -> session.newRequest(headersFrame, new Stream.Client.Listener()
  * {
  *     @Override
  *     public void onResponse(Stream.Client stream, HeadersFrame frame)
@@ -97,21 +96,24 @@ import org.slf4j.LoggerFactory;
  *         if (!data.isLast())
  *             stream.demand();
  *     }
- * }).get(5, TimeUnit.SECONDS);
+ * }, p));
  *
  * // Use the Stream.Client object to send request content, if any, using a DATA frame.
  * ByteBuffer requestChunk1 = UTF_8.encode("hello");
- * stream.data(new DataFrame(requestChunk1, false))
- *     // Subsequent sends must wait for previous sends to complete.
- *     .thenCompose(s ->
+ * stream.data(new DataFrame(requestChunk1, false), new Promise.Invocable.NonBlocking()
+ * {
+ *     @Override
+ *     public void succeeded(Stream s)
  *     {
+ *         // Subsequent sends must wait for previous sends to complete.
  *         ByteBuffer requestChunk2 = UTF_8.encode("world");
- *         return s.data(new DataFrame(requestChunk2, true));
- *     });
+ *         return s.data(new DataFrame(requestChunk2, true), Promise.Invocable.noop());
+ *     }
+ * });
  * }</pre>
  *
  * <p>IMPLEMENTATION NOTES.</p>
- * <p>Each call to {@link #connect(Transport, SocketAddress, Session.Client.Listener)}
+ * <p>Each call to {@link #connect(Transport, SocketAddress, Session.Client.Listener, Promise.Invocable)}
  * creates a new {@link DatagramChannelEndPoint} with the correspondent QUIC
  * {@link Connection}.</p>
  * <p>Each QUIC connection manages one QUIC {@link org.eclipse.jetty.quic.api.Session}
@@ -209,11 +211,11 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
      * @param transport the {@code Transport} to use
      * @param socketAddress the address to connect to
      * @param listener the listener to notify of session events
-     * @return a {@code CompletableFuture} that is completed when the connect operation is complete
+     * @param promise a {@code Promise.Invocable} that is completed when the connect operation is complete
      */
-    public CompletableFuture<Session.Client> connect(Transport transport, SocketAddress socketAddress, Session.Client.Listener listener)
+    public void connect(Transport transport, SocketAddress socketAddress, Session.Client.Listener listener, Promise.Invocable<Session.Client> promise)
     {
-        return connect(transport, getClientConnector().getSslContextFactory(), socketAddress, listener);
+        connect(transport, getClientConnector().getSslContextFactory(), socketAddress, listener, promise);
     }
 
     /**
@@ -223,25 +225,24 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
      * @param sslContextFactory {@code null} for clear-text, non-{@code null} for secure HTTP/3
      * @param socketAddress the address to connect to
      * @param listener the listener to notify of session events
-     * @return a {@code CompletableFuture} that is completed when the connect operation is complete
+     * @param promise a {@code Promise.Invocable} that is completed when the connect operation is complete
      */
-    public CompletableFuture<Session.Client> connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress socketAddress, Session.Client.Listener listener)
+    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress socketAddress, Session.Client.Listener listener, Promise.Invocable<Session.Client> promise)
     {
-        return connect(transport, sslContextFactory, socketAddress, listener, null);
+        connect(transport, sslContextFactory, socketAddress, listener, null, promise);
     }
 
-    public CompletableFuture<Session.Client> connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context)
+    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress socketAddress, Session.Client.Listener listener, Map<String, Object> context, Promise.Invocable<Session.Client> promise)
     {
         if (context == null)
             context = new ConcurrentHashMap<>();
-        Promise.Completable<Session.Client> completable = new Promise.Completable<>();
         context.put(HTTP3Client.CONTEXT_KEY, this);
         context.put(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY, listener);
-        context.put(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY, completable);
+        context.put(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY, promise);
         context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
         context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
         context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, key -> sslContextFactory);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, completable::failed));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
         context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport, sslContextFactory, context));
         context.put(Transport.CONTEXT_KEY, transport);
 
@@ -249,7 +250,6 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
             LOG.debug("connecting to {}", socketAddress);
 
         transport.connect(socketAddress, context);
-        return completable;
     }
 
     public CompletableFuture<Void> shutdown()

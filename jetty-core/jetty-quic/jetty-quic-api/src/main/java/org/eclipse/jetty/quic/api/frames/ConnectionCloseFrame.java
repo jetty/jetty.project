@@ -24,7 +24,7 @@ public class ConnectionCloseFrame extends Frame
     /**
      * <p>Creates a connection close frame with the given application error code and reason.</p>
      * <p>Applications should use this constructor in conjunction with
-     * {@link Session#close(ConnectionCloseFrame)}.
+     * {@link Session#close(ConnectionCloseFrame, org.eclipse.jetty.util.Promise.Invocable)}.
      *
      * @param appErrorCode the application error code
      * @param reason the application error reason

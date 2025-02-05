@@ -17,11 +17,11 @@ import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>The low-level HTTP/3 API representing a connection with a remote peer.</p>
@@ -66,11 +66,12 @@ public interface Session
      * <p>Initiates the shutdown of this session by sending a GOAWAY frame to the other peer.</p>
      *
      * @param graceful whether the shutdown should be graceful
-     * @return the {@link CompletableFuture} that gets notified when the frame has been sent
+     * @param promise the {@link Promise.Invocable} that gets notified when the
+     * frame has been sent
      */
-    public default CompletableFuture<Void> goAway(boolean graceful)
+    public default void goAway(boolean graceful, Promise.Invocable<Session> promise)
     {
-        return CompletableFuture.completedFuture(null);
+        promise.succeeded(this);
     }
 
     /**
@@ -86,7 +87,7 @@ public interface Session
      *     {
      *         // Response headers received.
      *     }
-     * });
+     * }, Promise.Invocable.noop());
      * }</pre>
      *
      * @see Stream
@@ -94,13 +95,13 @@ public interface Session
     public interface Client extends Session
     {
         /**
-         * <p>Makes a request by creating a HTTP/3 stream and sending the given HEADERS frame.</p>
+         * <p>Makes a request by creating an HTTP/3 stream and sending the given HEADERS frame.</p>
          *
          * @param frame the HEADERS frame containing the HTTP request headers
          * @param listener the listener that gets notified of stream events
-         * @return a CompletableFuture that is notified of the stream creation
+         * @param promise a {@link Promise.Invocable} that is notified of the stream creation
          */
-        public CompletableFuture<Stream> newRequest(HeadersFrame frame, Stream.Client.Listener listener);
+        public void newRequest(HeadersFrame frame, Stream.Client.Listener listener, Promise.Invocable<Stream> promise);
 
         /**
          * <p>The client-side specific {@link Session.Listener}.</p>
@@ -133,7 +134,7 @@ public interface Session
             /**
              * <p>Callback method invoked when a request is received.</p>
              * <p>Applications should implement this method to process HTTP/3 requests,
-             * typically providing an HTTP/3 response via {@link Stream.Server#respond(HeadersFrame)}:</p>
+             * typically providing an HTTP/3 response via {@link Stream.Server#respond(HeadersFrame, Promise.Invocable)}:</p>
              * <pre>
              * class MyServer implements Session.Server.Listener
              * {
@@ -142,7 +143,7 @@ public interface Session
              *     {
              *         // Send a response.
              *         var response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
-             *         stream.respond(new HeadersFrame(response, true));
+             *         stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
              *         if (!frame.isLast())
              *             stream.demand();
              *         return null;

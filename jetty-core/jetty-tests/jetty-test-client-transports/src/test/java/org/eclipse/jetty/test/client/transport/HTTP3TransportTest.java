@@ -46,6 +46,8 @@ import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
@@ -170,8 +172,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
         server.start();
 
         InetSocketAddress socketAddress = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session.Client session = http3Client.connect(new QuicheTransport((QuicheClientQuicConfiguration)http3Client.getQuicConfiguration()), socketAddress, new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(new QuicheTransport((QuicheClientQuicConfiguration)http3Client.getQuicConfiguration()), socketAddress, new Session.Client.Listener() {}, p));
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
@@ -184,7 +185,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 responseLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
@@ -201,7 +202,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
         server.start();
 
         Transport transport = new QuicheTransport(new MemoryTransport(connector), (QuicheClientQuicConfiguration)http3Client.getQuicConfiguration());
-        Session.Client session = http3Client.connect(transport, connector.getLocalSocketAddress(), new Session.Client.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(transport, connector.getLocalSocketAddress(), new Session.Client.Listener() {}, p));
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
@@ -214,7 +215,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
                 assertThat(response.getStatus(), is(HttpStatus.OK_200));
                 responseLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }

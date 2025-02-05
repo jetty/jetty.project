@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,7 +180,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
                 default ->
                 {
                     Throwable failure = new IllegalArgumentException("unsupported stream type: " + streamType);
-                    getEndPoint().disconnect(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), failure, true);
+                    getEndPoint().disconnect(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), failure, true, Promise.Invocable.noop());
                     yield false;
                 }
             };
@@ -190,13 +191,13 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("reserved stream type {}, closing {}", Long.toHexString(type), this);
-                getEndPoint().disconnect(HTTP3ErrorCode.randomReservedCode(), null, true);
+                getEndPoint().disconnect(HTTP3ErrorCode.randomReservedCode(), null, true, Promise.Invocable.noop());
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("invalid stream type {}, closing {}", Long.toHexString(type), this);
-                getEndPoint().disconnect(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), null, true);
+                getEndPoint().disconnect(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), null, true, Promise.Invocable.noop());
             }
             return false;
         }

@@ -79,7 +79,7 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} buffers ({} bytes) for stream #{} on {}", buffers.size(), accumulator.getTotalLength(), endPoint.getStream().getId(), this);
 
-        endPoint.write(writeCallback, buffers, Frame.isLast(frame));
+        endPoint.write(Frame.isLast(frame), buffers, writeCallback);
         return Action.SCHEDULED;
     }
 

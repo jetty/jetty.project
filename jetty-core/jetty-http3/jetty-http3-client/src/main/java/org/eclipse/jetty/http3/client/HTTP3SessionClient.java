@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http3.client;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.api.Session;
@@ -39,9 +37,9 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionClient.class);
 
-    private final Promise<Client> promise;
+    private final Promise.Invocable<Client> promise;
 
-    public HTTP3SessionClient(Scheduler scheduler, ClientHTTP3Session session, Client.Listener listener, Promise<Client> promise)
+    public HTTP3SessionClient(Scheduler scheduler, ClientHTTP3Session session, Client.Listener listener, Promise.Invocable<Client> promise)
     {
         super(scheduler, session, listener);
         this.promise = promise;
@@ -95,7 +93,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    public CompletableFuture<Stream> newRequest(HeadersFrame frame, Stream.Client.Listener listener)
+    public void newRequest(HeadersFrame frame, Stream.Client.Listener listener, Promise.Invocable<Stream> promise)
     {
         var quicSession = getProtocolSession().getSession();
         long streamId = quicSession.newStreamId(true);
@@ -108,35 +106,40 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         StreamEndPoint endPoint = session.getOrCreateStreamEndPoint(quicStream, session::openStreamEndPoint);
         ((AbstractStream)quicStream).setListener(new ProtocolStreamListener(() -> endPoint));
 
-        Promise.Completable<Stream> promise = new Promise.Completable<>();
-        promise.whenComplete((s, x) ->
+        HTTP3StreamClient stream;
+        try
         {
-            if (x != null)
-                endPoint.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, true);
-        });
-        HTTP3StreamClient stream = (HTTP3StreamClient)createStream(endPoint, promise::failed);
-        if (stream == null)
-            return promise;
+            stream = (HTTP3StreamClient)createStream(endPoint);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not create stream for {} on {}", endPoint, this);
+            Promise.Invocable<StreamEndPoint> p = Promise.Invocable.from(promise.getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
+            endPoint.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, true, p);
+            return;
+        }
 
         stream.setListener(listener);
         stream.onOpen();
 
-        stream.writeFrame(frame)
-            .whenComplete((r, x) ->
+        stream.writeFrame(frame, new Promise.Invocable.Wrapper<>(promise)
+        {
+            @Override
+            public void succeeded(Stream result)
             {
                 stream.updateClose(frame.isLast(), true);
-                if (x == null)
-                {
-                    promise.succeeded(stream);
-                }
-                else
-                {
-                    stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x)
-                        .whenComplete((s, t) -> promise.failed(x));
-                }
-            });
+                super.succeeded(result);
+            }
 
-        return promise;
+            @Override
+            public void failed(Throwable x)
+            {
+                stream.updateClose(frame.isLast(), true);
+                Promise.Invocable<Stream> p = Promise.Invocable.from(super.getInvocationType(), s -> super.failed(x), t -> super.failed(x));
+                stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, p);
+            }
+        });
     }
 
     @Override

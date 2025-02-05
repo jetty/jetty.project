@@ -29,6 +29,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.internal.HTTP3StreamServer;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +91,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 else
                 {
                     MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                    stream.respond(new HeadersFrame(response, true));
+                    stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
                     return null;
                 }
             }
@@ -102,16 +103,17 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch clientIdleLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
-        {
-            @Override
-            public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p ->
+            clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
             {
-                clientIdleLatch.countDown();
-                // Signal to close the stream.
-                promise.succeeded(true);
-            }
-        }).get(5, TimeUnit.SECONDS);
+                @Override
+                public void onIdleTimeout(Stream.Client stream, Throwable failure, Promise<Boolean> promise)
+                {
+                    clientIdleLatch.countDown();
+                    // Signal to close the stream.
+                    promise.succeeded(true);
+                }
+            }, p));
 
         // The server does not reply, the client must idle timeout.
         assertTrue(clientIdleLatch.await(2 * streamIdleTimeout, TimeUnit.MILLISECONDS));
@@ -129,7 +131,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             {
                 clientLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
 
@@ -171,7 +173,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 else
                 {
                     MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                    stream.respond(new HeadersFrame(response, true));
+                    stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
                     return null;
                 }
             }
@@ -180,8 +182,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         assertNotNull(h3);
         h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
 
-        Session.Client clientSession = http3Client.connect(transport, new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client clientSession = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(transport, new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {}, p));
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);
         clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
@@ -194,7 +195,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 // reading it will cause an exception that is notified here.
                 clientFailureLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(serverIdleLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
@@ -211,7 +212,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             {
                 clientLatch.countDown();
             }
-        });
+        }, Promise.Invocable.noop());
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
 

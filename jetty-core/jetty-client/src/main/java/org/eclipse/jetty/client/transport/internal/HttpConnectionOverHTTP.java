@@ -322,7 +322,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     {
         HttpExchange exchange = channel.getHttpExchange();
         if (exchange != null)
-            promise.completeWith(exchange.getRequest().abort(failure));
+            Promise.completeWith(promise, exchange.getRequest().abort(failure));
         else
             promise.succeeded(false);
     }

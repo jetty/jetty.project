@@ -269,7 +269,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             promise.succeeded(false);
             return null;
         }
-        Runnable task = () -> promise.completeWith(exchange.getRequest().abort(failure));
+        Runnable task = () -> Promise.completeWith(promise, exchange.getRequest().abort(failure));
         return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
     }
 

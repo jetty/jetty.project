@@ -17,8 +17,10 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -222,6 +224,8 @@ public class Blocker
     {
         C block() throws IOException;
 
+        C block(long time, TimeUnit unit) throws IOException;
+
         @Override
         void close();
     }
@@ -244,6 +248,19 @@ public class Blocker
                 try
                 {
                     return _future.get();
+                }
+                catch (Throwable t)
+                {
+                    throw IO.rethrow(t);
+                }
+            }
+
+            @Override
+            public C block(long time, TimeUnit unit) throws IOException
+            {
+                try
+                {
+                    return _future.get(time, unit);
                 }
                 catch (Throwable t)
                 {
@@ -275,6 +292,24 @@ public class Blocker
                 _future.completeExceptionally(x);
             }
         };
+    }
+
+    public static <R> R blockWithPromise(Consumer<Promise<R>> consumer) throws IOException
+    {
+        try (Promise<R> promise = Blocker.promise())
+        {
+            consumer.accept(promise);
+            return promise.block();
+        }
+    }
+
+    public static <R> R blockWithPromise(long time, TimeUnit unit, Consumer<Promise<R>> consumer) throws IOException
+    {
+        try (Promise<R> promise = Blocker.promise())
+        {
+            consumer.accept(promise);
+            return promise.block(time, unit);
+        }
     }
 
     /**

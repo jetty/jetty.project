@@ -18,16 +18,15 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.WritePendingException;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.common.AbstractStream;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,20 +129,22 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public CompletableFuture<Stream> data(boolean last, ByteBuffer... buffers)
+    public void data(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise)
     {
         Writer current;
         while (true)
         {
             current = writer.get();
             if (current != null)
-                return CompletableFuture.failedFuture(new WritePendingException());
-            current = Writer.forWriting(buffers, last);
+            {
+                promise.failed(new WritePendingException());
+                return;
+            }
+            current = Writer.forWriting(last, buffers, promise);
             if (writer.compareAndSet(null, current))
                 break;
         }
         write(current);
-        return current.completable;
     }
 
     @Override
@@ -160,10 +161,10 @@ public class QuicheStream extends AbstractStream
             if (LOG.isDebugEnabled())
                 LOG.debug("writing {} for {}", current, this);
 
-            int length = current.buffers().length;
+            int length = current.buffers().size();
             for (int i = 0; i < length; ++i)
             {
-                ByteBuffer buffer = current.buffers()[i];
+                ByteBuffer buffer = current.buffers().get(i);
 
                 int remaining = buffer.remaining();
                 boolean lastBuffer = i == length - 1;
@@ -198,12 +199,12 @@ public class QuicheStream extends AbstractStream
             if (LOG.isDebugEnabled())
                 LOG.debug("written {} for {}", current, this);
 
-            current.completable().complete(this);
+            current.promise().succeeded(this);
         }
         catch (Throwable x)
         {
             updateCloseState(CloseState.LOCALLY_CLOSED);
-            current.completable().completeExceptionally(x);
+            current.promise().failed(x);
         }
     }
 
@@ -254,60 +255,74 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public CompletableFuture<Stream> maxData(long maxData)
+    public void maxData(long maxData, Promise.Invocable<Stream> promise)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CompletableFuture<Stream> reset(long appErrorCode)
+    public void reset(long appErrorCode, Promise.Invocable<Stream> promise)
     {
         updateCloseState(CloseState.LOCALLY_CLOSED);
-        return session.shutdownStream(this, true, appErrorCode);
+        session.shutdownStream(this, true, appErrorCode, promise);
     }
 
     @Override
-    public CompletableFuture<Stream> stopSending(long appErrorCode)
+    public void stopSending(long appErrorCode, Promise.Invocable<Stream> promise)
     {
         // Ask the other peer to stop sending, but there may be
         // data in flight, so cannot update the close state here.
-        return session.shutdownStream(this, false, appErrorCode);
+        session.shutdownStream(this, false, appErrorCode, promise);
     }
 
     @Override
-    public CompletableFuture<Stream> dataBlocked(long offset)
+    public void dataBlocked(long offset, Promise.Invocable<Stream> promise)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CompletableFuture<Stream> disconnect(long appErrorCode, Throwable failure)
+    public void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
     {
-        return disconnect(appErrorCode, failure, true);
+        disconnect(true, appErrorCode, failure, promise);
     }
 
-    CompletableFuture<Stream> disconnect(long appErrorCode, Throwable failure, boolean stopAndReset)
+    void disconnect(boolean stopAndReset, long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} stop&reset={} {} {}", Long.toHexString(appErrorCode), stopAndReset, this, String.valueOf(failure));
 
         Writer writer = this.writer.get();
         if (writer != null)
-            writer.completable().completeExceptionally(failure != null ? failure : new AsynchronousCloseException());
+            writer.promise().failed(failure != null ? failure : new AsynchronousCloseException());
 
         CloseState previous = closeState.getAndSet(CloseState.CLOSED);
         if (previous != CloseState.CLOSED)
             removeAndNotifyClose();
 
         if (!stopAndReset || previous == CloseState.CLOSED)
-            return CompletableFuture.completedFuture(this);
+        {
+            promise.succeeded(this);
+            return;
+        }
 
-        CompletableFuture<Stream> result = CompletableFuture.completedFuture(this);
-        if (previous != CloseState.REMOTELY_CLOSED)
-            result = result.handle((r, x) -> stopSending(appErrorCode)).thenCompose(Function.identity());
-        if (previous != CloseState.LOCALLY_CLOSED)
-            result = result.handle((r, x) -> reset(appErrorCode)).thenCompose(Function.identity());
-        return result;
+        boolean stopSending = previous != CloseState.REMOTELY_CLOSED;
+        boolean reset = previous != CloseState.LOCALLY_CLOSED;
+
+        if (stopSending)
+        {
+            if (reset)
+                stopSending(appErrorCode, Promise.Invocable.from(promise.getInvocationType(), s -> reset(appErrorCode, promise), promise::failed));
+            else
+                stopSending(appErrorCode, promise);
+        }
+        else
+        {
+            if (reset)
+                reset(appErrorCode, promise);
+            else
+                promise.succeeded(this);
+        }
     }
 
     void onIdleTimeout(TimeoutException timeout)
@@ -318,7 +333,7 @@ public class QuicheStream extends AbstractStream
             LOG.debug("stream idle timeout {}ms {} on {}", getIdleTimeout(), expired ? "expired" : "ignored", this);
 
         if (expired)
-            disconnect(ErrorCode.NO_ERROR.code(), timeout);
+            disconnect(ErrorCode.NO_ERROR.code(), timeout, Promise.Invocable.noop());
         else
             notIdle();
     }
@@ -412,16 +427,16 @@ public class QuicheStream extends AbstractStream
         return "%s[%s,writer=%s]".formatted(super.toString(), closeState, writer);
     }
 
-    private record Writer(CompletableFuture<Stream> completable, ByteBuffer[] buffers, boolean last, boolean pending)
+    private record Writer(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise, boolean pending)
     {
-        private static Writer forWriting(ByteBuffer[] buffers, boolean last)
+        private static Writer forWriting(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise)
         {
-            return new Writer(new CompletableFuture<>(), buffers, last, false);
+            return new Writer(last, buffers, promise, false);
         }
 
         public static Writer forPending(Writer writer)
         {
-            return new Writer(writer.completable, writer.buffers, writer.last, true);
+            return new Writer(writer.last, writer.buffers, writer.promise, true);
         }
 
         @Override
@@ -432,7 +447,7 @@ public class QuicheStream extends AbstractStream
                 hashCode(),
                 last,
                 pending,
-                Arrays.toString(buffers)
+                buffers
             );
         }
     }

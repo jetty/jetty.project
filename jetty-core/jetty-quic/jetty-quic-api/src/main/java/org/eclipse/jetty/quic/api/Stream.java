@@ -15,7 +15,7 @@ package org.eclipse.jetty.quic.api;
 
 import java.nio.ByteBuffer;
 import java.util.EventListener;
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.Retainable;
@@ -24,6 +24,7 @@ import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Promise;
 
 /**
  * <p>A stream represents a unidirectional or bidirectional exchange
@@ -75,8 +76,8 @@ public interface Stream
      * <p>Returns whether the stream is locally closed.</p>
      * <p>A locally closed stream will not send further data.</p>
      * <p>A stream becomes locally closed when either it has sent
-     * {@link #data(boolean, ByteBuffer...) the last data}, or issued
-     * a {@link #reset(long)}.</p>
+     * {@link #data(boolean, List, Promise.Invocable) the last data}, or issued
+     * a {@link #reset(long, Promise.Invocable)}.</p>
      *
      * @return whether the stream is locally closed
      * @see #isRemotelyClosed()
@@ -159,63 +160,63 @@ public interface Stream
      * of whether they are the last to be sent.</p>
      *
      * @param last whether the data bytes are the last
-     * @param data the data bytes to send
-     * @return the {@link CompletableFuture} that gets notified when the
-     * frame has been sent
+     * @param data the list of data bytes to send
+     * @param promise the {@link Promise.Invocable} that gets notified when the
+     * data has been sent
      */
-    CompletableFuture<Stream> data(boolean last, ByteBuffer... data);
+    void data(boolean last, List<ByteBuffer> data, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Sends a MAX_STREAM_DATA frame with the new total max data bytes
      * that this peer is willing to receive.</p>
      *
      * @param maxData the max data bytes this peer is willing to receive
-     * @return the {@link CompletableFuture} that gets notified when the
+     * @param promise the {@link Promise.Invocable} that gets notified when the
      * frame has been sent
      */
-    CompletableFuture<Stream> maxData(long maxData);
+    void maxData(long maxData, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Sends a RESET_STREAM frame, with the given application error
      * code.</p>
      *
      * @param appErrorCode the application error code
-     * @return the {@link CompletableFuture} that gets notified when the
+     * @param promise the {@link Promise.Invocable} that gets notified when the
      * frame has been sent
      */
-    CompletableFuture<Stream> reset(long appErrorCode);
+    void reset(long appErrorCode, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Sends a STOP_SENDING frame, with the given application error
      * code.</p>
      *
      * @param appErrorCode the application error code
-     * @return the {@link CompletableFuture} that gets notified when the
+     * @param promise the {@link Promise.Invocable} that gets notified when the
      * frame has been sent
      */
-    CompletableFuture<Stream> stopSending(long appErrorCode);
+    void stopSending(long appErrorCode, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Sends a STREAM_DATA_BLOCKED frame, with the given offset.</p>
      *
      * @param offset the data offset
-     * @return the {@link CompletableFuture} that gets notified when the
+     * @param promise the {@link Promise.Invocable} that gets notified when the
      * frame has been sent
      */
-    CompletableFuture<Stream> dataBlocked(long offset);
+    void dataBlocked(long offset, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Abruptly terminates this stream with the given error.</p>
      * <p>This method removes this stream from its session and
-     * then terminates the QUIC stream, via {@link #stopSending(long)},
-     * and then a {@link #reset(long)}.</p>
+     * then terminates the QUIC stream, via {@link #stopSending(long, Promise.Invocable)},
+     * and then a {@link #reset(long, Promise.Invocable)}.</p>
      *
      * @param appErrorCode the application error code
      * @param failure the failure that caused the disconnect of the stream
-     * @return the {@link CompletableFuture} that gets notified when the
+     * @param promise the {@link Promise.Invocable} that gets notified when the
      * disconnect is completed
      */
-    CompletableFuture<Stream> disconnect(long appErrorCode, Throwable failure);
+    void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise);
 
     /**
      * <p>A {@link Stream.Listener} is the passive counterpart of a {@link Stream}

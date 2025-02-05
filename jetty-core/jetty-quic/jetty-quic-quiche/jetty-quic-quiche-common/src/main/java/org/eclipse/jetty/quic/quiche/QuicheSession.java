@@ -50,6 +50,7 @@ import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -193,25 +194,25 @@ public abstract class QuicheSession extends AbstractSession
     }
 
     @Override
-    public CompletableFuture<Session> maxStreams(MaxStreamsFrame frame)
+    public void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CompletableFuture<Session> ping()
+    public void ping(Promise.Invocable<Session> promise)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CompletableFuture<Session> maxData(MaxDataFrame frame)
+    public void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public CompletableFuture<Void> disconnect(ConnectionCloseFrame frame, Throwable failure)
+    public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting {} {}", frame, this, failure);
@@ -221,20 +222,20 @@ public abstract class QuicheSession extends AbstractSession
         for (QuicheStream stream : streams.values())
         {
             // This is a session failure, there is no need to stop/reset the stream.
-            stream.disconnect(frame.getErrorCode(), failure, false);
+            stream.disconnect(false, frame.getErrorCode(), failure, Promise.Invocable.noop());
         }
 
         quiche.close(frame.getErrorCode(), frame.getReason());
         flush();
 
-        return flusher.disconnect()
+        Promise.completeWith(promise, flusher.disconnect()
             .whenComplete((r, x) ->
             {
                 LifeCycle.stop(this);
                 emitDisconnect();
                 // Propagate outwards.
                 getConnection().disconnect(this, frame, failure);
-            });
+            }));
     }
 
     @Override
@@ -432,17 +433,17 @@ public abstract class QuicheSession extends AbstractSession
         }
     }
 
-    CompletableFuture<Stream> shutdownStream(QuicheStream stream, boolean writeSide, long appErrorCode)
+    void shutdownStream(QuicheStream stream, boolean writeSide, long appErrorCode, Promise.Invocable<Stream> promise)
     {
         try
         {
             quiche.shutdownStream(stream.getId(), writeSide, appErrorCode);
             flush();
-            return CompletableFuture.completedFuture(stream);
+            promise.succeeded(stream);
         }
         catch (Throwable x)
         {
-            return CompletableFuture.failedFuture(x);
+            promise.failed(x);
         }
     }
 
@@ -491,7 +492,7 @@ public abstract class QuicheSession extends AbstractSession
 
     private class Flusher extends IteratingCallback
     {
-        private final CompletableFuture<Void> disconnect = new CompletableFuture<>();
+        private final CompletableFuture<Session> disconnect = new CompletableFuture<>();
         private final CyclicTimeout timeout;
         private RetainableByteBuffer cipherBuffer;
 
@@ -576,12 +577,12 @@ public abstract class QuicheSession extends AbstractSession
             timeout.destroy();
             quiche.dispose();
             if (failure == null)
-                disconnect.complete(null);
+                disconnect.complete(QuicheSession.this);
             else
                 disconnect.completeExceptionally(failure);
         }
 
-        private CompletableFuture<Void> disconnect()
+        private CompletableFuture<Session> disconnect()
         {
             return disconnect;
         }

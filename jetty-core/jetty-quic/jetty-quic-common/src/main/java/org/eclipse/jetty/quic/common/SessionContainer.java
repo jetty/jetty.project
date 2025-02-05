@@ -79,10 +79,9 @@ public class SessionContainer extends AbstractLifeCycle implements EventListener
         }
     }
 
-    private CompletableFuture<Void> shutdown(Session session)
+    private CompletableFuture<Session> shutdown(Session session)
     {
-        // cast to AbstractSession? can we do the same for local close?
-        return session.shutdown();
+        return ((AbstractSession)session).shutdown();
     }
 
     @Override

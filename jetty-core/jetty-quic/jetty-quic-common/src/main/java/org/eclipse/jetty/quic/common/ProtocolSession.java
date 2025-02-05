@@ -30,6 +30,7 @@ import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
@@ -160,7 +161,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         }
     }
 
-    protected void closeStreamEndPoint(StreamEndPoint endPoint, Throwable failure)
+    private void closeStreamEndPoint(StreamEndPoint endPoint, Throwable failure)
     {
         Connection connection = endPoint.getConnection();
         if (connection != null)
@@ -171,9 +172,11 @@ public abstract class ProtocolSession extends ContainerLifeCycle
 
     protected abstract Connection newConnection(StreamEndPoint endPoint) throws IOException;
 
-    public CompletableFuture<Void> shutdown()
+    public CompletableFuture<ProtocolSession> shutdown()
     {
-        return disconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "shutdown"), null);
+        CompletableFuture<ProtocolSession> completable = new CompletableFuture<>();
+        disconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "shutdown"), null, Promise.Invocable.toPromise(completable));
+        return completable;
     }
 
     public boolean onIdleTimeout(TimeoutException timeout)
@@ -185,7 +188,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     {
         StreamEndPoint streamEndPoint = getStreamEndPoint(streamId);
         if (streamEndPoint != null)
-            streamEndPoint.disconnect(ErrorCode.NO_ERROR.code(), failure, true);
+            streamEndPoint.disconnect(ErrorCode.NO_ERROR.code(), failure, true, Promise.Invocable.noop());
     }
 
     /**
@@ -194,22 +197,22 @@ public abstract class ProtocolSession extends ContainerLifeCycle
      * {@link StreamEndPoint}s managed by this class.
      * In turn, the {@link Connection} typically closes its associated
      * {@link StreamEndPoint}, causing it to be removed from this class.
-     * Lastly, it calls {@link #disconnect(ConnectionCloseFrame, Throwable)}.</p>
+     * Lastly, it calls {@link #disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)}.</p>
      *
      * @param frame the frame carrying the error code and reason
-     * @return a {@link CompletableFuture} that completes when the frame send completes
-     * @see Session#close(ConnectionCloseFrame)
+     * @param promise a {@link Promise} that completes when the frame send completes
+     * @see Session#close(ConnectionCloseFrame, Promise.Invocable)
      */
-    public CompletableFuture<Void> close(ConnectionCloseFrame frame)
+    public void close(ConnectionCloseFrame frame, Promise.Invocable<ProtocolSession> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed locally {} {}", frame, this);
-        return closeAndDisconnect(frame, null);
+        closeAndDisconnect(frame, promise);
     }
 
     /**
      * <p>Performs an inward close upon receiving a {@code CONNECTION_CLOSE} frame.</p>
-     * <p>The behavior is identical to {@link #close(ConnectionCloseFrame)}.</p>
+     * <p>The behavior is identical to {@link #close(ConnectionCloseFrame, Promise.Invocable)}.</p>
      *
      * @param frame the frame carrying the error code and reason
      */
@@ -217,20 +220,20 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", frame, this);
-        closeAndDisconnect(frame, null);
+        closeAndDisconnect(frame, Promise.Invocable.noop());
     }
 
-    private CompletableFuture<Void> closeAndDisconnect(ConnectionCloseFrame frame, Throwable failure)
+    private void closeAndDisconnect(ConnectionCloseFrame frame, Promise.Invocable<ProtocolSession> promise)
     {
         // Perform the close inwards, by closing the
         // Connection associated to the StreamEndPoint.
         for (StreamEndPoint streamEndPoint : getStreamEndPoints())
         {
-            closeStreamEndPoint(streamEndPoint, failure);
+            closeStreamEndPoint(streamEndPoint, null);
         }
 
         // Start propagating outwards.
-        return disconnect(frame, failure);
+        disconnect(frame, null, promise);
     }
 
     /**
@@ -238,10 +241,11 @@ public abstract class ProtocolSession extends ContainerLifeCycle
      *
      * @param frame the frame carrying the error code and reason
      * @param failure the failure that caused the disconnect, or {@code null}
-     * @return a {@link CompletableFuture} that completes when the frame send completes
-     * @see Session#disconnect(ConnectionCloseFrame, Throwable)
+     * @param promise the {@link Promise} that gets notified when the
+     * disconnect is complete
+     * @see Session#disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)
      */
-    public CompletableFuture<Void> disconnect(ConnectionCloseFrame frame, Throwable failure)
+    public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<ProtocolSession> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with {} on {}", frame, this, failure);
@@ -250,10 +254,10 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         for (StreamEndPoint streamEndPoint : getStreamEndPoints())
         {
             // This is a session failure, there is no need to disconnect the StreamEndPoint's stream.
-            streamEndPoint.disconnect(frame.getErrorCode(), failure, false);
+            streamEndPoint.disconnect(frame.getErrorCode(), failure, false, Promise.Invocable.noop());
         }
         // Continue the propagation outwards.
-        return getSession().disconnect(frame, failure);
+        getSession().disconnect(frame, failure, Promise.Invocable.toPromise(promise, s -> this));
     }
 
     public void offerTask(Runnable task)

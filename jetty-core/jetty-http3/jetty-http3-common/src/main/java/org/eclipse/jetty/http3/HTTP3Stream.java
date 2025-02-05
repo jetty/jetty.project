@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3;
 
 import java.util.EnumSet;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -25,12 +24,10 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Attachable;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,7 +127,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         notifyIdleTimeout(timeout, Promise.from(timedOut ->
         {
             if (timedOut)
-                disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
+                disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout, Promise.Invocable.noop());
             else
                 notIdle();
             promise.succeeded(timedOut);
@@ -138,23 +135,33 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     }
 
     @Override
-    public CompletableFuture<Stream> data(DataFrame frame)
+    public void data(DataFrame frame, Promise.Invocable<Stream> promise)
     {
-        return write(frame);
+        write(frame, promise);
     }
 
-    protected CompletableFuture<Stream> write(Frame frame)
+    protected void write(Frame frame, Promise.Invocable<Stream> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} on {}", frame, this);
 
-        return writeFrame(frame)
-            .whenComplete((s, x) ->
+        writeFrame(frame, new Promise.Invocable.Wrapper<>(promise)
+        {
+            @Override
+            public void succeeded(Stream result)
             {
                 updateClose(Frame.isLast(frame), true);
-                if (x != null)
-                    disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-            });
+                super.succeeded(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                updateClose(Frame.isLast(frame), true);
+                super.failed(x);
+                disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, Promise.Invocable.noop());
+            }
+        });
     }
 
     @Override
@@ -186,7 +193,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("could not read {}", this, x);
-            disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+            disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, Promise.Invocable.noop());
             // Rethrow to the application, so don't notify onFailure().
             throw x;
         }
@@ -243,11 +250,14 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     }
 
     @Override
-    public CompletableFuture<Stream> trailer(HeadersFrame frame)
+    public void trailer(HeadersFrame frame, Promise.Invocable<Stream> promise)
     {
         if (!frame.isLast())
-            throw new IllegalArgumentException("invalid trailer frame: property 'last' must be true");
-        return write(frame);
+        {
+            promise.failed(new IllegalArgumentException("invalid trailer frame: property 'last' must be true"));
+            return;
+        }
+        write(frame, promise);
     }
 
     public boolean hasDemand()
@@ -317,7 +327,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     public void onFailure(long error, Throwable failure)
     {
         notifyFailure(error, failure);
-        disconnect(error, failure);
+        disconnect(error, failure, Promise.Invocable.noop());
     }
 
     protected abstract void notifyFailure(long error, Throwable failure);
@@ -341,11 +351,10 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         }
     }
 
-    public Promise.Completable<Stream> writeFrame(Frame frame)
+    public void writeFrame(Frame frame, Promise.Invocable<Stream> promise)
     {
         notIdle();
-        return Promise.Completable.with(p ->
-            session.writeMessageFrame(endPoint, frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> p.succeeded(this), p::failed)));
+        session.writeMessageFrame(endPoint, frame, Promise.Invocable.toCallback(promise, this));
     }
 
     private CloseState getCloseState()
@@ -407,12 +416,12 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     }
 
     @Override
-    public CompletableFuture<Stream> disconnect(long appErrorCode, Throwable failure)
+    public void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
     {
-        return disconnect(appErrorCode, failure, failure != null);
+        disconnect(appErrorCode, failure, failure != null, promise);
     }
 
-    private CompletableFuture<Stream> disconnect(long appErrorCode, Throwable failure, boolean notifyFailure)
+    private void disconnect(long appErrorCode, Throwable failure, boolean notifyFailure, Promise.Invocable<Stream> promise)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} {} {}", Long.toHexString(appErrorCode), this, String.valueOf(failure));
@@ -428,7 +437,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
         // Propagate outwards.
         HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
-        return connection.disconnect(appErrorCode, failure).thenApply(s -> this);
+        connection.disconnect(appErrorCode, failure, Promise.Invocable.toPromise(promise, streamEndPoint -> this));
     }
 
     @Override

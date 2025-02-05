@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.api;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.MetaData;
@@ -62,9 +61,9 @@ public interface Stream
      * of the request content or of the response content.</p>
      *
      * @param frame the DATA frame containing some or all the bytes of the request or of the response.
-     * @return the {@link CompletableFuture} that gets notified when the frame has been sent
+     * @param promise the {@link Promise.Invocable} that gets notified when the frame has been sent
      */
-    CompletableFuture<Stream> data(DataFrame frame);
+    void data(DataFrame frame, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Reads request content bytes or response content bytes.</p>
@@ -120,9 +119,9 @@ public interface Stream
      * <p>Sends the given HEADERS frame containing the trailer headers.</p>
      *
      * @param frame the HEADERS frame containing the trailer headers
-     * @return the {@link CompletableFuture} that gets notified when the frame has been sent
+     * @param promise the {@link Promise.Invocable} that gets notified when the frame has been sent
      */
-    CompletableFuture<Stream> trailer(HeadersFrame frame);
+    void trailer(HeadersFrame frame, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Abruptly terminates this stream with the given error.</p>
@@ -132,8 +131,9 @@ public interface Stream
      *
      * @param appErrorCode the error code
      * @param failure the failure that caused the close of the stream, if any
+     * @param promise the {@link Promise.Invocable} that gets notified when the disconnect is complete
      */
-    CompletableFuture<Stream> disconnect(long appErrorCode, Throwable failure);
+    void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise);
 
     /**
      * <p>The client side version of {@link Stream}.</p>
@@ -150,7 +150,7 @@ public interface Stream
         {
             /**
              * <p>Callback method invoked when a stream is created locally by
-             * {@link Session.Client#newRequest(HeadersFrame, Listener)}.</p>
+             * {@link Session.Client#newRequest(HeadersFrame, Listener, Promise.Invocable)}.</p>
              *
              * @param stream the newly created stream
              */
@@ -292,13 +292,13 @@ public interface Stream
     interface Server extends Stream
     {
         /**
-         * <p>Responds to a request performed via {@link Session.Client#newRequest(HeadersFrame, Client.Listener)},
+         * <p>Responds to a request performed via {@link Session.Client#newRequest(HeadersFrame, Client.Listener, Promise.Invocable)},
          * sending the given HEADERS frame containing the response status code and response headers.</p>
          *
          * @param frame the HEADERS frame containing the response headers
-         * @return the {@link CompletableFuture} that gets notified when the frame has been sent
+         * @param promise the {@link Promise.Invocable} that gets notified when the frame has been sent
          */
-        CompletableFuture<Stream> respond(HeadersFrame frame);
+        void respond(HeadersFrame frame, Promise.Invocable<Stream> promise);
 
         /**
          * <p>A {@link Stream.Server.Listener} is the passive counterpart of a {@link Stream.Server}

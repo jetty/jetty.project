@@ -46,7 +46,7 @@ public class StreamFrame extends Frame.WithStreamId
      * <p>Creates the first stream frame with {@code offset=0} for a {@link Stream}.</p>
      * <p>Applications should use this constructor in conjunction with
      * {@link Session#newStream(long, Stream.Listener)}, and for subsequent
-     * data to send on the same stream use {@link Stream#data(boolean, ByteBuffer...)},
+     * data to send on the same stream use {@link Stream#data(boolean, java.util.List, org.eclipse.jetty.util.Promise.Invocable)},
      * so that the implementation can compute the {@code offset} on behalf of the application.</p>
      *
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
