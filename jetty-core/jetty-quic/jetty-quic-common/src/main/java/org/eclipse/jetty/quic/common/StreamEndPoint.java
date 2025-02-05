@@ -381,6 +381,18 @@ public class StreamEndPoint implements EndPoint
         };
     }
 
+    @Override
+    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        write(false, List.of(buffers), callback);
+    }
+
+    @Override
+    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    {
+        write(last, List.of(byteBuffer), callback);
+    }
+
     public void write(boolean last, List<ByteBuffer> buffers, Callback callback)
     {
         if (LOG.isDebugEnabled())
