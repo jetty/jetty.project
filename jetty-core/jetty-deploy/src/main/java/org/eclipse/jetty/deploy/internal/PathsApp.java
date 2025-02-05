@@ -228,7 +228,12 @@ public class PathsApp
                 Properties props = new Properties();
                 props.load(inputStream);
                 props.stringPropertyNames().forEach(
-                    (name) -> getAttributes().setAttribute(name, props.getProperty(name)));
+                    (name) ->
+                    {
+                        String value = props.getProperty(name);
+                        String key = DeploymentScanner.stripOldAttributePrefix(name);
+                        getAttributes().setAttribute(key, value);
+                    });
             }
             catch (IOException e)
             {

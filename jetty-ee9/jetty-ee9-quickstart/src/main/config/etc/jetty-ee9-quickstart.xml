@@ -10,19 +10,19 @@
   <Call class="org.eclipse.jetty.util.component.Environment" name="ensure">
     <Arg>ee9</Arg>
     <Call name="setAttribute">
-      <Arg>jetty.deploy.attribute.org.eclipse.jetty.quickstart.mode</Arg>
+      <Arg>org.eclipse.jetty.quickstart.mode</Arg>
       <Arg>
         <Property name="jetty.quickstart.mode" />
       </Arg>
     </Call>
     <Call name="setAttribute">
-      <Arg>jetty.deploy.attribute.org.eclipse.jetty.quickstart.origin</Arg>
+      <Arg>org.eclipse.jetty.quickstart.origin</Arg>
       <Arg>
         <Property name="jetty.quickstart.origin" />
       </Arg>
     </Call>
     <Call name="setAttribute">
-      <Arg>jetty.deploy.attribute.org.eclipse.jetty.quickstart.xml</Arg>
+      <Arg>org.eclipse.jetty.quickstart.xml</Arg>
       <Arg>
         <Property name="jetty.quickstart.xml" />
       </Arg>

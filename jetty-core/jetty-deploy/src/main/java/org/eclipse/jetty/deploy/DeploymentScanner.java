@@ -116,6 +116,8 @@ import org.slf4j.LoggerFactory;
 public class DeploymentScanner extends ContainerLifeCycle implements Scanner.ChangeSetListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentScanner.class);
+    // old attributes prefix, now stripped.
+    private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private final Server server;
     private final ContextHandlerDeployer contextHandlerDeployer;
@@ -133,6 +135,15 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
     private boolean deferInitialScan = false;
     private String defaultEnvironmentName;
 
+    /**
+     * <p>
+     * Convenience constructor to have DeploymentScanner participate in DeploymentManager startup behaviors,
+     * allowing failures in DeploymentScanner.start() to trigger a failure to start DeploymentManager.
+     * </p>
+     *
+     * @param server the server reference to use for any XML based deployments.
+     * @param deploymentManager the DeploymentManager instance that is being used by this DeploymentScanner.
+     */
     public DeploymentScanner(
         @Name("server") Server server,
         @Name("deploymentManager") DeploymentManager deploymentManager)
@@ -141,6 +152,16 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         deploymentManager.addBean(this);
     }
 
+    /**
+     * <p>
+     * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
+     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * it's configured destination.
+     * </p>
+     *
+     * @param server the server reference to use for any XML based deployments.
+     * @param contextHandlerDeployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
+     */
     public DeploymentScanner(
         @Name("server") Server server,
         @Name("contextHandlerDeployer") ContextHandlerDeployer contextHandlerDeployer)
@@ -148,6 +169,17 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         this(server, contextHandlerDeployer, null);
     }
 
+    /**
+     * <p>
+     * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
+     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * it's configured destination.
+     * </p>
+     *
+     * @param server the server reference to use for any XML based deployments.
+     * @param contextHandlerDeployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
+     * @param filter A custom FilenameFilter to control what files the {@link Scanner} monitors for changes.
+     */
     public DeploymentScanner(
         @Name("server") Server server,
         @Name("contextHandlerDeployer") ContextHandlerDeployer contextHandlerDeployer,
@@ -156,6 +188,21 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         this.server = server;
         this.contextHandlerDeployer = Objects.requireNonNull(contextHandlerDeployer);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
+    }
+
+    /**
+     * Strip old {@code jetty.deploy.attribute.} prefix if found.
+     * We no longer limit the properties to only those prefixed keys, we allow all keys through now.
+     *
+     * @param key the key to possibly strip
+     * @return the stripped key
+     */
+    public static String stripOldAttributePrefix(String key)
+    {
+        if (key.startsWith(ATTRIBUTE_PREFIX))
+            return key.substring(ATTRIBUTE_PREFIX.length());
+        else
+            return key;
     }
 
     /**
@@ -848,7 +895,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
 
                 Attributes.Layer layer = new Attributes.Layer(attributesLayer);
                 //put each property into our substitution pool
-                tmp.stringPropertyNames().forEach(k -> layer.setAttribute(k, tmp.getProperty(k)));
+                tmp.stringPropertyNames().forEach(name ->
+                {
+                    String value = tmp.getProperty(name);
+                    String key = stripOldAttributePrefix(name);
+                    layer.setAttribute(key, value);
+                });
                 attributesLayer = layer;
             }
         }

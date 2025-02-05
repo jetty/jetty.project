@@ -47,7 +47,6 @@ public class PathsContextHandlerFactory
     public static final String ENVIRONMENT = "environment";
     public static final String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
     public static final String ENVIRONMENT_XML_PATHS = "jetty.deploy.paths.environmentXmls";
-    private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private static Map<String, String> asProperties(Attributes attributes)
     {
@@ -55,13 +54,7 @@ public class PathsContextHandlerFactory
         attributes.getAttributeNameSet().forEach((name) ->
         {
             Object value = attributes.getAttribute(name);
-            // Strip old "jetty.deploy.attribute." prefix if found.
-            // We no longer limit the properties to only those
-            // prefixed keys, we allow all keys through now.
-            String key = name.startsWith(ATTRIBUTE_PREFIX)
-                ? name.substring(ATTRIBUTE_PREFIX.length())
-                : name;
-            props.put(key, Objects.toString(value));
+            props.put(name, Objects.toString(value));
         });
         return props;
     }
@@ -152,8 +145,7 @@ public class PathsContextHandlerFactory
             ContextHandler contextHandler = getContextHandler(context);
 
             // Copy non-deploy attributes into ContextHandler attributes for context use
-            deployAttributes.getAttributeNameSet().stream()
-                .filter(k -> !k.startsWith("jetty.deploy."))
+            deployAttributes.getAttributeNameSet()
                 .forEach(k -> contextHandler.setAttribute(k, deployAttributes.getAttribute(k)));
 
             return contextHandler;
@@ -276,15 +268,7 @@ public class PathsContextHandlerFactory
         }
 
         // pass through properties as attributes directly
-        attributes.getAttributeNameSet().stream()
-            .map(key ->
-            {
-                // strip older attribute prefix from key names.
-                if (key.startsWith(ATTRIBUTE_PREFIX))
-                    return key.substring(ATTRIBUTE_PREFIX.length());
-                else
-                    return key;
-            })
+        attributes.getAttributeNameSet()
             .forEach((key) ->
             {
                 Object value = attributes.getAttribute(key);
