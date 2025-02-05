@@ -18,6 +18,7 @@ import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.List;
+import java.util.function.Consumer;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DecodeException;
@@ -33,7 +34,12 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.
 {
     public DecodedTextStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {
-        super(session, methodHandle, decoders);
+        this(session, methodHandle, decoders, null);
+    }
+
+    public DecodedTextStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders, Consumer<Throwable> onError)
+    {
+        super(session, methodHandle, decoders, onError);
     }
 
     @Override
@@ -42,7 +48,7 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.
         MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
             .findVirtual(DecodedTextStreamMessageSink.class, "onStreamStart", MethodType.methodType(void.class, Reader.class))
             .bindTo(this);
-        return new ReaderMessageSink(coreSession, methodHandle, true);
+        return new ReaderMessageSink(coreSession, methodHandle, true, _onError);
     }
 
     public void onStreamStart(Reader reader)

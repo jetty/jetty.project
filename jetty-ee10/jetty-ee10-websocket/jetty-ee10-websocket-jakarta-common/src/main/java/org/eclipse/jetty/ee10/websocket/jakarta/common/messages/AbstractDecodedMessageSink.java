@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.websocket.jakarta.common.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import jakarta.websocket.CloseReason;
@@ -34,10 +35,17 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
 
     private final MethodHandle _methodHandle;
     private final MessageSink _messageSink;
+    protected final Consumer<Throwable> _onError;
 
     public AbstractDecodedMessageSink(CoreSession coreSession, MethodHandle methodHandle)
     {
+        this(coreSession, methodHandle, null);
+    }
+
+    public AbstractDecodedMessageSink(CoreSession coreSession, MethodHandle methodHandle, Consumer<Throwable> onError)
+    {
         _methodHandle = methodHandle;
+        _onError = onError;
 
         try
         {
@@ -107,7 +115,12 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
 
         public Stream(CoreSession coreSession, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
         {
-            super(coreSession, methodHandle);
+            this(coreSession, methodHandle, decoders, null);
+        }
+
+        public Stream(CoreSession coreSession, MethodHandle methodHandle, List<RegisteredDecoder> decoders, Consumer<Throwable> onError)
+        {
+            super(coreSession, methodHandle, onError);
             if (decoders.size() != 1)
                 throw new IllegalArgumentException("Require exactly one decoder for " + this.getClass());
             _decoder = decoders.get(0).getInstance();

@@ -36,6 +36,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedBinaryMes
 import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -229,6 +230,23 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
 
         return wrappedConfig;
+    }
+
+    public void onError(Throwable error)
+    {
+        try
+        {
+            Blocker.Callback callback = Blocker.callback();
+            onError(error, callback);
+            callback.block();
+            coreSession.demand();
+        }
+        catch (Throwable t)
+        {
+            t.addSuppressed(error);
+            CloseStatus closeStatus = new CloseStatus(CloseStatus.SERVER_ERROR, t);
+            getSession().getCoreSession().close(closeStatus, Callback.NOOP);
+        }
     }
 
     @Override

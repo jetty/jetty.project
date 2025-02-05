@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.websocket.CloseReason;
@@ -194,7 +195,15 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         try
         {
             MethodHandles.Lookup lookup = getServerMethodHandleLookup();
-            if (AbstractDecodedMessageSink.class.isAssignableFrom(msgMetadata.getSinkClass()))
+            if (AbstractDecodedMessageSink.Stream.class.isAssignableFrom(msgMetadata.getSinkClass()))
+            {
+                MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
+                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, List.class, Consumer.class));
+                List<RegisteredDecoder> registeredDecoders = msgMetadata.getRegisteredDecoders();
+                Consumer<Throwable> onError = session.getFrameHandler()::onError;
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHandle(), registeredDecoders, onError);
+            }
+            else if (AbstractDecodedMessageSink.class.isAssignableFrom(msgMetadata.getSinkClass()))
             {
                 MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
                     MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, List.class));
