@@ -126,6 +126,7 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
                 MessageWriter writer = newMessageWriter();
                 writer.setCallback(new SendHandlerCallback(handler));
                 textStreamEncoder.encode(data, writer);
+                writer.close();
             }
             catch (EncodeException | IOException e)
             {
@@ -154,6 +155,7 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
                 MessageOutputStream out = newMessageOutputStream();
                 out.setCallback(callback);
                 binaryStreamEncoder.encode(data, out);
+                out.close();
             }
             catch (EncodeException | IOException e)
             {
