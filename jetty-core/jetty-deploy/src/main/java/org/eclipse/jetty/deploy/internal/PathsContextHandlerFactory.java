@@ -41,12 +41,12 @@ import org.slf4j.LoggerFactory;
  */
 public class PathsContextHandlerFactory
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PathsContextHandlerFactory.class);
     public static final String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
     public static final String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
     public static final String ENVIRONMENT = "environment";
     public static final String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
     public static final String ENVIRONMENT_XML_PATHS = "jetty.deploy.paths.environmentXmls";
+    private static final Logger LOG = LoggerFactory.getLogger(PathsContextHandlerFactory.class);
 
     private static Map<String, String> asProperties(Attributes attributes)
     {
@@ -57,6 +57,23 @@ public class PathsContextHandlerFactory
             props.put(name, Objects.toString(value));
         });
         return props;
+    }
+
+    /**
+     * Convert an Object into a String suitable for use as a Properties value.
+     *
+     * @param obj the object to convert
+     * @return the String representing the Object, or null if {@code obj} is null.
+     */
+    private static String asPropertyValue(Object obj)
+    {
+        if (obj == null)
+            return null;
+        if (obj instanceof Enum<?> en)
+            return en.name();
+        if (obj instanceof Environment env)
+            return env.getName();
+        return Objects.toString(obj);
     }
 
     public static List<Path> getEnvironmentXmlPaths(Attributes attributes)
@@ -221,36 +238,6 @@ public class PathsContextHandlerFactory
         }
     }
 
-    /**
-     * Convert an Object into a String suitable for use as a Properties value.
-     *
-     * @param obj the object to convert
-     * @return the String representing the Object, or null if {@code obj} is null.
-     */
-    private static String asPropertyValue(Object obj)
-    {
-        if (obj == null)
-            return null;
-        if (obj instanceof Enum<?> en)
-            return en.name();
-        if (obj instanceof Environment env)
-            return env.getName();
-        return Objects.toString(obj);
-    }
-
-    private ClassLoader getClassLoader(Object context, Environment environment)
-    {
-        ContextHandler contextHandler = getContextHandler(context);
-        if (context != null)
-        {
-            ClassLoader classLoader = contextHandler.getClassLoader();
-            if (classLoader != null)
-                return classLoader;
-        }
-
-        return environment.getClassLoader();
-    }
-
     protected void initializeContextHandler(ContextHandler contextHandler, Path path, Attributes attributes)
     {
         if (LOG.isDebugEnabled())
@@ -351,6 +338,19 @@ public class PathsContextHandlerFactory
         return true;
     }
 
+    private ClassLoader getClassLoader(Object context, Environment environment)
+    {
+        ContextHandler contextHandler = getContextHandler(context);
+        if (context != null)
+        {
+            ClassLoader classLoader = contextHandler.getClassLoader();
+            if (classLoader != null)
+                return classLoader;
+        }
+
+        return environment.getClassLoader();
+    }
+
     /**
      * Find the {@link ContextHandler} for the provided {@link Object}
      *
@@ -375,6 +375,27 @@ public class PathsContextHandlerFactory
         if (LOG.isDebugEnabled())
             LOG.debug("Not a context {}", context);
         return null;
+    }
+
+    private void initializeDeployable(Object context, Attributes attributes)
+    {
+        // Ensure that WAR fallback String (that WebInfConfiguration needs) is
+        // only created once.
+        if (attributes.getAttribute(Deployable.WAR) == null)
+        {
+            Path mainPath = (Path)attributes.getAttribute(Deployable.MAIN_PATH);
+            if (FileID.isWebArchive(mainPath))
+            {
+                // Set a backup value for the path to the war in case it hasn't already been set
+                // via a different means.  This is especially important for a deployable App
+                // that is only a <name>.war file (no XML).  The eventual WebInfConfiguration
+                // will use this attribute.
+                attributes.setAttribute(Deployable.WAR, mainPath.toString());
+            }
+        }
+
+        if (context instanceof Deployable deployable)
+            deployable.initializeDefaults(attributes);
     }
 
     /**
@@ -449,27 +470,6 @@ public class PathsContextHandlerFactory
         }
 
         return null;
-    }
-
-    private void initializeDeployable(Object context, Attributes attributes)
-    {
-        // Ensure that WAR fallback String (that WebInfConfiguration needs) is
-        // only created once.
-        if (attributes.getAttribute(Deployable.WAR) == null)
-        {
-            Path mainPath = (Path)attributes.getAttribute(Deployable.MAIN_PATH);
-            if (FileID.isWebArchive(mainPath))
-            {
-                // Set a backup value for the path to the war in case it hasn't already been set
-                // via a different means.  This is especially important for a deployable App
-                // that is only a <name>.war file (no XML).  The eventual WebInfConfiguration
-                // will use this attribute.
-                attributes.setAttribute(Deployable.WAR, mainPath.toString());
-            }
-        }
-
-        if (context instanceof Deployable deployable)
-            deployable.initializeDefaults(attributes);
     }
 
     private Object newInstance(String className) throws Exception

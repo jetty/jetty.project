@@ -483,6 +483,14 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         performActions(actions);
     }
 
+    public void resetAppState(String name)
+    {
+        PathsApp app = findApp(name);
+        if (app == null)
+            return;
+        app.resetStates();
+    }
+
     @ManagedOperation(value = "Scan the monitored directories", impact = "ACTION")
     public void scan()
     {
@@ -493,19 +501,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
                 .collect(Collectors.joining(", ", "[", "]"))
         );
         scanner.nudge();
-    }
-
-    protected PathsApp findApp(String name)
-    {
-        return trackedApps.get(name);
-    }
-
-    public void resetAppState(String name)
-    {
-        PathsApp app = findApp(name);
-        if (app == null)
-            return;
-        app.resetStates();
     }
 
     @Override
@@ -545,16 +540,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
             }
         }
         return sortActions(actions);
-    }
-
-    private void startTracking(PathsApp app)
-    {
-        trackedApps.put(app.getName(), app);
-    }
-
-    private void stopTracking(PathsApp app)
-    {
-        trackedApps.remove(app.getName());
     }
 
     @Override
@@ -649,6 +634,11 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
     protected boolean exists(String path)
     {
         return scanner.exists(path);
+    }
+
+    protected PathsApp findApp(String name)
+    {
+        return trackedApps.get(name);
     }
 
     protected boolean isEnvironmentConfigPath(Path path)
@@ -906,6 +896,16 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Cha
         }
 
         return attributesLayer;
+    }
+
+    private void startTracking(PathsApp app)
+    {
+        trackedApps.put(app.getName(), app);
+    }
+
+    private void stopTracking(PathsApp app)
+    {
+        trackedApps.remove(app.getName());
     }
 
     public record DeployAction(DeployAction.Type type, String name)
