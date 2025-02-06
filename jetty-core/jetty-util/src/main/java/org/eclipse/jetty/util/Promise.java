@@ -289,12 +289,16 @@ public interface Promise<C>
          */
         static <R> BiConsumer<R, Throwable> toBiConsumer(Promise.Invocable<R> promise)
         {
-            return (result, failure) ->
+            return new InvocableBiConsumer<>(promise.getInvocationType())
             {
-                if (failure == null)
-                    promise.succeeded(result);
-                else
-                    promise.failed(failure);
+                @Override
+                public void accept(R result, Throwable failure)
+                {
+                    if (failure == null)
+                        promise.succeeded(result);
+                    else
+                        promise.failed(failure);
+                }
             };
         }
 
@@ -518,4 +522,21 @@ public interface Promise<C>
 class NoOp extends Promise.Invocable.NonBlocking<Object>
 {
     static NoOp NOOP = new NoOp();
+}
+
+// @checkstyle-disable-check : OneTopLevelClass
+abstract class InvocableBiConsumer<R> implements BiConsumer<R, Throwable>, org.eclipse.jetty.util.thread.Invocable
+{
+    private final InvocationType invocationType;
+
+    InvocableBiConsumer(InvocationType invocationType)
+    {
+        this.invocationType = invocationType;
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return invocationType;
+    }
 }
