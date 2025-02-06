@@ -75,6 +75,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HttpConnectionTest
 {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(HttpConnectionTest.class);
+
+    private final HttpConfiguration httpConfig = new HttpConfiguration();
     private Server _server;
     private LocalConnector _connector;
 
@@ -83,11 +85,10 @@ public class HttpConnectionTest
     {
         _server = new Server();
 
-        HttpConfiguration config = new HttpConfiguration();
-        config.setRequestHeaderSize(1024);
-        config.setResponseHeaderSize(1024);
-        config.setSendDateHeader(true);
-        HttpConnectionFactory http = new HttpConnectionFactory(config);
+        httpConfig.setRequestHeaderSize(1024);
+        httpConfig.setResponseHeaderSize(1024);
+        httpConfig.setSendDateHeader(true);
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
 
         _connector = new LocalConnector(_server, http, null);
         _connector.setIdleTimeout(5000);
@@ -1187,6 +1188,8 @@ public class HttpConnectionTest
     @Test
     public void testOversizedResponse() throws Exception
     {
+        httpConfig.setMaxResponseHeaderSize(httpConfig.getResponseHeaderSize());
+
         String str = "thisisastringthatshouldreachover1kbytes-";
         for (int i = 0; i < 500; i++)
         {
