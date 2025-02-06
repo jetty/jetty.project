@@ -42,6 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -848,6 +849,48 @@ public class ServletHandlerTest
         assertThat(connector.getResponse("GET /foo/bar HTTP/1.0\r\n\r\n"), containsString("path-/*-name-foo-FOO"));
         assertThat(connector.getResponse("GET /foo/bar.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-name-foo-FOO"));
         assertThat(connector.getResponse("GET /other.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-default"));
+    }
+
+    @Test
+    public void testFilterMappingsResetAfterStart() throws Exception
+    {
+        Server server = new Server();
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
+
+        ServletHandler handler = context.getServletHandler();
+        List<FilterHolder> filterHolders = new ArrayList<>();
+        fh1.setFilter(new SomeFilter());
+        fh2.setFilter(new SomeFilter());
+        fh3.setFilter(new SomeFilter());
+        filterHolders.add(fh1);
+        filterHolders.add(fh2);
+        List<FilterMapping> filterMappings = new ArrayList<>();
+        filterMappings.add(fm1);
+        filterMappings.add(fm2);
+
+        handler.setFilters(filterHolders.toArray(
+            new FilterHolder[filterHolders.size()]
+        ));
+        handler.setFilterMappings(filterMappings.toArray(
+            new FilterMapping[filterMappings.size()]
+        ));
+
+        handler.addFilter(fh3, fm3);
+
+        server.start();
+
+        context.stop();
+
+        assertDoesNotThrow(() ->
+        {
+            handler.setFilters(null);
+            handler.setFilterMappings(null);
+            handler.addFilter(fh1, fm1);
+            handler.addFilter(fh2, fm2);
+            handler.addFilter(fh3, fm3);
+            context.start();
+        });
     }
 
     @Test

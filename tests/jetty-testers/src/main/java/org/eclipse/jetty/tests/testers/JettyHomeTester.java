@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * String jettyVersion = "12.0.0";
  * JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
  *         .jettyVersion(jettyVersion)
- *         .jettyBase(Paths.get("demo-base"))
+ *         .jettyBase(Paths.get("test-base"))
  *         .build();
  *
  * // The first run initializes the Jetty Base.
