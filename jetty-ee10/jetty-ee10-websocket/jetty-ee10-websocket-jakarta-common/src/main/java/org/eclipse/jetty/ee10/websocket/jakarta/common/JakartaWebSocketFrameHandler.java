@@ -45,6 +45,7 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
@@ -232,14 +233,12 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         return wrappedConfig;
     }
 
-    public void onError(Throwable error)
+    public void handleError(Throwable error)
     {
-        try
+        try (Blocker.Callback callback = Blocker.callback())
         {
-            Blocker.Callback callback = Blocker.callback();
             onError(error, callback);
             callback.block();
-            coreSession.demand();
         }
         catch (Throwable t)
         {
@@ -247,6 +246,20 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             CloseStatus closeStatus = new CloseStatus(CloseStatus.SERVER_ERROR, t);
             getSession().getCoreSession().close(closeStatus, Callback.NOOP);
         }
+    }
+
+    public void handleError(Throwable error, Callback callback)
+    {
+        Throwable unwrappedError = error;
+        if (unwrappedError instanceof WebSocketException webSocketException && webSocketException.getCause() != null)
+            unwrappedError = webSocketException.getCause();
+        onError(unwrappedError, callback);
+        if (error instanceof CloseException closeException)
+        {
+            CloseStatus closeStatus = new CloseStatus(closeException.getStatusCode(), closeException);
+            getSession().getCoreSession().close(closeStatus, Callback.NOOP);
+        }
+        coreSession.demand();
     }
 
     @Override
@@ -258,11 +271,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             // If it is a recoverable error, we can continue processing frames.
             if (session.isOpen())
             {
-                if (x instanceof WebSocketException webSocketException)
-                    x = webSocketException.getCause();
-
-                onError(x, frameCallback);
-                coreSession.demand();
+                handleError(x, frameCallback);
                 return;
             }
 
