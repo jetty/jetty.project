@@ -676,7 +676,7 @@ public interface Request
     {
         /**
          * @return the value of the {@code Content-Type} header for the request
-         * content, such as {@code application/octet-stream} or {@code application/json},
+         * content, such as {@code text/html;charset=utf-8} or {@code application/json},
          * or {@code null} to use the value from
          * {@link HttpClient#getDefaultRequestContentType()}
          */
