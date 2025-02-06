@@ -43,7 +43,7 @@ public class ManyConnectorsTest extends AbstractEmbeddedTest
         Map<String, Integer> ports = ServerUtil.fixDynamicPortConfigurations(server);
 
         // Establish base URI's that use "localhost" to prevent tripping over
-        // the "REMOTE ACCESS" warnings in demo-base
+        // the "REMOTE ACCESS" warnings in webapps/ee#-demo-jetty.d/ee#-demo-jetty-override-web.xml
         serverPlainUri = URI.create("http://localhost:" + ports.get("plain") + "/");
         serverSslUri = URI.create("https://localhost:" + ports.get("secure") + "/");
     }

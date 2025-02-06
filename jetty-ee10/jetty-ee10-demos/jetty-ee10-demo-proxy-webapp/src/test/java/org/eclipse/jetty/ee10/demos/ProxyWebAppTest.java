@@ -34,7 +34,7 @@ import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.is;
 
 /**
- * Test the configuration found in WEB-INF/web.xml for purposes of the demo-base
+ * Test the configuration found in WEB-INF/web.xml of ee10-demo-proxy.war
  */
 public class ProxyWebAppTest
 {
