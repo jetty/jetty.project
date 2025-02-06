@@ -144,7 +144,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
             assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
             assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
-            assertEquals(httpClient.getRequestBufferSize(), http2Client.getMaxRequestHeadersSize());
+            assertEquals(httpClient.getMaxRequestHeadersSize(), http2Client.getMaxRequestHeadersSize());
             assertEquals(httpClient.getMaxResponseHeadersSize(), http2Client.getMaxResponseHeadersSize());
         }
         assertTrue(http2Client.isStopped());

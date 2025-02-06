@@ -92,6 +92,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             HTTP3Configuration http3Configuration = http3Client.getHTTP3Configuration();
             assertEquals(httpClient.isUseInputDirectByteBuffers(), http3Configuration.isUseInputDirectByteBuffers());
             assertEquals(httpClient.isUseOutputDirectByteBuffers(), http3Configuration.isUseOutputDirectByteBuffers());
+            assertEquals(httpClient.getMaxRequestHeadersSize(), http3Configuration.getMaxRequestHeadersSize());
             assertEquals(httpClient.getMaxResponseHeadersSize(), http3Configuration.getMaxResponseHeadersSize());
         }
         assertTrue(http3Client.isStopped());

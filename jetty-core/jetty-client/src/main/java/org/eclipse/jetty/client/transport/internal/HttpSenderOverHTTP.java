@@ -157,6 +157,7 @@ public class HttpSenderOverHTTP extends HttpSender
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             HttpExchange exchange = getHttpExchange();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+            int requestHeadersSize = httpClient.getRequestBufferSize();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -173,14 +174,25 @@ public class HttpSenderOverHTTP extends HttpSender
                 {
                     case NEED_HEADER:
                     {
-                        headerBuffer = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
+                        generator.setMaxHeaderBytes(getHttpChannel().getHttpDestination().getHttpClient().getMaxRequestHeadersSize());
+                        headerBuffer = bufferPool.acquire(requestHeadersSize, useDirectByteBuffers);
                         break;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        headerBuffer.release();
-                        headerBuffer = null;
-                        throw new IllegalArgumentException("Request header too large");
+                        int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
+                        if (maxRequestHeadersSize > requestHeadersSize)
+                        {
+                            generator.reset();
+                            headerBuffer.release();
+                            headerBuffer = bufferPool.acquire(maxRequestHeadersSize, useDirectByteBuffers);
+                            requestHeadersSize = maxRequestHeadersSize;
+                            break;
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException("Request headers too large");
+                        }
                     }
                     case NEED_CHUNK:
                     {
@@ -189,7 +201,7 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     case NEED_CHUNK_TRAILER:
                     {
-                        chunkBuffer = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
+                        chunkBuffer = bufferPool.acquire(requestHeadersSize, useDirectByteBuffers);
                         break;
                     }
                     case FLUSH:

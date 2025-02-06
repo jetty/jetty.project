@@ -59,8 +59,11 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -1934,6 +1937,108 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRequestHeadersSizeOverflow(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        RetainableByteBuffer buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
+        int capacity = buffer.capacity();
+        buffer.release();
+        client.setMaxRequestHeadersSize(3 * capacity);
+        connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setRequestHeaderSize(3 * capacity);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            // Overflow the default request headers size, but don't exceed the max.
+            .agent("A".repeat(2 * capacity))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testResponseHeadersSizeOverflow(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
+            {
+                int capacity = (int)request.getHeaders().getLongField("X-Capacity");
+                // Overflow the default response headers size, but don't exceed the max.
+                response.getHeaders().put("X-Large", "A".repeat(2 * capacity));
+            }
+        });
+
+        HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
+        RetainableByteBuffer buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
+        int capacity = buffer.capacity();
+        buffer.release();
+        httpConfig.setMaxResponseHeaderSize(3 * capacity);
+        client.setMaxResponseHeadersSize(3 * capacity);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .headers(h -> h.put("X-Capacity", capacity))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testMaxRequestHeadersSize(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        RetainableByteBuffer buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
+        int capacity = buffer.capacity();
+        buffer.release();
+        client.setMaxRequestHeadersSize(2 * capacity);
+        connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setRequestHeaderSize(4 * capacity);
+
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            // Overflow the max request headers size.
+            .agent("A".repeat(3 * capacity))
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testMaxResponseHeadersSize(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
+            {
+                int capacity = (int)request.getHeaders().getLongField("X-Capacity");
+                // Overflow the max request headers size, should generate a 500.
+                response.getHeaders().put("X-Large", "A".repeat(3 * capacity));
+            }
+        });
+
+        HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
+        RetainableByteBuffer buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
+        int capacity = buffer.capacity();
+        buffer.release();
+        httpConfig.setMaxResponseHeaderSize(2 * capacity);
+        client.setMaxResponseHeadersSize(4 * capacity);
+
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .headers(h -> h.put("X-Capacity", capacity))
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
     }
 
     private void assertCopyRequest(Request original)
