@@ -20,7 +20,6 @@ import java.lang.reflect.RecordComponent;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -648,8 +647,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             long pooled = _pooled.longValue();
             long acquires = _acquires.longValue();
             float hitRatio = acquires == 0 ? Float.NaN : pooled * 100F / acquires;
+            int averageSize = acquires == 0 ? 0 : (int)(_totalAcquired.longValue() / acquires);
             return new Statistics(getCapacity(), getPool().getInUseCount(), getPool().size(), pooled, acquires,
-                _releases.longValue(), hitRatio, _nonPooled.longValue(), _evicts.longValue(), _removes.longValue());
+                _releases.longValue(), hitRatio, averageSize, _nonPooled.longValue(), _evicts.longValue(), _removes.longValue());
         }
 
         public void clear()
@@ -671,7 +671,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         private record Statistics(int capacity, int inUseEntries, int totalEntries, long pooled, long acquires,
-                                  long releases, float hitRatio, long nonPooled, long evicts, long removes)
+                                  long releases, float hitRatio, int averageSize, long nonPooled, long evicts, long removes)
         {
             private Map<String, Object> toMap()
             {
@@ -693,7 +693,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             @Override
             public String toString()
             {
-                return "capacity=%d,in-use=%d/%d,pooled/acquires/releases=%d/%d/%d(%.3f%%),non-pooled/evicts/removes=%d/%d/%d".formatted(
+                return "capacity=%d,in-use=%d/%d,pooled/acquires/releases=%d/%d/%d(%.3f%%),avgSize=%d,non-pooled/evicts/removes=%d/%d/%d".formatted(
                     capacity,
                     inUseEntries,
                     totalEntries,
@@ -701,6 +701,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     acquires,
                     releases,
                     hitRatio,
+                    averageSize,
                     nonPooled,
                     evicts,
                     removes
