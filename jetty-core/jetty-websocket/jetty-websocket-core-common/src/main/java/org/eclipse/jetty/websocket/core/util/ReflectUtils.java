@@ -411,6 +411,9 @@ public class ReflectUtils
             return true;
         }
 
+        if (superType instanceof ParameterizedType pSuperType && subType instanceof Class<?> subClass)
+            return ((Class<?>)pSuperType.getRawType()).isAssignableFrom(subClass);
+
         if (superType instanceof GenericArrayType superTypeArray && subType instanceof GenericArrayType subTypeArray)
             return isAssignableFrom(superTypeArray.getGenericComponentType(), subTypeArray.getGenericComponentType());
 
