@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -392,15 +393,14 @@ public class ResponseListeners
                 iterator.remove();
         }
         notifyHeaders(headersListener, response);
+        ByteBuffer content = BufferUtil.EMPTY_BUFFER;
         if (response instanceof ContentResponse contentResponse)
         {
-            byte[] content = contentResponse.getContent();
-            if (content != null && content.length > 0)
-            {
-                ByteBufferContentSource byteBufferContentSource = new ByteBufferContentSource(ByteBuffer.wrap(content));
-                notifyContentSource(contentSourceListener, response, byteBufferContentSource);
-            }
+            byte[] bytes = contentResponse.getContent();
+            if (bytes != null && bytes.length > 0)
+                content = ByteBuffer.wrap(bytes);
         }
+        notifyContentSource(contentSourceListener, response, new ByteBufferContentSource(content));
     }
 
     public void emitSuccess(Response response)

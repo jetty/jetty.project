@@ -675,9 +675,10 @@ public interface Request
     public interface Content extends org.eclipse.jetty.io.Content.Source
     {
         /**
-         * @return the content type string such as "application/octet-stream" or
-         * "application/json;charset=UTF8", or null if the {@code Content-Type}
-         * header must not be set
+         * @return the value of the {@code Content-Type} header for the request
+         * content, such as {@code text/html;charset=utf-8} or {@code application/json},
+         * or {@code null} to use the value from
+         * {@link HttpClient#getDefaultRequestContentType()}
          */
         public default String getContentType()
         {
