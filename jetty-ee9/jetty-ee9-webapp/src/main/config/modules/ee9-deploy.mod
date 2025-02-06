@@ -1,6 +1,6 @@
 [description]
 # tag::description[]
-This module enables webapp deployment from the `$JETTY_BASE/webapps` directory.
+Scans and deploys `ee9` environment webapps from `$JETTY_BASE/webapps` directory.
 # end::description[]
 
 [tags]
@@ -10,7 +10,7 @@ deployment
 ee9
 
 [depend]
-deploy
+deployment/deployment-scanner
 ee9-webapp
 
 [xml]

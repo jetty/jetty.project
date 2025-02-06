@@ -1,5 +1,7 @@
 [description]
-Enables application based on core handlers deployed from the $JETTY_BASE/webapps/ directory.
+# tag::description[]
+Scans and deploys `core` environment contexts from `$JETTY_BASE/webapps` directory.
+# end::description[]
 
 [tags]
 deployment
@@ -8,7 +10,7 @@ deployment
 core
 
 [depend]
-deploy
+deployment/deployment-scanner
 
 [xml]
 etc/jetty-core-deploy.xml
