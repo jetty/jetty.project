@@ -2,7 +2,7 @@
 Deprecated `deploy` module (does nothing on its own)
 
 [deprecated]
-Module 'deprecated' is deprecated and does nothing
+Module 'deploy' is deprecated and does nothing on its own.
 Use one of the environment specific modules '<env>-deploy' instead.
 
 [tags]
