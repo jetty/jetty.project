@@ -129,16 +129,6 @@ public class HttpSenderOverHTTP3 extends HttpSender
             }
         }
 
-        Stream stream = getHttpChannel().getStream();
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("HTTP3 request #{}/{}:{}{} {}{}{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), metaData.getMethod(), metaData.getHttpURI(),
-                System.lineSeparator(), metaData.getHttpFields());
-        }
-
         HeadersFrame hf = headersFrame;
         DataFrame df = dataFrame;
         HeadersFrame tf = trailerFrame;
@@ -147,17 +137,26 @@ public class HttpSenderOverHTTP3 extends HttpSender
         session.newRequest(hf, getHttpChannel().getStreamListener(), Promise.Invocable.from(callback.getInvocationType(), s ->
         {
             onNewStream(s, request);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("HTTP3 request #{}/{}:{}{} {}{}{}",
+                    s.getId(), Integer.toHexString(s.getSession().hashCode()),
+                    System.lineSeparator(), metaData.getMethod(), metaData.getHttpURI(),
+                    System.lineSeparator(), metaData.getHttpFields());
+            }
+
             if (df != null)
             {
                 if (tf != null)
-                    sendDataAndTrailer(stream, df, lastContent, tf, callback);
+                    sendDataAndTrailer(s, df, lastContent, tf, callback);
                 else
-                    sendData(stream, df, lastContent, callback);
+                    sendData(s, df, lastContent, callback);
             }
             else
             {
                 if (tf != null)
-                    sendTrailer(stream, tf, callback);
+                    sendTrailer(s, tf, callback);
                 else
                     callback.succeeded();
             }
