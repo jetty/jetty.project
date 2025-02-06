@@ -295,6 +295,8 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
             JakartaWebSocketCreator creator = new JakartaWebSocketCreator(this, config, getExtensionRegistry());
             PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
+            if (webSocketMappings.getWebSocketNegotiator(pathSpec) != null)
+                throw new DeploymentException("Duplicate WebSocket mapping for path: " + config.getPath());
             webSocketMappings.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
         }
         catch (InvalidSignatureException e)
