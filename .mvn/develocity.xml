@@ -29,7 +29,7 @@
         <![CDATA[authenticated]]>
       </onlyIf>
     </publishing>
-    <backgroundBuildScanUpload>#{isFalse(env['JENKINS_URL'])}</backgroundBuildScanUpload>
+    <backgroundBuildScanUpload>#{isFalse(env['CI']) and isFalse(env['JENKINS_URL'])}</backgroundBuildScanUpload>
   </buildScan>
   <buildCache>
     <local>
@@ -37,7 +37,7 @@
     </local>
     <remote>
       <enabled>false</enabled>
-      <storeEnabled>#{isTrue(env['JENKINS_URL'])}</storeEnabled>
+      <storeEnabled>#{isTrue(env['CI']) or isTrue(env['JENKINS_URL'])}</storeEnabled>
     </remote>
   </buildCache>
 </develocity>
