@@ -79,6 +79,7 @@ jobs:
       - name: Clean install dependencies and build
         env:
           MAVEN_OPTS: "-Djava.awt.headless=true -client -Xmx4G -Xms4G"
+          DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_API_TOKEN }}
         run:
           ./mvnw clean install -DskipTests -B -V
 

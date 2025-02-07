@@ -1,5 +1,12 @@
 #!groovy
 
+def secrets = [
+  [path: 'cbi/rt.jetty/develocity.eclipse.org', secretValues: [
+    [envVar: 'DEVELOCITY_ACCESS_KEY', vaultKey: 'api-token']
+    ]
+  ]
+]
+
 pipeline {
   agent none
   // save some io during the build
@@ -129,7 +136,9 @@ def mavenBuild(jdk, cmdline, mvnName) {
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
           }
-          sh "mvn $extraArgs $dashProfile -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          withVault([vaultSecrets: secrets]) {
+            sh "mvn $extraArgs $dashProfile -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          }
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
