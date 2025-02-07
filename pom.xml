@@ -2863,6 +2863,7 @@
                   jetty-e8.*</skippedModules>
                 <sourceFileExcludes>
                   <sourceFileExclude>**/module-info.java</sourceFileExclude>
+                  <sourceFileExclude>**/internal/**/*.java</sourceFileExclude>
                 </sourceFileExcludes>
                 <sourceFileIncludes>
                   <sourceFileInclude>org/eclipse/jetty/**/*.java</sourceFileInclude>
