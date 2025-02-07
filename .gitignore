@@ -54,3 +54,6 @@ bin/
 reports/
 
 .launchable
+
+# Develocity
+.mvn/.develocity/develocity-workspace-id
