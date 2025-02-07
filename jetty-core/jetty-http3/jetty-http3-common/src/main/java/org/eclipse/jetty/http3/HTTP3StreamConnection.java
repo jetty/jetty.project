@@ -117,17 +117,24 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     @Override
     public void onFillable()
     {
+        processFrames(null);
+    }
+
+    private void processFrames(ParseResult result)
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("onFillable drivesFillInterest={} on {}", drivesFillInterest, this);
+            LOG.debug("processing frames, drivesFillInterest={} on {}", drivesFillInterest, this);
 
         try
         {
             if (drivesFillInterest)
             {
                 tryAcquireInputBuffer();
+
                 while (true)
                 {
-                    ParseResult result = parseAndFill();
+                    if (result == null)
+                        result = parseAndFill();
                     boolean loop = switch (result)
                     {
                         case NO_FRAME ->
@@ -178,7 +185,10 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             yield false;
                         }
                     };
-                    if (!loop)
+
+                    if (loop)
+                        result = null;
+                    else
                         break;
                 }
             }
@@ -494,10 +504,10 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 LOG.debug("received {}#{} wasBlocked={}", frame, streamId, wasBlocked);
             Runnable delegate = () -> super.onHeaders(streamId, frame, wasBlocked);
             Runnable task = () -> processHeaders(frame, wasBlocked, delegate);
-            if (wasBlocked)
-                task.run();
-            else if (!frameAction.compareAndSet(null, new FrameAction(frame, task)))
+            if (!frameAction.compareAndSet(null, new FrameAction(frame, task)))
                 throw new IllegalStateException();
+            if (wasBlocked)
+                processFrames(ParseResult.FRAME);
         }
 
         @Override

@@ -361,12 +361,12 @@ public class ClientServerTest extends AbstractClientServerTest
         stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true), Promise.Invocable.noop());
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
+        assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
         assertArrayEquals(bytesSent, bytesReceived);
 
         HTTP3Session serverSession = serverSessionRef.get();
-        assertTrue(serverSession.getStreams().isEmpty());
-        assertTrue(clientSession.getStreams().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> serverSession.getStreams().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientSession.getStreams().isEmpty());
 
         ProtocolSession serverProtocolSession = serverSession.getProtocolSession();
         assertTrue(serverProtocolSession.getStreamEndPoints().stream()

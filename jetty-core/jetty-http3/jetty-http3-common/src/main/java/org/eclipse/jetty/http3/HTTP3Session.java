@@ -618,8 +618,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         if (goAwayFrame != null)
         {
-            Callback callback = Callback.from(() -> promise.succeeded(this), promise::failed);
-            writeControlFrame(goAwayFrame, Callback.from(() -> terminateAndDisconnect(error, reason, promise), callback));
+            writeControlFrame(goAwayFrame, Callback.from(() -> terminateAndDisconnect(error, reason, promise)));
         }
         else
         {
