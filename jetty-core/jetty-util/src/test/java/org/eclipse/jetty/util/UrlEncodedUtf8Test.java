@@ -39,7 +39,8 @@ public class UrlEncodedUtf8Test
         f=%aardvark     | f            | �rdvark
         g=b%ar          | g            | b�
         h=end%          | h            | end�
-        i=%&z=2         | i            | �
+        # This shows how the '&' symbol gets swallowed by a pct-encoding effort.
+        i=%&z=2         | i            | �=2
         """)
     public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue)
     {
