@@ -176,6 +176,9 @@ public class MessageOutputStream extends OutputStream
     {
         try
         {
+            if (closed)
+                return;
+
             flush(true);
             buffer.release();
             if (LOG.isDebugEnabled())
