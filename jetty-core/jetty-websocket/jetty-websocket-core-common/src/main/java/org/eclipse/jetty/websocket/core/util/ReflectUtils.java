@@ -24,9 +24,12 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
 
@@ -143,19 +146,49 @@ public class ReflectUtils
 
     public static Method[] findAnnotatedMethods(Class<?> pojo, Class<? extends Annotation> anno)
     {
-        Class<?> clazz = pojo;
-        List<Method> methods = new ArrayList<>();
-        while ((clazz != null) && Object.class.isAssignableFrom(clazz))
+        Set<MethodSignature> seenSignatures = new HashSet<>();
+        List<Method> annotatedMethods = new ArrayList<>();
+
+        for (Class<?> clazz = pojo; (clazz != null) && Object.class.isAssignableFrom(clazz); clazz = clazz.getSuperclass())
         {
-            Stream.of(clazz.getDeclaredMethods())
-                .filter(method -> !method.isSynthetic() && (method.getAnnotation(anno) != null))
-                .forEach(methods::add);
-            clazz = clazz.getSuperclass();
+            for (Method method : clazz.getDeclaredMethods())
+            {
+                if (method.isSynthetic() || method.getAnnotation(anno) == null)
+                    continue;
+                if (seenSignatures.add(new MethodSignature(method)))
+                    annotatedMethods.add(method);
+            }
         }
 
-        if (methods.isEmpty())
+        if (annotatedMethods.isEmpty())
             return null;
-        return methods.toArray(new Method[0]);
+        return annotatedMethods.toArray(new Method[0]);
+    }
+
+    private static class MethodSignature
+    {
+        private final String name;
+        private final Class<?>[] parameterTypes;
+
+        MethodSignature(Method method)
+        {
+            this.name = method.getName();
+            this.parameterTypes = method.getParameterTypes();
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (o instanceof MethodSignature that)
+                return Objects.equals(name, that.name) && Arrays.equals(parameterTypes, that.parameterTypes);
+            return false;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 31 * name.hashCode() + Arrays.hashCode(parameterTypes);
+        }
     }
 
     /**
