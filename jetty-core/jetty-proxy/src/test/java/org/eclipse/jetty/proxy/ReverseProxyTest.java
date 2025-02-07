@@ -147,6 +147,7 @@ public class ReverseProxyTest extends AbstractProxyTest
 
         int maxResponseHeadersSize = 256;
         serverHttpConfig.setResponseHeaderSize(maxResponseHeadersSize);
+        serverHttpConfig.setMaxResponseHeaderSize(maxResponseHeadersSize);
         startServer(new Handler.Abstract()
         {
             @Override
@@ -283,6 +284,7 @@ public class ReverseProxyTest extends AbstractProxyTest
 
         CountDownLatch proxyToClientFailureLatch = new CountDownLatch(1);
         proxyHttpConfig.setResponseHeaderSize(maxResponseHeadersSize);
+        proxyHttpConfig.setMaxResponseHeaderSize(maxResponseHeadersSize);
         startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
             HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
         {
