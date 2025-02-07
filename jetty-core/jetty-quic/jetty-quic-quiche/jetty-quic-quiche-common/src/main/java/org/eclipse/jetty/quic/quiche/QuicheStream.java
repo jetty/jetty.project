@@ -28,6 +28,7 @@ import org.eclipse.jetty.quic.common.AbstractStream;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +37,11 @@ public class QuicheStream extends AbstractStream
     private static final Logger LOG = LoggerFactory.getLogger(QuicheStream.class);
     private static final Listener DEFAULT_LISTENER = new Listener() {};
 
+    private final AutoLock lock = new AutoLock();
     private final AtomicReference<Writer> writer = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final QuicheSession session;
+    private boolean dataDemand;
 
     public QuicheStream(QuicheSession session, long streamId, boolean local)
     {
@@ -81,9 +84,39 @@ public class QuicheStream extends AbstractStream
         return session;
     }
 
-    Throwable peek()
+    boolean readable()
     {
-        Throwable failure = session.peek(this);
+        boolean hasDemand;
+        try (AutoLock ignored = lock.lock())
+        {
+            hasDemand = dataDemand;
+            dataDemand = false;
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("readable demand={} {} on {}", hasDemand, this, session);
+
+        if (hasDemand)
+        {
+            notifyDataAvailable();
+        }
+        else
+        {
+            // Even if there is no demand, we want to know if the peer sent a RESET_STREAM.
+            if (session.isFinished(this))
+            {
+                Throwable failure = isReset();
+                if (failure != null)
+                    notifyFailure(failure);
+            }
+        }
+
+        return hasDemand;
+    }
+
+    private Throwable isReset()
+    {
+        Throwable failure = session.isReset(this);
         if (failure != null)
             updateCloseState(CloseState.REMOTELY_CLOSED);
         return failure;
@@ -125,7 +158,18 @@ public class QuicheStream extends AbstractStream
     @Override
     public void demand()
     {
-        session.demand(this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("demand for {} on {}", this, session);
+
+        try (AutoLock ignored = lock.lock())
+        {
+            dataDemand = true;
+        }
+
+        // The production might have idled, as all the network
+        // data was fed to Quiche, but there was no demand.
+        // Restart production now that there is demand.
+        session.produce();
     }
 
     @Override
@@ -364,7 +408,7 @@ public class QuicheStream extends AbstractStream
         write(current);
     }
 
-    void notifyDataAvailable()
+    private void notifyDataAvailable()
     {
         Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
         try
@@ -393,7 +437,7 @@ public class QuicheStream extends AbstractStream
         }
     }
 
-    void notifyFailure(Throwable failure)
+    private void notifyFailure(Throwable failure)
     {
         Listener listener = getListener();
         try

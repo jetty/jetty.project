@@ -895,7 +895,7 @@ public class ForeignQuicheConnection extends Quiche
     }
 
     @Override
-    public int drainClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
+    public int drainClearBytesForStream(long streamId, ByteBuffer buffer, boolean[] last) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -905,24 +905,28 @@ public class ForeignQuicheConnection extends Quiche
             long read;
             try (Arena scope = Arena.ofConfined())
             {
-                MemorySegment fin = scope.allocate(NativeHelper.C_CHAR);
+                MemorySegment fin = scope.allocate(NativeHelper.C_BOOL);
                 MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
                 if (buffer.isDirect())
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
                     MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
                     read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
+                    if (read >= 0)
+                    {
+                        buffer.position(buffer.position() + (int)read);
+                        last[0] = fin.get(NativeHelper.C_BOOL, 0L) != 0;
+                    }
                 }
                 else
                 {
                     // If the ByteBuffer is heap-allocated, native memory must be copied to it.
                     MemorySegment bufferSegment = scope.allocate(buffer.remaining());
                     read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
-                    if (read > 0)
+                    if (read >= 0)
                     {
-                        int prevPosition = buffer.position();
                         buffer.put(bufferSegment.asByteBuffer().limit((int)read));
-                        buffer.position(prevPosition);
+                        last[0] = fin.get(NativeHelper.C_BOOL, 0L) != 0;
                     }
                 }
             }
@@ -933,7 +937,6 @@ public class ForeignQuicheConnection extends Quiche
                 throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             if (read < 0L)
                 throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
-            buffer.position((int)(buffer.position() + read));
             return (int)read;
         }
     }

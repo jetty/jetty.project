@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -238,6 +239,7 @@ public class StreamEndPoint implements EndPoint
             callback = fillInterest;
             fillInterest = null;
         }
+        // TODO: feed callback to AES or executeImmediately.
         if (callback != null)
             callback.succeeded();
         else
@@ -541,7 +543,12 @@ public class StreamEndPoint implements EndPoint
         if (LOG.isDebugEnabled())
             LOG.debug("notifying fillable via {} on {}", callback, this);
         if (callback != null)
-            callback.succeeded();
+        {
+            // This is how protocols on top of QUIC streams are parallelized.
+            // For example H1 on top of SEPs would register a BLOCKING callback,
+            // and the AES at the QUIC session level would run them concurrently.
+            protocolSession.offerTask(new Invocable.ReadyTask(callback.getInvocationType(), callback::succeeded));
+        }
     }
 
     @Override

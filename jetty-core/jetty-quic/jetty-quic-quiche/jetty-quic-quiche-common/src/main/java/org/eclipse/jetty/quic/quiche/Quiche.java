@@ -165,7 +165,7 @@ public abstract class Quiche
 
     public abstract int feedClearBytesForStream(long streamId, ByteBuffer buffer, boolean last) throws IOException;
 
-    public abstract int drainClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException;
+    public abstract int drainClearBytesForStream(long streamId, ByteBuffer buffer, boolean[] last) throws IOException;
 
     /**
      * @param streamId the stream id

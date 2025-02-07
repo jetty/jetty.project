@@ -33,7 +33,6 @@ public class MessageFlusher extends IteratingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(MessageFlusher.class);
 
-    private final Callback writeCallback = Callback.from(InvocationType.NON_BLOCKING, this::onWriteSuccess, this::onWriteFailure);
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
     private final ByteBufferPool.Accumulator accumulator;
@@ -79,7 +78,7 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} buffers ({} bytes) for stream #{} on {}", buffers.size(), accumulator.getTotalLength(), endPoint.getStream().getId(), this);
 
-        endPoint.write(Frame.isLast(frame), buffers, writeCallback);
+        endPoint.write(Frame.isLast(frame), buffers, Callback.from(entry.callback.getInvocationType(), this::onWriteSuccess, this::onWriteFailure));
         return Action.SCHEDULED;
     }
 

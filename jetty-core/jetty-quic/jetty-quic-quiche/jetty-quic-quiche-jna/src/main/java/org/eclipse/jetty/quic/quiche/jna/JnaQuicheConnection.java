@@ -739,7 +739,7 @@ public class JnaQuicheConnection extends Quiche
     }
 
     @Override
-    public int drainClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
+    public int drainClearBytesForStream(long streamId, ByteBuffer buffer, boolean[] last) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -747,15 +747,19 @@ public class JnaQuicheConnection extends Quiche
                 throw new IOException("connection was released");
             bool_pointer fin = new bool_pointer();
             uint64_t_pointer outErrorCode = new uint64_t_pointer();
-            int read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin, outErrorCode).intValue();
+            long read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin, outErrorCode).longValue();
+            if (read >= 0)
+            {
+                buffer.position(buffer.position() + (int)read);
+                last[0] = fin.getValue();
+            }
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read == quiche_error.QUICHE_ERR_STREAM_RESET)
                 throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             if (read < 0L)
                 throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
-            buffer.position(buffer.position() + read);
-            return read;
+            return (int)read;
         }
     }
 

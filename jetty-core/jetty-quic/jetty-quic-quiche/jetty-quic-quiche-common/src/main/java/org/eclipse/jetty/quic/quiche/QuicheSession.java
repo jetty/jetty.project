@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.quiche;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -26,7 +27,6 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -75,7 +75,6 @@ public abstract class QuicheSession extends AbstractSession
     private static final Logger LOG = LoggerFactory.getLogger(QuicheSession.class);
 
     private final Map<Long, QuicheStream> streams = new ConcurrentHashMap<>();
-    private final Set<Long> demands = ConcurrentHashMap.newKeySet();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final Quiche quiche;
@@ -335,27 +334,20 @@ public abstract class QuicheSession extends AbstractSession
         strategy.produce();
     }
 
-    void demand(QuicheStream stream)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("demand for {} on {}", stream, this);
-        demands.add(stream.getId());
-        // The production might have idled, as all the network
-        // data was fed to Quiche, but there was no demand.
-        // Restart production now that there is demand.
-        produce();
-    }
-
-    Throwable peek(QuicheStream stream)
+    Throwable isReset(QuicheStream stream)
     {
         try
         {
-            quiche.drainClearBytesForStream(stream.getId(), BufferUtil.EMPTY_BUFFER);
+            quiche.drainClearBytesForStream(stream.getId(), BufferUtil.EMPTY_BUFFER, new boolean[1]);
             return null;
+        }
+        catch (EOFException x)
+        {
+            return x;
         }
         catch (Throwable x)
         {
-            return x;
+            return null;
         }
     }
 
@@ -369,23 +361,26 @@ public abstract class QuicheSession extends AbstractSession
         {
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             byteBuffer.clear();
-            int filled = quiche.drainClearBytesForStream(stream.getId(), byteBuffer);
+
+            boolean[] outLast = new boolean[1];
+            int filled = quiche.drainClearBytesForStream(stream.getId(), byteBuffer, outLast);
             byteBuffer.flip();
+            boolean last = outLast[0];
 
             if (LOG.isDebugEnabled())
-                LOG.debug("read {} bytes from {} on {}", filled, stream, this);
+                LOG.debug("read {} bytes last={} from {} on {}", filled, last, stream, this);
 
             flush();
 
             if (filled > 0)
             {
                 // Releasing the StreamData will release the buffer.
-                return new QuicheStreamData(buffer);
+                return new QuicheStreamData(buffer, last);
             }
 
             buffer.release();
 
-            if (filled == 0)
+            if (filled == 0 && !last)
                 return null;
 
             return Stream.Data.EOF;
@@ -597,11 +592,13 @@ public abstract class QuicheSession extends AbstractSession
     private static class QuicheStreamData extends Retainable.Wrapper implements Stream.Data
     {
         private final int length;
+        private final boolean last;
 
-        private QuicheStreamData(RetainableByteBuffer buffer)
+        private QuicheStreamData(RetainableByteBuffer buffer, boolean last)
         {
             super(buffer);
             this.length = buffer.remaining();
+            this.last = last;
         }
 
         @Override
@@ -625,7 +622,13 @@ public abstract class QuicheSession extends AbstractSession
         @Override
         public boolean isLast()
         {
-            return false;
+            return last;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[length=%d,last=%b,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getLength(), isLast(), getWrapped());
         }
     }
 
@@ -688,29 +691,8 @@ public abstract class QuicheSession extends AbstractSession
                     if (stream == null)
                         stream = createRemoteStream(streamId);
 
-                    boolean demand = demands.remove(streamId);
-                    process |= demand;
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("readable stream #{} demand={} on {}", streamId, demand, QuicheSession.this);
-
-                    if (demand)
-                    {
-                        stream.notifyDataAvailable();
-                    }
-                    else
-                    {
-                        // Even if there is no demand, we want to know if the peer sent a RESET_STREAM.
-                        if (stream.isRemotelyClosed())
-                        {
-                            Throwable failure = stream.peek();
-                            if (failure != null)
-                                stream.notifyFailure(failure);
-                        }
-                    }
+                    process |= stream.readable();
                 }
-
-                flush();
 
                 if (!process)
                     break;

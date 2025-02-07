@@ -37,6 +37,7 @@ import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,7 @@ public class QpackDecoder implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(QpackDecoder.class);
 
+    private final AutoLock lock = new AutoLock();
     private final List<Instruction> _instructions = new ArrayList<>();
     private final List<MetaDataNotification> _metaDataNotifications = new ArrayList<>();
     private final Instruction.Handler _handler;
@@ -159,25 +161,27 @@ public class QpackDecoder implements Dumpable
         if (maxHeaderSize > 0 && buffer.remaining() > maxHeaderSize)
             throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "header_too_large");
 
-        _integerDecoder.setPrefix(8);
-        int encodedInsertCount = _integerDecoder.decodeInt(buffer);
-        if (encodedInsertCount < 0)
-            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "invalid_required_insert_count");
-
-        _integerDecoder.setPrefix(7);
-        boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
-        int deltaBase = _integerDecoder.decodeInt(buffer);
-        if (deltaBase < 0)
-            throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "invalid_delta_base");
-
-        // Decode the Required Insert Count using the DynamicTable state.
-        DynamicTable dynamicTable = _context.getDynamicTable();
-        int insertCount = dynamicTable.getInsertCount();
-        int maxDynamicTableSize = getMaxTableCapacity();
-        int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
-
-        try
+        List<Instruction> instructions;
+        List<MetaDataNotification> metaDataNotifications;
+        try (AutoLock ignored = lock.lock())
         {
+            _integerDecoder.setPrefix(8);
+            int encodedInsertCount = _integerDecoder.decodeInt(buffer);
+            if (encodedInsertCount < 0)
+                throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "invalid_required_insert_count");
+
+            _integerDecoder.setPrefix(7);
+            boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
+            int deltaBase = _integerDecoder.decodeInt(buffer);
+            if (deltaBase < 0)
+                throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "invalid_delta_base");
+
+            // Decode the Required Insert Count using the DynamicTable state.
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            int insertCount = dynamicTable.getInsertCount();
+            int maxDynamicTableSize = getMaxTableCapacity();
+            int requiredInsertCount = decodeInsertCount(encodedInsertCount, insertCount, maxDynamicTableSize);
+
             // Parse the buffer into an Encoded Field Section.
             int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
             EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, handler, requiredInsertCount, base, buffer, _beginNanoTimeSupplier.getAsLong());
@@ -203,10 +207,8 @@ public class QpackDecoder implements Dumpable
                 _encodedFieldSections.add(encodedFieldSection);
             }
 
-            boolean hadMetaData = !_metaDataNotifications.isEmpty();
-            notifyInstructionHandler();
-            notifyMetaDataHandler(false);
-            return hadMetaData;
+            instructions = takeInstructions();
+            metaDataNotifications = takeMetaDataNotifications();
         }
         catch (QpackException.SessionException e)
         {
@@ -216,6 +218,9 @@ public class QpackDecoder implements Dumpable
         {
             throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, t.getMessage(), t);
         }
+        notifyInstructionHandler(instructions);
+        notifyMetaDataHandler(metaDataNotifications, false);
+        return !metaDataNotifications.isEmpty();
     }
 
     /**
@@ -230,14 +235,16 @@ public class QpackDecoder implements Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Parsing Instructions {}", BufferUtil.toDetailString(buffer));
 
-        try
+        List<Instruction> instructions;
+        List<MetaDataNotification> metaDataNotifications;
+        try (AutoLock ignored = lock.lock())
         {
             while (BufferUtil.hasContent(buffer))
             {
                 _parser.parse(buffer);
             }
-            notifyInstructionHandler();
-            notifyMetaDataHandler(true);
+            instructions = takeInstructions();
+            metaDataNotifications = takeMetaDataNotifications();
         }
         catch (QpackException.SessionException e)
         {
@@ -247,6 +254,8 @@ public class QpackDecoder implements Dumpable
         {
             throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, t.getMessage(), t);
         }
+        notifyInstructionHandler(instructions);
+        notifyMetaDataHandler(metaDataNotifications, true);
     }
 
     /**
@@ -256,11 +265,16 @@ public class QpackDecoder implements Dumpable
      */
     public void streamCancellation(long streamId)
     {
-        _encodedFieldSections.removeIf(encodedFieldSection -> encodedFieldSection.getStreamId() == streamId);
-        _blockedStreams.remove(streamId);
-        _metaDataNotifications.removeIf(notification -> notification._streamId == streamId);
-        _instructions.add(new StreamCancellationInstruction(streamId));
-        notifyInstructionHandler();
+        List<Instruction> instructions;
+        try (AutoLock ignored = lock.lock())
+        {
+            _encodedFieldSections.removeIf(encodedFieldSection -> encodedFieldSection.getStreamId() == streamId);
+            _blockedStreams.remove(streamId);
+            _metaDataNotifications.removeIf(notification -> notification._streamId == streamId);
+            _instructions.add(new StreamCancellationInstruction(streamId));
+            instructions = takeInstructions();
+        }
+        notifyInstructionHandler(instructions);
     }
 
     private void checkEncodedFieldSections() throws QpackException
@@ -330,24 +344,35 @@ public class QpackDecoder implements Dumpable
         return String.format("QpackDecoder@%x{%s}", hashCode(), _context);
     }
 
-    private void notifyInstructionHandler()
+    private List<Instruction> takeInstructions()
     {
         if (_instructions.isEmpty())
-            return;
+            return List.of();
         // Copy the list to avoid re-entrance.
         List<Instruction> instructions = List.copyOf(_instructions);
         _instructions.clear();
-        _handler.onInstructions(instructions);
+        return instructions;
     }
 
-    private void notifyMetaDataHandler(boolean wasBlocked)
+    private void notifyInstructionHandler(List<Instruction> instructions)
+    {
+        if (instructions != null && !instructions.isEmpty())
+            _handler.onInstructions(instructions);
+    }
+
+    private List<MetaDataNotification> takeMetaDataNotifications()
     {
         if (_metaDataNotifications.isEmpty())
-            return;
+            return List.of();
         // Copy the list to avoid re-entrance, where the call to
         // notifyHandler() may end up calling again this method.
         List<MetaDataNotification> notifications = List.copyOf(_metaDataNotifications);
         _metaDataNotifications.clear();
+        return notifications;
+    }
+
+    private void notifyMetaDataHandler(List<MetaDataNotification> notifications, boolean wasBlocked)
+    {
         for (MetaDataNotification notification : notifications)
         {
             notification.notifyHandler(wasBlocked);

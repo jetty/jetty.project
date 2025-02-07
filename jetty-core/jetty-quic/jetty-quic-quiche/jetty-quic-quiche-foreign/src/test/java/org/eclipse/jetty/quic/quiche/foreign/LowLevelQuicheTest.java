@@ -122,12 +122,13 @@ public class LowLevelQuicheTest
         ForeignQuicheConnection serverQuicheConnection = entry.getValue();
 
         // client sends 16 bytes of payload over stream 0
-        assertThat(clientQuicheConnection.feedClearBytesForStream(0, ByteBuffer.allocate(16)
+        ByteBuffer data = ByteBuffer.allocate(16)
             .putInt(0xdeadbeef)
             .putInt(0xcafebabe)
             .putInt(0xdeadc0de)
             .putInt(0xbaddecaf)
-            .flip()), is(16));
+            .flip();
+        assertThat(clientQuicheConnection.feedClearBytesForStream(0, data.slice()), is(16));
         drainClientToFeedServer(entry, 59);
 
         // server checks that stream 0 is readable
@@ -136,9 +137,15 @@ public class LowLevelQuicheTest
         assertThat(readableStreamIds.get(0), is(0L));
 
         // server reads 16 bytes from stream 0
-        assertThat(serverQuicheConnection.drainClearBytesForStream(0, ByteBuffer.allocate(1000)), is(16));
+        boolean[] outLast = new boolean[1];
+        ByteBuffer readData = ByteBuffer.allocate(1000);
+        int read = serverQuicheConnection.drainClearBytesForStream(0, readData, outLast);
+        assertThat(read, is(16));
+        readData.flip();
+        assertThat(data, is(readData));
 
         // assert that stream 0 is not finished on server
+        assertThat(outLast[0], is(false));
         assertThat(serverQuicheConnection.isStreamFinished(0), is(false));
 
         // client finishes stream 0
@@ -149,7 +156,12 @@ public class LowLevelQuicheTest
         assertThat(readableStreamIds.size(), is(1));
         assertThat(readableStreamIds.get(0), is(0L));
 
+        readData.clear();
+        read = serverQuicheConnection.drainClearBytesForStream(0, readData, outLast);
+        assertThat(read, is(0));
+
         // assert that stream 0 is finished on server
+        assertThat(outLast[0], is(true));
         assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
 
         // assert that there is not client certificate
@@ -188,9 +200,11 @@ public class LowLevelQuicheTest
         assertThat(serverQuicheConnection.isStreamFinished(0), is(false));
 
         // server reads 16 bytes from stream 0
-        assertThat(serverQuicheConnection.drainClearBytesForStream(0, ByteBuffer.allocate(1000)), is(16));
+        boolean[] outLast = new boolean[1];
+        assertThat(serverQuicheConnection.drainClearBytesForStream(0, ByteBuffer.allocate(1000), outLast), is(16));
 
         // assert that stream 0 is finished on server
+        assertThat(outLast[0], is(true));
         assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
 
         // assert that there is not client certificate
