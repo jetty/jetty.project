@@ -210,7 +210,9 @@ In Jetty 12, you can use `Content.Sink.asOutputStream(response)` to obtain an `O
 [[api-changes-handler-sequence]]
 === `HandlerCollection` and `HandlerList`
 
-Jetty 11's `org.eclipse.jetty.server.handler.HandlerCollection` and `org.eclipse.jetty.server.handler.HandlerList` have been replaced by Jetty 12's `org.eclipse.jetty.server.handler.Handler.Sequence`.
+Jetty 11's `org.eclipse.jetty.server.handler.HandlerCollection` and `org.eclipse.jetty.server.handler.HandlerList` have been replaced by Jetty 12's `org.eclipse.jetty.server.Handler.Sequence`.
+
+Note that when used in configuration properties, XML files, or via reflection, you must use the fully qualified class name `org.eclipse.jetty.server.Handler$Sequence` (note the `$` symbol).
 
 Note that class `org.eclipse.jetty.server.handler.ContextHandlerCollection` has been retained (with the updates introduced by `Handler` as described <<api-changes-handler,here>>), and it is typically a better choice: where `Handler.Sequence` just iterates all its children ``Handler``s until one return `true` from the `handle(Request, Response, Callback)` method, `ContextHandlerCollection` more efficiently selects the child `ContextHandler` based on context path and virtual hosts.
 

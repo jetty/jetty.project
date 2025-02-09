@@ -168,7 +168,7 @@
     <asm.version>9.7.1</asm.version>
     <awaitility.version>4.2.2</awaitility.version>
     <bndlib.version>7.0.0</bndlib.version>
-    <bouncycastle.version>1.79</bouncycastle.version>
+    <bouncycastle.version>1.80</bouncycastle.version>
     <build-helper.maven.plugin.version>3.6.0</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
@@ -707,17 +707,22 @@
 
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk15to18</artifactId>
+        <artifactId>bcpkix-jdk18on</artifactId>
         <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk15to18</artifactId>
+        <artifactId>bcprov-jdk18on</artifactId>
         <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
-        <artifactId>bcutil-jdk15to18</artifactId>
+        <artifactId>bctls-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcutil-jdk18on</artifactId>
         <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
@@ -749,6 +754,16 @@
         <groupId>org.eclipse.jdt</groupId>
         <artifactId>ecj</artifactId>
         <version>${eclipse.jdt.ecj.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-bouncycastle-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-bouncycastle-server</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -2878,6 +2893,7 @@
                   jetty-e8.*</skippedModules>
                 <sourceFileExcludes>
                   <sourceFileExclude>**/module-info.java</sourceFileExclude>
+                  <sourceFileExclude>**/internal/**/*.java</sourceFileExclude>
                 </sourceFileExcludes>
                 <sourceFileIncludes>
                   <sourceFileInclude>org/eclipse/jetty/**/*.java</sourceFileInclude>
