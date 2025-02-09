@@ -24,9 +24,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.PushBuilder;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -85,7 +85,7 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
         ContentResponse response = client.newRequest(newURI(transportType))
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -203,7 +203,7 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
         ContentResponse response = client.newRequest(newURI(transportType))
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -312,7 +312,7 @@ public class PushedResourcesTest extends AbstractTest
         URI theURI = URI.create(uri + "/serverpushtck/foo");
 
         ContentResponse response = client.newRequest(theURI)
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -361,7 +361,7 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
 
         ContentResponse response = client.newRequest(newURI(transportType))
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)

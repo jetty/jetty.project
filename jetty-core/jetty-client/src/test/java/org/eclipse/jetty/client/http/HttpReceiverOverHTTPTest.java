@@ -20,13 +20,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -96,7 +96,7 @@ public class HttpReceiverOverHTTPTest
     {
         HttpRequest request = (HttpRequest)client.newRequest("http://localhost");
         CompletableFuture<ContentResponse> completable = new CompletableFuture<>();
-        BufferingResponseListener listener = new BufferingResponseListener()
+        RetainingResponseListener listener = new RetainingResponseListener()
         {
             @Override
             public void onComplete(Result result)

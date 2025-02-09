@@ -18,12 +18,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 
 import org.eclipse.jetty.client.Response.Listener;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**
@@ -32,13 +28,16 @@ import org.eclipse.jetty.util.BufferUtil;
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
  * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
+ * <p>The implementation is not very efficient, as it copies (possibly multiple times)
+ * the response content into a buffer.
+ * Use {@link RetainingResponseListener} for a more efficient implementation.</p>
+ *
+ * @deprecated use {@link RetainingResponseListener} instead
  */
-public abstract class BufferingResponseListener implements Listener
+@Deprecated(since = "12.1.0", forRemoval = true)
+public abstract class BufferingResponseListener extends AbstractResponseListener
 {
-    private final int maxLength;
     private ByteBuffer buffer;
-    private String mediaType;
-    private String encoding;
 
     /**
      * Creates an instance with a default maximum length of 2 MiB.
@@ -55,52 +54,7 @@ public abstract class BufferingResponseListener implements Listener
      */
     public BufferingResponseListener(int maxLength)
     {
-        if (maxLength < 0)
-            throw new IllegalArgumentException("Invalid max length " + maxLength);
-        this.maxLength = maxLength;
-    }
-
-    @Override
-    public void onHeaders(Response response)
-    {
-        Request request = response.getRequest();
-        HttpFields headers = response.getHeaders();
-        long length = headers.getLongField(HttpHeader.CONTENT_LENGTH);
-        if (HttpMethod.HEAD.is(request.getMethod()))
-            length = 0;
-        if (length > maxLength)
-        {
-            response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
-            return;
-        }
-
-        String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-        if (contentType != null)
-        {
-            String media = contentType;
-
-            String charset = "charset=";
-            int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
-            if (index > 0)
-            {
-                media = contentType.substring(0, index);
-                String encoding = contentType.substring(index + charset.length());
-                // Sometimes charsets arrive with an ending semicolon.
-                int semicolon = encoding.indexOf(';');
-                if (semicolon > 0)
-                    encoding = encoding.substring(0, semicolon).trim();
-                // Sometimes charsets are quoted.
-                int lastIndex = encoding.length() - 1;
-                if (encoding.charAt(0) == '"' && encoding.charAt(lastIndex) == '"')
-                    encoding = encoding.substring(1, lastIndex).trim();
-                this.encoding = encoding;
-            }
-
-            int semicolon = media.indexOf(';');
-            if (semicolon > 0)
-                media = media.substring(0, semicolon).trim();
-            this.mediaType = media;
-        }
+        super(maxLength);
     }
 
     @Override
@@ -112,6 +66,7 @@ public abstract class BufferingResponseListener implements Listener
         if (length > BufferUtil.space(buffer))
         {
             int remaining = buffer == null ? 0 : buffer.remaining();
+            int maxLength = getMaxLength();
             if (remaining + length > maxLength)
                 response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
             int requiredCapacity = buffer == null ? length : buffer.capacity() + length;
@@ -124,16 +79,6 @@ public abstract class BufferingResponseListener implements Listener
     @Override
     public abstract void onComplete(Result result);
 
-    public String getMediaType()
-    {
-        return mediaType;
-    }
-
-    public String getEncoding()
-    {
-        return encoding;
-    }
-
     /**
      * @return the content as bytes
      * @see #getContentAsString()
@@ -141,7 +86,7 @@ public abstract class BufferingResponseListener implements Listener
     public byte[] getContent()
     {
         if (buffer == null)
-            return new byte[0];
+            return BufferUtil.EMPTY_BYTES;
         return BufferUtil.toArray(buffer);
     }
 
@@ -152,7 +97,7 @@ public abstract class BufferingResponseListener implements Listener
      */
     public String getContentAsString()
     {
-        String encoding = this.encoding;
+        String encoding = getEncoding();
         if (encoding == null)
             return getContentAsString(StandardCharsets.UTF_8);
         return getContentAsString(encoding);

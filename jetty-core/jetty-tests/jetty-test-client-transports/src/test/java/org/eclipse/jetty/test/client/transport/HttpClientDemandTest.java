@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.AbstractResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
@@ -90,7 +90,7 @@ public class HttpClientDemandTest extends AbstractTest
 
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
-            .send(new BufferingResponseListener()
+            .send(new AbstractResponseListener()
             {
                 private final AtomicInteger chunks = new AtomicInteger();
 
@@ -147,7 +147,7 @@ public class HttpClientDemandTest extends AbstractTest
         Queue<Content.Chunk> contentQueue = new ConcurrentLinkedQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
-            .send(new BufferingResponseListener()
+            .send(new AbstractResponseListener()
             {
                 @Override
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)
