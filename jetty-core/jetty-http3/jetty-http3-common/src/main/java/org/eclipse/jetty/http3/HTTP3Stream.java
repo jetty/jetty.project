@@ -202,6 +202,13 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     @Override
     public void demand()
     {
+        // On the server, the first demand typically comes from
+        // Session.Server.Listener.onRequest(), but cannot notify
+        // onDataAvailable() until onRequest() has returned the
+        // Stream.Server.Listener instance, so initially dataStalled=false.
+        // This is not necessary on the client, but the mechanism
+        // is implemented here to make the implementation simpler.
+
         boolean needsFillInterest;
         boolean process = false;
         try (AutoLock ignored = lock.lock())

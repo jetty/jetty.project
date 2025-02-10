@@ -194,6 +194,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             }
             else
             {
+                if (result != null)
+                    readData(result);
                 stream.processData(true);
             }
         }
@@ -212,13 +214,19 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     Stream.Data readData()
     {
+        return readData(null);
+    }
+
+    private Stream.Data readData(ParseResult result)
+    {
         try
         {
             if (remotelyClosed)
                 return Stream.Data.EOF;
 
             tryAcquireInputBuffer();
-            ParseResult result = parseAndFill();
+            if (result == null)
+                result = parseAndFill();
             return switch (result)
             {
                 case NO_FRAME ->
@@ -230,9 +238,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 case BLOCKED_FRAME ->
                 {
                     // A blocked trailer HEADERS frame.
-                    // Return EOF immediately because another thread may
+                    // Return null immediately because another thread may
                     // resume the processing as the stream is unblocked.
-                    yield Stream.Data.EOF;
+                    yield null;
                 }
                 case FRAME ->
                 {

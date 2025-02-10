@@ -401,7 +401,6 @@ public abstract class QuicheSession extends AbstractSession
     public void offerTask(Runnable task)
     {
         producer.offer(task);
-        produce();
     }
 
     boolean isFinished(QuicheStream stream)
