@@ -360,6 +360,8 @@ public abstract class JakartaWebSocketFrameHandlerFactory
                     // No decoders matched try partial signatures and pong signatures.
                     if (matchOnMessage(onMsg, metadata, msgMetadata, getMethodHandle))
                         continue;
+
+                    throw new InvalidWebSocketException("Unable to match @OnMessage method: " + onMsg);
                 }
             }
         }
