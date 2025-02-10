@@ -129,7 +129,5 @@ public class ServerRetainContentTest extends AbstractTest
         // server we should reuse the input buffer as much as possible.
         long estimatedExpected = 128 * 1024;
         assertThat(byteBufferPool.dump(), finalMemory - initialMemory, lessThanOrEqualTo(estimatedExpected));
-
-        client.close();
     }
 }
