@@ -409,7 +409,7 @@ public class UrlEncoded
                     {
                         char hi = query.charAt(++i);
                         char lo = query.charAt(++i);
-                        buffer.append(decodeHexByte(hi, lo));
+                        decodeHexByteTo(buffer, hi, lo, allowBadUtf8);
                     }
                     else if (allowBadUtf8)
                     {
@@ -543,11 +543,28 @@ public class UrlEncoded
      * Decoded parameters to Map.
      *
      * @param in InputSteam to read
-     * @param map MultiMap to add parameters to
+     * @param fields the Fields to store the parameters
      * @param maxLength maximum form length to decode or -1 for no limit
      * @param maxKeys the maximum number of keys to read or -1 for no limit
      * @throws IOException if unable to decode the input stream
      */
+    public static void decodeUtf8To(InputStream in, Fields fields, int maxLength, int maxKeys)
+        throws IOException
+    {
+        decodeUtf8To(in, fields::add, maxLength, maxKeys);
+    }
+
+    /**
+     * Decoded parameters to Map.
+     *
+     * @param in InputSteam to read
+     * @param map MultiMap to add parameters to
+     * @param maxLength maximum form length to decode or -1 for no limit
+     * @param maxKeys the maximum number of keys to read or -1 for no limit
+     * @throws IOException if unable to decode the input stream
+     * @deprecated use {@link #decodeUtf8To(InputStream, Fields, int, int)} instead.
+     */
+    @Deprecated(since = "12.0.17", forRemoval = true)
     public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
         throws IOException
     {
@@ -1011,6 +1028,21 @@ public class UrlEncoded
         catch (NumberFormatException e)
         {
             throw new IllegalArgumentException("Not valid encoding '%" + hi + lo + "'");
+        }
+    }
+
+    private static void decodeHexByteTo(Utf8StringBuilder buffer, char hi, char lo, boolean allowBadUtf8)
+    {
+        try
+        {
+            buffer.append((byte)((convertHexDigit(hi) << 4) + convertHexDigit(lo)));
+        }
+        catch (NumberFormatException e)
+        {
+            if (allowBadUtf8)
+                buffer.append(Utf8StringBuilder.REPLACEMENT);
+            else
+                throw e;
         }
     }
 
