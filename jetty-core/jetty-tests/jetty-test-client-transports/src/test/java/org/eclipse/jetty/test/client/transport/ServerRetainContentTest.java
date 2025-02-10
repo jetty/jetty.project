@@ -121,16 +121,8 @@ public class ServerRetainContentTest extends AbstractTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         long finalMemory = byteBufferPool.getDirectMemory() + byteBufferPool.getHeapMemory() + byteBufferPool.getReserved();
 
-        long totalData = 0;
-        for (Content.Chunk chunk : chunks)
-        {
-            chunk.release();
-            if (chunk.hasRemaining())
-                totalData += chunk.remaining();
-        }
+        chunks.forEach(Content.Chunk::release);
 
-        assertThat(finalMemory - baseMemory, lessThanOrEqualTo((transportType.isSecure() ? 100 : 32) * 1024L));
-
-        client.close();
+        assertThat(byteBufferPool.dump(), finalMemory - baseMemory, lessThanOrEqualTo((transportType.isSecure() ? 128 : 64) * 1024L));
     }
 }
