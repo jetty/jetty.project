@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -26,9 +25,9 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CompletableTask;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -44,47 +43,50 @@ public class ServerRetainContentTest extends AbstractTest
     public void testRetainPOST(TransportType transportType) throws Exception
     {
         Queue<Content.Chunk> chunks = new ConcurrentLinkedQueue<>();
-        CountDownLatch blocked = new CountDownLatch(1);
-
         start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                while (true)
+                CompletableTask<Void> task = new CompletableTask<>()
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    @Override
+                    public void run()
                     {
-                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        while (true)
                         {
-                            blocked.countDown();
-                            request.demand(blocker);
-                            blocker.block();
+                            Content.Chunk chunk = request.read();
+                            if (chunk == null)
+                            {
+                                request.demand(this);
+                                return;
+                            }
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                completeExceptionally(chunk.getFailure());
+                                return;
+                            }
+                            chunks.add(chunk);
+                            if (chunk.isLast())
+                            {
+                                complete(null);
+                                return;
+                            }
                         }
-                        catch (IOException e)
-                        {
-                            // ignored
-                        }
-                        continue;
                     }
-
-                    chunks.add(chunk);
-                    if (chunk.isLast())
-                        break;
-                }
-                callback.succeeded();
+                };
+                callback.completeWith(task.start());
                 return true;
             }
         });
+        ArrayByteBufferPool byteBufferPool = (ArrayByteBufferPool)server.getByteBufferPool();
+        byteBufferPool.setStatisticsEnabled(true);
+        long initialMemory = byteBufferPool.getDirectMemory() + byteBufferPool.getHeapMemory() + byteBufferPool.getReserved();
+
         AsyncRequestContent content = new AsyncRequestContent();
 
         Callback.Completable one = new Callback.Completable();
         content.write(false, BufferUtil.toBuffer("1"), one);
-
-        ArrayByteBufferPool byteBufferPool = (ArrayByteBufferPool)server.getByteBufferPool();
-
-        long baseMemory = byteBufferPool.getDirectMemory() + byteBufferPool.getHeapMemory() + byteBufferPool.getReserved();
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
@@ -98,14 +100,12 @@ public class ServerRetainContentTest extends AbstractTest
 
         Callback.Completable two = new Callback.Completable();
         content.write(false, BufferUtil.toBuffer("2"), two);
-        content.flush();
 
-        assertTrue(blocked.await(5, TimeUnit.SECONDS));
         one.get(5, TimeUnit.SECONDS);
         two.get(5, TimeUnit.SECONDS);
 
-        final int CHUNKS = 1000;
-        for (int i = 3; i < CHUNKS; i++)
+        int count = 1000;
+        for (int i = 3; i < count; i++)
         {
             Callback.Completable complete = new Callback.Completable();
             content.write(false, BufferUtil.toBuffer(Integer.toString(i)), complete);
@@ -121,8 +121,13 @@ public class ServerRetainContentTest extends AbstractTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         long finalMemory = byteBufferPool.getDirectMemory() + byteBufferPool.getHeapMemory() + byteBufferPool.getReserved();
 
+        // Release all chunks retained on the server.
         chunks.forEach(Content.Chunk::release);
 
-        assertThat(byteBufferPool.dump(), finalMemory - baseMemory, lessThanOrEqualTo((transportType.isSecure() ? 128 : 64) * 1024L));
+        // Estimate derived from runs of this test.
+        // The chunks are very small (at most 3 characters), and on the
+        // server we should reuse the input buffer as much as possible.
+        long estimatedExpected = 128 * 1024;
+        assertThat(byteBufferPool.dump(), finalMemory - initialMemory, lessThanOrEqualTo(estimatedExpected));
     }
 }
