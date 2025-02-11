@@ -79,8 +79,6 @@ public class CompressionHandler extends Handler.Wrapper
     {
         Compression previous = supportedEncodings.put(compression.getEncodingName(), compression);
         compression.setContainer(this);
-        if (compression.getByteBufferPool() == null)
-            compression.setByteBufferPool(getServer().getByteBufferPool());
         updateBean(previous, compression, true);
         return previous;
     }
@@ -189,6 +187,11 @@ public class CompressionHandler extends Handler.Wrapper
             // No explicit compression configured, discover them via ServiceLoader.
             TypeUtil.serviceStream(ServiceLoader.load(Compression.class)).forEach(this::putCompression);
         }
+        supportedEncodings.values().forEach(compression ->
+        {
+            if (compression.getByteBufferPool() == null)
+                compression.setByteBufferPool(getServer().getByteBufferPool());
+        });
 
         if (pathConfigs.isEmpty())
         {
