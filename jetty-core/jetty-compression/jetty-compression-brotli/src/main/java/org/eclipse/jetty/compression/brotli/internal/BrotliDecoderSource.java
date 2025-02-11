@@ -18,17 +18,21 @@ import java.nio.ByteBuffer;
 
 import com.aayushatharva.brotli4j.decoder.DecoderJNI;
 import org.eclipse.jetty.compression.DecoderSource;
+import org.eclipse.jetty.compression.brotli.BrotliCompression;
 import org.eclipse.jetty.compression.brotli.BrotliDecoderConfig;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class BrotliDecoderSource extends DecoderSource
 {
     private final DecoderJNI.Wrapper decoder;
+    private final BrotliCompression compression;
 
-    public BrotliDecoderSource(Content.Source source, BrotliDecoderConfig config)
+    public BrotliDecoderSource(Content.Source source, BrotliCompression compression, BrotliDecoderConfig config)
     {
         super(source);
+        this.compression = compression;
         try
         {
             this.decoder = new DecoderJNI.Wrapper(config.getBufferSize());
@@ -73,8 +77,10 @@ public class BrotliDecoderSource extends DecoderSource
                 case NEEDS_MORE_OUTPUT ->
                 {
                     ByteBuffer output = decoder.pull();
-                    // rely on status.OK to go to EOF
-                    return Content.Chunk.from(output, false);
+                    // Rely on status.OK to go to EOF.
+                    RetainableByteBuffer.Mutable copy = compression.acquireByteBuffer(output.remaining());
+                    copy.append(output);
+                    return Content.Chunk.asChunk(copy.getByteBuffer(), false, copy);
                 }
                 default ->
                 {

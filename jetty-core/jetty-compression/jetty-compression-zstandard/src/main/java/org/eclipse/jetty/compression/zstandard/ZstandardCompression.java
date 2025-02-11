@@ -65,21 +65,11 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public RetainableByteBuffer acquireByteBuffer()
+    public RetainableByteBuffer.Mutable acquireByteBuffer(int length)
     {
-        return acquireByteBuffer(getBufferSize());
-    }
-
-    @Override
-    public RetainableByteBuffer acquireByteBuffer(int length)
-    {
-        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
-        if (length == 0)
-            return RetainableByteBuffer.EMPTY;
-
         // Per zstd-jni, these MUST be direct ByteBuffer implementations.
         RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, true);
-        if (!buffer.getByteBuffer().isDirect())
+        if (!buffer.isDirect())
         {
             buffer.release();
             throw new IllegalStateException("ByteBufferPool does not return zstd-jni required direct ByteBuffer");

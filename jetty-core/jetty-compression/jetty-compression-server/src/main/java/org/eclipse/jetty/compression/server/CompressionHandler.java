@@ -79,6 +79,8 @@ public class CompressionHandler extends Handler.Wrapper
     {
         Compression previous = supportedEncodings.put(compression.getEncodingName(), compression);
         compression.setContainer(this);
+        if (compression.getByteBufferPool() == null)
+            compression.setByteBufferPool(getServer().getByteBufferPool());
         updateBean(previous, compression, true);
         return previous;
     }
