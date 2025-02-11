@@ -33,9 +33,9 @@ public class JettyHttpContext extends com.sun.net.httpserver.HttpContext
 
     private final HttpServer _server;
 
-    private final Map<String, Object> _attributes = new HashMap<>();
+    private final Map<String, Object> _attributes = new HashMap<String, Object>();
 
-    private final List<Filter> _filters = new ArrayList<>();
+    private final List<Filter> _filters = new ArrayList<Filter>();
 
     private Authenticator _authenticator;
 
