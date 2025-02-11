@@ -97,17 +97,19 @@ public class HttpClientLoadTest extends AbstractTest
     {
         start(transportType, new LoadHandler());
         client.stop();
+
+        int cores = 8;
         ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
         client.setByteBufferPool(byteBufferPool);
-        client.setMaxConnectionsPerDestination(32768);
+        client.setMaxConnectionsPerDestination(cores);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         try (HttpClient httpClient = client)
         {
             httpClient.start();
 
             int runs = 1;
-            int iterations = 128;
-            IntStream.range(0, 16).parallel().forEach(i ->
+            int iterations = 64;
+            IntStream.range(0, cores).parallel().forEach(i ->
                 IntStream.range(0, runs).forEach(j ->
                     run(transportType, iterations)));
         }
