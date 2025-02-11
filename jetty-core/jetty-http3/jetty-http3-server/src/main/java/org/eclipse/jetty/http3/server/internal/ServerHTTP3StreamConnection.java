@@ -49,7 +49,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         this.session = session;
     }
 
-    public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
+    public void onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
         // Create new metadata for every request as the local or remote address may have changed.
         HttpChannel httpChannel = httpChannelFactory.newHttpChannel(new MetaData());
@@ -57,19 +57,28 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         HttpStreamOverHTTP3 httpStream = new HttpStreamOverHTTP3(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
-        return httpStream.onRequest(frame);
+        Runnable task = httpStream.onRequest(frame);
+        offerTask(task);
     }
 
-    public Runnable onDataAvailable(HTTP3Stream stream)
+    public void onDataAvailable(HTTP3Stream stream)
     {
         HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
-        return httpStream.onDataAvailable();
+        Runnable task = httpStream.onDataAvailable();
+        offerTask(task);
     }
 
-    public Runnable onTrailer(HTTP3Stream stream, HeadersFrame frame)
+    public void onTrailer(HTTP3Stream stream, HeadersFrame frame)
     {
         HttpStreamOverHTTP3 httpStream = (HttpStreamOverHTTP3)stream.getAttachment();
-        return httpStream.onTrailer(frame);
+        Runnable task = httpStream.onTrailer(frame);
+        offerTask(task);
+    }
+
+    void offerTask(Runnable task)
+    {
+        if (task != null)
+            session.offerTask(task);
     }
 
     public void onIdleTimeout(HTTP3Stream stream, TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)

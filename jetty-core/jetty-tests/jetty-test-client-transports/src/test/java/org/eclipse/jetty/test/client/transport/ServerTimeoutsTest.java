@@ -32,8 +32,8 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -115,7 +115,6 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndIdleTimeoutListener")
-    @Tag("flaky")
     public void testIdleTimeoutWithDemand(TransportType transportType, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
@@ -151,14 +150,28 @@ public class ServerTimeoutsTest extends AbstractTest
         // Demand is invoked by the idle timeout.
         assertTrue(demanded.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
 
-        // Reads should yield the idle timeout.
-        Content.Chunk chunk = requestRef.get().read();
+        Request request = requestRef.get();
+
+        // Reads should eventually yield the idle timeout.
+        Content.Chunk chunk;
+        while (true)
+        {
+            chunk = request.read();
+            if (chunk != null)
+                break;
+            try (Blocker.Runnable demand = Blocker.runnable())
+            {
+                request.demand(demand);
+                demand.block(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+            }
+        }
+
         assertTrue(Content.Chunk.isFailure(chunk, false));
         Throwable cause = chunk.getFailure();
         assertThat(cause, instanceOf(TimeoutException.class));
 
         // Can read again.
-        assertNull(requestRef.get().read());
+        assertNull(request.read());
 
         // The idle timeout listener is not called as the timeout is delivered via demand callback.
         assertFalse(listenerCalled.get());

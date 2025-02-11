@@ -25,6 +25,7 @@ import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -90,6 +91,12 @@ public abstract class QuicheConnection extends AbstractConnection
         public InvocationType getInvocationType()
         {
             return InvocationType.EITHER;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getInvocationType());
         }
     }
 }

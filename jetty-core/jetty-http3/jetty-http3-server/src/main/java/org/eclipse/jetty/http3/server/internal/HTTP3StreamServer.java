@@ -24,10 +24,11 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
+public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3StreamServer.class);
     private static final Listener DEFAULT_LISTENER = new Listener() {};
@@ -42,7 +43,7 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
 
     private Listener getListener()
     {
-        return this.listener;
+        return listener;
     }
 
     public void onRequest(HeadersFrame frame)
@@ -148,5 +149,11 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
         {
             LOG.info("failure notifying listener {}", listener, x);
         }
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return Invocable.getInvocationType(getListener());
     }
 }

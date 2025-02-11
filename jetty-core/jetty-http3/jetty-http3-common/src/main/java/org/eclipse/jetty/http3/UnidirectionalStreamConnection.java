@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UnidirectionalStreamConnection extends AbstractConnection implements Connection.UpgradeFrom
+public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocking implements Connection.UpgradeFrom
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnidirectionalStreamConnection.class);
 

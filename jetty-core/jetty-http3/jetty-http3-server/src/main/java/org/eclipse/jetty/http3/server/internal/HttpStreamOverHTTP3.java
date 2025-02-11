@@ -34,7 +34,6 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -69,6 +68,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
     public String getId()
     {
         return String.valueOf(stream.getId());
+    }
+
+    public HttpChannel getHttpChannel()
+    {
+        return httpChannel;
     }
 
     public Runnable onRequest(HeadersFrame frame)
@@ -180,10 +184,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             Runnable task = httpChannel.onContentAvailable();
             if (task != null)
-            {
-                ProtocolSession protocolSession = stream.getSession().getProtocolSession();
-                protocolSession.offerTask(task);
-            }
+                connection.offerTask(task);
         }
         else
         {
@@ -198,19 +199,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
             LOG.debug("HTTP3 request data available #{}/{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
         }
-
-        Stream.Data data = stream.readData();
-        if (data == null)
-        {
-            stream.demand();
-            return null;
-        }
-
-        // The data instance should be released after readData() above;
-        // the chunk is stored below for later use, so should be retained;
-        // the two actions cancel each other, no need to further retain or release.
-        storeAsChunk(data);
-
         return httpChannel.onContentAvailable();
     }
 

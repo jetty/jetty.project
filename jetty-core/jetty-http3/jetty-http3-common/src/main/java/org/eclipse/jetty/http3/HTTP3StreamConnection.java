@@ -33,7 +33,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +44,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3StreamConnection.class);
 
+    private final Callback fillableCallback = new FillableCallback();
     private final AtomicReference<FrameAction> frameAction = new AtomicReference<>();
     private final ByteBufferPool bufferPool;
     private final int minInputBufferSpace;
@@ -112,6 +116,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         // Idle timeouts are handled by HTTP3Stream.
         return false;
+    }
+
+    @Override
+    public void fillInterested()
+    {
+        fillInterested(fillableCallback);
     }
 
     @Override
@@ -540,5 +550,33 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private record FrameAction(Frame frame, Runnable task)
     {
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            HTTP3Stream http3Stream = stream;
+            return http3Stream == null ? InvocationType.NON_BLOCKING : Invocable.getInvocationType(http3Stream);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getInvocationType());
+        }
     }
 }

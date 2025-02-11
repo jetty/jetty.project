@@ -207,7 +207,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         // onDataAvailable() until onRequest() has returned the
         // Stream.Server.Listener instance, so initially dataStalled=false.
         // This is not necessary on the client, but the mechanism
-        // is implemented here to make the implementation simpler.
+        // is implemented in this common class for simplicity.
 
         boolean needsFillInterest;
         boolean process = false;

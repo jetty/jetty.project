@@ -526,7 +526,7 @@ public class StreamEndPoint implements EndPoint
                 fillInterest = callback;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("setting ({}) fill interest on {}", set, this);
+            LOG.debug("setting ({}) fill interest with {} on {}", set, callback, this);
         if (set)
             stream.demand();
         return set;
@@ -547,7 +547,7 @@ public class StreamEndPoint implements EndPoint
             // This is how protocols on top of QUIC streams are parallelized.
             // For example H1 on top of SEPs would register a BLOCKING callback,
             // and the AES at the QUIC session level would run them concurrently.
-            protocolSession.offerTask(new Invocable.ReadyTask(callback.getInvocationType(), callback::succeeded));
+            protocolSession.offerTask(new FillableTask(callback));
         }
     }
 
@@ -650,6 +650,23 @@ public class StreamEndPoint implements EndPoint
         public boolean isLast()
         {
             return true;
+        }
+    }
+
+    private static class FillableTask extends Invocable.Task.Abstract
+    {
+        private final Callback callback;
+
+        private FillableTask(Callback callback)
+        {
+            super(callback.getInvocationType());
+            this.callback = callback;
+        }
+
+        @Override
+        public void run()
+        {
+            callback.succeeded();
         }
     }
 }
