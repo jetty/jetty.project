@@ -653,9 +653,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_aggregate != null)
         {
-            boolean asyncCancelPossible = _channel.getRequest().getMetaData().getHttpVersion().getVersion() >= HttpVersion.HTTP_2.getVersion();
             ByteBufferPool bufferPool = _channel.getConnector().getByteBufferPool();
-            if (failure == null || !asyncCancelPossible)
+            if (failure == null || _channel.getRequest().getMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_2.getVersion())
                 bufferPool.release(_aggregate);
             else
                 bufferPool.remove(_aggregate);
