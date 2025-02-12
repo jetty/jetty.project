@@ -78,7 +78,10 @@ public class BrotliDecoderSource extends DecoderSource
                 {
                     ByteBuffer output = decoder.pull();
                     // Rely on status.OK to go to EOF.
-                    RetainableByteBuffer.Mutable copy = compression.acquireByteBuffer(output.remaining());
+                    int remaining = output.remaining();
+                    if (remaining == 0)
+                        return Content.Chunk.EMPTY;
+                    RetainableByteBuffer.Mutable copy = compression.acquireByteBuffer(remaining);
                     copy.append(output);
                     return Content.Chunk.asChunk(copy.getByteBuffer(), false, copy);
                 }
