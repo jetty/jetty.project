@@ -122,7 +122,7 @@ public class Origin
 
     public boolean isSecure()
     {
-        return HttpScheme.HTTPS.is(getScheme());
+        return HttpScheme.isSecure(getScheme());
     }
 
     @Override
