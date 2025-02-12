@@ -34,7 +34,6 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server, Inv
     private static final Listener DEFAULT_LISTENER = new Listener() {};
 
     private Stream.Server.Listener listener;
-    private volatile boolean dataReady;
 
     public HTTP3StreamServer(HTTP3Session session, StreamEndPoint endPoint, boolean local)
     {
@@ -53,19 +52,7 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server, Inv
             onHeaders(frame);
             updateClose(frame.isLast(), false);
             listener = notifyRequest(frame);
-            dataReady = true;
         }
-    }
-
-    @Override
-    public Data readData()
-    {
-        boolean ready = dataReady;
-        if (ready)
-            return super.readData();
-        if (LOG.isDebugEnabled())
-            LOG.debug("data not ready on {}", this);
-        return null;
     }
 
     private Listener notifyRequest(HeadersFrame frame)
