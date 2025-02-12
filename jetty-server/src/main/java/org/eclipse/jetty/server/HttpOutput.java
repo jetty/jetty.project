@@ -32,6 +32,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -652,8 +653,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_aggregate != null)
         {
+            boolean asyncCancelPossible = _channel.getRequest().getMetaData().getHttpVersion().getVersion() >= HttpVersion.HTTP_2.getVersion();
             ByteBufferPool bufferPool = _channel.getConnector().getByteBufferPool();
-            if (failure == null)
+            if (failure == null || !asyncCancelPossible)
                 bufferPool.release(_aggregate);
             else
                 bufferPool.remove(_aggregate);
