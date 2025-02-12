@@ -45,8 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Scanner
- * <p>
  * Utility for scanning a directory for added, removed and changed
  * files and reporting these events via registered Listeners.
  * The scanner operates on the {@link Path#toRealPath(LinkOption...)} of the files scanned and
@@ -90,8 +88,6 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * PathMatcherSet
-     *
      * A set of PathMatchers for testing Paths against path matching patterns via
      * @see IncludeExcludeSet
      */
@@ -110,8 +106,6 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * MetaData
-     *
      * Metadata about a file: Last modified time, file size and
      * last file status (ADDED, CHANGED, DELETED, STABLE)
      */
@@ -150,8 +144,6 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Visitor
-     *
      * A FileVisitor for walking a subtree of paths. The Scanner uses
      * this to examine the dirs and files it has been asked to scan.
      */
@@ -248,9 +240,7 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Listener
-     *
-     * Marker for notifications re file changes.
+     * Listener for notifications re file changes.
      */
     public interface Listener
     {
@@ -330,20 +320,18 @@ public class Scanner extends ContainerLifeCycle
      */
     public interface BulkListener extends Listener
     {
+        default void pathsChanged(Map<Path, Notification> changeSet) throws Exception
+        {
+            pathsChanged(changeSet.keySet());
+        }
+
         default void pathsChanged(Set<Path> paths) throws Exception
         {
             filesChanged(paths.stream().map(Path::toString).collect(Collectors.toSet()));
         }
 
-        void filesChanged(Set<String> filenames) throws Exception;
-    }
-
-    /**
-     * Listener that notifies of the complete path change set.
-     */
-    public interface ChangeSetListener extends Listener
-    {
-        void pathsChanged(Map<Path, Notification> changeSet);
+        default void filesChanged(Set<String> filenames) throws Exception
+        {}
     }
 
     /**
@@ -804,8 +792,7 @@ public class Scanner extends ContainerLifeCycle
 
     /**
      * Report the adds/changes/removes to the registered listeners
-     *
-     * Only report an add or change once a file has stablilized in size.
+     * Only report an add or change once a file has stabilized in size.
      *
      * @param currentScan the info from the most recent pass
      * @param oldScan info from the previous pass
@@ -852,7 +839,7 @@ public class Scanner extends ContainerLifeCycle
                 //Unchanged file: if it was previously
                 //ADDED, we can now send the ADDED event.
                 if (previous._status == Status.ADDED)
-                    changes.put(entry.getKey(),  Notification.ADDED);
+                    changes.put(entry.getKey(), Notification.ADDED);
                 else if (previous._status == Status.CHANGED)
                     changes.put(entry.getKey(), Notification.CHANGED);
 
@@ -863,154 +850,47 @@ public class Scanner extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("scanned {}", _scannables.keySet());
 
-        // Call the DiscreteListeners
-        for (Map.Entry<Path, Notification> entry : changes.entrySet())
+        if (!changes.isEmpty())
         {
-            switch (entry.getValue())
-            {
-                case ADDED:
-                    reportAddition(entry.getKey());
-                    break;
-                case CHANGED:
-                    reportChange(entry.getKey());
-                    break;
-                case REMOVED:
-                    reportRemoval(entry.getKey());
-                    break;
-                default:
-                    LOG.warn("Unknown file change: {}", entry.getValue());
-                    break;
-            }
-        }
-
-        // Call the ChangeSetListeners
-        reportChangeSet(changes);
-
-        // Call the BulkListeners
-        reportBulkChanges(changes.keySet());
-    }
-
-    private void warn(Object listener, Path path, Throwable th)
-    {
-        LOG.warn("{} failed on '{}'", listener, path, th);
-    }
-
-    /**
-     * Report a file addition to the registered FileAddedListeners
-     *
-     * @param path the path
-     */
-    private void reportAddition(Path path)
-    {
-        if (path == null)
-            return;
-
-        for (Listener listener : _listeners)
-        {
-            try
-            {
-                if (listener instanceof DiscreteListener discreteListener)
-                    discreteListener.pathAdded(path);
-            }
-            catch (Throwable e)
-            {
-                warn(listener, path, e);
-            }
-        }
-    }
-
-    /**
-     * Report a file removal to the FileRemovedListeners
-     *
-     * @param path the path of the removed filename
-     */
-    private void reportRemoval(Path path)
-    {
-        if (path == null)
-            return;
-
-        for (Listener listener : _listeners)
-        {
-            try
-            {
-                if (listener instanceof DiscreteListener discreteListener)
-                    discreteListener.pathRemoved(path);
-            }
-            catch (Throwable e)
-            {
-                warn(listener, path, e);
-            }
-        }
-    }
-
-    /**
-     * Report a file change to the FileChangedListeners
-     *
-     * @param path the path of the changed file
-     */
-    private void reportChange(Path path)
-    {
-        if (path == null)
-            return;
-
-        for (Listener listener : _listeners)
-        {
-            try
-            {
-                if (listener instanceof DiscreteListener discreteListener)
-                    discreteListener.pathChanged(path);
-            }
-            catch (Throwable e)
-            {
-                warn(listener, path, e);
-            }
-        }
-    }
-
-    /**
-     * Report set of changes to the ChangeSetListener
-     *
-     * @param changes the changes that occurred.
-     */
-    private void reportChangeSet(Map<Path, Notification> changes)
-    {
-        if (changes == null || changes.isEmpty())
-            return;
-
-        for (Listener l : _listeners)
-        {
-            try
-            {
-                if (l instanceof ChangeSetListener changeSetListener)
-                    changeSetListener.pathsChanged(changes);
-            }
-            catch (Throwable e)
-            {
-                LOG.warn("{} failed on '{}'", l, changes, e);
-            }
-        }
-    }
-
-    /**
-     * Report the list of filenames for which changes were detected.
-     *
-     * @param paths The paths of all files added/changed/removed
-     */
-    private void reportBulkChanges(Set<Path> paths)
-    {
-        if (paths == null || paths.isEmpty())
-            return;
-
-        for (Listener listener : _listeners)
-        {
-            try
+            // For each listener
+            for (Listener listener : _listeners)
             {
                 if (listener instanceof BulkListener bulkListener)
-                    bulkListener.pathsChanged(paths);
-            }
-            catch (Throwable e)
-            {
-                LOG.warn("{} failed on '{}'", listener, paths, e);
+                {
+                    try
+                    {
+                        bulkListener.pathsChanged(changes);
+                    }
+                    catch (Throwable t)
+                    {
+                        LOG.warn("{} failed on '{}'", listener, changes, t);
+                    }
+                }
+
+                if (listener instanceof DiscreteListener discreteListener)
+                {
+                    // Call the DiscreteListeners
+                    for (Map.Entry<Path, Notification> entry : changes.entrySet())
+                    {
+                        if (entry.getKey() != null)
+                        {
+                            try
+                            {
+                                switch (entry.getValue())
+                                {
+                                    case ADDED -> discreteListener.pathAdded(entry.getKey());
+                                    case CHANGED -> discreteListener.pathChanged(entry.getKey());
+                                    case REMOVED -> discreteListener.pathRemoved(entry.getKey());
+                                    default -> LOG.warn("Unknown file change: {}", entry.getValue());
+                                }
+                            }
+                            catch (Throwable t)
+                            {
+                                LOG.warn("{} failed on '{}'", listener, entry.getKey(), t);
+                            }
+                        }
+                    }
+                }
             }
         }
     }

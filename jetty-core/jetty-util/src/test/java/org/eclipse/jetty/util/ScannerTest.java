@@ -774,12 +774,6 @@ public class ScannerTest
             LOG.debug("pathsChanged: {}", paths);
             add(paths);
         }
-
-        @Override
-        public void filesChanged(Set<String> filenames)
-        {
-            // not interested about this method
-        }
     }
 
     private static class BulkFilesQueueListener extends LinkedBlockingQueue<Set<String>> implements Scanner.BulkListener
@@ -794,7 +788,7 @@ public class ScannerTest
         }
     }
 
-    private static class ChangeSetQueueListener extends LinkedBlockingQueue<Map<Path, Notification>> implements Scanner.ChangeSetListener
+    private static class ChangeSetQueueListener extends LinkedBlockingQueue<Map<Path, Notification>> implements Scanner.BulkListener
     {
         private static final Logger LOG = LoggerFactory.getLogger(ScannerTest.LOG.getName() + "." + ChangeSetQueueListener.class.getSimpleName());
 
