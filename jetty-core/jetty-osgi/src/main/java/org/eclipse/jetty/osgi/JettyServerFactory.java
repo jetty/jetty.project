@@ -129,10 +129,11 @@ public class JettyServerFactory
                             config.getProperties().put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
                         }
 
-                        Object o = config.configure();
-                        server = (Server)o;
-
+                        config.configure();
                         idMap = config.getIdMap();
+                        Server s = (Server)idMap.get("Server");
+                        if (s != null)
+                            server = s;
                     }
                     catch (Exception e)
                     {

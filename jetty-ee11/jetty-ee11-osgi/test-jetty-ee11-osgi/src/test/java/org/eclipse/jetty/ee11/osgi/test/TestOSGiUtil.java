@@ -14,14 +14,19 @@
 package org.eclipse.jetty.ee11.osgi.test;
 
 import java.io.File;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.osgi.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
@@ -66,34 +71,37 @@ public class TestOSGiUtil
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
-        File etc = new File(FS.separators("src/test/config/etc"));
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
 
         List<Option> options = new ArrayList<>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
-        xmlConfigs.append(";");
+        List<Path> xmlFiles = new ArrayList<>();
+
+        xmlFiles.add(etc.resolve("jetty.xml"));
         if (ssl)
         {
             options.add(CoreOptions.systemProperty("jetty.ssl.port").value("0"));
-            xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-ssl-context.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
-            xmlConfigs.append(";");
+            xmlFiles.add(etc.resolve("jetty-ssl.xml"));
+            xmlFiles.add(etc.resolve("jetty-ssl-context.xml"));
+            xmlFiles.add(etc.resolve("jetty-alpn.xml"));
+            xmlFiles.add(etc.resolve("jetty-https.xml"));
         }
-        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-deployment-scanner.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+        xmlFiles.add(etc.resolve(jettySelectorFileName));
+        xmlFiles.add(etc.resolve("jetty-deployment-manager.xml"));
+        xmlFiles.add(etc.resolve("jetty-testrealm.xml"));
 
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
+        // Sanity check that the referenced files actually exist.
+        xmlFiles.forEach(p -> assertTrue(p + " doesn't exists and/or isn't a file", Files.isRegularFile(p)));
+
+        // Convert list of XML to a list of URIs separated by ";"
+        String xmlConfigLine = xmlFiles.stream()
+            .map(Path::toUri)
+            .map(URI::toASCIIString)
+            .collect(Collectors.joining(";"));
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
         options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
-        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.home").value(etc.getParent().toString()));
+        options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }
 

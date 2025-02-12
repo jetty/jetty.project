@@ -12,6 +12,7 @@
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
+    <duplicate-finder.skip>true</duplicate-finder.skip>
     <!-- too many external dependencies to fix... :) -->
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
