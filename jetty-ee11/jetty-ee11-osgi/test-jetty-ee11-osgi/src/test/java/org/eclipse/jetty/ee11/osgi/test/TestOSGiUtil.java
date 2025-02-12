@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee11.osgi.test;
 
-import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +24,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.osgi.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
-import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -107,21 +105,31 @@ public class TestOSGiUtil
 
     public static List<Option>  configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
     {
-        //use the default set of config files embedded in jetty boot jar
         List<Option> options = new ArrayList<>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(JettyBootstrapActivator.DEFAULT_JETTY_ETC_FILES);
-        xmlConfigs.append(",");
-        //add in a couple of external files needed for testing
-        File etc = new File(FS.separators("src/test/config/etc"));
-        xmlConfigs.append(new File(etc, jettyConnectorListenerFileName).toURI());
-        xmlConfigs.append(",");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+        List<Path> xmlFiles = new ArrayList<>();
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
+        xmlFiles.add(etc.resolve(jettyConnectorListenerFileName));
+        xmlFiles.add(etc.resolve("jetty-testrealm.xml"));
 
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
+        // Sanity check that the referenced files actually exist.
+        xmlFiles.forEach(p -> assertTrue(p + " doesn't exists and/or isn't a file", Files.isRegularFile(p)));
+
+        // Create ordered list of XML file reference strings.
+        List<String> xmlReferences = new ArrayList<>();
+        // Add relative reference paths that will be resolved within jetty-home bundle (not from src/test/config/etc)
+        xmlReferences.addAll(JettyBootstrapActivator.DEFAULT_JETTY_XML_FILES);
+        xmlFiles.stream()
+            .map(Path::toUri)
+            .map(URI::toASCIIString)
+            .forEach(xmlReferences::add);
+
+        // Convert list of XML to a list of URIs separated by ";"
+        String xmlConfigLine = String.join(";", xmlReferences);
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
         options.add(systemProperty("jetty.http.port").value("0"));
         options.add(systemProperty(OSGiServerConstants.JETTY_HOME_BUNDLE).value("org.eclipse.jetty.ee11.osgi.boot"));
-        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }
     
