@@ -16,11 +16,13 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.RecordComponent;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntUnaryOperator;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.internal.CompoundPool;
@@ -345,7 +348,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return;
         try
         {
-            long memory = getMemory(direct);
+            long memory = getTotalMemory(direct);
             long excess = memory - max;
             if (excess > 0)
             {
@@ -430,34 +433,81 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return Arrays.stream(buckets).mapToLong(bucket -> bucket.getPool().getIdleCount()).sum();
     }
 
-    @ManagedAttribute("The bytes retained by direct ByteBuffers")
+    @ManagedAttribute("The total bytes retained by direct ByteBuffers")
     public long getDirectMemory()
     {
-        return getMemory(true);
+        return getTotalMemory(true);
     }
 
-    @ManagedAttribute("The bytes retained by heap ByteBuffers")
+    @ManagedAttribute("The total bytes retained by heap ByteBuffers")
     public long getHeapMemory()
     {
-        return getMemory(false);
+        return getTotalMemory(false);
     }
 
-    private long getMemory(boolean direct)
+    private long getTotalMemory(boolean direct)
+    {
+        return getMemory(direct, bucket -> bucket.getPool().size());
+    }
+
+    private long getMemory(boolean direct, ToLongFunction<RetainedBucket> count)
     {
         long size = 0;
         for (RetainedBucket bucket : direct ? _direct : _indirect)
-            size += (long)bucket.getPool().getIdleCount() * bucket.getCapacity();
+            size += count.applyAsLong(bucket) * bucket.getCapacity();
         return size;
     }
 
+    @ManagedAttribute("The available bytes retained by direct ByteBuffers")
     public long getAvailableDirectMemory()
     {
-        return getDirectMemory();
+        return getAvailableMemory(true);
     }
 
+    @ManagedAttribute("The available bytes retained by heap ByteBuffers")
     public long getAvailableHeapMemory()
     {
-        return getHeapMemory();
+        return getAvailableMemory(false);
+    }
+
+    private long getAvailableMemory(boolean direct)
+    {
+        return getMemory(direct, bucket -> bucket.getPool().getIdleCount());
+    }
+
+    @ManagedAttribute("The heap buckets statistics")
+    public List<Map<String, Object>> getHeapBucketsStatistics()
+    {
+        return getBucketsStatistics(false);
+    }
+
+    @ManagedAttribute("The direct buckets statistics")
+    public List<Map<String, Object>> getDirectBucketsStatistics()
+    {
+        return getBucketsStatistics(true);
+    }
+
+    private List<Map<String, Object>> getBucketsStatistics(boolean direct)
+    {
+        RetainedBucket[] buckets = direct ? _direct : _indirect;
+        return Arrays.stream(buckets).map(b -> b.getStatistics().toMap()).toList();
+    }
+
+    @ManagedAttribute("The acquires for direct non-pooled bucket capacities")
+    public Map<Integer, Long> getNoBucketDirectAcquires()
+    {
+        return getNoBucketAcquires(true);
+    }
+
+    @ManagedAttribute("The acquires for heap non-pooled bucket capacities")
+    public Map<Integer, Long> getNoBucketHeapAcquires()
+    {
+        return getNoBucketAcquires(false);
+    }
+
+    private Map<Integer, Long> getNoBucketAcquires(boolean direct)
+    {
+        return new HashMap<>(direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires);
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
@@ -487,7 +537,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             DumpableCollection.fromArray("direct", _direct),
             new DumpableMap("direct non-pooled acquisitions", _noBucketDirectAcquires),
             DumpableCollection.fromArray("indirect", _indirect),
-            new DumpableMap("indirect non-pooled acquisitions", _noBucketIndirectAcquires)
+            new DumpableMap("heap non-pooled acquisitions", _noBucketIndirectAcquires)
         );
     }
 
@@ -592,6 +642,16 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return getCapacity();
         }
 
+        private Statistics getStatistics()
+        {
+            long pooled = _pooled.longValue();
+            long acquires = _acquires.longValue();
+            float hitRatio = acquires == 0 ? Float.NaN : pooled * 100F / acquires;
+            int averageSize = acquires == 0 ? 0 : (int)(_totalAcquired.longValue() / acquires);
+            return new Statistics(getCapacity(), getPool().getInUseCount(), getPool().size(), pooled, acquires,
+                _releases.longValue(), hitRatio, averageSize, _nonPooled.longValue(), _evicts.longValue(), _removes.longValue());
+        }
+
         public void clear()
         {
             _acquires.reset();
@@ -607,35 +667,46 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         @Override
         public String toString()
         {
-            int entries = 0;
-            int inUse = 0;
-            Iterator<Pool.Entry<RetainableByteBuffer.Pooled>> iterator = getPool().stream().iterator();
-            while (iterator.hasNext())
+            return String.format("%s[%s]", super.toString(), getStatistics());
+        }
+
+        private record Statistics(int capacity, int inUseEntries, int totalEntries, long pooled, long acquires,
+                                  long releases, float hitRatio, int averageSize, long nonPooled, long evicts, long removes)
+        {
+            private Map<String, Object> toMap()
             {
-                Pool.Entry<RetainableByteBuffer.Pooled> entry = iterator.next();
-                entries++;
-                if (entry.isInUse())
-                    inUse++;
+                try
+                {
+                    Map<String, Object> statistics = new HashMap<>();
+                    for (RecordComponent c : getClass().getRecordComponents())
+                    {
+                        statistics.put(c.getName(), c.getAccessor().invoke(this));
+                    }
+                    return statistics;
+                }
+                catch (Throwable x)
+                {
+                    return Map.of();
+                }
             }
 
-            long pooled = _pooled.longValue();
-            long acquires = _acquires.longValue();
-            float hitRatio = acquires == 0L ? Float.NaN : pooled * 100F / acquires;
-            long avgSize = acquires == 0L ? 0L : _totalAcquired.longValue() / acquires;
-            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d(%.3f%%),avgsize=%d,non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
-                super.toString(),
-                getCapacity(),
-                inUse,
-                entries,
-                pooled,
-                acquires,
-                hitRatio,
-                avgSize,
-                _nonPooled.longValue(),
-                _evicts.longValue(),
-                _removes.longValue(),
-                _releases.longValue()
-            );
+            @Override
+            public String toString()
+            {
+                return "capacity=%d,in-use=%d/%d,pooled/acquires/releases=%d/%d/%d(%.3f%%),avgSize=%d,non-pooled/evicts/removes=%d/%d/%d".formatted(
+                    capacity,
+                    inUseEntries,
+                    totalEntries,
+                    pooled,
+                    acquires,
+                    releases,
+                    hitRatio,
+                    averageSize,
+                    nonPooled,
+                    evicts,
+                    removes
+                );
+            }
         }
 
         private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer.Pooled>
