@@ -356,7 +356,9 @@ public class Scanner extends ContainerLifeCycle
          *
          * @param paths the paths that changed (includes all ADDED, REMOVED, CHANGED entries)
          * @throws Exception if unable to report the events.
+         * @deprecated use {@link #pathsChanged(Map)} instead.
          */
+        @Deprecated(since = "12.1.0", forRemoval = true)
         default void pathsChanged(Set<Path> paths) throws Exception
         {
             filesChanged(paths.stream().map(Path::toString).collect(Collectors.toSet()));
@@ -375,7 +377,9 @@ public class Scanner extends ContainerLifeCycle
          *
          * @param filenames the set of filenames that changed (includes all ADDED, REMOVED, CHANGED entries)
          * @throws Exception if unable to report the events.
+         * @deprecated use {@link #pathsChanged(Map)} instead
          */
+        @Deprecated(since = "12.1.0", forRemoval = true)
         default void filesChanged(Set<String> filenames) throws Exception
         {
         }
