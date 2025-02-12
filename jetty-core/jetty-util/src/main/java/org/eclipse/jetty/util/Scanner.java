@@ -45,9 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Scanner
- * <p>
- * Utility for scanning a directory for added, removed and changed
+ * Utility for scanning a directory for added, removed, and changed
  * files and reporting these events via registered Listeners.
  * The scanner operates on the {@link Path#toRealPath(LinkOption...)} of the files scanned and
  * can be configured to follow symlinks.
@@ -90,9 +88,8 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * PathMatcherSet
-     *
      * A set of PathMatchers for testing Paths against path matching patterns via
+     *
      * @see IncludeExcludeSet
      */
     static class PathMatcherSet extends HashSet<PathMatcher> implements Predicate<Path>
@@ -110,8 +107,6 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * MetaData
-     *
      * Metadata about a file: Last modified time, file size and
      * last file status (ADDED, CHANGED, DELETED, STABLE)
      */
@@ -150,8 +145,6 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Visitor
-     *
      * A FileVisitor for walking a subtree of paths. The Scanner uses
      * this to examine the dirs and files it has been asked to scan.
      */
@@ -195,7 +188,8 @@ public class Scanner extends ContainerLifeCycle
                 if (accepted)
                 {
                     scanInfoMap.put(dir, new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
-                    if (LOG.isDebugEnabled()) LOG.debug("scan accepted dir {} mod={}", f, f.lastModified());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("scan accepted dir {} mod={}", f, f.lastModified());
                 }
             }
 
@@ -227,7 +221,8 @@ public class Scanner extends ContainerLifeCycle
             if (accepted)
             {
                 scanInfoMap.put(path, new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
-                if (LOG.isDebugEnabled()) LOG.debug("scan accepted {} mod={}", f, f.lastModified());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("scan accepted {} mod={}", f, f.lastModified());
             }
 
             return FileVisitResult.CONTINUE;
@@ -248,9 +243,7 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Listener
-     *
-     * Marker for notifications re file changes.
+     * Marker for notifications of file changes.
      */
     public interface Listener
     {
@@ -264,6 +257,7 @@ public class Scanner extends ContainerLifeCycle
         /**
          * Called when a file is changed.
          * Default implementation calls {@link #fileChanged(String)}.
+         *
          * @param path the {@link Path#toRealPath(LinkOption...)} of the changed file
          * @throws Exception May be thrown for handling errors
          */
@@ -275,6 +269,7 @@ public class Scanner extends ContainerLifeCycle
         /**
          * Called when a file is added.
          * Default implementation calls {@link #fileAdded(String)}.
+         *
          * @param path the {@link Path#toRealPath(LinkOption...)} of the added file
          * @throws Exception May be thrown for handling errors
          */
@@ -286,6 +281,7 @@ public class Scanner extends ContainerLifeCycle
         /**
          * Called when a file is removed.
          * Default implementation calls {@link #fileRemoved(String)}.
+         *
          * @param path the {@link Path#toRealPath(LinkOption...)} of the removed file
          * @throws Exception May be thrown for handling errors
          */
@@ -297,6 +293,7 @@ public class Scanner extends ContainerLifeCycle
         /**
          * Called when a file is changed.
          * May not be called if {@link #pathChanged(Path)} is overridden.
+         *
          * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the changed file
          * @throws Exception May be thrown for handling errors
          */
@@ -307,6 +304,7 @@ public class Scanner extends ContainerLifeCycle
         /**
          * Called when a file is added.
          * May not be called if {@link #pathAdded(Path)} is overridden.
+         *
          * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the added file
          * @throws Exception May be thrown for handling errors
          */
@@ -317,6 +315,7 @@ public class Scanner extends ContainerLifeCycle
         /**
          * Called when a file is removed.
          * May not be called if {@link #pathRemoved(Path)} is overridden.
+         *
          * @param filename the {@link Path#toRealPath(LinkOption...)} as a string of the removed file
          * @throws Exception May be thrown for handling errors
          */
@@ -330,20 +329,56 @@ public class Scanner extends ContainerLifeCycle
      */
     public interface BulkListener extends Listener
     {
+        /**
+         * Main entry point for BulkListener events.
+         * <p>
+         * Override this to see a Map of Path to Notification.
+         * </p>
+         *
+         * @param changeSet the raw changeset that was detected by the last scan.
+         * @throws Exception if unable to report the events.
+         */
+        default void pathsChanged(Map<Path, Notification> changeSet) throws Exception
+        {
+            pathsChanged(changeSet.keySet());
+        }
+
+        /**
+         * Only the list of Paths that changed, with no knowledge of how it changed (Added, Removed, Changed).
+         * <p>
+         * Use this if you have a need to interrogate the state of the Paths yourself, otherwise
+         * use the {@link #pathsChanged(Map)} for a more complete set of changes detected.
+         * </p>
+         * <p>
+         * Note: this method is inherently racy, as by the time you investigate the status of
+         * the paths that changed, those paths might have changed again in an unexpected way.
+         * </p>
+         *
+         * @param paths the paths that changed (includes all ADDED, REMOVED, CHANGED entries)
+         * @throws Exception if unable to report the events.
+         */
         default void pathsChanged(Set<Path> paths) throws Exception
         {
             filesChanged(paths.stream().map(Path::toString).collect(Collectors.toSet()));
         }
 
-        void filesChanged(Set<String> filenames) throws Exception;
-    }
-
-    /**
-     * Listener that notifies of the complete path change set.
-     */
-    public interface ChangeSetListener extends Listener
-    {
-        void pathsChanged(Map<Path, Notification> changeSet);
+        /**
+         * Only the list of filenames that have changed, with no knowledge of how it changed (Added, Removed, Changed).
+         * <p>
+         * Use this if you have a need to interrogate the state of the filenames yourself, otherwise
+         * use the {@link #pathsChanged(Map)} for a more complete set of changes detected.
+         * </p>
+         * <p>
+         * Note: this method is inherently racy, as by the time you investigate the status of
+         * the paths that changed, those paths might have changed again in an unexpected way.
+         * </p>
+         *
+         * @param filenames the set of filenames that changed (includes all ADDED, REMOVED, CHANGED entries)
+         * @throws Exception if unable to report the events.
+         */
+        default void filesChanged(Set<String> filenames) throws Exception
+        {
+        }
     }
 
     /**
@@ -359,12 +394,12 @@ public class Scanner extends ContainerLifeCycle
         {
         }
     }
-    
+
     public Scanner()
     {
         this(null);
     }
-    
+
     public Scanner(Scheduler scheduler)
     {
         this(scheduler, true);
@@ -379,7 +414,7 @@ public class Scanner extends ContainerLifeCycle
         //Create the scheduler and start it
         _scheduler = scheduler == null ? new ScheduledExecutorScheduler("Scanner-" + SCANNER_IDS.getAndIncrement(), true, 1) : scheduler;
         installBean(_scheduler);
-        _linkOptions = reportRealPaths ? new LinkOption[0] : new LinkOption[] {LinkOption.NOFOLLOW_LINKS};
+        _linkOptions = reportRealPaths ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     }
 
     /**
@@ -413,7 +448,7 @@ public class Scanner extends ContainerLifeCycle
         _scannables.clear();
         if (dirs == null)
             return;
-        for (Path p :dirs)
+        for (Path p : dirs)
         {
             if (Files.isDirectory(p))
                 addDirectory(p);
@@ -563,8 +598,7 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Whether or not an initial scan will report all files as being
-     * added.
+     * Whether an initial scan will report all files as being added.
      *
      * @param reportExisting if true, all files found on initial scan will be
      * reported as being added, otherwise not
@@ -576,7 +610,7 @@ public class Scanner extends ContainerLifeCycle
         _reportExisting = reportExisting;
     }
 
-    public boolean getReportExistingFilesOnStartup()
+    public boolean isReportExistingFilesOnStartup()
     {
         return _reportExisting;
     }
@@ -629,7 +663,7 @@ public class Scanner extends ContainerLifeCycle
     public void doStart() throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Scanner start: autoStartScanning={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
+            LOG.debug("Scanner start: autoStartScanning={}, reportExists={}, depth={}, reportDirs={}, interval={}, filter={}, scannables={}",
                 isAutoStartScanning(), _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
 
         // Start the scanner and managed beans (eg: the scheduler)
@@ -644,9 +678,9 @@ public class Scanner extends ContainerLifeCycle
     /**
      * Start scanning.
      * <p>
-     *     This will perform the initial scan of the directories {@link #setScanDirs(List)}
-     *     and schedule future scans, following all of the configuration
-     *     of the scan (eg: {@link #setReportExistingFilesOnStartup(boolean)})
+     * This will perform the initial scan of the directories {@link #setScanDirs(List)}
+     * and schedule future scans, following all the configuration
+     * of the scan (eg: {@link #setReportExistingFilesOnStartup(boolean)})
      * </p>
      */
     public void startScanning()
@@ -661,7 +695,7 @@ public class Scanner extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("{}.startup()", this.getClass().getSimpleName());
 
-        if (_reportExisting)
+        if (isReportExistingFilesOnStartup())
         {
             // if files exist at startup, report them
             scan();
@@ -792,7 +826,7 @@ public class Scanner extends ContainerLifeCycle
             try
             {
                 Files.walkFileTree(entry.getKey(), EnumSet.allOf(FileVisitOption.class), _scanDepth,
-                                   new Visitor(entry.getKey(), entry.getValue(), currentScan));
+                    new Visitor(entry.getKey(), entry.getValue(), currentScan));
             }
             catch (IOException e)
             {
@@ -805,7 +839,7 @@ public class Scanner extends ContainerLifeCycle
     /**
      * Report the adds/changes/removes to the registered listeners
      *
-     * Only report an add or change once a file has stablilized in size.
+     * Only report an add or change once a file has stabilized in size.
      *
      * @param currentScan the info from the most recent pass
      * @param oldScan info from the previous pass
@@ -852,7 +886,7 @@ public class Scanner extends ContainerLifeCycle
                 //Unchanged file: if it was previously
                 //ADDED, we can now send the ADDED event.
                 if (previous._status == Status.ADDED)
-                    changes.put(entry.getKey(),  Notification.ADDED);
+                    changes.put(entry.getKey(), Notification.ADDED);
                 else if (previous._status == Status.CHANGED)
                     changes.put(entry.getKey(), Notification.CHANGED);
 
@@ -863,154 +897,48 @@ public class Scanner extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("scanned {}", _scannables.keySet());
 
-        // Call the DiscreteListeners
-        for (Map.Entry<Path, Notification> entry : changes.entrySet())
-        {
-            switch (entry.getValue())
-            {
-                case ADDED:
-                    reportAddition(entry.getKey());
-                    break;
-                case CHANGED:
-                    reportChange(entry.getKey());
-                    break;
-                case REMOVED:
-                    reportRemoval(entry.getKey());
-                    break;
-                default:
-                    LOG.warn("Unknown file change: {}", entry.getValue());
-                    break;
-            }
-        }
-
-        // Call the ChangeSetListeners
-        reportChangeSet(changes);
-
-        // Call the BulkListeners
-        reportBulkChanges(changes.keySet());
-    }
-
-    private void warn(Object listener, Path path, Throwable th)
-    {
-        LOG.warn("{} failed on '{}'", listener, path, th);
-    }
-
-    /**
-     * Report a file addition to the registered FileAddedListeners
-     *
-     * @param path the path
-     */
-    private void reportAddition(Path path)
-    {
-        if (path == null)
-            return;
+        if (changes.isEmpty())
+            return; // nothing to report
 
         for (Listener listener : _listeners)
         {
-            try
-            {
-                if (listener instanceof DiscreteListener discreteListener)
-                    discreteListener.pathAdded(path);
-            }
-            catch (Throwable e)
-            {
-                warn(listener, path, e);
-            }
-        }
-    }
+            if (listener == null)
+                continue; // skip
 
-    /**
-     * Report a file removal to the FileRemovedListeners
-     *
-     * @param path the path of the removed filename
-     */
-    private void reportRemoval(Path path)
-    {
-        if (path == null)
-            return;
-
-        for (Listener listener : _listeners)
-        {
-            try
+            if (listener instanceof BulkListener bulkListener)
             {
-                if (listener instanceof DiscreteListener discreteListener)
-                    discreteListener.pathRemoved(path);
+                try
+                {
+                    bulkListener.pathsChanged(changes);
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("{} failed on '{}'", listener, changes, t);
+                }
             }
-            catch (Throwable e)
-            {
-                warn(listener, path, e);
-            }
-        }
-    }
 
-    /**
-     * Report a file change to the FileChangedListeners
-     *
-     * @param path the path of the changed file
-     */
-    private void reportChange(Path path)
-    {
-        if (path == null)
-            return;
+            if (listener instanceof DiscreteListener discreteListener)
+            {
+                for (Map.Entry<Path, Notification> entry : changes.entrySet())
+                {
+                    if (entry.getKey() == null)
+                        continue; // skip, cannot report it anyway.
 
-        for (Listener listener : _listeners)
-        {
-            try
-            {
-                if (listener instanceof DiscreteListener discreteListener)
-                    discreteListener.pathChanged(path);
-            }
-            catch (Throwable e)
-            {
-                warn(listener, path, e);
-            }
-        }
-    }
-
-    /**
-     * Report set of changes to the ChangeSetListener
-     *
-     * @param changes the changes that occurred.
-     */
-    private void reportChangeSet(Map<Path, Notification> changes)
-    {
-        if (changes == null || changes.isEmpty())
-            return;
-
-        for (Listener l : _listeners)
-        {
-            try
-            {
-                if (l instanceof ChangeSetListener changeSetListener)
-                    changeSetListener.pathsChanged(changes);
-            }
-            catch (Throwable e)
-            {
-                LOG.warn("{} failed on '{}'", l, changes, e);
-            }
-        }
-    }
-
-    /**
-     * Report the list of filenames for which changes were detected.
-     *
-     * @param paths The paths of all files added/changed/removed
-     */
-    private void reportBulkChanges(Set<Path> paths)
-    {
-        if (paths == null || paths.isEmpty())
-            return;
-
-        for (Listener listener : _listeners)
-        {
-            try
-            {
-                if (listener instanceof BulkListener bulkListener)
-                    bulkListener.pathsChanged(paths);
-            }
-            catch (Throwable e)
-            {
-                LOG.warn("{} failed on '{}'", listener, paths, e);
+                    try
+                    {
+                        switch (entry.getValue())
+                        {
+                            case ADDED -> discreteListener.pathAdded(entry.getKey());
+                            case CHANGED -> discreteListener.pathChanged(entry.getKey());
+                            case REMOVED -> discreteListener.pathRemoved(entry.getKey());
+                            default -> LOG.warn("Unknown file change: {} -> {}", entry.getKey(), entry.getValue());
+                        }
+                    }
+                    catch (Throwable t)
+                    {
+                        LOG.warn("{} failed on '{}'", listener, entry.getKey(), t);
+                    }
+                }
             }
         }
     }
@@ -1049,7 +977,6 @@ public class Scanner extends ContainerLifeCycle
             {
                 if (listener instanceof ScanCycleListener scanCycleListener)
                     scanCycleListener.scanEnded(cycle);
-
             }
             catch (Exception e)
             {
