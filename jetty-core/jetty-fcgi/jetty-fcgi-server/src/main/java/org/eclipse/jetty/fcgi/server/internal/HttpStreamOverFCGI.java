@@ -253,7 +253,7 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public Runnable cancelSend(Throwable cause, Callback callback)
     {
-        throw new UnsupportedOperationException("TODO IMPLEMENT ME");
+        return () -> _connection.getFlusher().cancel(cause).failed(cause);
     }
 
     private void commit(MetaData.Response info, boolean head, boolean last, ByteBuffer content, Callback callback)
