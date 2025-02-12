@@ -151,9 +151,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     protected HttpGenerator newHttpGenerator()
     {
-        HttpGenerator generator = new HttpGenerator();
-        generator.setMaxHeaderBytes(getHttpConfiguration().getResponseHeaderSize());
-        return generator;
+        return new HttpGenerator();
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
@@ -814,6 +812,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_callback == null)
                 throw new IllegalStateException();
 
+            int responseHeadersSize = getHttpConfiguration().getResponseHeaderSize();
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -832,16 +831,30 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 switch (result)
                 {
                     case NEED_INFO:
+                    {
                         throw new EofException("request lifecycle violation");
-
+                    }
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
+                        _generator.setMaxHeaderBytes(getHttpConfiguration().getMaxResponseHeaderSize());
+                        _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response Header Fields Too Large");
+                        int maxResponseHeadersSize = getHttpConfiguration().getMaxResponseHeaderSize();
+                        if (maxResponseHeadersSize > responseHeadersSize)
+                        {
+                            _generator.reset();
+                            _header.release();
+                            _header = _bufferPool.acquire(maxResponseHeadersSize, useDirectByteBuffers);
+                            responseHeadersSize = maxResponseHeadersSize;
+                            break;
+                        }
+                        else
+                        {
+                            throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response Header Fields Too Large");
+                        }
                     }
                     case NEED_CHUNK:
                     {
@@ -851,7 +864,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
+                        _chunk = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:

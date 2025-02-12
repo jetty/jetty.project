@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
@@ -464,6 +466,20 @@ public class ExceptionUtil
         {
             throw new RuntimeException(e.getCause());
         }
+    }
+
+    /**
+     * <p>Convert a {@link Throwable} to a string equivalent to what {@link Throwable#printStackTrace()} prints.</p>
+     * @param throwable The {@link Throwable} or null
+     * @return a string containing the throwable's full stack trace
+     */
+    public static String toString(Throwable throwable)
+    {
+        if (throwable == null)
+            return "null";
+        StringWriter sw = new StringWriter();
+        throwable.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 
     private ExceptionUtil()

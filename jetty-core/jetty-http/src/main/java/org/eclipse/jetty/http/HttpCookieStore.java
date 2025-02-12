@@ -17,18 +17,18 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * <p>A container for {@link HttpCookie}s.</p>
@@ -51,12 +51,12 @@ public interface HttpCookieStore
      * @param cookie the cookie to add
      * @return whether the cookie has been added
      */
-    public boolean add(URI uri, HttpCookie cookie);
+    boolean add(URI uri, HttpCookie cookie);
 
     /**
      * @return all the cookies
      */
-    public List<HttpCookie> all();
+    List<HttpCookie> all();
 
     /**
      * <p>Returns the cookies that match the given {@code URI}.</p>
@@ -64,7 +64,7 @@ public interface HttpCookieStore
      * @param uri the {@code URI} to match against
      * @return a list of cookies that match the given {@code URI}
      */
-    public List<HttpCookie> match(URI uri);
+    List<HttpCookie> match(URI uri);
 
     /**
      * <p>Removes the cookie associated with the given {@code URI}.</p>
@@ -73,19 +73,19 @@ public interface HttpCookieStore
      * @param cookie the cookie to remove
      * @return whether the cookie has been removed
      */
-    public boolean remove(URI uri, HttpCookie cookie);
+    boolean remove(URI uri, HttpCookie cookie);
 
     /**
      * <p>Removes all the cookies from this store.</p>
      *
      * @return whether the store modified by this call
      */
-    public boolean clear();
+    boolean clear();
 
     /**
      * <p>An implementation of {@link HttpCookieStore} that does not store any cookie.</p>
      */
-    public static class Empty implements HttpCookieStore
+    class Empty implements HttpCookieStore
     {
         @Override
         public boolean add(URI uri, HttpCookie cookie)
@@ -121,9 +121,9 @@ public interface HttpCookieStore
     /**
      * <p>A default implementation of {@link HttpCookieStore}.</p>
      */
-    public static class Default implements HttpCookieStore
+    class Default implements HttpCookieStore
     {
-        private final AutoLock lock = new AutoLock();
+        private final ReadWriteLock lock = new ReentrantReadWriteLock();
         private final Map<String, List<StoredHttpCookie>> cookies = new HashMap<>();
 
         @Override
@@ -143,7 +143,8 @@ public interface HttpCookieStore
             // This facilitates the matching algorithm.
             boolean[] added = new boolean[1];
             StoredHttpCookie storedCookie = new StoredHttpCookie(cookie, uri, resolvedDomain, resolvedPath);
-            try (AutoLock ignored = lock.lock())
+            lock.writeLock().lock();
+            try
             {
                 String key = resolvedDomain.toLowerCase(Locale.ENGLISH);
                 cookies.compute(key, (k, v) ->
@@ -164,9 +165,12 @@ public interface HttpCookieStore
                     v.add(storedCookie);
                     return v;
                 });
+                return added[0];
             }
-
-            return added[0];
+            finally
+            {
+                lock.writeLock().unlock();
+            }
         }
 
         private String resolveDomain(URI uri, HttpCookie cookie)
@@ -260,13 +264,18 @@ public interface HttpCookieStore
         @Override
         public List<HttpCookie> all()
         {
-            try (AutoLock ignored = lock.lock())
+            lock.readLock().lock();
+            try
             {
                 return cookies.values().stream()
                     .flatMap(Collection::stream)
                     .filter(Predicate.not(StoredHttpCookie::isExpired))
                     .map(HttpCookie.class::cast)
                     .toList();
+            }
+            finally
+            {
+                lock.readLock().unlock();
             }
         }
 
@@ -283,8 +292,10 @@ public interface HttpCookieStore
 
             boolean secure = HttpScheme.isSecure(uri.getScheme());
 
-            List<HttpCookie> result = new ArrayList<>();
-            try (AutoLock ignored = lock.lock())
+            List<HttpCookie> result = null;
+            Map<String, List<StoredHttpCookie>> expired = null;
+            lock.readLock().lock();
+            try
             {
                 // Given the way cookies are stored in the Map, the matching
                 // algorithm starts with the URI domain and iterates chopping
@@ -300,37 +311,68 @@ public interface HttpCookieStore
                 while (domain != null)
                 {
                     List<StoredHttpCookie> stored = cookies.get(domain);
-                    Iterator<StoredHttpCookie> iterator = stored == null ? Collections.emptyIterator() : stored.iterator();
-                    while (iterator.hasNext())
+                    if (stored != null)
                     {
-                        StoredHttpCookie cookie = iterator.next();
-
-                        // Check and remove expired cookies.
-                        if (cookie.isExpired())
+                        for (StoredHttpCookie cookie : stored)
                         {
-                            iterator.remove();
-                            continue;
+                            // Check for expired cookies.
+                            if (cookie.isExpired())
+                            {
+                                if (expired == null)
+                                    expired = new HashMap<>();
+                                expired.computeIfAbsent(domain, k -> new ArrayList<>()).add(cookie);
+                                continue;
+                            }
+
+                            // Match whether the cookie is secure.
+                            if (cookie.isSecure() && !secure)
+                                continue;
+
+                            // Match the domain.
+                            if (!domainMatches(uriDomain, cookie.domain, cookie.getWrapped().getDomain()))
+                                continue;
+
+                            // Match the path.
+                            if (!pathMatches(path, cookie.path))
+                                continue;
+
+                            if (result == null)
+                                result = new ArrayList<>();
+                            result.add(cookie);
                         }
-
-                        // Check whether the cookie is secure.
-                        if (cookie.isSecure() && !secure)
-                            continue;
-
-                        // Match the domain.
-                        if (!domainMatches(uriDomain, cookie.domain, cookie.getWrapped().getDomain()))
-                            continue;
-
-                        // Match the path.
-                        if (!pathMatches(path, cookie.path))
-                            continue;
-
-                        result.add(cookie);
                     }
                     domain = parentDomain(domain);
                 }
             }
+            finally
+            {
+                lock.readLock().unlock();
+            }
 
-            return result;
+            if (expired != null)
+            {
+                lock.writeLock().lock();
+                try
+                {
+                    for (Map.Entry<String, List<StoredHttpCookie>> entry : expired.entrySet())
+                    {
+                        String domain = entry.getKey();
+                        List<StoredHttpCookie> stored = cookies.get(domain);
+                        if (stored != null)
+                        {
+                            stored.removeAll(entry.getValue());
+                            if (stored.isEmpty())
+                                cookies.remove(domain);
+                        }
+                    }
+                }
+                finally
+                {
+                    lock.writeLock().unlock();
+                }
+            }
+
+            return result == null ? List.of() : result;
         }
 
         private static boolean domainMatches(String uriDomain, String domain, String cookieDomain)
@@ -380,7 +422,8 @@ public interface HttpCookieStore
             String resolvedPath = resolvePath(uri, cookie);
 
             boolean[] removed = new boolean[1];
-            try (AutoLock ignored = lock.lock())
+            lock.writeLock().lock();
+            try
             {
                 String domain = uriDomain.toLowerCase(Locale.ENGLISH);
                 while (domain != null)
@@ -411,8 +454,12 @@ public interface HttpCookieStore
                     });
                     domain = parentDomain(domain);
                 }
+                return removed[0];
             }
-            return removed[0];
+            finally
+            {
+                lock.writeLock().unlock();
+            }
         }
 
         private String parentDomain(String domain)
@@ -431,12 +478,17 @@ public interface HttpCookieStore
         @Override
         public boolean clear()
         {
-            try (AutoLock ignored = lock.lock())
+            lock.writeLock().lock();
+            try
             {
                 if (cookies.isEmpty())
                     return false;
                 cookies.clear();
                 return true;
+            }
+            finally
+            {
+                lock.writeLock().unlock();
             }
         }
 

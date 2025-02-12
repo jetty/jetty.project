@@ -193,21 +193,43 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", RFC3986.getAllowed());
 
     /**
-     * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT},
-     * {@link Violation#AMBIGUOUS_EMPTY_SEGMENT}, {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, {@link Violation#AMBIGUOUS_PATH_ENCODING}
-     * and {@link Violation#UTF16_ENCODINGS}.
+     * LEGACY compliance mode that models pre Jetty 12 behavior by allowing:
+     * <ul>
+     *     <li>{@link Violation#AMBIGUOUS_PATH_SEGMENT}</li>
+     *     <li>{@link Violation#AMBIGUOUS_PATH_SEPARATOR}</li>
+     *     <li>{@link Violation#AMBIGUOUS_PATH_ENCODING}</li>
+     *     <li>{@link Violation#AMBIGUOUS_EMPTY_SEGMENT}</li>
+     *     <li>{@link Violation#BAD_UTF8_ENCODING}</li>
+     *     <li>{@link Violation#UTF16_ENCODINGS}</li>
+     *     <li>{@link Violation#USER_INFO}</li>
+     * </ul>
+     * <p>
+     *     Note: this mode allows URL/URIs that the Servlet spec will reject.
+     *     <br>
+     *     See <a href="https://github.com/jakartaee/servlet/blob/6.0.0-RELEASE/spec/src/main/asciidoc/servlet-spec-body.adoc#352-uri-path-canonicalization">point 10 "Rejecting Suspicious Sequences" in Section 3.5.2. URI Path Canonicalization</a>,
+     *     <br>
+     *     and <a href="https://jetty.org/docs/jetty/12/programming-guide/server/compliance.html#servleturi">Jetty Documentation: Servlet URI Compliance Modes.</a>
+     * </p>
      */
     public static final UriCompliance LEGACY = new UriCompliance("LEGACY",
         of(Violation.AMBIGUOUS_PATH_SEGMENT,
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
+            Violation.BAD_UTF8_ENCODING,
             Violation.UTF16_ENCODINGS,
             Violation.USER_INFO,
             Violation.FRAGMENT));
 
     /**
-     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form, and illegal characters
+     * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form, and illegal characters.
+     * <p>
+     *     Note: this mode allows URL/URIs that the Servlet spec will reject.
+     *     <br>
+     *     See <a href="https://github.com/jakartaee/servlet/blob/6.0.0-RELEASE/spec/src/main/asciidoc/servlet-spec-body.adoc#352-uri-path-canonicalization">point 10 "Rejecting Suspicious Sequences" in Section 3.5.2. URI Path Canonicalization</a>,
+     *     <br>
+     *     and <a href="https://jetty.org/docs/jetty/12/programming-guide/server/compliance.html#servleturi">Jetty Documentation: Servlet URI Compliance Modes.</a>
+     * </p>
      */
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 

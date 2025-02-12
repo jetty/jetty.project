@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 public abstract class RegexRule extends Rule
 {
     private Pattern _regex;
+    private boolean _matchQuery = true;
 
     public RegexRule()
     {
@@ -52,10 +53,31 @@ public abstract class RegexRule extends Rule
         _regex = regex == null ? null : Pattern.compile(regex);
     }
 
+    /**
+     * <p>Is regex matching against URI path with query section present.</p>
+     *
+     * @return true to match against URI path with query (default), false to match only against URI path.
+     */
+    public boolean isMatchQuery()
+    {
+        return _matchQuery;
+    }
+
+    /**
+     * <p>Enable or disable regex matching against URI path with query section present.</p>
+     *
+     * @param flag true to have regex match against URI path with query, false
+     *   to have match against only URI path.
+     */
+    public void setMatchQuery(boolean flag)
+    {
+        _matchQuery = flag;
+    }
+
     @Override
     public Handler matchAndApply(Handler input) throws IOException
     {
-        String target = input.getHttpURI().getPathQuery();
+        String target = isMatchQuery() ? input.getHttpURI().getPathQuery() : input.getHttpURI().getPath();
         Matcher matcher = _regex.matcher(target);
         if (matcher.matches())
             return apply(input, matcher);
