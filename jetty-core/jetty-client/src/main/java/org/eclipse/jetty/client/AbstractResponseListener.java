@@ -13,38 +13,39 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 
 public abstract class AbstractResponseListener implements Response.Listener
 {
-    private final int maxLength;
+    private final RetainableByteBuffer.Mutable accumulator;
     private String encoding;
     private String mediaType;
+    private byte[] content;
 
-    public AbstractResponseListener()
+    protected AbstractResponseListener(RetainableByteBuffer.Mutable accumulator)
     {
-        this(2 * 1024 * 1024);
+        this.accumulator = Objects.requireNonNull(accumulator);
     }
 
-    public AbstractResponseListener(int maxLength)
+    public long getMaxLength()
     {
-        if (maxLength < 0)
-            throw new IllegalArgumentException("Invalid max length " + maxLength);
-        this.maxLength = maxLength;
+        return accumulator.maxSize();
     }
 
     public String getEncoding()
     {
         return encoding;
-    }
-
-    public int getMaxLength()
-    {
-        return maxLength;
     }
 
     public String getMediaType()
@@ -60,6 +61,7 @@ public abstract class AbstractResponseListener implements Response.Listener
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH);
         if (HttpMethod.HEAD.is(request.getMethod()))
             length = 0;
+        long maxLength = getMaxLength();
         if (length > maxLength)
         {
             response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
@@ -93,5 +95,86 @@ public abstract class AbstractResponseListener implements Response.Listener
                 media = media.substring(0, semicolon).trim();
             this.mediaType = media;
         }
+    }
+
+    @Override
+    public void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception
+    {
+        if (accumulator.append(chunk))
+            demander.run();
+        else
+            response.abort(new IllegalArgumentException("Buffering capacity " + getMaxLength() + " exceeded"));
+    }
+
+    @Override
+    public void onSuccess(Response response)
+    {
+        // Always take here to be sure the accumulator is released.
+        content = take();
+    }
+
+    @Override
+    public void onFailure(Response response, Throwable failure)
+    {
+        accumulator.clear();
+    }
+
+    /**
+     * @return the content as a byte array.
+     * @see #getContentAsString()
+     */
+    public byte[] getContent()
+    {
+        // Call take() in case onSuccess() is
+        // overridden, but super is not called.
+        if (content == null)
+            content = take();
+        return content;
+    }
+
+    /**
+     * @return the content as a string, using the "Content-Type" header to detect
+     * the encoding or defaulting to UTF-8 if the encoding could not be detected.
+     * @see #getContentAsString(String)
+     */
+    public String getContentAsString()
+    {
+        String encoding = getEncoding();
+        if (encoding == null)
+            return getContentAsString(StandardCharsets.UTF_8);
+        return getContentAsString(encoding);
+    }
+
+    /**
+     * @param encoding the encoding of the content bytes
+     * @return the content as a string, with the specified encoding
+     * @see #getContentAsString()
+     */
+    public String getContentAsString(String encoding)
+    {
+        return getContentAsString(Charset.forName(encoding));
+    }
+
+    /**
+     * @param charset the charset of the content bytes
+     * @return the content as a string, with the specified charset
+     * @see #getContentAsString()
+     */
+    public String getContentAsString(Charset charset)
+    {
+        return new String(getContent(), charset);
+    }
+
+    /**
+     * @return the content as {@link InputStream}
+     */
+    public InputStream getContentAsInputStream()
+    {
+        return new ByteArrayInputStream(getContent());
+    }
+
+    private byte[] take()
+    {
+        return accumulator.takeByteArray();
     }
 }

@@ -474,6 +474,24 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * Take the contents of this buffer, leaving it clear and independent.
+     * @return A possibly newly allocated array with the contents of this buffer, avoiding copies if possible.
+     */
+    default byte[] takeByteArray()
+    {
+        if (isEmpty())
+            return BufferUtil.EMPTY_BYTES;
+        long size = size();
+        if (size > Integer.MAX_VALUE)
+            throw new BufferOverflowException();
+        int length = (int)size;
+        byte[] bytes = new byte[length];
+        getByteBuffer().get(bytes);
+        clear();
+        return bytes;
+    }
+
+    /**
      * Consumes and puts the contents of this retainable byte buffer at the end of the given byte buffer.
      * @param toInfillMode the destination buffer, whose position is updated.
      * @throws BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
@@ -1678,11 +1696,7 @@ public interface RetainableByteBuffer extends Retainable
             return new DynamicCapacity(buffers, _pool, _maxSize, _minRetainSize);
         }
 
-        /**
-         * Take the contents of this buffer, leaving it clear and independent
-         * @return A possibly newly allocated array with the contents of this buffer, avoiding copies if possible.
-         * The length of the array may be larger than the contents, but the offset will always be 0.
-         */
+        @Override
         public byte[] takeByteArray()
         {
             if (LOG.isDebugEnabled())
