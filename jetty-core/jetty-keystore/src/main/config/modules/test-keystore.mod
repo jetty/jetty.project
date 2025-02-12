@@ -10,15 +10,15 @@ ssl
 ssl-context
 
 [files]
-maven://org.bouncycastle/bcpkix-jdk15to18/${bouncycastle.version}|lib/bouncycastle/bcpkix-jdk15to18-${bouncycastle.version}.jar
-maven://org.bouncycastle/bcprov-jdk15to18/${bouncycastle.version}|lib/bouncycastle/bcprov-jdk15to18-${bouncycastle.version}.jar
-maven://org.bouncycastle/bcutil-jdk15to18/${bouncycastle.version}|lib/bouncycastle/bcutil-jdk15to18-${bouncycastle.version}.jar
+maven://org.bouncycastle/bcpkix-jdk18on/${bouncycastle.version}|lib/bouncycastle/bcpkix-jdk18on-${bouncycastle.version}.jar
+maven://org.bouncycastle/bcprov-jdk18on/${bouncycastle.version}|lib/bouncycastle/bcprov-jdk18on-${bouncycastle.version}.jar
+maven://org.bouncycastle/bcutil-jdk18on/${bouncycastle.version}|lib/bouncycastle/bcutil-jdk18on-${bouncycastle.version}.jar
 
 [lib]
 lib/jetty-keystore-${jetty.version}.jar
-lib/bouncycastle/bcpkix-jdk15to18-${bouncycastle.version}.jar
-lib/bouncycastle/bcprov-jdk15to18-${bouncycastle.version}.jar
-lib/bouncycastle/bcutil-jdk15to18-${bouncycastle.version}.jar
+lib/bouncycastle/bcpkix-jdk18on-${bouncycastle.version}.jar
+lib/bouncycastle/bcprov-jdk18on-${bouncycastle.version}.jar
+lib/bouncycastle/bcutil-jdk18on-${bouncycastle.version}.jar
 
 [xml]
 etc/jetty-test-keystore.xml

@@ -21,8 +21,10 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.sun.net.httpserver.BasicAuthenticator;
+import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
@@ -403,5 +405,55 @@ public class SPIServerTest
         assertThat(response.getStatus(), is(200));
         String body = response.getContentAsString();
         assertThat(body, is("Hello"));
+    }
+    
+    @Test
+    public void testFilter() throws Exception
+    {
+        final AtomicReference<String> reference = new AtomicReference<String>();
+
+        final HttpContext httpContext = server.createContext("/", new HttpHandler()
+        {
+            public void handle(HttpExchange exchange) throws IOException
+            {
+                assertThat(reference.get(), is("before"));
+                Headers responseHeaders = exchange.getResponseHeaders();
+                responseHeaders.set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(200, 0);
+
+                OutputStream responseBody = exchange.getResponseBody();
+                responseBody.write("Hello".getBytes(StandardCharsets.ISO_8859_1));
+                responseBody.close();
+            }
+        });
+
+        httpContext.getFilters().add(new Filter()
+        {
+          @Override
+          public void doFilter(HttpExchange exchange, Chain chain) throws IOException 
+          {
+            reference.set("before");
+            chain.doFilter(exchange);
+            reference.set("after");
+            
+          }
+
+          @Override
+          public String description() 
+          {
+            return "test";
+          }
+      });
+
+        Request request = client.newRequest("localhost", port)
+            .scheme("http")
+            .method(HttpMethod.GET)
+            .path("/");
+
+        ContentResponse response = request.send();
+        assertThat(response.getStatus(), is(200));
+        String body = response.getContentAsString();
+        assertThat(body, is("Hello"));
+        assertThat(reference.get(), is("after"));
     }
 }

@@ -129,7 +129,9 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private int maxConnectionsPerDestination = 64;
     private int maxRequestsQueuedPerDestination = 1024;
     private int requestBufferSize = 4096;
+    private int maxRequestHeadersSize = 8192;
     private int responseBufferSize = 16384;
+    private int maxResponseHeadersSize = -1;
     private int maxRedirects = 8;
     private long addressResolutionTimeout = 15000;
     private boolean strictEventOrdering = false;
@@ -139,8 +141,6 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private int maxRequestHeadersSize = 8192;
-    private int maxResponseHeadersSize = -1;
     private Sweeper destinationSweeper;
 
     /**
