@@ -7,11 +7,11 @@ Adds Sign-In with Ethereum (SIWE) authentication to the server.
 security
 
 [files]
-maven://org.bouncycastle/bcprov-jdk15to18/${bouncycastle.version}|lib/bouncycastle/bcprov-jdk15to18-${bouncycastle.version}.jar
+maven://org.bouncycastle/bcprov-jdk18on/${bouncycastle.version}|lib/bouncycastle/bcprov-jdk18on-${bouncycastle.version}.jar
 
 [lib]
 lib/jetty-ethereum-${jetty.version}.jar
-lib/bouncycastle/bcprov-jdk15to18-${bouncycastle.version}.jar
+lib/bouncycastle/bcprov-jdk18on-${bouncycastle.version}.jar
 
 [ini]
 bouncycastle.version?=@bouncycastle.version@

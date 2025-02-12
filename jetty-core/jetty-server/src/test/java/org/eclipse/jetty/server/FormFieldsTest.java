@@ -111,7 +111,6 @@ public class FormFieldsTest
             Arguments.of(List.of("name%"), UTF_8, -1, -1, IllegalStateException.class),
             Arguments.of(List.of("name%A"), UTF_8, -1, -1, IllegalStateException.class),
 
-            // TODO: these 2 should throw the same exception.
             Arguments.of(List.of("name%A="), UTF_8, -1, -1, CharacterCodingException.class),
             Arguments.of(List.of("name%A&"), UTF_8, -1, -1, IllegalArgumentException.class),
 
@@ -125,6 +124,7 @@ public class FormFieldsTest
             Arguments.of(List.of("n=v&X=Y"), UTF_8, -1, 3, IllegalStateException.class),
             Arguments.of(List.of("n%AH=v"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=v%AH"), UTF_8, -1, -1, IllegalArgumentException.class),
+            Arguments.of(List.of("n=%%TOK%%"), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("n=v%FF"), UTF_8, -1, -1, CharacterCodingException.class)
         );
     }

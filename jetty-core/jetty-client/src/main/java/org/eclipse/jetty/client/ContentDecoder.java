@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * <p>Groups abstractions related to response content decoding.</p>
@@ -101,7 +103,7 @@ public interface ContentDecoder
         public abstract Content.Source newDecoderContentSource(Content.Source contentSource);
     }
 
-    class Factories extends ContainerLifeCycle implements Iterable<ContentDecoder.Factory>
+    class Factories extends ContainerLifeCycle implements Iterable<ContentDecoder.Factory>, Dumpable
     {
         private final Map<String, Factory> factories = new LinkedHashMap<>();
         private HttpField acceptEncodingField;
@@ -146,6 +148,18 @@ public interface ContentDecoder
             acceptEncodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, header.toString());
 
             return result;
+        }
+
+        @Override
+        public String dump()
+        {
+            return Dumpable.dump(this);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out, indent, this, factories);
         }
     }
 }

@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test the configuration found in WEB-INF/web.xml for purposes of the demo-base
+ * Test the configuration found in WEB-INF/web.xml of ee9-demo-proxy.war
  */
 public class ProxyWebAppTest
 {

@@ -1789,6 +1789,7 @@ public class ProxyServletTest
     {
         int maxResponseHeadersSize = 256;
         httpConfig.setResponseHeaderSize(maxResponseHeadersSize);
+        httpConfig.setMaxResponseHeaderSize(maxResponseHeadersSize);
         startServer(new HttpServlet()
         {
             @Override

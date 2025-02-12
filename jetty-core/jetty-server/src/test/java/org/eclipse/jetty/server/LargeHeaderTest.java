@@ -64,6 +64,7 @@ public class LargeHeaderTest
         server = new Server();
 
         HttpConfiguration config = new HttpConfiguration();
+        config.setMaxResponseHeaderSize(config.getResponseHeaderSize());
         HttpConnectionFactory http = new HttpConnectionFactory(config);
 
         ServerConnector connector = new ServerConnector(server, http);
