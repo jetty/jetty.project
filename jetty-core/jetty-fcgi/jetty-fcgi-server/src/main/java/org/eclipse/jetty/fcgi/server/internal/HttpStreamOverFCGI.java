@@ -250,6 +250,12 @@ public class HttpStreamOverFCGI implements HttpStream
         }
     }
 
+    @Override
+    public Callback cancelSend(Throwable cause, Callback callback)
+    {
+        throw new UnsupportedOperationException("TODO IMPLEMENT ME");
+    }
+
     private void commit(MetaData.Response info, boolean head, boolean last, ByteBuffer content, Callback callback)
     {
         if (LOG.isDebugEnabled())

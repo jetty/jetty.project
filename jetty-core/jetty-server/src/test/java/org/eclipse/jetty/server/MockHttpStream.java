@@ -205,6 +205,12 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
+    public Callback cancelSend(Throwable cause, Callback callback)
+    {
+        throw new UnsupportedOperationException("TODO IMPLEMENT ME");
+    }
+
+    @Override
     public long getIdleTimeout()
     {
         return 0;

@@ -92,10 +92,7 @@ public interface HttpStream extends Callback
      *         that was passed to the {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
      *         method.
      */
-    default Callback cancelSend(Throwable cause, Callback callback)
-    {
-        return callback;
-    }
+    Callback cancelSend(Throwable cause, Callback callback);
 
     /**
      * <p>Pushes the given {@code resource} to the client.</p>
@@ -198,6 +195,12 @@ public interface HttpStream extends Callback
         public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
             getWrapped().send(request, response, last, content, callback);
+        }
+
+        @Override
+        public Callback cancelSend(Throwable cause, Callback callback)
+        {
+            return getWrapped().cancelSend(cause, callback);
         }
 
         @Override
