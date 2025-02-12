@@ -565,16 +565,16 @@ public class ScannerTest
     }
 
     @Test
-    public void testChangeSetAdd() throws Exception
+    public void testBulkPathsChangedAdd() throws Exception
     {
         Path directory = workDir.getEmptyPathDir();
-        ChangeSetQueueListener changeSetQueue = new ChangeSetQueueListener();
+        PathsChangedQueueListener pathsChangedQueue = new PathsChangedQueueListener();
         _scanner = new Scanner();
         _scanner.addDirectory(directory);
         _scanner.setScanInterval(0);
         _scanner.setReportDirs(false);
         _scanner.setReportExistingFilesOnStartup(false);
-        _scanner.addListener(changeSetQueue);
+        _scanner.addListener(pathsChangedQueue);
         _scanner.start();
         _scanner.scan();
 
@@ -585,7 +585,7 @@ public class ScannerTest
 
         _scanner.scan();
         _scanner.scan();
-        List<String> actualChanges = changeSetQueue.pollOrderedChanges();
+        List<String> actualChanges = pathsChangedQueue.pollOrderedChanges();
         List<String> expected = List.of(
             "ADDED|" + fileA0,
             "ADDED|" + fileA1
@@ -594,16 +594,16 @@ public class ScannerTest
     }
 
     @Test
-    public void testChangeSetAddRemove() throws Exception
+    public void testBulkPathsChangedAddRemove() throws Exception
     {
         Path directory = workDir.getEmptyPathDir();
-        ChangeSetQueueListener changeSetQueue = new ChangeSetQueueListener();
+        PathsChangedQueueListener pathsChangedQueue = new PathsChangedQueueListener();
         _scanner = new Scanner();
         _scanner.addDirectory(directory);
         _scanner.setScanInterval(0);
         _scanner.setReportDirs(false);
         _scanner.setReportExistingFilesOnStartup(false);
-        _scanner.addListener(changeSetQueue);
+        _scanner.addListener(pathsChangedQueue);
         _scanner.start();
         _scanner.scan();
 
@@ -615,7 +615,7 @@ public class ScannerTest
 
         _scanner.scan();
         _scanner.scan();
-        List<String> actualChanges = changeSetQueue.pollOrderedChanges();
+        List<String> actualChanges = pathsChangedQueue.pollOrderedChanges();
         List<String> expected = List.of(
             "ADDED|" + fileA0,
             "ADDED|" + fileA1
@@ -626,7 +626,7 @@ public class ScannerTest
         delete(fileA0);
         _scanner.scan();
 
-        actualChanges = changeSetQueue.pollOrderedChanges();
+        actualChanges = pathsChangedQueue.pollOrderedChanges();
         expected = List.of(
             "REMOVED|" + fileA0
         );
@@ -634,16 +634,16 @@ public class ScannerTest
     }
 
     @Test
-    public void testChangeSetAddChange() throws Exception
+    public void testBulkPathsChangedAddChange() throws Exception
     {
         Path directory = workDir.getEmptyPathDir();
-        ChangeSetQueueListener changeSetQueue = new ChangeSetQueueListener();
+        PathsChangedQueueListener pathsChangedQueue = new PathsChangedQueueListener();
         _scanner = new Scanner();
         _scanner.addDirectory(directory);
         _scanner.setScanInterval(0);
         _scanner.setReportDirs(false);
         _scanner.setReportExistingFilesOnStartup(false);
-        _scanner.addListener(changeSetQueue);
+        _scanner.addListener(pathsChangedQueue);
         _scanner.start();
         _scanner.scan();
 
@@ -655,7 +655,7 @@ public class ScannerTest
 
         _scanner.scan();
         _scanner.scan();
-        List<String> actualChanges = changeSetQueue.pollOrderedChanges();
+        List<String> actualChanges = pathsChangedQueue.pollOrderedChanges();
         List<String> expected = List.of(
             "ADDED|" + fileA0,
             "ADDED|" + fileA1
@@ -666,11 +666,11 @@ public class ScannerTest
         touch(fileA0);
         _scanner.scan();
 
-        actualChanges = changeSetQueue.pollOrderedChanges();
+        actualChanges = pathsChangedQueue.pollOrderedChanges();
         assertThat("The changes to A0 are not stable yet", actualChanges, nullValue());
 
         _scanner.scan();
-        actualChanges = changeSetQueue.pollOrderedChanges();
+        actualChanges = pathsChangedQueue.pollOrderedChanges();
         expected = List.of(
             "CHANGED|" + fileA0
         );
@@ -678,16 +678,16 @@ public class ScannerTest
     }
 
     @Test
-    public void testChangeSetAddChangeRemove() throws Exception
+    public void testBulkPathsChangedAddChangeRemove() throws Exception
     {
         Path directory = workDir.getEmptyPathDir();
-        ChangeSetQueueListener changeSetQueue = new ChangeSetQueueListener();
+        PathsChangedQueueListener pathsChangedQueue = new PathsChangedQueueListener();
         _scanner = new Scanner();
         _scanner.addDirectory(directory);
         _scanner.setScanInterval(0);
         _scanner.setReportDirs(false);
         _scanner.setReportExistingFilesOnStartup(false);
-        _scanner.addListener(changeSetQueue);
+        _scanner.addListener(pathsChangedQueue);
         _scanner.start();
         _scanner.scan();
 
@@ -699,7 +699,7 @@ public class ScannerTest
 
         _scanner.scan();
         _scanner.scan();
-        List<String> actualChanges = changeSetQueue.pollOrderedChanges();
+        List<String> actualChanges = pathsChangedQueue.pollOrderedChanges();
         List<String> expected = List.of(
             "ADDED|" + fileA0,
             "ADDED|" + fileA1
@@ -712,14 +712,14 @@ public class ScannerTest
         touch(fileB2);
         _scanner.scan();
 
-        actualChanges = changeSetQueue.pollOrderedChanges();
+        actualChanges = pathsChangedQueue.pollOrderedChanges();
         assertThat("The changes to A0 and B2 are not stable yet", actualChanges, nullValue());
 
         // -- remove A1
         delete(fileA1);
 
         _scanner.scan();
-        actualChanges = changeSetQueue.pollOrderedChanges();
+        actualChanges = pathsChangedQueue.pollOrderedChanges();
         expected = List.of(
             "ADDED|" + fileB2,
             "CHANGED|" + fileA0,
@@ -764,6 +764,8 @@ public class ScannerTest
         }
     }
 
+    @SuppressWarnings("removal")
+    @Deprecated // remove this test class in the future
     private static class BulkPathsQueueListener extends LinkedBlockingQueue<Set<Path>> implements Scanner.BulkListener
     {
         private static final Logger LOG = LoggerFactory.getLogger(ScannerTest.LOG.getName() + "." + BulkPathsQueueListener.class.getSimpleName());
@@ -782,6 +784,8 @@ public class ScannerTest
         }
     }
 
+    @SuppressWarnings("removal")
+    @Deprecated // remove this test class in the future
     private static class BulkFilesQueueListener extends LinkedBlockingQueue<Set<String>> implements Scanner.BulkListener
     {
         private static final Logger LOG = LoggerFactory.getLogger(ScannerTest.LOG.getName() + "." + BulkFilesQueueListener.class.getSimpleName());
@@ -794,23 +798,23 @@ public class ScannerTest
         }
     }
 
-    private static class ChangeSetQueueListener extends LinkedBlockingQueue<Map<Path, Notification>> implements Scanner.ChangeSetListener
+    private static class PathsChangedQueueListener extends LinkedBlockingQueue<Map<Path, Notification>> implements Scanner.BulkListener
     {
-        private static final Logger LOG = LoggerFactory.getLogger(ScannerTest.LOG.getName() + "." + ChangeSetQueueListener.class.getSimpleName());
+        private static final Logger LOG = LoggerFactory.getLogger(ScannerTest.LOG.getName() + "." + PathsChangedQueueListener.class.getSimpleName());
 
         @Override
-        public void pathsChanged(Map<Path, Notification> changeSet)
+        public void pathsChanged(Map<Path, Notification> pathsChanged)
         {
-            LOG.atDebug().addArgument(changeSet).log("pathsChanged: {}");
-            add(changeSet);
+            LOG.atDebug().addArgument(pathsChanged).log("pathsChanged: {}");
+            add(pathsChanged);
         }
 
         public List<String> pollOrderedChanges()
         {
-            Map<Path, Notification> changeSet = poll();
-            if (changeSet == null)
+            Map<Path, Notification> pathsChanged = poll();
+            if (pathsChanged == null)
                 return null;
-            return changeSet.entrySet().stream()
+            return pathsChanged.entrySet().stream()
                 .map(e -> String.format("%s|%s", e.getValue(), e.getKey()))
                 .sorted()
                 .toList();
