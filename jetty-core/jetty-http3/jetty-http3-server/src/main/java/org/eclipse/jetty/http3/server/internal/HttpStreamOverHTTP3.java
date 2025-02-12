@@ -264,9 +264,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public Callback cancelSend(Throwable cause, Callback callback)
+    public Runnable cancelSend(Throwable cause, Callback callback)
     {
-        return stream.cancel(cause, callback);
+        return () -> stream.cancel(cause, callback).failed(cause);
     }
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)

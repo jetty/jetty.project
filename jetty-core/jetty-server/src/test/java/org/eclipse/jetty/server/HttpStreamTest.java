@@ -138,7 +138,7 @@ public class HttpStreamTest
         }
 
         @Override
-        public Callback cancelSend(Throwable cause, Callback callback)
+        public Runnable cancelSend(Throwable cause, Callback callback)
         {
             throw new UnsupportedOperationException();
         }

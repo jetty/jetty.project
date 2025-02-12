@@ -251,7 +251,7 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public Callback cancelSend(Throwable cause, Callback callback)
+    public Runnable cancelSend(Throwable cause, Callback callback)
     {
         throw new UnsupportedOperationException("TODO IMPLEMENT ME");
     }

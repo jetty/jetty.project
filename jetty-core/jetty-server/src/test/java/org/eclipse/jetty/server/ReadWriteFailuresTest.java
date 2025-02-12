@@ -105,9 +105,8 @@ public class ReadWriteFailuresTest
 
                 new Thread(() ->
                 {
-                    // TODO what callback gets failed with exception 1?
-                    Callback cancelCallback = streamRef.get().cancelSend(new ArithmeticException("1"), releaseCb);
-                    cancelCallback.failed(new ArithmeticException("2"));
+                    Runnable cancellation = streamRef.get().cancelSend(new ArithmeticException(), releaseCb);
+                    cancellation.run();
                 }).start();
 
                 try

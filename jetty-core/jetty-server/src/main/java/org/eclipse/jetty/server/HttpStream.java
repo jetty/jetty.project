@@ -87,12 +87,12 @@ public interface HttpStream extends Callback
      *
      * @param cause The cause of the cancellation
      * @param callback The callback to ultimately {@link Callback#failed(Throwable) fail} after the cancellation
-     * @return A {@link Callback} that will be {@link Callback#failed(Throwable) failed} to complete the
+     * @return A {@link Runnable} that will be {@link Runnable#run() run} to complete the
      *         cancellation and will, in turn, ultimately fail both the passed {@link Callback} and any {@link Callback}
      *         that was passed to the {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
      *         method.
      */
-    Callback cancelSend(Throwable cause, Callback callback);
+    Runnable cancelSend(Throwable cause, Callback callback);
 
     /**
      * <p>Pushes the given {@code resource} to the client.</p>
@@ -198,7 +198,7 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public Callback cancelSend(Throwable cause, Callback callback)
+        public Runnable cancelSend(Throwable cause, Callback callback)
         {
             return getWrapped().cancelSend(cause, callback);
         }
