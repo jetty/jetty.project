@@ -570,8 +570,9 @@ public interface Request extends Attributes, Content.Source
             if (charset == null || StandardCharsets.UTF_8.equals(charset))
             {
                 UriCompliance uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
+                boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
                 boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
-                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadUtf8))
+                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowTruncatedUtf8, allowBadUtf8))
                 {
                     HttpChannel httpChannel = HttpChannel.from(request);
                     if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)

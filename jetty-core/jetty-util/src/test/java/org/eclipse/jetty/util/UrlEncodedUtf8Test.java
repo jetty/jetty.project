@@ -45,7 +45,7 @@ public class UrlEncodedUtf8Test
     public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue)
     {
         Fields fields = new Fields();
-        UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, true);
+        UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, true, true);
         Fields.Field field = fields.get(expectedName);
         assertThat("Name exists", field, notNullValue());
         assertThat("Value", field.getValue(), is(expectedValue));

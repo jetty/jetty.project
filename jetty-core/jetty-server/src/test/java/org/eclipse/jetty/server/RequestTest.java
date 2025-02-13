@@ -19,11 +19,9 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
@@ -44,7 +42,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -55,7 +52,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class RequestTest
 {
@@ -549,77 +545,6 @@ public class RequestTest
         }
     }
 
-    /**
-     * Test to ensure that response.write() will add Content-Length on HTTP/1.1 responses.
-     */
-    @ParameterizedTest
-    @ValueSource(strings = { "true", "false"})
-    public void testBadUtf8Query(boolean allowBadUtf8) throws Exception
-    {
-        server.stop();
-        List<ComplianceViolation.Event> events = new CopyOnWriteArrayList<>();
-        ComplianceViolation.Listener listener = new ComplianceViolation.Listener()
-        {
-            @Override
-            public void onComplianceViolation(ComplianceViolation.Event event)
-            {
-                events.add(event);
-            }
-        };
-
-        if (allowBadUtf8)
-        {
-            for (Connector connector : server.getConnectors())
-            {
-                HttpConnectionFactory httpConnectionFactory = connector.getConnectionFactory(HttpConnectionFactory.class);
-                if (httpConnectionFactory != null)
-                {
-                    HttpConfiguration httpConfiguration = httpConnectionFactory.getHttpConfiguration();
-                    httpConfiguration.setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING));
-                    httpConfiguration.addComplianceViolationListener(listener);
-                }
-            }
-        }
-
-        server.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                if (allowBadUtf8)
-                {
-                    Fields fields = Request.extractQueryParameters(request);
-                    assertThat(fields.getValue("param"), is("bad_�"));
-                    assertThat(fields.getValue("other"), is("short�"));
-                }
-                else
-                {
-                    assertThrows(IllegalArgumentException.class, () -> Request.extractQueryParameters(request));
-                }
-                callback.succeeded();
-                return true;
-            }
-        });
-        server.start();
-
-        String request = """
-            GET /foo?param=bad_%e0%b8&other=short%a HTTP/1.1\r
-            Host: local\r
-            \r
-            """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        if (allowBadUtf8)
-        {
-            assertThat(events.size(), is(1));
-            assertThat(events.get(0).violation(), is(UriCompliance.Violation.BAD_UTF8_ENCODING));
-        }
-        else
-        {
-            assertThat(events.size(), is(0));
-        }
-    }
-
     @ParameterizedTest
     @CsvSource({
         // These are the values that pass in jetty-11.0.x
@@ -682,8 +607,6 @@ public class RequestTest
                 \r
                 """.formatted(query);
 
-        System.err.println(request);
-
         String responses = connector.getResponse(request);
         if ("400".equals(expected0))
             assertThat(responses, startsWith("HTTP/1.1 400 "));
@@ -715,7 +638,8 @@ public class RequestTest
     public void testUtf8QueryAllowBadUtf8(String query, String expected0, String expected1) throws Exception
     {
         server.stop();
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING));
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
+            .setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING));
         server.setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
@@ -723,7 +647,6 @@ public class RequestTest
             {
                 try
                 {
-                    System.err.println(request.getHttpURI());
                     Fields fields = Request.extractQueryParameters(request);
                     String param = fields.getValue("expected");
                     String other = fields.getValue("other");
@@ -733,20 +656,14 @@ public class RequestTest
                 }
                 catch (AssertionError e)
                 {
-                    e.printStackTrace();
                     callback.failed(e);
                 }
                 catch (Throwable t)
                 {
                     if ("*".equals(expected0))
-                    {
                         callback.succeeded();
-                    }
                     else
-                    {
-                        t.printStackTrace();
                         callback.failed(t);
-                    }
                 }
                 return true;
             }
@@ -759,8 +676,6 @@ public class RequestTest
                 Connection: close\r
                 \r
                 """.formatted(query);
-
-        System.err.println(request);
 
         String responses = connector.getResponse(request);
         if ("400".equals(expected0))
@@ -801,7 +716,6 @@ public class RequestTest
             {
                 try
                 {
-                    System.err.println(request.getHttpURI());
                     Fields fields = Request.extractQueryParameters(request);
                     String param = fields.getValue("expected");
                     String other = fields.getValue("other");
@@ -811,20 +725,14 @@ public class RequestTest
                 }
                 catch (AssertionError e)
                 {
-                    e.printStackTrace();
                     callback.failed(e);
                 }
                 catch (Throwable t)
                 {
                     if ("*".equals(expected0))
-                    {
                         callback.succeeded();
-                    }
                     else
-                    {
-                        t.printStackTrace();
                         callback.failed(t);
-                    }
                 }
                 return true;
             }
@@ -837,8 +745,6 @@ public class RequestTest
                 Connection: close\r
                 \r
                 """.formatted(query);
-
-        System.err.println(request);
 
         String responses = connector.getResponse(request);
         if ("400".equals(expected0))

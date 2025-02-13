@@ -225,7 +225,7 @@ public class UrlEncoded
 
         if (StandardCharsets.UTF_8.equals(charset))
         {
-            decodeUtf8To(content, 0, content.length(), adder, false);
+            decodeUtf8To(content, 0, content.length(), adder);
             return;
         }
 
@@ -320,7 +320,7 @@ public class UrlEncoded
     @Deprecated
     public static void decodeUtf8To(String query, int offset, int length, MultiMap<String> map)
     {
-        decodeUtf8To(query, offset, length, map::add, false);
+        decodeUtf8To(query, offset, length, map::add);
     }
 
     /**
@@ -333,7 +333,7 @@ public class UrlEncoded
      */
     public static void decodeUtf8To(String uri, int offset, int length, Fields fields)
     {
-        decodeUtf8To(uri, offset, length, fields::add, false);
+        decodeUtf8To(uri, offset, length, fields::add);
     }
 
     /**
@@ -343,11 +343,28 @@ public class UrlEncoded
      * @param offset the offset at which query parameters start.
      * @param length the length of query parameters string to parse.
      * @param adder the method to call to add decoded parameters.
+     * @return {@code true} if the string was decoded without any bad UTF-8
+     * @throws org.eclipse.jetty.util.Utf8StringBuilder.Utf8IllegalArgumentException if there is illegal UTF-8 and `allowsBadUtf8` is {@code false}
+     */
+    public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder)
+        throws Utf8StringBuilder.Utf8IllegalArgumentException
+    {
+        return decodeUtf8To(query, offset, length, adder, false, false);
+    }
+
+    /**
+     * <p>Decodes URI query parameters as UTF8 string</p>
+     *
+     * @param query the URI string.
+     * @param offset the offset at which query parameters start.
+     * @param length the length of query parameters string to parse.
+     * @param adder the method to call to add decoded parameters.
+     * @param allowTruncatedUtf8 if {@code true} allow truncated UTF-8 and insert the replacement character.
      * @param allowBadUtf8 if {@code true} allow bad UTF-8 and insert the replacement character.
      * @return {@code true} if the string was decoded without any bad UTF-8
      * @throws org.eclipse.jetty.util.Utf8StringBuilder.Utf8IllegalArgumentException if there is illegal UTF-8 and `allowsBadUtf8` is {@code false}
      */
-    public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder, boolean allowBadUtf8)
+    public static boolean decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder, boolean allowTruncatedUtf8, boolean allowBadUtf8)
         throws Utf8StringBuilder.Utf8IllegalArgumentException
     {
         Utf8StringBuilder buffer = new Utf8StringBuilder();
@@ -379,7 +396,26 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    value = buffer.takeCompleteString(onCodingError);
+                    if (allowTruncatedUtf8)
+                    {
+                        boolean codingError = buffer.hasCodingErrors();
+                        buffer.complete();
+                        if (!codingError && buffer.hasCodingErrors())
+                        {
+                            value = buffer.takeCompleteString(null);
+                            buffer.reset();
+                            if (badUtf8 != null)
+                                badUtf8.set(true);
+                        }
+                        else
+                        {
+                            value = buffer.takeCompleteString(onCodingError);
+                        }
+                    }
+                    else
+                    {
+                        value = buffer.takeCompleteString(onCodingError);
+                    }
                     if (key != null)
                     {
                         adder.accept(key, value);
@@ -397,7 +433,27 @@ public class UrlEncoded
                         buffer.append(c);
                         break;
                     }
-                    key = buffer.takeCompleteString(onCodingError);
+
+                    if (allowTruncatedUtf8)
+                    {
+                        boolean codingError = buffer.hasCodingErrors();
+                        buffer.complete();
+                        if (!codingError && buffer.hasCodingErrors())
+                        {
+                            key = buffer.takeCompleteString(null);
+                            buffer.reset();
+                            if (badUtf8 != null)
+                                badUtf8.set(true);
+                        }
+                        else
+                        {
+                            key = buffer.takeCompleteString(onCodingError);
+                        }
+                    }
+                    else
+                    {
+                        key = buffer.takeCompleteString(onCodingError);
+                    }
                     break;
 
                 case '+':
