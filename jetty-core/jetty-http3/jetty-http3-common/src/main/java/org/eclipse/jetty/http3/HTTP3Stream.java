@@ -27,7 +27,6 @@ import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -59,28 +58,6 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         this.session = session;
         this.endPoint = endPoint;
         this.local = local;
-    }
-
-    public Callback cancel(Throwable cause, Callback callback)
-    {
-        Callback nested = new Callback.Nested(callback)
-        {
-            @Override
-            public void succeeded()
-            {
-                super.failed(cause);
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
-                super.failed(cause);
-            }
-        };
-        // TODO does this guarantee that all buffers previously passed will be immediately released?
-        reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), cause);
-        return nested;
     }
 
     public QuicStreamEndPoint getEndPoint()
