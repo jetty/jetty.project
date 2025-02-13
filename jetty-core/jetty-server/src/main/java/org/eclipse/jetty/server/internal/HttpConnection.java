@@ -755,7 +755,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
                 // The write was cancelled and the callback is this ICB (or another callback wrapping this ICB),
                 // so failing it will call onCompleted.
-                senderCallback.failed(cancelSendException);
+                senderCallback.failed(cause);
 
             // wait for the cancellation to be complete and the callback to be set by onAbort.
             // This should never block indefinitely, as onAborted only waits for active states like PROCESSING to complete.
