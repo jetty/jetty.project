@@ -41,7 +41,7 @@ public class OSGiUndeployer extends StandardUndeployer
     {
         String contextPath = contextHandler.getContextPath();
 
-        Bundle bundle = Util.getBundle(contextHandler);
+        Bundle bundle = (Bundle)contextHandler.getAttribute(BundleMetadata.BUNDLE);
         if (bundle != null)
         {
             // This is a ContextHandler that is managed by jetty-osgi.

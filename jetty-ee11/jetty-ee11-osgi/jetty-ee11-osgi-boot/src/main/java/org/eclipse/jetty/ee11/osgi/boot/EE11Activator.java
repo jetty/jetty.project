@@ -272,6 +272,7 @@ public class EE11Activator implements BundleActivator
             Path jettyHomePath = (StringUtil.isBlank(jettyHome) ? null : Paths.get(jettyHome));
 
             ContextHandler contextHandler = new ContextHandler();
+            contextHandler.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
             ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
 
             //Make base resource that of the bundle
@@ -366,6 +367,7 @@ public class EE11Activator implements BundleActivator
             Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : ResourceFactory.of(provider.getServer()).newResource(jettyHome).getPath();
 
             WebAppContext webApp = new WebAppContext();
+            webApp.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
             ResourceFactory resourceFactory = ResourceFactory.of(webApp);
 
             //Apply defaults from the deployer providers

@@ -27,6 +27,8 @@ import org.osgi.framework.Bundle;
  */
 public class BundleMetadata
 {
+    public static final String BUNDLE = "org.eclipse.jetty.osgi.bundle";
+
     private final Bundle bundle;
     private final Path bundlePath;
     private final String contextPath;
@@ -75,11 +77,6 @@ public class BundleMetadata
     public String getContextPath()
     {
         return contextPath;
-    }
-
-    public String getID()
-    {
-        return bundle.getSymbolicName();
     }
 
     public Path getPath()

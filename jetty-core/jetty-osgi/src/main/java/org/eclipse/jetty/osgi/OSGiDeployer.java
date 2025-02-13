@@ -42,7 +42,7 @@ public class OSGiDeployer extends StandardDeployer
         //TODO  how to NOT send this event if its not a webapp:
         //OSGi Enterprise Spec only wants an event sent if its a webapp bundle (ie not a ContextHandler)
 
-        Bundle bundle = Util.getBundle(contextHandler);
+        Bundle bundle = (Bundle)contextHandler.getAttribute(BundleMetadata.BUNDLE);
         if (bundle == null)
         {
             // Not an OSGI based ContextHandler

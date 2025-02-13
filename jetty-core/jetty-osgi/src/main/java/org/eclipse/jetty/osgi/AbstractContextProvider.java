@@ -16,7 +16,6 @@ package org.eclipse.jetty.osgi;
 import java.util.Objects;
 
 import org.eclipse.jetty.deploy.ContextHandlerDeployer;
-import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -65,9 +64,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
             return null;
 
         // Create a ContextHandler suitable to deploy in OSGi
-        ContextHandler contextHandler = _contextFactory.createContextHandler(this, metadata);
-        Util.setBundle(contextHandler, metadata.getBundle());
-        return contextHandler;
+        return _contextFactory.createContextHandler(this, metadata);
     }
 
     public String getEnvironmentName()

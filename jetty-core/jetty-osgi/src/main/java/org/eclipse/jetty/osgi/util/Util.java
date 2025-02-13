@@ -49,13 +49,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Various useful functions utility methods for OSGi wide use.
+ * Utility methods.
  */
 public class Util
 {
     private static final Logger LOG = LoggerFactory.getLogger(Util.class);
-    private static final String BUNDLE = BundleMetadata.class.getPackageName() + ".bundle";
-    private static final String REGISTRATION = BundleMetadata.class.getPackageName() + ".registration";
+
+    private static final String REGISTRATION = "org.eclipse.jetty.osgi.registration";
 
     /**
      * Create an osgi filter for the given classname and server name.
@@ -113,11 +113,6 @@ public class Util
         return urls;
     }
 
-    public static Bundle getBundle(ContextHandler contextHandler)
-    {
-        return (Bundle)contextHandler.getAttribute(BUNDLE);
-    }
-
     /**
      * Get the install location of a Bundle as a Path
      *
@@ -148,25 +143,6 @@ public class Util
         // Fix some osgiPaths.get( locations which point to an archive, but that doesn't end in .jar
         URL url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(root.toUri().toURL());
         return resourceFactory.newResource(url);
-    }
-
-    public static String getBundleSymbolicName(ContextHandler contextHandler)
-    {
-        Bundle bundle = getBundle(contextHandler);
-        if (bundle == null)
-            return null;
-        return bundle.getSymbolicName();
-    }
-
-    public static String getBundleVersionAsString(ContextHandler contextHandler)
-    {
-        Bundle bundle = getBundle(contextHandler);
-        if (bundle == null)
-            return null;
-        Version version = bundle.getVersion();
-        if (version == null)
-            return null;
-        return version.toString();
     }
 
     /**
@@ -303,13 +279,21 @@ public class Util
             Dictionary<String, String> properties = new Hashtable<>();
             properties.put(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
 
-            String bundleSymbolicName = getBundleSymbolicName(contextHandler);
-            if (StringUtil.isNotBlank(bundleSymbolicName))
-                properties.put(OSGiWebappConstants.OSGI_WEB_SYMBOLICNAME, bundleSymbolicName);
+            Bundle bundle = (Bundle)contextHandler.getAttribute(BundleMetadata.BUNDLE);
+            if (bundle != null)
+            {
+                String bundleSymbolicName = bundle.getSymbolicName();
+                if (StringUtil.isNotBlank(bundleSymbolicName))
+                    properties.put(OSGiWebappConstants.OSGI_WEB_SYMBOLICNAME, bundleSymbolicName);
 
-            String bundleVersion = getBundleVersionAsString(contextHandler);
-            if (StringUtil.isNotBlank(bundleVersion))
-                properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, bundleVersion);
+                Version version = bundle.getVersion();
+                if (version != null)
+                {
+                    String bundleVersion = version.toString();
+                    if (StringUtil.isNotBlank(bundleVersion))
+                        properties.put(OSGiWebappConstants.OSGI_WEB_VERSION, bundleVersion);
+                }
+            }
 
             properties.put(OSGiWebappConstants.OSGI_WEB_CONTEXTPATH, contextHandler.getContextPath());
 
@@ -420,11 +404,6 @@ public class Util
         {
             return value.substring(0, ind) + defaultValue + reminder;
         }
-    }
-
-    public static void setBundle(ContextHandler contextHandler, Bundle bundle)
-    {
-        contextHandler.setAttribute(BUNDLE, bundle);
     }
 
     public static void setProperty(Dictionary<String, Object> properties, String key, Object value)
