@@ -471,18 +471,32 @@ public class UrlEncoded
                         }
                         catch (NumberFormatException e)
                         {
-                            buffer.append(Utf8StringBuilder.REPLACEMENT);
                             if (!allowBadUtf8)
                                 throw e;
-                            if (query.charAt(i - 1) == '&')
-                                i = i - 2;
-                            else if (query.charAt(i) == '&')
-                                i = i - 1;
+
+                            if (!buffer.replaceIncomplete())
+                                buffer.append(Utf8StringBuilder.REPLACEMENT);
+
+                            if (key == null)
+                            {
+                                if (query.charAt(i - 1) == '=')
+                                    i = i - 2;
+                                else if (query.charAt(i) == '=')
+                                    i = i - 1;
+                            }
+                            else
+                            {
+                                if (query.charAt(i - 1) == '&')
+                                    i = i - 2;
+                                else if (query.charAt(i) == '&')
+                                    i = i - 1;
+                            }
                         }
                     }
                     else if (allowBadUtf8)
                     {
-                        buffer.append(Utf8StringBuilder.REPLACEMENT);
+                        if (!buffer.replaceIncomplete())
+                            buffer.append(Utf8StringBuilder.REPLACEMENT);
                         i = end;
                     }
                     else

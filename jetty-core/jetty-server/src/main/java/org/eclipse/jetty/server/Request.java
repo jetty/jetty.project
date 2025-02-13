@@ -560,6 +560,7 @@ public interface Request extends Attributes, Content.Source
 
     static Fields extractQueryParameters(Request request, Charset charset)
     {
+        UriCompliance uriCompliance = null;
         try
         {
             String query = request.getHttpURI().getQuery();
@@ -569,7 +570,7 @@ public interface Request extends Attributes, Content.Source
 
             if (charset == null || StandardCharsets.UTF_8.equals(charset))
             {
-                UriCompliance uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
+                uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
                 boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
                 boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
                 if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowTruncatedUtf8, allowBadUtf8))
@@ -587,6 +588,8 @@ public interface Request extends Attributes, Content.Source
         }
         catch (Throwable t)
         {
+            if (uriCompliance == UriCompliance.LEGACY)
+                throw t;
             throw new BadMessageException("Bad query", t);
         }
     }

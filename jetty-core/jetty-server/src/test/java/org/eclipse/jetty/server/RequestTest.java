@@ -41,7 +41,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,7 +48,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -670,60 +668,60 @@ public class RequestTest
         cases.add(Arguments.of("param=%E2%9C%94&other=foo", 200, "param", "✔"));
 
         // Truncated / Insufficient Hex cases
-        cases.add(Arguments.of("param=%E2%9C%9", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%9C%9&other=foo", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%9C%", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%9C%&other=foo", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%9C", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%9C&other=foo", 500, "param", "�"));
-        cases.add(Arguments.of("param=%E2%9", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%9&other=foo", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%&other=foo", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C%9", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C%9&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C%", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C%&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C&other=foo", 400, "param", "�"));
+        cases.add(Arguments.of("param=%E2%9", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2&other=foo", 400, "param", ""));
 
         // Tokenized cases
-        cases.add(Arguments.of("param=%%TOK%%", 500, "param", ""));
-        cases.add(Arguments.of("param=%%TOK%%&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%%TOK%%", 400, "param", ""));
+        cases.add(Arguments.of("param=%%TOK%%&other=foo", 400, "param", ""));
 
         // Bad Hex
-        cases.add(Arguments.of("param=%xx", 500, "param", ""));
-        cases.add(Arguments.of("param=%xx&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%xx", 400, "param", ""));
+        cases.add(Arguments.of("param=%xx&other=foo", 400, "param", ""));
 
         // Overlong UTF-8 Encoding
-        cases.add(Arguments.of("param=%C0%AF", 500, "param", ""));
-        cases.add(Arguments.of("param=%C0%AF&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%C0%AF", 400, "param", ""));
+        cases.add(Arguments.of("param=%C0%AF&other=foo", 400, "param", ""));
 
         // Out of range
-        cases.add(Arguments.of("param=%F4%90%80%80", 500, "param", ""));
-        cases.add(Arguments.of("param=%F4%90%80%80&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%F4%90%80%80", 400, "param", ""));
+        cases.add(Arguments.of("param=%F4%90%80%80&other=foo", 400, "param", ""));
 
         // Long surrogate
-        cases.add(Arguments.of("param=%ED%A0%80", 500, "param", ""));
-        cases.add(Arguments.of("param=%ED%A0%80&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%ED%A0%80", 400, "param", ""));
+        cases.add(Arguments.of("param=%ED%A0%80&other=foo", 400, "param", ""));
 
         // Standalone continuations
-        cases.add(Arguments.of("param=%80", 500, "param", ""));
-        cases.add(Arguments.of("param=%80&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%80", 400, "param", ""));
+        cases.add(Arguments.of("param=%80&other=foo", 400, "param", ""));
 
         // Truncated sequence
-        cases.add(Arguments.of("param=%E2%82", 500, "param", ""));
-        cases.add(Arguments.of("param=%E2%82&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%E2%82", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%82&other=foo", 400, "param", ""));
 
         // C1 never starts UTF-8
-        cases.add(Arguments.of("param=%C1%BF", 500, "param", ""));
-        cases.add(Arguments.of("param=%C1%BF&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%C1%BF", 400, "param", ""));
+        cases.add(Arguments.of("param=%C1%BF&other=foo", 400, "param", ""));
 
         // E0 must be followed by A0-BF
-        cases.add(Arguments.of("param=%E0%9F%80", 500, "param", ""));
-        cases.add(Arguments.of("param=%E0%9F%80&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=%E0%9F%80", 400, "param", ""));
+        cases.add(Arguments.of("param=%E0%9F%80&other=foo", 400, "param", ""));
 
         // Community Examples
-        cases.add(Arguments.of("param=f_%e0%b8", 500, "param", ""));
-        cases.add(Arguments.of("param=f_%e0%b8&other=foo", 500, "param", ""));
-        cases.add(Arguments.of("param=%£", 500, "param", ""));
-        cases.add(Arguments.of("param=%£&other=foo", 500, "param", ""));
+        cases.add(Arguments.of("param=f_%e0%b8", 400, "param", ""));
+        cases.add(Arguments.of("param=f_%e0%b8&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%£", 400, "param", ""));
+        cases.add(Arguments.of("param=%£&other=foo", 400, "param", ""));
 
         // Extra ampersands
         cases.add(Arguments.of("param=aaa&&&", 200, "param", "aaa"));
@@ -741,12 +739,12 @@ public class RequestTest
         cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", 200, "帽子", "Beret"));
 
         // bad pct-encoded parameter names
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 500, "帽子", null));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", 500, "帽子", null));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", 500, "帽子", null));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 500, "帽子", null));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", 500, "帽子", null));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", 500, "帽子", null));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 400, "帽子", null));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", 400, "帽子", null));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", 400, "帽子", null));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 400, "帽子", null));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", 400, "帽子", null));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", 400, "帽子", null));
 
         return cases.stream();
     }
@@ -772,16 +770,16 @@ public class RequestTest
         cases.add(Arguments.of("param=%E2%9C%94&other=foo", 200, "param", "✔"));
 
         // Truncated / Insufficient Hex cases
-        cases.add(Arguments.of("param=%E2%9C%9", 200, "param", "��"));
-        cases.add(Arguments.of("param=%E2%9C%9&other=foo", 200, "param", "��"));
-        cases.add(Arguments.of("param=%E2%9C%", 200, "param", "��"));
-        cases.add(Arguments.of("param=%E2%9C%&other=foo", 200, "param", "��"));
+        cases.add(Arguments.of("param=%E2%9C%9", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%9C%9&other=foo", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%9C%", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%9C%&other=foo", 200, "param", "�"));
         cases.add(Arguments.of("param=%E2%9C", 200, "param", "�"));
         cases.add(Arguments.of("param=%E2%9C&other=foo", 200, "param", "�"));
-        cases.add(Arguments.of("param=%E2%9", 200, "param", "��"));
-        cases.add(Arguments.of("param=%E2%9&other=foo", 200, "param", "��"));
-        cases.add(Arguments.of("param=%E2%", 200, "param", "��"));
-        cases.add(Arguments.of("param=%E2%&other=foo", 200, "param", "��"));
+        cases.add(Arguments.of("param=%E2%9", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%9&other=foo", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%&other=foo", 200, "param", "�"));
         cases.add(Arguments.of("param=%E2", 200, "param", "�"));
         cases.add(Arguments.of("param=%E2&other=foo", 200, "param", "�"));
 
@@ -843,11 +841,11 @@ public class RequestTest
         cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", 200, "帽子", "Beret"));
 
         // bad pct-encoded parameter names
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 200, "帽孝Beret", null));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", 200, "帽��eret", null));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 200, "帽�", "Beret"));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", 200, "帽�", "Beret"));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", 200, "帽�", "Beret"));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 200, "帽孝Beret", null));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", 200, "帽��eret", null));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 200, "帽�", "Beret"));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", 200, "帽�", "Beret"));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", 200, "帽�", "Beret"));
 
         return cases.stream();
@@ -857,14 +855,8 @@ public class RequestTest
     @MethodSource("queryBehaviorsBadUtf8Allowed")
     public void testQueryExtractionBehaviorBadUtf8Allowed(String inputQuery, int expectedStatus, String expectedKey, String expectedValue) throws Exception
     {
-        /*
         UriCompliance uriCompliance = UriCompliance.DEFAULT.with("test",
-            UriCompliance.Violation.BAD_UTF8_ENCODING,
-            UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
-         */
-
-        UriCompliance uriCompliance = UriCompliance.DEFAULT.with("test",
-            UriCompliance.Violation.BAD_UTF8_ENCODING);
+            UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
         testQueryExtractionBehavior(uriCompliance, inputQuery, expectedStatus, expectedKey, expectedValue);
     }
 
@@ -909,9 +901,7 @@ public class RequestTest
                     }
                     default:
                     {
-                        RuntimeException e = assertThrows(RuntimeException.class, () -> {
-                            Request.extractQueryParameters(request);
-                        });
+                        RuntimeException e = assertThrows(RuntimeException.class, () -> Request.extractQueryParameters(request));
                         callback.failed(e);
                     }
                 }
@@ -930,213 +920,5 @@ public class RequestTest
         String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(expectedStatus));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        // These are the values that pass in jetty-11.0.x
-        "'',            '',    'value'",
-        "'foo',         'foo', 'value'",
-        "'%E2%9C%94',   '✔',   'value'",
-        "'%E2%9C',      '*',   ''",         // truncated
-        "'%E2',         '*',   ''",         // truncated
-        "'%%foo%%',     '*',   ''",         // not % encoded
-        "'%',           '*',   ''",         // insufficient hex digits
-        "'%xx',         '*',   ''",         // bad hex
-        "'%C0%AF',      '*',   ''",         // overlong encoding of %2F
-        "'%F4%90%80%80','*',   ''",         // out of range
-        "'%ED%A0%80',   '*',   ''",         // Long surrogate
-        "'%80',         '*',   ''",         // stand along continuations
-        "'%E2%82',      '*',   ''",         // truncated sequence
-        "'%C1%BF',      '*',   ''",         // C1 never starts UTF-8
-        "'%E0%9F%80',   '*',   ''",         // E0 must be followed by A0–BF
-        "'f_%e0%b8',    '*',   ''",         // Client example
-        "'%£',          '400',  ''",        // Client example
-    })
-    public void testUtf8QueryDefault(String query, String expected0, String expected1) throws Exception
-    {
-        server.stop();
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        server.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                try
-                {
-                    Fields fields = Request.extractQueryParameters(request);
-                    String param = fields.getValue("expected");
-                    String other = fields.getValue("other");
-                    assertThat(param, is(expected0));
-                    assertThat(other, is(expected1));
-                    callback.succeeded();
-                }
-                catch (AssertionError e)
-                {
-                    callback.failed(e);
-                }
-                catch (Throwable t)
-                {
-                    if ("*".equals(expected0))
-                        callback.succeeded();
-                    else
-                        callback.failed(t);
-                }
-                return true;
-            }
-        });
-        server.start();
-
-        String request = """
-                GET /path?expected=%s&other=value HTTP/1.1\r
-                Host: whatever\r
-                Connection: close\r
-                \r
-                """.formatted(query);
-
-        String responses = connector.getResponse(request);
-        if ("400".equals(expected0))
-            assertThat(responses, startsWith("HTTP/1.1 400 "));
-        else
-            assertThat(responses, startsWith("HTTP/1.1 200 "));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        // These are the values that pass in jetty-11.0.x
-        "'',            '',    'value'",
-        "'foo',         'foo', 'value'",
-        "'%E2%9C%94',   '✔',   'value'",
-        "'%E2%9C',      '�',   'value'",    // truncated
-        "'%E2',         '�',   'value'",    // truncated
-        "'%%foo%%',     '�oo�','value'",    // not % encoded
-        "'%',           '�',   'value'",    // insufficient hex digits
-        "'%xx',         '�',   'value'",    // bad hex
-        "'%C0%AF',      '��',  'value'",    // overlong encoding of %2F
-        "'%F4%90%80%80','����','value'",    // out of range
-        "'%ED%A0%80',   '���', 'value'",    // Long surrogate
-        "'%80',         '�',   'value'",    // stand along continuations
-        "'%E2%82',      '�',   'value'",    // truncated sequence
-        "'%C1%BF',      '��',  'value'",    // C1 never starts UTF-8
-        "'%E0%9F%80',   '���', 'value'",    // E0 must be followed by A0–BF
-        "'f_%e0%b8',    'f_�', 'value'",    // Client example
-        "'%£',          '�',   'value'",    // Client example
-    })
-    public void testUtf8QueryAllowBadUtf8(String query, String expected0, String expected1) throws Exception
-    {
-        server.stop();
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration()
-            .setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING));
-        server.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                try
-                {
-                    Fields fields = Request.extractQueryParameters(request);
-                    String param = fields.getValue("expected");
-                    String other = fields.getValue("other");
-                    assertThat(param, is(expected0));
-                    assertThat(other, is(expected1));
-                    callback.succeeded();
-                }
-                catch (AssertionError e)
-                {
-                    callback.failed(e);
-                }
-                catch (Throwable t)
-                {
-                    if ("*".equals(expected0))
-                        callback.succeeded();
-                    else
-                        callback.failed(t);
-                }
-                return true;
-            }
-        });
-        server.start();
-
-        String request = """
-                GET /path?expected=%s&other=value HTTP/1.1\r
-                Host: whatever\r
-                Connection: close\r
-                \r
-                """.formatted(query);
-
-        String responses = connector.getResponse(request);
-        if ("400".equals(expected0))
-            assertThat(responses, startsWith("HTTP/1.1 400 "));
-        else
-            assertThat(responses, startsWith("HTTP/1.1 200 "));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        // These are the values that pass in jetty-11.0.x
-        "'',            '',    'value'",
-        "'foo',         'foo', 'value'",
-        "'%E2%9C%94',   '✔',   'value'",
-        "'%E2%9C',      '�',   'value'",    // truncated
-        "'%E2',         '�',   'value'",    // truncated
-        "'%%foo%%',     '*',   ''",         // not % encoded
-        "'%',           '*',   ''",         // insufficient hex digits
-        "'%xx',         '*',   ''",         // bad hex
-        "'%C0%AF',      '*',   ''",         // overlong encoding of %2F
-        "'%F4%90%80%80','*',   ''",         // out of range
-        "'%ED%A0%80',   '*',   ''",         // Long surrogate
-        "'%80',         '*',   ''",         // stand along continuations
-        "'%E2%82',      '�',   'value'",    // truncated sequence
-        "'%C1%BF',      '*',   ''",         // C1 never starts UTF-8
-        "'%E0%9F%80',   '*',   ''",         // E0 must be followed by A0–BF
-        "'f_%e0%b8',    'f_�',  'value'",   // Client example
-        "'%£',          '400',  ''",        // Client example
-    })
-    public void testUtf8QueryLegacy(String query, String expected0, String expected1) throws Exception
-    {
-        server.stop();
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        server.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                try
-                {
-                    Fields fields = Request.extractQueryParameters(request);
-                    String param = fields.getValue("expected");
-                    String other = fields.getValue("other");
-                    assertThat(param, is(expected0));
-                    assertThat(other, is(expected1));
-                    callback.succeeded();
-                }
-                catch (AssertionError e)
-                {
-                    callback.failed(e);
-                }
-                catch (Throwable t)
-                {
-                    if ("*".equals(expected0))
-                        callback.succeeded();
-                    else
-                        callback.failed(t);
-                }
-                return true;
-            }
-        });
-        server.start();
-
-        String request = """
-                GET /path?expected=%s&other=value HTTP/1.1\r
-                Host: whatever\r
-                Connection: close\r
-                \r
-                """.formatted(query);
-
-        String responses = connector.getResponse(request);
-        if ("400".equals(expected0))
-            assertThat(responses, startsWith("HTTP/1.1 400 "));
-        else
-            assertThat(responses, startsWith("HTTP/1.1 200 "));
     }
 }
