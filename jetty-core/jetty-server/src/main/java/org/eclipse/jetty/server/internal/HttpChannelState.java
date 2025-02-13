@@ -917,24 +917,38 @@ public class HttpChannelState implements HttpChannel, Components
             try
             {
                 HttpStream stream;
+                boolean expecting100;
+                HttpChannelState httpChannel;
                 try (AutoLock ignored = _lock.lock())
                 {
-                    HttpChannelState httpChannel = lockedGetHttpChannelState();
-
+                    httpChannel = lockedGetHttpChannelState();
                     Content.Chunk error = httpChannel._readFailure;
                     httpChannel._readFailure = Content.Chunk.next(error);
                     if (error != null)
                         return error;
 
                     stream = httpChannel._stream;
+                    expecting100 = httpChannel._expects100Continue;
                 }
                 Content.Chunk chunk = stream.read();
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("read {}", chunk);
 
-                if (chunk != null && chunk.hasRemaining())
-                    _contentBytesRead.add(chunk.getByteBuffer().remaining());
+                if (chunk == null)
+                    return null;
+
+                if (expecting100)
+                {
+                    // No need to send 100 continues as content has already arrived
+                    try (AutoLock ignored = _lock.lock())
+                    {
+                        httpChannel._expects100Continue = false;
+                    }
+                }
+
+                if (chunk.hasRemaining())
+                    _contentBytesRead.add(chunk.remaining());
 
                 if (chunk instanceof Trailers trailers)
                     _trailers = trailers.getTrailers();
