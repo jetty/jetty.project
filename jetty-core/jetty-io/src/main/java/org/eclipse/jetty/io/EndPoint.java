@@ -334,13 +334,17 @@ public interface EndPoint extends Closeable, Content.Sink
     }
 
     /**
+     * TODO improve javadoc!
+     * TODO change the impl to make this is a terminal state
+     * TODO rename to abort()?
      * Cancel any {@link #write(Callback, ByteBuffer...)} operation
      * in progress.
      *
+     * @param cause the cause
      * @return The callback passed to {@link #write(Callback, ByteBuffer...)} or
      *         {@code null}
      */
-    Callback cancelWrite();
+    Callback cancelWrite(Throwable cause);
 
     /**
      * @return the {@link Connection} associated with this EndPoint

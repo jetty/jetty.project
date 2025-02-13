@@ -205,9 +205,9 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public Runnable cancelSend(Throwable cause, Callback callback)
+    public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        throw new UnsupportedOperationException("TODO IMPLEMENT ME");
+        throw new UnsupportedOperationException();
     }
 
     @Override

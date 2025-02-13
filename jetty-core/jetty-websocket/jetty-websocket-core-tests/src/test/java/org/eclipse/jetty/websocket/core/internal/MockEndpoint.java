@@ -136,7 +136,7 @@ public class MockEndpoint implements EndPoint
     }
 
     @Override
-    public Callback cancelWrite()
+    public Callback cancelWrite(Throwable cause)
     {
         return null;
     }

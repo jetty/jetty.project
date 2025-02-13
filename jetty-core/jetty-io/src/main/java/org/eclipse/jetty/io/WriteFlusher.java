@@ -106,15 +106,15 @@ public abstract class WriteFlusher
         /** The {@link #completeWrite()} method has been called and the write will be progressed */
         COMPLETING,
 
-        /** The {@link #cancelWrite()} method was called whilst in {@link StateType#FLUSHING} or {@link StateType#COMPLETING},
+        /** The {@link WriteFlusher#cancelWrite(Throwable)} method was called whilst in {@link StateType#FLUSHING} or {@link StateType#COMPLETING},
          * so that when those operations complete, the next state will be {@link StateType#CANCELLING}*/
         CANCEL,
 
         /** A flush operation has completed and seen the {@link StateType#CANCEL} state.  Entering this state indicates that
-         * the thread calling {@link #cancelWrite()} can continue to progress to the {@link StateType#CANCELLED} state. */
+         * the thread calling {@link WriteFlusher#cancelWrite(Throwable)} can continue to progress to the {@link StateType#CANCELLED} state. */
         CANCELLING,
 
-        /** The {@link #cancelWrite()} method was called and the cancellation of outstanding operations has completed */
+        /** The {@link WriteFlusher#cancelWrite(Throwable)} method was called and the cancellation of outstanding operations has completed */
         CANCELLED,
 
         /** The write failed due to a failure from flushing */
@@ -567,7 +567,7 @@ public abstract class WriteFlusher
         }
     }
 
-    public Callback cancelWrite()
+    public Callback cancelWrite(Throwable cause)
     {
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while (true)
@@ -576,6 +576,8 @@ public abstract class WriteFlusher
             switch (current.getType())
             {
                 case IDLE:
+                    if (updateState(current, new FailedState(cause)))
+                        return null;
                 case CANCELLED:
                 case FAILED:
                     return null;

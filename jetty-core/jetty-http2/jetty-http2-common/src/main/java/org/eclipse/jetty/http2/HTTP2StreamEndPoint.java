@@ -344,7 +344,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     }
 
     @Override
-    public Callback cancelWrite()
+    public Callback cancelWrite(Throwable cause)
     {
         // TODO this is wrong
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);

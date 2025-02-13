@@ -56,7 +56,7 @@ public class Flusher
         // in a serialized context and the callback will be set on the CSE.
 
         // If a write operation has been scheduled cancel it and fail its callback, otherwise complete ourselves
-        Callback writeCallback = endPoint.cancelWrite();
+        Callback writeCallback = endPoint.cancelWrite(cause);
 
         if (writeCallback == null)
             // There was no write in operation, so we can complete the CSE ourselves

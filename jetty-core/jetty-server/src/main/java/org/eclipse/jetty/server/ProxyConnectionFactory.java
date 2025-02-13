@@ -804,9 +804,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public Callback cancelWrite()
+        public Callback cancelWrite(Throwable cause)
         {
-            return _endPoint.cancelWrite();
+            return _endPoint.cancelWrite(cause);
         }
 
         @Override

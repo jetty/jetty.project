@@ -438,9 +438,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public Runnable cancelSend(Throwable cause, Callback callback)
+    public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        return () -> _stream.cancel(cause, callback).failed(cause);
+        return () -> _stream.cancel(cause, appCallback).failed(cause);
     }
 
     private HttpFields retrieveTrailers()

@@ -185,9 +185,9 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     }
 
     @Override
-    public Callback cancelWrite()
+    public Callback cancelWrite(Throwable cause)
     {
-        Callback callback = super.cancelWrite();
+        Callback callback = super.cancelWrite(cause);
         if (callback != null)
             removeInterests(SelectionKey.OP_WRITE);
         return callback;

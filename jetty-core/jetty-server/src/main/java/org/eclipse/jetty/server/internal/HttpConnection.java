@@ -741,20 +741,21 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // Cancel the IteratingCallback and take the nest Callback
             CancelSendException cancelSendException = new CancelSendException(cause);
             if (!abort(cancelSendException))
-                return Callback.NOOP;
+                return Callback.NOOP; // TODO return null to tell there was no pending write?
 
             // We now know that we aborted this ICB with the CSE above, so onAbort will eventually be called
             // in a serialized context and the callback will be set on the CSE.
 
             // If a write operation has been scheduled cancel it and fail its callback, otherwise complete ourselves
-            Callback writeCallback = getEndPoint().cancelWrite();
+            Callback senderCallback = getEndPoint().cancelWrite(cause);
 
-            if (writeCallback == null)
+            if (senderCallback == null)
                 // There was no write in operation, so we can complete the CSE ourselves
                 cancelSendException.complete();
             else
-                // The write was cancelled and the callback is this ICB, so failing it will call onCompleted
-                writeCallback.failed(cancelSendException);
+                // The write was cancelled and the callback is this ICB (or another callback wrapping this ICB),
+                // so failing it will call onCompleted.
+                senderCallback.failed(cancelSendException);
 
             // wait for the cancellation to be complete and the callback to be set by onAbort.
             // This should never block indefinitely, as onAborted only waits for active states like PROCESSING to complete.
@@ -1555,12 +1556,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public Runnable cancelSend(Throwable cause, Callback callback)
+        public Runnable cancelSend(Throwable cause, Callback appCallback)
         {
             // We know that the SendCallback#cancel call will never block on external events,
             // so we can just combine here. At worst we may be deferred whilst another thread finishes
             // processing a write before it notices the cancel.  It never blocks on IO itself
-            return () -> _sendCallback.cancel(cause).failed(cause);
+            // TODO the cancel contract could/should be modified so that when it returns null,
+            //  the callback should be succeeded as that means cancel() arrived after the write
+            //  completed.
+            return () -> Callback.combine(_sendCallback.cancel(cause), appCallback).failed(cause);
         }
 
         @Override
