@@ -567,8 +567,14 @@ public abstract class WriteFlusher
         }
     }
 
+    // TODO javadoc
     public Callback cancelWrite(Throwable cause)
     {
+        // TODO this implementation moves the state to FAILED when the current state is IDLE,
+        //  while it moves the state (eventually) to CANCELLED if it is PENDING/COMPLETING/FLUSHING
+        //  which prevents further use of the flusher in the 1st case but not in the 2nd case.
+        // TODO get rid of CANCELLED state and move to FAILED instead?
+
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while (true)
         {
