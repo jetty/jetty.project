@@ -30,6 +30,7 @@ import java.security.Principal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.List;
@@ -88,12 +89,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -665,6 +669,149 @@ public class RequestTest
         LOG.info("Expecting NotUtf8Exception in state 36...");
         String responses = _connector.getResponse(request);
         assertThat(responses, startsWith("HTTP/1.1 200"));
+    }
+
+    public static Stream<Arguments> queryBehaviors()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        // Normal cases
+        cases.add(Arguments.of("param=aaa", 200, "param", "aaa"));
+        cases.add(Arguments.of("param=aaa&other=foo", 200, "param", "aaa"));
+        cases.add(Arguments.of("param=", 200, "param", ""));
+        cases.add(Arguments.of("param=&other=foo", 200, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C%94", 200, "param", "✔"));
+        cases.add(Arguments.of("param=%E2%9C%94&other=foo", 200, "param", "✔"));
+
+        // Truncated / Insufficient Hex cases
+        cases.add(Arguments.of("param=%E2%9C%9", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C%9&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C%", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C%&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9C", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%9C&other=foo", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%9", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%9&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2%&other=foo", 400, "param", ""));
+        cases.add(Arguments.of("param=%E2", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2&other=foo", 200, "param", "�"));
+
+        // Tokenized cases
+        cases.add(Arguments.of("param=%%TOK%%", 400, "param", ""));
+        cases.add(Arguments.of("param=%%TOK%%&other=foo", 400, "param", ""));
+
+        // Bad Hex
+        cases.add(Arguments.of("param=%xx", 400, "param", ""));
+        cases.add(Arguments.of("param=%xx&other=foo", 400, "param", ""));
+
+        // Overlong UTF-8 Encoding
+        cases.add(Arguments.of("param=%C0%AF", 400, "param", ""));
+        cases.add(Arguments.of("param=%C0%AF&other=foo", 400, "param", ""));
+
+        // Out of range
+        cases.add(Arguments.of("param=%F4%90%80%80", 400, "param", ""));
+        cases.add(Arguments.of("param=%F4%90%80%80&other=foo", 400, "param", ""));
+
+        // Long surrogate
+        cases.add(Arguments.of("param=%ED%A0%80", 400, "param", ""));
+        cases.add(Arguments.of("param=%ED%A0%80&other=foo", 400, "param", ""));
+
+        // Standalone continuations
+        cases.add(Arguments.of("param=%80", 400, "param", ""));
+        cases.add(Arguments.of("param=%80&other=foo", 400, "param", ""));
+
+        // Truncated sequence
+        cases.add(Arguments.of("param=%E2%82", 200, "param", "�"));
+        cases.add(Arguments.of("param=%E2%82&other=foo", 200, "param", "�"));
+
+        // C1 never starts UTF-8
+        cases.add(Arguments.of("param=%C1%BF", 400, "param", ""));
+        cases.add(Arguments.of("param=%C1%BF&other=foo", 400, "param", ""));
+
+        // E0 must be followed by A0-BF
+        cases.add(Arguments.of("param=%E0%9F%80", 400, "param", ""));
+        cases.add(Arguments.of("param=%E0%9F%80&other=foo", 400, "param", ""));
+
+        // Community Examples
+        cases.add(Arguments.of("param=f_%e0%b8", 200, "param", "f_�"));
+        cases.add(Arguments.of("param=f_%e0%b8&other=foo", 200, "param", "f_�"));
+        cases.add(Arguments.of("param=%£", 400, "param", ""));
+        cases.add(Arguments.of("param=%£&other=foo", 400, "param", ""));
+
+        // Extra ampersands
+        cases.add(Arguments.of("param=aaa&&&", 200, "param", "aaa"));
+        cases.add(Arguments.of("&&&param=aaa", 200, "param", "aaa"));
+        cases.add(Arguments.of("&&param=aaa&&other=foo", 200, "param", "aaa"));
+        cases.add(Arguments.of("param=aaa&&other=foo&&", 200, "param", "aaa"));
+
+        // Encoded ampersands
+        cases.add(Arguments.of("param=aaa%26&other=foo", 200, "param", "aaa&"));
+        cases.add(Arguments.of("param=aaa&%26other=foo", 200, "&other", "foo"));
+
+        // pct-encoded parameter names ("帽子" means "hat" in japanese)
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret", 200, "帽子", "Beret"));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%90=Beret&other=foo", 200, "帽子", "Beret"));
+        cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", 200, "帽子", "Beret"));
+
+        // truncated pct-encoded parameter names
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 200, "帽孝Beret", ""));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", 400, "帽子", ""));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", 200, "帽�", "Beret"));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 200, "帽孝Beret", ""));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", 400, "帽子", ""));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", 200, "帽�", "Beret"));
+
+        // raw unicode parameter names (strange replacement logic here)
+        cases.add(Arguments.of("€=currency", 200, "?", "currency"));
+        cases.add(Arguments.of("帽子=Beret", 200, "??", "Beret"));
+
+        // invalid pct-encoded parameter name
+        cases.add(Arguments.of("foo%xx=abc", 400, "foo�", ""));
+        cases.add(Arguments.of("foo%x=abc", 400, "foo�", ""));
+        cases.add(Arguments.of("foo%=abc", 400, "foo�", ""));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryBehaviors")
+    public void testQueryExtractionBehavior(String inputQuery, int expectedStatus, String expectedKey, String expectedValue) throws Exception
+    {
+        _handler._checker = (request, response) ->
+        {
+            switch (expectedStatus)
+            {
+                case 200:
+                {
+                    // Verify that parameter exists
+                    List<String> paramNames = Collections.list(request.getParameterNames());
+                    assertThat(paramNames, hasItem(expectedKey));
+
+                    // Get value
+                    String value = request.getParameter(expectedKey);
+                    assertThat(value, is(expectedValue));
+                    response.setStatus(200);
+                    return true;
+                }
+                default:
+                {
+                    // We are expecting an exception, rethrow it.
+                    throw assertThrows(RuntimeException.class, () -> request.getParameter(expectedKey));
+                }
+            }
+        };
+
+        //Send a request with query string with illegal hex code to cause
+        //an exception parsing the params
+        String rawRequest = String.format("GET /?%s HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Connection: close\n" +
+            "\n", inputQuery);
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(expectedStatus));
     }
 
     @Test
@@ -2412,3 +2559,4 @@ public class RequestTest
         }
     }
 }
+
