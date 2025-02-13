@@ -409,7 +409,20 @@ public class UrlEncoded
                     {
                         char hi = query.charAt(++i);
                         char lo = query.charAt(++i);
-                        decodeHexByteTo(buffer, hi, lo, allowBadUtf8);
+                        try
+                        {
+                            decodeHexByteTo(buffer, hi, lo);
+                        }
+                        catch (NumberFormatException e)
+                        {
+                            buffer.append(Utf8StringBuilder.REPLACEMENT);
+                            if (!allowBadUtf8)
+                                throw e;
+                            if (query.charAt(i - 1) == '&')
+                                i = i - 2;
+                            else if (query.charAt(i) == '&')
+                                i = i - 1;
+                        }
                     }
                     else if (allowBadUtf8)
                     {
@@ -1031,19 +1044,9 @@ public class UrlEncoded
         }
     }
 
-    private static void decodeHexByteTo(Utf8StringBuilder buffer, char hi, char lo, boolean allowBadUtf8)
+    private static void decodeHexByteTo(Utf8StringBuilder buffer, char hi, char lo)
     {
-        try
-        {
-            buffer.append((byte)((convertHexDigit(hi) << 4) + convertHexDigit(lo)));
-        }
-        catch (NumberFormatException e)
-        {
-            if (allowBadUtf8)
-                buffer.append(Utf8StringBuilder.REPLACEMENT);
-            else
-                throw e;
-        }
+        buffer.append((byte)((convertHexDigit(hi) << 4) + convertHexDigit(lo)));
     }
 
     /**

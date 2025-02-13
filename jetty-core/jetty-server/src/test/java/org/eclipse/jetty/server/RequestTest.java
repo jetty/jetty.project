@@ -42,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -50,6 +51,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -616,5 +618,232 @@ public class RequestTest
         {
             assertThat(events.size(), is(0));
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // These are the values that pass in jetty-11.0.x
+        "'',            '',    'value'",
+        "'foo',         'foo', 'value'",
+        "'%E2%9C%94',   '✔',   'value'",
+        "'%E2%9C',      '*',   ''",         // truncated
+        "'%E2',         '*',   ''",         // truncated
+        "'%%foo%%',     '*',   ''",         // not % encoded
+        "'%',           '*',   ''",         // insufficient hex digits
+        "'%xx',         '*',   ''",         // bad hex
+        "'%C0%AF',      '*',   ''",         // overlong encoding of %2F
+        "'%F4%90%80%80','*',   ''",         // out of range
+        "'%ED%A0%80',   '*',   ''",         // Long surrogate
+        "'%80',         '*',   ''",         // stand along continuations
+        "'%E2%82',      '*',   ''",         // truncated sequence
+        "'%C1%BF',      '*',   ''",         // C1 never starts UTF-8
+        "'%E0%9F%80',   '*',   ''",         // E0 must be followed by A0–BF
+        "'f_%e0%b8',    '*',   ''",         // Client example
+        "'%£',          '400',  ''",        // Client example
+    })
+    public void testUtf8QueryDefault(String query, String expected0, String expected1) throws Exception
+    {
+        server.stop();
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
+        server.setHandler(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                try
+                {
+                    Fields fields = Request.extractQueryParameters(request);
+                    String param = fields.getValue("expected");
+                    String other = fields.getValue("other");
+                    assertThat(param, is(expected0));
+                    assertThat(other, is(expected1));
+                    callback.succeeded();
+                }
+                catch (AssertionError e)
+                {
+                    callback.failed(e);
+                }
+                catch (Throwable t)
+                {
+                    if ("*".equals(expected0))
+                        callback.succeeded();
+                    else
+                        callback.failed(t);
+                }
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path?expected=%s&other=value HTTP/1.1\r
+                Host: whatever\r
+                Connection: close\r
+                \r
+                """.formatted(query);
+
+        System.err.println(request);
+
+        String responses = connector.getResponse(request);
+        if ("400".equals(expected0))
+            assertThat(responses, startsWith("HTTP/1.1 400 "));
+        else
+            assertThat(responses, startsWith("HTTP/1.1 200 "));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // These are the values that pass in jetty-11.0.x
+        "'',            '',    'value'",
+        "'foo',         'foo', 'value'",
+        "'%E2%9C%94',   '✔',   'value'",
+        "'%E2%9C',      '�',   'value'",    // truncated
+        "'%E2',         '�',   'value'",    // truncated
+        "'%%foo%%',     '�oo�','value'",    // not % encoded
+        "'%',           '�',   'value'",    // insufficient hex digits
+        "'%xx',         '�',   'value'",    // bad hex
+        "'%C0%AF',      '��',  'value'",    // overlong encoding of %2F
+        "'%F4%90%80%80','����','value'",    // out of range
+        "'%ED%A0%80',   '���', 'value'",    // Long surrogate
+        "'%80',         '�',   'value'",    // stand along continuations
+        "'%E2%82',      '�',   'value'",    // truncated sequence
+        "'%C1%BF',      '��',  'value'",    // C1 never starts UTF-8
+        "'%E0%9F%80',   '���', 'value'",    // E0 must be followed by A0–BF
+        "'f_%e0%b8',    'f_�', 'value'",    // Client example
+        "'%£',          '�',   'value'",    // Client example
+    })
+    public void testUtf8QueryAllowBadUtf8(String query, String expected0, String expected1) throws Exception
+    {
+        server.stop();
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING));
+        server.setHandler(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                try
+                {
+                    System.err.println(request.getHttpURI());
+                    Fields fields = Request.extractQueryParameters(request);
+                    String param = fields.getValue("expected");
+                    String other = fields.getValue("other");
+                    assertThat(param, is(expected0));
+                    assertThat(other, is(expected1));
+                    callback.succeeded();
+                }
+                catch (AssertionError e)
+                {
+                    e.printStackTrace();
+                    callback.failed(e);
+                }
+                catch (Throwable t)
+                {
+                    if ("*".equals(expected0))
+                    {
+                        callback.succeeded();
+                    }
+                    else
+                    {
+                        t.printStackTrace();
+                        callback.failed(t);
+                    }
+                }
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path?expected=%s&other=value HTTP/1.1\r
+                Host: whatever\r
+                Connection: close\r
+                \r
+                """.formatted(query);
+
+        System.err.println(request);
+
+        String responses = connector.getResponse(request);
+        if ("400".equals(expected0))
+            assertThat(responses, startsWith("HTTP/1.1 400 "));
+        else
+            assertThat(responses, startsWith("HTTP/1.1 200 "));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // These are the values that pass in jetty-11.0.x
+        "'',            '',    'value'",
+        "'foo',         'foo', 'value'",
+        "'%E2%9C%94',   '✔',   'value'",
+        "'%E2%9C',      '�',   'value'",    // truncated
+        "'%E2',         '�',   'value'",    // truncated
+        "'%%foo%%',     '*',   ''",         // not % encoded
+        "'%',           '*',   ''",         // insufficient hex digits
+        "'%xx',         '*',   ''",         // bad hex
+        "'%C0%AF',      '*',   ''",         // overlong encoding of %2F
+        "'%F4%90%80%80','*',   ''",         // out of range
+        "'%ED%A0%80',   '*',   ''",         // Long surrogate
+        "'%80',         '*',   ''",         // stand along continuations
+        "'%E2%82',      '�',   'value'",    // truncated sequence
+        "'%C1%BF',      '*',   ''",         // C1 never starts UTF-8
+        "'%E0%9F%80',   '*',   ''",         // E0 must be followed by A0–BF
+        "'f_%e0%b8',    'f_�',  'value'",   // Client example
+        "'%£',          '400',  ''",        // Client example
+    })
+    public void testUtf8QueryLegacy(String query, String expected0, String expected1) throws Exception
+    {
+        server.stop();
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+        server.setHandler(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                try
+                {
+                    System.err.println(request.getHttpURI());
+                    Fields fields = Request.extractQueryParameters(request);
+                    String param = fields.getValue("expected");
+                    String other = fields.getValue("other");
+                    assertThat(param, is(expected0));
+                    assertThat(other, is(expected1));
+                    callback.succeeded();
+                }
+                catch (AssertionError e)
+                {
+                    e.printStackTrace();
+                    callback.failed(e);
+                }
+                catch (Throwable t)
+                {
+                    if ("*".equals(expected0))
+                    {
+                        callback.succeeded();
+                    }
+                    else
+                    {
+                        t.printStackTrace();
+                        callback.failed(t);
+                    }
+                }
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path?expected=%s&other=value HTTP/1.1\r
+                Host: whatever\r
+                Connection: close\r
+                \r
+                """.formatted(query);
+
+        System.err.println(request);
+
+        String responses = connector.getResponse(request);
+        if ("400".equals(expected0))
+            assertThat(responses, startsWith("HTTP/1.1 400 "));
+        else
+            assertThat(responses, startsWith("HTTP/1.1 200 "));
     }
 }
