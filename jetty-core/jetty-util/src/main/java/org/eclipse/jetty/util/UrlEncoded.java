@@ -127,7 +127,7 @@ public class UrlEncoded
 
                     if (val != null)
                     {
-                        if (val.length() > 0)
+                        if (!val.isEmpty())
                         {
                             result.append('=');
                             result.append(encodeString(val, charset));
@@ -247,12 +247,11 @@ public class UrlEncoded
                     {
                         adder.accept(key, value);
                     }
-                    else if (value != null && value.length() > 0)
+                    else if (value != null && !value.isEmpty())
                     {
                         adder.accept(value, "");
                     }
                     key = null;
-                    value = null;
                     break;
                 case '=':
                     if (key != null)
@@ -279,7 +278,7 @@ public class UrlEncoded
             key = encoded
                 ? decodeString(content, mark + 1, content.length() - mark - 1, charset)
                 : content.substring(mark + 1);
-            if (key != null && key.length() > 0)
+            if (key != null && !key.isEmpty())
             {
                 adder.accept(key, "");
             }
@@ -396,26 +395,8 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    if (allowTruncatedUtf8)
-                    {
-                        boolean codingError = buffer.hasCodingErrors();
-                        buffer.complete();
-                        if (!codingError && buffer.hasCodingErrors())
-                        {
-                            value = buffer.takeCompleteString(null);
-                            buffer.reset();
-                            if (badUtf8 != null)
-                                badUtf8.set(true);
-                        }
-                        else
-                        {
-                            value = buffer.takeCompleteString(onCodingError);
-                        }
-                    }
-                    else
-                    {
-                        value = buffer.takeCompleteString(onCodingError);
-                    }
+                    value = take(allowTruncatedUtf8, buffer, badUtf8, onCodingError);
+
                     if (key != null)
                     {
                         adder.accept(key, value);
@@ -434,26 +415,7 @@ public class UrlEncoded
                         break;
                     }
 
-                    if (allowTruncatedUtf8)
-                    {
-                        boolean codingError = buffer.hasCodingErrors();
-                        buffer.complete();
-                        if (!codingError && buffer.hasCodingErrors())
-                        {
-                            key = buffer.takeCompleteString(null);
-                            buffer.reset();
-                            if (badUtf8 != null)
-                                badUtf8.set(true);
-                        }
-                        else
-                        {
-                            key = buffer.takeCompleteString(onCodingError);
-                        }
-                    }
-                    else
-                    {
-                        key = buffer.takeCompleteString(onCodingError);
-                    }
+                    key = take(allowTruncatedUtf8, buffer, badUtf8, onCodingError);
                     break;
 
                 case '+':
@@ -513,15 +475,33 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.takeCompleteString(onCodingError);
+            value = take(allowTruncatedUtf8, buffer, badUtf8, onCodingError);
             adder.accept(key, value);
         }
         else if (buffer.length() > 0)
         {
-            adder.accept(buffer.toCompleteString(), "");
+            key = take(allowTruncatedUtf8, buffer, badUtf8, onCodingError);
+            adder.accept(key, "");
         }
 
         return badUtf8 == null || !badUtf8.get();
+    }
+
+    private static <X extends Throwable> String take(boolean allowTrauncatedUtf8, Utf8StringBuilder buffer, AtomicBoolean badUtf8, Supplier<X> onCodingError) throws X
+    {
+        if (!allowTrauncatedUtf8)
+            return buffer.takeCompleteString(onCodingError);
+
+        boolean codingError = buffer.hasCodingErrors();
+        buffer.complete();
+        if (codingError || !buffer.hasCodingErrors())
+            return buffer.takeCompleteString(onCodingError);
+
+        String result = buffer.takeCompleteString(null);
+        buffer.reset();
+        if (badUtf8 != null)
+            badUtf8.set(true);
+        return result;
     }
 
     /**
@@ -564,14 +544,14 @@ public class UrlEncoded
             switch ((char)b)
             {
                 case '&':
-                    value = buffer.length() == 0 ? "" : buffer.toString();
+                    value = buffer.isEmpty() ? "" : buffer.toString();
                     buffer.setLength(0);
                     if (key != null)
                     {
                         adder.accept(key, value);
                         keys++;
                     }
-                    else if (value.length() > 0)
+                    else if (!value.isEmpty())
                     {
                         adder.accept(value, "");
                         keys++;
@@ -609,12 +589,12 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.length() == 0 ? "" : buffer.toString();
+            value = buffer.isEmpty() ? "" : buffer.toString();
             buffer.setLength(0);
             adder.accept(key, value);
             keys++;
         }
-        else if (buffer.length() > 0)
+        else if (!buffer.isEmpty())
         {
             adder.accept(buffer.toString(), "");
             keys++;
@@ -686,7 +666,7 @@ public class UrlEncoded
                         adder.accept(key, value);
                         keys++;
                     }
-                    else if (value != null && value.length() > 0)
+                    else if (value != null && !value.isEmpty())
                     {
                         adder.accept(value, "");
                         keys++;
@@ -838,7 +818,7 @@ public class UrlEncoded
                             adder.accept(key, value);
                             keys++;
                         }
-                        else if (value != null && value.length() > 0)
+                        else if (value != null && !value.isEmpty())
                         {
                             adder.accept(value, "");
                             keys++;
