@@ -72,7 +72,7 @@ public class JettyServerFactory
             ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, contextCl/*JettyServerFactory.class.getClassLoader()*/);
 
             ClassLoader serverClassLoader = libExtClassLoader;
-            
+
             if (LOG.isDebugEnabled())
                 LOG.debug("LibExtClassLoader = {}", libExtClassLoader);
 
