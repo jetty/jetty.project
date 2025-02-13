@@ -32,6 +32,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -287,7 +288,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                releaseBuffer();
+                releaseBuffer(failure);
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -508,7 +509,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             _state = State.CLOSED;
-            releaseBuffer();
+            releaseBuffer(failure);
         }
     }
 
@@ -648,12 +649,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _aggregate;
     }
 
-    private void releaseBuffer()
+    private void releaseBuffer(Throwable failure)
     {
         if (_aggregate != null)
         {
             ByteBufferPool bufferPool = _channel.getConnector().getByteBufferPool();
-            bufferPool.release(_aggregate);
+            if (failure == null || _channel.getRequest().getMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_2.getVersion())
+                bufferPool.release(_aggregate);
+            else
+                bufferPool.remove(_aggregate);
             _aggregate = null;
         }
     }
@@ -1400,7 +1404,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _commitSize = config.getOutputAggregationSize();
             if (_commitSize > _bufferSize)
                 _commitSize = _bufferSize;
-            releaseBuffer();
+            releaseBuffer(null);
             _written = 0;
             _writeListener = null;
             _onError = null;
