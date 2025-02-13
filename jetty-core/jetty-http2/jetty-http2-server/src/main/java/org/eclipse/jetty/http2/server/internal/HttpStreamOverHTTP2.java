@@ -440,7 +440,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        return () -> _stream.cancel(cause, appCallback).failed(cause);
+        // Append a ResetFrame into the H2 flusher and complete the appCallback once all the frames up to and including the reset one have been flushed.
+        return () -> _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.from(() -> appCallback.failed(cause)));
     }
 
     private HttpFields retrieveTrailers()

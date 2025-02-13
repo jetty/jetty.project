@@ -208,19 +208,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         return false;
     }
 
-    /**
-     * Cancel the stream with a reset
-     * @param cause The cause of the cancellation
-     * @param callback The {@link Callback} to invoke once the reset and the callback returned from this method have completed
-     * @return A {@link Callback} that is completed to cancel the stream.
-     */
-    public Callback cancel(Throwable cause, Callback callback)
-    {
-        List<Callback> callbacks = Callback.from(callback, cause, 2);
-        reset(new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code), callbacks.get(0));
-        return callbacks.get(1);
-    }
-
     @Override
     public Object getAttribute(String key)
     {
