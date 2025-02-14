@@ -194,7 +194,7 @@ public class PathsContextHandlerFactory
                     }
                     else
                     {
-                        PathsContextHandlerFactory.this.initializeContextPath(contextHandler, xml);
+                        PathsContextHandlerFactory.this.initializeContextPath(contextHandler, xml, attributes);
                         PathsContextHandlerFactory.this.initializeContextHandler(contextHandler, xml, attributes);
                     }
                 }
@@ -273,7 +273,7 @@ public class PathsContextHandlerFactory
         }
     }
 
-    protected void initializeContextPath(ContextHandler contextHandler, Path path)
+    protected void initializeContextPath(ContextHandler contextHandler, Path path, Attributes attributes)
     {
         if (contextHandler == null)
             return;
@@ -301,8 +301,9 @@ public class PathsContextHandlerFactory
             contextPath = "/" + contextPath;
 
         contextHandler.setDisplayName(basename);
+
         // Set this via initializeDeployable to avoid default-context-path state changes.
-        contextHandler.setAttribute(Deployable.DEFAULT_CONTEXT_PATH, contextPath);
+        attributes.setAttribute(Deployable.DEFAULT_CONTEXT_PATH, contextPath);
     }
 
     /**
@@ -426,7 +427,7 @@ public class PathsContextHandlerFactory
             if (contextHandler == null)
                 throw new IllegalStateException("Unknown context type of " + context);
 
-            initializeContextPath(contextHandler, path);
+            initializeContextPath(contextHandler, path, attributes);
             initializeContextHandler(contextHandler, path, attributes);
 
             // Allow context created from CONTEXT_HANDLER_CLASS to be initialized
@@ -446,7 +447,7 @@ public class PathsContextHandlerFactory
 
             if (createdContext)
             {
-                initializeContextPath(contextHandler, path);
+                initializeContextPath(contextHandler, path, attributes);
                 initializeContextHandler(contextHandler, path, attributes);
                 initializeDeployable(context, attributes);
             }
@@ -464,7 +465,7 @@ public class PathsContextHandlerFactory
             if (contextHandler == null)
                 throw new IllegalStateException("Unknown context type of " + context);
 
-            initializeContextPath(contextHandler, path);
+            initializeContextPath(contextHandler, path, attributes);
             initializeContextHandler(contextHandler, path, attributes);
             initializeDeployable(context, attributes);
             return context;

@@ -229,7 +229,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses((String[])value);
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
                 case Deployable.CONTEXT_PATH -> setContextPath((String)value);
-                case Deployable.DEFAULT_CONTEXT_PATH -> setDefaultContextPath((String)value);
+                case Deployable.DEFAULT_CONTEXT_PATH ->
+                {
+                    // Don't set default context path, if context-path is set before init (like from XML)
+                    if (isContextPathDefault())
+                        setDefaultContextPath((String)value);
+                }
                 case Deployable.EXTRACT_WARS -> setExtractWAR((Boolean)value);
                 case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority((Boolean)value);
                 case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
