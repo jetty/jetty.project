@@ -560,7 +560,12 @@ public abstract class WriteFlusher
         }
     }
 
-    // TODO javadoc
+    /**
+     * Abort any write the flusher may have in progress or pending, then prevent any further write.
+     *
+     * @param cause the cause
+     * @return the callback of the write in progress or pending, null if the flusher was idle
+     */
     public Callback cancelWrite(Throwable cause)
     {
         // Keep trying to handle the failure until we get to IDLE or FAILED state
