@@ -254,7 +254,7 @@ public class PathsContextHandlerFactory
             }
         }
 
-        // pass through properties as attributes directly
+        // copy attributes into context
         attributes.getAttributeNameSet()
             .forEach((key) ->
             {
@@ -445,7 +445,11 @@ public class PathsContextHandlerFactory
                 throw new IllegalStateException("Unknown context type of " + context);
 
             if (createdContext)
+            {
+                initializeContextPath(contextHandler, path);
+                initializeContextHandler(contextHandler, path, attributes);
                 initializeDeployable(context, attributes);
+            }
             return context;
         }
 
