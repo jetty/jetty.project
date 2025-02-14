@@ -138,7 +138,7 @@ public class MockEndpoint implements EndPoint
     @Override
     public Callback cancelWrite(Throwable cause)
     {
-        return null;
+        throw new UnsupportedOperationException(NOT_SUPPORTED);
     }
 
     @Override
