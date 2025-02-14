@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>
  * This class wraps a standard {@link StringBuilder} and provides methods to append
  * UTF-8 encoded bytes, that are converted into characters.
  * </p><p>
