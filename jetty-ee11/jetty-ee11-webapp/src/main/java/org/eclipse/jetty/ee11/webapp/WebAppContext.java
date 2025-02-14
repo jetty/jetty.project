@@ -226,6 +226,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 }
             }
         }
+
+        // This method is called from the Deployment implementations (eg: DeploymentScanner, OSGIDeployment, etc)
+        // These deployment tools often initialize the context with their own "default" context-path (eg: the basename of the war).
+        // We need to reset the internal tracking of _defaultContextPath to its original value (true) to allow descriptor
+        // based <default-context-path> to set the context-path if an XML hasn't set it prior to the descriptor being read.
+        _defaultContextPath = true;
     }
 
     public boolean isContextPathDefault()
