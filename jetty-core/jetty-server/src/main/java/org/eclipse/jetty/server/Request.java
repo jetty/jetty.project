@@ -588,8 +588,8 @@ public interface Request extends Attributes, Content.Source
         }
         catch (Throwable t)
         {
-            if (uriCompliance == UriCompliance.LEGACY)
-                throw t;
+//            if (uriCompliance == UriCompliance.LEGACY)
+//                throw t;
             throw new BadMessageException("Bad query", t);
         }
     }
