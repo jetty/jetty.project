@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
@@ -43,24 +44,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CancelWriteTest
 {
     private Server server;
+    private ArrayByteBufferPool.Tracking bufferPool;
 
     @BeforeEach
     public void setUp()
     {
-        server = new Server();
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, bufferPool);
     }
 
     @AfterEach
     public void tearDown()
     {
-        LifeCycle.stop(server);
+        try
+        {
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
     }
 
     @Test
     public void testCancelCongestedWrite() throws Exception
     {
         long idleTimeout = 1000;
-        int length = 128 * 1024 * 1024;
         CountDownLatch serverWriteFailureLatch = new CountDownLatch(1);
 
         ServerConnector connector = new ServerConnector(server, 1, 1);
@@ -74,7 +83,7 @@ public class CancelWriteTest
                 SocketChannelEndPoint serverEndPoint = (SocketChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint();
 
                 // Large write, it blocks due to TCP congestion.
-                RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(length, true);
+                RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 byteBuffer.clear();
                 response.write(true, byteBuffer, Callback.from(callback::succeeded, x ->
@@ -139,7 +148,6 @@ public class CancelWriteTest
                     {
                         HttpConnection connection = (HttpConnection)getConnection();
                         Runnable runnable = connection.getHttpChannel().onFailure(new ArithmeticException());
-
                         Thread thread = new Thread(runnable);
                         thread.start();
 
