@@ -59,7 +59,6 @@ import org.slf4j.LoggerFactory;
  *     unpacked into the temp directory defined by this core webapp.
  * </p>
  */
-// TODO: rename CoreContextHandler
 public class CoreContextHandler extends ContextHandler implements Deployable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CoreContextHandler.class);
@@ -100,6 +99,7 @@ public class CoreContextHandler extends ContextHandler implements Deployable
 
                 switch (keyName)
                 {
+                    case Deployable.CONTEXT_PATH, Deployable.DEFAULT_CONTEXT_PATH -> setContextPath((String)value);
                     case Deployable.OTHER_PATHS ->
                     {
                         // The Base Resource (before init) is a nominated directory ("/<name>.d/")
