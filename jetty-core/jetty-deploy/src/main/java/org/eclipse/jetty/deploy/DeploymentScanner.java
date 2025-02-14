@@ -113,7 +113,7 @@ import org.slf4j.LoggerFactory;
  */
 // TODO: fix dumpable to show details about monitored dirs, environments dir, configured environment attributes, scan interval, etc ...
 @ManagedObject("Provider for dynamic deployment of contexts (and webapps) based on presence in directory")
-public class DeploymentScanner extends ContainerLifeCycle implements Scanner.ChangeSetListener
+public class DeploymentScanner extends ContainerLifeCycle implements Scanner.BulkListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentScanner.class);
     // old attributes prefix, now stripped.
