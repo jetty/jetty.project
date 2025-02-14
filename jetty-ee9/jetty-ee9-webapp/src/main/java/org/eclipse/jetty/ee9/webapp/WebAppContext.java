@@ -257,6 +257,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 case Deployable.TEMP_DIR -> setTempDirectory(IO.asFile(value));
                 case Deployable.CONFIGURATION_CLASSES -> setConfigurationClasses((String[])value);
                 case Deployable.CONTAINER_SCAN_JARS -> setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, value);
+                case Deployable.CONTEXT_PATH -> setContextPath((String)value);
+                case Deployable.DEFAULT_CONTEXT_PATH -> setDefaultContextPath((String)value);
                 case Deployable.EXTRACT_WARS -> setExtractWAR((Boolean)value);
                 case Deployable.PARENT_LOADER_PRIORITY -> setParentLoaderPriority((Boolean)value);
                 case Deployable.WEBINF_SCAN_JARS -> setAttribute(MetaInfConfiguration.WEBINF_JAR_PATTERN, value);
@@ -270,12 +272,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 }
             }
         }
-
-        // This method is called from the Deployment implementations (eg: DeploymentScanner, OSGIDeployment, etc)
-        // These deployment tools often initialize the context with their own "default" context-path (eg: the basename of the war).
-        // We need to reset the internal tracking of _defaultContextPath to its original value (true) to allow descriptor
-        // based <default-context-path> to set the context-path if an XML hasn't set it prior to the descriptor being read.
-        _defaultContextPath = true;
     }
 
     public boolean isContextPathDefault()

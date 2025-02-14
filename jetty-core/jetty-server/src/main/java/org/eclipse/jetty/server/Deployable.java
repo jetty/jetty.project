@@ -88,6 +88,14 @@ public interface Deployable
      */
     String CONTEXT_PATH = "jetty.deploy.contextPath";
     /**
+     * <p>Attribute key name: Specifies the context-path of the {@link ContextHandler}</p>
+     *
+     * <p>Value is a {@code String}</p>
+     *
+     * @see ContextHandler#setContextPath(String)
+     */
+    String DEFAULT_CONTEXT_PATH = "jetty.deploy.defaultContextPath";
+    /**
      * <p>Attribute key name: Specifies the default descriptor to user for EE based deployments.</p>
      *
      * <p>Non-EE deployments will not use this configuration.</p>

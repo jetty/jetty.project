@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee11.test;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -83,11 +84,11 @@ public class DeploymentDefaultContextPathTest
     /**
      * Test that deploys a simple war (no XML).
      * The basename in the /webapps/ directory is just `test`.
-     * The web.xml has a default-context-path of `/test-default`.
+     * The {@code <war>!/WEB-INF/web.xml} has a default-context-path of `/test-default`.
      * The deployed context-path should be `/test-default`
      */
     @Test
-    public void testDefaultContextPathDeployment() throws Exception
+    public void testDefaultContextPath() throws Exception
     {
         Path base = workDir.getEmptyPathDir();
         Path webappsDir = base.resolve("webapps");
@@ -95,10 +96,73 @@ public class DeploymentDefaultContextPathTest
 
         // Create webapp in webapps directory.
         Path war = webappsDir.resolve("test.war");
+        createWarFile(war, "/test-default");
+
+        startServer(webappsDir);
+
+        String rawRequest = """
+            GET /test-default/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), containsString("<body>Test</body>"));
+    }
+
+    /**
+     * Test that deploys a simple war, with XML.
+     * The basename in the /webapps/ directory is just `test`.
+     * The {@code <war>!/WEB-INF/web.xml} has a default-context-path of `/test-other`.
+     * The /webapps/test.xml sets the context-path to `/test-alt`
+     * The deployed context-path should be `/test-alt`
+     */
+    @Test
+    public void testXmlOverridesDefaultContextPath() throws Exception
+    {
+        Path base = workDir.getEmptyPathDir();
+        Path webappsDir = base.resolve("webapps");
+        FS.ensureDirExists(webappsDir);
+
+        // Create webapp in webapps directory.
+        Path war = webappsDir.resolve("test.war");
+        createWarFile(war, "/test-other");
+
+        // Create xml that sets a different context-path
+        Path xml = webappsDir.resolve("test.xml");
+        String xmlText = """
+            <?xml version="1.0"?>
+            <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
+            <Configure id="wac" class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+              <Set name="contextPath">/test-alt</Set>
+              <Set name="war"><Property name="jetty.webapps" default="." />/test.war</Set>
+              <Set name="extractWAR">false</Set>
+            </Configure>
+            """;
+        Files.writeString(xml, xmlText, StandardCharsets.UTF_8);
+
+        startServer(webappsDir);
+
+        String rawRequest = """
+            GET /test-alt/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), containsString("<body>Test</body>"));
+    }
+
+    private void createWarFile(Path warFile, String defaultContextPath) throws IOException
+    {
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
 
-        URI uri = URI.create("jar:" + war.toUri().toASCIIString());
+        URI uri = URI.create("jar:" + warFile.toUri().toASCIIString());
         try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
         {
             Path root = zipfs.getPath("/");
@@ -115,26 +179,13 @@ public class DeploymentDefaultContextPathTest
                     metadata-complete="false"
                     version="5.0">
                   <display-name>EE10 Test WebApp</display-name>
-                  <default-context-path>/test-default</default-context-path>
+                  <default-context-path>%s</default-context-path>
                 </web-app>
-                """;
+                """.formatted(defaultContextPath);
             Files.writeString(webXml, webXmlText, StandardCharsets.UTF_8);
 
             Path indexHtml = root.resolve("index.html");
             Files.writeString(indexHtml, "<html><body>Test</body></html>", StandardCharsets.UTF_8);
         }
-
-        startServer(webappsDir);
-
-        String rawRequest = """
-            GET /test-default/ HTTP/1.1
-            Host: local
-            Connection: close
-            
-            """;
-        String rawResponse = connector.getResponse(rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.getContent(), containsString("<body>Test</body>"));
     }
 }

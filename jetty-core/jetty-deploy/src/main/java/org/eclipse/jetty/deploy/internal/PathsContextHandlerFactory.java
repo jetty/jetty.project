@@ -300,12 +300,9 @@ public class PathsContextHandlerFactory
         if (contextPath.charAt(0) != '/')
             contextPath = "/" + contextPath;
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("ContextHandler {} initialized with displayName: {}", contextHandler, basename);
         contextHandler.setDisplayName(basename);
-        if (LOG.isDebugEnabled())
-            LOG.debug("ContextHandler {} initialized with contextPath: {}", contextHandler, contextPath);
-        contextHandler.setContextPath(contextPath);
+        // Set this via initializeDeployable to avoid default-context-path state changes.
+        contextHandler.setAttribute(Deployable.DEFAULT_CONTEXT_PATH, contextPath);
     }
 
     /**
@@ -431,12 +428,12 @@ public class PathsContextHandlerFactory
 
             initializeContextPath(contextHandler, path);
             initializeContextHandler(contextHandler, path, attributes);
-        }
 
-        // Allow context created from CONTEXT_HANDLER_CLASS to be initialized
-        // before the XML executes, and possibly references content that only
-        // the context will know about (such as from a classloader)
-        initializeDeployable(context, attributes);
+            // Allow context created from CONTEXT_HANDLER_CLASS to be initialized
+            // before the XML executes, and possibly references content that only
+            // the context will know about (such as from a classloader)
+            initializeDeployable(context, attributes);
+        }
 
         if (FileID.isXml(path))
         {
