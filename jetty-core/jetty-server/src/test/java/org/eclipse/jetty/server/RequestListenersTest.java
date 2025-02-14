@@ -458,7 +458,7 @@ public class RequestListenersTest
                 Host: localhost
                 Content-Length: 1
                 Connection: close
-                
+                            
                 """);
 
             Callback callback = writeFailed.get(5 * idleTimeout, TimeUnit.MILLISECONDS);
