@@ -49,7 +49,6 @@ public abstract class WriteFlusher
     private static final State __FLUSHING = new FlushingState();
     private static final State __COMPLETING = new CompletingState();
     private static final State __CANCEL = new State(StateType.CANCEL);
-    private static final State __CANCELLED = new State(StateType.CANCELLED);
     private final EndPoint _endPoint;
     private final AtomicReference<State> _state = new AtomicReference<>();
 
@@ -66,22 +65,21 @@ public abstract class WriteFlusher
         //     IDLE--(fail)-->IDLE
         //
         // If a cancel happens then:
-        //     PENDING -> CANCELLED
+        //     PENDING -> FAILED
         //     COMPLETING/FLUSHING -> CANCEL
-        //     CANCELLING -> CANCELLED
         //     CANCEL -> CANCELLING
+        //     CANCELLING -> FAILED
         //
         // From any other state than IDLE a failure will result in an FAILED state which is a terminal state, and
         // the callback is failed with the Throwable which caused the failure.
         //     IDLE-->FLUSHING--(fail)-->FAILED
 
-        __stateTransitions.put(StateType.IDLE, EnumSet.of(StateType.FLUSHING));
+        __stateTransitions.put(StateType.IDLE, EnumSet.of(StateType.FLUSHING, StateType.FAILED));
         __stateTransitions.put(StateType.FLUSHING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.CANCEL, StateType.FAILED));
-        __stateTransitions.put(StateType.PENDING, EnumSet.of(StateType.COMPLETING, StateType.IDLE, StateType.CANCELLED, StateType.FAILED));
+        __stateTransitions.put(StateType.PENDING, EnumSet.of(StateType.COMPLETING, StateType.IDLE, StateType.FAILED));
         __stateTransitions.put(StateType.COMPLETING, EnumSet.of(StateType.IDLE, StateType.PENDING, StateType.CANCEL, StateType.FAILED));
         __stateTransitions.put(StateType.CANCEL, EnumSet.of(StateType.CANCELLING));
-        __stateTransitions.put(StateType.CANCELLING, EnumSet.of(StateType.CANCELLED));
-        __stateTransitions.put(StateType.CANCELLED, EnumSet.noneOf(StateType.class));
+        __stateTransitions.put(StateType.CANCELLING, EnumSet.of(StateType.FAILED));
         __stateTransitions.put(StateType.FAILED, EnumSet.noneOf(StateType.class));
     }
 
@@ -111,11 +109,8 @@ public abstract class WriteFlusher
         CANCEL,
 
         /** A flush operation has completed and seen the {@link StateType#CANCEL} state.  Entering this state indicates that
-         * the thread calling {@link WriteFlusher#cancelWrite(Throwable)} can continue to progress to the {@link StateType#CANCELLED} state. */
+         * the thread calling {@link WriteFlusher#cancelWrite(Throwable)} can continue to progress to the {@link StateType#FAILED} state. */
         CANCELLING,
-
-        /** The {@link WriteFlusher#cancelWrite(Throwable)} method was called and the cancellation of outstanding operations has completed */
-        CANCELLED,
 
         /** The write failed due to a failure from flushing */
         FAILED
@@ -371,7 +366,6 @@ public abstract class WriteFlusher
                 }
 
                 case IDLE:
-                case CANCELLED:
                 case CANCELLING:
                     for (Throwable t : suppressed)
                     {
@@ -532,7 +526,6 @@ public abstract class WriteFlusher
                 case IDLE:
                 case CANCEL:
                 case CANCELLING:
-                case CANCELLED:
                 case FAILED:
                     if (DEBUG)
                     {
@@ -570,11 +563,6 @@ public abstract class WriteFlusher
     // TODO javadoc
     public Callback cancelWrite(Throwable cause)
     {
-        // TODO this implementation moves the state to FAILED when the current state is IDLE,
-        //  while it moves the state (eventually) to CANCELLED if it is PENDING/COMPLETING/FLUSHING
-        //  which prevents further use of the flusher in the 1st case but not in the 2nd case.
-        // TODO get rid of CANCELLED state and move to FAILED instead?
-
         // Keep trying to handle the failure until we get to IDLE or FAILED state
         while (true)
         {
@@ -584,13 +572,12 @@ public abstract class WriteFlusher
                 case IDLE:
                     if (updateState(current, new FailedState(cause)))
                         return null;
-                case CANCELLED:
                 case FAILED:
                     return null;
 
                 case PENDING:
                     PendingState pending = (PendingState)current;
-                    if (updateState(current, __CANCELLED))
+                    if (updateState(current, new FailedState(cause)))
                         return pending._callback;
                     break;
 
@@ -608,7 +595,7 @@ public abstract class WriteFlusher
 
                 case CANCELLING:
                     CancellingState cancelling = (CancellingState)current;
-                    if (updateState(current, __CANCELLED))
+                    if (updateState(current, new FailedState(cause)))
                         return cancelling._callback;
                     break;
 
@@ -631,7 +618,7 @@ public abstract class WriteFlusher
         }
     }
 
-    boolean isFailed()
+    public boolean isFailed()
     {
         return isState(StateType.FAILED);
     }
@@ -653,27 +640,16 @@ public abstract class WriteFlusher
 
     public String toStateString()
     {
-        switch (_state.get().getType())
+        return switch (_state.get().getType())
         {
-            case FLUSHING:
-                return "F";
-            case PENDING:
-                return "P";
-            case COMPLETING:
-                return "C";
-            case IDLE:
-                return "-";
-            case FAILED:
-                return "F";
-            case CANCEL:
-                return "c";
-            case CANCELLING:
-                return ".";
-            case CANCELLED:
-                return "C";
-            default:
-                return "?";
-        }
+            case IDLE -> "-";
+            case FLUSHING -> "F";
+            case PENDING -> "P";
+            case COMPLETING -> "C";
+            case CANCEL -> "l";
+            case CANCELLING -> "L";
+            case FAILED -> "F";
+        };
     }
 
     @Override
