@@ -572,6 +572,8 @@ public abstract class WriteFlusher
                 case IDLE:
                     if (updateState(current, new FailedState(cause)))
                         return null;
+                    break;
+
                 case FAILED:
                     return null;
 
