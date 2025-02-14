@@ -632,10 +632,10 @@ public class RequestTest
         cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", 200, "帽子", "Beret"));
 
         // truncated pct-encoded parameter names
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 200, "帽孝Beret", ""));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 400, "�", "")); // different from 11
         cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", 400, "帽子", ""));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", 200, "帽�", "Beret"));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 200, "帽孝Beret", ""));
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 400, "", "")); // different from 11
         cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", 400, "帽子", ""));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", 200, "帽�", "Beret"));
 
