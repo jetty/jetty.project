@@ -168,7 +168,8 @@ public class CancelWriteTest
             }
         };
         server.addConnector(connector);
-        server.setHandler(new Handler.Abstract() {
+        server.setHandler(new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
@@ -254,7 +255,8 @@ public class CancelWriteTest
             }
         };
         server.addConnector(connector);
-        server.setHandler(new Handler.Abstract() {
+        server.setHandler(new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
