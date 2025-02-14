@@ -7,7 +7,7 @@ Enables JAAS for deployed web applications.
 security
 
 [before]
-deploy
+deployment/deployment-scanner
 
 [xml]
 etc/jetty-jaas.xml
