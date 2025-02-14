@@ -31,7 +31,7 @@ public class UrlEncodedUtf8Test
     @CsvSource(delimiter = '|', useHeadersInDisplayName = false,
         textBlock = """
         # query         | expectedName | expectedValue
-        a=bad_%e0%b     | a            | bad_��
+        a=bad_%e0%b     | a            | bad_�
         b=bad_%e0%ba    | b            | bad_�
         c=short%a       | c            | short�
         d=b%aam         | d            | b�m
@@ -39,8 +39,8 @@ public class UrlEncodedUtf8Test
         f=%aardvark     | f            | �rdvark
         g=b%ar          | g            | b�
         h=end%          | h            | end�
-        # This shows how the '&' symbol gets swallowed by a pct-encoding effort.
-        i=%&z=2         | i            | �=2
+        # This shows how the '&' symbol does not get swallowed by a bad pct-encoding.
+        i=%&z=2         | i            | �
         """)
     public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue)
     {
