@@ -37,7 +37,7 @@ public class Flusher
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
-    private final IteratingCallback flushCallback = new FlushCallback();
+    private final FlushCallback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
 
     public Flusher(EndPoint endPoint)
@@ -50,7 +50,7 @@ public class Flusher
         // Cancel the IteratingCallback and take the nest Callback
         CancelSendException cancelSendException = new CancelSendException(cause);
         if (!flushCallback.abort(cancelSendException))
-            return Callback.NOOP;
+            return Callback.NOOP; // TODO return null to tell there was no pending write?
 
         // We now know that we aborted this ICB with the CSE above, so onAbort will eventually be called
         // in a serialized context and the callback will be set on the CSE.
@@ -63,7 +63,7 @@ public class Flusher
             cancelSendException.complete();
         else
             // The write was cancelled and the callback is this ICB, so failing it will call onCompleted
-            writeCallback.failed(cancelSendException);
+            writeCallback.failed(cause);
 
         // wait for the cancellation to be complete and the callback to be set by onAbort.
         // This should never block indefinitely, as onAborted only waits for active states like PROCESSING to complete.
