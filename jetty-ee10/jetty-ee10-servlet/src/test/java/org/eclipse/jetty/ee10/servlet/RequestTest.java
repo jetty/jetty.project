@@ -633,7 +633,8 @@ public class RequestTest
     @CsvSource(delimiter = '|', useHeadersInDisplayName = false,
         textBlock = """
         # query         | expectedName | expectedValue
-        a=bad_%e0%b     | a            | bad_��
+        a=bad_%e0%b     | a            | bad_�
+        a=bad_%e0%b&b=2 | a            | bad_�
         a=bad_%e0%ba    | a            | bad_�
         b=short%a       | b            | short�
         c=%%TOK%%       | c            | �OK�
