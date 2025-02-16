@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,7 +186,7 @@ public class Dispatcher implements RequestDispatcher
                 if (query == null)
                     query = old_uri.getQuery();
 
-                String decodedPathInContext = URIUtil.decodePath(_pathInContext);
+                String decodedPathInContext = _pathInContext;
                 baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
                 baseRequest.setContext(_contextHandler.getServletContext(), decodedPathInContext);
 

@@ -51,7 +51,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.Part;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -60,6 +62,7 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -293,6 +296,56 @@ public class CrossContextDispatcherTest
         params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward"));
         assertThat(content, containsString("REQUEST_URI=/foreign/verify/pinfo"));
+    }
+
+    @Test
+    public void testEncodedCrossContextForward() throws Exception
+    {
+        _server.stop();
+        _targetServletContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
+        _targetServletContextHandler.getServletHandler().setDecodeAmbiguousURIs(true);
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+        _contextHandler.getServletHandler().setDecodeAmbiguousURIs(true);
+        _server.getContainedBeans(HttpConnectionFactory.class).forEach(f -> f.getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING)));
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET /context/dispatch/?forward=/verify/%25%20test HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        String content = response.getContent();
+        String[] contentLines = content.split("\\n");
+
+        //verify forward attributes
+        assertThat(content, containsString("Verified!"));
+        assertThat(content, containsString("jakarta.servlet.forward.context_path=/context"));
+        assertThat(content, containsString("jakarta.servlet.forward.servlet_path=/dispatch"));
+        assertThat(content, containsString("jakarta.servlet.forward.path_info=/"));
+
+        String forwardMapping = extractLine(contentLines, "jakarta.servlet.forward.mapping=");
+        assertNotNull(forwardMapping);
+        assertThat(forwardMapping, containsString("CrossContextDispatchServlet"));
+        assertThat(content, containsString("jakarta.servlet.forward.query_string=forward=/verify"));
+        assertThat(content, containsString("jakarta.servlet.forward.request_uri=/context/dispatch/"));
+        //verify request values
+        assertThat(content, containsString("REQUEST_URL=http://localhost/foreign/"));
+        assertThat(content, containsString("CONTEXT_PATH=/foreign"));
+        assertThat(content, containsString("SERVLET_PATH=/verify"));
+        assertThat(content, containsString("PATH_INFO=/% test/pinfo"));
+        String mapping = extractLine(contentLines, "MAPPING=");
+        assertNotNull(mapping);
+        assertThat(mapping, containsString("VerifyForwardServlet"));
+        String params = extractLine(contentLines, "PARAMS=");
+        assertNotNull(params);
+        params = params.substring(params.indexOf("=") + 1);
+        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward"));
+        assertThat(content, containsString("REQUEST_URI=/foreign/verify/%25%20test/pinfo"));
     }
 
     @Test
@@ -831,7 +884,7 @@ public class CrossContextDispatcherTest
             {
                 ServletContext foreign = getServletContext().getContext(ctx);
                 assertNotNull(foreign);
-                dispatcher = foreign.getRequestDispatcher(request.getParameter("forward") + "/pinfo?a=b");
+                dispatcher = foreign.getRequestDispatcher(URIUtil.encodePath(request.getParameter("forward")) + "/pinfo?a=b");
 
                 if (dispatcher == null)
                        response.sendError(404, "No dispatcher for forward");
@@ -994,7 +1047,7 @@ public class CrossContextDispatcherTest
                 res.getWriter().println("----------- FORWARD ATTRIBUTES");
                 res.getWriter().println(RequestDispatcher.FORWARD_CONTEXT_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
                 res.getWriter().println(RequestDispatcher.FORWARD_SERVLET_PATH + "=" + req.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
-                res.getWriter().println(RequestDispatcher.FORWARD_PATH_INFO  + "=" + req.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+                res.getWriter().println(RequestDispatcher.FORWARD_PATH_INFO + "=" + req.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
                 res.getWriter().println(RequestDispatcher.FORWARD_MAPPING + "=" + req.getAttribute(RequestDispatcher.FORWARD_MAPPING));
                 res.getWriter().println(RequestDispatcher.FORWARD_QUERY_STRING + "=" + req.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
                 res.getWriter().println(RequestDispatcher.FORWARD_REQUEST_URI + "=" + req.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI));
