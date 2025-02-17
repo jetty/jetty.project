@@ -135,7 +135,8 @@ public class CancelWriteTest
     @Test
     public void testCancelBeforeWrite() throws Exception
     {
-        CountDownLatch serverWriteFailureLatch = new CountDownLatch(2);
+        CountDownLatch serverWriteFailureLatch = new CountDownLatch(1);
+        CountDownLatch serverEndPointWriteFailureLatch = new CountDownLatch(1);
         ServerConnector connector = new ServerConnector(server, 1, 1)
         {
             @Override
@@ -156,7 +157,8 @@ public class CancelWriteTest
 
                         super.write(Callback.from(callback::succeeded, x ->
                         {
-                            serverWriteFailureLatch.countDown();
+                            if (serverWriteFailureLatch.getCount() == 1L)
+                                serverEndPointWriteFailureLatch.countDown();
 
                             // Complete the send callback from HttpConnection.
                             callback.failed(x);
@@ -178,7 +180,8 @@ public class CancelWriteTest
                 byteBuffer.clear();
                 response.write(true, byteBuffer, Callback.from(callback::succeeded, x ->
                 {
-                    serverWriteFailureLatch.countDown();
+                    if (serverEndPointWriteFailureLatch.getCount() == 0L)
+                        serverWriteFailureLatch.countDown();
 
                     // Release the buffer.
                     buffer.release();
@@ -202,6 +205,7 @@ public class CancelWriteTest
             client.write(buffer);
 
             assertTrue(serverWriteFailureLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(serverEndPointWriteFailureLatch.await(5, TimeUnit.SECONDS));
 
             // Verify that the server eventually closes the connection after writing 0 byte.
             long totalRead = 0L;
@@ -222,7 +226,8 @@ public class CancelWriteTest
     @Test
     public void testCancelAfterWrite() throws Exception
     {
-        CountDownLatch serverWriteFailureLatch = new CountDownLatch(2);
+        CountDownLatch serverEndPointWriteSuccessLatch = new CountDownLatch(1);
+        CountDownLatch serverWriteFailureLatch = new CountDownLatch(1);
         CountDownLatch serverWriteSuccessLatch = new CountDownLatch(1);
         ServerConnector connector = new ServerConnector(server, 1, 1)
         {
@@ -236,7 +241,8 @@ public class CancelWriteTest
                     {
                         super.write(Callback.from(() ->
                         {
-                            serverWriteFailureLatch.countDown();
+                            if (serverWriteFailureLatch.getCount() == 1L)
+                                serverEndPointWriteSuccessLatch.countDown();
 
                             HttpConnection connection = (HttpConnection)getConnection();
                             Runnable runnable = connection.getHttpChannel().onFailure(new ArithmeticException());
@@ -274,7 +280,8 @@ public class CancelWriteTest
                         callback.succeeded();
                     }, x ->
                     {
-                        serverWriteFailureLatch.countDown();
+                        if (serverEndPointWriteSuccessLatch.getCount() == 0L)
+                            serverWriteFailureLatch.countDown();
 
                         // Release the buffer.
                         buffer.release();
@@ -297,7 +304,7 @@ public class CancelWriteTest
 
             client.write(buffer);
 
-            assertTrue(serverWriteFailureLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(serverEndPointWriteSuccessLatch.await(5, TimeUnit.SECONDS));
             assertFalse(serverWriteSuccessLatch.await(1, TimeUnit.SECONDS));
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));

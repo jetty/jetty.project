@@ -16,7 +16,7 @@ package org.eclipse.jetty.http2.tests;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -24,16 +24,17 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -42,15 +43,30 @@ public class CancelWriteTest extends AbstractTest
     @Test
     public void testCancelAfterWrite() throws Exception
     {
+        CountDownLatch serverFlusherPendingLatch = new CountDownLatch(1);
         CountDownLatch serverWriteSuccessLatch = new CountDownLatch(1);
         CountDownLatch serverWriteFailureLatch = new CountDownLatch(1);
-        AtomicReference<Stream> clientStreamRef = new AtomicReference<>();
 
         start(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                AtomicBoolean httpStreamCancelled = new AtomicBoolean();
+                request.addHttpStreamWrapper(w -> new HttpStream.Wrapper(w)
+                {
+                    @Override
+                    public Runnable cancelSend(Throwable cause, Callback appCallback)
+                    {
+                        return super.cancelSend(cause, Callback.from(appCallback::succeeded, x ->
+                        {
+                            // Make sure this callback gets called before the Response.write() one.
+                            httpStreamCancelled.set(true);
+                            appCallback.failed(x);
+                        }));
+                    }
+                });
+
                 RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 byteBuffer.clear();
@@ -65,6 +81,7 @@ public class CancelWriteTest extends AbstractTest
                     callback.succeeded();
                 }, x ->
                 {
+                    assertTrue(httpStreamCancelled.get());
                     serverWriteFailureLatch.countDown();
 
                     // Release the buffer.
@@ -74,23 +91,42 @@ public class CancelWriteTest extends AbstractTest
                     callback.failed(x);
                 }));
 
-                // Make the client reset the current stream.
-                Stream clientStream = await().atMost(5, TimeUnit.SECONDS).until(clientStreamRef::get, notNullValue());
-                clientStream.reset(new ResetFrame(clientStream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                // Wait until TCP congestion.
+                await().atMost(5, TimeUnit.SECONDS).until(() ->
+                {
+                    AbstractEndPoint endPoint = (AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint();
+                    WriteFlusher flusher = endPoint.getWriteFlusher();
+                    return flusher.isPending();
+                });
+                serverFlusherPendingLatch.countDown();
 
                 return true;
             }
         });
 
+        // Set the HTTP/2 flow control windows very large so we can
+        // cause TCP congestion, not HTTP/2 flow control congestion.
+        http2Client.setInitialSessionRecvWindow(512 * 1024 * 1024);
+        http2Client.setInitialStreamRecvWindow(512 * 1024 * 1024);
         Session session = newClientSession(new Session.Listener() {});
-        try (Blocker.Promise<Stream> promise = Blocker.promise())
+        session.newStream(new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true), new Stream.Listener()
         {
-            session.newStream(new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, false), promise, new Stream.Listener() {});
-            clientStreamRef.set(promise.block());
-        }
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame, Callback callback)
+            {
+                try
+                {
+                    // Block to cause TCP congestion.
+                    assertTrue(serverFlusherPendingLatch.await(5, TimeUnit.SECONDS));
 
-        Stream stream = clientStreamRef.get();
-        await().atMost(5, TimeUnit.SECONDS).until(() -> stream.isReset() && stream.isClosed());
+                    stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), callback);
+                }
+                catch (InterruptedException e)
+                {
+                    callback.failed(e);
+                }
+            }
+        });
 
         assertTrue(serverWriteFailureLatch.await(5, TimeUnit.SECONDS));
         assertFalse(serverWriteSuccessLatch.await(1, TimeUnit.SECONDS));
