@@ -61,8 +61,8 @@ public abstract class WriteFlusher
         // Or it may take several cycles to complete
         //     IDLE-->FLUSHING-->PENDING-->COMPLETING-->PENDING-->COMPLETING-->IDLE
         //
-        // If a failure happens while in IDLE, it is a noop since there is no operation to tell of the failure.
-        //     IDLE--(fail)-->IDLE
+        // If a failure happens while in IDLE, the state goes to FAILED even if there is no operation to tell of the failure.
+        //     IDLE--(fail)-->FAILED
         //
         // If a cancel happens then:
         //     PENDING -> FAILED
@@ -112,7 +112,7 @@ public abstract class WriteFlusher
          * the thread calling {@link WriteFlusher#cancelWrite(Throwable)} can continue to progress to the {@link StateType#FAILED} state. */
         CANCELLING,
 
-        /** The write failed due to a failure from flushing */
+        /** The write failed due to a failure from flushing, or cancellation is done. */
         FAILED
     }
 
