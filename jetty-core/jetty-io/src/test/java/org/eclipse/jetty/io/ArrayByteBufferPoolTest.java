@@ -42,6 +42,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ArrayByteBufferPoolTest
 {
     @Test
+    public void testRemoveAndReleaseCompoundPool()
+    {
+        int bufferCount = ConcurrentPool.OPTIMAL_MAX_SIZE * 2;
+        List<RetainableByteBuffer> rbbs = new ArrayList<>();
+
+        ArrayByteBufferPool pool = new ArrayByteBufferPool();
+        for (int i = 0; i < bufferCount; i++)
+        {
+            RetainableByteBuffer rbb = pool.acquire(1, false);
+            rbbs.add(rbb);
+        }
+        rbbs.forEach(Retainable::release);
+        rbbs.clear();
+
+        for (int i = 0; i < bufferCount; i++)
+        {
+            RetainableByteBuffer rbb = pool.acquire(1, false);
+            rbbs.add(rbb);
+        }
+
+        rbbs.forEach(pool::removeAndRelease);
+    }
+
+    @Test
     public void testDump()
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 100, Integer.MAX_VALUE, 200, 200);
