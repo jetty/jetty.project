@@ -67,7 +67,8 @@ pipeline {
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
               recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
-                             tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
+                             tools: [[parser: 'JACOCO',pattern: 'target/site/jacoco-aggregate/jacoco.xml'],
+                                     [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
                              sourceCodeRetention: 'MODIFIED',
                              sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
             }
