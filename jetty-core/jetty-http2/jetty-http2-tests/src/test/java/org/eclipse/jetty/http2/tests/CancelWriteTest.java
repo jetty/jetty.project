@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CancelWriteTest extends AbstractTest
 {
     @Test
-    public void testCancelWrite() throws Exception
+    public void testCancelCongestedWrite() throws Exception
     {
         CountDownLatch serverFlusherPendingLatch = new CountDownLatch(1);
         CountDownLatch serverWriteSuccessLatch = new CountDownLatch(1);
