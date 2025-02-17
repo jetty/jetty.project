@@ -70,7 +70,7 @@ pipeline {
                              tools: [[parser: 'JACOCO',pattern: 'target/site/jacoco-aggregate/jacoco.xml'],
                                      [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
                              sourceCodeRetention: 'MODIFIED',
-                            sourceDirectories: [[path: 'glob:**/src/main/java'], [path: 'glob:**/target/generated-sources/ee8']]
+                             sourceDirectories: [[path: 'glob:**/src/main/java'], [path: 'glob:**/target/generated-sources/ee8']]
             }
           }
         }
