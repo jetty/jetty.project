@@ -203,6 +203,7 @@ public class QueuedPool<P> implements Pool<P>
         // val/false -> idle
         // val/true  -> in use
         private final AtomicMarkableReference<P> pooled = new AtomicMarkableReference<>(null, false);
+        private P removedReference; // Only written before setting 'pooled', only read after getting 'pooled'.
 
         private QueuedEntry(QueuedPool<P> pool)
         {
@@ -243,7 +244,8 @@ public class QueuedPool<P> implements Pool<P>
         @Override
         public P getPooled()
         {
-            return pooled.getReference();
+            P reference = pooled.getReference();
+            return reference != null ? reference : removedReference;
         }
 
         void acquire()
@@ -273,6 +275,7 @@ public class QueuedPool<P> implements Pool<P>
             P p = pooled.get(inUse);
             if (p == null && inUse[0])
                 return false;
+            removedReference = p;
             pooled.set(null, true);
             return true;
         }

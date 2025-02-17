@@ -76,6 +76,20 @@ public class QueuedPoolTest
     }
 
     @Test
+    public void testReleaseBeforeRemove()
+    {
+        Pool<String> pool = new QueuedPool<>(1);
+        pool.reserve().enable("aaa", false);
+
+        Pool.Entry<String> e1 = pool.acquire();
+
+        assertThat(e1.remove(), is(true));
+        assertThat(e1.remove(), is(false));
+        assertThat(e1.release(), is(false));
+        assertThat(e1.getPooled(), notNullValue());
+    }
+
+    @Test
     public void testRemoveBeforeRelease()
     {
         Pool<String> pool = new QueuedPool<>(1);
@@ -85,6 +99,7 @@ public class QueuedPoolTest
         assertThat(e1.remove(), is(true));
         assertThat(e1.remove(), is(false));
         assertThat(e1.release(), is(false));
+        assertThat(e1.getPooled(), notNullValue());
     }
 
     @Test
