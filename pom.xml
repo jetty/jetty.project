@@ -324,7 +324,7 @@
     <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
-    <mina.core.version>2.2.3</mina.core.version>
+    <mina.core.version>2.2.4</mina.core.version>
     <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
     <mongo.docker.version>3.2.20</mongo.docker.version>
     <mongodb.version>3.12.14</mongodb.version>
