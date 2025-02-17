@@ -121,6 +121,15 @@ public interface ClientConnectionFactory
         public abstract List<String> getProtocols(boolean secure);
 
         /**
+         * <p>Customizes the given context, if necessary.</p>
+         *
+         * @param context the context to customize
+         */
+        public void customize(Map<String, Object> context)
+        {
+        }
+
+        /**
          * @return the {@link ClientConnectionFactory} that speaks the protocol
          */
         public ClientConnectionFactory getClientConnectionFactory()

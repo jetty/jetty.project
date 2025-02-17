@@ -55,12 +55,12 @@ public class ExternalServerTest
     {
         QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
         HTTP3Client client = new HTTP3Client(quicConfig);
-        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, new QuicheTransport(quicConfig))))
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, QuicheTransport.INSTANCE)))
         {
             httpClient.start();
             URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
             ContentResponse response = httpClient.newRequest(uri)
-                .transport(new QuicheTransport(quicConfig))
+                .transport(QuicheTransport.INSTANCE)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertThat(response.getContentAsString(), containsString("<artifactId>maven-parent</artifactId>"));
@@ -83,7 +83,7 @@ public class ExternalServerTest
 //            HostPort hostPort = new HostPort("quic.tech:8443");
 //            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
 //            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
-            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport(quicConfig), new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {}, p));
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(QuicheTransport.INSTANCE, new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {}, p));
 
             CountDownLatch requestLatch = new CountDownLatch(1);
             HttpURI uri = HttpURI.from(String.format("https://%s/", hostPort));

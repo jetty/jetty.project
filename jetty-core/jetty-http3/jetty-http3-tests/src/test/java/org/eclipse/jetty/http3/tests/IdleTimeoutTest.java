@@ -147,7 +147,7 @@ public class IdleTimeoutTest
             http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
             http3Client.start();
 
-            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(new QuicheTransport(clientQuicConfiguration), new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {}, p));
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(QuicheTransport.INSTANCE, new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {}, p));
 
             MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:" + connector.getLocalPort() + "/path"), HttpVersion.HTTP_3, HttpFields.EMPTY);
             // The request will complete exceptionally.

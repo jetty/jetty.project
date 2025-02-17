@@ -30,6 +30,7 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
@@ -58,13 +59,13 @@ public class HTTP3ServerDocs
 
         QuicheServerQuicConfiguration quicConfiguration = new QuicheServerQuicConfiguration(Path.of("/path/to/pem/dir"));
         // Configure the max number of requests per QUIC connection.
-        quicConfiguration.setBidirectionalMaxStreams(1024);
+        quicConfiguration.setBidirectionalMaxStreams(1024 * 1024);
 
         // Create and configure the RawHTTP3ServerConnectionFactory.
         RawHTTP3ServerConnectionFactory http3 = new RawHTTP3ServerConnectionFactory(sessionListener);
         http3.getHTTP3Configuration().setStreamIdleTimeout(15000);
 
-        // Create and configure the QuicServerConnector.
+        // Create and configure the QuicheServerConnector.
         QuicheServerConnector connector = new QuicheServerConnector(server, sslContextFactory, quicConfiguration, http3);
 
         // Add the Connector to the Server.
@@ -100,7 +101,8 @@ public class HTTP3ServerDocs
             {
                 Map<Long, Long> settings = new HashMap<>();
 
-                // Customize the settings
+                // Customize the settings, for example:
+                settings.put(SettingsFrame.MAX_BLOCKED_STREAMS, 16L);
 
                 return settings;
             }
@@ -116,10 +118,11 @@ public class HTTP3ServerDocs
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
+                // Process the request method, URI and headers.
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
 
                 // Return a Stream.Server.Listener to handle the request events,
-                // for example request content events or a request reset.
+                // for example request content events or request cancellation.
                 return new Stream.Server.Listener() {};
             }
         };
@@ -134,6 +137,7 @@ public class HTTP3ServerDocs
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
+                // Process the request method, URI and headers.
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
 
                 // Demand to be called back when data is available.

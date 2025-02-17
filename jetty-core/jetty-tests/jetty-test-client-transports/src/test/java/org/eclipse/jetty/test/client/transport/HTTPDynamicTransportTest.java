@@ -108,7 +108,7 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         http2Client = new HTTP2Client(clientConnector);
 
         QuicheClientQuicConfiguration quicConfiguration = new QuicheClientQuicConfiguration();
-        transport = new QuicheTransport(quicConfiguration);
+        transport = QuicheTransport.INSTANCE;
         http3Client = new HTTP3Client(quicConfiguration, clientConnector);
     }
 
@@ -512,7 +512,7 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         server.start();
 
-        Transport transport = new QuicheTransport(new MemoryTransport(connector), (QuicheClientQuicConfiguration)http3Client.getQuicConfiguration());
+        Transport transport = new QuicheTransport(new MemoryTransport(connector));
 
         ContentResponse response = httpClient.newRequest("https://localhost/")
             .transport(transport)

@@ -176,7 +176,7 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transport(new QuicheTransport(new QuicheClientQuicConfiguration()))
+            .transport(QuicheTransport.INSTANCE)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -206,7 +206,7 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transport(new QuicheTransport(new QuicheClientQuicConfiguration()))
+            .transport(QuicheTransport.INSTANCE)
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -318,7 +318,7 @@ public class HTTP2TransportTest extends AbstractTransportTest
         server.start();
 
         SocketAddress socketAddress = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session session = http2Client.connect(new QuicheTransport(clientQuicConfig), null, socketAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
+        Session session = http2Client.connect(QuicheTransport.INSTANCE, null, socketAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_2, HttpFields.EMPTY);

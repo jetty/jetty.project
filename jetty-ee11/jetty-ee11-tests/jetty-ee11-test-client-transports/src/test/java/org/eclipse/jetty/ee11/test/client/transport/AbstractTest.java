@@ -83,10 +83,7 @@ public class AbstractTest
 
     public static Collection<TransportType> transports()
     {
-        EnumSet<TransportType> transportTypes = EnumSet.allOf(TransportType.class);
-        if ("ci".equals(System.getProperty("env")))
-            transportTypes.remove(TransportType.H3_QUICHE);
-        return transportTypes;
+        return EnumSet.allOf(TransportType.class);
     }
 
     public static Collection<TransportType> transportsNoFCGI()
@@ -105,9 +102,8 @@ public class AbstractTest
 
     public static Collection<TransportType> transportsSecure()
     {
-        EnumSet<TransportType> transportTypes = EnumSet.of(TransportType.HTTPS, TransportType.H2, TransportType.H3_QUICHE);
-        if ("ci".equals(System.getProperty("env")))
-            transportTypes.remove(TransportType.H3_QUICHE);
+        Collection<TransportType> transportTypes = transports();
+        transportTypes.removeIf(t -> !t.isSecure());
         return transportTypes;
     }
 
@@ -283,7 +279,7 @@ public class AbstractTest
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
                 QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration(clientPemDirectory);
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
-                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
+                yield new HttpClientTransportOverHTTP3(http3Client, QuicheTransport.INSTANCE);
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");
         };

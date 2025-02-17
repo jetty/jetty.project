@@ -9,4 +9,4 @@ quic
 experimental
 
 [depends]
-http3-quiche
+http3-impl

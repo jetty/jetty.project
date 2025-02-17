@@ -164,7 +164,7 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
         return http3Configuration;
     }
 
-    public ClientQuicConfiguration getQuicConfiguration()
+    public ClientQuicConfiguration getClientQuicConfiguration()
     {
         return quicConfiguration;
     }
@@ -239,6 +239,7 @@ public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
         context.put(HTTP3Client.CONTEXT_KEY, this);
         context.put(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY, listener);
         context.put(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY, promise);
+        context.put(ClientQuicConfiguration.CONTEXT_KEY, getClientQuicConfiguration());
         context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
         context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
         context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, key -> sslContextFactory);

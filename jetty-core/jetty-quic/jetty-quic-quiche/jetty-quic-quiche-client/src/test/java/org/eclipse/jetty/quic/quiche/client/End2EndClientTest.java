@@ -111,7 +111,7 @@ public class End2EndClientTest
         clientThreads.setDetailedDump(true);
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setExecutor(clientThreads);
-        transport = new QuicheTransport(new QuicheClientQuicConfiguration());
+        transport = QuicheTransport.INSTANCE;
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));

@@ -162,7 +162,7 @@ public class HTTP1TransportTest extends AbstractTransportTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transport(new QuicheTransport(clientQuicConfig))
+            .transport(QuicheTransport.INSTANCE)
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();

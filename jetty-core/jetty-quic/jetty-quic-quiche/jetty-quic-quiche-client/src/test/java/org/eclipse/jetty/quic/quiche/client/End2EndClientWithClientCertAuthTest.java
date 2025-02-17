@@ -122,7 +122,7 @@ public class End2EndClientWithClientCertAuthTest
         clientSslContextFactory.setTrustStorePassword("storepwd");
         QuicheClientQuicConfiguration clientQuicConfiguration = new QuicheClientQuicConfiguration(clientWorkPath);
         clientQuicConfiguration.start();
-        transport = new QuicheTransport(clientQuicConfiguration);
+        transport = QuicheTransport.INSTANCE;
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(clientSslContextFactory);
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;

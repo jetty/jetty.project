@@ -48,7 +48,7 @@ public abstract class AbstractQuicheServerConnectionFactory extends AbstractConn
         return sslContextFactory;
     }
 
-    public QuicheServerQuicConfiguration getQuicConfiguration()
+    public QuicheServerQuicConfiguration getServerQuicConfiguration()
     {
         return quicConfiguration;
     }
@@ -90,7 +90,7 @@ public abstract class AbstractQuicheServerConnectionFactory extends AbstractConn
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        ServerQuicheConnection connection = new ServerQuicheConnection(connector, getSslContextFactory(), getQuicConfiguration(), endPoint, getSessionListenerFactory());
+        ServerQuicheConnection connection = new ServerQuicheConnection(connector, getSslContextFactory(), getServerQuicConfiguration(), endPoint, getSessionListenerFactory());
         return configure(connection, connector, endPoint);
     }
 }

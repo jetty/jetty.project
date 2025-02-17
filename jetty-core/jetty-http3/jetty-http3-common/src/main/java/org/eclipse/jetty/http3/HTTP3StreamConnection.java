@@ -182,6 +182,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             // Notify the application via onRequest()/onResponse().
                             action.task().run();
 
+                            // TODO: running the action above
+                            //  results in onRequest() queueing a task for AES,
+                            //  which can be run concurrently to the code below.
+                            //  Maybe not a problem for the server?
+                            //  Could be a problem for the client if interim?
+
                             // Notify onDataAvailable() if the application
                             // demanded in onRequest()/onResponse().
                             if (!interim)
@@ -201,6 +207,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     else
                         break;
                 }
+
+                // TODO: now queue the tasks back into the AES? Or just call produce().
             }
             else
             {
@@ -569,6 +577,10 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         @Override
         public InvocationType getInvocationType()
         {
+            // TODO: cannot be non-blocking, because if I parse 1 byte, then fillInterested(non-blocking)
+            //  when I wake up again I may parse the whole HeadersFrame, call the Handler tree and block
+            //  from a Callback that declared itself non-blocking.
+
             HTTP3Stream http3Stream = stream;
             return http3Stream == null ? InvocationType.NON_BLOCKING : Invocable.getInvocationType(http3Stream);
         }

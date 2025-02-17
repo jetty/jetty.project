@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
@@ -94,7 +93,7 @@ public class HTTP1OverQuicTest extends AbstractTest
 
         transport = switch (transportType)
         {
-            case QUICHE -> new QuicheTransport(new QuicheClientQuicConfiguration());
+            case QUICHE -> QuicheTransport.INSTANCE;
         };
     }
 

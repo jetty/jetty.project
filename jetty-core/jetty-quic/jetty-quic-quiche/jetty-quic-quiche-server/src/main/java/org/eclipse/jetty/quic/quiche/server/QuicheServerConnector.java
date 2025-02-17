@@ -64,7 +64,7 @@ public class QuicheServerConnector extends DatagramServerConnector
 
     public QuicheServerQuicConfiguration getServerQuicConfiguration()
     {
-        return connectionFactory.getQuicConfiguration();
+        return connectionFactory.getServerQuicConfiguration();
     }
 
     public int getInputBufferSize()
@@ -83,7 +83,7 @@ public class QuicheServerConnector extends DatagramServerConnector
         addBean(connectionFactory);
 
         connectionFactory.configure(this);
-        QuicheServerQuicConfiguration quicConfiguration = connectionFactory.getQuicConfiguration();
+        QuicheServerQuicConfiguration quicConfiguration = connectionFactory.getServerQuicConfiguration();
         quicConfiguration.addEventListener(container);
         quicConfiguration.setPemWorkDirectory(findPemWorkDirectory());
 

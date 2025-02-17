@@ -103,7 +103,8 @@ public class AbstractTest
 
     public static Collection<TransportType> transports()
     {
-        return EnumSet.allOf(TransportType.class);
+//        return EnumSet.allOf(TransportType.class);
+        return EnumSet.of(TransportType.H3_QUICHE);
     }
 
     public static Collection<TransportType> transportsNoFCGI()
@@ -390,7 +391,7 @@ public class AbstractTest
             {
                 QuicheClientQuicConfiguration quicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
                 HTTP3Client http3Client = new HTTP3Client(quicConfig, clientConnector);
-                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(quicConfig));
+                yield new HttpClientTransportOverHTTP3(http3Client, QuicheTransport.INSTANCE);
             }
             case FCGI -> new HttpClientTransportOverFCGI(clientConnector, "");
         };

@@ -14,6 +14,9 @@ http2
 quic-quiche-server
 work
 
+[provides]
+http3-impl|default
+
 [lib]
 lib/http3/jetty-http3-common-${jetty.version}.jar
 lib/http3/jetty-http3-qpack-${jetty.version}.jar

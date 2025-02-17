@@ -177,7 +177,7 @@ public class HttpChannelAssociationTest extends AbstractTest
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
-                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig))
+                yield new HttpClientTransportOverHTTP3(http3Client, QuicheTransport.INSTANCE)
                 {
                     @Override
                     protected org.eclipse.jetty.client.Connection newConnection(Destination destination, HTTP3SessionClient session)
