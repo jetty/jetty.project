@@ -2005,6 +2005,7 @@
             <!-- test classes -->
             <exclude>**/org/eclipse/jetty/tests/**</exclude>
             <exclude>**/org/eclipse/jetty/test/**</exclude>
+            <exclude>**/jakarta/xml/**</exclude>
           </excludes>
         </configuration>
         <executions>
