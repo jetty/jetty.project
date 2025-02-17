@@ -103,8 +103,7 @@ public class AbstractTest
 
     public static Collection<TransportType> transports()
     {
-//        return EnumSet.allOf(TransportType.class);
-        return EnumSet.of(TransportType.H3_QUICHE);
+        return EnumSet.allOf(TransportType.class);
     }
 
     public static Collection<TransportType> transportsNoFCGI()
