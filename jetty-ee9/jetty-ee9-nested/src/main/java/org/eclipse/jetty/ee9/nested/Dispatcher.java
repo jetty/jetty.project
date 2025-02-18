@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,14 +51,14 @@ public class Dispatcher implements RequestDispatcher
 
     private final ContextHandler _contextHandler;
     private final HttpURI _uri;
-    private final String _pathInContext;
+    private final String _uriInContext;
     private final String _named;
 
-    public Dispatcher(ContextHandler contextHandler, HttpURI uri, String pathInContext)
+    public Dispatcher(ContextHandler contextHandler, HttpURI uri, String uriInContext)
     {
         _contextHandler = contextHandler;
         _uri = uri.asImmutable();
-        _pathInContext = pathInContext;
+        _uriInContext = uriInContext;
         _named = null;
     }
 
@@ -65,7 +66,7 @@ public class Dispatcher implements RequestDispatcher
     {
         _contextHandler = contextHandler;
         _uri = null;
-        _pathInContext = null;
+        _uriInContext = null;
         _named = name;
     }
 
@@ -109,13 +110,13 @@ public class Dispatcher implements RequestDispatcher
                     old_context,
                     old_mapping,
                     _uri.getPath(),
-                    _pathInContext,
+                    _uriInContext,
                     _uri.getQuery());
                 if (attr._query != null)
                     baseRequest.mergeQueryParameters(baseRequest.getQueryString(), attr._query);
                 baseRequest.setAttributes(attr);
 
-                _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_uriInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
         }
         finally
@@ -186,7 +187,7 @@ public class Dispatcher implements RequestDispatcher
                 if (query == null)
                     query = old_uri.getQuery();
 
-                String decodedPathInContext = _pathInContext;
+                String decodedPathInContext = URIUtil.decodePath(_uriInContext);
                 baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
                 baseRequest.setContext(_contextHandler.getServletContext(), decodedPathInContext);
 

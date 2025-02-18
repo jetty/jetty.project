@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 
 class CrossContextDispatcher implements RequestDispatcher
 {
@@ -251,7 +252,7 @@ class CrossContextDispatcher implements RequestDispatcher
         //if forwarding to the same environment we must mutate this request for Object wrapper identity
         if (_targetContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
         {
-            new Dispatcher(coreContextHandler.getContextHandler(), _uri, _decodedPathInContext).forward(httpServletRequest, httpServletResponse, DispatcherType.FORWARD);
+            new Dispatcher(coreContextHandler.getContextHandler(), _uri, URIUtil.encodePath(_decodedPathInContext)).forward(httpServletRequest, httpServletResponse, DispatcherType.FORWARD);
             return;
         }
 
@@ -299,7 +300,7 @@ class CrossContextDispatcher implements RequestDispatcher
         //if including to the same environment we must mutate this request for Object wrapper identity
         if (_targetContext.getTargetContext().getContextHandler() instanceof ContextHandler.CoreContextHandler coreContextHandler)
         {
-            new Dispatcher(coreContextHandler.getContextHandler(), _uri, _decodedPathInContext).include(httpServletRequest, httpServletResponse);
+            new Dispatcher(coreContextHandler.getContextHandler(), _uri, URIUtil.encodePath(_decodedPathInContext)).include(httpServletRequest, httpServletResponse);
             return;
         }
 
