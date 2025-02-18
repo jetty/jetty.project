@@ -672,8 +672,6 @@ public class RequestTest
     {
         List<Arguments> cases = new ArrayList<>();
 
-        // TODO: All of these 500 response status codes should really be 400
-
         // Normal cases
         cases.add(Arguments.of("param=aaa", 200, "param", "aaa"));
         cases.add(Arguments.of("param=aaa&other=foo", 200, "param", "aaa"));
