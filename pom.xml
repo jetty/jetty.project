@@ -1996,6 +1996,8 @@
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
             <exclude>**/org/eclipse/jetty/demo/**</exclude>
+            <exclude>**/jmh/**</exclude>
+            <exclude>**/org/eclipse/jetty/docs/programming/**</exclude>
             <!-- special environments / late integrations -->
             <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
             <exclude>**/org/eclipse/jetty/infinispan/**</exclude>
