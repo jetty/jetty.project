@@ -21,12 +21,12 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
 import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.jndi.ContextFactory;
@@ -105,7 +105,7 @@ public class EnvConfiguration extends AbstractConfiguration
             {
                 XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlResource);
                 configuration.setJettyStandardIdsAndProperties(context.getServer(), null);
-                WebAppClassLoader.runWithServerClassAccess(() ->
+                WebAppClassLoader.runWithHiddenClassAccess(() ->
                 {
                     configuration.configure(context);
                     return null;
@@ -245,7 +245,7 @@ public class EnvConfiguration extends AbstractConfiguration
 
         try
         {
-            WebAppClassLoader.runWithServerClassAccess(() ->
+            WebAppClassLoader.runWithHiddenClassAccess(() ->
             {
                 Context context = new InitialContext();
                 Context compCtx = (Context)context.lookup("java:comp");

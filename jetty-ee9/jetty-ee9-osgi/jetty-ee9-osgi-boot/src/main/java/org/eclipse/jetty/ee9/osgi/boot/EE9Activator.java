@@ -27,9 +27,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
 import org.eclipse.jetty.osgi.BundleContextProvider;
@@ -37,6 +37,7 @@ import org.eclipse.jetty.osgi.BundleMetadata;
 import org.eclipse.jetty.osgi.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.ContextFactory;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
+import org.eclipse.jetty.osgi.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.FakeURLClassLoader;
@@ -300,12 +301,12 @@ public class EE9Activator implements BundleActivator
                 try
                 {
                     Thread.currentThread().setContextClassLoader(contextHandler.getClassLoader());
-                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    WebAppClassLoader.runWithHiddenClassAccess(() ->
                     {
                         Server server = provider.getServer();
                         XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(contextHandler).newResource(contextXmlURI));
                         xmlConfiguration.setJettyStandardIdsAndProperties(server, null);
-                        WebAppClassLoader.runWithServerClassAccess(() ->
+                        WebAppClassLoader.runWithHiddenClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
@@ -389,7 +390,7 @@ public class EE9Activator implements BundleActivator
             try
             {
                 Thread.currentThread().setContextClassLoader(environmentLoader);
-                WebAppClassLoader.runWithServerClassAccess(() ->
+                WebAppClassLoader.runWithHiddenClassAccess(() ->
                 {
                     Configurations.getKnown();
                     return null;
@@ -475,12 +476,12 @@ public class EE9Activator implements BundleActivator
                 try
                 {
                     Thread.currentThread().setContextClassLoader(webApp.getClassLoader());
-                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    WebAppClassLoader.runWithHiddenClassAccess(() ->
                     {
                         Server server = provider.getServer();
                         XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(webApp).newResource(contextXmlUri));
                         xmlConfiguration.setJettyStandardIdsAndProperties(server, null);
-                        WebAppClassLoader.runWithServerClassAccess(() ->
+                        WebAppClassLoader.runWithHiddenClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());

@@ -27,9 +27,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee11.webapp.Configuration;
 import org.eclipse.jetty.ee11.webapp.Configurations;
-import org.eclipse.jetty.ee11.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
 import org.eclipse.jetty.osgi.BundleContextProvider;
@@ -37,6 +37,7 @@ import org.eclipse.jetty.osgi.BundleMetadata;
 import org.eclipse.jetty.osgi.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.ContextFactory;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
+import org.eclipse.jetty.osgi.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.FakeURLClassLoader;

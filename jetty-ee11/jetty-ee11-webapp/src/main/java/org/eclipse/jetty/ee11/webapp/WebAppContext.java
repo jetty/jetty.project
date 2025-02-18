@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee11.servlet.ErrorHandler;
 import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
@@ -707,30 +708,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public String[] getHiddenClasses()
     {
         return _hiddenClasses.getPatterns();
-    }
-
-    @Override
-    public boolean isHiddenClass(Class<?> clazz)
-    {
-        return _hiddenClasses.match(clazz);
-    }
-
-    @Override
-    public boolean isProtectedClass(Class<?> clazz)
-    {
-        return _protectedClasses.match(clazz);
-    }
-
-    @Override
-    public boolean isHiddenResource(String name, URL url)
-    {
-        return _hiddenClasses.match(name, url);
-    }
-
-    @Override
-    public boolean isProtectedResource(String name, URL url)
-    {
-        return _protectedClasses.match(name, url);
     }
 
     @Override
