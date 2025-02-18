@@ -418,7 +418,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         private ContextHandler contextHandler;
 
         /**
-         * The lifecycle node location of this App
+         * The lifecycle node location of this ContextHandler
          */
         private Node lifecyleNode;
 

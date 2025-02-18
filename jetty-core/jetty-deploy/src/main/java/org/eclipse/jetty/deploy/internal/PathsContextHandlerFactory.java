@@ -110,7 +110,7 @@ public class PathsContextHandlerFactory
         // Can happen if the file existed when notified by scanner (as either an ADD or CHANGE),
         // and then the file was deleted before reaching this code.
         if (!Files.exists(mainPath))
-            throw new IllegalStateException("App path does not exist " + mainPath);
+            throw new IllegalStateException("Main path does not exist " + mainPath);
 
         deployAttributes.setAttribute(Deployable.MAIN_PATH, mainPath);
         deployAttributes.setAttribute(Deployable.OTHER_PATHS, app.getPaths().keySet());
@@ -385,7 +385,7 @@ public class PathsContextHandlerFactory
             if (FileID.isWebArchive(mainPath))
             {
                 // Set a backup value for the path to the war in case it hasn't already been set
-                // via a different means.  This is especially important for a deployable App
+                // via a different means.  This is especially important for a deployable app
                 // that is only a <name>.war file (no XML).  The eventual WebInfConfiguration
                 // will use this attribute.
                 attributes.setAttribute(Deployable.WAR, mainPath.toString());
@@ -404,13 +404,13 @@ public class PathsContextHandlerFactory
      * </p>
      * <ol>
      * <li>If app attribute {@link #CONTEXT_HANDLER_CLASS} is specified, use it, and initialize context</li>
-     * <li>If App deployable path is XML, apply XML {@code <Configuration>}</li>
+     * <li>If app deployable path is XML, apply XML {@code <Configuration>}</li>
      * <li>Fallback to environment attribute {@link #CONTEXT_HANDLER_CLASS_DEFAULT}, and initialize context.</li>
      * </ol>
      *
      * @param environment the environment context applies to
-     * @param app the App for the context
-     * @param attributes the Attributes used to deploy the App
+     * @param app the app for the context
+     * @param attributes the Attributes used to deploy the app
      * @param path the path of the deployable
      * @return the Context Object.
      * @throws Exception if unable to create Object instance.

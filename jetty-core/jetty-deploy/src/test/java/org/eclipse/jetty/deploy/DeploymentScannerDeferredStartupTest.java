@@ -98,7 +98,7 @@ public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironme
                     }
                     if (event instanceof DeploymentScanner)
                     {
-                        eventQueue.add("ScanningAppProvider started");
+                        eventQueue.add("DeploymentScanner started");
                     }
                     if (event instanceof Scanner)
                     {
@@ -164,7 +164,7 @@ public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironme
             String[] expectedOrderedEvents = {
                 // The deepest component starts first
                 "Scanner started",
-                "ScanningAppProvider started",
+                "DeploymentScanner started",
                 "Server started",
                 // We should see scan events after the server has started
                 "Scan Started [1]",

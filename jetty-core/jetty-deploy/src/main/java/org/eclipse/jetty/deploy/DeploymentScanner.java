@@ -317,7 +317,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * Test if initial scan should be deferred.
      *
-     * @return true if initial scan is deferred, false to have initial scan occur on startup of ScanningAppProvider.
+     * @return true if initial scan is deferred, false to have initial scan occur on startup of {@code DeploymentScanner}.
      */
     public boolean isDeferInitialScan()
     {
@@ -332,10 +332,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      *     has reached it's STARTED state.<br>
      *     Note: any failures in a deployment will not fail the Server startup in this mode.</li>
      *     <li>{@code false} - (default value) to have initial scan occur as normal on
-     *     ScanningAppProvider startup.</li>
+     *     {@code DeploymentScanner} startup.</li>
      * </ul>
      *
-     * @param defer true to defer initial scan, false to have initial scan occur on startup of ScanningAppProvider.
+     * @param defer true to defer initial scan, false to have initial scan occur on startup of {@code DeploymentScanner}.
      */
     public void setDeferInitialScan(boolean defer)
     {
@@ -425,7 +425,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             }
         }
 
-        // Now we know the ScanTrackedApp instances that are changed by processing
+        // Now we know the PathsApp instances that are changed by processing
         // the incoming Scanner changes.
         // Now we want to convert this list of changes to a DeployAction list
         // that will perform the add/remove logic in a consistent way.
@@ -711,8 +711,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                             appEnvironment = getDefaultEnvironmentName();
                         app.setEnvironment(Environment.get(appEnvironment));
 
-                        // Create a new Attributes layer for the App deployment, which is the
-                        // combination of layered Environment Attributes with App Attributes overlaying them.
+                        // Create a new Attributes layer for the app deployment, which is the
+                        // combination of layered Environment Attributes with app Attributes overlaying them.
                         Attributes envAttributes = environmentAttributesMap.get(appEnvironment);
                         Attributes.Layer deployAttributes = new Attributes.Layer(envAttributes, app.getAttributes());
 

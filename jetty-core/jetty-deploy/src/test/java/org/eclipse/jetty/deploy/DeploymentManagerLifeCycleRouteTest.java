@@ -83,7 +83,7 @@ public class DeploymentManagerLifeCycleRouteTest
         // Start DepMan
         depman.start();
 
-        // Create new App
+        // Create new ContextHandler
         ContextHandler contextHandler = Util.createContextHandler("foo-webapp-1.war");
         depman.addUndeployed(contextHandler);
 

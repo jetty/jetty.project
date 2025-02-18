@@ -36,9 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Default represents all the components that make up
- * a from-file-system App deployment that the {@link DeploymentScanner}
- * creates and uses.
+ * A representation of all the filesystem components that are used to
+ * create a {@link ContextHandler} and push it through the {@link org.eclipse.jetty.deploy.DeploymentManager}.
  */
 public class PathsApp
 {
@@ -194,8 +193,8 @@ public class PathsApp
     }
 
     /**
-     * Load all {@code properties} files belonging to this ScanTrackedApp
-     * into the {@link Attributes} for this App.
+     * Load all {@code properties} files belonging to this PathsApp
+     * into its {@link Attributes}.
      *
      * @see #getAttributes()
      */
@@ -308,7 +307,7 @@ public class PathsApp
      * <dd>All Path states are in REMOVED state, or there are no Paths being tracked</dd>
      * </dl>
      *
-     * @return the state of the App.
+     * @return the state.
      */
     private State calcState()
     {

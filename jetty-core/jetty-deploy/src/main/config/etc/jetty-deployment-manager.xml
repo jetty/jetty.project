@@ -4,8 +4,7 @@
 <!-- Create the deployment manager                                   -->
 <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 <!-- The deployment manager handles the lifecycle of deploying web   -->
-<!-- applications. Apps are provided by instances of the             -->
-<!-- AppProvider interface.                                          -->
+<!-- applications via instances of ContextHandler.                   -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
