@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.webapp;
+package org.eclipse.jetty.ee;
 
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
