@@ -1989,14 +1989,15 @@
         <artifactId>jacoco-maven-plugin</artifactId>
         <configuration>
           <excludes>
-            <!-- build tools -->
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <exclude>**/com/oracle/**</exclude>
+            <exclude>**/javax/**</exclude>
             <exclude>*/org/eclipse/jetty/maven/its/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
             <exclude>**/org/eclipse/jetty/demo/**</exclude>
-            <exclude>**/jmh/**</exclude>
+            <exclude>**/jmh**/**</exclude>
             <exclude>**/org/eclipse/jetty/docs/programming/**</exclude>
             <!-- special environments / late integrations -->
             <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
@@ -2008,6 +2009,8 @@
             <exclude>**/org/eclipse/jetty/tests/**</exclude>
             <exclude>**/org/eclipse/jetty/test/**</exclude>
             <exclude>**/jakarta/xml/**</exclude>
+            <exclude>**/org/apache/**</exclude>
+            <exclude>**/org/slf4j/**</exclude>
           </excludes>
         </configuration>
         <executions>
