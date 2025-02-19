@@ -102,6 +102,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
         /**
          * Allow truncated UTF-8 encodings to be substituted by the replacement character.
+         * <p>
+         * Note: This violation allows a subset of {@link #BAD_UTF8_ENCODING} behaviors meant to replicate LEGACY behaviors, and will be reported as {@link #BAD_UTF8_ENCODING}.
+         * </p>
          */
         TRUNCATED_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Truncated UTF-8 encoding"),
 
@@ -112,7 +115,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
         /**
          * Allow path characters not allowed in the path portion of the URI and HTTP specs.
-         * <p>This would allow characters that fall outside of the {@code unreserved / pct-encoded / sub-delims / ":" / "@"} ABNF</p>
+         * <p>This would allow characters that fall outside the {@code unreserved / pct-encoded / sub-delims / ":" / "@"} ABNF</p>
          */
         ILLEGAL_PATH_CHARACTERS("https://datatracker.ietf.org/doc/html/rfc3986#section-3.3", "Illegal Path Character"),
 
@@ -426,6 +429,16 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
+    /**
+     * Check the {@link HttpURI} against a configured {@link UriCompliance} to see if any detected violations
+     * are allowed by the configured {@link UriCompliance}.
+     *
+     * @param compliance the configured {@link UriCompliance}.
+     * @param uri the HttpURI.
+     * @param listener listener to report violations to.
+     * @return A string representing the violations that were not allowed by the configured {@link UriCompliance}, null if
+     *         the provided HttpURI either has no violations, or only had violations that are allowed by the {@link UriCompliance}
+     */
     public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
     {
         if (uri.hasViolations())
@@ -433,11 +446,13 @@ public final class UriCompliance implements ComplianceViolation.Mode
             StringBuilder violations = null;
             for (UriCompliance.Violation violation : uri.getViolations())
             {
+                // Always report violation to listeners
+                if (listener != null)
+                    listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
+
+                // Only trigger a failure of the HttpURI for compliance reasons if the compliance doesn't allow for violation detected
                 if (compliance == null || !compliance.allows(violation))
                 {
-                    if (listener != null)
-                        listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
-
                     if (violations == null)
                         violations = new StringBuilder();
                     else
