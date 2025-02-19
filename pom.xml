@@ -1580,6 +1580,7 @@
               <jetty.unixdomain.dir>${jetty.unixdomain.dir}</jetty.unixdomain.dir>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
               <pax.exam.debug.remote>${pax.exam.debug.remote}</pax.exam.debug.remote>
+              <distributionTest.args>${distributionTest.args}</distributionTest.args>
             </systemPropertyVariables>
             <!-- The LC_ALL env variable must have some UTF variant otherwise creating and/or reading files with non-ascii names doesn't work -->
             <environmentVariables>
@@ -2018,6 +2019,17 @@
               <goal>prepare-agent</goal>
             </goals>
             <phase>initialize</phase>
+          </execution>
+          <execution>
+            <id>jacoco-setup-distribution-tests</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <!-- Enable recording of coverage during execution of distribution tests -->
+              <propertyName>distributionTest.args</propertyName>
+            </configuration>
           </execution>
           <execution>
             <id>jacoco-setup-m-invoker-p</id>
