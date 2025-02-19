@@ -147,7 +147,7 @@ public class JettyHomeTester
             commands.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:" + debugPort);
 
         String disTestArgs = System.getProperty("distributionTest.args");
-        if (disTestArgs != null)
+        if (StringUtils.isNotBlank(disTestArgs))
         {
             commands.add(disTestArgs);
         }
