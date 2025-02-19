@@ -2008,7 +2008,7 @@
             <exclude>**/org/apache/**</exclude>
             <exclude>**/org/slf4j/**</exclude>
             <exclude>**/org/objectweb/**</exclude>
-            <exclude>**/**Benchmark</exclude>
+            <exclude>**/**Benchmark**</exclude>
           </excludes>
         </configuration>
         <executions>
