@@ -221,7 +221,7 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("removeInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
+            LOG.debug("updateInterests p={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
 
         if (!pending && _selector != null)
             _selector.submit(_updateKeyAction);
