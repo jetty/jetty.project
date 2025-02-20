@@ -2053,7 +2053,12 @@ public class Request implements HttpServletRequest
             else
             {
                 maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                if (maxFormContentSize < 0)
+                    maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+
                 maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
+                if (maxFormKeys < 0)
+                    maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
             }
 
             MultiPartCompliance multiPartCompliance = getHttpChannel().getHttpConfiguration().getMultiPartCompliance();
