@@ -410,11 +410,10 @@ public final class HttpCompliance implements ComplianceViolation.Mode
 
     private static void assertAllowed(Violation violation, HttpCompliance mode, ComplianceViolation.Listener listener)
     {
-        if (mode.allows(violation))
-            listener.onComplianceViolation(new ComplianceViolation.Event(
-                mode, violation, violation.getDescription()
-            ));
-        else
+        listener.onComplianceViolation(new ComplianceViolation.Event(
+            mode, violation, violation.getDescription()
+        ));
+        if (!mode.allows(violation))
             throw new BadMessageException(violation.getDescription());
     }
 }
