@@ -308,6 +308,11 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         }
     }
 
+    public boolean isWriteInterested()
+    {
+        return (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE;
+    }
+
     @Override
     public void replaceKey(SelectionKey newKey)
     {
