@@ -340,8 +340,8 @@ public interface EndPoint extends Closeable, Content.Sink
      * writing anymore.
      *
      * @param cause the cause
-     * @return The callback passed to {@link #write(Callback, ByteBuffer...)} or
-     *         {@code null}
+     * @return The callback passed to a pending/in progress {@link #write(Callback, ByteBuffer...) write}
+     *         or {@code null} if there was none.
      */
     Callback cancelWrite(Throwable cause);
 

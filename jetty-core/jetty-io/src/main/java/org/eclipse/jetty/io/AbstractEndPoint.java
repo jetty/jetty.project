@@ -349,10 +349,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         _writeFlusher.write(callback, buffers);
     }
 
-    /**
-     * TODO javadoc!
-     * @return The callback passed to a pending {@link #write(Callback, ByteBuffer...)}
-     */
     @Override
     public Callback cancelWrite(Throwable cause)
     {
