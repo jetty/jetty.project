@@ -57,12 +57,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-ethereum</artifactId>
+        <artifactId>jetty-ee</artifactId>
         <version>12.1.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-ee</artifactId>
+        <artifactId>jetty-ethereum</artifactId>
         <version>12.1.0-SNAPSHOT</version>
       </dependency>
       <dependency>
