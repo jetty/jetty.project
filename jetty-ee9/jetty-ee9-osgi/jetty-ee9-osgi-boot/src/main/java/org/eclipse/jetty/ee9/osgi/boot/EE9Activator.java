@@ -28,9 +28,9 @@ import java.util.Optional;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
 import org.eclipse.jetty.osgi.BundleContextProvider;
@@ -38,6 +38,7 @@ import org.eclipse.jetty.osgi.BundleWebAppProvider;
 import org.eclipse.jetty.osgi.ContextFactory;
 import org.eclipse.jetty.osgi.OSGiApp;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
+import org.eclipse.jetty.osgi.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.FakeURLClassLoader;
@@ -69,9 +70,9 @@ import org.slf4j.LoggerFactory;
 public class EE9Activator implements BundleActivator
 {
     private static final Logger LOG = LoggerFactory.getLogger(EE9Activator.class);
-    
+
     public static final String ENVIRONMENT = "ee9";
-    
+
     private static Collection<ServerClasspathContributor> __serverClasspathContributors = new ArrayList<>();
 
     public static void registerServerClasspathContributor(ServerClasspathContributor contributor)
@@ -91,15 +92,15 @@ public class EE9Activator implements BundleActivator
 
     /**
      * ServerTracker
-     * 
-     * Tracks appearance of Server instances as OSGi services, and then configures them 
+     *
+     * Tracks appearance of Server instances as OSGi services, and then configures them
      * for deployment of EE9 contexts and webapps.
      *
      */
     public static class ServerTracker implements ServiceTrackerCustomizer
     {
         private Bundle _myBundle = null;
-        
+
         public ServerTracker(Bundle bundle)
         {
             _myBundle = bundle;
@@ -291,10 +292,10 @@ public class EE9Activator implements BundleActivator
                 try
                 {
                     Thread.currentThread().setContextClassLoader(contextHandler.getClassLoader());
-                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    WebAppClassLoader.runWithHiddenClassAccess(() ->
                     {
                         XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(contextHandler).newResource(contextXmlURI));
-                        WebAppClassLoader.runWithServerClassAccess(() ->
+                        WebAppClassLoader.runWithHiddenClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
                             xmlConfiguration.getIdMap().put("Server", osgiApp.getDeploymentManager().getServer());
@@ -380,7 +381,7 @@ public class EE9Activator implements BundleActivator
             try
             {
                 Thread.currentThread().setContextClassLoader(environmentLoader);
-                WebAppClassLoader.runWithServerClassAccess(() ->
+                WebAppClassLoader.runWithHiddenClassAccess(() ->
                 {
                     Configurations.getKnown();
                     return null;
@@ -465,10 +466,10 @@ public class EE9Activator implements BundleActivator
                 try
                 {
                     Thread.currentThread().setContextClassLoader(webApp.getClassLoader());
-                    WebAppClassLoader.runWithServerClassAccess(() ->
+                    WebAppClassLoader.runWithHiddenClassAccess(() ->
                     {
                         XmlConfiguration xmlConfiguration = new XmlConfiguration(ResourceFactory.of(webApp).newResource(contextXmlUri));
-                        WebAppClassLoader.runWithServerClassAccess(() ->
+                        WebAppClassLoader.runWithHiddenClassAccess(() ->
                         {
                             Map<String, String> properties = new HashMap<>();
                             xmlConfiguration.getIdMap().put("Server", osgiApp.getDeploymentManager().getServer());

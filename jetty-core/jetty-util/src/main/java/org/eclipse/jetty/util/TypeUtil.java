@@ -441,10 +441,15 @@ public class TypeUtil
      */
     public static int convertHexDigit(char c)
     {
-        int d = ((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
-        if (d < 0 || d > 15)
-            throw new NumberFormatException("!hex " + c);
-        return d;
+        int val = c - '0';
+        if (val >= 0 && val <= 9)
+            return val;
+
+        val = (c & ~0x20) - 'A';
+        if (val >= 0 && val <= 5)
+            return val + 10;
+
+        throw new NumberFormatException("!hex " + c);
     }
 
     /**

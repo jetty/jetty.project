@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ErrorHandler;
@@ -740,49 +741,47 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @ManagedAttribute(value = "classes and packages protected by context classloader", readonly = true)
     public String[] getSystemClasses()
     {
-        return _systemClasses.getPatterns();
+        return getProtectedClasses();
     }
 
     @ManagedAttribute(value = "classes and packages hidden by the context classloader", readonly = true)
     public String[] getServerClasses()
     {
-        return _serverClasses.getPatterns();
+        return getHiddenClasses();
     }
 
     @Override
-    public boolean isHiddenClass(Class<?> clazz)
+    public org.eclipse.jetty.util.ClassMatcher getHiddenClassMatcher()
     {
-        return isServerClass(clazz);
+        return _serverClasses;
     }
 
     @Override
-    public boolean isProtectedClass(Class<?> clazz)
+    public org.eclipse.jetty.util.ClassMatcher getProtectedClassMatcher()
     {
-        return isSystemClass(clazz);
+        return _systemClasses;
     }
 
     @Override
     public boolean isServerClass(Class<?> clazz)
     {
-        return _serverClasses.match(clazz);
+        return isHiddenClass(clazz);
     }
 
     @Override
     public boolean isSystemClass(Class<?> clazz)
     {
-        return _systemClasses.match(clazz);
+        return isProtectedClass(clazz);
     }
 
-    @Override
     public boolean isServerResource(String name, URL url)
     {
-        return _serverClasses.match(name, url);
+        return isHiddenResource(name, url);
     }
 
-    @Override
     public boolean isSystemResource(String name, URL url)
     {
-        return _systemClasses.match(name, url);
+        return isProtectedResource(name, url);
     }
 
     @Override

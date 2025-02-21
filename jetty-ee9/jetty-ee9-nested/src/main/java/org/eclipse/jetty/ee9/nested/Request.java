@@ -426,8 +426,9 @@ public class Request implements HttpServletRequest
                 if (StandardCharsets.UTF_8.equals(_queryEncoding) || _queryEncoding == null && UrlEncoded.ENCODING.equals(StandardCharsets.UTF_8))
                 {
                     UriCompliance uriCompliance = getHttpChannel().getHttpConfiguration().getUriCompliance();
+                    boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
                     boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
-                    if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowBadUtf8))
+                    if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowTruncatedUtf8, allowBadUtf8))
                     {
                         ComplianceViolation.Listener complianceViolationListener = getComplianceViolationListener();
                         if (complianceViolationListener != null)
@@ -2052,7 +2053,12 @@ public class Request implements HttpServletRequest
             else
             {
                 maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
+                if (maxFormContentSize < 0)
+                    maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
+
                 maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
+                if (maxFormKeys < 0)
+                    maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
             }
 
             MultiPartCompliance multiPartCompliance = getHttpChannel().getHttpConfiguration().getMultiPartCompliance();
