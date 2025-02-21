@@ -42,6 +42,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.StreamFrame;
+import org.eclipse.jetty.http2.frames.UnknownFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
@@ -181,7 +182,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         if (resetFailure != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("failing callback immediately as we already are reset, {}", this, resetFailure);
+                LOG.debug("failing callback immediately as stream {} already is locally reset", this, resetFailure);
             close();
             session.removeStream(this);
             callback.failed(resetFailure);
@@ -190,6 +191,16 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             session.reset(this, frame, callback);
         }
+    }
+
+    /**
+     * Ask to be called back when all the frames of this session have been
+     * flushed to the network.
+     * @param callback the callback that gets notified when the frames have been flushed
+     */
+    public void flush(Callback callback)
+    {
+        session.flush(this, new UnknownFrame(0), callback);
     }
 
     private boolean startWrite(Callback callback)

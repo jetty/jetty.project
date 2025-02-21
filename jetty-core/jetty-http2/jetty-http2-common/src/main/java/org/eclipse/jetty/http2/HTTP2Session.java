@@ -52,6 +52,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.StreamFrame;
+import org.eclipse.jetty.http2.frames.UnknownFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
@@ -734,6 +735,24 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 removeStream(stream);
             }
         }, callback), frame);
+    }
+
+    void flush(HTTP2Stream stream, UnknownFrame frame, Callback callback)
+    {
+        Entry entry = new Entry(frame, stream, callback) {
+            @Override
+            public int getFrameBytesGenerated()
+            {
+                return 0;
+            }
+
+            @Override
+            public boolean generate(RetainableByteBuffer.Mutable accumulator)
+            {
+                return true;
+            }
+        };
+        frame(entry, true);
     }
 
     /**
