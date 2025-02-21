@@ -741,7 +741,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // Cancel the IteratingCallback and take the nest Callback
             CancelSendException cancelSendException = new CancelSendException(cause);
             if (!abort(cancelSendException))
-                return Callback.NOOP; // TODO return null to tell there was no pending write?
+                return Callback.NOOP;
 
             // We now know that we aborted this ICB with the CSE above, so onAbort will eventually be called
             // in a serialized context and the callback will be set on the CSE.
@@ -1561,9 +1561,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // We know that the SendCallback#cancel call will never block on external events,
             // so we can just combine here. At worst we may be deferred whilst another thread finishes
             // processing a write before it notices the cancel.  It never blocks on IO itself
-            // TODO the cancel contract could/should be modified so that when it returns null,
-            //  the callback should be succeeded as that means cancel() arrived after the write
-            //  completed.
             return () -> Callback.combine(_sendCallback.cancel(cause), appCallback).failed(cause);
         }
 

@@ -357,7 +357,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
             if (LOG.isTraceEnabled())
                 LOG.trace("blocker failed", x);
         }
-        return Callback.NOOP; // TODO return null to tell there is no more pending write?
+        return Callback.NOOP;
     }
 
     private void writeSuccess(Callback callback)

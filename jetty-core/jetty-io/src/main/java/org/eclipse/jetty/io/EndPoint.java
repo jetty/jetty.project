@@ -334,7 +334,6 @@ public interface EndPoint extends Closeable, Content.Sink
     }
 
     /**
-     * TODO rename to abort()?
      * Cancel any {@link #write(Callback, ByteBuffer...)} operation
      * in progress. Calling this method prevents this EndPoint from
      * writing anymore.

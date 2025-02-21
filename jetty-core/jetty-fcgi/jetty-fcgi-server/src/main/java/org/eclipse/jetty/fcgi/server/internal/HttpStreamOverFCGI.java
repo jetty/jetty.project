@@ -253,9 +253,6 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        // TODO the cancel contract could/should be modified so that when it returns null,
-        //  the callback should be succeeded as that means cancel() arrived after the write
-        //  completed.
         return () -> Callback.combine(_connection.getFlusher().cancel(cause), appCallback).failed(cause);
     }
 

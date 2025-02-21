@@ -50,7 +50,7 @@ public class Flusher
         // Cancel the IteratingCallback and take the nest Callback
         CancelSendException cancelSendException = new CancelSendException(cause);
         if (!flushCallback.abort(cancelSendException))
-            return Callback.NOOP; // TODO return null to tell there was no pending write?
+            return Callback.NOOP;
 
         // We now know that we aborted this ICB with the CSE above, so onAbort will eventually be called
         // in a serialized context and the callback will be set on the CSE.
