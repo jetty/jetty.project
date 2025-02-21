@@ -28,6 +28,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -346,9 +347,17 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     @Override
     public Callback cancelWrite(Throwable cause)
     {
-        // TODO this is wrong
-        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        return null;
+        try (Blocker.Callback blocker = Blocker.callback())
+        {
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), blocker);
+            blocker.block();
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("blocker failed", x);
+        }
+        return Callback.NOOP; // TODO return null to tell there is no more pending write?
     }
 
     private void writeSuccess(Callback callback)
