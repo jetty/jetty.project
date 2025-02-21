@@ -334,11 +334,10 @@ public interface EndPoint extends Closeable, Content.Sink
     }
 
     /**
-     * TODO improve javadoc!
-     * TODO change the impl to make this is a terminal state
      * TODO rename to abort()?
      * Cancel any {@link #write(Callback, ByteBuffer...)} operation
-     * in progress.
+     * in progress. Calling this method prevents this EndPoint from
+     * writing anymore.
      *
      * @param cause the cause
      * @return The callback passed to {@link #write(Callback, ByteBuffer...)} or
