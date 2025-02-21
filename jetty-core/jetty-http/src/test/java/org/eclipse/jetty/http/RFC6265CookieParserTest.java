@@ -41,7 +41,7 @@ public class RFC6265CookieParserTest
         assertThat("Cookies.length", cookies.size(), is(1));
         assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 1, "/acme");
         // There are 2 attributes, so 2 violations.
-        assertThat(parser.violations.size(), is(2));
+        assertThat(parser.violations.size(), is(3));
 
         // Same test with RFC6265.
         parser = new TestCookieParser(CookieCompliance.RFC6265);
@@ -61,7 +61,7 @@ public class RFC6265CookieParserTest
         assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 0, null);
 
         // There are 2 attributes that are seen as violations
-        assertThat(parser.violations.size(), is(2));
+        assertThat(parser.violations.size(), is(3));
 
         // Same again, but allow attributes which are not ignored
         parser = new TestCookieParser(CookieCompliance.from("RFC6265,ATTRIBUTE_VALUES"));
@@ -70,7 +70,7 @@ public class RFC6265CookieParserTest
         assertCookie("Cookies[0]", cookies.get(0), "Customer", "WILE_E_COYOTE", 1, "/acme");
 
         // There are 2 attributes that are seen as violations
-        assertThat(parser.violations.size(), is(2));
+        assertThat(parser.violations.size(), is(3));
 
         // Same test, but with RFC 6265 strict.
         parser = new TestCookieParser(CookieCompliance.RFC6265_STRICT);
