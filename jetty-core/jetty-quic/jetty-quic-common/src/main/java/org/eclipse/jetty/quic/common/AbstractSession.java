@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.security.cert.X509Certificate;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
@@ -60,6 +61,8 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
     {
         return listener;
     }
+
+    public abstract X509Certificate[] getPeerCertificates();
 
     protected void emitOpen()
     {

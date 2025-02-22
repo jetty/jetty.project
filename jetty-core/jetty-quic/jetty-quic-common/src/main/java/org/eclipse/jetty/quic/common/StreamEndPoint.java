@@ -19,6 +19,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -600,15 +601,9 @@ public class StreamEndPoint implements EndPoint
     @Override
     public SslSessionData getSslSessionData()
     {
-        // TODO
-        return EndPoint.super.getSslSessionData();
-    }
-
-    @Override
-    public boolean isSecure()
-    {
-        // TODO
-        return EndPoint.super.isSecure();
+        AbstractSession session = (AbstractSession)stream.getSession();
+        X509Certificate[] peerCertificates = session.getPeerCertificates();
+        return SslSessionData.from(null, null, null, peerCertificates);
     }
 
     private String toConnectionString()

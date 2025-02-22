@@ -153,7 +153,7 @@ public class ClientQuicheConnection extends QuicheConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("could not open {}", this);
-            getEndPoint().close(x);
+            fail(ErrorCode.INTERNAL_ERROR.code(), "open_failure", x);
         }
     }
 

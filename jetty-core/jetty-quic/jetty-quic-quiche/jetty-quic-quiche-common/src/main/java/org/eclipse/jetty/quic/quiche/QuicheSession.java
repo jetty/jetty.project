@@ -312,6 +312,7 @@ public abstract class QuicheSession extends AbstractSession
      *
      * @return the peer certificates chain (currently only the last certificate in the chain)
      */
+    @Override
     public X509Certificate[] getPeerCertificates()
     {
         try
