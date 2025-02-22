@@ -879,9 +879,10 @@ public class HTTPClientDocs
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
 
         // Create and configure the HTTP/3 transport.
-        HttpClientTransportOverHTTP3 transport = new HttpClientTransportOverHTTP3(http3Client, QuicheTransport.INSTANCE);
+        QuicheTransport transport = new QuicheTransport(clientQuicConfig);
+        HttpClientTransportOverHTTP3 httpClientTransport = new HttpClientTransportOverHTTP3(http3Client, transport);
 
-        HttpClient client = new HttpClient(transport);
+        HttpClient client = new HttpClient(httpClientTransport);
         client.start();
         // end::http3Transport[]
     }
@@ -937,7 +938,8 @@ public class HTTPClientDocs
 
         QuicheClientQuicConfiguration quicConfiguration = new QuicheClientQuicConfiguration();
         HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
-        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, QuicheTransport.INSTANCE);
+        QuicheTransport transport = new QuicheTransport(quicConfiguration);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
 
         // The order of the protocols indicates the client's preference.
         // The first is the most preferred, the last is the least preferred, but
@@ -963,7 +965,8 @@ public class HTTPClientDocs
 
         QuicheClientQuicConfiguration quicConfiguration = new QuicheClientQuicConfiguration();
         HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
-        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, QuicheTransport.INSTANCE);
+        QuicheTransport transport = new QuicheTransport(quicConfiguration);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
         // tag::dynamicExplicitVersion[]
         HttpClient client = new HttpClient(new HttpClientTransportDynamic(connector, http1, http2, http3));
         client.start();
@@ -1010,7 +1013,8 @@ public class HTTPClientDocs
 
         QuicheClientQuicConfiguration quicConfiguration = new QuicheClientQuicConfiguration();
         HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
-        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, QuicheTransport.INSTANCE);
+        QuicheTransport transport = new QuicheTransport(quicConfiguration);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
         // tag::dynamicPreferH3[]
         // Client prefers HTTP/3.
         HttpClient client = new HttpClient(new HttpClientTransportDynamic(connector, http3, http2, http1));
@@ -1037,7 +1041,8 @@ public class HTTPClientDocs
 
         QuicheClientQuicConfiguration quicConfiguration = new QuicheClientQuicConfiguration();
         HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
-        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, QuicheTransport.INSTANCE);
+        QuicheTransport transport = new QuicheTransport(quicConfiguration);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
         // tag::dynamicPreferH2[]
         // Client prefers HTTP/2.
         HttpClient client = new HttpClient(new HttpClientTransportDynamic(connector, http2, http1, http3));
@@ -1191,7 +1196,8 @@ public class HTTPClientDocs
 
         QuicheClientQuicConfiguration quicConfiguration = new QuicheClientQuicConfiguration();
         HTTP3Client http3Client = new HTTP3Client(quicConfiguration, clientConnector);
-        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, QuicheTransport.INSTANCE);
+        QuicheTransport transport = new QuicheTransport(quicConfiguration);
+        ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
 
         // tag::mixedTransports[]
         HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(clientConnector, http2, http1, http3));

@@ -84,7 +84,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
         clientConnector.setSelectors(1);
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
-        httpClient = new HttpClient(new HttpClientTransportOverHTTP3(http3Client, QuicheTransport.INSTANCE));
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig)));
         server.addBean(httpClient);
     }
 
@@ -126,7 +126,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transport(QuicheTransport.INSTANCE)
+            .transport(new QuicheTransport((QuicheClientQuicConfiguration)http3Client.getClientQuicConfiguration()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -145,7 +145,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
         server.start();
 
         ContentResponse response = httpClient.newRequest("http://localhost/")
-            .transport(new QuicheTransport(new MemoryTransport(connector)))
+            .transport(new QuicheTransport(new MemoryTransport(connector), (QuicheClientQuicConfiguration)http3Client.getClientQuicConfiguration()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -172,7 +172,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
         server.start();
 
         InetSocketAddress socketAddress = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(QuicheTransport.INSTANCE, socketAddress, new Session.Client.Listener() {}, p));
+        Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(new QuicheTransport((QuicheClientQuicConfiguration)http3Client.getClientQuicConfiguration()), socketAddress, new Session.Client.Listener() {}, p));
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
@@ -201,7 +201,7 @@ public class HTTP3TransportTest extends AbstractTransportTest
         server.setHandler(new EmptyServerHandler());
         server.start();
 
-        Transport transport = new QuicheTransport(new MemoryTransport(connector));
+        Transport transport = new QuicheTransport(new MemoryTransport(connector), (QuicheClientQuicConfiguration)http3Client.getClientQuicConfiguration());
         Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(transport, connector.getLocalSocketAddress(), new Session.Client.Listener() {}, p));
 
         CountDownLatch responseLatch = new CountDownLatch(1);

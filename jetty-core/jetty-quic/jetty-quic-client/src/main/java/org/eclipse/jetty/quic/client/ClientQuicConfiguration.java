@@ -17,8 +17,6 @@ import org.eclipse.jetty.quic.common.QuicConfiguration;
 
 public class ClientQuicConfiguration extends QuicConfiguration
 {
-    public static final String CONTEXT_KEY = ClientQuicConfiguration.class.getName();
-
     public ClientQuicConfiguration()
     {
         // Default configuration for a client.

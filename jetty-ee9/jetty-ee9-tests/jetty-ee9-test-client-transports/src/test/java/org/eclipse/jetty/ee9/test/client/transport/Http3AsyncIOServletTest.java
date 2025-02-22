@@ -141,7 +141,7 @@ public class Http3AsyncIOServletTest
         });
 
         InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-        Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(QuicheTransport.INSTANCE, address, new Client.Listener() {}, p));
+        Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport((QuicheClientQuicConfiguration)client.getClientQuicConfiguration()), address, new Client.Listener() {}, p));
         MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, false);
         Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, null, p));

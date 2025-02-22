@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.transport;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -192,17 +191,6 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     public Destination newDestination(Origin origin)
     {
         return new HttpDestination(getHttpClient(), origin);
-    }
-
-    @Override
-    public void connect(SocketAddress address, Map<String, Object> context)
-    {
-        HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
-        Origin origin = destination.resolveOrigin();
-        clientConnectionFactoryInfos.stream()
-            .filter(info -> info.matches(origin.getProtocol().getProtocols(), origin.isSecure()))
-            .forEach(info -> info.customize(context));
-        super.connect(address, context);
     }
 
     @Override

@@ -47,11 +47,11 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     private final HTTP3Client http3Client;
     private final Transport transport;
 
-    public HttpClientTransportOverHTTP3(HTTP3Client http3Client, Transport defaultTransport)
+    public HttpClientTransportOverHTTP3(HTTP3Client http3Client, Transport transport)
     {
         this.http3Client = Objects.requireNonNull(http3Client);
         installBean(http3Client);
-        this.transport = Objects.requireNonNull(defaultTransport);
+        this.transport = Objects.requireNonNull(transport);
         setConnectionPoolFactory(destination ->
         {
             HttpClient httpClient = getHttpClient();

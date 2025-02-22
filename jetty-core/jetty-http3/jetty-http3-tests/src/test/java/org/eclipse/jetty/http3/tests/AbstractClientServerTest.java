@@ -144,7 +144,7 @@ public class AbstractClientServerTest
 
         transport = switch (transportType)
         {
-            case H3_QUICHE -> QuicheTransport.INSTANCE;
+            case H3_QUICHE -> new QuicheTransport((QuicheClientQuicConfiguration)http3Client.getClientQuicConfiguration());
         };
 
         HttpClientTransport httpClientTransport = dynamic

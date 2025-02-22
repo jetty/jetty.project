@@ -388,9 +388,9 @@ public class AbstractTest
             }
             case H3_QUICHE ->
             {
-                QuicheClientQuicConfiguration quicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
-                HTTP3Client http3Client = new HTTP3Client(quicConfig, clientConnector);
-                yield new HttpClientTransportOverHTTP3(http3Client, QuicheTransport.INSTANCE);
+                QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+                HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
+                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
             }
             case FCGI -> new HttpClientTransportOverFCGI(clientConnector, "");
         };

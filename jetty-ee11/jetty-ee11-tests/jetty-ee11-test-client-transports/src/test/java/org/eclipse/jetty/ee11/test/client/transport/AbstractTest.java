@@ -279,7 +279,7 @@ public class AbstractTest
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
                 QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration(clientPemDirectory);
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
-                yield new HttpClientTransportOverHTTP3(http3Client, QuicheTransport.INSTANCE);
+                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");
         };

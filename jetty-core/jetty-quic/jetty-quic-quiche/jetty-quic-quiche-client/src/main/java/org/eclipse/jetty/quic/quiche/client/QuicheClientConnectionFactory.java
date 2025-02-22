@@ -20,15 +20,17 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.internal.ClientQuicheConnection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class QuicheClientConnectionFactory extends ClientConnectionFactory.Wrapper
 {
-    public QuicheClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    private final QuicheClientQuicConfiguration quicConfiguration;
+
+    public QuicheClientConnectionFactory(ClientConnectionFactory connectionFactory, QuicheClientQuicConfiguration quicConfiguration)
     {
         super(connectionFactory);
+        this.quicConfiguration = quicConfiguration;
     }
 
     @Override
@@ -41,8 +43,6 @@ public class QuicheClientConnectionFactory extends ClientConnectionFactory.Wrapp
         // is not present in the context (e.g. the scheme is "http"), but QUIC requires it.
         if (sslContextFactory == null)
             sslContextFactory = clientConnector.getSslContextFactory();
-
-        QuicheClientQuicConfiguration quicConfiguration = (QuicheClientQuicConfiguration)context.get(ClientQuicConfiguration.CONTEXT_KEY);
 
         ClientQuicheConnection connection = new ClientQuicheConnection(clientConnector, sslContextFactory, quicConfiguration, getWrapped(), endPoint, context);
         return customize(connection, context);

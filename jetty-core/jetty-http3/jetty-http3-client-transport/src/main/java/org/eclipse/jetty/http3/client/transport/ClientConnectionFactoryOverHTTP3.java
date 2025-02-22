@@ -26,7 +26,6 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -87,14 +86,6 @@ public class ClientConnectionFactoryOverHTTP3 extends ContainerLifeCycle impleme
             if (secure)
                 return protocols;
             return List.of();
-        }
-
-        @Override
-        public void customize(Map<String, Object> context)
-        {
-            super.customize(context);
-            ClientConnectionFactoryOverHTTP3 http3 = (ClientConnectionFactoryOverHTTP3)getClientConnectionFactory();
-            context.put(ClientQuicConfiguration.CONTEXT_KEY, http3.http3Client.getClientQuicConfiguration());
         }
 
         @Override

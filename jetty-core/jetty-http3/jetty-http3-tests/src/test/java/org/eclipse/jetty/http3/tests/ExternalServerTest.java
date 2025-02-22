@@ -53,14 +53,14 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHttpClient() throws Exception
     {
-        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
-        HTTP3Client client = new HTTP3Client(quicConfig);
-        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, QuicheTransport.INSTANCE)))
+        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        HTTP3Client client = new HTTP3Client(clientQuicConfig);
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, new QuicheTransport(clientQuicConfig))))
         {
             httpClient.start();
             URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
             ContentResponse response = httpClient.newRequest(uri)
-                .transport(QuicheTransport.INSTANCE)
+                .transport(new QuicheTransport(clientQuicConfig))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertThat(response.getContentAsString(), containsString("<artifactId>maven-parent</artifactId>"));
@@ -71,8 +71,8 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHTTP3Client() throws Exception
     {
-        QuicheClientQuicConfiguration quicConfig = new QuicheClientQuicConfiguration();
-        try (HTTP3Client client = new HTTP3Client(quicConfig))
+        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        try (HTTP3Client client = new HTTP3Client(clientQuicConfig))
         {
             client.start();
             // Well-known HTTP/3 servers to try.
@@ -83,7 +83,7 @@ public class ExternalServerTest
 //            HostPort hostPort = new HostPort("quic.tech:8443");
 //            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
 //            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
-            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(QuicheTransport.INSTANCE, new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {}, p));
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport(clientQuicConfig), new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {}, p));
 
             CountDownLatch requestLatch = new CountDownLatch(1);
             HttpURI uri = HttpURI.from(String.format("https://%s/", hostPort));

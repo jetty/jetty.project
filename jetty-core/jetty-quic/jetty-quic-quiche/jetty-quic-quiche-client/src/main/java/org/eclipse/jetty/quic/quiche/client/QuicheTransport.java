@@ -46,17 +46,19 @@ import org.slf4j.LoggerFactory;
  */
 public class QuicheTransport extends Transport.Wrapper
 {
-    public static final QuicheTransport INSTANCE = new QuicheTransport();
     private static final Logger LOG = LoggerFactory.getLogger(QuicheTransport.class);
 
-    public QuicheTransport()
+    private final QuicheClientQuicConfiguration quicConfiguration;
+
+    public QuicheTransport(QuicheClientQuicConfiguration quicConfiguration)
     {
-        this(UDP_IP);
+        this(UDP_IP, quicConfiguration);
     }
 
-    public QuicheTransport(Transport wrapped)
+    public QuicheTransport(Transport wrapped, QuicheClientQuicConfiguration quicConfiguration)
     {
         super(wrapped);
+        this.quicConfiguration = quicConfiguration;
     }
 
     @Override
@@ -69,7 +71,7 @@ public class QuicheTransport extends Transport.Wrapper
     public ClientConnectionFactory newClientConnectionFactory(ClientConnector connector, ClientConnectionFactory factory)
     {
         factory = super.newClientConnectionFactory(connector, factory);
-        return new QuicheClientConnectionFactory(factory);
+        return new QuicheClientConnectionFactory(factory, quicConfiguration);
     }
 
     @Override

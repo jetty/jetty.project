@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
@@ -106,7 +107,7 @@ public class HTTPDynamicOverQuicTest extends AbstractTest
 
         transport = switch (transportType)
         {
-            case QUICHE -> QuicheTransport.INSTANCE;
+            case QUICHE -> new QuicheTransport(new QuicheClientQuicConfiguration());
         };
     }
 
