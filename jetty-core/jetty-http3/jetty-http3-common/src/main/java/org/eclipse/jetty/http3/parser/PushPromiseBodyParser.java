@@ -23,7 +23,7 @@ public class PushPromiseBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         throw new UnsupportedOperationException();
     }

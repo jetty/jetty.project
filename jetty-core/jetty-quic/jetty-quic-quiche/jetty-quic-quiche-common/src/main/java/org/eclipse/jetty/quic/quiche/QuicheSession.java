@@ -632,7 +632,7 @@ public abstract class QuicheSession extends AbstractSession
         @Override
         public String toString()
         {
-            return "%s@%x[length=%d,last=%b,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getLength(), isLast(), getWrapped());
+            return "%s@%x[bytes=%d/%d,last=%b,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getByteBuffer().remaining(), getLength(), isLast(), getWrapped());
         }
     }
 

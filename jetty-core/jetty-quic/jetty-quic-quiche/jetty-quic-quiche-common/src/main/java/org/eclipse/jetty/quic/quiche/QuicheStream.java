@@ -103,12 +103,13 @@ public class QuicheStream extends AbstractStream
         else
         {
             // Even if there is no demand, we want to know if the peer sent a RESET_STREAM.
-            if (session.isFinished(this))
-            {
-                Throwable failure = isReset();
-                if (failure != null)
-                    notifyFailure(failure);
-            }
+            // TODO: this code is racy with a previous notification to onDataAvailable()
+//            if (session.isFinished(this))
+//            {
+//                Throwable failure = isReset();
+//                if (failure != null)
+//                    notifyFailure(failure);
+//            }
         }
 
         return hasDemand;

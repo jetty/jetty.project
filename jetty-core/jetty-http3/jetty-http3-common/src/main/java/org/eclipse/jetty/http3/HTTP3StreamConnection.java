@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,10 +28,8 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
@@ -46,50 +43,23 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private final Callback fillableCallback = new FillableCallback();
     private final AtomicReference<FrameAction> frameAction = new AtomicReference<>();
-    private final ByteBufferPool bufferPool;
-    private final int minInputBufferSpace;
     private final MessageParser parser;
-    private boolean useInputDirectByteBuffers = true;
     private HTTP3Stream stream;
-    private RetainableByteBuffer inputBuffer;
+    private org.eclipse.jetty.quic.api.Stream.Data quicData;
     private boolean remotelyClosed;
     private boolean drivesFillInterest = true;
 
-    public HTTP3StreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser)
-    {
-        this(endPoint, executor, bufferPool, parser, -1);
-    }
-
-    public HTTP3StreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser, int minInputBufferSpace)
+    public HTTP3StreamConnection(StreamEndPoint endPoint, Executor executor, MessageParser parser)
     {
         super(endPoint, executor);
-        this.bufferPool = bufferPool;
         this.parser = parser;
         parser.init(MessageListener::new);
-        this.minInputBufferSpace = minInputBufferSpace < 0 ? 1500 : minInputBufferSpace;
-    }
-
-    public void onFailure(Throwable failure)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onFailure on {}", this, failure);
-        tryReleaseInputBuffer(true);
     }
 
     @Override
     public StreamEndPoint getEndPoint()
     {
         return (StreamEndPoint)super.getEndPoint();
-    }
-
-    public boolean isUseInputDirectByteBuffers()
-    {
-        return useInputDirectByteBuffers;
-    }
-
-    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
-    {
-        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
     void setStream(HTTP3Stream stream)
@@ -107,8 +77,24 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     @Override
     public void onClose(Throwable cause)
     {
-        tryReleaseInputBuffer(true);
+        tryReleaseData();
         super.onClose(cause);
+    }
+
+    private void tryReleaseData()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("releasing {} on {}", quicData, this);
+        if (quicData != null)
+            quicData.release();
+        quicData = null;
+    }
+
+    public void onFailure(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFailure on {}", this, failure);
+        tryReleaseData();
     }
 
     @Override
@@ -139,8 +125,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         {
             if (drivesFillInterest)
             {
-                tryAcquireInputBuffer();
-
                 while (true)
                 {
                     if (result == null)
@@ -149,7 +133,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     {
                         case NO_FRAME ->
                         {
-                            tryReleaseInputBuffer(false);
                             fillInterested();
                             yield false;
                         }
@@ -174,11 +157,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             // Now the application drives fill interest via Stream.demand().
                             drivesFillInterest = interim;
 
-                            // Release the buffer before notifying the application,
-                            // because the application may concurrently call readData().
-                            if (!interim)
-                                tryReleaseInputBuffer(false);
-
                             // Notify the application via onRequest()/onResponse().
                             action.task().run();
 
@@ -191,7 +169,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         }
                         case EOF ->
                         {
-                            tryReleaseInputBuffer(true);
                             yield false;
                         }
                     };
@@ -211,7 +188,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            tryReleaseInputBuffer(true);
+            tryReleaseData();
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             // Notify the application that a failure happened.
             parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), error, x);
@@ -234,15 +211,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (remotelyClosed)
                 return Stream.Data.EOF;
 
-            tryAcquireInputBuffer();
             if (result == null)
                 result = parseAndFill();
             return switch (result)
             {
                 case NO_FRAME ->
                 {
-                    if (!inputBuffer.isRetained())
-                        tryReleaseInputBuffer(false);
                     yield null;
                 }
                 case BLOCKED_FRAME ->
@@ -262,62 +236,34 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     {
                         if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
                         {
-                            tryReleaseInputBuffer(false);
+                            tryReleaseData();
                             yield Stream.Data.EOF;
                         }
                         else
                         {
-                            Stream.Data data = new StreamData(dataFrame, inputBuffer);
-                            // Retain because multiple data can be parsed from the same inputBuffer.
+                            Stream.Data data = new StreamData(dataFrame, quicData);
+                            // Retain because multiple data can be parsed from the same QUIC data.
                             data.retain();
-                            // Try to reuse the inputBuffer if it's not the last data.
                             if (data.isLast())
-                                tryReleaseInputBuffer(false);
+                                tryReleaseData();
                             yield data;
                         }
                     }
 
                     // It is a trailer HEADERS frame.
-                    tryReleaseInputBuffer(true);
+                    tryReleaseData();
                     yield Stream.Data.EOF;
                 }
                 case EOF ->
                 {
-                    tryReleaseInputBuffer(true);
                     yield Stream.Data.EOF;
                 }
             };
         }
         catch (IOException x)
         {
-            tryReleaseInputBuffer(true);
+            tryReleaseData();
             throw new UncheckedIOException(x);
-        }
-    }
-
-    private void tryAcquireInputBuffer()
-    {
-        if (inputBuffer == null)
-        {
-            inputBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("acquired {}", inputBuffer);
-        }
-    }
-
-    private void tryReleaseInputBuffer(boolean force)
-    {
-        if (inputBuffer != null)
-        {
-            if (inputBuffer.hasRemaining() && force)
-                inputBuffer.clear();
-            if (inputBuffer.isEmpty())
-            {
-                boolean released = inputBuffer.release();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("released {} {}", released, inputBuffer);
-                inputBuffer = null;
-            }
         }
     }
 
@@ -326,63 +272,37 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("parse+fill on {} with buffer {}", this, inputBuffer);
+                LOG.debug("parse+fill on {}", this);
 
             while (true)
             {
-                ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
-                MessageParser.Result result = parser.parse(byteBuffer);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("parsed {} on {} with buffer {}", result, this, inputBuffer);
-                if (result == MessageParser.Result.FRAME)
-                    return ParseResult.FRAME;
-                if (result == MessageParser.Result.BLOCKED_FRAME)
-                    return ParseResult.BLOCKED_FRAME;
-
-                boolean compact = true;
-                if (inputBuffer.isRetained())
+                if (quicData != null)
                 {
-                    // If there is sufficient space available, we can top up the buffer rather than allocate a new one
-                    if (minInputBufferSpace > 0 && BufferUtil.space(inputBuffer.getByteBuffer()) >= minInputBufferSpace)
-                    {
-                        // Do not compact the buffer.
-                        compact = false;
-                    }
-                    else
-                    {
-                        inputBuffer.release();
-                        RetainableByteBuffer newBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("reacquired {} for retained {}", newBuffer, inputBuffer);
-                        inputBuffer = newBuffer;
-                        byteBuffer = inputBuffer.getByteBuffer();
-                    }
+                    MessageParser.Result result = parser.parse(quicData.getByteBuffer(), quicData.isLast());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("parsed {} from {} on {}", result, quicData, this);
+
+                    if (result == MessageParser.Result.FRAME)
+                        return ParseResult.FRAME;
+                    if (result == MessageParser.Result.BLOCKED_FRAME)
+                        return ParseResult.BLOCKED_FRAME;
+
+                    tryReleaseData();
                 }
 
-                int filled = fill(byteBuffer, compact);
+                quicData = getEndPoint().fill();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} on {} with buffer {}", filled, this, inputBuffer);
+                    LOG.debug("filled {} on {}", quicData, this);
 
-                if (filled > 0)
+                if (quicData == null)
+                    return ParseResult.NO_FRAME;
+
+                if (quicData.getLength() > 0)
                     continue;
 
-                if (filled == 0)
-                {
-                    // Workaround for a Quiche glitch, that sometimes reports
-                    // an HTTP/3 frame with last=false, but a subsequent read
-                    // of zero bytes reports that the stream is finished.
-                    boolean quicRemotelyClosed = getEndPoint().getStream().isRemotelyClosed();
-                    if (!remotelyClosed && quicRemotelyClosed)
-                    {
-                        // An empty HTTP/3 DATA frame is the sequence of bytes [0x0, 0x0].
-                        ByteBuffer emptyDataFrame = ByteBuffer.allocate(2);
-                        parser.parse(emptyDataFrame);
-                        return ParseResult.FRAME;
-                    }
-                    return ParseResult.NO_FRAME;
-                }
-
-                return ParseResult.EOF;
+                ParseResult result = quicData.isLast() ? ParseResult.EOF : ParseResult.NO_FRAME;
+                tryReleaseData();
+                return result;
             }
         }
         catch (Throwable x)
@@ -390,26 +310,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("parse+fill failure on {}", this, x);
             throw x;
-        }
-    }
-
-    private int fill(ByteBuffer buffer, boolean compact) throws IOException
-    {
-        int padding = 0;
-        try
-        {
-            if (!compact)
-            {
-                // Add padding content to avoid compaction
-                padding = buffer.limit();
-                buffer.position(0);
-            }
-            return getEndPoint().fill(buffer);
-        }
-        finally
-        {
-            if (!compact && padding > 0)
-                buffer.position(padding);
         }
     }
 
@@ -456,7 +356,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} {} {}", Long.toHexString(appErrorCode), this, String.valueOf(failure));
-        tryReleaseInputBuffer(true);
+        tryReleaseData();
         // Propagate outwards.
         getEndPoint().disconnect(appErrorCode, failure, true, promise);
     }
@@ -469,9 +369,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private static class StreamData extends Stream.Data
     {
-        private final RetainableByteBuffer retainable;
+        private final Retainable retainable;
 
-        public StreamData(DataFrame frame, RetainableByteBuffer retainable)
+        private StreamData(DataFrame frame, Retainable retainable)
         {
             super(frame);
             this.retainable = retainable;

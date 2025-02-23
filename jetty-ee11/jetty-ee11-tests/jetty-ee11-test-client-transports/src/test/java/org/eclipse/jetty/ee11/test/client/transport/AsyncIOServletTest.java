@@ -293,8 +293,8 @@ public class AsyncIOServletTest extends AbstractTest
                 clientLatch.countDown();
             });
 
-        // HTTP/2 does not close a Connection when the request idle times out.
-        if (transportType != TransportType.H2C && transportType != TransportType.H2)
+        // Multiplexed transports do not close the Connection when the request idle times out.
+        if (!transportType.isMultiplexed())
             assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS), "response latch expired");
         content.close();
@@ -492,8 +492,8 @@ public class AsyncIOServletTest extends AbstractTest
                     clientLatch.countDown();
             });
 
-        assertTrue(errorLatch.await(10, TimeUnit.SECONDS));
-        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -568,26 +568,30 @@ public class AsyncIOServletTest extends AbstractTest
         });
 
         AtomicBoolean failed = new AtomicBoolean(false);
-        CountDownLatch clientLatch = new CountDownLatch(3);
+        CountDownLatch clientHeadersLatch = new CountDownLatch(1);
+        CountDownLatch clientFailureLatch = new CountDownLatch(1);
+        CountDownLatch clientCompleteLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
             .onResponseHeaders(response ->
             {
                 if (response.getStatus() == HttpStatus.OK_200)
-                    clientLatch.countDown();
+                    clientHeadersLatch.countDown();
             })
             .onResponseContent((response, content) ->
             {
                 // System.err.println("Content: "+BufferUtil.toDetailString(content));
             })
-            .onResponseFailure((response, failure) -> clientLatch.countDown())
+            .onResponseFailure((response, failure) -> clientFailureLatch.countDown())
             .send(result ->
             {
                 failed.set(result.isFailed());
-                clientLatch.countDown();
+                clientCompleteLatch.countDown();
             });
 
-        assertTrue(complete.await(10, TimeUnit.SECONDS));
-        assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(complete.await(5, TimeUnit.SECONDS));
+        assertTrue(clientHeadersLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCompleteLatch.await(5, TimeUnit.SECONDS));
         assertTrue(failed.get());
     }
 

@@ -21,6 +21,6 @@ public class ClientHTTP3StreamConnection extends HTTP3StreamConnection
 {
     public ClientHTTP3StreamConnection(StreamEndPoint endPoint, ClientHTTP3Session session, MessageParser parser)
     {
-        super(endPoint, session.getExecutor(), session.getByteBufferPool(), parser);
+        super(endPoint, session.getExecutor(), parser);
     }
 }

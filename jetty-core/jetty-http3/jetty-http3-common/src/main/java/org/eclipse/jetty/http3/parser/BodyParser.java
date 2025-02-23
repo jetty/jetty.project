@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>The base parser for the frame body of HTTP/3 frames.</p>
- * <p>Subclasses implement {@link #parse(ByteBuffer)} to parse
+ * <p>Subclasses implement {@link #parse(ByteBuffer, boolean)} to parse
  * the frame specific body.</p>
  *
  * @see MessageParser
@@ -61,9 +61,9 @@ public abstract class BodyParser
      * @param buffer the buffer to parse
      * @return the result of the parsing
      */
-    public abstract Result parse(ByteBuffer buffer);
+    public abstract Result parse(ByteBuffer buffer, boolean last);
 
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer, boolean last)
     {
         sessionFailure(buffer, HTTP3ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame", new IOException("invalid empty body frame"));
     }

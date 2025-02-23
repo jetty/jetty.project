@@ -43,13 +43,13 @@ public class SettingsBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer, boolean last)
     {
         onSettings(Map.of());
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         while (buffer.hasRemaining())
         {

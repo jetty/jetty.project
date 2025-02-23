@@ -28,7 +28,7 @@ public class GoAwayBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer, boolean last)
     {
         if (varLenInt.tryDecode(buffer, this::onGoAway))
             return Result.WHOLE_FRAME;

@@ -328,6 +328,33 @@ public class StreamEndPoint implements EndPoint
         }
     }
 
+    /**
+     * <p>Fills from this {@code StreamEndPoint}.</p>
+     * <p>This method should be used in alternative to {@link #fill(ByteBuffer)},
+     * when the {@link Connection} installed on top of this {@code StreamEndPoint}
+     * needs to know both the bytes and whether the QUIC data is the last in the
+     * stream, for example in HTTP/3.</p>
+     *
+     * @return a QUIC {@link Stream.Data}, or {@code null} if there is no data
+     * @throws IOException when a failure occurred while filling data from the QUIC stream
+     */
+    public Stream.Data fill() throws IOException
+    {
+        Stream.Data current;
+        try (AutoLock ignored = lock.lock())
+        {
+            current = data;
+        }
+
+        if (current == null)
+            current = read();
+
+        if (current instanceof StreamDataFailure f)
+            throw IO.rethrow(f.failure());
+
+        return current;
+    }
+
     private Stream.Data read()
     {
         try
