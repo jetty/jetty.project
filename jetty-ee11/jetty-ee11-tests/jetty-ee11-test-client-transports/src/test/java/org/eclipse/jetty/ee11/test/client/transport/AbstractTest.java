@@ -66,13 +66,18 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @ExtendWith(WorkDirExtension.class)
 public class AbstractTest
 {
     public WorkDir workDir;
 
+    @RegisterExtension
+    public final BeforeTestExecutionCallback printMethodName = context ->
+        System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected Path pemDir;
     protected SslContextFactory.Server sslContextFactoryServer;
