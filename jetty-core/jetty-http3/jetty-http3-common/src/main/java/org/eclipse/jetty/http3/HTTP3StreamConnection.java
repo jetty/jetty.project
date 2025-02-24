@@ -77,7 +77,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     @Override
     public void onClose(Throwable cause)
     {
-        tryReleaseData();
+        tryReleaseData(true);
         super.onClose(cause);
     }
 
@@ -85,7 +85,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onFailure on {}", this, failure);
-        tryReleaseData();
+        tryReleaseData(true);
     }
 
     @Override
@@ -148,6 +148,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             // Now the application drives fill interest via Stream.demand().
                             drivesFillInterest = interim;
 
+                            tryReleaseData(false);
+
                             // Notify the application via onRequest()/onResponse().
                             action.task().run();
 
@@ -179,7 +181,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            tryReleaseData();
+            tryReleaseData(true);
             long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             // Notify the application that a failure happened.
             parser.getListener().onStreamFailure(getEndPoint().getStream().getId(), error, x);
@@ -227,7 +229,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     {
                         if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
                         {
-                            tryReleaseData();
+                            tryReleaseData(true);
                             yield Stream.Data.EOF;
                         }
                         else
@@ -236,13 +238,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             // Retain because multiple data can be parsed from the same QUIC data.
                             data.retain();
                             if (data.isLast())
-                                tryReleaseData();
+                                tryReleaseData(true);
                             yield data;
                         }
                     }
 
                     // It is a trailer HEADERS frame.
-                    tryReleaseData();
+                    tryReleaseData(true);
                     yield Stream.Data.EOF;
                 }
                 case EOF ->
@@ -253,7 +255,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (IOException x)
         {
-            tryReleaseData();
+            tryReleaseData(true);
             throw new UncheckedIOException(x);
         }
     }
@@ -278,7 +280,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     if (result == MessageParser.Result.BLOCKED_FRAME)
                         return ParseResult.BLOCKED_FRAME;
 
-                    tryReleaseData();
+                    tryReleaseData(true);
                 }
 
                 quicData = getEndPoint().fill();
@@ -292,7 +294,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     continue;
 
                 ParseResult result = quicData.isLast() ? ParseResult.EOF : ParseResult.NO_FRAME;
-                tryReleaseData();
+                tryReleaseData(true);
                 return result;
             }
         }
@@ -347,18 +349,22 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} {} {}", Long.toHexString(appErrorCode), this, String.valueOf(failure));
-        tryReleaseData();
+        tryReleaseData(true);
         // Propagate outwards.
         getEndPoint().disconnect(appErrorCode, failure, true, promise);
     }
 
-    private void tryReleaseData()
+    private void tryReleaseData(boolean force)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("releasing {} on {}", quicData, this);
-        if (quicData != null)
+            LOG.debug("releasing force={} {} on {}", force, quicData, this);
+        if (quicData == null)
+            return;
+        if (force || (quicData.isLast() && !quicData.getByteBuffer().hasRemaining()))
+        {
             quicData.release();
-        quicData = null;
+            quicData = null;
+        }
     }
 
     @Override
