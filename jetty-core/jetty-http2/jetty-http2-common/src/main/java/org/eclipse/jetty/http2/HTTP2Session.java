@@ -41,7 +41,6 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FailureFrame;
-import org.eclipse.jetty.http2.frames.FlushFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -737,9 +736,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }, callback), frame);
     }
 
-    void flush(HTTP2Stream stream, FlushFrame frame, Callback callback)
+    public void flush(HTTP2Stream stream, Callback callback)
     {
-        Entry entry = new Entry(frame, stream, callback)
+        Entry entry = new Entry(new FlushFrame(), stream, callback)
         {
             @Override
             public int getFrameBytesGenerated()
@@ -2538,6 +2537,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             // The implementation of the Iterator returned above does not support
             // removal, but the HTTP2Stream will be removed by stream.onIdleTimeout().
             return false;
+        }
+    }
+
+    private static class FlushFrame extends Frame
+    {
+        public FlushFrame()
+        {
+            super(FrameType.FLUSH);
         }
     }
 }

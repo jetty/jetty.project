@@ -446,7 +446,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         return () ->
         {
             _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            _stream.flush(Callback.from(() ->
+            _stream.getSession().flush(_stream, Callback.from(() ->
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("cancelSend reset and flushed");
