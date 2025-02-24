@@ -101,7 +101,8 @@ public class LowResourceMonitor extends ContainerLifeCycle
             // already configured?
             if (!getMonitorThreads())
                 addLowResourceCheck(new ConnectorsThreadPoolLowResourceCheck());
-        } else
+        }
+        else
             getBeans(ConnectorsThreadPoolLowResourceCheck.class).forEach(this::removeBean);
     }
 
