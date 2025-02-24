@@ -739,7 +739,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     void flush(HTTP2Stream stream, UnknownFrame frame, Callback callback)
     {
-        Entry entry = new Entry(frame, stream, callback) {
+        Entry entry = new Entry(frame, stream, callback)
+        {
             @Override
             public int getFrameBytesGenerated()
             {
