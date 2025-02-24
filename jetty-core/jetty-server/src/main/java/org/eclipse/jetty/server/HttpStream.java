@@ -86,7 +86,7 @@ public interface HttpStream extends Callback
      * Cancel any {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)} call in progress.
      *
      * @param cause The cause of the cancellation
-     * @param appCallback The callback passed to  to ultimately {@link Callback#failed(Throwable) fail} after the cancellation
+     * @param appCallback The callback to ultimately {@link Callback#failed(Throwable) fail} after the cancellation
      * @return A {@link Runnable} that will be {@link Runnable#run() run} to complete the
      *         cancellation and will, in turn, ultimately fail both the passed {@link Callback} and any {@link Callback}
      *         that was passed to the {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}

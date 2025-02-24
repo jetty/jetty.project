@@ -188,6 +188,8 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     public Callback cancelWrite(Throwable cause)
     {
         Callback callback = super.cancelWrite(cause);
+        // This is somewhat racy, but any onWritable notification that happens after cancellation but
+        // before removal of interest will be ignored.  This just ensure that interest will not be left hanging.
         if (callback != null)
             removeInterests(SelectionKey.OP_WRITE);
         return callback;

@@ -334,9 +334,9 @@ public interface EndPoint extends Closeable, Content.Sink
     }
 
     /**
-     * Cancel any {@link #write(Callback, ByteBuffer...)} operation
-     * in progress. Calling this method prevents this EndPoint from
-     * writing anymore.
+     * Cancel any current {@link #write(Callback, ByteBuffer...)} operation
+     * in progress. Calling this method with cause future calls to {@link #write(Callback, ByteBuffer...)}
+     * and its variants, to fail the passed {@link Callback}.
      *
      * @param cause the cause
      * @return The callback passed to a pending/in progress {@link #write(Callback, ByteBuffer...) write}
