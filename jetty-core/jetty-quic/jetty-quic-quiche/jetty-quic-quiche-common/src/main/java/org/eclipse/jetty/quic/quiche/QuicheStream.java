@@ -103,13 +103,12 @@ public class QuicheStream extends AbstractStream
         else
         {
             // Even if there is no demand, we want to know if the peer sent a RESET_STREAM.
-            // TODO: this code is racy with a previous notification to onDataAvailable()
-//            if (session.isFinished(this))
-//            {
-//                Throwable failure = isReset();
-//                if (failure != null)
-//                    notifyFailure(failure);
-//            }
+            if (session.isFinished(this))
+            {
+                Throwable failure = isReset();
+                if (failure != null)
+                    notifyFailure(failure);
+            }
         }
 
         return hasDemand;
@@ -411,7 +410,7 @@ public class QuicheStream extends AbstractStream
 
     private void notifyDataAvailable()
     {
-        Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
+        Stream.Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
         try
         {
             listener.onDataAvailable(this);
@@ -424,7 +423,7 @@ public class QuicheStream extends AbstractStream
 
     private boolean notifyIdleTimeout(TimeoutException failure)
     {
-        Listener listener = getListener();
+        Stream.Listener listener = getListener();
         try
         {
             if (listener != null)
@@ -440,7 +439,7 @@ public class QuicheStream extends AbstractStream
 
     private void notifyFailure(Throwable failure)
     {
-        Listener listener = getListener();
+        Stream.Listener listener = getListener();
         try
         {
             if (listener != null)
@@ -454,7 +453,7 @@ public class QuicheStream extends AbstractStream
 
     private void notifyClose()
     {
-        Listener listener = getListener();
+        Stream.Listener listener = getListener();
         try
         {
             if (listener != null)

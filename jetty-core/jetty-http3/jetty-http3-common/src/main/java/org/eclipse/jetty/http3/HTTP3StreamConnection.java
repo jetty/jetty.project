@@ -81,15 +81,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         super.onClose(cause);
     }
 
-    private void tryReleaseData()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("releasing {} on {}", quicData, this);
-        if (quicData != null)
-            quicData.release();
-        quicData = null;
-    }
-
     public void onFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
@@ -359,6 +350,15 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         tryReleaseData();
         // Propagate outwards.
         getEndPoint().disconnect(appErrorCode, failure, true, promise);
+    }
+
+    private void tryReleaseData()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("releasing {} on {}", quicData, this);
+        if (quicData != null)
+            quicData.release();
+        quicData = null;
     }
 
     @Override

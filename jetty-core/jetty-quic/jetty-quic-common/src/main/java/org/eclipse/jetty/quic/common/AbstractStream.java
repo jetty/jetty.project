@@ -28,7 +28,7 @@ public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
 
     private final long streamId;
     private final boolean local;
-    private Listener listener;
+    private Stream.Listener listener;
     private long idleTimeout;
     private long expireNanoTime = Long.MAX_VALUE;
 
@@ -56,7 +56,7 @@ public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
         return local;
     }
 
-    public Listener getListener()
+    public Stream.Listener getListener()
     {
         return listener;
     }
