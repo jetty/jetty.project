@@ -57,7 +57,6 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.internal.HTTP2Flusher;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -715,15 +714,10 @@ public class StreamResetTest extends AbstractTest
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
         assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
 
-        // Give time to the server to process the reset and drain the flusher queue.
-        Thread.sleep(500);
-
+        // Assert that reset cleared the session on the server.
         AbstractHTTP2ServerConnectionFactory http2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
         Set<Session> sessions = http2.getBean(AbstractHTTP2ServerConnectionFactory.HTTP2SessionContainer.class).getSessions();
-        assertEquals(1, sessions.size());
-        HTTP2Session session = (HTTP2Session)sessions.iterator().next();
-        HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
-        assertEquals(0, flusher.getFrameQueueSize());
+        assertEquals(0, sessions.size());
     }
 
     @Test
@@ -815,7 +809,7 @@ public class StreamResetTest extends AbstractTest
     }
 
     @Test
-    public void testResetAfterTCPCongestedWrite() throws Exception
+    public void testResetAfterTCPCongestedWriteThenResolveCongestionToUnblockWrite() throws Exception
     {
         AtomicReference<SelectableChannelEndPoint> serverEndPointRef = new AtomicReference<>();
         CountDownLatch writeLatch1 = new CountDownLatch(1);
@@ -894,6 +888,84 @@ public class StreamResetTest extends AbstractTest
                     break;
                 buffer.clear();
             }
+
+            assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
+            assertTrue(writeLatch2.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testResetAfterTCPCongestedWriteThenWaitForIdleTimeoutToUnblockWrite() throws Exception
+    {
+        int serverIdleTimeout = 1000;
+        AtomicReference<SelectableChannelEndPoint> serverEndPointRef = new AtomicReference<>();
+        CountDownLatch writeLatch1 = new CountDownLatch(1);
+        CountDownLatch writeLatch2 = new CountDownLatch(1);
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                serverEndPointRef.set((SelectableChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
+
+                try
+                {
+                    // Large write, it blocks due to TCP congestion.
+                    byte[] data = new byte[128 * 1024 * 1024];
+                    Content.Sink.write(response, false, ByteBuffer.wrap(data));
+                }
+                catch (IOException x)
+                {
+                    writeLatch1.countDown();
+                    try
+                    {
+                        // Try to write again, must fail immediately.
+                        Content.Sink.write(response, true, ByteBuffer.wrap(new byte[]{1}));
+                    }
+                    catch (IOException e)
+                    {
+                        writeLatch2.countDown();
+                    }
+                }
+                return true;
+            }
+        });
+        connector.setIdleTimeout(serverIdleTimeout);
+
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
+        try (SocketChannel socket = SocketChannel.open())
+        {
+            String host = "localhost";
+            int port = connector.getLocalPort();
+            socket.connect(new InetSocketAddress(host, port));
+
+            Generator generator = new Generator(bufferPool);
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            generator.control(accumulator, new PrefaceFrame());
+            Map<Integer, Integer> clientSettings = new HashMap<>();
+            // Max stream HTTP/2 flow control window.
+            clientSettings.put(SettingsFrame.INITIAL_WINDOW_SIZE, Integer.MAX_VALUE);
+            generator.control(accumulator, new SettingsFrame(clientSettings, false));
+            // Max session HTTP/2 flow control window.
+            generator.control(accumulator, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
+
+            HttpURI uri = HttpURI.from("http", host, port, "/");
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            int streamId = 3;
+            HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
+            generator.control(accumulator, headersFrame);
+
+            accumulator.writeTo(Content.Sink.from(socket), false);
+
+            // Wait until the server is TCP congested.
+            waitUntilTCPCongested(serverEndPointRef::get);
+
+            accumulator.clear();
+            generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
+            accumulator.writeTo(Content.Sink.from(socket), false);
+            accumulator.release();
+
+            // Idle timeout should unblock the server's write.
 
             assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
             assertTrue(writeLatch2.await(5, TimeUnit.SECONDS));
