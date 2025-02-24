@@ -57,6 +57,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.internal.HTTP2Flusher;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -714,10 +715,15 @@ public class StreamResetTest extends AbstractTest
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
         assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
 
-        // Assert that reset cleared the session on the server.
+        // Give time to the server to process the reset and drain the flusher queue.
+        Thread.sleep(500);
+
         AbstractHTTP2ServerConnectionFactory http2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
         Set<Session> sessions = http2.getBean(AbstractHTTP2ServerConnectionFactory.HTTP2SessionContainer.class).getSessions();
-        assertEquals(0, sessions.size());
+        assertEquals(1, sessions.size());
+        HTTP2Session session = (HTTP2Session)sessions.iterator().next();
+        HTTP2Flusher flusher = session.getBean(HTTP2Flusher.class);
+        assertEquals(0, flusher.getFrameQueueSize());
     }
 
     @Test

@@ -37,12 +37,12 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FailureFrame;
+import org.eclipse.jetty.http2.frames.FlushFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.StreamFrame;
-import org.eclipse.jetty.http2.frames.UnknownFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
@@ -200,7 +200,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
      */
     public void flush(Callback callback)
     {
-        session.flush(this, new UnknownFrame(0), callback);
+        session.flush(this, new FlushFrame(), callback);
     }
 
     private boolean startWrite(Callback callback)

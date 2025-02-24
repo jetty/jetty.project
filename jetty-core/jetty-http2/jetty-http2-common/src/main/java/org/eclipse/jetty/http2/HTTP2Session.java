@@ -41,6 +41,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FailureFrame;
+import org.eclipse.jetty.http2.frames.FlushFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -52,7 +53,6 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.StreamFrame;
-import org.eclipse.jetty.http2.frames.UnknownFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
@@ -737,7 +737,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }, callback), frame);
     }
 
-    void flush(HTTP2Stream stream, UnknownFrame frame, Callback callback)
+    void flush(HTTP2Stream stream, FlushFrame frame, Callback callback)
     {
         Entry entry = new Entry(frame, stream, callback)
         {
@@ -1356,6 +1356,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case WINDOW_UPDATE:
                 case PREFACE:
                 case DISCONNECT:
+                case FAILURE:
+                case FLUSH:
                     return false;
                 // Frames of this type follow the logic below.
                 case DATA:
