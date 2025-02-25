@@ -19,7 +19,6 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -350,9 +349,12 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                         WriteState.Pending pending = (WriteState.Pending)current;
                         // Initiate a reset() and a flush().
                         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code));
-                        Iterator<Callback> callbacks = Callback.collection(pending.callback, cause, 2).iterator();
-                        stream.getSession().flush(callbacks.next());
-                        return callbacks.next();
+
+                        Callback.Combination callbacks = new Callback.Combination();
+                        stream.getSession().flush(callbacks.newCallback());
+                        Callback cancelCallback = callbacks.newCallback();
+                        callbacks.whenAllComplete(pending.callback);
+                        return cancelCallback;
                     }
                 }
                 case FAILED ->

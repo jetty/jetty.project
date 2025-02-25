@@ -13,19 +13,20 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.thread.Invocable;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class CallbackTest
 {
@@ -147,60 +148,139 @@ public class CallbackTest
     }
 
     @Test
-    void testCallbackCollection()
+    void testCallbackCollectionAllSucceededBefore()
     {
         FutureCallback mainCallback = new FutureCallback();
-        List<Callback> callbacks = Callback.collection(mainCallback, 3);
-
-        callbacks.get(0).succeeded();
-        callbacks.get(0).succeeded();
-        assertFalse(mainCallback.isDone());
-        callbacks.get(1).succeeded();
-        callbacks.get(1).succeeded();
-        assertFalse(mainCallback.isDone());
-        callbacks.get(2).succeeded();
-        callbacks.get(2).succeeded();
-        callbacks.forEach(Callback::succeeded);
+        Callback.Combination combination = new Callback.Combination();
+        for (int i = 0; i < 10; i++)
+            combination.newCallback().succeeded();
+        combination.whenAllComplete(mainCallback);
         assertTrue(mainCallback.isDone());
+        assertFalse(mainCallback.isFailed());
     }
 
     @Test
-    void testCallbackCollectionFailure()
+    void testCallbackCollectionOneFailBefore() throws InterruptedException
     {
         FutureCallback mainCallback = new FutureCallback();
-        List<Callback> callbacks = Callback.collection(mainCallback, 3);
-
-        callbacks.get(0).succeeded();
-        callbacks.get(0).succeeded();
-        assertFalse(mainCallback.isDone());
-        callbacks.get(1).failed(new Exception("Test Failure"));
-        callbacks.get(1).succeeded();
-        assertFalse(mainCallback.isDone());
-        callbacks.get(2).succeeded();
-        callbacks.get(2).succeeded();
+        Callback.Combination combination = new Callback.Combination();
+        for (int i = 0; i < 5; i++)
+            combination.newCallback().succeeded();
+        Exception failure = new Exception("Test");
+        combination.newCallback().failed(failure);
+        for (int i = 6; i < 10; i++)
+            combination.newCallback().succeeded();
+        combination.whenAllComplete(mainCallback);
 
         assertTrue(mainCallback.isDone());
         assertTrue(mainCallback.isFailed());
-        assertThrows(ExecutionException.class, mainCallback::get);
+        try
+        {
+            mainCallback.get();
+            fail();
+        }
+        catch (ExecutionException e)
+        {
+            assertThat(e.getCause(), Matchers.sameInstance(failure));
+        }
     }
 
     @Test
-    void testCallbackCollectionForcedFailure()
+    void testCallbackCollectionAllSucceededAfter()
     {
         FutureCallback mainCallback = new FutureCallback();
-        List<Callback> callbacks = Callback.collection(mainCallback, new Exception("Test Failure"), 3);
+        Callback.Combination combination = new Callback.Combination();
+        Callback[] callbacks = new Callback[10];
+        for (int i = 0; i < callbacks.length; i++)
+            callbacks[i] = combination.newCallback();
+        combination.whenAllComplete(mainCallback);
+        assertFalse(mainCallback.isDone());
 
-        callbacks.get(0).succeeded();
-        callbacks.get(0).succeeded();
+        for (Callback callback : callbacks)
+            callback.succeeded();
+        assertTrue(mainCallback.isDone());
+        assertFalse(mainCallback.isFailed());
+    }
+
+    @Test
+    void testCallbackCollectionOneFailAfter() throws InterruptedException
+    {
+        FutureCallback mainCallback = new FutureCallback();
+        Callback.Combination combination = new Callback.Combination();
+        Callback[] callbacks = new Callback[10];
+        for (int i = 0; i < callbacks.length; i++)
+            callbacks[i] = combination.newCallback();
+        combination.whenAllComplete(mainCallback);
         assertFalse(mainCallback.isDone());
-        callbacks.get(1).succeeded();
-        callbacks.get(1).succeeded();
-        assertFalse(mainCallback.isDone());
-        callbacks.get(2).succeeded();
-        callbacks.get(2).succeeded();
+
+        for (int i = 0; i < 5; i++)
+            callbacks[i].succeeded();
+        Exception failure = new Exception("Test");
+        callbacks[5].failed(failure);
+        for (int i = 6; i < 10; i++)
+            callbacks[i].succeeded();
 
         assertTrue(mainCallback.isDone());
         assertTrue(mainCallback.isFailed());
-        assertThrows(ExecutionException.class, mainCallback::get);
+        try
+        {
+            mainCallback.get();
+            fail();
+        }
+        catch (ExecutionException e)
+        {
+            assertThat(e.getCause(), Matchers.sameInstance(failure));
+        }
+    }
+
+    @Test
+    void testCallbackCollectionForceFail() throws InterruptedException
+    {
+        FutureCallback mainCallback = new FutureCallback();
+        Exception failure = new Exception("Test");
+        Callback.Combination combination = new Callback.Combination(failure);
+        for (int i = 0; i < 10; i++)
+            combination.newCallback().succeeded();
+
+        combination.whenAllComplete(mainCallback);
+        assertTrue(mainCallback.isDone());
+        assertTrue(mainCallback.isFailed());
+        try
+        {
+            mainCallback.get();
+            fail();
+        }
+        catch (ExecutionException e)
+        {
+            assertThat(e.getCause(), Matchers.sameInstance(failure));
+        }
+    }
+
+    @Test
+    void testCallbackCollectionForceFailAssociated() throws InterruptedException
+    {
+        FutureCallback mainCallback = new FutureCallback();
+        Exception failure = new Exception("Test");
+        Exception associated = new Exception("Test");
+        Callback.Combination combination = new Callback.Combination(failure);
+
+        for (int i = 0; i < 5; i++)
+            combination.newCallback().succeeded();
+        combination.newCallback().failed(associated);
+        for (int i = 6; i < 10; i++)
+            combination.newCallback().succeeded();
+        combination.whenAllComplete(mainCallback);
+        assertTrue(mainCallback.isDone());
+        assertTrue(mainCallback.isFailed());
+        try
+        {
+            mainCallback.get();
+            fail();
+        }
+        catch (ExecutionException e)
+        {
+            assertThat(e.getCause(), Matchers.sameInstance(failure));
+            assertTrue(ExceptionUtil.areAssociated(failure, associated));
+        }
     }
 }

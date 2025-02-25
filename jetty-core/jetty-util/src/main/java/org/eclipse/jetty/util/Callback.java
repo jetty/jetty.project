@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -396,80 +393,134 @@ public interface Callback extends Invocable
     }
 
     /**
-     * Creates a collection of {@code Callback}s, all of which must be completed before
-     * the passed {@code callback} is completed.
-     * @param callback The callback to complete, once all the returned callbacks are completed.
-     * @param size The number of {@code Callback}s to return
-     * @return A collection of {@code Callback}s that must all be completed.
+     * A combination of multiple Callbacks, that must all be completed before a specific callback is completed.
+     * For example: <pre>{@code
+     *   void sendToAll(String message, Collection<Channel> channels, Callback callback)
+     *   {
+     *       Callback.Combination combination = new Callback.Combination();
+     *       for (Channel channel : channels)
+     *           channel.send(message, combination.newCallback());
+     *       combination.whenAllComplete(callback);
+     *   }
+     * }</pre>
      */
-    static List<Callback> collection(Callback callback, int size)
+    class Combination
     {
-        return collection(callback, null, size);
-    }
+        private final AtomicInteger count = new AtomicInteger(1);
+        private final AtomicReference<Throwable> failure;
+        private final AtomicReference<Callback> andThen = new AtomicReference<>();
+        private InvocationType invocationType;
 
-    /**
-     * Creates a collection of {@code Callback}s, all of which must be completed before
-     * the passed {@code callback} is completed. If the passed cause is non {@code null}, then the
-     * passed {@code Callback} will always be failed once the collection of callbacks is completed.
-     * @param callback The callback to complete, once all the returned callbacks are completed.
-     * @param cause The cause of any failure known already, or {@code null}
-     * @param size The number of {@code Callback}s to return
-     * @return A collection of {@code Callback}s that must all be completed.
-     */
-    static List<Callback> collection(Callback callback, Throwable cause, int size)
-    {
-        if (size <= 0)
-            throw new IllegalArgumentException("Count must be greater than 0");
-
-        final List<Callback> callbacks = new ArrayList<>(size);
-        final AtomicReference<Throwable> failure = new AtomicReference<>(cause);
-        final AtomicInteger countdown = new AtomicInteger(size);
-
-        for (int i = 0; i < size; i++)
+        /**
+         * Create a new empty combined callback.
+         */
+        public Combination()
         {
-            callbacks.add(new Callback()
-            {
-                private final AtomicBoolean _completed = new AtomicBoolean(false);
-
-                @Override
-                public void succeeded()
-                {
-                    complete();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    failure.updateAndGet(prev ->
-                    {
-                        if (prev == null)
-                            return x;
-                        ExceptionUtil.addSuppressedIfNotAssociated(prev, x);
-                        return prev;
-                    });
-                    complete();
-                }
-
-                private void complete()
-                {
-                    if (_completed.compareAndSet(false, true) && countdown.decrementAndGet() == 0)
-                    {
-                        Throwable failed = failure.get();
-                        if (failed == null)
-                            callback.succeeded();
-                        else
-                            callback.failed(failed);
-                    }
-                }
-
-                @Override
-                public InvocationType getInvocationType()
-                {
-                    return callback.getInvocationType();
-                }
-            });
+            this(null);
         }
-        return Collections.unmodifiableList(callbacks);
+
+        /**
+         * Create a new empty combined callback with a forced failure.
+         * @param failure If not {@code null}, force a failure, so that the {@link Callback#failed(Throwable)} method
+         * will always be called on the {@code Callback} passed to {@link #whenAllComplete(Callback)}, once all the
+         * combined callbacks are completed
+         */
+        public Combination(Throwable failure)
+        {
+            this(failure, null);
+        }
+
+        /**
+         * Create a new empty combined callback with a forced failure and invocation type.
+         * @param failure If not {@code null}, force a failure, so that the {@link Callback#failed(Throwable)} method
+         * will always be called on the {@code Callback} passed to {@link #whenAllComplete(Callback)}, once all the
+         * combined callbacks are completed
+         * @param invocationType The invocationType of the {@code Callback} that will ultimately be passed to
+         *                       {@link #whenAllComplete(Callback)}.
+         */
+        public Combination(Throwable failure, InvocationType invocationType)
+        {
+            this.failure = new AtomicReference<>(failure);
+            this.invocationType = invocationType;
+        }
+
+        /**
+         * Create a new {@code Callback} as part of this combination.
+         * @return A {@code Callback} that must be completed before the callback passed to
+         *         {@link #whenAllComplete(Callback)} is completed.
+         * @throws IllegalStateException if the combination has already been completed.
+         */
+        public Callback newCallback()
+        {
+            while (true)
+            {
+                int s = count.get();
+                if (s == 0)
+                    throw new IllegalStateException("completed");
+                if (!count.compareAndSet(s, s + 1))
+                    continue;
+                return new Callback()
+                {
+                    private final AtomicBoolean completed = new AtomicBoolean(false);
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        if (completed.compareAndSet(false, true))
+                        {
+                            failure.updateAndGet(prev ->
+                            {
+                                if (prev == null)
+                                    return x;
+                                ExceptionUtil.addSuppressedIfNotAssociated(prev, x);
+                                return prev;
+                            });
+                            complete();
+                        }
+                    }
+
+                    @Override
+                    public void succeeded()
+                    {
+                        if (completed.compareAndSet(false, true))
+                            complete();
+                    }
+
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return invocationType == null ? InvocationType.NON_BLOCKING : invocationType;
+                    }
+                };
+            }
+        }
+
+        /**
+         * Called to set the {@code Callback} to call once the combination is complete.
+         * If the combination is already complete, then it will be completed in the scope of this call.
+         * @param callback The {@code Callback} to complete once all {@code Callbacks} in the combination are complete.
+         * @throws IllegalStateException if this method has already been called.
+         */
+        public void whenAllComplete(Callback callback)
+        {
+            if (!andThen.compareAndSet(null, Objects.requireNonNull(callback)))
+                throw new IllegalStateException("whenAllComplete already called");
+            invocationType = Invocable.combine(invocationType, callback.getInvocationType());
+            complete();
+        }
+
+        private void complete()
+        {
+            if (count.decrementAndGet() == 0)
+            {
+                Callback callback = andThen.getAndSet(null);
+                assert callback != null;
+                Throwable failed = failure.get();
+                if (failed == null)
+                    callback.succeeded();
+                else
+                    callback.failed(failed);
+            }
+        }
     }
 
     /**
