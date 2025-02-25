@@ -32,7 +32,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     endPoint.write(countCallback, buffers);
  * }
  * </pre>
+ * @deprecated use {@link Callback#collection(Callback, int)}
  */
+@Deprecated
 public class CountingCallback extends Callback.Nested
 {
     private final AtomicInteger count;

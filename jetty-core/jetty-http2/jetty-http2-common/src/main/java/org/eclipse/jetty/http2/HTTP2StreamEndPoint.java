@@ -19,6 +19,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -349,24 +350,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                         WriteState.Pending pending = (WriteState.Pending)current;
                         // Initiate a reset() and a flush().
                         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code));
-                        Callback.Completable flushCallback = new Callback.Completable();
-                        stream.getSession().flush(flushCallback);
-                        Callback.Completable returnedCallback = new Callback.Completable();
-                        flushCallback.whenComplete((r, x) ->
-                        {
-                            // When the flush() is complete, attach the
-                            // following function to the returned callback.
-                            returnedCallback.whenComplete((rr, xx) ->
-                            {
-                                // When also the returned callback is complete,
-                                // then complete the pending callback.
-                                if (xx == null)
-                                    pending.callback.succeeded();
-                                else
-                                    pending.callback.failed(xx);
-                            });
-                        });
-                        return returnedCallback;
+                        Iterator<Callback> callbacks = Callback.collection(pending.callback, cause, 2).iterator();
+                        stream.getSession().flush(callbacks.next());
+                        return callbacks.next();
                     }
                 }
                 case FAILED ->
