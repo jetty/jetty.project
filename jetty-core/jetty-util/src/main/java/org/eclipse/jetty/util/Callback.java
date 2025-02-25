@@ -13,14 +13,8 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
@@ -393,70 +387,6 @@ public interface Callback extends Invocable
     static Callback from(Callback callback1, Callback callback2)
     {
         return combine(callback1, callback2);
-    }
-
-    /**
-     * Creates a collection of {@code Callback}s, all of which must be completed before
-     * the passed {@code callback} is completed.
-     * @param callback The callback to complete, once all the returned callbacks are completed.
-     * @param cause The cause of any failure known already, or {@code null}
-     * @param count The number of {@code Callback}s to return
-     * @return A collection of {@code Callback}s that must all be completed.
-     */
-    static List<Callback> from(Callback callback, Throwable cause, int count)
-    {
-        if (count <= 0)
-            throw new IllegalArgumentException("Count must be greater than 0");
-
-        final List<Callback> callbacks = new ArrayList<>(count);
-        final AtomicReference<Throwable> failure = new AtomicReference<>(cause);
-        final AtomicInteger countdown = new AtomicInteger(count);
-
-        for (int i = 0; i < count; i++)
-        {
-            callbacks.add(new Callback()
-            {
-                private final AtomicBoolean _completed = new AtomicBoolean(false);
-
-                @Override
-                public void succeeded()
-                {
-                    complete();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    failure.updateAndGet(prev ->
-                    {
-                        if (prev == null)
-                            return x;
-                        ExceptionUtil.addSuppressedIfNotAssociated(prev, x);
-                        return prev;
-                    });
-                    complete();
-                }
-
-                private void complete()
-                {
-                    if (_completed.compareAndSet(false, true) && countdown.decrementAndGet() == 0)
-                    {
-                        Throwable failed = failure.get();
-                        if (failed == null)
-                            callback.succeeded();
-                        else
-                            callback.failed(failed);
-                    }
-                }
-
-                @Override
-                public InvocationType getInvocationType()
-                {
-                    return callback.getInvocationType();
-                }
-            });
-        }
-        return Collections.unmodifiableList(callbacks);
     }
 
     /**

@@ -19,8 +19,6 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
-import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -97,7 +95,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                     return;
                 case PENDING:
                     Callback callback = ((WriteState.Pending)current).callback;
-                    if (!writeState.compareAndSet(current, new WriteState.Pending(this, callback, WriteState.State.PENDING_OSHUT)))
+                    if (!writeState.compareAndSet(current, new WriteState.Pending(WriteState.State.PENDING_OSHUT, this, callback)))
                         break;
                     return;
                 case PENDING_OSHUT:
@@ -128,8 +126,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         while (true)
         {
             WriteState current = writeState.get();
-            if (Objects.requireNonNull(current.state) != WriteState.State.OSHUT ||
-                writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, failure)))
+            if (current.state != WriteState.State.OSHUT)
+                return;
+            if (writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, failure)))
                 return;
         }
     }
@@ -239,22 +238,12 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         // stream.data() would remain as a pending operation.
 
         WriteState current = writeState.get();
-        switch (current.state)
+        return switch (current.state)
         {
-            case IDLE, PENDING ->
-            {
-                return false;
-            }
+            case IDLE, PENDING -> false;
             case PENDING_OSHUT, OSHUT -> throw new EofException("Output shutdown");
-            case FAILED ->
-            {
-                Throwable failure = current.failure;
-                if (failure instanceof IOException)
-                    throw (IOException)failure;
-                throw new IOException(failure);
-            }
-            default -> throw new IllegalStateException("Unexpected state: " + current.state);
-        }
+            case FAILED -> throw IO.rethrow(current.failure);
+        };
     }
 
     @Override
@@ -320,7 +309,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                 {
                     case IDLE ->
                     {
-                        WriteState.Pending pending = new WriteState.Pending(this, callback);
+                        WriteState.Pending pending = new WriteState.Pending(WriteState.State.PENDING, this, callback);
                         if (!writeState.compareAndSet(current, pending))
                             continue;
                         // TODO: we really need a Stream primitive to write multiple frames.
@@ -343,7 +332,6 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         while (true)
         {
             WriteState current = writeState.get();
-
             switch (current.state)
             {
                 case IDLE ->
@@ -359,10 +347,26 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                     if (writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, cause)))
                     {
                         WriteState.Pending pending = (WriteState.Pending)current;
-                        List<Callback> legs = Callback.from(pending.callback, cause, 2);
-
-                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), legs.get(0));
-                        return legs.get(1);
+                        // Initiate a reset() and a flush().
+                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code));
+                        Callback.Completable flushCallback = new Callback.Completable();
+                        stream.getSession().flush(flushCallback);
+                        Callback.Completable returnedCallback = new Callback.Completable();
+                        flushCallback.whenComplete((r, x) ->
+                        {
+                            // When the flush() is complete, attach the
+                            // following function to the returned callback.
+                            returnedCallback.whenComplete((rr, xx) ->
+                            {
+                                // When also the returned callback is complete,
+                                // then complete the pending callback.
+                                if (xx == null)
+                                    pending.callback.succeeded();
+                                else
+                                    pending.callback.failed(xx);
+                            });
+                        });
+                        return returnedCallback;
                     }
                 }
                 case FAILED ->
@@ -396,9 +400,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                 {
                     if (!writeState.compareAndSet(current, WriteState.OSHUT))
                         continue;
-
-                    stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true),
-                        current instanceof WriteState.Pending pending ? pending.getCallback() : Callback.NOOP);
+                    ((WriteState.Pending)current).callback.succeeded();
+                    // Complete the shutdown of the output.
+                    stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
                 }
             }
             return;
@@ -416,8 +420,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                 {
                     if (!writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, failure)))
                         continue;
-                    if (current instanceof WriteState.Pending pending)
-                        pending.getCallback().failed(failure);
+                    ((WriteState.Pending)current).callback.failed(failure);
                 }
             }
             return;
@@ -557,26 +560,16 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
             IDLE, PENDING, PENDING_OSHUT, OSHUT, FAILED
         }
 
-        public static class Pending extends WriteState implements Callback
+        private static class Pending extends WriteState implements Callback
         {
             private final HTTP2StreamEndPoint endpoint;
             private final Callback callback;
 
-            public Pending(HTTP2StreamEndPoint endPoint, Callback callback)
+            private Pending(State state, HTTP2StreamEndPoint endPoint, Callback callback)
             {
-                this(endPoint, callback, null);
-            }
-
-            public Pending(HTTP2StreamEndPoint endPoint, Callback callback, State state)
-            {
-                super(state == null ? State.PENDING : state);
+                super(state);
                 this.endpoint = endPoint;
                 this.callback = callback;
-            }
-
-            public Callback getCallback()
-            {
-                return callback;
             }
 
             @Override
@@ -594,7 +587,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
             @Override
             public InvocationType getInvocationType()
             {
-                return Invocable.getInvocationType(getCallback());
+                return callback.getInvocationType();
             }
         }
     }
