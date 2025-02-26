@@ -350,7 +350,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                         // Initiate a reset() and a flush().
                         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code));
 
-                        try (Callback.Combination callbacks = new Callback.Combination(pending.callback))
+                        try (Callback.Combination callbacks = new Callback.Combination(pending.callback, cause))
                         {
                             stream.getSession().flush(callbacks.newCallback());
                             return callbacks.newCallback();
