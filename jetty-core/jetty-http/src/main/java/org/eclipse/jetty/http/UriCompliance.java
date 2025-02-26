@@ -214,10 +214,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
         of(Violation.AMBIGUOUS_PATH_SEGMENT,
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
-            Violation.AMBIGUOUS_EMPTY_SEGMENT,
+            Violation.BAD_UTF8_ENCODING,
+            Violation.SUSPICIOUS_PATH_CHARACTERS,
             Violation.TRUNCATED_UTF8_ENCODING,
-            Violation.UTF16_ENCODINGS,
-            Violation.USER_INFO));
+            Violation.USER_INFO,
+            Violation.UTF16_ENCODINGS));
 
     /**
      * Compliance mode that allows all URI Violations, including allowing ambiguous paths in non-canonical form, and illegal characters.

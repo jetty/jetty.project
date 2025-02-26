@@ -36,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -76,6 +77,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -715,5 +717,63 @@ public class RequestTest
             []
             [xyz]
             """));
+    }
+
+    static Stream<Arguments> suspiciousCharactersLegacy()
+    {
+        return Stream.of(
+            Arguments.of(UriCompliance.DEFAULT, "o", "o"),
+            Arguments.of(UriCompliance.DEFAULT, "%5C", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%0A", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%00", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%01", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%5F", "_"),
+            Arguments.of(UriCompliance.DEFAULT, "%2F", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%252F", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "//", "400"),
+
+            // these results are from jetty-11 DEFAULT
+            Arguments.of(UriCompliance.LEGACY, "o", "o"),
+            Arguments.of(UriCompliance.LEGACY, "%5C", "\\"),
+            Arguments.of(UriCompliance.LEGACY, "%0A", "\n"),
+            Arguments.of(UriCompliance.LEGACY, "%00", "400"),
+            Arguments.of(UriCompliance.LEGACY, "%01", "\u0001"),
+            Arguments.of(UriCompliance.LEGACY, "%5F", "_"),
+            Arguments.of(UriCompliance.LEGACY, "%2F", "/"),
+            Arguments.of(UriCompliance.LEGACY, "%252F", "%2F"),
+            Arguments.of(UriCompliance.LEGACY, "//", "400")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("suspiciousCharactersLegacy")
+    public void testSuspiciousCharactersLegacy(UriCompliance compliance, String suspect, String expected) throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                if (expected.length() != 3 || !Character.isDigit(expected.charAt(0)))
+                    assertThat(request.getPathInfo(), is("/test/fo" + expected + "bar"));
+            }
+        });
+
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(compliance);
+        if (compliance == UriCompliance.LEGACY)
+            _server.getBean(ServletContextHandler.class).getServletHandler().setDecodeAmbiguousURIs(true);
+        String request = "GET /test/fo" + suspect + "bar HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+        String response = _connector.getResponse(request);
+
+        if (expected.length() == 3 && Character.isDigit(expected.charAt(0)))
+        {
+            assertThat(response, startsWith("HTTP/1.1 " + expected + " "));
+        }
+        else
+        {
+            assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        }
     }
 }

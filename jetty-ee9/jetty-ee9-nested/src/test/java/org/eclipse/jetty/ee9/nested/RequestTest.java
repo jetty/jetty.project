@@ -93,6 +93,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2570,5 +2572,58 @@ public class RequestTest
                 """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    static Stream<Arguments> suspiciousCharactersLegacy()
+    {
+        return Stream.of(
+            Arguments.of(UriCompliance.DEFAULT, "o", "o"),
+            Arguments.of(UriCompliance.DEFAULT, "%5C", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%0A", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%00", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%01", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%5F", "_"),
+            Arguments.of(UriCompliance.DEFAULT, "%2F", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%252F", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "//", "400"),
+
+            // these results are from jetty-11 DEFAULT
+            Arguments.of(UriCompliance.LEGACY, "o", "o"),
+            Arguments.of(UriCompliance.LEGACY, "%5C", "\\"),
+            Arguments.of(UriCompliance.LEGACY, "%0A", "\n"),
+            Arguments.of(UriCompliance.LEGACY, "%00", "400"),
+            Arguments.of(UriCompliance.LEGACY, "%01", "\u0001"),
+            Arguments.of(UriCompliance.LEGACY, "%5F", "_"),
+            Arguments.of(UriCompliance.LEGACY, "%2F", "/"),
+            Arguments.of(UriCompliance.LEGACY, "%252F", "%2F"),
+            Arguments.of(UriCompliance.LEGACY, "//", "400")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("suspiciousCharactersLegacy")
+    public void testSuspiciousCharactersLegacy(UriCompliance compliance, String suspect, String expected) throws Exception
+    {
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(compliance);
+        _handler._checker = (request, response) ->
+        {
+            if (expected.length() != 3 || !Character.isDigit(expected.charAt(0)))
+                assertThat(request.getPathInfo(), is("/test/fo" + expected + "bar"));
+            return true;
+        };
+
+        String request = "GET /test/fo" + suspect + "bar HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+        String response = _connector.getResponse(request);
+
+        if (expected.length() == 3 && Character.isDigit(expected.charAt(0)))
+        {
+            assertThat(response, startsWith("HTTP/1.1 " + expected + " "));
+        }
+        else
+        {
+            assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        }
     }
 }
