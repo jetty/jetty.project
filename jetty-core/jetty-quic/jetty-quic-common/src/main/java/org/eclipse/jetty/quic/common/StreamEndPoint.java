@@ -334,6 +334,8 @@ public class StreamEndPoint implements EndPoint
      * when the {@link Connection} installed on top of this {@code StreamEndPoint}
      * needs to know both the bytes and whether the QUIC data is the last in the
      * stream, for example in HTTP/3.</p>
+     * <p>The code calling this method is responsible to organize for the returned
+     * {@link Stream.Data} to be eventually {@link Stream.Data#release() released}.</p>
      *
      * @return a QUIC {@link Stream.Data}, or {@code null} if there is no data
      * @throws IOException when a failure occurred while filling data from the QUIC stream

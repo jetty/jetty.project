@@ -25,6 +25,7 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     private boolean useInputDirectByteBuffers = true;
     private int outputBufferSize = 2048;
     private boolean useOutputDirectByteBuffers = true;
+    private int minInputBufferSpace = 1500;
     private long streamIdleTimeout;
     private long sessionMaxData;
     private long localBidirectionalStreamMaxData;
@@ -71,6 +72,16 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    public int getMinInputBufferSpace()
+    {
+        return minInputBufferSpace;
+    }
+
+    public void setMinInputBufferSpace(int minInputBufferSpace)
+    {
+        this.minInputBufferSpace = minInputBufferSpace;
     }
 
     public long getStreamIdleTimeout()

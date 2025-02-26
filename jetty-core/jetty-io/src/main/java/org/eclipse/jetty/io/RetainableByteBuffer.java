@@ -1004,6 +1004,14 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
+        public long space()
+        {
+            if (_flipPosition < 0)
+                return _byteBuffer.capacity() - _byteBuffer.limit();
+            return _byteBuffer.remaining();
+        }
+
+        @Override
         public Mutable asMutable()
         {
             if (!isMutable() || isRetained())

@@ -55,9 +55,9 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
     }
 
     @Override
-    public QuicheServerQuicConfiguration getConfiguration()
+    public QuicheServerQuicConfiguration getQuicConfiguration()
     {
-        return (QuicheServerQuicConfiguration)super.getConfiguration();
+        return (QuicheServerQuicConfiguration)super.getQuicConfiguration();
     }
 
     @Override

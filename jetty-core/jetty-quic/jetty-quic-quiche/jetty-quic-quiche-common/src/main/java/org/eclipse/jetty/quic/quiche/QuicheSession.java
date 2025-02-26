@@ -36,7 +36,6 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.CyclicTimeouts;
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
@@ -144,7 +143,7 @@ public abstract class QuicheSession extends AbstractSession
         QuicheStream stream = new QuicheStream(this, streamId, true);
         if (streams.putIfAbsent(streamId, stream) == null)
         {
-            stream.setIdleTimeout(getConfiguration().getStreamIdleTimeout());
+            stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
             if (LOG.isDebugEnabled())
                 LOG.debug("created local {} on {}", stream, this);
@@ -161,7 +160,7 @@ public abstract class QuicheSession extends AbstractSession
         if (streams.putIfAbsent(streamId, stream) != null)
             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "duplicate_remote_stream");
 
-        stream.setIdleTimeout(getConfiguration().getStreamIdleTimeout());
+        stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
         Stream.Listener listener = notifyNewStream(stream);
         stream.setListener(listener);
@@ -352,45 +351,19 @@ public abstract class QuicheSession extends AbstractSession
         }
     }
 
-    Stream.Data read(QuicheStream stream) throws IOException
+    int read(QuicheStream stream, ByteBuffer byteBuffer, boolean[] outLast) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("reading from {} on {}", stream, this);
 
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getConfiguration().getInputBufferSize(), getConfiguration().isUseInputDirectByteBuffers());
-        try
-        {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            byteBuffer.clear();
+        int filled = quiche.drainClearBytesForStream(stream.getId(), byteBuffer, outLast);
 
-            boolean[] outLast = new boolean[1];
-            int filled = quiche.drainClearBytesForStream(stream.getId(), byteBuffer, outLast);
-            byteBuffer.flip();
-            boolean last = outLast[0];
+        if (LOG.isDebugEnabled())
+            LOG.debug("read {} bytes last={} from {} on {}", filled, outLast[0], stream, this);
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("read {} bytes last={} from {} on {}", filled, last, stream, this);
+        flush();
 
-            flush();
-
-            if (filled > 0)
-            {
-                // Releasing the StreamData will release the buffer.
-                return new QuicheStreamData(buffer, last);
-            }
-
-            buffer.release();
-
-            if (filled == 0 && !last)
-                return null;
-
-            return Stream.Data.EOF;
-        }
-        catch (Throwable x)
-        {
-            buffer.release();
-            throw x;
-        }
+        return filled;
     }
 
     protected int data(QuicheStream stream, boolean last, ByteBuffer buffer) throws IOException
@@ -516,7 +489,7 @@ public abstract class QuicheSession extends AbstractSession
         @Override
         protected Action process() throws IOException
         {
-            cipherBuffer = getByteBufferPool().acquire(getConfiguration().getOutputBufferSize(), getConfiguration().isUseOutputDirectByteBuffers());
+            cipherBuffer = getByteBufferPool().acquire(getQuicConfiguration().getOutputBufferSize(), getQuicConfiguration().isUseOutputDirectByteBuffers());
             ByteBuffer cipherByteBuffer = cipherBuffer.getByteBuffer();
             int pos = BufferUtil.flipToFill(cipherByteBuffer);
             int drained = quiche.drainCipherBytes(cipherByteBuffer);
@@ -590,49 +563,6 @@ public abstract class QuicheSession extends AbstractSession
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
-        }
-    }
-
-    private static class QuicheStreamData extends Retainable.Wrapper implements Stream.Data
-    {
-        private final int length;
-        private final boolean last;
-
-        private QuicheStreamData(RetainableByteBuffer buffer, boolean last)
-        {
-            super(buffer);
-            this.length = buffer.remaining();
-            this.last = last;
-        }
-
-        @Override
-        public RetainableByteBuffer getWrapped()
-        {
-            return (RetainableByteBuffer)super.getWrapped();
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return getWrapped().getByteBuffer();
-        }
-
-        @Override
-        public int getLength()
-        {
-            return length;
-        }
-
-        @Override
-        public boolean isLast()
-        {
-            return last;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x[bytes=%d/%d,last=%b,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getByteBuffer().remaining(), getLength(), isLast(), getWrapped());
         }
     }
 

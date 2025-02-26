@@ -52,7 +52,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         return executor;
     }
 
-    public QuicConfiguration getConfiguration()
+    public QuicConfiguration getQuicConfiguration()
     {
         return configuration;
     }
