@@ -477,7 +477,7 @@ public interface Callback extends Invocable
                     @Override
                     public InvocationType getInvocationType()
                     {
-                        return Invocable.getInvocationType(andThen);
+                        return andThen.getInvocationType();
                     }
                 };
             }
