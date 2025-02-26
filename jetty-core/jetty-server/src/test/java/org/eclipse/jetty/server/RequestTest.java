@@ -939,32 +939,32 @@ public class RequestTest
     static Stream<Arguments> suspiciousCharactersLegacy()
     {
         return Stream.of(
-            Arguments.of(UriCompliance.DEFAULT, "o", "o", "o"),
-            Arguments.of(UriCompliance.DEFAULT, "%5C", "400", "400"),
-            Arguments.of(UriCompliance.DEFAULT, "%0A", "400", "400"),
-            Arguments.of(UriCompliance.DEFAULT, "%00", "400", "400"),
-            Arguments.of(UriCompliance.DEFAULT, "%01", "400", "400"),
-            Arguments.of(UriCompliance.DEFAULT, "%5F", "_", "_"),
-            Arguments.of(UriCompliance.DEFAULT, "%2F", "400", "400"),
-            Arguments.of(UriCompliance.DEFAULT, "%252F", "400", "400"),
-            Arguments.of(UriCompliance.DEFAULT, "//", "400", "400"),
+            Arguments.of("o", "o", "o", UriCompliance.DEFAULT),
+            Arguments.of("%5C", "400", "400", UriCompliance.DEFAULT),
+            Arguments.of("%0A", "400", "400", UriCompliance.DEFAULT),
+            Arguments.of("%00", "400", "400", UriCompliance.DEFAULT),
+            Arguments.of("%01", "400", "400", UriCompliance.DEFAULT),
+            Arguments.of("%5F", "_", "_", UriCompliance.DEFAULT),
+            Arguments.of("%2F", "400", "400", UriCompliance.DEFAULT),
+            Arguments.of("%252F", "400", "400", UriCompliance.DEFAULT),
+            Arguments.of("//", "400", "400", UriCompliance.DEFAULT),
 
             // these results are from jetty-11 DEFAULT
-            Arguments.of(UriCompliance.LEGACY, "o", "o", "o"),
-            Arguments.of(UriCompliance.LEGACY, "%5C", "%5C", "\\"),
-            Arguments.of(UriCompliance.LEGACY, "%0A", "%0A", "\n"),
-            Arguments.of(UriCompliance.LEGACY, "%00", "400", "400"),
-            Arguments.of(UriCompliance.LEGACY, "%01", "%01", "\u0001"),
-            Arguments.of(UriCompliance.LEGACY, "%5F", "_", "_"),
-            Arguments.of(UriCompliance.LEGACY, "%2F", "%2F", "/"),
-            Arguments.of(UriCompliance.LEGACY, "%252F", "%252F", "%2F"),
-            Arguments.of(UriCompliance.LEGACY, "//", "400", "400")
+            Arguments.of("o", "o", "o", UriCompliance.LEGACY),
+            Arguments.of("%5C", "%5C", "\\", UriCompliance.LEGACY),
+            Arguments.of("%0A", "%0A", "\n", UriCompliance.LEGACY),
+            Arguments.of("%00", "400", "400", UriCompliance.LEGACY),
+            Arguments.of("%01", "%01", "\u0001", UriCompliance.LEGACY),
+            Arguments.of("%5F", "_", "_", UriCompliance.LEGACY),
+            Arguments.of("%2F", "%2F", "/", UriCompliance.LEGACY),
+            Arguments.of("%252F", "%252F", "%2F", UriCompliance.LEGACY),
+            Arguments.of("//", "400", "400", UriCompliance.LEGACY)
         );
     }
 
     @ParameterizedTest
     @MethodSource("suspiciousCharactersLegacy")
-    public void testSuspiciousCharactersLegacy(UriCompliance compliance, String suspect, String canonical, String decoded) throws Exception
+    public void testSuspiciousCharactersLegacy(String suspect, String canonical, String decoded, UriCompliance compliance) throws Exception
     {
         server.stop();
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(compliance);
