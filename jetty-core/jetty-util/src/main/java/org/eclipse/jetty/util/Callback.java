@@ -408,7 +408,6 @@ public interface Callback extends Invocable
     {
         private final Callback andThen;
         private final AtomicStampedReference<Throwable> state;
-        private final AtomicBoolean closed = new AtomicBoolean();
 
         /**
          * Create a new empty combined callback.
@@ -432,7 +431,8 @@ public interface Callback extends Invocable
         public Combination(Callback andThen, Throwable failure)
         {
             this.andThen = andThen;
-            this.state = new AtomicStampedReference<>(failure, 1);
+            // initial stamp is -1 to indicate not closed and requiring 1 completion from close.
+            this.state = new AtomicStampedReference<>(failure, -1);
         }
 
         /**
@@ -444,16 +444,15 @@ public interface Callback extends Invocable
          */
         public Callback newCallback()
         {
-            if (closed.get())
-                throw new IllegalStateException("closed");
             while (true)
             {
                 int s = state.getStamp();
                 Throwable failure = state.getReference();
-                
-                if (s == 0)
-                    throw new IllegalStateException("completed");
-                if (!state.compareAndSet(failure, failure, s, s + 1))
+
+                if (s >= 0)
+                    throw new IllegalStateException("closed");
+                // we can only create new callbacks when not closed, so we decrement to make a more negative stamp.
+                if (!state.compareAndSet(failure, failure, s--, s))
                     continue;
 
                 return new Callback()
@@ -492,33 +491,46 @@ public interface Callback extends Invocable
         @Override
         public void close() throws IllegalStateException
         {
-            if (!closed.compareAndSet(false, true))
-                throw new IllegalStateException("already closed");
-            complete(null);
-        }
-
-        private void complete(Throwable x)
-        {
-            Throwable failure;
             while (true)
             {
                 int s = state.getStamp();
-                failure = state.getReference();
+                Throwable failure = state.getReference();
 
-                if (!state.compareAndSet(failure, failure == null ? x : failure, s--, s))
+                if (s >= 0)
+                    throw new IllegalStateException("closed");
+
+                if (!state.compareAndSet(failure, failure, s, -s))
+                    continue;
+                complete(null);
+                return;
+            }
+        }
+
+        private void complete(Throwable failure)
+        {
+            Throwable failed;
+            while (true)
+            {
+                int s = state.getStamp();
+                failed = state.getReference();
+
+                // If the stamp is < 0, the combination has not been closed, so we increment, else we decrement.
+                int n = s < 0 ? s + 1 : s - 1;
+                if (!state.compareAndSet(failed, failed == null ? failure : failed, s, n))
                     continue;
 
-                if (failure == null)
-                    failure = x;
-                else
-                    ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
+                // combine failures
+                if (failed == null)
+                    failed = failure;
+                else if (failure != null)
+                    ExceptionUtil.addSuppressedIfNotAssociated(failed, failure);
 
-                if (s == 0)
+                if (n == 0)
                 {
-                    if (failure == null)
+                    if (failed == null)
                         andThen.succeeded();
                     else
-                        andThen.failed(failure);
+                        andThen.failed(failed);
                 }
 
                 return;
