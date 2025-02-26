@@ -45,7 +45,8 @@ public class QuicheStream extends AbstractStream
     private final AtomicReference<Writer> writer = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final QuicheSession session;
-    private RetainableByteBuffer.Mutable inputBuffer;
+    private RetainableByteBuffer inputBuffer;
+    private boolean inputFailed;
     private boolean dataDemand;
 
     public QuicheStream(QuicheSession session, long streamId, boolean local)
@@ -130,11 +131,13 @@ public class QuicheStream extends AbstractStream
     @Override
     public Data read()
     {
+        RetainableByteBuffer inputBuffer = tryAcquireInputBuffer();
         try
         {
             try
             {
-                tryAcquireInputBuffer();
+                if (inputBuffer == null)
+                    throw new IOException("could not read from stream #" + getId());
 
                 ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
                 int position = byteBuffer.position();
@@ -155,19 +158,23 @@ public class QuicheStream extends AbstractStream
                     // Retain because multiple data can be read with the same inputBuffer.
                     data.retain();
                     if (last)
-                        tryReleaseInputBuffer();
+                        tryReleaseInputBuffer(inputBuffer);
+                    else
+                        tryStoreInputBuffer(inputBuffer);
                     return data;
                 }
 
                 if (filled == 0 && !last)
                 {
                     // Keep the buffer around only if it is retained.
-                    if (!inputBuffer.isRetained())
-                        tryReleaseInputBuffer();
+                    if (inputBuffer.isRetained())
+                        tryStoreInputBuffer(inputBuffer);
+                    else
+                        tryReleaseInputBuffer(inputBuffer);
                     return null;
                 }
 
-                tryReleaseInputBuffer();
+                tryReleaseInputBuffer(inputBuffer);
 
                 return Stream.Data.EOF;
             }
@@ -181,7 +188,12 @@ public class QuicheStream extends AbstractStream
             if (LOG.isDebugEnabled())
                 LOG.debug("failure reading from {}", this, x);
 
-            tryReleaseInputBuffer();
+            try (AutoLock ignored = lock.lock())
+            {
+                inputFailed = true;
+            }
+            tryReleaseInputBuffer(inputBuffer);
+
             updateCloseState(CloseState.REMOTELY_CLOSED);
 
             // Stream.read() typically does not throw, but with
@@ -193,33 +205,59 @@ public class QuicheStream extends AbstractStream
         }
     }
 
-    private void tryAcquireInputBuffer()
+    private RetainableByteBuffer tryAcquireInputBuffer()
     {
-        if (inputBuffer != null)
+        RetainableByteBuffer buffer;
+        try (AutoLock ignored = lock.lock())
         {
-            int minInputSpace = getSession().getQuicConfiguration().getMinInputBufferSpace();
-            ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
+            if (inputFailed)
+                return null;
+            buffer = inputBuffer;
+            inputBuffer = null;
+        }
+
+        QuicConfiguration quicConfiguration = session.getQuicConfiguration();
+        if (buffer != null)
+        {
+            int minInputSpace = quicConfiguration.getMinInputBufferSpace();
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
             if (minInputSpace < 0 || (byteBuffer.capacity() - byteBuffer.limit()) < minInputSpace)
-                tryReleaseInputBuffer();
+            {
+                tryReleaseInputBuffer(buffer);
+                buffer = null;
+            }
         }
-        if (inputBuffer == null)
+        if (buffer == null)
         {
-            QuicConfiguration quicConfiguration = session.getQuicConfiguration();
-            inputBuffer = getSession().getByteBufferPool().acquire(quicConfiguration.getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
+            buffer = getSession().getByteBufferPool().acquire(quicConfiguration.getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
-                LOG.debug("acquired {} on {}", inputBuffer, this);
+                LOG.debug("acquired {} on {}", buffer, this);
         }
+        return buffer;
     }
 
-    private void tryReleaseInputBuffer()
+    private void tryStoreInputBuffer(RetainableByteBuffer buffer)
     {
-        if (inputBuffer != null)
+        try (AutoLock ignored = lock.lock())
         {
-            inputBuffer.release();
-            if (LOG.isDebugEnabled())
-                LOG.debug("released {} on {}", inputBuffer, this);
+            assert inputBuffer == null;
+            if (!inputFailed)
+            {
+                inputBuffer = buffer;
+                return;
+            }
         }
-        inputBuffer = null;
+        tryReleaseInputBuffer(buffer);
+    }
+
+    private void tryReleaseInputBuffer(RetainableByteBuffer buffer)
+    {
+        if (buffer != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("releasing {} on {}", buffer, this);
+            buffer.release();
+        }
     }
 
     @Override
@@ -410,6 +448,15 @@ public class QuicheStream extends AbstractStream
         CloseState previous = closeState.getAndSet(CloseState.CLOSED);
         if (previous != CloseState.CLOSED)
             removeAndNotifyClose();
+
+        RetainableByteBuffer buffer;
+        try (AutoLock ignored = lock.lock())
+        {
+            inputFailed = true;
+            buffer = inputBuffer;
+            inputBuffer = null;
+        }
+        tryReleaseInputBuffer(buffer);
 
         if (!stopAndReset || previous == CloseState.CLOSED)
         {

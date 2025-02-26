@@ -169,9 +169,6 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     {
         try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("reading data on {}", this);
-
             HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
             Data data = connection.readData();
 

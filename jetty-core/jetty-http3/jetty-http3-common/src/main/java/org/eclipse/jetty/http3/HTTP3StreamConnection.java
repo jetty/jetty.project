@@ -476,7 +476,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         public InvocationType getInvocationType()
         {
             HTTP3Stream http3Stream = stream;
-            return http3Stream == null ? InvocationType.NON_BLOCKING : Invocable.getInvocationType(http3Stream);
+            return http3Stream == null ? InvocationType.BLOCKING : Invocable.getInvocationType(http3Stream);
         }
 
         @Override
