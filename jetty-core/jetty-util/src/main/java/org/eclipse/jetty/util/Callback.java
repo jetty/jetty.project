@@ -16,8 +16,7 @@ package org.eclipse.jetty.util;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
@@ -397,128 +396,132 @@ public interface Callback extends Invocable
      * For example: <pre>{@code
      *   void sendToAll(String message, Collection<Channel> channels, Callback callback)
      *   {
-     *       Callback.Combination combination = new Callback.Combination();
-     *       for (Channel channel : channels)
-     *           channel.send(message, combination.newCallback());
-     *       combination.whenAllComplete(callback);
+     *       try (Callback.Combination combination = new Callback.Combination(callback))
+     *       {
+     *           for (Channel channel : channels)
+     *               channel.send(message, combination.newCallback());
+     *       }
      *   }
      * }</pre>
      */
-    class Combination
+    class Combination implements AutoCloseable
     {
-        private final AtomicInteger count = new AtomicInteger(1);
-        private final AtomicReference<Throwable> failure;
-        private final AtomicReference<Callback> andThen = new AtomicReference<>();
-        private InvocationType invocationType;
+        private final Callback andThen;
+        private final AtomicStampedReference<Throwable> state;
+        private final AtomicBoolean closed = new AtomicBoolean();
 
         /**
          * Create a new empty combined callback.
+         * @param andThen The {@code Callback} to complete once all {@code Callbacks} in the combination are complete
+         *                and this combination is {@link #close() closed}.
          */
-        public Combination()
+        public Combination(Callback andThen)
         {
-            this(null);
-        }
-
-        /**
-         * Create a new empty combined callback with a forced failure.
-         * @param failure If not {@code null}, force a failure, so that the {@link Callback#failed(Throwable)} method
-         * will always be called on the {@code Callback} passed to {@link #whenAllComplete(Callback)}, once all the
-         * combined callbacks are completed
-         */
-        public Combination(Throwable failure)
-        {
-            this(failure, null);
+            this(andThen, null);
         }
 
         /**
          * Create a new empty combined callback with a forced failure and invocation type.
+         *
+         * @param andThen The {@code Callback} to complete once all {@code Callbacks} in the combination are complete
+         *                and this combination is {@link #close() closed}.
          * @param failure If not {@code null}, force a failure, so that the {@link Callback#failed(Throwable)} method
-         * will always be called on the {@code Callback} passed to {@link #whenAllComplete(Callback)}, once all the
-         * combined callbacks are completed
-         * @param invocationType The invocationType of the {@code Callback} that will ultimately be passed to
-         *                       {@link #whenAllComplete(Callback)}.
+         * will always be called on the {@code Callback} passed to the constructor, once all the
+         * combined callbacks are completed and the {@code Combination} is {@link #close() closed}.
          */
-        public Combination(Throwable failure, InvocationType invocationType)
+        public Combination(Callback andThen, Throwable failure)
         {
-            this.failure = new AtomicReference<>(failure);
-            this.invocationType = invocationType;
+            this.andThen = andThen;
+            this.state = new AtomicStampedReference<>(failure, 1);
         }
 
         /**
          * Create a new {@code Callback} as part of this combination.
+         *
          * @return A {@code Callback} that must be completed before the callback passed to
-         *         {@link #whenAllComplete(Callback)} is completed.
+         *         the constructor is completed.
          * @throws IllegalStateException if the combination has already been completed.
          */
         public Callback newCallback()
         {
+            if (closed.get())
+                throw new IllegalStateException("closed");
             while (true)
             {
-                int s = count.get();
+                int s = state.getStamp();
+                Throwable failure = state.getReference();
+                
                 if (s == 0)
                     throw new IllegalStateException("completed");
-                if (!count.compareAndSet(s, s + 1))
+                if (!state.compareAndSet(failure, failure, s, s + 1))
                     continue;
+
                 return new Callback()
                 {
                     private final AtomicBoolean completed = new AtomicBoolean(false);
+
                     @Override
                     public void failed(Throwable x)
                     {
                         if (completed.compareAndSet(false, true))
-                        {
-                            failure.updateAndGet(prev ->
-                            {
-                                if (prev == null)
-                                    return x;
-                                ExceptionUtil.addSuppressedIfNotAssociated(prev, x);
-                                return prev;
-                            });
-                            complete();
-                        }
+                            complete(x);
                     }
 
                     @Override
                     public void succeeded()
                     {
                         if (completed.compareAndSet(false, true))
-                            complete();
+                            complete(null);
                     }
 
                     @Override
                     public InvocationType getInvocationType()
                     {
-                        return invocationType == null ? InvocationType.NON_BLOCKING : invocationType;
+                        return Invocable.getInvocationType(andThen);
                     }
                 };
             }
         }
 
         /**
-         * Called to set the {@code Callback} to call once the combination is complete.
+         * Called to indicate that no more calls to {@link #newCallback()} will happen.
          * If the combination is already complete, then it will be completed in the scope of this call.
-         * @param callback The {@code Callback} to complete once all {@code Callbacks} in the combination are complete.
+         *
          * @throws IllegalStateException if this method has already been called.
          */
-        public void whenAllComplete(Callback callback)
+        @Override
+        public void close() throws IllegalStateException
         {
-            if (!andThen.compareAndSet(null, Objects.requireNonNull(callback)))
-                throw new IllegalStateException("whenAllComplete already called");
-            invocationType = Invocable.combine(invocationType, callback.getInvocationType());
-            complete();
+            if (!closed.compareAndSet(false, true))
+                throw new IllegalStateException("already closed");
+            complete(null);
         }
 
-        private void complete()
+        private void complete(Throwable x)
         {
-            if (count.decrementAndGet() == 0)
+            Throwable failure;
+            while (true)
             {
-                Callback callback = andThen.getAndSet(null);
-                assert callback != null;
-                Throwable failed = failure.get();
-                if (failed == null)
-                    callback.succeeded();
+                int s = state.getStamp();
+                failure = state.getReference();
+
+                if (!state.compareAndSet(failure, failure == null ? x : failure, s--, s))
+                    continue;
+
+                if (failure == null)
+                    failure = x;
                 else
-                    callback.failed(failed);
+                    ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
+
+                if (s == 0)
+                {
+                    if (failure == null)
+                        andThen.succeeded();
+                    else
+                        andThen.failed(failure);
+                }
+
+                return;
             }
         }
     }

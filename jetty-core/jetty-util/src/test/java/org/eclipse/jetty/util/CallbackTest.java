@@ -151,26 +151,28 @@ public class CallbackTest
     void testCallbackCollectionAllSucceededBefore()
     {
         FutureCallback mainCallback = new FutureCallback();
-        Callback.Combination combination = new Callback.Combination();
-        for (int i = 0; i < 10; i++)
-            combination.newCallback().succeeded();
-        combination.whenAllComplete(mainCallback);
+        try (Callback.Combination combination = new Callback.Combination(mainCallback))
+        {
+            for (int i = 0; i < 10; i++)
+                combination.newCallback().succeeded();
+        }
         assertTrue(mainCallback.isDone());
         assertFalse(mainCallback.isFailed());
     }
 
     @Test
-    void testCallbackCollectionOneFailBefore() throws InterruptedException
+    void testCallbackCollectionOneFailBefore() throws Exception
     {
         FutureCallback mainCallback = new FutureCallback();
-        Callback.Combination combination = new Callback.Combination();
-        for (int i = 0; i < 5; i++)
-            combination.newCallback().succeeded();
         Exception failure = new Exception("Test");
-        combination.newCallback().failed(failure);
-        for (int i = 6; i < 10; i++)
-            combination.newCallback().succeeded();
-        combination.whenAllComplete(mainCallback);
+        try (Callback.Combination combination = new Callback.Combination(mainCallback))
+        {
+            for (int i = 0; i < 5; i++)
+                combination.newCallback().succeeded();
+            combination.newCallback().failed(failure);
+            for (int i = 6; i < 10; i++)
+                combination.newCallback().succeeded();
+        }
 
         assertTrue(mainCallback.isDone());
         assertTrue(mainCallback.isFailed());
@@ -189,11 +191,12 @@ public class CallbackTest
     void testCallbackCollectionAllSucceededAfter()
     {
         FutureCallback mainCallback = new FutureCallback();
-        Callback.Combination combination = new Callback.Combination();
         Callback[] callbacks = new Callback[10];
-        for (int i = 0; i < callbacks.length; i++)
-            callbacks[i] = combination.newCallback();
-        combination.whenAllComplete(mainCallback);
+        try (Callback.Combination combination = new Callback.Combination(mainCallback))
+        {
+            for (int i = 0; i < callbacks.length; i++)
+                callbacks[i] = combination.newCallback();
+        }
         assertFalse(mainCallback.isDone());
 
         for (Callback callback : callbacks)
@@ -206,11 +209,12 @@ public class CallbackTest
     void testCallbackCollectionOneFailAfter() throws InterruptedException
     {
         FutureCallback mainCallback = new FutureCallback();
-        Callback.Combination combination = new Callback.Combination();
         Callback[] callbacks = new Callback[10];
-        for (int i = 0; i < callbacks.length; i++)
-            callbacks[i] = combination.newCallback();
-        combination.whenAllComplete(mainCallback);
+        try (Callback.Combination combination = new Callback.Combination(mainCallback))
+        {
+            for (int i = 0; i < callbacks.length; i++)
+                callbacks[i] = combination.newCallback();
+        }
         assertFalse(mainCallback.isDone());
 
         for (int i = 0; i < 5; i++)
@@ -238,11 +242,11 @@ public class CallbackTest
     {
         FutureCallback mainCallback = new FutureCallback();
         Exception failure = new Exception("Test");
-        Callback.Combination combination = new Callback.Combination(failure);
-        for (int i = 0; i < 10; i++)
-            combination.newCallback().succeeded();
-
-        combination.whenAllComplete(mainCallback);
+        try (Callback.Combination combination = new Callback.Combination(mainCallback, failure))
+        {
+            for (int i = 0; i < 10; i++)
+                combination.newCallback().succeeded();
+        }
         assertTrue(mainCallback.isDone());
         assertTrue(mainCallback.isFailed());
         try
@@ -262,14 +266,14 @@ public class CallbackTest
         FutureCallback mainCallback = new FutureCallback();
         Exception failure = new Exception("Test");
         Exception associated = new Exception("Test");
-        Callback.Combination combination = new Callback.Combination(failure);
-
-        for (int i = 0; i < 5; i++)
-            combination.newCallback().succeeded();
-        combination.newCallback().failed(associated);
-        for (int i = 6; i < 10; i++)
-            combination.newCallback().succeeded();
-        combination.whenAllComplete(mainCallback);
+        try (Callback.Combination combination = new Callback.Combination(mainCallback, failure))
+        {
+            for (int i = 0; i < 5; i++)
+                combination.newCallback().succeeded();
+            combination.newCallback().failed(associated);
+            for (int i = 6; i < 10; i++)
+                combination.newCallback().succeeded();
+        }
         assertTrue(mainCallback.isDone());
         assertTrue(mainCallback.isFailed());
         try
