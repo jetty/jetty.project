@@ -453,7 +453,7 @@ public interface Callback extends Invocable
                 if (s >= 0)
                     throw new IllegalStateException("closed");
                 // we can only create new callbacks when not closed, so we decrement to make a more negative stamp.
-                if (!state.compareAndSet(failure, failure, s--, s))
+                if (!state.compareAndSet(failure, failure, s, s - 1))
                     continue;
 
                 return new Callback()
