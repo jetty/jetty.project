@@ -136,6 +136,12 @@ public class MockEndpoint implements EndPoint
     }
 
     @Override
+    public Callback cancelWrite(Throwable cause)
+    {
+        throw new UnsupportedOperationException(NOT_SUPPORTED);
+    }
+
+    @Override
     public Connection getConnection()
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);

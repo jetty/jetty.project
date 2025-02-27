@@ -29,10 +29,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -60,11 +60,10 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.internal.HTTP2Flusher;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.WriteFlusher;
+import org.eclipse.jetty.io.SelectableChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -76,7 +75,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -817,10 +815,9 @@ public class StreamResetTest extends AbstractTest
     }
 
     @Test
-    public void testResetAfterTCPCongestedWrite() throws Exception
+    public void testResetAfterTCPCongestedWriteThenResolveCongestionToUnblockWrite() throws Exception
     {
-        AtomicReference<WriteFlusher> flusherRef = new AtomicReference<>();
-        CountDownLatch flusherLatch = new CountDownLatch(1);
+        AtomicReference<SelectableChannelEndPoint> serverEndPointRef = new AtomicReference<>();
         CountDownLatch writeLatch1 = new CountDownLatch(1);
         CountDownLatch writeLatch2 = new CountDownLatch(1);
         start(new Handler.Abstract()
@@ -828,8 +825,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                flusherRef.set(((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint()).getWriteFlusher());
-                flusherLatch.countDown();
+                serverEndPointRef.set((SelectableChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
 
                 try
                 {
@@ -880,14 +876,102 @@ public class StreamResetTest extends AbstractTest
             accumulator.writeTo(Content.Sink.from(socket), false);
 
             // Wait until the server is TCP congested.
-            assertTrue(flusherLatch.await(5, TimeUnit.SECONDS));
-            WriteFlusher flusher = flusherRef.get();
-            waitUntilTCPCongested(flusher);
+            waitUntilTCPCongested(serverEndPointRef::get);
 
             accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
             accumulator.writeTo(Content.Sink.from(socket), false);
             accumulator.release();
+
+            // Resolve TCP congestion to allow the server to send its reset frame initiated by
+            // the cancellation of the pending write.
+            socket.configureBlocking(false);
+            ByteBuffer buffer = ByteBuffer.allocate(8192);
+            while (true)
+            {
+                int read = socket.read(buffer);
+                if (read < 1)
+                    break;
+                buffer.clear();
+            }
+
+            assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
+            assertTrue(writeLatch2.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testResetAfterTCPCongestedWriteThenWaitForIdleTimeoutToUnblockWrite() throws Exception
+    {
+        int serverIdleTimeout = 1000;
+        AtomicReference<SelectableChannelEndPoint> serverEndPointRef = new AtomicReference<>();
+        CountDownLatch writeLatch1 = new CountDownLatch(1);
+        CountDownLatch writeLatch2 = new CountDownLatch(1);
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                serverEndPointRef.set((SelectableChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
+
+                try
+                {
+                    // Large write, it blocks due to TCP congestion.
+                    byte[] data = new byte[128 * 1024 * 1024];
+                    Content.Sink.write(response, false, ByteBuffer.wrap(data));
+                }
+                catch (IOException x)
+                {
+                    writeLatch1.countDown();
+                    try
+                    {
+                        // Try to write again, must fail immediately.
+                        Content.Sink.write(response, true, ByteBuffer.wrap(new byte[]{1}));
+                    }
+                    catch (IOException e)
+                    {
+                        writeLatch2.countDown();
+                    }
+                }
+                return true;
+            }
+        });
+        connector.setIdleTimeout(serverIdleTimeout);
+
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
+        try (SocketChannel socket = SocketChannel.open())
+        {
+            String host = "localhost";
+            int port = connector.getLocalPort();
+            socket.connect(new InetSocketAddress(host, port));
+
+            Generator generator = new Generator(bufferPool);
+            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            generator.control(accumulator, new PrefaceFrame());
+            Map<Integer, Integer> clientSettings = new HashMap<>();
+            // Max stream HTTP/2 flow control window.
+            clientSettings.put(SettingsFrame.INITIAL_WINDOW_SIZE, Integer.MAX_VALUE);
+            generator.control(accumulator, new SettingsFrame(clientSettings, false));
+            // Max session HTTP/2 flow control window.
+            generator.control(accumulator, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
+
+            HttpURI uri = HttpURI.from("http", host, port, "/");
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            int streamId = 3;
+            HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
+            generator.control(accumulator, headersFrame);
+
+            accumulator.writeTo(Content.Sink.from(socket), false);
+
+            // Wait until the server is TCP congested.
+            waitUntilTCPCongested(serverEndPointRef::get);
+
+            accumulator.clear();
+            generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
+            accumulator.writeTo(Content.Sink.from(socket), false);
+            accumulator.release();
+
+            // Idle timeout should unblock the server's write.
 
             assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
             assertTrue(writeLatch2.await(5, TimeUnit.SECONDS));
@@ -897,7 +981,7 @@ public class StreamResetTest extends AbstractTest
     @Test
     public void testResetSecondRequestAfterTCPCongestedWriteBeforeWrite() throws Exception
     {
-        Exchanger<WriteFlusher> exchanger = new Exchanger<>();
+        Exchanger<SelectableChannelEndPoint> exchanger = new Exchanger<>();
         CountDownLatch requestLatch1 = new CountDownLatch(1);
         CountDownLatch requestLatch2 = new CountDownLatch(1);
         CountDownLatch writeLatch1 = new CountDownLatch(1);
@@ -918,7 +1002,7 @@ public class StreamResetTest extends AbstractTest
 
             private void service1(Request request, Response response, Callback callback) throws Exception
             {
-                exchanger.exchange(((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint()).getWriteFlusher());
+                exchanger.exchange((SelectableChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Large write, it blocks due to TCP congestion.
                 response.write(true, ByteBuffer.wrap(new byte[128 * 1024 * 1024]), callback);
             }
@@ -968,7 +1052,8 @@ public class StreamResetTest extends AbstractTest
 
             accumulator.writeTo(Content.Sink.from(socket), false);
 
-            waitUntilTCPCongested(exchanger.exchange(null));
+            SelectableChannelEndPoint endPoint = exchanger.exchange(null);
+            waitUntilTCPCongested(() -> endPoint);
 
             // Send a second request.
             uri = HttpURI.from("http", host, port, "/2");
@@ -1119,16 +1204,16 @@ public class StreamResetTest extends AbstractTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)stream.getSession()).updateSendWindow(0), greaterThan(0));
     }
 
-    private void waitUntilTCPCongested(WriteFlusher flusher) throws TimeoutException, InterruptedException
+    private void waitUntilTCPCongested(Supplier<SelectableChannelEndPoint> selectableChannelEndPointRef)
     {
-        long start = NanoTime.now();
-        while (!flusher.isPending())
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            if (NanoTime.secondsSince(start) > 15)
-                throw new TimeoutException();
-            Thread.sleep(100);
-        }
-        // Wait for the selector to update the SelectionKey to OP_WRITE.
-        Thread.sleep(1000);
+            SelectableChannelEndPoint endPoint = selectableChannelEndPointRef.get();
+            if (endPoint == null)
+                return false;
+            boolean pending = endPoint.getWriteFlusher().isPending();
+            boolean writeInterested = endPoint.isWriteInterested();
+            return pending && writeInterested;
+        });
     }
 }
