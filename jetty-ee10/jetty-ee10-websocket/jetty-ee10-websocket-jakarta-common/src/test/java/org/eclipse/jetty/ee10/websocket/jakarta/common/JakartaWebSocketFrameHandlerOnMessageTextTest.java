@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.DeploymentException;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.sockets.TrackingSocket;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakartaWebSocketFrameHandlerTest
@@ -72,8 +74,9 @@ public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakar
     public void testAmbiguousEmptyMessage() throws Exception
     {
         MessageSocket socket = new MessageSocket();
-        Exception e = assertThrows(InvalidSignatureException.class, () -> onText(socket, "Hello World"));
-        assertThat(e.getMessage(), containsString("@OnMessage public void " + MessageSocket.class.getName() + "#onMessage"));
+        Exception e = assertThrows(DeploymentException.class, () -> onText(socket, "Hello World"));
+        assertThat(e.getCause(), instanceOf(InvalidSignatureException.class));
+        assertThat(e.getCause().getMessage(), containsString("@OnMessage public void " + MessageSocket.class.getName() + ".onMessage"));
     }
 
     @ClientEndpoint
@@ -109,8 +112,9 @@ public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakar
     public void testAmbiguousMessageSession() throws Exception
     {
         MessageSessionSocket socket = new MessageSessionSocket();
-        Exception e = assertThrows(InvalidSignatureException.class, () -> onText(socket, "Hello World"));
-        assertThat(e.getMessage(), containsString("@OnMessage public void " + MessageSessionSocket.class.getName() + "#onMessage"));
+        Exception e = assertThrows(DeploymentException.class, () -> onText(socket, "Hello World"));
+        assertThat(e.getCause(), instanceOf(InvalidSignatureException.class));
+        assertThat(e.getCause().getMessage(), containsString("@OnMessage public void " + MessageSessionSocket.class.getName() + ".onMessage"));
     }
 
     @ClientEndpoint

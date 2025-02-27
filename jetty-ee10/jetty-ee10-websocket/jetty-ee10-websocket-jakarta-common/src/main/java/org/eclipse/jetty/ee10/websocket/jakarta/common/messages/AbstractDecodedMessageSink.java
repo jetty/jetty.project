@@ -121,8 +121,6 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
         public Stream(CoreSession coreSession, MethodHandle methodHandle, List<RegisteredDecoder> decoders, Consumer<Throwable> onError)
         {
             super(coreSession, methodHandle, onError);
-            if (decoders.size() != 1)
-                throw new IllegalArgumentException("Require exactly one decoder for " + this.getClass());
             _decoder = decoders.get(0).getInstance();
         }
     }

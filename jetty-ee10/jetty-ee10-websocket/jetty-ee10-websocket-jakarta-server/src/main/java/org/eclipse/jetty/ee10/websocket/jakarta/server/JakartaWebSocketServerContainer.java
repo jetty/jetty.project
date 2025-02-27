@@ -303,6 +303,10 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         {
             throw new DeploymentException(e.getMessage(), e);
         }
+        catch (DeploymentException e)
+        {
+            throw e;
+        }
         catch (Throwable t)
         {
             throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), t);

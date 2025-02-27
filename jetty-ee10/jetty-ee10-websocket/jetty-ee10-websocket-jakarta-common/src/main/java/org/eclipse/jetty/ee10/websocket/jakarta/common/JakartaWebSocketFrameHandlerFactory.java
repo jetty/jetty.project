@@ -48,6 +48,7 @@ import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedTextStrea
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialByteArrayMessageSink;
@@ -361,7 +362,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
                     if (matchOnMessage(onMsg, metadata, msgMetadata, getMethodHandle))
                         continue;
 
-                    throw new InvalidWebSocketException("Unable to match @OnMessage method: " + onMsg);
+                    throw new InvalidSignatureException("Unable to match @OnMessage " + onMsg);
                 }
             }
         }

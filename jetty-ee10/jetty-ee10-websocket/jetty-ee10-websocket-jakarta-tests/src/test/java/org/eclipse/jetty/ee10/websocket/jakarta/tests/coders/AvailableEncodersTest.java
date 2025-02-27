@@ -29,15 +29,13 @@ import org.eclipse.jetty.ee10.websocket.jakarta.common.encoders.AvailableEncoder
 import org.eclipse.jetty.ee10.websocket.jakarta.common.encoders.IntegerEncoder;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AvailableEncodersTest
 {
@@ -278,18 +276,26 @@ public class AvailableEncodersTest
     public void testCustomEncoderRegisterDuplicate()
     {
         // has duplicated support for the same target Type
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> encoders.register(BadDualEncoder.class));
-        assertThat(e.getMessage(), containsString("Duplicate"));
+        encoders.register(BadDualEncoder.class);
+        assertThat(encoders.getEncoderFor(Integer.class), equalTo(BadDualEncoder.class));
     }
 
     @Test
-    public void testCustomEncoderRegisterOtherDuplicate()
+    public void testCustomEncoderRegisterOtherDuplicate() throws Exception
     {
-        // Register DateEncoder (decodes java.util.Date)
+        // Register TimeEncoder (decodes to java.util.Date)
+        encoders.register(TimeEncoder.class);
+
+        // Register DateEncoder (which also wants to decode to java.util.Date)
         encoders.register(DateEncoder.class);
 
-        // Register TimeEncoder (which also wants to decode java.util.Date)
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> encoders.register(TimeEncoder.class));
-        assertThat(e.getMessage(), containsString("Duplicate"));
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+        calendar.set(Calendar.YEAR, 2016);
+        calendar.set(Calendar.MONTH, Calendar.AUGUST);
+        calendar.set(Calendar.DAY_OF_MONTH, 22);
+        Date val = calendar.getTime();
+
+        // Because of the duplicate the implementation selects just one of the Encoder implementations.
+        assertTextEncoder(Date.class, val, "2016.08.22");
     }
 }
