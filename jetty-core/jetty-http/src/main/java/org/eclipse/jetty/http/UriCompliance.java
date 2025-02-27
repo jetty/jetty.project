@@ -215,7 +215,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      *     and <a href="https://jetty.org/docs/jetty/12/programming-guide/server/compliance.html#servleturi">Jetty Documentation: Servlet URI Compliance Modes.</a>
      * </p>
      */
-    public static final UriCompliance JETTY_11 = new UriCompliance("JETTY_11",
+    public static final UriCompliance LEGACY_11 = new UriCompliance("LEGACY_11",
         of(Violation.AMBIGUOUS_PATH_SEGMENT,
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
@@ -267,7 +267,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
     private static final AtomicInteger __custom = new AtomicInteger();
-    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, JETTY_11, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY_11, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
 
     public static boolean isAmbiguous(Set<Violation> violations)
     {
