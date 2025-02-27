@@ -101,6 +101,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
         BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding"),
 
         /**
+         * Allow Truncated UTF-8 encodings to be substituted by the replacement character in query strings
+         */
+        TRUNCATED_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Truncated UTF-8 encoding"),
+
+        /**
          * Allow bad-8 percent encodings such as %xx or %% in query strings
          */
         BAD_PERCENT_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad percent encoding"),
@@ -214,8 +219,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
         of(Violation.AMBIGUOUS_PATH_SEGMENT,
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
-            Violation.BAD_UTF8_ENCODING,
             Violation.SUSPICIOUS_PATH_CHARACTERS,
+            Violation.TRUNCATED_UTF8_ENCODING,
             Violation.UTF16_ENCODINGS,
             Violation.USER_INFO));
 
@@ -244,8 +249,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
-            Violation.BAD_UTF8_ENCODING,
             Violation.SUSPICIOUS_PATH_CHARACTERS,
+            Violation.TRUNCATED_UTF8_ENCODING,
             Violation.UTF16_ENCODINGS,
             Violation.USER_INFO));
 

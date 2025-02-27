@@ -573,7 +573,8 @@ public interface Request extends Attributes, Content.Source
                 uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
                 boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
                 boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
-                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8))
+                boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
                 {
                     HttpChannel httpChannel = HttpChannel.from(request);
                     if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)

@@ -638,8 +638,8 @@ public class RequestTest
         a=bad_%e0%b     | a            | bad_�
         a=bad_%e0%b&b=2 | a            | bad_�
         a=bad_%e0%ba    | a            | bad_�
-        b=short%a       | b            | short�
-        c=%%TOK%%       | c            | �OK�
+        b=short%a       | b            | short%a
+        c=%%TOK%%       | c            | %%TOK%%
         """)
     public void testBadUtf8Query(String query, String expectedName, String expectedValue) throws Exception
     {
@@ -656,7 +656,7 @@ public class RequestTest
 
         startServer((server) ->
                 _connector.getConnectionFactory(HttpConnectionFactory.class)
-                    .getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING)),
+                    .getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING, UriCompliance.Violation.BAD_PERCENT_ENCODING)),
             servlet
         );
 
