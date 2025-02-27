@@ -34,7 +34,7 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
      * Name of a class that belongs to the jstl bundle. From that class
      * we locate the corresponding bundle.
      */
-    private static String JSTL_BUNDLE_CLASS = "org.apache.taglibs.standard.tag.el.core.WhenTag";
+    private static String JSTL_BUNDLE_CLASS = "org.glassfish.wasp.taglibs.standard.tag.el.core.WhenTag";
 
     @Override
     public List<Bundle> getScannableBundles()
