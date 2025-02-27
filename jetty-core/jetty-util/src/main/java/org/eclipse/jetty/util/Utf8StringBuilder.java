@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>UTF-8 StringBuilder.</p>
  * <p>
  * This class wraps a standard {@link StringBuilder} and provides methods to append
  * UTF-8 encoded bytes, that are converted into characters.
@@ -37,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * {@link CharacterCodingException}. Already decoded characters may also be appended (e.g. {@link #append(char)}
  * making this class suitable for decoding % encoded strings of already decoded characters.
  * </p>
+ *
  * @see CharsetStringBuilder for decoding of arbitrary {@link java.nio.charset.Charset}s.
  */
 public class Utf8StringBuilder implements CharsetStringBuilder
@@ -136,6 +136,16 @@ public class Utf8StringBuilder implements CharsetStringBuilder
             _state = UTF8_ACCEPT;
             _codingErrors = true;
         }
+    }
+
+    public boolean replaceIncomplete()
+    {
+        if (_state == UTF8_ACCEPT)
+            return false;
+
+        bufferAppend(REPLACEMENT);
+        _state = UTF8_ACCEPT;
+        return true;
     }
 
     public void append(char c)
@@ -342,6 +352,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     /**
      * Get the completely decoded string, which is equivalent to calling {@link #complete()} then {@link #toString()}.
+     *
      * @return The completely decoded string.
      */
     public String toCompleteString()
@@ -352,8 +363,9 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     /**
      * Take the completely decoded string.
+     *
      * @param onCodingError A supplier of a {@link Throwable} to use if {@link #hasCodingErrors()} returns true,
-     *                      or null for no error action
+     * or null for no error action
      * @param <X> The type of the exception thrown
      * @return The complete string.
      * @throws X if {@link #hasCodingErrors()} is true after {@link #complete()}.
@@ -366,8 +378,9 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
     /**
      * Take the partially decoded string.
+     *
      * @param onCodingError A supplier of a {@link Throwable} to use if {@link #hasCodingErrors()} returns true,
-     *                      or null for no error action
+     * or null for no error action
      * @param <X> The type of the exception thrown
      * @return The complete string.
      * @throws X if {@link #hasCodingErrors()} is true after {@link #complete()}.

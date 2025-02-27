@@ -932,6 +932,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             String contextPath = getContextPath();
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) || baseRequest.getCoreRequest().getContext().isCrossContextDispatch(baseRequest.getCoreRequest()))
             {
+                // Perform context-path (and url-pattern) matching on compacted path.
+                if (isCompactPath())
+                    target = URIUtil.compactPath(target);
+
                 if (target.length() > contextPath.length())
                 {
                     if (contextPath.length() > 1)
@@ -1409,19 +1413,34 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     }
 
     /**
+     * Is a compacted path used for context-path and url-pattern matching?
+     *
      * @return True if URLs are compacted to replace multiple '/'s with a single '/'
-     * @deprecated use {@code CompactPathRule} with {@code RewriteHandler} instead.
+     * @deprecated use {@code CompactPathRule} with {@code RewriteHandler} instead.  Will be removed from ee10 onwards.
+     * @see URIUtil#compactPath(String)
      */
-    @Deprecated
+    @Deprecated(since = "10.0.5", forRemoval = true)
     public boolean isCompactPath()
     {
         return _compactPath;
     }
 
     /**
+     * <p>
+     * When performing context-path and url-pattern matching, do so with a compacted form of the
+     * request path.
+     * </p>
+     *
+     * <p>
+     * Note: this compacted path is not exposed to the Servlet API, the original request path
+     * is used.
+     * </p>
+     *
      * @param compactPath True if URLs are compacted to replace multiple '/'s with a single '/'
+     * @deprecated use {@code CompactPathRule} with {@code RewriteHandler} instead.  Will be removed from ee10 onwards.
+     * @see URIUtil#compactPath(String)
      */
-    @Deprecated
+    @Deprecated(since = "10.0.5", forRemoval = true)
     public void setCompactPath(boolean compactPath)
     {
         _compactPath = compactPath;

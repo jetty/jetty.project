@@ -36,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -559,27 +560,38 @@ public interface Request extends Attributes, Content.Source
 
     static Fields extractQueryParameters(Request request, Charset charset)
     {
-        String query = request.getHttpURI().getQuery();
-        if (StringUtil.isBlank(query))
-            return Fields.EMPTY;
-        Fields fields = new Fields(true);
+        UriCompliance uriCompliance = null;
+        try
+        {
+            String query = request.getHttpURI().getQuery();
+            if (StringUtil.isBlank(query))
+                return Fields.EMPTY;
+            Fields fields = new Fields(true);
 
-        if (charset == null || StandardCharsets.UTF_8.equals(charset))
-        {
-            UriCompliance uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
-            boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
-            if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadUtf8))
+            if (charset == null || StandardCharsets.UTF_8.equals(charset))
             {
-                HttpChannel httpChannel = HttpChannel.from(request);
-                if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)
-                    httpChannel.getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
+                uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
+                boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+                boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
+                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowTruncatedUtf8, allowBadUtf8))
+                {
+                    HttpChannel httpChannel = HttpChannel.from(request);
+                    if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)
+                        httpChannel.getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
+                }
             }
+            else
+            {
+                UrlEncoded.decodeTo(query, fields::add, charset);
+            }
+            return fields;
         }
-        else
+        catch (Throwable t)
         {
-            UrlEncoded.decodeTo(query, fields::add, charset);
+//            if (uriCompliance == UriCompliance.LEGACY)
+//                throw t;
+            throw new BadMessageException("Bad query", t);
         }
-        return fields;
     }
 
     static Fields getParameters(Request request) throws Exception

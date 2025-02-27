@@ -101,6 +101,11 @@ public final class UriCompliance implements ComplianceViolation.Mode
         BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding"),
 
         /**
+         * Allow truncated UTF-8 encodings to be substituted by the replacement character.
+         */
+        TRUNCATED_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Truncated UTF-8 encoding"),
+
+        /**
          * Allow encoded path characters not allowed by the Servlet spec rules.
          */
         SUSPICIOUS_PATH_CHARACTERS("https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization", "Suspicious Path Character"),
@@ -210,7 +215,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
-            Violation.BAD_UTF8_ENCODING,
+            Violation.TRUNCATED_UTF8_ENCODING,
             Violation.UTF16_ENCODINGS,
             Violation.USER_INFO));
 
