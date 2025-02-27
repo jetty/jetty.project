@@ -733,6 +733,17 @@ public class RequestTest
             Arguments.of(UriCompliance.DEFAULT, "//", "400"),
 
             // these results are from jetty-11 DEFAULT
+            Arguments.of(UriCompliance.JETTY_11, "o", "o"),
+            Arguments.of(UriCompliance.JETTY_11, "%5C", "\\"),
+            Arguments.of(UriCompliance.JETTY_11, "%0A", "\n"),
+            Arguments.of(UriCompliance.JETTY_11, "%00", "400"),
+            Arguments.of(UriCompliance.JETTY_11, "%01", "\u0001"),
+            Arguments.of(UriCompliance.JETTY_11, "%5F", "_"),
+            Arguments.of(UriCompliance.JETTY_11, "%2F", "/"),
+            Arguments.of(UriCompliance.JETTY_11, "%252F", "%2F"),
+            Arguments.of(UriCompliance.JETTY_11, "//", "400"),
+
+            // these results are from jetty-11 LEGACY
             Arguments.of(UriCompliance.LEGACY, "o", "o"),
             Arguments.of(UriCompliance.LEGACY, "%5C", "\\"),
             Arguments.of(UriCompliance.LEGACY, "%0A", "\n"),
@@ -741,7 +752,7 @@ public class RequestTest
             Arguments.of(UriCompliance.LEGACY, "%5F", "_"),
             Arguments.of(UriCompliance.LEGACY, "%2F", "/"),
             Arguments.of(UriCompliance.LEGACY, "%252F", "%2F"),
-            Arguments.of(UriCompliance.LEGACY, "//", "400")
+            Arguments.of(UriCompliance.LEGACY, "//", "//")
         );
     }
 
@@ -760,7 +771,7 @@ public class RequestTest
         });
 
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(compliance);
-        if (compliance == UriCompliance.LEGACY)
+        if (compliance != UriCompliance.DEFAULT)
             _server.getBean(ServletContextHandler.class).getServletHandler().setDecodeAmbiguousURIs(true);
         String request = "GET /test/fo" + suspect + "bar HTTP/1.0\r\n" +
             "Host: whatever\r\n" +

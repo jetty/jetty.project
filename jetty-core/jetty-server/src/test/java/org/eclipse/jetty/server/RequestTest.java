@@ -633,10 +633,10 @@ public class RequestTest
         cases.add(Arguments.of("other=foo&%E5%B8%BD%E5%AD%90=Beret", 200, "帽子", "Beret"));
 
         // truncated pct-encoded parameter names
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 400, "�", "")); // different from 11
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret", 200, "帽孝Beret", ""));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret", 400, "帽子", ""));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret", 200, "帽�", "Beret"));
-        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 400, "", "")); // different from 11
+        cases.add(Arguments.of("%E5%B8%BD%E5%AD%9=Beret&other=foo", 200, "帽孝Beret", ""));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD%=Beret&other=foo", 400, "帽子", ""));
         cases.add(Arguments.of("%E5%B8%BD%E5%AD=Beret&other=foo", 200, "帽�", "Beret"));
 
@@ -798,12 +798,12 @@ public class RequestTest
         cases.add(Arguments.of("param=%E2&other=foo", 200, "param", "�"));
 
         // Tokenized cases
-        cases.add(Arguments.of("param=%%TOK%%", 200, "param", "�OK�"));
-        cases.add(Arguments.of("param=%%TOK%%&other=foo", 200, "param", "�OK�"));
+        cases.add(Arguments.of("param=%%TOK%%", 200, "param", "%%TOK%%"));
+        cases.add(Arguments.of("param=%%TOK%%&other=foo", 200, "param", "%%TOK%%"));
 
         // Bad Hex
-        cases.add(Arguments.of("param=%xx", 200, "param", "�"));
-        cases.add(Arguments.of("param=%xx&other=foo", 200, "param", "�"));
+        cases.add(Arguments.of("param=%xx", 200, "param", "%xx"));
+        cases.add(Arguments.of("param=%xx&other=foo", 200, "param", "%xx"));
 
         // Overlong UTF-8 Encoding
         cases.add(Arguments.of("param=%C0%AF", 200, "param", "��"));
@@ -836,8 +836,10 @@ public class RequestTest
         // Community Examples
         cases.add(Arguments.of("param=f_%e0%b8", 200, "param", "f_�"));
         cases.add(Arguments.of("param=f_%e0%b8&other=foo", 200, "param", "f_�"));
-        cases.add(Arguments.of("param=%£", 200, "param", "�"));
-        cases.add(Arguments.of("param=%£&other=foo", 200, "param", "�"));
+        cases.add(Arguments.of("param=%x", 200, "param", "%x"));
+        cases.add(Arguments.of("param=%£", 200, "param", "%�"));
+        cases.add(Arguments.of("param=%x&other=foo", 200, "param", "%x"));
+        cases.add(Arguments.of("param=%£&other=foo", 200, "param", "%�"));
 
         // Extra ampersands
         cases.add(Arguments.of("param=aaa&&&", 200, "param", "aaa"));
@@ -869,8 +871,7 @@ public class RequestTest
     @MethodSource("queryBehaviorsBadUtf8Allowed")
     public void testQueryExtractionBehaviorBadUtf8Allowed(String inputQuery, int expectedStatus, String expectedKey, String expectedValue) throws Exception
     {
-        UriCompliance uriCompliance = UriCompliance.DEFAULT.with("test",
-            UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+        UriCompliance uriCompliance = UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING, UriCompliance.Violation.BAD_PERCENT_ENCODING);
         testQueryExtractionBehavior(uriCompliance, inputQuery, expectedStatus, expectedKey, expectedValue);
     }
 
@@ -884,40 +885,38 @@ public class RequestTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                switch (expectedStatus)
+                if (expectedStatus == 200)
                 {
-                    case 200:
+                    try
                     {
-                        try
-                        {
-                            Fields fields = Request.extractQueryParameters(request);
-                            Fields.Field field = fields.get(expectedKey);
-                            assertNotNull(field);
-                            String value = field.getValue();
+                        Fields fields = Request.extractQueryParameters(request);
+                        Fields.Field field = fields.get(expectedKey);
+                        assertNotNull(field);
+                        String value = field.getValue();
 
-                            if (expectedValue == null)
-                            {
-                                assertThat(field.getValue(), is(""));
-                            }
-                            else
-                            {
-                                assertThat(value, is(expectedValue));
-                            }
-                            response.setStatus(200);
-                            callback.succeeded();
-                            return true;
-                        }
-                        catch (Throwable t)
+                        if (expectedValue == null)
                         {
-                            callback.failed(t);
-                            return true;
+                            assertThat(field.getValue(), is(""));
                         }
+                        else
+                        {
+                            assertThat(value, is(expectedValue));
+                        }
+                        response.setStatus(200);
+                        callback.succeeded();
+                        return true;
                     }
-                    default:
+                    catch (Throwable t)
                     {
-                        RuntimeException e = assertThrows(RuntimeException.class, () -> Request.extractQueryParameters(request));
-                        callback.failed(e);
+                        callback.failed(t);
+                        return true;
                     }
+                }
+                else
+                {
+                    System.err.println(Request.extractQueryParameters(request));
+                    RuntimeException e = assertThrows(RuntimeException.class, () -> Request.extractQueryParameters(request));
+                    callback.failed(e);
                 }
                 return true;
             }
@@ -950,6 +949,17 @@ public class RequestTest
             Arguments.of("//", "400", "400", UriCompliance.DEFAULT),
 
             // these results are from jetty-11 DEFAULT
+            Arguments.of("o", "o", "o", UriCompliance.JETTY_11),
+            Arguments.of("%5C", "%5C", "\\", UriCompliance.JETTY_11),
+            Arguments.of("%0A", "%0A", "\n", UriCompliance.JETTY_11),
+            Arguments.of("%00", "400", "400", UriCompliance.JETTY_11),
+            Arguments.of("%01", "%01", "\u0001", UriCompliance.JETTY_11),
+            Arguments.of("%5F", "_", "_", UriCompliance.JETTY_11),
+            Arguments.of("%2F", "%2F", "/", UriCompliance.JETTY_11),
+            Arguments.of("%252F", "%252F", "%2F", UriCompliance.JETTY_11),
+            Arguments.of("//", "400", "400", UriCompliance.JETTY_11),
+
+            // these results are from jetty-11 LEGACY
             Arguments.of("o", "o", "o", UriCompliance.LEGACY),
             Arguments.of("%5C", "%5C", "\\", UriCompliance.LEGACY),
             Arguments.of("%0A", "%0A", "\n", UriCompliance.LEGACY),
@@ -958,7 +968,7 @@ public class RequestTest
             Arguments.of("%5F", "_", "_", UriCompliance.LEGACY),
             Arguments.of("%2F", "%2F", "/", UriCompliance.LEGACY),
             Arguments.of("%252F", "%252F", "%2F", UriCompliance.LEGACY),
-            Arguments.of("//", "400", "400", UriCompliance.LEGACY)
+            Arguments.of("//", "//", "//", UriCompliance.LEGACY)
         );
     }
 
