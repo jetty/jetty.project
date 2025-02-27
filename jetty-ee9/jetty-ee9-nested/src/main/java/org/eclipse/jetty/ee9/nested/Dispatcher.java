@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,14 +50,14 @@ public class Dispatcher implements RequestDispatcher
 
     private final ContextHandler _contextHandler;
     private final HttpURI _uri;
-    private final String _uriInContext;
+    private final String _pathInContext;
     private final String _named;
 
-    public Dispatcher(ContextHandler contextHandler, HttpURI uri, String uriInContext)
+    public Dispatcher(ContextHandler contextHandler, HttpURI uri, String pathInContext)
     {
         _contextHandler = contextHandler;
         _uri = uri.asImmutable();
-        _uriInContext = uriInContext;
+        _pathInContext = pathInContext;
         _named = null;
     }
 
@@ -66,7 +65,7 @@ public class Dispatcher implements RequestDispatcher
     {
         _contextHandler = contextHandler;
         _uri = null;
-        _uriInContext = null;
+        _pathInContext = null;
         _named = name;
     }
 
@@ -110,13 +109,13 @@ public class Dispatcher implements RequestDispatcher
                     old_context,
                     old_mapping,
                     _uri.getPath(),
-                    _uriInContext,
+                    _pathInContext,
                     _uri.getQuery());
                 if (attr._query != null)
                     baseRequest.mergeQueryParameters(baseRequest.getQueryString(), attr._query);
                 baseRequest.setAttributes(attr);
 
-                _contextHandler.handle(_uriInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
         }
         finally
@@ -187,9 +186,8 @@ public class Dispatcher implements RequestDispatcher
                 if (query == null)
                     query = old_uri.getQuery();
 
-                String decodedPathInContext = URIUtil.decodePath(_uriInContext);
                 baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
-                baseRequest.setContext(_contextHandler.getServletContext(), decodedPathInContext);
+                baseRequest.setContext(_contextHandler.getServletContext(), _pathInContext);
 
                 if (_uri.getQuery() != null || old_uri.getQuery() != null)
                 {
@@ -212,7 +210,7 @@ public class Dispatcher implements RequestDispatcher
                     }
                 }
 
-                _contextHandler.handle(decodedPathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
                 // If we are not async and not closed already, then close via the possibly wrapped response.
                 if (!baseRequest.getHttpChannelState().isAsync() && !baseResponse.getHttpOutput().isClosed())
