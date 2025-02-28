@@ -249,7 +249,7 @@ public class QueuedPool<P> implements Pool<P>
         @Override
         public P getPooled()
         {
-            return  pooled.getReference();
+            return pooled.getReference();
         }
 
         void acquire()
