@@ -914,9 +914,12 @@ public class Request implements HttpServletRequest
     {
         if (_inputState != INPUT_NONE && _inputState != INPUT_STREAM)
             throw new IllegalStateException("READER");
+
+        // Try to write a 100 continue if it is necessary.
+        if (_inputState == INPUT_NONE && _coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+            _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+
         _inputState = INPUT_STREAM;
-        // Try to write a 100 continue, ignoring failure result if it was not necessary.
-        _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return _input;
     }
 
