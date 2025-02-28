@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,13 +196,13 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", RFC3986.getAllowed());
 
     /**
-     * JETTY_11 compliance mode that models Jetty 11 behavior by allowing:
+     * JETTY_11 compliance mode that models Jetty 11 DEFAULT behavior by allowing:
      * <ul>
      *     <li>{@link Violation#AMBIGUOUS_PATH_SEGMENT}</li>
      *     <li>{@link Violation#AMBIGUOUS_PATH_SEPARATOR}</li>
      *     <li>{@link Violation#AMBIGUOUS_PATH_ENCODING}</li>
-     *     <li>{@link Violation#BAD_UTF8_ENCODING}</li>
      *     <li>{@link Violation#SUSPICIOUS_PATH_CHARACTERS}</li>
+     *     <li>{@link Violation#TRUNCATED_UTF8_ENCODING}</li>
      *     <li>{@link Violation#UTF16_ENCODINGS}</li>
      *     <li>{@link Violation#USER_INFO}</li>
      * </ul>
@@ -215,7 +214,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      *     and <a href="https://jetty.org/docs/jetty/12/programming-guide/server/compliance.html#servleturi">Jetty Documentation: Servlet URI Compliance Modes.</a>
      * </p>
      */
-    public static final UriCompliance LEGACY_11 = new UriCompliance("LEGACY_11",
+    public static final UriCompliance JETTY_11 = new UriCompliance("JETTY_11",
         of(Violation.AMBIGUOUS_PATH_SEGMENT,
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
@@ -225,14 +224,14 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.USER_INFO));
 
     /**
-     * LEGACY compliance mode that models pre Jetty 11 behavior by allowing:
+     * LEGACY compliance mode that models pre Jetty 12 LEGACY behaviors by allowing:
      * <ul>
      *     <li>{@link Violation#AMBIGUOUS_PATH_SEGMENT}</li>
      *     <li>{@link Violation#AMBIGUOUS_PATH_SEPARATOR}</li>
      *     <li>{@link Violation#AMBIGUOUS_PATH_ENCODING}</li>
      *     <li>{@link Violation#AMBIGUOUS_EMPTY_SEGMENT}</li>
-     *     <li>{@link Violation#BAD_UTF8_ENCODING}</li>
      *     <li>{@link Violation#SUSPICIOUS_PATH_CHARACTERS}</li>
+     *     <li>{@link Violation#TRUNCATED_UTF8_ENCODING}</li>
      *     <li>{@link Violation#UTF16_ENCODINGS}</li>
      *     <li>{@link Violation#USER_INFO}</li>
      * </ul>
@@ -267,7 +266,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
     private static final AtomicInteger __custom = new AtomicInteger();
-    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY_11, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, JETTY_11, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
 
     public static boolean isAmbiguous(Set<Violation> violations)
     {

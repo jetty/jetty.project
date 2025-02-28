@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
@@ -949,15 +948,15 @@ public class RequestTest
             Arguments.of("//", "400", "400", UriCompliance.DEFAULT),
 
             // these results are from jetty-11 DEFAULT
-            Arguments.of("o", "o", "o", UriCompliance.LEGACY_11),
-            Arguments.of("%5C", "%5C", "\\", UriCompliance.LEGACY_11),
-            Arguments.of("%0A", "%0A", "\n", UriCompliance.LEGACY_11),
-            Arguments.of("%00", "400", "400", UriCompliance.LEGACY_11),
-            Arguments.of("%01", "%01", "\u0001", UriCompliance.LEGACY_11),
-            Arguments.of("%5F", "_", "_", UriCompliance.LEGACY_11),
-            Arguments.of("%2F", "%2F", "/", UriCompliance.LEGACY_11),
-            Arguments.of("%252F", "%252F", "%2F", UriCompliance.LEGACY_11),
-            Arguments.of("//", "400", "400", UriCompliance.LEGACY_11),
+            Arguments.of("o", "o", "o", UriCompliance.JETTY_11),
+            Arguments.of("%5C", "%5C", "\\", UriCompliance.JETTY_11),
+            Arguments.of("%0A", "%0A", "\n", UriCompliance.JETTY_11),
+            Arguments.of("%00", "400", "400", UriCompliance.JETTY_11),
+            Arguments.of("%01", "%01", "\u0001", UriCompliance.JETTY_11),
+            Arguments.of("%5F", "_", "_", UriCompliance.JETTY_11),
+            Arguments.of("%2F", "%2F", "/", UriCompliance.JETTY_11),
+            Arguments.of("%252F", "%252F", "%2F", UriCompliance.JETTY_11),
+            Arguments.of("//", "400", "400", UriCompliance.JETTY_11),
 
             // these results are from jetty-11 LEGACY
             Arguments.of("o", "o", "o", UriCompliance.LEGACY),

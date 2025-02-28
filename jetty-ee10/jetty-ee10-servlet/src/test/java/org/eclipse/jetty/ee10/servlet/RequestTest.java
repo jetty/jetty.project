@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,13 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -733,15 +732,15 @@ public class RequestTest
             Arguments.of(UriCompliance.DEFAULT, "//", "400"),
 
             // these results are from jetty-11 DEFAULT
-            Arguments.of(UriCompliance.LEGACY_11, "o", "o"),
-            Arguments.of(UriCompliance.LEGACY_11, "%5C", "\\"),
-            Arguments.of(UriCompliance.LEGACY_11, "%0A", "\n"),
-            Arguments.of(UriCompliance.LEGACY_11, "%00", "400"),
-            Arguments.of(UriCompliance.LEGACY_11, "%01", "\u0001"),
-            Arguments.of(UriCompliance.LEGACY_11, "%5F", "_"),
-            Arguments.of(UriCompliance.LEGACY_11, "%2F", "/"),
-            Arguments.of(UriCompliance.LEGACY_11, "%252F", "%2F"),
-            Arguments.of(UriCompliance.LEGACY_11, "//", "400"),
+            Arguments.of(UriCompliance.JETTY_11, "o", "o"),
+            Arguments.of(UriCompliance.JETTY_11, "%5C", "\\"),
+            Arguments.of(UriCompliance.JETTY_11, "%0A", "\n"),
+            Arguments.of(UriCompliance.JETTY_11, "%00", "400"),
+            Arguments.of(UriCompliance.JETTY_11, "%01", "\u0001"),
+            Arguments.of(UriCompliance.JETTY_11, "%5F", "_"),
+            Arguments.of(UriCompliance.JETTY_11, "%2F", "/"),
+            Arguments.of(UriCompliance.JETTY_11, "%252F", "%2F"),
+            Arguments.of(UriCompliance.JETTY_11, "//", "400"),
 
             // these results are from jetty-11 LEGACY
             Arguments.of(UriCompliance.LEGACY, "o", "o"),

@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
@@ -1560,7 +1559,7 @@ public class HttpConnectionTest
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
-        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY_11);
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.JETTY_11);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
