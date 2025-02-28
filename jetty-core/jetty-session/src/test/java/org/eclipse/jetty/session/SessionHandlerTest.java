@@ -155,7 +155,13 @@ public class SessionHandlerTest
                             out.append("Attribute ").append(name).append(" = ").append(session.getAttribute(name)).append('\n');
                         out.append("URI [")
                             .append(session.encodeURI(request, "/some/path", request.getHeaders().contains(HttpHeader.COOKIE)))
-                            .append("]");
+                            .append("]\n");
+                        out.append("RELATIVE URI [")
+                            .append(session.encodeURI(request, "../", request.getHeaders().contains(HttpHeader.COOKIE)))
+                            .append("]\n");
+                        out.append("ABSOLUTE URI [")
+                            .append(session.encodeURI(request, "http://localhost:80/foo/bar/", request.getHeaders().contains(HttpHeader.COOKIE)))
+                            .append("]\n");
                     }
                     else
                     {
@@ -488,6 +494,8 @@ public class SessionHandlerTest
             String content = response.getContent();
             assertThat(content, startsWith("Session="));
             assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id))); // Cookies not known to be in use
+            assertThat(content, containsString("RELATIVE URI [../;session_id=%s]".formatted(id))); // Cookies not known to be in use
+            assertThat(content, containsString("ABSOLUTE URI [http://localhost:80/foo/bar/;session_id=%s]".formatted(id))); // Cookies not known to be in use
 
             // Get with cookie
             endPoint.addInput("""
@@ -503,6 +511,8 @@ public class SessionHandlerTest
             content = response.getContent();
             assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
+            assertThat(content, containsString("RELATIVE URI [../]"));
+            assertThat(content, containsString("ABSOLUTE URI [http://localhost:80/foo/bar/"));
 
             // Get with parameter
             endPoint.addInput("""
@@ -517,6 +527,8 @@ public class SessionHandlerTest
             content = response.getContent();
             assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
             assertThat(content, containsString("URI [/some/path;session_id=%s]".formatted(id))); // Cookies not in use
+            assertThat(content, containsString("RELATIVE URI [../;session_id=%s]".formatted(id)));
+            assertThat(content, containsString("ABSOLUTE URI [http://localhost:80/foo/bar/;session_id=%s]".formatted(id)));
 
             // Get with both, but param wrong
             endPoint.addInput("""
@@ -532,6 +544,8 @@ public class SessionHandlerTest
             content = response.getContent();
             assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
+            assertThat(content, containsString("RELATIVE URI [../]"));
+            assertThat(content, containsString("ABSOLUTE URI [http://localhost:80/foo/bar/]"));
 
             // Get with both, but cookie wrong
             endPoint.addInput("""
@@ -547,6 +561,8 @@ public class SessionHandlerTest
             content = response.getContent();
             assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
             assertThat(content, containsString("URI [/some/path]")); // Cookies known to be in use
+            assertThat(content, containsString("RELATIVE URI [../]"));
+            assertThat(content, containsString("ABSOLUTE URI [http://localhost:80/foo/bar/]"));
         }
     }
 
@@ -789,5 +805,4 @@ public class SessionHandlerTest
         assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
         assertThat(content, containsString("attribute = value"));
     }
-
 }
