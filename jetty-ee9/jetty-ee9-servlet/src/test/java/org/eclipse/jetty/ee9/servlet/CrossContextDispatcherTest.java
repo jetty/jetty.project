@@ -338,7 +338,6 @@ public class CrossContextDispatcherTest
         assertThat(content, containsString("CONTEXT_PATH=/foreign"));
         assertThat(content, containsString("SERVLET_PATH=/verify"));
         assertThat(content, containsString("PATH_INFO=/% test/pinfo"));
-        System.err.println(content);
         String mapping = extractLine(contentLines, "MAPPING=");
         assertNotNull(mapping);
         assertThat(mapping, containsString("VerifyForwardServlet"));
