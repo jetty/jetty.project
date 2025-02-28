@@ -307,6 +307,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         bucket.recordRelease();
 
         RetainableByteBuffer buffer = entry.getPooled();
+        if (buffer == null)
+            return;
         BufferUtil.reset(buffer.getByteBuffer());
 
         // Release the buffer and check the memory 1% of the times.

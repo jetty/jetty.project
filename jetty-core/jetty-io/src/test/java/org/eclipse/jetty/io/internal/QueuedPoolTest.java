@@ -83,10 +83,10 @@ public class QueuedPoolTest
 
         Pool.Entry<String> e1 = pool.acquire();
 
+        assertThat(e1.release(), is(true));
         assertThat(e1.remove(), is(true));
         assertThat(e1.remove(), is(false));
-        assertThat(e1.release(), is(false));
-        assertThat(e1.getPooled(), notNullValue());
+        assertThat(e1.getPooled(), nullValue());
     }
 
     @Test
@@ -99,7 +99,7 @@ public class QueuedPoolTest
         assertThat(e1.remove(), is(true));
         assertThat(e1.remove(), is(false));
         assertThat(e1.release(), is(false));
-        assertThat(e1.getPooled(), notNullValue());
+        assertThat(e1.getPooled(), nullValue());
     }
 
     @Test

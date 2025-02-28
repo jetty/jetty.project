@@ -203,7 +203,6 @@ public class QueuedPool<P> implements Pool<P>
         // val/false -> idle
         // val/true  -> in use
         private final AtomicMarkableReference<P> pooled = new AtomicMarkableReference<>(null, false);
-        private P removedReference; // Only written before setting 'pooled', only read after getting 'pooled'.
 
         private QueuedEntry(QueuedPool<P> pool)
         {
@@ -214,96 +213,139 @@ public class QueuedPool<P> implements Pool<P>
         public boolean enable(P pooled, boolean acquire)
         {
             Objects.requireNonNull(pooled);
-            boolean[] inUse = new boolean[1];
-            P p = this.pooled.get(inUse);
-            if (p != null)
-            {
-                if (pool.isTerminated())
-                    return false;
-                throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
-            }
-            if (inUse[0])
-                return false; // terminated
 
-            this.pooled.set(pooled, acquire);
-            if (acquire)
+            while (true)
             {
-                if (pool.isTerminated())
+                boolean[] state = new boolean[1];
+                P p = this.pooled.get(state);
+                if (p != null)
                 {
-                    this.pooled.set(null, false);
-                    return false;
+                    if (pool.isTerminated())
+                        return false;
+                    throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
                 }
-                return true;
-            }
-            else
-            {
-                return pool.requeue(this);
+                if (state[0])
+                    return false; // terminated
+
+                if (!this.pooled.compareAndSet(null, pooled, false, acquire))
+                    continue;
+
+                if (acquire)
+                {
+                    if (pool.isTerminated())
+                    {
+                        this.pooled.set(null, true);
+                        return false;
+                    }
+                    return true;
+                }
+                else
+                {
+                    return pool.requeue(this);
+                }
             }
         }
 
         @Override
         public P getPooled()
         {
-            P reference = pooled.getReference();
-            return reference != null ? reference : removedReference;
+            return  pooled.getReference();
         }
 
         void acquire()
         {
-            boolean[] inUse = new boolean[1];
-            P p = pooled.get(inUse);
-            if (p == null || inUse[0])
-                return; // terminated
-            pooled.set(p, true);
+            while (true)
+            {
+                boolean[] state = new boolean[1];
+                P p = pooled.get(state);
+                boolean idle = isIdle(p, state[0]);
+                if (!idle)
+                    return;
+                if (pooled.compareAndSet(p, p, false, true))
+                    return;
+            }
         }
 
         @Override
         public boolean release()
         {
-            boolean[] inUse = new boolean[1];
-            P p = pooled.get(inUse);
-            if (p == null || !inUse[0])
-                return false;
-            pooled.set(p, false);
-            return pool.requeue(this);
+            while (true)
+            {
+                boolean[] state = new boolean[1];
+                P p = pooled.get(state);
+                boolean inUse = isInUse(p, state[0]);
+                if (!inUse)
+                    return false;
+                if (pooled.compareAndSet(p, p, true, false))
+                    return pool.requeue(this);
+            }
         }
 
         @Override
         public boolean remove()
         {
-            boolean[] inUse = new boolean[1];
-            P p = pooled.get(inUse);
-            if (p == null && inUse[0])
-                return false;
-            removedReference = p;
-            pooled.set(null, true);
-            return true;
+            while (true)
+            {
+                boolean[] state = new boolean[1];
+                P p = pooled.get(state);
+                boolean terminated = isTerminated(p, state[0]);
+                if (terminated)
+                    return false;
+                if (pooled.compareAndSet(p, null, state[0], true))
+                    return true;
+            }
         }
 
         @Override
         public boolean isReserved()
         {
-            return pooled.getReference() == null;
+            boolean[] state = new boolean[1];
+            P p = pooled.get(state);
+            return isReserved(p, state[0]);
+        }
+
+        private static boolean isReserved(Object item, boolean state)
+        {
+            return item == null && !state;
         }
 
         @Override
         public boolean isIdle()
         {
-            return !pooled.isMarked();
+            boolean[] state = new boolean[1];
+            P p = pooled.get(state);
+            return isIdle(p, state[0]);
+        }
+
+        private static boolean isIdle(Object item, boolean state)
+        {
+            return item != null && !state;
         }
 
         @Override
         public boolean isInUse()
         {
-            return pooled.isMarked();
+            boolean[] state = new boolean[1];
+            P p = pooled.get(state);
+            return isInUse(p, state[0]);
+        }
+
+        private static boolean isInUse(Object item, boolean state)
+        {
+            return item != null && state;
         }
 
         @Override
         public boolean isTerminated()
         {
-            boolean[] inUse = new boolean[1];
-            P p = pooled.get(inUse);
-            return p == null && inUse[0];
+            boolean[] state = new boolean[1];
+            P p = pooled.get(state);
+            return isTerminated(p, state[0]);
+        }
+
+        private static boolean isTerminated(Object item, boolean state)
+        {
+            return item == null && state;
         }
     }
 }
