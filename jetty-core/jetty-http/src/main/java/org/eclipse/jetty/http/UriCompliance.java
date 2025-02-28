@@ -106,7 +106,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
         TRUNCATED_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Truncated UTF-8 encoding"),
 
         /**
-         * Allow bad-8 percent encodings such as %xx or %% in query strings
+         * Allow bad percent encodings such as %xx or %% in query strings
          */
         BAD_PERCENT_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad percent encoding"),
 
