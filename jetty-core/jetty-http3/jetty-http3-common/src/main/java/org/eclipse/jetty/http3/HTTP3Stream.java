@@ -142,9 +142,6 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     protected void write(Frame frame, Promise.Invocable<Stream> promise)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("writing {} on {}", frame, this);
-
         writeFrame(frame, new Promise.Invocable.Abstract<>(promise.getInvocationType())
         {
             @Override
@@ -360,6 +357,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     public void writeFrame(Frame frame, Promise.Invocable<Stream> promise)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("writing {} on {}", frame, this);
         notIdle();
         session.writeMessageFrame(endPoint, frame, Promise.Invocable.toCallback(promise, this));
     }

@@ -277,21 +277,15 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         });
     }
 
-    protected HTTP3Stream getOrCreateStream(StreamEndPoint endPoint)
-    {
-        if (endPoint == null)
-            return null;
-        return streams.computeIfAbsent(endPoint.getStream().getId(), id -> createHTTP3Stream(endPoint, false));
-    }
-
     private HTTP3Stream createHTTP3Stream(StreamEndPoint endPoint, boolean local)
     {
         try (AutoLock ignored = lock.lock())
         {
-            if (closeState == CloseState.NOT_CLOSED)
-                streamCount.incrementAndGet();
-            else
-                throw new IllegalStateException("session_closed");
+            if (closeState == CloseState.LOCALLY_CLOSED && endPoint.getStream().getId() > goAwaySent.getLastId())
+                throw new IllegalStateException("goaway sent");
+            else if (closeState != CloseState.NOT_CLOSED)
+                throw new IllegalStateException("session closed");
+            streamCount.incrementAndGet();
         }
 
         HTTP3Stream stream = newHTTP3Stream(endPoint, local);
@@ -408,11 +402,26 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         else
         {
             StreamEndPoint endPoint = session.getStreamEndPoint(streamId);
-            HTTP3Stream stream = getOrCreateStream(endPoint);
-            if (LOG.isDebugEnabled())
-                LOG.debug("received trailer {} on {}", frame, stream);
-            if (stream != null)
-                stream.onTrailer(frame);
+            if (endPoint != null)
+            {
+                HTTP3Stream stream = getStream(endPoint.getStream().getId());
+                if (stream != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("received trailer {} on {}", frame, stream);
+                    stream.onTrailer(frame);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("dropping trailer {}: no stream on {}", frame, this);
+                }
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("dropping trailer {}: no stream endpoint on {}", frame, this);
+            }
         }
     }
 

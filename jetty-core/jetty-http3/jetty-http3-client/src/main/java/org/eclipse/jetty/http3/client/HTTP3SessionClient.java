@@ -71,11 +71,26 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         if (frame.getMetaData().isResponse())
         {
             StreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
-            HTTP3StreamClient stream = (HTTP3StreamClient)getOrCreateStream(endPoint);
-            if (LOG.isDebugEnabled())
-                LOG.debug("received response {} on {}", frame, stream);
-            if (stream != null)
-                stream.onResponse(frame);
+            if (endPoint != null)
+            {
+                HTTP3StreamClient stream = (HTTP3StreamClient)getStream(endPoint.getStream().getId());
+                if (stream != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("received response {} on {}", frame, stream);
+                    stream.onResponse(frame);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("dropping response {}: no stream on {}", frame, this);
+                }
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("dropping response {}: no stream endpoint on {}", frame, this);
+            }
         }
         else
         {
@@ -114,7 +129,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("could not create stream for {} on {}", endPoint, this);
+                LOG.debug("could not create stream for {} on {}", endPoint, this, x);
             Promise.Invocable<StreamEndPoint> p = Promise.Invocable.from(promise.getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
             endPoint.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, true, p);
             return;

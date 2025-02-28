@@ -142,9 +142,14 @@ public class GoAwayTest extends AbstractClientServerTest
         start(transportType, new Session.Server.Listener()
         {
             @Override
+            public void onAccept(Session.Server session)
+            {
+                serverSessionRef.set(session);
+            }
+
+            @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
-                serverSessionRef.set(stream.getSession());
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
                 stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
                 return null;
@@ -180,6 +185,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
         });
 
+        CompletableFuture<Stream> completable = new CompletableFuture<>();
         CountDownLatch streamFailureLatch = new CountDownLatch(1);
         clientSession.newRequest(new HeadersFrame(newRequest("/1"), true), new Stream.Client.Listener()
         {
@@ -190,7 +196,10 @@ public class GoAwayTest extends AbstractClientServerTest
                 // The server sends a lastStreamId for the first request, and discards the second.
                 serverSessionRef.get().goAway(false, Promise.Invocable.noop());
                 // The client sends the second request and should eventually fail it
-                // locally since it has a larger streamId, and the server discarded it.
+                // locally, in two ways: either it is sent to the server, and the server
+                // fails it because the request has a larger streamId than what sent with
+                // the GOAWAY; or the client received the GOAWAY from the server and
+                // the stream could not be created, and the request is never sent.
                 clientSession.newRequest(new HeadersFrame(newRequest("/2"), true), new Stream.Client.Listener()
                 {
                     @Override
@@ -198,12 +207,21 @@ public class GoAwayTest extends AbstractClientServerTest
                     {
                         streamFailureLatch.countDown();
                     }
-                }, Promise.Invocable.noop());
+                }, Promise.Invocable.toPromise(completable));
             }
         }, Promise.Invocable.noop());
 
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(streamFailureLatch.await(5, TimeUnit.SECONDS));
+        // If the request was successfully sent to the server, then expect
+        // the stream failure event, otherwise was not sent to the server.
+        CountDownLatch latch = completable.handle((s, x) ->
+        {
+            if (x == null)
+                return streamFailureLatch;
+            return null;
+        }).get(5, TimeUnit.SECONDS);
+        if (latch != null)
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
