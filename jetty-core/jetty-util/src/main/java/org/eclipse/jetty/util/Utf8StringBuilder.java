@@ -145,6 +145,8 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
         bufferAppend(REPLACEMENT);
         _state = UTF8_ACCEPT;
+        _codep = 0;
+        _codingErrors = true;
         return true;
     }
 

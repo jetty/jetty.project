@@ -426,9 +426,10 @@ public class Request implements HttpServletRequest
                 if (StandardCharsets.UTF_8.equals(_queryEncoding) || _queryEncoding == null && UrlEncoded.ENCODING.equals(StandardCharsets.UTF_8))
                 {
                     UriCompliance uriCompliance = getHttpChannel().getHttpConfiguration().getUriCompliance();
-                    boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+                    boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
                     boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
-                    if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowTruncatedUtf8, allowBadUtf8))
+                    boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
+                    if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
                     {
                         ComplianceViolation.Listener complianceViolationListener = getComplianceViolationListener();
                         if (complianceViolationListener != null)
