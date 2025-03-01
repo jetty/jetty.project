@@ -2,19 +2,49 @@ version: 2
 updates:
   - package-ecosystem: "maven"
     directory: "/"
+    open-pull-requests-limit: 30
+    target-branch: "jetty-12.0.x"
+    schedule:
+      interval: "daily"
+    # Associate with milestone 12.0.x
+    milestone: 8
+    commit-message:
+      prefix: "[12.0.x] "
+    groups:
+      dev-dependencies:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 30
+    target-branch: "jetty-12.1.x"
+    schedule:
+      interval: "daily"
+    # Associate with milestone 12.1.x
+    milestone: 89
+    commit-message:
+      prefix: "[12.1.x] "
+    groups:
+      dev-dependencies:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: "maven"
+    directory: "/"
     open-pull-requests-limit: 50
     target-branch: "jetty-10.0.x"
     schedule:
-      interval: "monthly"
-      day: "saturday"
-      time: "10:00"
-      timezone: "Australia/Brisbane"
+      interval: "daily"
     # Associate with milestone 10.0.x
     milestone: 6
     commit-message:
       prefix: "[10.0.x] "
     groups:
       build-deps:
+        applies-to: security-updates
         patterns:
           - "org.apache.maven:*"
           - "org.apache.maven.plugins:*"
@@ -31,6 +61,7 @@ updates:
           - "com.github.spotbugs:*"
           - "com.mycila:*"
       integration-deps:
+        applies-to: security-updates
         patterns:
           - "org.infinispan*"
           - "org.mongodb*"
@@ -39,6 +70,7 @@ updates:
           - "com.google.cloud:*"
           - "org.hawtio:*"
       spec-deps:
+        applies-to: security-updates
         patterns:
           - "jakarta.*"
           - "org.jboss.weld.*"
@@ -46,6 +78,7 @@ updates:
           - "org.glassfish.jaxb*"
           - "org.mortbay.jasper:*"
       dev-dependencies:
+        applies-to: security-updates
         patterns:
           - "*"
     ignore:
@@ -99,16 +132,14 @@ updates:
     open-pull-requests-limit: 30
     target-branch: "jetty-11.0.x"
     schedule:
-      interval: "monthly"
-      day: "saturday"
-      time: "10:00"
-      timezone: "Australia/Brisbane"
+      interval: "daily"
     # Associate with milestone 11.0.x
     milestone: 7
     commit-message:
       prefix: "[11.0.x] "
     groups:
       build-deps:
+        applies-to: security-updates
         patterns:
           - "org.apache.maven:*"
           - "org.apache.maven.plugins:*"
@@ -125,6 +156,7 @@ updates:
           - "com.github.spotbugs:*"
           - "com.mycila:*"
       integration-deps:
+        applies-to: security-updates
         patterns:
           - "org.infinispan*"
           - "org.mongodb*"
@@ -133,6 +165,7 @@ updates:
           - "com.google.cloud:*"
           - "org.hawtio:*"
       spec-deps:
+        applies-to: security-updates
         patterns:
           - "jakarta.*"
           - "org.jboss.weld.*"
@@ -140,6 +173,7 @@ updates:
           - "org.glassfish.jaxb*"
           - "org.mortbay.jasper:*"
       dev-dependencies:
+        applies-to: security-updates
         patterns:
           - "*"
     ignore:
@@ -199,16 +233,14 @@ updates:
     open-pull-requests-limit: 30
     target-branch: "jetty-9.4.x"
     schedule:
-      interval: "monthly"
-      day: "saturday"
-      time: "10:00"
-      timezone: "Australia/Brisbane"
+      interval: "daily"
     # Associate with milestone 9.4.x
     milestone: 3
     commit-message:
       prefix: "[9.4.x] "
     groups:
       dev-dependencies:
+        applies-to: security-updates
         patterns:
           - "*"
     ignore:
