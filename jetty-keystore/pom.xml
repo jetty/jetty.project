@@ -12,7 +12,7 @@
   <description>Test keystore with self-signed SSL Certificate.</description>
 
   <properties>
-    <bouncycastle.version>1.79</bouncycastle.version>
+    <bouncycastle.version>1.80</bouncycastle.version>
     <bundle-symbolic-name>${project.groupId}.keystore</bundle-symbolic-name>
   </properties>
 
