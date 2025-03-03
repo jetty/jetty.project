@@ -560,7 +560,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
          */
         List<Token> tokens = new ArrayList<>();
         String remaining = formatString;
-        while (remaining.length() > 0)
+        while (!remaining.isEmpty())
         {
             Matcher m = PATTERN.matcher(remaining);
             if (m.matches())
@@ -913,13 +913,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         return foldArguments(logHandle, specificHandle);
     }
 
-    //-----------------------------------------------------------------------------------//
     @SuppressWarnings("unused")
     private static void logNothing(StringBuilder b, Request request, Response response, boolean quoted)
     {
     }
 
-    //-----------------------------------------------------------------------------------//
     @SuppressWarnings("unused")
     private static void logPercent(StringBuilder b, Request request, Response response, boolean quoted)
     {
@@ -1064,7 +1062,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private static void logRequestCookies(StringBuilder b, Request request, Response response, boolean quoted)
     {
         List<HttpCookie> cookies = Request.getCookies(request);
-        if (cookies == null || cookies.size() == 0)
+        if (cookies == null || cookies.isEmpty())
         {
             b.append('-');
         }

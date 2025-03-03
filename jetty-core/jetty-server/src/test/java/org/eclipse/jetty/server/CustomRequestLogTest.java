@@ -1045,6 +1045,36 @@ public class CustomRequestLogTest
         assertThat(log, is("User-Agent: \"bad\\\"value\", \"bad\\\"value\""));
     }
 
+    @Test
+    public void testLogEscapedUserAgent() throws Exception
+    {
+        start("User-Agent: %{User-Agent}i, \"%{User-Agent}i\"");
+
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            User-Agent: bad\\"value
+            
+            """);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("User-Agent: \"bad\\\\\\\"value\", \"bad\\\\\\\"value\""));
+    }
+
+    @Test
+    public void testLogWithSloshSeparator() throws Exception
+    {
+        start("User-Agent: %{User-Agent}i\\\"%m\"");
+
+        HttpTester.Response response = getResponse("""
+            GET / HTTP/1.0
+            User-Agent: jetty
+            
+            """);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String log = _logs.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("User-Agent: jetty\\\"GET\""));
+    }
+
     class TestRequestLogWriter implements RequestLog.Writer
     {
         @Override
