@@ -714,9 +714,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
         String id = session.getExtendedId();
 
-        if (httpURI == null)
-            httpURI = HttpURI.from(uri);
-
         // Already encoded
         int prefix = uri.indexOf(sessionURLPrefix);
         if (prefix != -1)
@@ -735,16 +732,37 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         int suffix = uri.indexOf('?');
         if (suffix < 0)
             suffix = uri.indexOf('#');
+
         if (suffix < 0)
         {
-            return uri +
-                ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path, insert the root path
-                sessionURLPrefix + id;
+            if (URIUtil.isRelative(uri))
+            {
+                return uri + sessionURLPrefix + id;
+            }
+            else
+            {
+                if (httpURI == null)
+                    httpURI = HttpURI.from(uri);
+
+                return uri +
+                    ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path, insert the root path
+                    sessionURLPrefix + id;
+            }
         }
 
-        return uri.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path so insert the root path
-            sessionURLPrefix + id + uri.substring(suffix);
+        if (URIUtil.isRelative(uri))
+        {
+            return  uri.substring(0, suffix) + sessionURLPrefix + id + uri.substring(suffix);
+        }
+        else
+        {
+            if (httpURI == null)
+                httpURI = HttpURI.from(uri);
+
+            return uri.substring(0, suffix) +
+                ((HttpScheme.HTTPS.is(httpURI.getScheme()) || HttpScheme.HTTP.is(httpURI.getScheme())) && httpURI.getPath() == null ? "/" : "") + //if no path so insert the root path
+                sessionURLPrefix + id + uri.substring(suffix);
+        }
     }
 
     @Override

@@ -1331,14 +1331,14 @@ public class ErrorPageTest
 
             String responseBody = response.getContent();
             assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
-            assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: Unable to parse URI query"));
+            assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: Bad query"));
             assertThat(responseBody, Matchers.containsString("ERROR_CODE: 400"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Unable to parse URI query"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query"));
             assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
             assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + appServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /app"));
             assertThat(responseBody, Matchers.containsString("getQueryString()=[baa=%88%A4]"));
-            assertThat(responseBody, Matchers.containsString("getParameterMap().size=0"));
+            assertThat(responseBody, Matchers.containsString("getParameterMap().size=org.eclipse.jetty.http.BadMessageException"));
         }
     }
 
@@ -1971,16 +1971,23 @@ public class ErrorPageTest
             writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
             writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));
             writer.printf("getQueryString()=%s%n", valueOf(request.getQueryString()));
-            Map<String, String[]> params = request.getParameterMap();
-            writer.printf("getParameterMap().size=%d%n", params.size());
-            for (Map.Entry<String, String[]> entry : params.entrySet())
+            try
             {
-                String value = null;
-                if (entry.getValue() != null)
+                Map<String, String[]> params = request.getParameterMap();
+                writer.printf("getParameterMap().size=%d%n", params.size());
+                for (Map.Entry<String, String[]> entry : params.entrySet())
                 {
-                    value = String.join(", ", entry.getValue());
+                    String value = null;
+                    if (entry.getValue() != null)
+                    {
+                        value = String.join(", ", entry.getValue());
+                    }
+                    writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
                 }
-                writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
+            }
+            catch (Throwable t)
+            {
+                writer.printf("getParameterMap().size=%s%n", t);
             }
         }
 

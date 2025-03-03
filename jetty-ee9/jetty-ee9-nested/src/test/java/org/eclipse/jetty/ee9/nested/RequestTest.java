@@ -93,6 +93,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,34 +212,6 @@ public class RequestTest
         response = _connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 200"));
         assertEquals("utf-8", result.get());
-    }
-
-    @Test
-    public void testBadUtf8Query() throws Exception
-    {
-        _server.stop();
-        _connector.getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.BAD_UTF8_ENCODING));
-        _server.start();
-
-        _handler._checker = (request, response) ->
-        {
-            String param = request.getParameter("param");
-            String other = request.getParameter("other");
-            return param != null && param.equals("bad_�") && other != null && other.equals("short�");
-        };
-
-        //Send a request with query string with illegal hex code to cause
-        //an exception parsing the params
-        String request = """
-            GET /?param=bad_%e0%b8&other=short%a HTTP/1.1\r
-            Host: whatever\r
-            Connection: close
-            
-            """;
-
-        String responses = _connector.getResponse(request);
-        assertThat(responses, startsWith("HTTP/1.1 200"));
     }
 
     @Test
@@ -2570,5 +2544,58 @@ public class RequestTest
                 """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    static Stream<Arguments> suspiciousCharactersLegacy()
+    {
+        return Stream.of(
+            Arguments.of(UriCompliance.DEFAULT, "o", "o"),
+            Arguments.of(UriCompliance.DEFAULT, "%5C", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%0A", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%00", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%01", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%5F", "_"),
+            Arguments.of(UriCompliance.DEFAULT, "%2F", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "%252F", "400"),
+            Arguments.of(UriCompliance.DEFAULT, "//", "400"),
+
+            // these results are from jetty-11 LEGACY
+            Arguments.of(UriCompliance.LEGACY, "o", "o"),
+            Arguments.of(UriCompliance.LEGACY, "%5C", "\\"),
+            Arguments.of(UriCompliance.LEGACY, "%0A", "\n"),
+            Arguments.of(UriCompliance.LEGACY, "%00", "400"),
+            Arguments.of(UriCompliance.LEGACY, "%01", "\u0001"),
+            Arguments.of(UriCompliance.LEGACY, "%5F", "_"),
+            Arguments.of(UriCompliance.LEGACY, "%2F", "/"),
+            Arguments.of(UriCompliance.LEGACY, "%252F", "%2F"),
+            Arguments.of(UriCompliance.LEGACY, "//", "//")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("suspiciousCharactersLegacy")
+    public void testSuspiciousCharactersLegacy(UriCompliance compliance, String suspect, String expected) throws Exception
+    {
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(compliance);
+        _handler._checker = (request, response) ->
+        {
+            if (expected.length() != 3 || !Character.isDigit(expected.charAt(0)))
+                assertThat(request.getPathInfo(), is("/test/fo" + expected + "bar"));
+            return true;
+        };
+
+        String request = "GET /test/fo" + suspect + "bar HTTP/1.0\r\n" +
+            "Host: whatever\r\n" +
+            "\r\n";
+        String response = _connector.getResponse(request);
+
+        if (expected.length() == 3 && Character.isDigit(expected.charAt(0)))
+        {
+            assertThat(response, startsWith("HTTP/1.1 " + expected + " "));
+        }
+        else
+        {
+            assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        }
     }
 }
