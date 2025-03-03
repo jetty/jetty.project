@@ -122,7 +122,7 @@ public class TestOSGiUtil
         //sort out logging from the pax-exam environment
         List<Option> options = new ArrayList<>();
         options.add(systemProperty("pax.exam.logging").value("none"));
-        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
+        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "INFO");
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
         return options;
     }
@@ -213,6 +213,8 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-jndi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-osgi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-common").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-gzip").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-ee").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-ee10-servlet").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-ee10-webapp").versionAsInProject().start());
