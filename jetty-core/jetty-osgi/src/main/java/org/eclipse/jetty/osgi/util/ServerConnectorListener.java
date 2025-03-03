@@ -13,51 +13,56 @@
 
 package org.eclipse.jetty.osgi.util;
 
-import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
  * ServerConnectorListener
- *
+ * <p>
  * This is for test support, where we need jetty to run on a random port, and we need
  * a client to be able to find out which port was picked.
+ * </p>
  */
-public class ServerConnectorListener extends AbstractLifeCycleListener
+public class ServerConnectorListener implements LifeCycle.Listener
 {
-
     private Path _filePath;
     private String _sysPropertyName;
 
     @Override
     public void lifeCycleStarted(LifeCycle event)
     {
-        if (getFilePath() != null)
+        if (event instanceof ServerConnector serverConnector)
         {
-            try (FileWriter writer = new FileWriter(getFilePath().toFile()))
+            if (getFilePath() != null)
             {
-                Files.deleteIfExists(_filePath);
-                writer.write(((ServerConnector)event).getLocalPort());
+                try
+                {
+                    String line = String.valueOf(serverConnector.getLocalPort());
+                    Files.writeString(getFilePath(), line, StandardCharsets.UTF_8, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
             }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
 
-        if (getSysPropertyName() != null)
-        {
-            System.setProperty(_sysPropertyName, String.valueOf(((ServerConnector)event).getLocalPort()));
+            if (getSysPropertyName() != null)
+            {
+                System.err.println("Server Port: " + serverConnector.getLocalPort());
+                System.setProperty(_sysPropertyName, String.valueOf(serverConnector.getLocalPort()));
+            }
         }
-        super.lifeCycleStarted(event);
     }
 
     /**
      * Get the filePath.
+     *
      * @return the filePath
      */
     public Path getFilePath()
@@ -67,6 +72,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
 
     /**
      * Set the filePath to set.
+     *
      * @param filePath the filePath to set
      */
     public void setFilePath(Path filePath)
@@ -76,6 +82,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
 
     /**
      * Get the sysPropertyName.
+     *
      * @return the sysPropertyName
      */
     public String getSysPropertyName()
@@ -85,6 +92,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
 
     /**
      * Set the sysPropertyName to set.
+     *
      * @param sysPropertyName the sysPropertyName to set
      */
     public void setSysPropertyName(String sysPropertyName)
