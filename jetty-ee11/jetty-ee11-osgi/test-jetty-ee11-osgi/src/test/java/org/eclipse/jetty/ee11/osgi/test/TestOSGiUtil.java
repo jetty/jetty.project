@@ -103,7 +103,7 @@ public class TestOSGiUtil
         return options;
     }
 
-    public static List<Option>  configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
+    public static List<Option> configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
     {
         List<Option> options = new ArrayList<>();
         List<Path> xmlFiles = new ArrayList<>();
@@ -132,7 +132,7 @@ public class TestOSGiUtil
         options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }
-    
+
     public static List<Option> configurePaxExamLogging()
     {
         //sort out logging from the pax-exam environment

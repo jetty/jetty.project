@@ -57,7 +57,7 @@ public class JettyBootstrapActivator implements BundleActivator
     /**
      * List of XML reference strings to default XML files.
      */
-    public static final List<String> DEFAULT_JETTY_XML_FILES = List.of("etc/jetty.xml", "etc/jetty-http.xml", "etc/jetty-deployment-manager.xml");
+    public static final List<String> DEFAULT_JETTY_XML_FILES = List.of("etc/jetty.xml", "etc/jetty-http.xml", "etc/jetty-deploy.xml");
 
     /**
      * Set of config files to apply to a jetty Server instance if none are supplied by SYS_PROP_JETTY_ETC_FILES
