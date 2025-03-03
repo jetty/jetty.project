@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.osgi.test;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -112,12 +113,12 @@ public class TestJettyOSGiBootHTTP2JDK9
         String port = System.getProperty("boot.https.port");
         assertNotNull(port);
 
-        Path path = Paths.get("src/test/config").toAbsolutePath();
-        Path keys = path.resolve("etc/keystore.p12");
+        Path path = Paths.get("src", "test", "config");
+        File keys = path.resolve("etc").resolve("keystore.p12").toFile();
 
         ClientConnector clientConnector = new ClientConnector();
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        sslContextFactory.setKeyStorePath(keys.toString());
+        sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setEndpointIdentificationAlgorithm(null);
         clientConnector.setSslContextFactory(sslContextFactory);
