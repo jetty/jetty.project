@@ -214,9 +214,9 @@ public class QueuedPool<P> implements Pool<P>
         {
             Objects.requireNonNull(pooled);
 
+            boolean[] state = new boolean[1];
             while (true)
             {
-                boolean[] state = new boolean[1];
                 P p = this.pooled.get(state);
                 if (p != null)
                 {
@@ -254,9 +254,9 @@ public class QueuedPool<P> implements Pool<P>
 
         void acquire()
         {
+            boolean[] state = new boolean[1];
             while (true)
             {
-                boolean[] state = new boolean[1];
                 P p = pooled.get(state);
                 boolean idle = isIdle(p, state[0]);
                 if (!idle)
@@ -269,9 +269,9 @@ public class QueuedPool<P> implements Pool<P>
         @Override
         public boolean release()
         {
+            boolean[] state = new boolean[1];
             while (true)
             {
-                boolean[] state = new boolean[1];
                 P p = pooled.get(state);
                 boolean inUse = isInUse(p, state[0]);
                 if (!inUse)
@@ -284,9 +284,9 @@ public class QueuedPool<P> implements Pool<P>
         @Override
         public boolean remove()
         {
+            boolean[] state = new boolean[1];
             while (true)
             {
-                boolean[] state = new boolean[1];
                 P p = pooled.get(state);
                 boolean terminated = isTerminated(p, state[0]);
                 if (terminated)

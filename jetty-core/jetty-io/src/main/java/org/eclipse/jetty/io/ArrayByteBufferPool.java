@@ -308,13 +308,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         bucket.recordRelease();
 
-        RetainableByteBuffer buffer = entry.getPooled();
-        if (buffer == null)
-        {
-            // Removed before being released, record removal.
-            bucket.recordRemove();
+        if (entry.isTerminated())
             return;
-        }
+
+        RetainableByteBuffer buffer = entry.getPooled();
         BufferUtil.reset(buffer.getByteBuffer());
 
         // Release the buffer and check the memory 1% of the times.
