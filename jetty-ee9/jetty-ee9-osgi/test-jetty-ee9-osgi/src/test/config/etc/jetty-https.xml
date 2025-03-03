@@ -1,8 +1,7 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/jetty/configure_10_0.dtd">
 
 <!-- ============================================================= -->
-<!-- Configure an HTTPS connector.                                  -->
+<!-- Configure an HTTPS connector.                                 -->
 <!-- This configuration must be used in conjunction with jetty.xml -->
 <!-- and jetty-ssl.xml.                                            -->
 <!-- ============================================================= -->
@@ -12,23 +11,27 @@
     <Arg>
       <New class="org.eclipse.jetty.server.SslConnectionFactory">
         <Arg name="next">http/1.1</Arg>
-        <Arg name="sslContextFactory"><Ref refid="sslContextFactory"/></Arg>
+        <Arg name="sslContextFactory">
+          <Ref refid="sslContextFactory" />
+        </Arg>
       </New>
     </Arg>
   </Call>
-        <Call name="addEventListener">
-          <Arg>
-            <New class="org.eclipse.jetty.ee9.osgi.boot.utils.ServerConnectorListener">
-              <Set name="sysPropertyName">boot.https.port</Set>
-            </New>
-          </Arg>
-        </Call>
+  <Call name="addEventListener">
+    <Arg>
+      <New class="org.eclipse.jetty.ee9.osgi.boot.utils.ServerConnectorListener">
+        <Set name="sysPropertyName">boot.https.port</Set>
+      </New>
+    </Arg>
+  </Call>
   <Call name="addConnectionFactory">
     <Arg>
       <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-        <Arg name="config"><Ref refid="sslHttpConfig" /></Arg>
+        <Arg name="config">
+          <Ref refid="sslHttpConfig" />
+        </Arg>
       </New>
     </Arg>
   </Call>
-  
+
 </Configure>
