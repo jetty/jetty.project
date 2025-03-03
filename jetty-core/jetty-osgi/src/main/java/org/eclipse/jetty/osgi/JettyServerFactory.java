@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.osgi;
 
+import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +34,9 @@ import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,8 +115,11 @@ public class JettyServerFactory
                 {
                     try
                     {
+                        Resource xmlresource = resourceFactory.newResource(jettyConfiguration);
+                        if (!Resources.isReadableFile(xmlresource))
+                            throw new FileNotFoundException("Unable to read: " + jettyConfiguration);
                         // Execute a Jetty configuration file
-                        XmlConfiguration config = new XmlConfiguration(resourceFactory.newResource(jettyConfiguration));
+                        XmlConfiguration config = new XmlConfiguration(xmlresource);
 
                         config.getIdMap().putAll(idMap);
                         config.getProperties().putAll(properties);
@@ -130,8 +136,8 @@ public class JettyServerFactory
                         }
 
                         Object o = config.configure();
-                        server = (Server)o;
-
+                        if (o instanceof Server configuredServer)
+                            server = configuredServer;
                         idMap = config.getIdMap();
                     }
                     catch (Exception e)
