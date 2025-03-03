@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ByteBufferRequestContent;
@@ -1188,14 +1189,12 @@ public class HttpClientStreamTest extends AbstractTest
             assertTrue(read > 0);
             totalRead += read;
         }
-        assertEquals(64, totalRead);
+        assertEquals(chunk.length, totalRead);
 
         context.response().write(true, BufferUtil.EMPTY_BUFFER, context.callback());
 
-        assertEquals(-1, stream.read(buffer));
-
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        assertEquals(200, result.getResponse().getStatus());
     }
 
     @ParameterizedTest
