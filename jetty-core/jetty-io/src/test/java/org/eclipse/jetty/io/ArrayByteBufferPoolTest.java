@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.Pool;
@@ -48,6 +47,7 @@ public class ArrayByteBufferPoolTest
         List<RetainableByteBuffer> rbbs = new ArrayList<>();
 
         ArrayByteBufferPool pool = new ArrayByteBufferPool();
+        pool.setStatisticsEnabled(true);
         for (int i = 0; i < bufferCount; i++)
         {
             RetainableByteBuffer rbb = pool.acquire(1, false);
@@ -67,6 +67,8 @@ public class ArrayByteBufferPoolTest
         {
             assertThat(rbb.getByteBuffer(), notNullValue());
         }
+        String dump = pool.dump();
+        assertThat(dump, containsString("[capacity=4096,in-use=0/0,pooled/acquires/releases=512/1024/1024(50.000%),non-pooled/evicts/removes=0/0/1024]"));
     }
 
     @Test

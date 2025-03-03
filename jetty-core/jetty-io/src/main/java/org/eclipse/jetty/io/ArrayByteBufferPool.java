@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntUnaryOperator;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
-
 import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -308,7 +307,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         RetainableByteBuffer buffer = entry.getPooled();
         if (buffer == null)
+        {
+            // Removed before being released, record removal.
+            bucket.recordRemove();
             return;
+        }
         BufferUtil.reset(buffer.getByteBuffer());
 
         // Release the buffer and check the memory 1% of the times.
