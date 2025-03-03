@@ -50,6 +50,7 @@ public class TestJettyOSGiBootWithJsp
 
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
 
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-jsp.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -72,8 +73,7 @@ public class TestJettyOSGiBootWithJsp
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
 
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
 
@@ -83,10 +83,6 @@ public class TestJettyOSGiBootWithJsp
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
             assertTrue(content.contains("JSTL Example"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }

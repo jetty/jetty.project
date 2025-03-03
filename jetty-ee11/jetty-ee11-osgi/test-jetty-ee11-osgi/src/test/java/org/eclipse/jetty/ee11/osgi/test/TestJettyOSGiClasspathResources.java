@@ -54,6 +54,7 @@ public class TestJettyOSGiClasspathResources
         ArrayList<Option> options = new ArrayList<>();
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
 
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-resources.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -66,12 +67,12 @@ public class TestJettyOSGiClasspathResources
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
-        //Note: we have to back down the version of bnd used here because tinybundles expects only this version
+        // Note: we have to back down the version of bnd used here because tinybundles expects only this version
         options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").version("3.5.0").start());
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.ee11.osgi").artifactId("test-jetty-ee11-osgi-webapp-resources").type("war").versionAsInProject());
-        options.add(CoreOptions.cleanCaches(true));   
-        return options.toArray(new Option[options.size()]);
+        options.add(CoreOptions.cleanCaches(true));
+        return options.toArray(new Option[0]);
     }
    
     @Test
@@ -82,8 +83,7 @@ public class TestJettyOSGiClasspathResources
 
         //Test the test-jetty-ee11-osgi-webapp-resource bundle with a
         //Bundle-Classpath that does NOT include WEB-INF/classes
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
 
@@ -94,10 +94,6 @@ public class TestJettyOSGiClasspathResources
             String content = response.getContentAsString();
             //check that fake.properties is only listed once from the classpath
             assertEquals(content.indexOf("fake.properties"), content.lastIndexOf("fake.properties"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 
@@ -122,9 +118,8 @@ public class TestJettyOSGiClasspathResources
         webappBundle.stop();
         Bundle bundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee11.osgi.webapp.resources.alt");
         bundle.start();
-        
-        HttpClient client = new HttpClient();
-        try
+
+        try (HttpClient client = new HttpClient())
         {
             client.start();
 
@@ -135,10 +130,6 @@ public class TestJettyOSGiClasspathResources
             assertEquals(HttpStatus.OK_200, response.getStatus());
             //check that fake.properties is only listed once from the classpath
             assertEquals(content.indexOf("fake.properties"), content.lastIndexOf("fake.properties"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }
