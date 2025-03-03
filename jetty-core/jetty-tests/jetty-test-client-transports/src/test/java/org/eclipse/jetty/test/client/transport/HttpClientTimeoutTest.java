@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -145,7 +145,7 @@ public class HttpClientTimeoutTest extends AbstractTest
         Request request = client.newRequest(newURI(transportType))
             .body(new InputStreamRequestContent(new ByteArrayInputStream(content)))
             .timeout(2 * timeout, TimeUnit.MILLISECONDS);
-        request.send(new BufferingResponseListener()
+        request.send(new RetainingResponseListener()
         {
             @Override
             public void onComplete(Result result)

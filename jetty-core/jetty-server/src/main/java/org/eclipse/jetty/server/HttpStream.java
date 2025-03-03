@@ -83,6 +83,18 @@ public interface HttpStream extends Callback
     void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback);
 
     /**
+     * Cancel any {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)} call in progress.
+     *
+     * @param cause The cause of the cancellation
+     * @param appCallback The callback to ultimately {@link Callback#failed(Throwable) fail} after the cancellation
+     * @return A {@link Runnable} that will be {@link Runnable#run() run} to complete the
+     *         cancellation and will, in turn, ultimately fail both the passed {@link Callback} and any {@link Callback}
+     *         that was passed to the {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
+     *         method.
+     */
+    Runnable cancelSend(Throwable cause, Callback appCallback);
+
+    /**
      * <p>Pushes the given {@code resource} to the client.</p>
      *
      * @param resource the resource to push
@@ -183,6 +195,12 @@ public interface HttpStream extends Callback
         public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
             getWrapped().send(request, response, last, content, callback);
+        }
+
+        @Override
+        public Runnable cancelSend(Throwable cause, Callback appCallback)
+        {
+            return getWrapped().cancelSend(cause, appCallback);
         }
 
         @Override

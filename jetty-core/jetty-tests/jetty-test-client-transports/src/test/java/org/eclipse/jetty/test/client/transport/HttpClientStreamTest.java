@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
@@ -52,6 +51,7 @@ import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -771,7 +771,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         client.newRequest(newURI(transportType))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -805,7 +805,7 @@ public class HttpClientStreamTest extends AbstractTest
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         client.newRequest(newURI(transportType))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -848,7 +848,7 @@ public class HttpClientStreamTest extends AbstractTest
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         client.newRequest(newURI(transportType))
             .body(content)
-            .send(new BufferingResponseListener(data.length)
+            .send(new RetainingResponseListener(data.length)
             {
                 @Override
                 public void onComplete(Result result)
@@ -1188,11 +1188,12 @@ public class HttpClientStreamTest extends AbstractTest
             assertTrue(read > 0);
             totalRead += read;
         }
+        assertEquals(chunk.length, totalRead);
 
         context.response().write(true, BufferUtil.EMPTY_BUFFER, context.callback());
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        assertEquals(200, result.getResponse().getStatus());
     }
 
     @ParameterizedTest

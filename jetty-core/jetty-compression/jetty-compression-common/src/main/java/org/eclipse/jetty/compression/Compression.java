@@ -53,27 +53,10 @@ public abstract class Compression extends ContainerLifeCycle
      * managed by this Compression implementation (such as ByteOrder or buffer pooling)
      * </p>
      *
-     * <p>
-     * The size of the buffer comes from {@link Compression} implementation.
-     * </p>
-     *
-     * @return the ByteBuffer suitable for this compression implementation.
-     */
-    public abstract RetainableByteBuffer acquireByteBuffer();
-
-    /**
-     * Acquire a {@link RetainableByteBuffer} that is managed by this {@link Compression} implementation
-     * which is suitable for compressed output from an {@link EncoderSink} or compressed input from a {@link DecoderSource}.
-     *
-     * <p>
-     * It is recommended to use this method so that any compression specific details can be
-     * managed by this Compression implementation (such as ByteOrder or buffer pooling)
-     * </p>
-     *
      * @param length the requested size of the buffer
      * @return the ByteBuffer suitable for this compression implementation.
      */
-    public abstract RetainableByteBuffer acquireByteBuffer(int length);
+    public abstract RetainableByteBuffer.Mutable acquireByteBuffer(int length);
 
     /**
      * Get an etag with suffix that represents this compression implementation.

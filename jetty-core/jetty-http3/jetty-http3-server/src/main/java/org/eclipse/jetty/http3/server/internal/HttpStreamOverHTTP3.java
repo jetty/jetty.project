@@ -261,6 +261,13 @@ public class HttpStreamOverHTTP3 implements HttpStream
             sendContent(request, content, last, callback);
     }
 
+    @Override
+    public Runnable cancelSend(Throwable cause, Callback appCallback)
+    {
+        // TODO Implement after #12742 is merged
+        return () -> appCallback.failed(new UnsupportedOperationException("Implement after #12742 is merged"));
+    }
+
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
         this.responseMetaData = response;

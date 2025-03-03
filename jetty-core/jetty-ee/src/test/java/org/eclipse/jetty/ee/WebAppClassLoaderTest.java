@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.webapp;
+package org.eclipse.jetty.ee;
 
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -24,11 +24,13 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,36 +50,37 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class WebAppClassLoaderTest
 {
     private Path _testWebappDir;
-    private WebAppContext _context;
+    private TestableWebAppClassLoaderContext _context;
     protected WebAppClassLoader _loader;
-    private Server _server;
+    private ContainerLifeCycle _container;
 
     @BeforeEach
     public void init() throws Exception
     {
-        _server = new Server();
+        TestableWebAppClassLoaderContext.initEnvironment();
 
-        _testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        _context = new WebAppContext();
-        Resource webapp = _context.getResourceFactory().newResource(_testWebappDir);
-        _context.setBaseResource(webapp);
-        _context.setContextPath("/test");
-        _context.setExtraClasspath("target/test-classes/ext/*");
+        _container = new ContainerLifeCycle();
+        ResourceFactory resourceFactory = ResourceFactory.of(_container);
+
+        _context = new TestableWebAppClassLoaderContext(resourceFactory);
+
+        _testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
+        Resource webapp = resourceFactory.newResource(_testWebappDir);
+        _context.setExtraClasspath("src/test/resources/ext/*");
 
         _loader = new WebAppClassLoader(_context);
         _loader.addJars(webapp.resolve("WEB-INF/lib"));
         _loader.addClassPath(webapp.resolve("WEB-INF/classes"));
         _loader.setName("test");
 
-        _server.setHandler(_context);
-        _server.start();
+        _container.start();
     }
 
     @AfterEach
-    public void afterEach()
+    public void afterEach() throws Exception
     {
         IO.close(_loader);
-        LifeCycle.stop(_server);
+        LifeCycle.stop(_container);
     }
 
     public void assertCanLoadClass(String clazz) throws ClassNotFoundException
@@ -115,7 +118,7 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.exttwo.Main");
         assertCantLoadClass("org.acme.extthree.Main");
 
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         assertNotNull(clazzA.getField("FROM_PARENT"));
@@ -133,11 +136,12 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.exttwo.Main");
         assertCantLoadClass("org.acme.extthree.Main");
 
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         assertThrows(NoSuchFieldException.class, () ->
             clazzA.getField("FROM_PARENT"));
+        assertThat(clazzA.getPackage().getName(), is("org.acme.webapp"));
     }
 
     @Test
@@ -180,7 +184,7 @@ public class WebAppClassLoaderTest
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
         assertCanLoadClass("java.lang.String");
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
 
         assertThat("Classname Results", results, contains(
             _loader,
@@ -189,6 +193,29 @@ public class WebAppClassLoaderTest
             "org.acme.webapp.ClassInJarB",
             _loader,
             "org.acme.other.ClassInClassesC"));
+
+        Class<?> classInJarA = _loader.loadClass("org.acme.webapp.ClassInJarA");
+        Class<?> classInJarB = _loader.loadClass("org.acme.webapp.ClassInJarB");
+        Class<?> classInClassesC = _loader.loadClass("org.acme.other.ClassInClassesC");
+
+        assertThat(classInJarA.getPackage().getName(), is("org.acme.webapp"));
+        assertThat(classInJarB.getPackage().getName(), is("org.acme.webapp"));
+        assertThat(classInClassesC.getPackage().getName(), is("org.acme.other"));
+
+        assertThat(classInJarA.getPackage().getSpecificationTitle(), is("Test Package"));
+        assertThat(classInJarA.getPackage().getSpecificationVersion(), is("3.2.1"));
+        assertThat(classInJarA.getPackage().getImplementationTitle(), is("Testing 123"));
+        assertThat(classInJarA.getPackage().getImplementationVersion(), is("1.2.3"));
+
+        assertThat(classInJarB.getPackage().getSpecificationTitle(), is("Test Package"));
+        assertThat(classInJarB.getPackage().getSpecificationVersion(), is("3.2.1"));
+        assertThat(classInJarB.getPackage().getImplementationTitle(), is("Testing 123"));
+        assertThat(classInJarB.getPackage().getImplementationVersion(), is("1.2.3"));
+
+        assertThat(classInClassesC.getPackage().getSpecificationTitle(), nullValue());
+        assertThat(classInClassesC.getPackage().getSpecificationVersion(), nullValue());
+        assertThat(classInClassesC.getPackage().getImplementationTitle(), nullValue());
+        assertThat(classInClassesC.getPackage().getImplementationVersion(), nullValue());
     }
 
     @Test
@@ -209,89 +236,89 @@ public class WebAppClassLoaderTest
     @Test
     public void testExposedClassDeprecated() throws Exception
     {
-        String[] oldSC = _context.getServerClasses();
+        String[] oldSC = _context.getHiddenClasses();
         String[] newSC = new String[oldSC.length + 1];
-        newSC[0] = "-org.eclipse.jetty.ee9.webapp.Configuration";
+        newSC[0] = "-org.eclipse.jetty.util.statistic.RateCounter";
         System.arraycopy(oldSC, 0, newSC, 1, oldSC.length);
-        _context.setServerClassMatcher(new ClassMatcher(newSC));
+        _context.setHiddenClassMatcher(new ClassMatcher(newSC));
 
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
 
-        assertCanLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.JarScanner");
+        assertCanLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.SimpleStatistic");
     }
 
     @Test
     public void testExposedClass() throws Exception
     {
-        _context.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.webapp.Configuration");
+        _context.getHiddenClassMatcher().exclude("org.eclipse.jetty.util.statistic.RateCounter");
 
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
 
-        assertCanLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.JarScanner");
+        assertCanLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.SimpleStatistic");
     }
 
     @Test
     public void testSystemServerClassDeprecated() throws Exception
     {
-        String[] oldServC = _context.getServerClasses();
+        String[] oldServC = _context.getHiddenClasses();
         String[] newServC = new String[oldServC.length + 1];
-        newServC[0] = "org.eclipse.jetty.ee9.webapp.Configuration";
+        newServC[0] = "org.eclipse.jetty.util.statistic.RateCounter";
         System.arraycopy(oldServC, 0, newServC, 1, oldServC.length);
 
-        _context.setServerClassMatcher(new ClassMatcher(newServC));
+        _context.setHiddenClassMatcher(new ClassMatcher(newServC));
 
-        String[] oldSysC = _context.getSystemClasses();
+        String[] oldSysC = _context.getProtectedClasses();
         String[] newSysC = new String[oldSysC.length + 1];
-        newSysC[0] = "org.eclipse.jetty.ee9.webapp.";
+        newSysC[0] = "org.eclipse.jetty.ee11.webapp.";
         System.arraycopy(oldSysC, 0, newSysC, 1, oldSysC.length);
-        _context.setSystemClassMatcher(new ClassMatcher(newSysC));
+        _context.setProtectedClassMatcher(new ClassMatcher(newSysC));
 
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.JarScanner");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.SimpleStatistic");
 
-        oldSysC = _context.getSystemClasses();
+        oldSysC = _context.getProtectedClasses();
         newSysC = new String[oldSysC.length + 1];
         newSysC[0] = "org.acme.webapp.ClassInJarA";
         System.arraycopy(oldSysC, 0, newSysC, 1, oldSysC.length);
-        _context.setSystemClassMatcher(new ClassMatcher(newSysC));
+        _context.setProtectedClassMatcher(new ClassMatcher(newSysC));
 
         assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
-        _context.setSystemClassMatcher(new ClassMatcher(oldSysC));
+        _context.setProtectedClassMatcher(new ClassMatcher(oldSysC));
 
-        oldServC = _context.getServerClasses();
+        oldServC = _context.getHiddenClasses();
         newServC = new String[oldServC.length + 1];
         newServC[0] = "org.acme.webapp.ClassInJarA";
         System.arraycopy(oldServC, 0, newServC, 1, oldServC.length);
-        _context.setServerClassMatcher(new ClassMatcher(newServC));
+        _context.setHiddenClassMatcher(new ClassMatcher(newServC));
         assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
     }
 
     @Test
     public void testSystemServerClass() throws Exception
     {
-        _context.getServerClassMatcher().add("org.eclipse.jetty.ee9.webapp.Configuration");
-        _context.getSystemClassMatcher().add("org.eclipse.jetty.ee9.webapp.");
+        _context.getHiddenClassMatcher().add("org.eclipse.jetty.util.statistic.RateCounter");
+        _context.getProtectedClassMatcher().add("org.eclipse.jetty.ee11.webapp.");
 
         assertCanLoadClass("org.acme.webapp.ClassInJarA");
         assertCanLoadClass("org.acme.webapp.ClassInJarB");
         assertCanLoadClass("org.acme.other.ClassInClassesC");
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.Configuration");
-        assertCantLoadClass("org.eclipse.jetty.ee9.webapp.JarScanner");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.RateCounter");
+        assertCantLoadClass("org.eclipse.jetty.util.statistic.SimpleStatistic");
 
-        _context.getSystemClassMatcher().add("org.acme.webapp.ClassInJarA");
+        _context.getProtectedClassMatcher().add("org.acme.webapp.ClassInJarA");
         assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
-        _context.getSystemClassMatcher().remove("org.acme.webapp.ClassInJarA");
+        _context.getProtectedClassMatcher().remove("org.acme.webapp.ClassInJarA");
 
-        _context.getServerClassMatcher().add("org.acme.webapp.ClassInJarA");
+        _context.getHiddenClassMatcher().add("org.acme.webapp.ClassInJarA");
         assertCanLoadResource("org/acme/webapp/ClassInJarA.class");
     }
 
@@ -314,6 +341,7 @@ public class WebAppClassLoaderTest
 
         resources = Collections.list(_loader.getResources("org/acme/resource.txt"));
 
+        expected.clear();
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
         expected.add(targetTestClasses);
@@ -337,11 +365,11 @@ public class WebAppClassLoaderTest
 //        assertEquals(0,resources.get(1).toString().indexOf("jar:file:"));
 //        assertEquals(-1,resources.get(2).toString().indexOf("test-classes"));
 
-        String[] oldServC = _context.getServerClasses();
+        String[] oldServC = _context.getHiddenClasses();
         String[] newServC = new String[oldServC.length + 1];
         newServC[0] = "org.acme.";
         System.arraycopy(oldServC, 0, newServC, 1, oldServC.length);
-        _context.setServerClassMatcher(new ClassMatcher(newServC));
+        _context.setHiddenClassMatcher(new ClassMatcher(newServC));
 
         _context.setParentLoaderPriority(true);
         // dump(_context);
@@ -351,19 +379,19 @@ public class WebAppClassLoaderTest
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
 
-        assertThat("Resources Found (Parent Loader Priority == true) (with serverClasses filtering)", resources, ordered(expected));
+        assertThat("Resources Found (Parent Loader Priority == true) (with hiddenClasses filtering)", resources, ordered(expected));
 
 //        dump(resources);
 //        assertEquals(2,resources.size());
 //        assertEquals(0,resources.get(0).toString().indexOf("jar:file:"));
 //        assertEquals(0,resources.get(1).toString().indexOf("file:"));
 
-        _context.setServerClassMatcher(new ClassMatcher(oldServC));
-        String[] oldSysC = _context.getSystemClasses();
+        _context.setHiddenClassMatcher(new ClassMatcher(oldServC));
+        String[] oldSysC = _context.getProtectedClasses();
         String[] newSysC = new String[oldSysC.length + 1];
         newSysC[0] = "org.acme.";
         System.arraycopy(oldSysC, 0, newSysC, 1, oldSysC.length);
-        _context.setSystemClassMatcher(new ClassMatcher(newSysC));
+        _context.setProtectedClassMatcher(new ClassMatcher(newSysC));
 
         _context.setParentLoaderPriority(true);
         // dump(_context);
@@ -372,7 +400,7 @@ public class WebAppClassLoaderTest
         expected.clear();
         expected.add(targetTestClasses);
 
-        assertThat("Resources Found (Parent Loader Priority == true) (with systemClasses filtering)", resources, ordered(expected));
+        assertThat("Resources Found (Parent Loader Priority == true) (with hiddenClasses filtering)", resources, ordered(expected));
     }
 
     @Test

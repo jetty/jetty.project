@@ -20,9 +20,9 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -137,7 +137,7 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -198,7 +198,7 @@ public class PushedResourcesTest extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)

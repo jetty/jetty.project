@@ -35,7 +35,6 @@ import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.Authentication;
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.Connection;
@@ -54,6 +53,7 @@ import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.client.Socks5;
 import org.eclipse.jetty.client.Socks5Proxy;
@@ -460,15 +460,15 @@ public class HTTPClientDocs
         // end::completableResponseListener[]
     }
 
-    public void bufferingResponseListener() throws Exception
+    public void retainingResponseListener() throws Exception
     {
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
-        // tag::bufferingResponseListener[]
+        // tag::retainingResponseListener[]
         httpClient.newRequest("http://domain.com/path")
-            // Buffer response content up to 8 MiB
-            .send(new BufferingResponseListener(8 * 1024 * 1024)
+            // Accumulate response content up to 8 MiB.
+            .send(new RetainingResponseListener(8 * 1024 * 1024)
             {
                 @Override
                 public void onComplete(Result result)
@@ -480,7 +480,7 @@ public class HTTPClientDocs
                     }
                 }
             });
-        // end::bufferingResponseListener[]
+        // end::retainingResponseListener[]
     }
 
     public void inputStreamResponseListener() throws Exception

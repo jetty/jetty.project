@@ -166,7 +166,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         Throwable resetFailure = null;
         try (AutoLock ignored = lock.lock())
         {
-            if (isReset())
+            if (localReset)
             {
                 resetFailure = failure;
             }
@@ -180,6 +180,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         session.dataConsumed(this, flowControlLength);
         if (resetFailure != null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failing callback immediately as stream {} already is locally reset", this, resetFailure);
             close();
             session.removeStream(this);
             callback.failed(resetFailure);

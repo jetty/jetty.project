@@ -425,6 +425,13 @@ public class StreamEndPoint implements EndPoint
         write(last, List.of(byteBuffer), callback);
     }
 
+    @Override
+    public Callback cancelWrite(Throwable cause)
+    {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
     public void write(boolean last, List<ByteBuffer> buffers, Callback callback)
     {
         if (LOG.isDebugEnabled())

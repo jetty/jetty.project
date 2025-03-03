@@ -165,19 +165,6 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * {@link #release() Releases} the buffer in a way that ensures it will not be recycled in a buffer pool.
-     * This method should be used in cases where it is unclear if operations on the buffer have completed
-     * (for example, when a write operation has been aborted asynchronously or timed out, but the write
-     * operation may still be pending).
-     * @return whether if the buffer was released.
-     * @see ByteBufferPool#releaseAndRemove(RetainableByteBuffer)
-     */
-    default boolean releaseAndRemove()
-    {
-        return release();
-    }
-
-    /**
      * Appends and consumes the contents of this buffer to the passed buffer, limited by the capacity of the target buffer.
      * @param buffer The buffer to append bytes to, whose limit will be updated.
      * @return {@code true} if all bytes in this buffer are able to be appended.
@@ -474,6 +461,24 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * Take the contents of this buffer, leaving it clear and independent.
+     * @return A possibly newly allocated array with the contents of this buffer, avoiding copies if possible.
+     */
+    default byte[] takeByteArray()
+    {
+        if (isEmpty())
+            return BufferUtil.EMPTY_BYTES;
+        long size = size();
+        if (size > Integer.MAX_VALUE)
+            throw new BufferOverflowException();
+        int length = (int)size;
+        byte[] bytes = new byte[length];
+        getByteBuffer().get(bytes);
+        clear();
+        return bytes;
+    }
+
+    /**
      * Consumes and puts the contents of this retainable byte buffer at the end of the given byte buffer.
      * @param toInfillMode the destination buffer, whose position is updated.
      * @throws BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
@@ -669,12 +674,6 @@ public interface RetainableByteBuffer extends Retainable
         public RetainableByteBuffer getWrapped()
         {
             return (RetainableByteBuffer)super.getWrapped();
-        }
-
-        @Override
-        public boolean releaseAndRemove()
-        {
-            return getWrapped().releaseAndRemove();
         }
 
         @Override
@@ -1330,12 +1329,6 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public boolean releaseAndRemove()
-        {
-            return _pool.releaseAndRemove(this);
-        }
-
-        @Override
         public RetainableByteBuffer slice(long length)
         {
             int size = remaining();
@@ -1686,11 +1679,7 @@ public interface RetainableByteBuffer extends Retainable
             return new DynamicCapacity(buffers, _pool, _maxSize, _minRetainSize);
         }
 
-        /**
-         * Take the contents of this buffer, leaving it clear and independent
-         * @return A possibly newly allocated array with the contents of this buffer, avoiding copies if possible.
-         * The length of the array may be larger than the contents, but the offset will always be 0.
-         */
+        @Override
         public byte[] takeByteArray()
         {
             if (LOG.isDebugEnabled())
@@ -1698,17 +1687,13 @@ public interface RetainableByteBuffer extends Retainable
             checkNotReleased();
             return switch (_buffers.size())
             {
-                case 0 -> BufferUtil.EMPTY_BUFFER.array();
+                case 0 -> BufferUtil.EMPTY_BYTES;
                 case 1 ->
                 {
                     RetainableByteBuffer buffer = _buffers.get(0);
                     _aggregate = null;
                     _buffers.clear();
-
-                    // The array within the buffer can be used if it is not pooled, is not shared and it exits
-                    byte[] array = (!(buffer instanceof Pooled) && !buffer.isRetained() && !buffer.isDirect())
-                        ? buffer.getByteBuffer().array() : BufferUtil.toArray(buffer.getByteBuffer());
-
+                    byte[] array = BufferUtil.toArray(buffer.getByteBuffer());
                     buffer.release();
                     yield array;
                 }
@@ -1986,22 +1971,6 @@ public interface RetainableByteBuffer extends Retainable
             {
                 for (RetainableByteBuffer buffer : _buffers)
                     buffer.release();
-                _buffers.clear();
-                _aggregate = null;
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public boolean releaseAndRemove()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("release {}", this);
-            if (super.release())
-            {
-                for (RetainableByteBuffer buffer : _buffers)
-                    buffer.releaseAndRemove();
                 _buffers.clear();
                 _aggregate = null;
                 return true;

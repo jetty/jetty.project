@@ -11,42 +11,34 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.boot;
+package org.eclipse.jetty.osgi;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 
-import org.eclipse.jetty.ee11.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.osgi.util.BundleClassLoaderHelperFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * OSGiWebappClassLoader
- *
- *
+ * <p>
  * Extends the webapp classloader to also use the classloader of the Bundle defining the webapp.
  */
 public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleReference
 {
-    private static final Logger LOG = LoggerFactory.getLogger(OSGiWebappClassLoader.class.getName());
-
-    private ClassLoader _osgiBundleClassLoader;
-
-    private Bundle _contributor;
+    private final ClassLoader _osgiBundleClassLoader;
+    private final Bundle _contributor;
 
     /**
      * @param parent The parent classloader.
      * @param context The WebAppContext
      * @param contributor The bundle that defines this web-application.
-     * @throws IOException if unable to cerate the OSGiWebappClassLoader
+     * @throws IOException if unable to create the OSGiWebappClassLoader
      */
-    public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor)
-        throws IOException
+    public OSGiWebappClassLoader(ClassLoader parent, WebAppClassLoader.Context context, Bundle contributor) throws IOException
     {
         super(parent, context);
         _contributor = contributor;
@@ -119,7 +111,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * from the resource.  This implementation directly asks the osgi
      * bundle classloader to load the given class name.
      *
-     * @see org.eclipse.jetty.ee11.webapp.WebAppClassLoader#loadAsResource(java.lang.String, boolean)
+     * @see org.eclipse.jetty.ee.WebAppClassLoader#loadAsResource(String, boolean)
      */
     @Override
     protected Class<?> loadAsResource(String name, boolean checkSystemResource) throws ClassNotFoundException

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlConfiguration;

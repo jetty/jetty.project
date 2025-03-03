@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.webapp;
+package org.eclipse.jetty.ee;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

@@ -148,10 +148,7 @@ public class FormTest
             })
             .send();
 
-        int expected = (maxFormContentSize != null && maxFormContentSize < 0)
-            ? HttpStatus.OK_200
-            : HttpStatus.BAD_REQUEST_400;
-        assertEquals(expected, response.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
     public static Stream<Integer> formKeysScenarios()
@@ -193,10 +190,7 @@ public class FormTest
             .body(new FormRequestContent(formParams))
             .send();
 
-        int expected = (maxFormKeys != null && maxFormKeys < 0)
-            ? HttpStatus.OK_200
-            : HttpStatus.BAD_REQUEST_400;
-        assertEquals(expected, response.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
     @Test

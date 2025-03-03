@@ -13,15 +13,19 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -33,12 +37,37 @@ public class Flusher
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
-    private final IteratingCallback flushCallback = new FlushCallback();
+    private final FlushCallback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
 
     public Flusher(EndPoint endPoint)
     {
         this.endPoint = endPoint;
+    }
+
+    public Callback cancel(Throwable cause)
+    {
+        // Cancel the IteratingCallback and take the nest Callback
+        CancelSendException cancelSendException = new CancelSendException(cause);
+        if (!flushCallback.abort(cancelSendException))
+            return Callback.NOOP;
+
+        // We now know that we aborted this ICB with the CSE above, so onAbort will eventually be called
+        // in a serialized context and the callback will be set on the CSE.
+
+        // If a write operation has been scheduled cancel it and fail its callback, otherwise complete ourselves
+        Callback writeCallback = endPoint.cancelWrite(cause);
+
+        if (writeCallback == null)
+            // There was no write in operation, so we can complete the CSE ourselves
+            cancelSendException.complete();
+        else
+            // The write was cancelled and the callback is this ICB, so failing it will call onCompleted
+            writeCallback.failed(cause);
+
+        // wait for the cancellation to be complete and the callback to be set by onAbort.
+        // This should never block indefinitely, as onAborted only waits for active states like PROCESSING to complete.
+        return cancelSendException.join();
     }
 
     public void flush(ByteBufferPool.Accumulator accumulator, Callback callback)
@@ -73,6 +102,44 @@ public class Flusher
         }));
     }
 
+    private static class CancelSendException extends IOException
+    {
+        private final CountDownLatch _complete = new CountDownLatch(2);
+        private Callback _callback;
+
+        public CancelSendException(Throwable cause)
+        {
+            super(cause);
+        }
+
+        public void complete()
+        {
+            _complete.countDown();
+        }
+
+        public Callback join()
+        {
+            try
+            {
+                _complete.await();
+            }
+            catch (InterruptedException x)
+            {
+                Throwable cause = getCause();
+                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
+                throw new RuntimeIOException(cause);
+            }
+
+            return _callback;
+        }
+
+        public void setCallback(Callback callback)
+        {
+            _callback = callback;
+            _complete.countDown();
+        }
+    }
+
     private class FlushCallback extends IteratingCallback
     {
         private Entry active;
@@ -92,6 +159,28 @@ public class Flusher
             List<ByteBuffer> buffers = entry.accumulator.getByteBuffers();
             endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
             return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onAborted(Throwable cause)
+        {
+            if (cause instanceof CancelSendException cancelSend)
+                cancelSend.setCallback(resetCallback());
+        }
+
+        private Callback resetCallback()
+        {
+            Flusher.Entry entry = active;
+            active = null;
+            return Callback.from(entry.callback, entry::release);
+        }
+
+        @Override
+        protected void onCompleted(Throwable causeOrNull)
+        {
+            if (causeOrNull instanceof CancelSendException cancelSendException)
+                cancelSendException.complete();
+            super.onCompleted(causeOrNull);
         }
 
         @Override

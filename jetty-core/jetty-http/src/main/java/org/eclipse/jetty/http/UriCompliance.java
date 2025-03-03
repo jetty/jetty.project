@@ -96,9 +96,19 @@ public final class UriCompliance implements ComplianceViolation.Mode
         UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF-16 encoding"),
 
         /**
-         * Allow Bad UTF-8 encodings to be substituted by the replacement character.
+         * Allow Bad UTF-8 encodings to be substituted by the replacement character in query strings
          */
         BAD_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad UTF-8 encoding"),
+
+        /**
+         * Allow Truncated UTF-8 encodings to be substituted by the replacement character in query strings
+         */
+        TRUNCATED_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Truncated UTF-8 encoding"),
+
+        /**
+         * Allow bad percent encodings such as %xx or %% in query strings
+         */
+        BAD_PERCENT_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Bad percent encoding"),
 
         /**
          * Allow encoded path characters not allowed by the Servlet spec rules.
@@ -193,13 +203,42 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", RFC3986.getAllowed());
 
     /**
-     * LEGACY compliance mode that models pre Jetty 12 behavior by allowing:
+     * JETTY_11 compliance mode that models Jetty 11 DEFAULT behavior by allowing:
+     * <ul>
+     *     <li>{@link Violation#AMBIGUOUS_PATH_SEGMENT}</li>
+     *     <li>{@link Violation#AMBIGUOUS_PATH_SEPARATOR}</li>
+     *     <li>{@link Violation#AMBIGUOUS_PATH_ENCODING}</li>
+     *     <li>{@link Violation#SUSPICIOUS_PATH_CHARACTERS}</li>
+     *     <li>{@link Violation#TRUNCATED_UTF8_ENCODING}</li>
+     *     <li>{@link Violation#UTF16_ENCODINGS}</li>
+     *     <li>{@link Violation#USER_INFO}</li>
+     * </ul>
+     * <p>
+     *     Note: this mode allows URL/URIs that the Servlet spec will reject.
+     *     <br>
+     *     See <a href="https://github.com/jakartaee/servlet/blob/6.0.0-RELEASE/spec/src/main/asciidoc/servlet-spec-body.adoc#352-uri-path-canonicalization">point 10 "Rejecting Suspicious Sequences" in Section 3.5.2. URI Path Canonicalization</a>,
+     *     <br>
+     *     and <a href="https://jetty.org/docs/jetty/12/programming-guide/server/compliance.html#servleturi">Jetty Documentation: Servlet URI Compliance Modes.</a>
+     * </p>
+     */
+    public static final UriCompliance JETTY_11 = new UriCompliance("JETTY_11",
+        of(Violation.AMBIGUOUS_PATH_SEGMENT,
+            Violation.AMBIGUOUS_PATH_SEPARATOR,
+            Violation.AMBIGUOUS_PATH_ENCODING,
+            Violation.SUSPICIOUS_PATH_CHARACTERS,
+            Violation.TRUNCATED_UTF8_ENCODING,
+            Violation.UTF16_ENCODINGS,
+            Violation.USER_INFO));
+
+    /**
+     * LEGACY compliance mode that models pre Jetty 12 LEGACY behaviors by allowing:
      * <ul>
      *     <li>{@link Violation#AMBIGUOUS_PATH_SEGMENT}</li>
      *     <li>{@link Violation#AMBIGUOUS_PATH_SEPARATOR}</li>
      *     <li>{@link Violation#AMBIGUOUS_PATH_ENCODING}</li>
      *     <li>{@link Violation#AMBIGUOUS_EMPTY_SEGMENT}</li>
-     *     <li>{@link Violation#BAD_UTF8_ENCODING}</li>
+     *     <li>{@link Violation#SUSPICIOUS_PATH_CHARACTERS}</li>
+     *     <li>{@link Violation#TRUNCATED_UTF8_ENCODING}</li>
      *     <li>{@link Violation#UTF16_ENCODINGS}</li>
      *     <li>{@link Violation#USER_INFO}</li>
      * </ul>
@@ -216,7 +255,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
             Violation.AMBIGUOUS_PATH_SEPARATOR,
             Violation.AMBIGUOUS_PATH_ENCODING,
             Violation.AMBIGUOUS_EMPTY_SEGMENT,
-            Violation.BAD_UTF8_ENCODING,
+            Violation.SUSPICIOUS_PATH_CHARACTERS,
+            Violation.TRUNCATED_UTF8_ENCODING,
             Violation.UTF16_ENCODINGS,
             Violation.USER_INFO,
             Violation.FRAGMENT));
@@ -234,7 +274,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
     private static final AtomicInteger __custom = new AtomicInteger();
-    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, JETTY_11, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
 
     public static boolean isAmbiguous(Set<Violation> violations)
     {

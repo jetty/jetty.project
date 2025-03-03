@@ -31,21 +31,21 @@ public class UrlEncodedUtf8Test
     @CsvSource(delimiter = '|', useHeadersInDisplayName = false,
         textBlock = """
         # query         | expectedName | expectedValue
-        a=bad_%e0%b     | a            | bad_��
+        a=bad_%e0%b     | a            | bad_�
         b=bad_%e0%ba    | b            | bad_�
-        c=short%a       | c            | short�
+        c=short%a       | c            | short%a
         d=b%aam         | d            | b�m
-        e=%%TOK%%       | e            | �OK�
+        e=%%TOK%%       | e            | %%TOK%%
         f=%aardvark     | f            | �rdvark
-        g=b%ar          | g            | b�
-        h=end%          | h            | end�
-        # This shows how the '&' symbol gets swallowed by a pct-encoding effort.
-        i=%&z=2         | i            | �=2
+        g=b%ar          | g            | b%ar
+        h=end%          | h            | end%
+        # This shows how the '&' symbol does not get swallowed by a bad pct-encoding.
+        i=%&z=2         | i            | %
         """)
     public void testDecodeAllowBadSequence(String query, String expectedName, String expectedValue)
     {
         Fields fields = new Fields();
-        UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, true);
+        UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, true, true, true);
         Fields.Field field = fields.get(expectedName);
         assertThat("Name exists", field, notNullValue());
         assertThat("Value", field.getValue(), is(expectedValue));
