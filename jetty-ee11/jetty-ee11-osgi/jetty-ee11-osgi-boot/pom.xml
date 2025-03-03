@@ -56,6 +56,10 @@
     <resources>
       <resource>
         <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>**/.gitignore</exclude>
+          <exclude>**/*.log</exclude>
+        </excludes>
       </resource>
     </resources>
     <plugins>
@@ -97,28 +101,6 @@
           </instructions>
         </configuration>
       </plugin>
-
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
-                <copy todir="target/classes/jettyhome">
-                  <fileset dir="jettyhome">
-                    <exclude name="**/*.log"></exclude>
-                  </fileset>
-                </copy>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -138,5 +120,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>
