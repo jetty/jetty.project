@@ -96,7 +96,7 @@ public class GZIPContentDecoder implements Destroyable
         if (_inflateds.isEmpty())
         {
             if ((_inflated == null || !_inflated.hasRemaining()) || _state == State.CRC || _state == State.ISIZE)
-                return acquire(0);
+                return RetainableByteBuffer.EMPTY;
             RetainableByteBuffer result = _inflated;
             _inflated = null;
             return result;
@@ -106,6 +106,8 @@ public class GZIPContentDecoder implements Destroyable
             _inflateds.add(_inflated);
             _inflated = null;
             int length = _inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
+            if (length == 0)
+                return RetainableByteBuffer.EMPTY;
             RetainableByteBuffer result = acquire(length);
             for (RetainableByteBuffer buffer : _inflateds)
             {
@@ -422,9 +424,6 @@ public class GZIPContentDecoder implements Destroyable
      */
     public RetainableByteBuffer acquire(int capacity)
     {
-        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
-        if (capacity == 0)
-            return RetainableByteBuffer.EMPTY;
         return _pool.acquire(capacity, false);
     }
 }

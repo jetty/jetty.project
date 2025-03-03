@@ -13,36 +13,29 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
 /**
- * <p>Implementation of {@link Listener} that buffers the response content
- * by copying it up to a maximum length specified to the constructors.</p>
+ * <p>Implementation of {@link Response.Listener} that retains the response
+ * content without copying it, up to a configurable number of bytes.</p>
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
  * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
- * <p>Use {@link RetainingResponseListener} for a more efficient
- * implementation that does not copy the content bytes.</p>
+ * <p>The implementation retains the response content chunks, and converts them into a {@code byte[]}
+ * upon response success, returned by {@link #getContent()}.</p>
+ * <p>Subclasses overriding {@link #onSuccess(Response)} or {@link #onFailure(Response, Throwable)}
+ * must always call the {@code super} method to guarantee that the retained chunks are released.</p>
  */
-public abstract class BufferingResponseListener extends AbstractResponseListener
+public abstract class RetainingResponseListener extends AbstractResponseListener
 {
-    /**
-     * Creates an instance with a default maximum length of 2 MiB.
-     */
-    public BufferingResponseListener()
+    public RetainingResponseListener()
     {
         this(2 * 1024 * 1024);
     }
 
-    /**
-     * Creates an instance with the given maximum length
-     *
-     * @param maxLength the maximum length of the content
-     */
-    public BufferingResponseListener(int maxLength)
+    public RetainingResponseListener(int maxLength)
     {
-        // A DynamicCapacity that always copies.
-        super(new RetainableByteBuffer.DynamicCapacity(null, maxLength, Integer.MAX_VALUE));
+        // A DynamicCapacity that always retains.
+        super(new RetainableByteBuffer.DynamicCapacity(null, maxLength, 0));
     }
 }

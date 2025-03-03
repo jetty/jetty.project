@@ -61,11 +61,13 @@ public class ContinueProtocolHandler implements ProtocolHandler
         return null;
     }
 
-    protected class ContinueListener extends BufferingResponseListener
+    protected class ContinueListener extends RetainingResponseListener
     {
         @Override
         public void onSuccess(Response response)
         {
+            super.onSuccess(response);
+
             // Handling of success must be done here and not from onComplete(),
             // since the onComplete() is not invoked because the request is not completed yet.
 
@@ -104,6 +106,8 @@ public class ContinueProtocolHandler implements ProtocolHandler
         @Override
         public void onFailure(Response response, Throwable failure)
         {
+            super.onFailure(response, failure);
+
             HttpConversation conversation = ((HttpRequest)response.getRequest()).getConversation();
             // Mark the 100 Continue response as handled
             conversation.setAttribute(ATTRIBUTE, Boolean.TRUE);

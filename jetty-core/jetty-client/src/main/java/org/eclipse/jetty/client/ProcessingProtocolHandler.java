@@ -50,11 +50,13 @@ public class ProcessingProtocolHandler implements ProtocolHandler
     {
     }
 
-    private class ProcessingListener extends BufferingResponseListener
+    private class ProcessingListener extends RetainingResponseListener
     {
         @Override
         public void onSuccess(Response response)
         {
+            super.onSuccess(response);
+
             Request request = response.getRequest();
             HttpConversation conversation = ((HttpRequest)request).getConversation();
 
@@ -72,6 +74,8 @@ public class ProcessingProtocolHandler implements ProtocolHandler
         @Override
         public void onFailure(Response response, Throwable failure)
         {
+            super.onFailure(response, failure);
+
             HttpConversation conversation = ((HttpRequest)response.getRequest()).getConversation();
             // Reset the conversation listeners to allow the conversation to be completed.
             conversation.updateResponseListeners(null);

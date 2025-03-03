@@ -43,7 +43,7 @@ public class ZstandardDecoderSource extends DecoderSource
             return inputChunk;
         if (!input.isDirect())
             throw new IllegalArgumentException("Read Chunk is not a Direct ByteBuffer");
-        RetainableByteBuffer dst = compression.acquireByteBuffer();
+        RetainableByteBuffer dst = compression.acquireByteBuffer(compression.getBufferSize());
         boolean last = inputChunk.isLast();
         dst.getByteBuffer().clear();
         boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(dst.getByteBuffer(), input);

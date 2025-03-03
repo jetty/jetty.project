@@ -56,19 +56,9 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public RetainableByteBuffer acquireByteBuffer()
+    public RetainableByteBuffer.Mutable acquireByteBuffer(int length)
     {
-        return acquireByteBuffer(getBufferSize());
-    }
-
-    @Override
-    public RetainableByteBuffer acquireByteBuffer(int length)
-    {
-        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
-        if (length == 0)
-            return RetainableByteBuffer.EMPTY;
-
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, false);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, true);
         buffer.getByteBuffer().order(getByteOrder());
         return buffer;
     }

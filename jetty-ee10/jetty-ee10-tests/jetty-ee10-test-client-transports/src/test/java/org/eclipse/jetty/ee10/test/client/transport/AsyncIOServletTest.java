@@ -43,7 +43,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.ee10.servlet.HttpOutput;
@@ -738,7 +738,7 @@ public class AsyncIOServletTest extends AbstractTest
             .method(HttpMethod.POST)
             .body(content)
             .timeout(5, TimeUnit.SECONDS)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -842,7 +842,7 @@ public class AsyncIOServletTest extends AbstractTest
             .method(HttpMethod.POST)
             .body(content)
             .timeout(5, TimeUnit.SECONDS)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1055,7 +1055,7 @@ public class AsyncIOServletTest extends AbstractTest
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(requestContent)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -1246,7 +1246,7 @@ public class AsyncIOServletTest extends AbstractTest
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(contentProvider)
-            .send(new BufferingResponseListener(16 * 1024 * 1024)
+            .send(new RetainingResponseListener(16 * 1024 * 1024)
             {
                 @Override
                 public void onComplete(Result result)
