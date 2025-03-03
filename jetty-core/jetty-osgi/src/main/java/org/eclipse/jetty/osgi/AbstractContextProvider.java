@@ -35,7 +35,7 @@ import org.osgi.framework.ServiceReference;
 public abstract class AbstractContextProvider extends AbstractLifeCycle
 {
     private final Server _server;
-    private final ContextHandlerDeployer _contextHandlerManagement;
+    private final ContextHandlerDeployer _contextHandlerDeployer;
     private ContextFactory _contextFactory;
     private String _environment;
     private final Attributes _attributes = new Attributes.Mapped();
@@ -43,7 +43,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
     public AbstractContextProvider(Server server, ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
         _server = server;
-        _contextHandlerManagement = contextHandlerManagement;
+        _contextHandlerDeployer = contextHandlerManagement;
         _environment = Objects.requireNonNull(environment);
         _contextFactory = Objects.requireNonNull(contextFactory);
     }
@@ -74,7 +74,7 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
 
     public ContextHandlerDeployer getContextHandlerManagement()
     {
-        return _contextHandlerManagement;
+        return _contextHandlerDeployer;
     }
 
     /**
