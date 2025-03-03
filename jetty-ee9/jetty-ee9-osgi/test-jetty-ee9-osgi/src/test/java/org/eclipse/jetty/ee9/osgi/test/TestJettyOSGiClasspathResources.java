@@ -40,9 +40,7 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
  * TestJettyOSGiClasspathResources
- *
  */
-
 @RunWith(PaxExam.class)
 public class TestJettyOSGiClasspathResources
 {
@@ -83,8 +81,7 @@ public class TestJettyOSGiClasspathResources
 
         //Test the test-jetty-ee9-osgi-webapp-resource bundle with a
         //Bundle-Classpath that does NOT include WEB-INF/classes
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
 
@@ -95,10 +92,6 @@ public class TestJettyOSGiClasspathResources
             String content = response.getContentAsString();
             //check that fake.properties is only listed once from the classpath
             assertEquals(content.indexOf("fake.properties"), content.lastIndexOf("fake.properties"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 
@@ -123,9 +116,8 @@ public class TestJettyOSGiClasspathResources
         webappBundle.stop();
         Bundle bundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
         bundle.start();
-        
-        HttpClient client = new HttpClient();
-        try
+
+        try (HttpClient client = new HttpClient())
         {
             client.start();
 
@@ -136,10 +128,6 @@ public class TestJettyOSGiClasspathResources
             assertEquals(HttpStatus.OK_200, response.getStatus());
             //check that fake.properties is only listed once from the classpath
             assertEquals(content.indexOf("fake.properties"), content.lastIndexOf("fake.properties"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }
