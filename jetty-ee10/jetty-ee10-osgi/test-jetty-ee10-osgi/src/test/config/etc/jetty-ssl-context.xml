@@ -1,4 +1,4 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
@@ -7,18 +7,30 @@
         <Set name="Provider" property="jetty.sslContext.provider" />
         <Set name="KeyStorePath">
           <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
-            <Arg><Property name="jetty.base"/></Arg>
-            <Arg><Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12" /></Arg>
+            <Arg>
+              <Property name="jetty.base" />
+            </Arg>
+            <Arg>
+              <Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12" />
+            </Arg>
           </Call>
         </Set>
-        <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" /></Set>
+        <Set name="KeyStorePassword">
+          <Property name="jetty.sslContext.keyStorePassword" />
+        </Set>
         <Set name="KeyStoreType" property="jetty.sslContext.keyStoreType" />
         <Set name="KeyStoreProvider" property="jetty.sslContext.keyStoreProvider" />
-        <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword" /></Set>
+        <Set name="KeyManagerPassword">
+          <Property name="jetty.sslContext.keyManagerPassword" />
+        </Set>
         <Set name="TrustStorePath">
           <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
-            <Arg><Property name="jetty.base"/></Arg>
-            <Arg><Property name="jetty.sslContext.trustStorePath" deprecated="jetty.sslContext.trustStoreAbsolutePath,jetty.truststore" /></Arg>
+            <Arg>
+              <Property name="jetty.base" />
+            </Arg>
+            <Arg>
+              <Property name="jetty.sslContext.trustStorePath" deprecated="jetty.sslContext.trustStoreAbsolutePath,jetty.truststore" />
+            </Arg>
           </Call>
         </Set>
         <Set name="TrustStorePassword" property="jetty.sslContext.trustStorePassword" />
