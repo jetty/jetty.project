@@ -1189,11 +1189,12 @@ public class HttpClientStreamTest extends AbstractTest
             assertTrue(read > 0);
             totalRead += read;
         }
+        assertEquals(chunk.length, totalRead);
 
         context.response().write(true, BufferUtil.EMPTY_BUFFER, context.callback());
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.getStatus());
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        assertEquals(200, result.getResponse().getStatus());
     }
 
     @ParameterizedTest
