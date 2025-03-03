@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntUnaryOperator;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
+
 import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -256,7 +257,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         RetainableByteBuffer actual = buffer;
         while (actual instanceof RetainableByteBuffer.Wrapper wrapper)
+        {
             actual = wrapper.getWrapped();
+        }
 
         if (actual instanceof ReservedBuffer reservedBuffer)
         {
@@ -319,7 +322,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (entry.release())
         {
             if (used % 100 == 0)
-               checkMaxMemory(bucket, buffer.isDirect());
+                checkMaxMemory(bucket, buffer.isDirect());
             return;
         }
 
@@ -448,7 +451,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         long size = 0;
         for (RetainedBucket bucket : direct ? _direct : _indirect)
+        {
             size += count.applyAsLong(bucket) * bucket.getCapacity();
+        }
         return size;
     }
 
