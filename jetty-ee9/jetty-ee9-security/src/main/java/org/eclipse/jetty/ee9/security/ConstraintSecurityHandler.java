@@ -424,11 +424,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     protected void processConstraintMapping(ConstraintMapping mapping)
     {
-        Map<String, RoleInfo> mappings = _constraintRoles.get(asPathSpec(mapping));
+        PathSpec pathSpec = asPathSpec(mapping);
+        Map<String, RoleInfo> mappings = _constraintRoles.get(pathSpec);
         if (mappings == null)
         {
             mappings = new HashMap<>();
-            _constraintRoles.put(mapping.getPathSpec(), mappings);
+            _constraintRoles.put(pathSpec, mappings);
         }
         RoleInfo allMethodsRoleInfo = mappings.get(ALL_METHODS);
         if (allMethodsRoleInfo != null && allMethodsRoleInfo.isForbidden())
