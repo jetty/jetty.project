@@ -13,15 +13,18 @@
 
 package org.eclipse.jetty.ee10.osgi.test;
 
-import java.io.File;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.osgi.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
-import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
@@ -45,7 +48,7 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 public class TestOSGiUtil
 {
     public static final String BUNDLE_DEBUG = "bundle.debug";
-    
+
     /**
      * Null FragmentActivator for the fake bundle
      * that exposes src/test/resources/jetty-logging.properties in
@@ -66,63 +69,76 @@ public class TestOSGiUtil
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
-        File etc = new File(FS.separators("src/test/config/etc"));
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
 
         List<Option> options = new ArrayList<>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(new File(etc, "jetty.xml").toURI());
-        xmlConfigs.append(";");
+        List<Path> xmlFiles = new ArrayList<>();
+
+        xmlFiles.add(etc.resolve("jetty.xml"));
         if (ssl)
         {
             options.add(CoreOptions.systemProperty("jetty.ssl.port").value("0"));
-            xmlConfigs.append(new File(etc, "jetty-ssl.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-ssl-context.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-alpn.xml").toURI());
-            xmlConfigs.append(";");
-            xmlConfigs.append(new File(etc, "jetty-https.xml").toURI());
-            xmlConfigs.append(";");
+            xmlFiles.add(etc.resolve("jetty-ssl.xml"));
+            xmlFiles.add(etc.resolve("jetty-ssl-context.xml"));
+            xmlFiles.add(etc.resolve("jetty-alpn.xml"));
+            xmlFiles.add(etc.resolve("jetty-https.xml"));
         }
-        xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-deploy.xml").toURI());
-        xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+        xmlFiles.add(etc.resolve(jettySelectorFileName));
+        xmlFiles.add(etc.resolve("jetty-deployment-manager.xml"));
+        xmlFiles.add(etc.resolve("jetty-testrealm.xml"));
 
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
+        // Sanity check that the referenced files actually exist.
+        xmlFiles.forEach(p -> assertTrue(p + " doesn't exists and/or isn't a file", Files.isRegularFile(p)));
+
+        // Convert list of XML to a list of URIs separated by ";"
+        String xmlConfigLine = xmlFiles.stream()
+            .map(Path::toUri)
+            .map(URI::toASCIIString)
+            .collect(Collectors.joining(";"));
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
         options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty("jetty.home").value(etc.getParentFile().getAbsolutePath()));
-        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.home").value(etc.getParent().toString()));
+        options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }
 
-    public static List<Option>  configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
+    public static List<Option> configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
     {
-        //use the default set of config files embedded in jetty boot jar
         List<Option> options = new ArrayList<>();
-        StringBuffer xmlConfigs = new StringBuffer();
-        xmlConfigs.append(JettyBootstrapActivator.DEFAULT_JETTY_ETC_FILES);
-        xmlConfigs.append(",");
-        //add in a couple of external files needed for testing
-        File etc = new File(FS.separators("src/test/config/etc"));
-        xmlConfigs.append(new File(etc, jettyConnectorListenerFileName).toURI());
-        xmlConfigs.append(",");
-        xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
+        List<Path> xmlFiles = new ArrayList<>();
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
+        xmlFiles.add(etc.resolve(jettyConnectorListenerFileName));
+        xmlFiles.add(etc.resolve("jetty-testrealm.xml"));
 
-        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs.toString()));
+        // Sanity check that the referenced files actually exist.
+        xmlFiles.forEach(p -> assertTrue(p + " doesn't exists and/or isn't a file", Files.isRegularFile(p)));
+
+        // Create ordered list of XML file reference strings.
+        List<String> xmlReferences = new ArrayList<>();
+        // Add relative reference paths that will be resolved within jetty-home bundle (not from src/test/config/etc)
+        xmlReferences.addAll(JettyBootstrapActivator.DEFAULT_JETTY_XML_FILES);
+        xmlFiles.stream()
+            .map(Path::toUri)
+            .map(URI::toASCIIString)
+            .forEach(xmlReferences::add);
+
+        // Convert list of XML to a list of URIs separated by ";"
+        String xmlConfigLine = String.join(";", xmlReferences);
+
+        options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
         options.add(systemProperty("jetty.http.port").value("0"));
         options.add(systemProperty(OSGiServerConstants.JETTY_HOME_BUNDLE).value("org.eclipse.jetty.ee10.osgi.boot"));
-        options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
+        options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }
-    
+
     public static List<Option> configurePaxExamLogging()
     {
         //sort out logging from the pax-exam environment
         List<Option> options = new ArrayList<>();
         options.add(systemProperty("pax.exam.logging").value("none"));
-        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "INFO");
+        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
         return options;
     }
@@ -165,7 +181,7 @@ public class TestOSGiUtil
         loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
         loggingPropertiesBundle.add(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
-        
+
         res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet").artifactId("jakarta.servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
@@ -252,7 +268,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("jetty-ee10-osgi-boot-jsp").versionAsInProject().noStart());
     }
-    
+
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
         Map<String, Bundle> bundles = new HashMap<>();
@@ -295,14 +311,14 @@ public class TestOSGiUtil
             }
         }
     }
-    
+
     protected static void dumpBundle(Bundle b)
     {
         System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
     }
 
     protected static void diagnoseNonActiveOrNonResolvedBundle(Bundle b)
-    {        
+    {
         if (b.getState() != Bundle.ACTIVE && b.getHeaders().get("Fragment-Host") == null)
         {
             try
@@ -325,7 +341,9 @@ public class TestOSGiUtil
         System.err.println("RESOLVED: " + Bundle.RESOLVED);
         System.err.println("INSTALLED: " + Bundle.INSTALLED);
         for (Bundle b : bundleContext.getBundles())
+        {
             dumpBundle(b);
+        }
     }
 
     @SuppressWarnings("rawtypes")
