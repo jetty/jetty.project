@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -138,7 +139,8 @@ public class JettyServerFactory
                             }
 
                             Object o = config.configure();
-                            if (o instanceof Server configuredServer)
+                            // Remember the Server if it was configured.
+                            if (o instanceof Server configuredServer && server == null)
                                 server = configuredServer;
                             idMap = config.getIdMap();
                         }
@@ -148,6 +150,15 @@ public class JettyServerFactory
                             throw e;
                         }
                     }
+                }
+
+                if (server == null)
+                {
+                    LOG.warn("No Server was configured by the XML files {}",
+                        jettyConfigurations.stream()
+                            .map(URL::toString)
+                            .collect(Collectors.joining(", ", "[", "]"))
+                    );
                 }
             }
 
