@@ -71,12 +71,11 @@ public class TestOSGiUtil
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
-        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
-
         List<Option> options = new ArrayList<>();
         // List of XML URI Reference strings
         List<String> xmlReferences = new ArrayList<>();
 
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
         xmlReferences.add(resolveFile(etc, "jetty.xml"));
         if (ssl)
         {

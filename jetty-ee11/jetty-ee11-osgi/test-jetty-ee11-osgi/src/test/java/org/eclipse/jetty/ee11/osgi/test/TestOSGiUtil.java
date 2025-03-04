@@ -68,12 +68,11 @@ public class TestOSGiUtil
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
-        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
-
         List<Option> options = new ArrayList<>();
         // List of XML URI Reference strings
         List<String> xmlReferences = new ArrayList<>();
 
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
         xmlReferences.add(resolveFile(etc, "jetty.xml"));
         if (ssl)
         {
@@ -99,8 +98,6 @@ public class TestOSGiUtil
 
     public static List<Option> configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
     {
-        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
-
         List<Option> options = new ArrayList<>();
         // List of XML URI Reference strings
         List<String> xmlReferences = new ArrayList<>();
@@ -108,6 +105,7 @@ public class TestOSGiUtil
         // Add relative reference paths that will be resolved within jetty-home bundle (not from src/test/config/etc)
         xmlReferences.addAll(JettyBootstrapActivator.DEFAULT_JETTY_XML_FILES);
 
+        Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
         xmlReferences.add(resolveFile(etc, jettyConnectorListenerFileName));
         xmlReferences.add(resolveFile(etc, "jetty-testrealm.xml"));
 
