@@ -16,31 +16,38 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.RecordComponent;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntUnaryOperator;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentPool;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +73,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final long _maxHeapMemory;
     private final long _maxDirectMemory;
     private final IntUnaryOperator _bucketIndexFor;
+    private final IntUnaryOperator _bucketCapacity;
     private final AtomicBoolean _evictor = new AtomicBoolean(false);
     private final AtomicLong _reserved = new AtomicLong();
+    private final ConcurrentMap<Integer, Long> _noBucketDirectAcquires = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, Long> _noBucketIndirectAcquires = new ConcurrentHashMap<>();
     private boolean _statisticsEnabled;
 
     /**
@@ -166,6 +176,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         _maxHeapMemory = maxMemory(maxHeapMemory);
         _maxDirectMemory = maxMemory(maxDirectMemory);
         _bucketIndexFor = bucketIndexFor;
+        _bucketCapacity = bucketCapacity;
     }
 
     private long maxMemory(long maxMemory)
@@ -213,9 +224,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         // No bucket, return non-pooled.
         if (bucket == null)
+        {
+            recordNoBucketAcquire(size, direct);
             return RetainableByteBuffer.wrap(BufferUtil.allocate(size, direct));
+        }
 
-        bucket.recordAcquire();
+        bucket.recordAcquire(size);
 
         // Try to acquire a pooled entry.
         Pool.Entry<RetainableByteBuffer.Pooled> entry = bucket.getPool().acquire();
@@ -232,28 +246,20 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return buffer;
     }
 
-    @Override
-    public boolean releaseAndRemove(RetainableByteBuffer buffer)
+    private void recordNoBucketAcquire(int size, boolean direct)
     {
-        RetainableByteBuffer actual = buffer;
-        while (actual instanceof RetainableByteBuffer.Wrapper wrapper)
-            actual = wrapper.getWrapped();
-
-        if (actual instanceof ReservedBuffer reservedBuffer)
+        if (isStatisticsEnabled())
         {
-            // remove the actual reserved buffer, but release the wrapped buffer
-            reservedBuffer.remove();
-            return buffer.release();
+            ConcurrentMap<Integer, Long> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
+            int idx = _bucketIndexFor.applyAsInt(size);
+            int key = _bucketCapacity.applyAsInt(idx);
+            map.compute(key, (k, v) ->
+            {
+                if (v == null)
+                    return 1L;
+                return v + 1L;
+            });
         }
-
-        if (actual instanceof PooledBuffer poolBuffer)
-        {
-            // remove the actual pool buffer, but release the wrapped buffer
-            poolBuffer.remove();
-            return buffer.release();
-        }
-
-        return ByteBufferPool.super.releaseAndRemove(buffer);
     }
 
     private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
@@ -287,6 +293,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         bucket.recordRelease();
 
+        if (entry.isTerminated())
+            return;
+
         RetainableByteBuffer buffer = entry.getPooled();
         BufferUtil.reset(buffer.getByteBuffer());
 
@@ -295,7 +304,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (entry.release())
         {
             if (used % 100 == 0)
-               checkMaxMemory(bucket, buffer.isDirect());
+                checkMaxMemory(bucket, buffer.isDirect());
             return;
         }
 
@@ -318,7 +327,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return;
         try
         {
-            long memory = getMemory(direct);
+            long memory = getTotalMemory(direct);
             long excess = memory - max;
             if (excess > 0)
             {
@@ -403,41 +412,92 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         return Arrays.stream(buckets).mapToLong(bucket -> bucket.getPool().getIdleCount()).sum();
     }
 
-    @ManagedAttribute("The bytes retained by direct ByteBuffers")
+    @ManagedAttribute("The total bytes retained by direct ByteBuffers")
     public long getDirectMemory()
     {
-        return getMemory(true);
+        return getTotalMemory(true);
     }
 
-    @ManagedAttribute("The bytes retained by heap ByteBuffers")
+    @ManagedAttribute("The total bytes retained by heap ByteBuffers")
     public long getHeapMemory()
     {
-        return getMemory(false);
+        return getTotalMemory(false);
     }
 
-    private long getMemory(boolean direct)
+    private long getTotalMemory(boolean direct)
+    {
+        return getMemory(direct, bucket -> bucket.getPool().size());
+    }
+
+    private long getMemory(boolean direct, ToLongFunction<RetainedBucket> count)
     {
         long size = 0;
         for (RetainedBucket bucket : direct ? _direct : _indirect)
-            size += (long)bucket.getPool().getIdleCount() * bucket.getCapacity();
+        {
+            size += count.applyAsLong(bucket) * bucket.getCapacity();
+        }
         return size;
     }
 
+    @ManagedAttribute("The available bytes retained by direct ByteBuffers")
     public long getAvailableDirectMemory()
     {
-        return getDirectMemory();
+        return getAvailableMemory(true);
     }
 
+    @ManagedAttribute("The available bytes retained by heap ByteBuffers")
     public long getAvailableHeapMemory()
     {
-        return getHeapMemory();
+        return getAvailableMemory(false);
+    }
+
+    private long getAvailableMemory(boolean direct)
+    {
+        return getMemory(direct, bucket -> bucket.getPool().getIdleCount());
+    }
+
+    @ManagedAttribute("The heap buckets statistics")
+    public List<Map<String, Object>> getHeapBucketsStatistics()
+    {
+        return getBucketsStatistics(false);
+    }
+
+    @ManagedAttribute("The direct buckets statistics")
+    public List<Map<String, Object>> getDirectBucketsStatistics()
+    {
+        return getBucketsStatistics(true);
+    }
+
+    private List<Map<String, Object>> getBucketsStatistics(boolean direct)
+    {
+        RetainedBucket[] buckets = direct ? _direct : _indirect;
+        return Arrays.stream(buckets).map(b -> b.getStatistics().toMap()).toList();
+    }
+
+    @ManagedAttribute("The acquires for direct non-pooled bucket capacities")
+    public Map<Integer, Long> getNoBucketDirectAcquires()
+    {
+        return getNoBucketAcquires(true);
+    }
+
+    @ManagedAttribute("The acquires for heap non-pooled bucket capacities")
+    public Map<Integer, Long> getNoBucketHeapAcquires()
+    {
+        return getNoBucketAcquires(false);
+    }
+
+    private Map<Integer, Long> getNoBucketAcquires(boolean direct)
+    {
+        return new HashMap<>(direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires);
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
     public void clear()
     {
         clearBuckets(_direct);
+        _noBucketDirectAcquires.clear();
         clearBuckets(_indirect);
+        _noBucketIndirectAcquires.clear();
     }
 
     private void clearBuckets(RetainedBucket[] buckets)
@@ -456,7 +516,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             indent,
             this,
             DumpableCollection.fromArray("direct", _direct),
-            DumpableCollection.fromArray("indirect", _indirect));
+            new DumpableMap("direct non-pooled acquisitions", _noBucketDirectAcquires),
+            DumpableCollection.fromArray("indirect", _indirect),
+            new DumpableMap("heap non-pooled acquisitions", _noBucketIndirectAcquires)
+        );
     }
 
     @Override
@@ -473,6 +536,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private class RetainedBucket
     {
         private final LongAdder _acquires = new LongAdder();
+        private final LongAdder _totalAcquired = new LongAdder();
         private final LongAdder _pooled = new LongAdder();
         private final LongAdder _nonPooled = new LongAdder();
         private final LongAdder _evicts = new LongAdder();
@@ -493,10 +557,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             _capacity = capacity;
         }
 
-        public void recordAcquire()
+        public void recordAcquire(int size)
         {
             if (isStatisticsEnabled())
+            {
                 _acquires.increment();
+                _totalAcquired.add(size);
+            }
         }
 
         public void recordEvict()
@@ -556,9 +623,20 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return getCapacity();
         }
 
+        private Statistics getStatistics()
+        {
+            long pooled = _pooled.longValue();
+            long acquires = _acquires.longValue();
+            float hitRatio = acquires == 0 ? Float.NaN : pooled * 100F / acquires;
+            int averageSize = acquires == 0 ? 0 : (int)(_totalAcquired.longValue() / acquires);
+            return new Statistics(getCapacity(), getPool().getInUseCount(), getPool().size(), pooled, acquires,
+                _releases.longValue(), hitRatio, averageSize, _nonPooled.longValue(), _evicts.longValue(), _removes.longValue());
+        }
+
         public void clear()
         {
             _acquires.reset();
+            _totalAcquired.reset();
             _pooled.reset();
             _nonPooled.reset();
             _evicts.reset();
@@ -570,31 +648,46 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         @Override
         public String toString()
         {
-            int entries = 0;
-            int inUse = 0;
-            for (Pool.Entry<RetainableByteBuffer.Pooled> entry : getPool().stream().toList())
+            return String.format("%s[%s]", super.toString(), getStatistics());
+        }
+
+        private record Statistics(int capacity, int inUseEntries, int totalEntries, long pooled, long acquires,
+                                  long releases, float hitRatio, int averageSize, long nonPooled, long evicts, long removes)
+        {
+            private Map<String, Object> toMap()
             {
-                entries++;
-                if (entry.isInUse())
-                    inUse++;
+                try
+                {
+                    Map<String, Object> statistics = new HashMap<>();
+                    for (RecordComponent c : getClass().getRecordComponents())
+                    {
+                        statistics.put(c.getName(), c.getAccessor().invoke(this));
+                    }
+                    return statistics;
+                }
+                catch (Throwable x)
+                {
+                    return Map.of();
+                }
             }
 
-            long pooled = _pooled.longValue();
-            long acquires = _acquires.longValue();
-            float hitRatio = acquires == 0 ? Float.NaN : pooled * 100F / acquires;
-            return String.format("%s{capacity=%d,in-use=%d/%d,pooled/acquires=%d/%d(%.3f%%),non-pooled/evicts/removes/releases=%d/%d/%d/%d}",
-                super.toString(),
-                getCapacity(),
-                inUse,
-                entries,
-                pooled,
-                acquires,
-                hitRatio,
-                _nonPooled.longValue(),
-                _evicts.longValue(),
-                _removes.longValue(),
-                _releases.longValue()
-            );
+            @Override
+            public String toString()
+            {
+                return "capacity=%d,in-use=%d/%d,pooled/acquires/releases=%d/%d/%d(%.3f%%),avgSize=%d,non-pooled/evicts/removes=%d/%d/%d".formatted(
+                    capacity,
+                    inUseEntries,
+                    totalEntries,
+                    pooled,
+                    acquires,
+                    releases,
+                    hitRatio,
+                    averageSize,
+                    nonPooled,
+                    evicts,
+                    removes
+                );
+            }
         }
 
         private static class BucketCompoundPool extends CompoundPool<RetainableByteBuffer.Pooled>
@@ -691,35 +784,110 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     /**
      * A variant of the {@link ArrayByteBufferPool} that
+     * uses a predefined set of buckets of buffers.
+     */
+    public static class WithBucketCapacities extends ArrayByteBufferPool
+    {
+        public WithBucketCapacities(int... capacities)
+        {
+            this(0L, 0L, capacities);
+        }
+
+        public WithBucketCapacities(long maxHeapMemory, long maxDirectMemory, int... capacities)
+        {
+            super(-1, 1, sort(capacities)[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
+                c -> floorBucketIndexFor(c, capacities), i -> bucketCapacityForIndex(i, capacities));
+        }
+
+        private static int[] sort(int... values)
+        {
+            if (values.length == 0)
+                throw new IllegalArgumentException("At least one capacity is needed");
+            Arrays.sort(values);
+            return values;
+        }
+
+        private static int bucketCapacityForIndex(int idx, int... capacities)
+        {
+            if (idx >= capacities.length)
+            {
+                // An index over the capacities array's length is considered
+                // to refer to a multiple of the largest configured capacity;
+                // this logic is only meant for recordNoBucketAcquire().
+                int largestCapacity = capacities[capacities.length - 1];
+                int virtualIdx = idx - (capacities.length - 1);
+                return (virtualIdx + 1) * largestCapacity;
+            }
+            return capacities[idx];
+        }
+
+        private static int floorBucketIndexFor(int capacity, int... capacities)
+        {
+            int largestCapacity = capacities[capacities.length - 1];
+            if (capacity > largestCapacity)
+            {
+                // A capacity over the largest configured capacity returns an
+                // index that corresponds to where in the capacities array it
+                // would stand if the latter had more entries that would all
+                // be multiples of the largest configured capacity;
+                // this logic is only meant for recordNoBucketAcquire().
+                int remainder = capacity % largestCapacity != 0 ? 1 : 0;
+                int overLargestCapacityFactor = (capacity / largestCapacity) + remainder;
+                return overLargestCapacityFactor - 1 + capacities.length - 1;
+            }
+
+            int idx = 0;
+            for (int i = 0; i < capacities.length; i++)
+            {
+                idx = i;
+                if (capacities[i] > capacity)
+                    break;
+            }
+            return idx;
+        }
+    }
+
+    /**
+     * A variant of the {@link ArrayByteBufferPool} that
      * uses buckets of buffers that increase in size by a power of
      * 2 (e.g. 1k, 2k, 4k, 8k, etc.).
-     * @deprecated Usage of {@code Quadratic} is often wasteful of additional space and can increase contention on
-     * the larger buffers.
      */
-    @Deprecated(forRemoval = true, since = "12.1.0")
     public static class Quadratic extends ArrayByteBufferPool
     {
         public Quadratic()
         {
-            this(0, -1, Integer.MAX_VALUE);
+            this(-1, -1, Integer.MAX_VALUE);
         }
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize)
         {
-            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+            this(minCapacity, maxCapacity, maxBucketSize, 0L, 0L);
         }
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
             super(minCapacity,
-                -1,
-                maxCapacity,
+                computeMinCapacity(minCapacity),
+                computeMaxCapacity(maxCapacity),
                 maxBucketSize,
                 maxHeapMemory,
                 maxDirectMemory,
-                c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-                i -> 1 << i
+                // The bucket indices are the powers of 2, but those powers up to minCapacity are skipped so they must be
+                // substracted when computing the index and added when computing the capacity; so if minCapacity is 1024, any
+                // number from 0 to 1024 must return index 0, and index 0 must return capacity 1024.
+                c -> Integer.SIZE - Integer.numberOfLeadingZeros(c - 1) - MathUtils.ceilLog2(computeMinCapacity(minCapacity)),
+                i -> 1 << i + MathUtils.ceilLog2(computeMinCapacity(minCapacity))
             );
+        }
+
+        private static int computeMinCapacity(int minCapacity)
+        {
+            return minCapacity <= 0 ? 1024 : minCapacity;
+        }
+
+        private static int computeMaxCapacity(int maxCapacity)
+        {
+            return maxCapacity <= 0 ? 65536 : maxCapacity;
         }
     }
 

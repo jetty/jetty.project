@@ -804,6 +804,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
+        public Callback cancelWrite(Throwable cause)
+        {
+            return _endPoint.cancelWrite(cause);
+        }
+
+        @Override
         public SslSessionData getSslSessionData()
         {
             return _sslSessionData;

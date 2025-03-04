@@ -129,18 +129,18 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private int maxConnectionsPerDestination = 64;
     private int maxRequestsQueuedPerDestination = 1024;
     private int requestBufferSize = 4096;
+    private int maxRequestHeadersSize = 8192;
     private int responseBufferSize = 16384;
+    private int maxResponseHeadersSize = -1;
     private int maxRedirects = 8;
     private long addressResolutionTimeout = 15000;
     private boolean strictEventOrdering = false;
     private long destinationIdleTimeout;
-    private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+    private String name = "%s@%x".formatted(getClass().getSimpleName(), hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC9110;
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private int maxRequestHeadersSize = 8192;
-    private int maxResponseHeadersSize = -1;
     private Sweeper destinationSweeper;
 
     /**
@@ -233,6 +233,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         if (decoderFactories.isEmpty())
         {
             TypeUtil.serviceStream(ServiceLoader.load(Compression.class))
+                .peek(c -> c.setByteBufferPool(getByteBufferPool()))
                 .forEach(c -> decoderFactories.put(new CompressionContentDecoderFactory(c)));
         }
 

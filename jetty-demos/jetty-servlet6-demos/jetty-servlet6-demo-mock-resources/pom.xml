@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.demos</groupId>
+    <artifactId>jetty-servlet6-demos</artifactId>
+    <version>12.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-servlet6-demo-mock-resources</artifactId>
+  <packaging>jar</packaging>
+  <name>Servlet 6 :: Demo :: Mock Resources</name>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.servlet6.mocks</bundle-symbolic-name>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
+      <version>${ee9.jakarta.mail.api.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>${ee9.jakarta.servlet.api.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
+      <version>${ee9.jakarta.transaction-api.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Bundle-SymbolicName>org.eclipse.jetty.demos.servlet6-demo-mock-resources</Bundle-SymbolicName>
+                <Bundle-Description>Mock resources used for testing</Bundle-Description>
+                <Export-Package>org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                <Import-Package>javax.naming, javax.naming.spi, javax.sql, jakarta.transaction;version="2.0.0", org.eclipse.jetty.jndi</Import-Package>
+                <_nouses>true</_nouses>
+              </instructions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

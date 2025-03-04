@@ -12,12 +12,10 @@
   <name>Demos</name>
 
   <modules>
-    <!-- TBD -->
     <module>jetty-core-demos</module>
     <module>jetty-servlet4-demos</module>
     <module>jetty-servlet5-demos</module>
-    <!-- module>jetty-servlet6-demos</module -->
-    <!-- module>jetty-servlet61-demos</module -->
+    <module>jetty-servlet6-demos</module>
   </modules>
 
   <properties>

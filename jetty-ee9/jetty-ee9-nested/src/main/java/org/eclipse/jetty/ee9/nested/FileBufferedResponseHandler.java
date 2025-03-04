@@ -23,10 +23,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import org.eclipse.jetty.ee9.nested.HttpOutput.Interceptor;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +53,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileBufferedResponseHandler.class);
 
+    private static final int DEFAULT_BUFFER_SIZE = 64 * 1024;
+    private int _bufferSize = DEFAULT_BUFFER_SIZE;
     private Path _tempDir = new File(System.getProperty("java.io.tmpdir")).toPath();
 
     public Path getTempDir()
@@ -64,6 +67,16 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         _tempDir = Objects.requireNonNull(tempDir);
     }
 
+    public int getBufferSize()
+    {
+        return _bufferSize;
+    }
+
+    public void setBufferSize(int bufferSize)
+    {
+        this._bufferSize = bufferSize;
+    }
+
     @Override
     protected BufferedInterceptor newBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
     {
@@ -72,8 +85,6 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
     class FileBufferedInterceptor implements BufferedResponseHandler.BufferedInterceptor
     {
-        private static final int MAX_MAPPED_BUFFER_SIZE = Integer.MAX_VALUE / 2;
-
         private final Interceptor _next;
         private final HttpChannel _channel;
         private Boolean _aggregating;
@@ -193,41 +204,11 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             }
 
             // Create an iterating callback to do the writing
-            IteratingCallback icb = new IteratingCallback()
-            {
-                private final long fileLength = _filePath.toFile().length();
-                private long _pos = 0;
-                private boolean _last = false;
-
-                @Override
-                protected Action process() throws Exception
-                {
-                    if (_last)
-                        return Action.SUCCEEDED;
-
-                    long len = Math.min(MAX_MAPPED_BUFFER_SIZE, fileLength - _pos);
-                    _last = (_pos + len == fileLength);
-                    ByteBuffer buffer = BufferUtil.toMappedBuffer(_filePath, _pos, len);
-                    getNextInterceptor().write(buffer, _last, this);
-                    _pos += len;
-                    return Action.SCHEDULED;
-                }
-
-                @Override
-                protected void onCompleteSuccess()
-                {
-                    dispose();
-                    callback.succeeded();
-                }
-
-                @Override
-                protected void onFailure(Throwable cause)
-                {
-                    dispose();
-                    callback.failed(cause);
-                }
-            };
-            icb.iterate();
+            ByteBufferPool.Sized sizedPool = new ByteBufferPool.Sized(getServer().getByteBufferPool(), true, getBufferSize());
+            Content.Source source = Content.Source.from(sizedPool, _filePath);
+            Content.Sink sink = (last, bytebuffer, cb) -> getNextInterceptor().write(last, bytebuffer, cb);
+            Callback disposer = Callback.from(callback, this::dispose);
+            Content.copy(source, sink, disposer);
         }
     }
 }

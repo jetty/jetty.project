@@ -175,24 +175,24 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             {
                 boolean rethrow = true;
                 if (terminated instanceof HpackException.SessionException)
-                 {
-                     HTTP2Session.Entry entry = entries.peek();
-                     if (entry != null)
-                     {
-                         FrameType frameType = entry.frame().getType();
-                         if (frameType == FrameType.RST_STREAM || frameType == FrameType.GO_AWAY)
-                         {
-                             rethrow = false;
-                             if (frameType == FrameType.GO_AWAY)
-                             {
-                                 // Allow a SessionException to be processed once to send a GOAWAY.
-                                 terminated = new ClosedChannelException().initCause(terminated);
-                             }
-                         }
-                     }
-                 }
-                 if (rethrow)
-                     throw terminated;
+                {
+                    HTTP2Session.Entry entry = entries.peek();
+                    if (entry != null)
+                    {
+                        FrameType frameType = entry.frame().getType();
+                        if (frameType == FrameType.RST_STREAM || frameType == FrameType.GO_AWAY)
+                        {
+                            rethrow = false;
+                            if (frameType == FrameType.GO_AWAY)
+                            {
+                                // Allow a SessionException to be processed once to send a GOAWAY.
+                                terminated = new ClosedChannelException().initCause(terminated);
+                            }
+                        }
+                    }
+                }
+                if (rethrow)
+                    throw terminated;
             }
 
             WindowEntry windowEntry;

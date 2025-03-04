@@ -56,7 +56,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     protected Random _random;
     protected boolean _weakRandom;
     protected String _workerName;
-    protected String _workerAttr;
     protected long _reseed = 100000L;
     protected Server _server;
     protected HouseKeeper _houseKeeper;
@@ -134,9 +133,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     /**
      * Set the workername. If set, the workername is dot appended to the session
      * ID and can be used to assist session affinity in a load balancer.
-     * A worker name starting with $ is used as a request attribute name to
-     * lookup the worker name that can be dynamically set by a request
-     * Customizer.
      *
      * @param workerName the name of the worker, if null it is coerced to empty string
      */
@@ -315,8 +311,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             _workerName = "node" + (inst == null ? "0" : inst);
         }
 
-        _workerAttr = _workerName.startsWith("$") ? _workerName.substring(1) : null;
-
         if (_houseKeeper == null)
         {
             _ownHouseKeeper = true;
@@ -377,12 +371,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     {
         if (!StringUtil.isBlank(_workerName))
         {
-            if (_workerAttr == null)
-                return clusterId + '.' + _workerName;
-
-            String worker = (String)request.getAttribute(_workerAttr);
-            if (worker != null)
-                return clusterId + '.' + worker;
+            return clusterId + '.' + _workerName;
         }
 
         return clusterId;

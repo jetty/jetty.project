@@ -38,7 +38,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -46,6 +45,7 @@ import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -262,7 +262,7 @@ public class HttpClientContinueTest extends AbstractTest
         client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content1, content2))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -319,7 +319,7 @@ public class HttpClientContinueTest extends AbstractTest
             .path("/continue")
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -359,7 +359,7 @@ public class HttpClientContinueTest extends AbstractTest
             .path("/redirect")
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -407,7 +407,7 @@ public class HttpClientContinueTest extends AbstractTest
         clientRequest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -457,7 +457,7 @@ public class HttpClientContinueTest extends AbstractTest
         clientRequest
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -516,7 +516,7 @@ public class HttpClientContinueTest extends AbstractTest
         client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(new BytesRequestContent(content))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -568,7 +568,7 @@ public class HttpClientContinueTest extends AbstractTest
         client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -628,7 +628,7 @@ public class HttpClientContinueTest extends AbstractTest
         client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -677,7 +677,7 @@ public class HttpClientContinueTest extends AbstractTest
                 content.close();
             })
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -734,7 +734,7 @@ public class HttpClientContinueTest extends AbstractTest
         client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
             .body(content)
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)

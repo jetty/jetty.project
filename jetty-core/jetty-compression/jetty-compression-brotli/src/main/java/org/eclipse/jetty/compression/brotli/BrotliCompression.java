@@ -64,20 +64,9 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public RetainableByteBuffer acquireByteBuffer()
+    public RetainableByteBuffer.Mutable acquireByteBuffer(int length)
     {
-        return acquireByteBuffer(getBufferSize());
-    }
-
-    @Override
-    public RetainableByteBuffer acquireByteBuffer(int length)
-    {
-        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
-        if (length == 0)
-            return RetainableByteBuffer.EMPTY;
-
-        // Can Brotli4J use direct byte buffers?
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(length, false);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, true);
         buffer.getByteBuffer().order(getByteOrder());
         return buffer;
     }
@@ -111,7 +100,7 @@ public class BrotliCompression extends Compression
     public DecoderSource newDecoderSource(Content.Source source, DecoderConfig config)
     {
         BrotliDecoderConfig brotliDecoderConfig = (BrotliDecoderConfig)config;
-        return new BrotliDecoderSource(source, brotliDecoderConfig);
+        return new BrotliDecoderSource(source, this, brotliDecoderConfig);
     }
 
     @Override

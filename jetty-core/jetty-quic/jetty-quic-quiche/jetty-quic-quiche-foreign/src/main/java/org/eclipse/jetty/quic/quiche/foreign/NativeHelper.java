@@ -35,7 +35,8 @@ import static java.lang.foreign.ValueLayout.JAVA_BYTE;
 
 public class NativeHelper
 {
-    public static final ValueLayout.OfBoolean C_BOOL = ValueLayout.JAVA_BOOLEAN;
+    // In Rust, the size of bool is 1 byte, see https://github.com/rust-lang/rust/pull/46176#issuecomment-359593446
+    public static final ValueLayout.OfByte C_BOOL = ValueLayout.JAVA_BYTE;
     public static final ValueLayout.OfByte C_CHAR = ValueLayout.JAVA_BYTE;
     public static final ValueLayout.OfShort C_SHORT = ValueLayout.JAVA_SHORT;
     public static final ValueLayout.OfInt C_INT = ValueLayout.JAVA_INT;

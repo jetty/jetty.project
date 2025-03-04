@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee11.websocket.jakarta.server.config;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceLoader;
 
 import jakarta.websocket.Extension;
 import jakarta.websocket.HandshakeResponse;
@@ -28,7 +27,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The "Container Default Configurator" per the JSR-356 spec.
  *
- * @see ServiceLoader behavior of {@link jakarta.websocket.server.ServerEndpointConfig.Configurator}
+ * @see jakarta.websocket.server.ServerEndpointConfig.Configurator
  */
 public final class ContainerDefaultConfigurator extends Configurator
 {

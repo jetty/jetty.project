@@ -43,8 +43,10 @@ public class OpenIdRealmNameTest
     public void testSingleConfiguration() throws Exception
     {
         // Add some OpenID configurations.
-        OpenIdConfiguration config1 = new OpenIdConfiguration("provider1",
-            "", "", "", "", null);
+        OpenIdConfiguration config1 = new OpenIdConfiguration.Builder("provider1", "", "")
+            .authorizationEndpoint("test")
+            .tokenEndpoint("test")
+            .build();
         server.addBean(config1);
 
         // Configure two webapps to select configs based on realm name.
@@ -74,8 +76,10 @@ public class OpenIdRealmNameTest
     public void testSingleConfigurationNoRealmName() throws Exception
     {
         // Add some OpenID configurations.
-        OpenIdConfiguration config1 = new OpenIdConfiguration("provider1",
-            "", "", "", "", null);
+        OpenIdConfiguration config1 = new OpenIdConfiguration.Builder("provider1", "", "")
+            .authorizationEndpoint("test")
+            .tokenEndpoint("test")
+            .build();
         server.addBean(config1);
 
         // Configure two webapps to select configs based on realm name.
@@ -105,10 +109,14 @@ public class OpenIdRealmNameTest
     public void testMultipleConfiguration() throws Exception
     {
         // Add some OpenID configurations.
-        OpenIdConfiguration config1 = new OpenIdConfiguration("provider1",
-            "", "", "", "", null);
-        OpenIdConfiguration config2 = new OpenIdConfiguration("provider2",
-            "", "", "", "", null);
+        OpenIdConfiguration config1 = new OpenIdConfiguration.Builder("provider1", "", "")
+            .authorizationEndpoint("test")
+            .tokenEndpoint("test")
+            .build();
+        OpenIdConfiguration config2 = new OpenIdConfiguration.Builder("provider2", "", "")
+            .authorizationEndpoint("test")
+            .tokenEndpoint("test")
+            .build();
         server.addBean(config1);
         server.addBean(config2);
 
@@ -148,10 +156,8 @@ public class OpenIdRealmNameTest
     public void testMultipleConfigurationNoMatch() throws Exception
     {
         // Add some OpenID configurations.
-        OpenIdConfiguration config1 = new OpenIdConfiguration("provider1",
-            "", "", "", "", null);
-        OpenIdConfiguration config2 = new OpenIdConfiguration("provider2",
-            "", "", "", "", null);
+        OpenIdConfiguration config1 = new OpenIdConfiguration.Builder("provider1", "", "").build();
+        OpenIdConfiguration config2 = new OpenIdConfiguration.Builder("provider2", "", "").build();
         server.addBean(config1);
         server.addBean(config2);
 

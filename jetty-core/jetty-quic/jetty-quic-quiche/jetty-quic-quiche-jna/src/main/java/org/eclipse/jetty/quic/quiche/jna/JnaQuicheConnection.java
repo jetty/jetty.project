@@ -129,7 +129,7 @@ public class JnaQuicheConnection extends QuicheConnection
 
         Boolean verifyPeer = config.getVerifyPeer();
         if (verifyPeer != null)
-            LibQuiche.INSTANCE.quiche_config_verify_peer(quicheConfig, verifyPeer);
+            LibQuiche.INSTANCE.quiche_config_verify_peer(quicheConfig, new bool(verifyPeer));
 
         String trustedCertsPemPath = config.getTrustedCertsPemPath();
         if (trustedCertsPemPath != null)
@@ -203,7 +203,7 @@ public class JnaQuicheConnection extends QuicheConnection
 
         Boolean disableActiveMigration = config.getDisableActiveMigration();
         if (disableActiveMigration != null)
-            LibQuiche.INSTANCE.quiche_config_set_disable_active_migration(quicheConfig, disableActiveMigration);
+            LibQuiche.INSTANCE.quiche_config_set_disable_active_migration(quicheConfig, new bool(disableActiveMigration));
 
         Long maxConnectionWindow = config.getMaxConnectionWindow();
         if (maxConnectionWindow != null)
@@ -289,7 +289,7 @@ public class JnaQuicheConnection extends QuicheConnection
         LOG.debug("dcid len: {}", dcid_len);
         LOG.debug("token len: {}", token_len);
 
-        if (!LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()))
+        if (LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()).isFalse())
         {
             LOG.debug("version negotiation");
 
@@ -360,7 +360,7 @@ public class JnaQuicheConnection extends QuicheConnection
         LOG.debug("dcid len: {}", dcid_len);
         LOG.debug("token len: {}", token_len);
 
-        if (!LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()))
+        if (LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()).isFalse())
         {
             LOG.debug("need version negotiation");
             return null;
@@ -409,7 +409,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
 
-            if (!LibQuiche.INSTANCE.quiche_conn_set_qlog_path(quicheConn, filename, title, desc))
+            if (LibQuiche.INSTANCE.quiche_conn_set_qlog_path(quicheConn, filename, title, desc).isFalse())
                 throw new IOException("unable to set qlog path to " + filename);
         }
     }
@@ -448,7 +448,7 @@ public class JnaQuicheConnection extends QuicheConnection
 
             List<Long> result = new ArrayList<>();
             uint64_t_pointer streamId = new uint64_t_pointer();
-            while (LibQuiche.INSTANCE.quiche_stream_iter_next(quiche_stream_iter, streamId))
+            while (LibQuiche.INSTANCE.quiche_stream_iter_next(quiche_stream_iter, streamId).isTrue())
             {
                 result.add(streamId.getValue());
             }
@@ -519,7 +519,7 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            return LibQuiche.INSTANCE.quiche_conn_is_closed(quicheConn);
+            return LibQuiche.INSTANCE.quiche_conn_is_closed(quicheConn).isTrue();
         }
     }
 
@@ -530,7 +530,7 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            return LibQuiche.INSTANCE.quiche_conn_is_established(quicheConn);
+            return LibQuiche.INSTANCE.quiche_conn_is_established(quicheConn).isTrue();
         }
     }
 
@@ -540,7 +540,7 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            return LibQuiche.INSTANCE.quiche_conn_is_in_early_data(quicheConn);
+            return LibQuiche.INSTANCE.quiche_conn_is_in_early_data(quicheConn).isTrue();
         }
     }
 
@@ -592,7 +592,7 @@ public class JnaQuicheConnection extends QuicheConnection
                 return false;
             }
             int length = reason == null ? 0 : reason.getBytes(LibQuiche.CHARSET).length;
-            int rc = LibQuiche.INSTANCE.quiche_conn_close(quicheConn, true, new uint64_t(error), reason, new size_t(length));
+            int rc = LibQuiche.INSTANCE.quiche_conn_close(quicheConn, new bool(true), new uint64_t(error), reason, new size_t(length));
             if (rc == 0)
                 return true;
             if (rc == quiche_error.QUICHE_ERR_DONE)
@@ -624,7 +624,7 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            return LibQuiche.INSTANCE.quiche_conn_is_draining(quicheConn);
+            return LibQuiche.INSTANCE.quiche_conn_is_draining(quicheConn).isTrue();
         }
     }
 
@@ -694,7 +694,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (quicheConn == null)
                 throw new IOException("connection was released");
             uint64_t_pointer outErrorCode = new uint64_t_pointer();
-            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), jnaBuffer(buffer), new size_t(buffer.remaining()), last, outErrorCode).intValue();
+            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), jnaBuffer(buffer), new size_t(buffer.remaining()), new bool(last), outErrorCode).intValue();
             if (written == quiche_error.QUICHE_ERR_DONE)
             {
                 int rc = LibQuiche.INSTANCE.quiche_conn_stream_writable(quicheConn, new uint64_t(streamId), new size_t(buffer.remaining()));
@@ -766,7 +766,7 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            return LibQuiche.INSTANCE.quiche_conn_stream_finished(quicheConn, new uint64_t(streamId));
+            return LibQuiche.INSTANCE.quiche_conn_stream_finished(quicheConn, new uint64_t(streamId)).isTrue();
         }
     }
 
@@ -781,7 +781,7 @@ public class JnaQuicheConnection extends QuicheConnection
             uint64_t_pointer error = new uint64_t_pointer();
             char_pointer reason = new char_pointer();
             size_t_pointer reasonLength = new size_t_pointer();
-            if (LibQuiche.INSTANCE.quiche_conn_peer_error(quicheConn, app, error, reason, reasonLength))
+            if (LibQuiche.INSTANCE.quiche_conn_peer_error(quicheConn, app, error, reason, reasonLength).isTrue())
                 return new CloseInfo(error.getValue(), reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET));
             return null;
         }
@@ -798,7 +798,7 @@ public class JnaQuicheConnection extends QuicheConnection
             uint64_t_pointer error = new uint64_t_pointer();
             char_pointer reason = new char_pointer();
             size_t_pointer reasonLength = new size_t_pointer();
-            if (LibQuiche.INSTANCE.quiche_conn_local_error(quicheConn, app, error, reason, reasonLength))
+            if (LibQuiche.INSTANCE.quiche_conn_local_error(quicheConn, app, error, reason, reasonLength).isTrue())
                 return new CloseInfo(error.getValue(), reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET));
             return null;
         }

@@ -75,6 +75,11 @@
             <goal>deploy</goal>
           </goals>
         </goalsList>
+        <goalsList groupId="org.codehaus.mojo" artifactId="flatten-maven-plugin">
+          <goals>
+            <goal>flatten</goal>
+          </goals>
+        </goalsList>
       </goalsLists>
     </runAlways>
     <reconcile>

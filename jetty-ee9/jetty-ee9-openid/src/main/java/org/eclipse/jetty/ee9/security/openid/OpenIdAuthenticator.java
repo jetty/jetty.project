@@ -638,7 +638,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             scopes.append(" ").append(s);
         }
 
-        return _openIdConfiguration.getAuthEndpoint() +
+        return _openIdConfiguration.getAuthorizationEndpoint() +
             "?client_id=" + UrlEncoded.encodeString(_openIdConfiguration.getClientId(), StandardCharsets.UTF_8) +
             "&redirect_uri=" + UrlEncoded.encodeString(getRedirectUri(request), StandardCharsets.UTF_8) +
             "&scope=openid" + UrlEncoded.encodeString(scopes.toString(), StandardCharsets.UTF_8) +

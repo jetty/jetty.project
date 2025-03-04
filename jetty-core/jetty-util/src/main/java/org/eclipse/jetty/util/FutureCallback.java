@@ -108,6 +108,11 @@ public class FutureCallback implements Future<Void>, Callback
         return _done.get() && _latch.getCount() == 0;
     }
 
+    public boolean isFailed()
+    {
+        return isDone() && _cause != COMPLETED;
+    }
+
     @Override
     public Void get() throws InterruptedException, ExecutionException
     {

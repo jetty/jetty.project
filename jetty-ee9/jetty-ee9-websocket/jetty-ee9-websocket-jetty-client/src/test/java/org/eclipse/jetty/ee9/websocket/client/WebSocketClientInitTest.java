@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.nullValue;
 public class WebSocketClientInitTest
 {
     /**
-     * This is the new Jetty 9.4 advanced usage mode of WebSocketClient,
+     * Advanced usage mode of WebSocketClient,
      * that allows for more robust HTTP configurations (such as authentication,
      * cookies, and proxies)
      *

@@ -15,14 +15,19 @@ package org.eclipse.jetty.client.transport;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.internal.HttpContentResponse;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ChunksContentSource;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -225,6 +230,52 @@ public class ResponseListenersTest
 
         chunks.forEach(Content.Chunk::release);
         contentSource.close();
+    }
+
+    @Test
+    public void testEmitEventsInvokesContentSourceListenerForNoContent()
+    {
+        ResponseListeners responseListeners = new ResponseListeners();
+        List<String> events = new ArrayList<>();
+        responseListeners.addListener(new Response.Listener()
+        {
+            @Override
+            public void onBegin(Response response)
+            {
+                events.add("BEGIN");
+            }
+
+            @Override
+            public boolean onHeader(Response response, HttpField field)
+            {
+                return events.add("HEADER");
+            }
+
+            @Override
+            public void onHeaders(Response response)
+            {
+                events.add("HEADERS");
+            }
+
+            @Override
+            public void onContentSource(Response response, Content.Source contentSource)
+            {
+                events.add("CONTENT-SOURCE");
+            }
+
+            @Override
+            public void onSuccess(Response response)
+            {
+                events.add("SUCCESS");
+            }
+        });
+
+        Response response = new HttpResponse(null).addHeader(HttpFields.CONTENT_LENGTH_0);
+        Response contentResponse = new HttpContentResponse(response, BufferUtil.EMPTY_BYTES, null, null);
+        responseListeners.emitSuccess(contentResponse);
+
+        List<String> expected = List.of("BEGIN", "HEADER", "HEADERS", "CONTENT-SOURCE", "SUCCESS");
+        assertThat(events, is(expected));
     }
 
     private static class TestSource extends ChunksContentSource implements Closeable

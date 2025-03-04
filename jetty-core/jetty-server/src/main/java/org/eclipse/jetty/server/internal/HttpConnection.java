@@ -19,6 +19,7 @@ import java.nio.channels.WritePendingException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -65,6 +66,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
@@ -149,9 +151,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     protected HttpGenerator newHttpGenerator()
     {
-        HttpGenerator generator = new HttpGenerator();
-        generator.setMaxHeaderBytes(getHttpConfiguration().getResponseHeaderSize());
-        return generator;
+        return new HttpGenerator();
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
@@ -736,6 +736,59 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             super(true);
         }
 
+        /**
+         * Cancel any send in progress by aborting this {@link IteratingCallback} and take any send {@link Callback}.
+         * @param cause the cause of the cancellation
+         * @return A {@link Callback} passed to
+         *         {@link #reset(MetaData.Request, MetaData.Response, ByteBuffer, boolean, Callback)} if it has not yet
+         *         been invoked, else {@code null}
+         */
+        public Callback cancel(Throwable cause)
+        {
+            // wrap the cause in a CSE so that onAborted knows it is cancelling and can provide the reset callback.
+            CancelSendException cancelSendException = new CancelSendException(cause);
+
+            // Try to abort the IteratingCallback and if unable to, then return NOOP.
+            if (!abort(cancelSendException))
+                return Callback.NOOP;
+
+            // We now know that we aborted this ICB with the CSE above, so onAbort will eventually be called
+            // in a serialized context and the callback will be set on the CSE.
+            // Whilst waiting for that to happen...
+
+            // If a write operation has been scheduled cancel it and take its callback
+            Callback senderCallback = getEndPoint().cancelWrite(cause);
+
+            if (senderCallback == null)
+                // There was no write in operation, so we must complete the CSE ourselves
+                cancelSendException.complete();
+            else
+                // The write was cancelled and we have the callback (probably to this ICB or another callback
+                // wrapping this ICB). So failing the taken callback will call onCompleted and allow onAborted to be called.
+                senderCallback.failed(cause);
+
+            // wait for the cancellation to be complete and the callback to be set by onAbort.
+            // This should never block indefinitely, as onAborted only waits for active states like PROCESSING to complete.
+            return cancelSendException.join();
+        }
+
+        @Override
+        protected void onAborted(Throwable cause)
+        {
+            // If the cause is a CSE, then take the callback and give it to the CSE to be called once cancellation is complete.
+            if (cause instanceof CancelSendException cancelSend)
+                cancelSend.setCallback(takeCallbackAndReset());
+        }
+
+        @Override
+        protected void onCompleted(Throwable causeOrNull)
+        {
+            // If the cause is a CSE, then signal to it that the ICB is complete and any join call can return.
+            if (causeOrNull instanceof CancelSendException cancelSendException)
+                cancelSendException.complete();
+            super.onCompleted(causeOrNull);
+        }
+
         @Override
         public InvocationType getInvocationType()
         {
@@ -772,6 +825,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_callback == null)
                 throw new IllegalStateException();
 
+            int responseHeadersSize = getHttpConfiguration().getResponseHeaderSize();
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -790,16 +844,30 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 switch (result)
                 {
                     case NEED_INFO:
+                    {
                         throw new EofException("request lifecycle violation");
-
+                    }
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
+                        _generator.setMaxHeaderBytes(getHttpConfiguration().getMaxResponseHeaderSize());
+                        _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response Header Fields Too Large");
+                        int maxResponseHeadersSize = getHttpConfiguration().getMaxResponseHeaderSize();
+                        if (maxResponseHeadersSize > responseHeadersSize)
+                        {
+                            _generator.reset();
+                            _header.release();
+                            _header = _bufferPool.acquire(maxResponseHeadersSize, useDirectByteBuffers);
+                            responseHeadersSize = maxResponseHeadersSize;
+                            break;
+                        }
+                        else
+                        {
+                            throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Response Header Fields Too Large");
+                        }
                     }
                     case NEED_CHUNK:
                     {
@@ -809,7 +877,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _bufferPool.acquire(getHttpConfiguration().getResponseHeaderSize(), useDirectByteBuffers);
+                        _chunk = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:
@@ -896,17 +964,19 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
         }
 
-        private Callback resetCallback()
+        private Callback takeCallbackAndReset()
         {
-            Callback complete = _callback;
+            Callback callback = _callback;
             _callback = null;
             _info = null;
             _content = null;
-            return complete;
+            return callback;
         }
 
         private void release()
         {
+            if (_callback != null)
+                throw new IllegalStateException("callback not invoked");
             releaseHeader();
             releaseChunk();
         }
@@ -935,16 +1005,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 // cannot be delayed by any further server handling before the stream callback is completed.
                 getEndPoint().shutdownOutput();
             }
-            Callback callback = resetCallback();
+            Callback callback = takeCallbackAndReset();
             release();
-            callback.succeeded();
+            if (callback != null)
+                callback.succeeded();
         }
 
         @Override
         public void onFailure(final Throwable x)
         {
-            Callback callback = resetCallback();
-            callback.failed(x);
+            Callback callback = takeCallbackAndReset();
+            if (callback != null)
+                callback.failed(x);
         }
 
         @Override
@@ -957,6 +1029,44 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         public String toString()
         {
             return String.format("%s[i=%s,cb=%s]", super.toString(), _info, _callback);
+        }
+
+        private static class CancelSendException extends IOException
+        {
+            private final CountDownLatch _complete = new CountDownLatch(2);
+            private Callback _callback;
+
+            public CancelSendException(Throwable cause)
+            {
+                super(cause);
+            }
+
+            public void complete()
+            {
+                _complete.countDown();
+            }
+
+            public Callback join()
+            {
+                try
+                {
+                    _complete.await();
+                }
+                catch (InterruptedException x)
+                {
+                    Throwable cause = getCause();
+                    ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
+                    throw new RuntimeIOException(cause);
+                }
+
+                return _callback;
+            }
+
+            public void setCallback(Callback callback)
+            {
+                _callback = callback;
+                _complete.countDown();
+            }
         }
     }
 
@@ -1455,6 +1565,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             if (_sendCallback.reset(_request, response, content, last, callback))
                 _sendCallback.iterate();
+        }
+
+        @Override
+        public Runnable cancelSend(Throwable cause, Callback appCallback)
+        {
+            // We know that the SendCallback#cancel call will never block on external events,
+            // so we can just return a Runnable that fails the combination of the cancellation of any
+            // send in progress with the passed in appCallback. At worst, we may be deferred whilst another thread finishes
+            // processing a send/write before it notices the cancel.  It never blocks on IO itself
+            return () -> Callback.combine(_sendCallback.cancel(cause), appCallback).failed(cause);
         }
 
         @Override

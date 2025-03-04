@@ -187,6 +187,11 @@ public class CompressionHandler extends Handler.Wrapper
             // No explicit compression configured, discover them via ServiceLoader.
             TypeUtil.serviceStream(ServiceLoader.load(Compression.class)).forEach(this::putCompression);
         }
+        supportedEncodings.values().forEach(compression ->
+        {
+            if (compression.getByteBufferPool() == null)
+                compression.setByteBufferPool(getServer().getByteBufferPool());
+        });
 
         if (pathConfigs.isEmpty())
         {

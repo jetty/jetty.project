@@ -23,6 +23,7 @@ ee11-demo-proxy
 ee11-demo-rewrite
 ee11-demo-jndi
 ee11-demo-spec
+ee11-demo-spec-6-1
 ee11-demo-jsp
 
 [ini-template]

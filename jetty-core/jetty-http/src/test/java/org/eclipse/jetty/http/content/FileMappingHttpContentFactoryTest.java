@@ -28,6 +28,8 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -39,7 +41,7 @@ public class FileMappingHttpContentFactoryTest
     public WorkDir workDir;
 
     @Test
-    public void testMultiBufferFileMapped() throws Exception
+    public void testMultiBufferFileMappedOffsetAndLength() throws Exception
     {
         Path file = Files.writeString(workDir.getEmptyPathDir().resolve("file.txt"), "0123456789abcdefghijABCDEFGHIJ");
         FileMappingHttpContentFactory fileMappingHttpContentFactory = new FileMappingHttpContentFactory(
@@ -74,6 +76,22 @@ public class FileMappingHttpContentFactoryTest
         assertThat(writeToString(content, 15, -1), is("fghijABCDEFGHIJ"));
         assertThat(writeToString(content, 20, -1), is("ABCDEFGHIJ"));
         assertThat(writeToString(content, 25, -1), is("FGHIJ"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {8, 10})
+    public void testMultiBufferFileMappedMaxBufferSizeRounding(int maxBufferSize) throws Exception
+    {
+        Path file = Files.writeString(workDir.getEmptyPathDir().resolve("file.txt"), "0123456789abcdefghijABCDEFGHIJ");
+        FileMappingHttpContentFactory fileMappingHttpContentFactory = new FileMappingHttpContentFactory(
+            new ResourceHttpContentFactory(ResourceFactory.root().newResource(file.getParent()), MimeTypes.DEFAULTS, ByteBufferPool.SIZED_NON_POOLING),
+            0, maxBufferSize);
+
+        HttpContent content = fileMappingHttpContentFactory.getContent("file.txt");
+
+        assertThat(content.getContentLength().getValue(), is("30"));
+        assertThat(content.getContentLengthValue(), is(30L));
+        assertThat(writeToString(content, 0, -1), is("0123456789abcdefghijABCDEFGHIJ"));
     }
 
     private static String writeToString(HttpContent content, long offset, long length) throws IOException

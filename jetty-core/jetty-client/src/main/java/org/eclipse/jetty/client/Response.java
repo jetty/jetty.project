@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * <p>{@link Response} objects do not contain getters for the response content, because it may be too large
  * to fit into memory.
  * The response content should be retrieved via {@link Response.Listener#onContent(Response, ByteBuffer) content
- * events}, or via utility classes such as {@link BufferingResponseListener}.</p>
+ * events}, or via utility classes such as {@link RetainingResponseListener}.</p>
  */
 public interface Response
 {

@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -1166,19 +1167,48 @@ public class BufferUtil
         return buf;
     }
 
+    /**
+     * Attempt to return a ByteBuffer created via {@link FileChannel#map} call.
+     *
+     * @param path the path to map
+     * @return the mapped bytebuffer, or null if unable to map the {@link FileChannel}
+     * @throws IOException if unable to open mapped byte buffer
+     */
     public static ByteBuffer toMappedBuffer(Path path) throws IOException
     {
         return toMappedBuffer(path, 0, Files.size(path));
     }
 
+    /**
+     * Attempt to return a ByteBuffer created via {@link FileChannel#map} call.
+     *
+     * @param filePath the path to map
+     * @param pos the position to start from
+     * @param len the length to support
+     * @return the mapped bytebuffer, or null if unable to map the {@link FileChannel}
+     * @throws IOException if unable to open mapped byte buffer
+     */
     public static ByteBuffer toMappedBuffer(Path filePath, long pos, long len) throws IOException
     {
         try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.READ))
         {
             return channel.map(MapMode.READ_ONLY, pos, len);
         }
+        catch (UnsupportedEncodingException e)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("Ignored exception", e);
+            return null;
+        }
     }
 
+    /**
+     * Attempt to return a ByteBuffer created via {@link FileChannel#map} call.
+     *
+     * @param resource the resource to map
+     * @return the mapped bytebuffer, or null if unable to map the {@link FileChannel} (usually due to Resource not supporting memory mapped files)
+     * @throws IOException if unable to open mapped byte buffer
+     */
     public static ByteBuffer toMappedBuffer(Resource resource) throws IOException
     {
         Path path = resource.getPath();
@@ -1187,6 +1217,15 @@ public class BufferUtil
         return toMappedBuffer(path);
     }
 
+    /**
+     * Attempt to return a ByteBuffer created via {@link FileChannel#map} call.
+     *
+     * @param resource the resource to map
+     * @param pos the position to start from
+     * @param len the length to support
+     * @return the mapped bytebuffer, or null if unable to map the {@link FileChannel} (usually due to Resource not supporting memory mapped files)
+     * @throws IOException if unable to open mapped byte buffer
+     */
     public static ByteBuffer toMappedBuffer(Resource resource, long pos, long len) throws IOException
     {
         Path path = resource.getPath();

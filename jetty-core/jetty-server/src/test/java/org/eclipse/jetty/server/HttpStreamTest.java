@@ -138,6 +138,12 @@ public class HttpStreamTest
         }
 
         @Override
+        public Runnable cancelSend(Throwable cause, Callback appCallback)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public long getIdleTimeout()
         {
             throw new UnsupportedOperationException();

@@ -464,9 +464,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating {} max header list size to {} for {}", local ? "decoder" : "encoder", value, this);
                     if (local)
+                    {
                         parser.getHpackDecoder().setMaxHeaderListSize(value);
+                    }
                     else
-                        generator.getHpackEncoder().setMaxHeaderListSize(value);
+                    {
+                        HpackEncoder hpackEncoder = generator.getHpackEncoder();
+                        hpackEncoder.setMaxHeaderListSize(Math.min(value, hpackEncoder.getMaxHeaderListSize()));
+                    }
                 }
                 case SettingsFrame.ENABLE_CONNECT_PROTOCOL ->
                 {
@@ -729,6 +734,25 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 removeStream(stream);
             }
         }, callback), frame);
+    }
+
+    public void flush(Callback callback)
+    {
+        Entry entry = new Entry(new FlushFrame(), null, callback)
+        {
+            @Override
+            public int getFrameBytesGenerated()
+            {
+                return 0;
+            }
+
+            @Override
+            public boolean generate(RetainableByteBuffer.Mutable accumulator)
+            {
+                return true;
+            }
+        };
+        frame(entry, true);
     }
 
     /**
@@ -1331,6 +1355,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case WINDOW_UPDATE:
                 case PREFACE:
                 case DISCONNECT:
+                case FAILURE:
+                case FLUSH:
                     return false;
                 // Frames of this type follow the logic below.
                 case DATA:
@@ -2511,6 +2537,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             // The implementation of the Iterator returned above does not support
             // removal, but the HTTP2Stream will be removed by stream.onIdleTimeout().
             return false;
+        }
+    }
+
+    private static class FlushFrame extends Frame
+    {
+        public FlushFrame()
+        {
+            super(FrameType.FLUSH);
         }
     }
 }

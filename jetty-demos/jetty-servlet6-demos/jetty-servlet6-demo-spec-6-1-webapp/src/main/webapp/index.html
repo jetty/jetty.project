@@ -1,0 +1,146 @@
+<html>
+<head>
+    <title>Demo Specification WebApp</title>
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache,no-store">
+    <link rel="stylesheet" type="text/css" href="demo.css"/>
+    <style>
+        .result {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .passed {
+            color: green;
+        }
+        .failed {
+            color: red;
+        }
+    </style>
+    <script>
+        function result(id, result) {
+            console.error("Result:", id, " = ", result);
+            const resultSpan = document.createElement("span");
+            resultSpan.classList.add("result");
+            if (result){
+                resultSpan.textContent = "PASSED!";
+                resultSpan.classList.add("passed");
+            } else {
+                resultSpan.textContent = "FAILED!!";
+                resultSpan.classList.add("failed");
+            }
+            document.getElementById(id).after(resultSpan);
+        }
+
+        function sendDurableDispatchTest(event) {
+            event.preventDefault();
+            fetch("./durable/test", {
+                method: "GET"
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.text();
+            }).then(data => {
+                result("durable-test", data.startsWith("OK"));
+            }).catch(error => {
+                console.error("Error:", error);
+                alert(`Failed to send GET request.\nError: ${error.message}`);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const link = document.getElementById("durable-test");
+            link.addEventListener("click", sendDurableDispatchTest);
+        });
+
+        function sendByteBufferIoTest(event) {
+            event.preventDefault();
+
+            const jsonData = {
+                test: "data",
+                result: "ok"
+            };
+
+            fetch("echo/test", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(jsonData),
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            }).then(data => {
+                console.log("Response:", data);
+                result("bytebuffer-test", data.result === "ok")
+            }).catch(error => {
+                console.error("Error:", error);
+                alert(`Failed to send POST request.\nError: ${error.message}`);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const link = document.getElementById("bytebuffer-test");
+            link.addEventListener("click", sendByteBufferIoTest);
+        });
+
+        function ambiguousUriTest(event) {
+            event.preventDefault();
+
+            const urls = ["/foo%2Fbar", "/foo//bar", "/foo/..;/bar", "/foo/%2e%2e;param/bar"];
+
+            const fetchStatuses = urls.map(url =>
+                fetch(url)
+                    .then(response => response.status === 400)
+                    .catch(() => false)
+            );
+
+            Promise.all(fetchStatuses)
+                .then(results => {
+                    result("ambiguous-uri-test", results.every(status => status));
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert(`An error occurred during the requests.`);
+                });
+        }
+
+        // Attach the event listener in JavaScript
+        document.addEventListener("DOMContentLoaded", () => {
+            const link = document.getElementById("ambiguous-uri-test");
+            link.addEventListener("click", ambiguousUriTest);
+        });
+
+    </script>
+</head>
+<body>
+    <div class="topnav">
+      <a class="menu" href="http://localhost:8080/">Demo Home</a>
+      <a class="menu" href="https://github.com/jetty/jetty.project/tree/jetty-12.0.x/jetty-demos/jetty-servlet6-demos/jetty-servlet6-demo-spec-6-1-webapp/">Source</a>
+      <a class="menu" href="https://jetty.org/">Jetty Project Home</a>
+      <a class="menu" href="https://jetty.org/docs/">Documentation</a>
+      <a class="menu" href="https://webtide.com">Commercial Support</a>
+    </div>
+
+    <div class="content">
+      <div style="text-align: center;">
+          <span style="color:red; font-style:italic; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
+      </div>
+
+     <h1>Servlet 6.x WebApp</h1>
+     <p>This example tests some aspects of the servlet 6.x specification:</p>
+     <ul>
+      <li><a href="#" id="durable-test">Durable dispatched request wrappers</a></li>
+      <li><a href="#" id="bytebuffer-test">Echo with ByteBuffer IO API </a></li>
+      <li><a href="#" id="ambiguous-uri-test">Deny ambiguous URIs</a></li>
+    </ul>
+
+  </div>
+
+  <div class="footer">
+    <div style="text-align: center;"><a href="https://jetty.org"><img src="small_powered_by.gif" alt="powered by jetty"/></a></div>
+  </div>
+</body>
+</html>

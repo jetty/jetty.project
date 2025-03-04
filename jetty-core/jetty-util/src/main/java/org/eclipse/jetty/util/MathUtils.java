@@ -77,4 +77,30 @@ public class MathUtils
             return maxValue;
         }
     }
+
+    /**
+     * Get the next highest power of two
+     * @param value An integer
+     * @return a power of two that is greater than or equal to {@code value}
+     */
+    public static int ceilToNextPowerOfTwo(int value)
+    {
+        if (value < 0)
+            throw new IllegalArgumentException("value must not be negative");
+        int result = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(value - 1));
+        return result > 0 ? result : Integer.MAX_VALUE;
+    }
+
+    /**
+     * Computes binary logarithm of the given number ceiled to the next power of two.
+     * If the given number is 800, it is ceiled to 1024 which is the closest power of 2 greater than or equal to 800,
+     * then 1024 is 10_000_000_000 in binary, i.e.: 1 followed by 10 zeros, and it's also 2 to the power of 10.
+     * So for the numbers between 513 and 1024 the returned value is 10.
+     * @param value An integer
+     * @return the binary logarithm of the given number ceiled to the next power of two.
+     */
+    public static int ceilLog2(int value)
+    {
+        return Integer.numberOfTrailingZeros(Integer.highestOneBit(ceilToNextPowerOfTwo(value)));
+    }
 }

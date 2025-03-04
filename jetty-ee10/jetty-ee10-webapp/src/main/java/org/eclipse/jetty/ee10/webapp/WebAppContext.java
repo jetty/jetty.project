@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee.WebAppClassLoading;
 import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
@@ -60,6 +61,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -717,30 +719,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _hiddenClasses.getPatterns();
     }
 
-    @Override
-    public boolean isHiddenClass(Class<?> clazz)
-    {
-        return _hiddenClasses.match(clazz);
-    }
-
-    @Override
-    public boolean isProtectedClass(Class<?> clazz)
-    {
-        return _protectedClasses.match(clazz);
-    }
-
-    @Override
-    public boolean isHiddenResource(String name, URL url)
-    {
-        return _hiddenClasses.match(name, url);
-    }
-
-    @Override
-    public boolean isProtectedResource(String name, URL url)
-    {
-        return _protectedClasses.match(name, url);
-    }
-
     /**
      * @deprecated use {@link #setHiddenClassMatcher(ClassMatcher)}
      */
@@ -1001,12 +979,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         name = String.format("%s@%x", name, hashCode());
 
         dumpObjects(out, indent,
+            Dumpable.named("environment", ServletContextHandler.ENVIRONMENT.getName()),
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Systemclasses " + name, systemClasses),
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, asAttributeMap().entrySet()),
             new DumpableCollection("Context attributes " + name, getContext().asAttributeMap().entrySet()),
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );

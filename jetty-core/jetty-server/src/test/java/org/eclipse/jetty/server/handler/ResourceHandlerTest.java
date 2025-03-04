@@ -18,6 +18,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -25,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -758,6 +761,26 @@ public class ResourceHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("   400\tThis is a big file\n     1\tThis is a big file"));
         assertThat(response.getContent(), containsString("   400\tThis is a big file\n"));
+    }
+
+    @Test
+    public void testOver2GBFile() throws Exception
+    {
+        long hugeLength = (long)Integer.MAX_VALUE + 10L;
+
+        generateFile(docRoot.resolve("huge.mkv"), hugeLength);
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/huge.mkv HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        long responseContentLength = response.getLongField(CONTENT_LENGTH);
+        assertThat(responseContentLength, is(hugeLength));
     }
 
     @Test
@@ -3935,6 +3958,37 @@ public class ResourceHandlerTest
             try (InputStream in = Files.newInputStream(big))
             {
                 IO.copy(in, zipOut);
+            }
+        }
+    }
+
+    private void generateFile(Path staticFile, long size) throws Exception
+    {
+        byte[] buf = new byte[(int)(1024 * 1024)]; // about 1 MB
+        Arrays.fill(buf, (byte)'x');
+        ByteBuffer src = ByteBuffer.wrap(buf);
+
+        if (Files.exists(staticFile) && Files.size(staticFile) == size)
+        {
+            // all done, nothing left to do.
+            return;
+        }
+
+        try (SeekableByteChannel channel = Files.newByteChannel(staticFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))
+        {
+            long remaining = size;
+            while (remaining > 0)
+            {
+                ByteBuffer slice = src.slice();
+                int len = buf.length;
+                if (remaining < Integer.MAX_VALUE)
+                {
+                    len = Math.min(buf.length, (int)remaining);
+                    slice.limit(len);
+                }
+
+                channel.write(slice);
+                remaining -= len;
             }
         }
     }
