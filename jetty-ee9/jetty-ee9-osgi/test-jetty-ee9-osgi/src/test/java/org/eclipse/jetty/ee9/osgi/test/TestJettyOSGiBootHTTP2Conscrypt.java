@@ -116,29 +116,27 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             assertTrue(services.length > 0);
         }
 
-        HTTP2Client client = new HTTP2Client();
-        try
+        String port = System.getProperty("boot.https.port");
+        assertNotNull(port);
+
+        Path path = Paths.get("src", "test", "config");
+        File keys = path.resolve("etc").resolve("keystore.p12").toFile();
+
+        ClientConnector clientConnector = new ClientConnector();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setProvider("Conscrypt");
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        if (JavaVersion.VERSION.getPlatform() < 9)
         {
-            String port = System.getProperty("boot.https.port");
-            assertNotNull(port);
-
-            Path path = Paths.get("src", "test", "config");
-            File keys = path.resolve("etc").resolve("keystore.p12").toFile();
-
-            ClientConnector clientConnector = new ClientConnector();
-            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-            sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
-            sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setProvider("Conscrypt");
-            sslContextFactory.setEndpointIdentificationAlgorithm(null);
-            if (JavaVersion.VERSION.getPlatform() < 9)
-            {
-                // Conscrypt enables TLSv1.3 by default but it's not supported in Java 8.
-                sslContextFactory.addExcludeProtocols("TLSv1.3");
-            }
-            clientConnector.setSslContextFactory(sslContextFactory);
-            HTTP2Client http2Client = new HTTP2Client(clientConnector);
-            HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
+            // Conscrypt enables TLSv1.3 by default but it's not supported in Java 8.
+            sslContextFactory.addExcludeProtocols("TLSv1.3");
+        }
+        clientConnector.setSslContextFactory(sslContextFactory);
+        try (HTTP2Client http2Client = new HTTP2Client(clientConnector);
+             HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)))
+        {
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
 
@@ -147,10 +145,6 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             ContentResponse response = httpClient.GET("https://localhost:" + port + "/demo-jsp/jstl.jsp");
             assertEquals(200, response.getStatus());
             assertTrue(response.getContentAsString().contains("JSTL Example"));
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }

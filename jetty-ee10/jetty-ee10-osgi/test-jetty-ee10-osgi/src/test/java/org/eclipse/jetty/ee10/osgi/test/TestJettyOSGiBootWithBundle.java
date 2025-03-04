@@ -103,8 +103,7 @@ public class TestJettyOSGiBootWithBundle
             TestOSGiUtil.diagnoseBundles(bundleContext);
         
         // now test the context
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
             String tmp = System.getProperty("boot.bundle.port");
@@ -114,10 +113,6 @@ public class TestJettyOSGiBootWithBundle
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             String content = new String(response.getContent());
             assertNotNull(content);
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }
