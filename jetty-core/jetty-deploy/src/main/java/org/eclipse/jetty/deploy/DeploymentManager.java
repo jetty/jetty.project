@@ -295,7 +295,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         ExceptionUtil.ifExceptionThrow(_onStartupErrors);
     }
 
-    private TrackedContext findTrackedContext(ContextHandler contextHandler)
+    protected TrackedContext findTrackedContext(ContextHandler contextHandler)
     {
         return _tracked.stream()
             .filter((e) -> e.contextHandler.equals(contextHandler))
@@ -326,7 +326,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
      * @param tracked the internal tracked context to move through the process
      * @param nodeName the name of the node to attain
      */
-    private void requestContextHandlerGoal(TrackedContext tracked, String nodeName)
+    protected void requestContextHandlerGoal(TrackedContext tracked, String nodeName)
     {
         Node destinationNode = _lifecycle.getNodeByName(nodeName);
         if (destinationNode == null)
@@ -393,7 +393,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
     }
 
-    private TrackedContext startTracking(ContextHandler contextHandler)
+    protected TrackedContext startTracking(ContextHandler contextHandler)
     {
         TrackedContext entry = new TrackedContext();
         entry.contextHandler = contextHandler;
@@ -402,7 +402,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         return entry;
     }
 
-    private void stopTracking(TrackedContext trackedContext)
+    protected void stopTracking(TrackedContext trackedContext)
     {
         _tracked.remove(trackedContext);
     }
@@ -410,7 +410,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
     /**
      * A mutable record tracking a single context within the deployment manager.
      */
-    private static class TrackedContext
+    protected static class TrackedContext
     {
         /**
          * The context being tracked.

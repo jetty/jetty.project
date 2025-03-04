@@ -119,8 +119,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     // old attributes prefix, now stripped.
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
+    private final DeployStrategy deployStrategy;
     private final Server server;
-    private final ContextHandlerDeployer contextHandlerDeployer;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
     private final PathsContextHandlerFactory contextHandlerFactory = new PathsContextHandlerFactory();
@@ -142,14 +142,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
-     * @param deploymentManager the DeploymentManager instance that is being used by this DeploymentScanner.
+     * @param deployStrategy the deploy strategy to use for contexts managed by this scanner.
      */
     public DeploymentScanner(
         @Name("server") Server server,
-        @Name("deploymentManager") DeploymentManager deploymentManager)
+        @Name("deployerStrategy") DeployStrategy deployStrategy)
     {
-        this(server, deploymentManager, null);
-        deploymentManager.addBean(this);
+        this(server, deployStrategy, null);
     }
 
     /**
@@ -160,33 +159,16 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
-     * @param contextHandlerDeployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
-     */
-    public DeploymentScanner(
-        @Name("server") Server server,
-        @Name("contextHandlerDeployer") ContextHandlerDeployer contextHandlerDeployer)
-    {
-        this(server, contextHandlerDeployer, null);
-    }
-
-    /**
-     * <p>
-     * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
-     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
-     * it's configured destination.
-     * </p>
-     *
-     * @param server the server reference to use for any XML based deployments.
-     * @param contextHandlerDeployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
+     * @param deployStrategy the deploy strategy to use for contexts managed by this scanner.
      * @param filter A custom FilenameFilter to control what files the {@link Scanner} monitors for changes.
      */
     public DeploymentScanner(
         @Name("server") Server server,
-        @Name("contextHandlerDeployer") ContextHandlerDeployer contextHandlerDeployer,
+        @Name("deployerStrategy") DeployStrategy deployStrategy,
         @Name("filenameFilter") FilenameFilter filter)
     {
         this.server = server;
-        this.contextHandlerDeployer = Objects.requireNonNull(contextHandlerDeployer);
+        this.deployStrategy = Objects.requireNonNull(deployStrategy);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
     }
 
@@ -695,7 +677,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                     {
                         // Track removal
                         removedApps.add(app);
-                        contextHandlerDeployer.undeploy(app.getContextHandler());
+                        deployStrategy.onContextRemoved(app.getContextHandler());
                     }
                     case ADD ->
                     {
@@ -727,7 +709,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
                         // Introduce the ContextHandler to the DeploymentManager
                         startTracking(app);
-                        contextHandlerDeployer.deploy(app.getContextHandler());
+                        deployStrategy.onContextCreated(app.getContextHandler());
                     }
                 }
             }
@@ -735,7 +717,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             {
                 LOG.warn("Failed to to perform action {} on {}", step.type(), app, t);
                 if (isStarting())
-                    contextHandlerDeployer.reportStartupFailure(t);
+                    deployStrategy.onContextFailed(t);
             }
             finally
             {
