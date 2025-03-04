@@ -106,27 +106,19 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return endPoints.get(streamId);
     }
 
-    public StreamEndPoint getOrCreateStreamEndPoint(Stream stream, Consumer<StreamEndPoint> consumer)
+    public StreamEndPoint createStreamEndPoint(Stream stream, Consumer<StreamEndPoint> initializer)
     {
-        boolean[] created = new boolean[1];
-        StreamEndPoint endPoint = endPoints.computeIfAbsent(stream.getId(), id ->
+        long streamId = stream.getId();
+        StreamEndPoint streamEndPoint = endPoints.compute(streamId, (k, v) ->
         {
+            if (v != null)
+                throw new IllegalStateException("duplicate stream " + streamId);
             if (LOG.isDebugEnabled())
-                LOG.debug("creating endpoint for stream #{} for {}", id, this);
-            StreamEndPoint result = newStreamEndPoint(stream);
-            created[0] = true;
-            return result;
+                LOG.debug("creating endpoint for stream #{} for {}", streamId, this);
+            return newStreamEndPoint(stream);
         });
-
-        // The consumer must be executed outside the Map.compute() above,
-        // since it may take a long time and it may be re-entrant, causing the
-        // creation of two StreamEndPoint objects for the same stream id.
-        if (created[0])
-            consumer.accept(endPoint);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("returning {} for {}", endPoint, this);
-        return endPoint;
+        initializer.accept(streamEndPoint);
+        return streamEndPoint;
     }
 
     public boolean removeStreamEndPoint(StreamEndPoint endPoint)

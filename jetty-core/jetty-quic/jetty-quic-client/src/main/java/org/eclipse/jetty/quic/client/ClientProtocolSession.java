@@ -55,7 +55,7 @@ public class ClientProtocolSession extends ProtocolSession
             // QUIC stream that plays the role of the TCP stream.
             long streamId = getSession().newStreamId(true);
             Stream stream = getSession().newStream(streamId, new ProtocolStreamListener(() -> getStreamEndPoint(streamId)));
-            getOrCreateStreamEndPoint(stream, this::openStreamEndPoint);
+            createStreamEndPoint(stream, this::openStreamEndPoint);
         }
         catch (Throwable x)
         {

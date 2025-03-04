@@ -118,7 +118,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
             LOG.debug("new request {} with {} on {}", quicStream, frame, this);
 
         ProtocolSession session = getProtocolSession();
-        StreamEndPoint endPoint = session.getOrCreateStreamEndPoint(quicStream, session::openStreamEndPoint);
+        StreamEndPoint endPoint = session.createStreamEndPoint(quicStream, session::openStreamEndPoint);
         ((AbstractStream)quicStream).setListener(new ProtocolStreamListener(() -> endPoint));
 
         HTTP3StreamClient stream;

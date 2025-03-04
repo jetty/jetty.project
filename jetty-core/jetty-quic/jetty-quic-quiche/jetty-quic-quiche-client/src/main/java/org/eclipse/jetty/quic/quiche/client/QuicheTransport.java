@@ -131,7 +131,7 @@ public class QuicheTransport extends Transport.Wrapper
         {
             // TODO: catch exception and abort.
             ProtocolSession pSession = protocolSession.get();
-            StreamEndPoint endPoint = pSession.getOrCreateStreamEndPoint(stream, pSession::openStreamEndPoint);
+            StreamEndPoint endPoint = pSession.createStreamEndPoint(stream, pSession::openStreamEndPoint);
             return new ProtocolStreamListener(() -> endPoint);
         }
 

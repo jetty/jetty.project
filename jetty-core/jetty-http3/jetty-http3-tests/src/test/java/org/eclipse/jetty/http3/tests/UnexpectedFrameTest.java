@@ -85,7 +85,7 @@ public class UnexpectedFrameTest extends AbstractClientServerTest
 
         ProtocolSession protocolSession = clientSession.getProtocolSession();
         var quicStream = protocolSession.getSession().newStream(0, null);
-        StreamEndPoint streamEndPoint = protocolSession.getOrCreateStreamEndPoint(quicStream, protocolSession::openStreamEndPoint);
+        StreamEndPoint streamEndPoint = protocolSession.createStreamEndPoint(quicStream, protocolSession::openStreamEndPoint);
         clientSession.writeMessageFrame(streamEndPoint, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
 
         assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));

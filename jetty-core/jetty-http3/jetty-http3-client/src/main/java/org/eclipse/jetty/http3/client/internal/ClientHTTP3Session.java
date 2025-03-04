@@ -243,7 +243,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         // TODO: add a Stream.Listener for failure/close events.
         // This is a write-only stream, so no need to link a Connection.
         Stream stream = getSession().newStream(streamId, null);
-        return getOrCreateStreamEndPoint(stream, StreamEndPoint::onOpen);
+        return createStreamEndPoint(stream, StreamEndPoint::onOpen);
     }
 
     private StreamEndPoint openControlEndPoint(long streamId)
@@ -251,7 +251,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         // TODO: add a Stream.Listener for failure/close events.
         // This is a write-only stream, so no need to link a Connection.
         Stream stream = getSession().newStream(streamId, null);
-        return getOrCreateStreamEndPoint(stream, StreamEndPoint::onOpen);
+        return createStreamEndPoint(stream, StreamEndPoint::onOpen);
     }
 
     @Override
