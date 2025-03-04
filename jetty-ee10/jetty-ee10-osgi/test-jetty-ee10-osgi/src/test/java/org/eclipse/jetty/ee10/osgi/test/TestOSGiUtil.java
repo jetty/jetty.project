@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.ee10.osgi.test;
 
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 import org.eclipse.jetty.osgi.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
@@ -72,29 +71,24 @@ public class TestOSGiUtil
         Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
 
         List<Option> options = new ArrayList<>();
-        List<Path> xmlFiles = new ArrayList<>();
+        // List of XML URI Reference strings
+        List<String> xmlReferences = new ArrayList<>();
 
-        xmlFiles.add(etc.resolve("jetty.xml"));
+        xmlReferences.add(resolveFile(etc, "jetty.xml"));
         if (ssl)
         {
             options.add(CoreOptions.systemProperty("jetty.ssl.port").value("0"));
-            xmlFiles.add(etc.resolve("jetty-ssl.xml"));
-            xmlFiles.add(etc.resolve("jetty-ssl-context.xml"));
-            xmlFiles.add(etc.resolve("jetty-alpn.xml"));
-            xmlFiles.add(etc.resolve("jetty-https.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-ssl.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-ssl-context.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-alpn.xml"));
+            xmlReferences.add(resolveFile(etc, "jetty-https.xml"));
         }
-        xmlFiles.add(etc.resolve(jettySelectorFileName));
-        xmlFiles.add(etc.resolve("jetty-deploy.xml"));
-        xmlFiles.add(etc.resolve("jetty-testrealm.xml"));
+        xmlReferences.add(resolveFile(etc, jettySelectorFileName));
+        xmlReferences.add(resolveFile(etc, "jetty-deploy.xml"));
+        xmlReferences.add(resolveFile(etc, "jetty-testrealm.xml"));
 
-        // Sanity check that the referenced files actually exist.
-        xmlFiles.forEach(p -> assertTrue(p + " doesn't exists and/or isn't a file", Files.isRegularFile(p)));
-
-        // Convert list of XML to a list of URIs separated by ";" (not OS specific, but OSGI specific)
-        String xmlConfigLine = xmlFiles.stream()
-            .map(Path::toUri)
-            .map(URI::toASCIIString)
-            .collect(Collectors.joining(";"));
+        // Convert list of XML URI Reference to String separated by ";" (separator is not OS specific, but OSGI specific)
+        String xmlConfigLine = String.join(";", xmlReferences);
 
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
         options.add(systemProperty("jetty.http.port").value("0"));
@@ -103,27 +97,21 @@ public class TestOSGiUtil
         return options;
     }
 
-    public static List<Option>  configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
+    public static List<Option> configureJettyHomeAndPortViaBootBundle(String jettyConnectorListenerFileName)
     {
-        List<Option> options = new ArrayList<>();
-        List<Path> xmlFiles = new ArrayList<>();
         Path etc = MavenPaths.projectBase().resolve("src/test/config/etc");
-        xmlFiles.add(etc.resolve(jettyConnectorListenerFileName));
-        xmlFiles.add(etc.resolve("jetty-testrealm.xml"));
 
-        // Sanity check that the referenced files actually exist.
-        xmlFiles.forEach(p -> assertTrue(p + " doesn't exists and/or isn't a file", Files.isRegularFile(p)));
-
-        // Create ordered list of XML file reference strings.
+        List<Option> options = new ArrayList<>();
+        // List of XML URI Reference strings
         List<String> xmlReferences = new ArrayList<>();
+
         // Add relative reference paths that will be resolved within jetty-home bundle (not from src/test/config/etc)
         xmlReferences.addAll(JettyBootstrapActivator.DEFAULT_JETTY_XML_FILES);
-        xmlFiles.stream()
-            .map(Path::toUri)
-            .map(URI::toASCIIString)
-            .forEach(xmlReferences::add);
 
-        // Convert list of XML to a list of URIs separated by ";" (not OS specific, but OSGI specific)
+        xmlReferences.add(resolveFile(etc, jettyConnectorListenerFileName));
+        xmlReferences.add(resolveFile(etc, "jetty-testrealm.xml"));
+
+        // Convert list of XML URI Reference to String separated by ";" (separator is not OS specific, but OSGI specific)
         String xmlConfigLine = String.join(";", xmlReferences);
 
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
@@ -132,7 +120,21 @@ public class TestOSGiUtil
         options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }
-    
+
+    /**
+     * Resolve a file path, ensuring that it exists, returning the URI String to said path.
+     *
+     * @param base the base path to look in
+     * @param relative the relative path to resolve
+     * @return the URI String of the resolved file.
+     */
+    private static String resolveFile(Path base, String relative)
+    {
+        Path file = base.resolve(Objects.requireNonNull(relative));
+        assertTrue("Unable to find file: " + file, Files.isRegularFile(file));
+        return file.toUri().toASCIIString();
+    }
+
     public static List<Option> configurePaxExamLogging()
     {
         //sort out logging from the pax-exam environment
