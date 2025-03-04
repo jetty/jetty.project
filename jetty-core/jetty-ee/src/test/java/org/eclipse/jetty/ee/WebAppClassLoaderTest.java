@@ -57,8 +57,6 @@ public class WebAppClassLoaderTest
     @BeforeEach
     public void init() throws Exception
     {
-        TestableWebAppClassLoaderContext.initEnvironment();
-
         _container = new ContainerLifeCycle();
         ResourceFactory resourceFactory = ResourceFactory.of(_container);
 

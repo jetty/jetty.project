@@ -25,18 +25,18 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 
 public class TestableWebAppClassLoaderContext implements WebAppClassLoader.Context
 {
-    private final ResourceFactory resourceFactory;
-    private boolean parentLoaderPriority = false;
-    private ClassMatcher protectedClassMatcher;
-    private ClassMatcher hiddenClassMatcher;
-    private List<Resource> extraClasspath;
-
-    public static void initEnvironment()
+    static
     {
         Environment environment = Environment.ensure("testable");
         environment.setAttribute(WebAppClassLoading.PROTECTED_CLASSES_ATTRIBUTE, "");
         environment.setAttribute(WebAppClassLoading.HIDDEN_CLASSES_ATTRIBUTE, "");
     }
+
+    private final ResourceFactory resourceFactory;
+    private boolean parentLoaderPriority = false;
+    private ClassMatcher protectedClassMatcher;
+    private ClassMatcher hiddenClassMatcher;
+    private List<Resource> extraClasspath;
 
     public TestableWebAppClassLoaderContext(ResourceFactory resourceFactory)
     {
