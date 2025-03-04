@@ -54,7 +54,6 @@ public class ServerConnectorListener implements LifeCycle.Listener
 
             if (getSysPropertyName() != null)
             {
-                System.err.println("Server Port: " + serverConnector.getLocalPort());
                 System.setProperty(_sysPropertyName, String.valueOf(serverConnector.getLocalPort()));
             }
         }
