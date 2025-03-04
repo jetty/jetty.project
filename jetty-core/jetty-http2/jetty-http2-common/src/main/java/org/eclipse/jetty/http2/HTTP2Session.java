@@ -736,6 +736,25 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         }, callback), frame);
     }
 
+    public void flush(Callback callback)
+    {
+        Entry entry = new Entry(new FlushFrame(), null, callback)
+        {
+            @Override
+            public int getFrameBytesGenerated()
+            {
+                return 0;
+            }
+
+            @Override
+            public boolean generate(RetainableByteBuffer.Mutable accumulator)
+            {
+                return true;
+            }
+        };
+        frame(entry, true);
+    }
+
     /**
      * <p>Invoked internally and by applications to send a GO_AWAY frame to the other peer.</p>
      *
@@ -1336,6 +1355,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case WINDOW_UPDATE:
                 case PREFACE:
                 case DISCONNECT:
+                case FAILURE:
+                case FLUSH:
                     return false;
                 // Frames of this type follow the logic below.
                 case DATA:
@@ -2516,6 +2537,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             // The implementation of the Iterator returned above does not support
             // removal, but the HTTP2Stream will be removed by stream.onIdleTimeout().
             return false;
+        }
+    }
+
+    private static class FlushFrame extends Frame
+    {
+        public FlushFrame()
+        {
+            super(FrameType.FLUSH);
         }
     }
 }

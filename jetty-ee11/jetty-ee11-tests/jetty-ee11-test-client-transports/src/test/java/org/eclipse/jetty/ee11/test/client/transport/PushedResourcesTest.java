@@ -22,9 +22,9 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -95,7 +95,7 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch2 = new CountDownLatch(1);
         ContentResponse response = client.newRequest(newURI(transportType))
             .headers(h -> h.add("Cookie", "C0=toBeRemoved"))
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)
@@ -150,7 +150,7 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         ;
         ContentResponse response = client.newRequest(newURI(transportType))
-            .onPush((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .onPush((mainRequest, pushedRequest) -> new RetainingResponseListener()
             {
                 @Override
                 public void onComplete(Result result)

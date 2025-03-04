@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MultiPart;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -84,15 +83,13 @@ public class TestJettyOSGiBootWithAnnotations
         return res;
     }
 
-    @Disabled("TODO servlet6.1 jstl not ported to servlet 6 jars yet")
     @Test
     public void testIndex() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
 
-        HttpClient client = new HttpClient();
-        try
+        try (HttpClient client = new HttpClient())
         {
             client.start();
             String port = System.getProperty("boot.annotations.port");
@@ -122,10 +119,6 @@ public class TestJettyOSGiBootWithAnnotations
             response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
                 .body(multiPart).send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
-        }
-        finally
-        {
-            client.stop();
         }
     }
 }

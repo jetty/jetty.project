@@ -31,7 +31,8 @@ public enum FrameType
     // Synthetic frames only needed by the implementation.
     PREFACE(10),
     DISCONNECT(11),
-    FAILURE(12);
+    FAILURE(12),
+    FLUSH(13);
 
     public static FrameType from(int type)
     {

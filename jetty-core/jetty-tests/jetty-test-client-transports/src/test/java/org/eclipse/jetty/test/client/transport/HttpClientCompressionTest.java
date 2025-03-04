@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,6 +30,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -209,9 +212,19 @@ public class HttpClientCompressionTest extends AbstractTest
         }
     }
 
+    private static List<Arguments> transportsAndEncodings()
+    {
+        List<Arguments> result = new ArrayList<>();
+        List<String> encodings = List.of("br", "gzip", "zstd");
+        Collection<TransportType> transports = transports();
+        transports.forEach(transportType ->
+            encodings.forEach(encoding -> result.add(Arguments.of(transportType, encoding))));
+        return result;
+    }
+
     @ParameterizedTest
-    @MethodSource("transports")
-    public void testQualityAcceptEncoding(TransportType transportType) throws Exception
+    @MethodSource("transportsAndEncodings")
+    public void testQualityAcceptEncoding(TransportType transportType, String encoding) throws Exception
     {
         start(transportType, new CompressionHandler(new Handler.Abstract()
         {
@@ -225,7 +238,7 @@ public class HttpClientCompressionTest extends AbstractTest
 
         AtomicReference<String> contentEncodingRef = new AtomicReference<>();
         ContentResponse response = client.newRequest(newURI(transportType))
-            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, "gzip;q=0.5, br;q=1.0"))
+            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, "gzip;q=0.5, %s;q=1.0".formatted(encoding)))
             .onResponseHeader((r, f) ->
             {
                 if (f.getHeader() == HttpHeader.CONTENT_ENCODING)
@@ -236,7 +249,7 @@ public class HttpClientCompressionTest extends AbstractTest
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("br", contentEncodingRef.get());
+        assertEquals(encoding, contentEncodingRef.get());
         assertEquals(SAMPLE_CONTENT, response.getContentAsString());
     }
 }

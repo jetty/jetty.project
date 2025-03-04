@@ -233,6 +233,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         if (decoderFactories.isEmpty())
         {
             TypeUtil.serviceStream(ServiceLoader.load(Compression.class))
+                .peek(c -> c.setByteBufferPool(getByteBufferPool()))
                 .forEach(c -> decoderFactories.put(new CompressionContentDecoderFactory(c)));
         }
 

@@ -321,6 +321,8 @@ public class Server extends Handler.Wrapper implements Attributes
 
     public void setErrorHandler(Request.Handler errorHandler)
     {
+        if (errorHandler instanceof Handler handler)
+            handler.setServer(this);
         updateBean(_errorHandler, errorHandler);
         _errorHandler = errorHandler;
     }

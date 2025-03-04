@@ -226,9 +226,9 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = """
-                GET / HTTP/1.1
-                Host: localhost
-                
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                \r
                 """;
 
         LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
@@ -324,13 +324,13 @@ public class StatisticsHandlerTest
         _server.start();
 
         String request = """
-                POST / HTTP/1.1
-                Host: localhost
-                Transfer-Encoding: chunked
-                Connection: close
-                
-                0a
-                0123456789
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                Connection: close\r
+                \r
+                0a\r
+                0123456789\r
                 """;
 
         String response = _connector.getResponse(request);

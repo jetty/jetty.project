@@ -1112,7 +1112,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         Exchanger<Response> ex = new Exchanger<>();
-        BufferingResponseListener listener = new BufferingResponseListener()
+        RetainingResponseListener listener = new RetainingResponseListener()
         {
             @Override
             public void onComplete(Result result)

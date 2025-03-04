@@ -111,7 +111,7 @@ public class FormFieldsTest
             Arguments.of(List.of("name%"), UTF_8, -1, -1, IllegalStateException.class),
             Arguments.of(List.of("name%A"), UTF_8, -1, -1, IllegalStateException.class),
 
-            Arguments.of(List.of("name%A="), UTF_8, -1, -1, CharacterCodingException.class),
+            Arguments.of(List.of("name%A="), UTF_8, -1, -1, IllegalArgumentException.class),
             Arguments.of(List.of("name%A&"), UTF_8, -1, -1, IllegalArgumentException.class),
 
             Arguments.of(List.of("name=%"), UTF_8, -1, -1, IllegalStateException.class),

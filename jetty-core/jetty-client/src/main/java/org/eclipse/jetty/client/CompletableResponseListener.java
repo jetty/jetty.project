@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 
 /**
- * <p>A {@link BufferingResponseListener} that sends a {@link Request}
+ * <p>A {@link RetainingResponseListener} that sends a {@link Request}
  * and returns a {@link CompletableFuture} that is completed when
  * {@link #onComplete(Result)} is called.</p>
  * <p>Typical usage:</p>
@@ -34,7 +34,7 @@ import org.eclipse.jetty.client.internal.HttpContentResponse;
  * ContentResponse response = completable.get(5, TimeUnit.SECONDS);
  * }</pre>
  */
-public class CompletableResponseListener extends BufferingResponseListener
+public class CompletableResponseListener extends RetainingResponseListener
 {
     private final CompletableFuture<ContentResponse> completable = new CompletableFuture<>();
     private final Request request;

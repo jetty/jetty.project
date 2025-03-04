@@ -262,30 +262,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    @Override
-    public boolean releaseAndRemove(RetainableByteBuffer buffer)
-    {
-        RetainableByteBuffer actual = buffer;
-        while (actual instanceof RetainableByteBuffer.Wrapper wrapper)
-            actual = wrapper.getWrapped();
-
-        if (actual instanceof ReservedBuffer reservedBuffer)
-        {
-            // remove the actual reserved buffer, but release the wrapped buffer
-            reservedBuffer.remove();
-            return buffer.release();
-        }
-
-        if (actual instanceof PooledBuffer poolBuffer)
-        {
-            // remove the actual pool buffer, but release the wrapped buffer
-            poolBuffer.remove();
-            return buffer.release();
-        }
-
-        return ByteBufferPool.super.releaseAndRemove(buffer);
-    }
-
     private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
     {
         _reserved.addAndGet(-byteBuffer.capacity());
@@ -317,6 +293,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         bucket.recordRelease();
 
+        if (entry.isTerminated())
+            return;
+
         RetainableByteBuffer buffer = entry.getPooled();
         BufferUtil.reset(buffer.getByteBuffer());
 
@@ -325,7 +304,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         if (entry.release())
         {
             if (used % 100 == 0)
-               checkMaxMemory(bucket, buffer.isDirect());
+                checkMaxMemory(bucket, buffer.isDirect());
             return;
         }
 
@@ -454,7 +433,9 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     {
         long size = 0;
         for (RetainedBucket bucket : direct ? _direct : _indirect)
+        {
             size += count.applyAsLong(bucket) * bucket.getCapacity();
+        }
         return size;
     }
 

@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,7 +55,7 @@ public class InformationalResponseTest extends AbstractTest
 
         CountDownLatch completeLatch = new CountDownLatch(1);
         AtomicReference<Response> response = new AtomicReference<>();
-        BufferingResponseListener listener = new BufferingResponseListener()
+        RetainingResponseListener listener = new RetainingResponseListener()
         {
             @Override
             public void onComplete(Result result)
@@ -97,7 +97,7 @@ public class InformationalResponseTest extends AbstractTest
 
         CountDownLatch complete = new CountDownLatch(1);
         AtomicReference<Response> response = new AtomicReference<>();
-        BufferingResponseListener listener = new BufferingResponseListener()
+        RetainingResponseListener listener = new RetainingResponseListener()
         {
             @Override
             public void onComplete(Result result)

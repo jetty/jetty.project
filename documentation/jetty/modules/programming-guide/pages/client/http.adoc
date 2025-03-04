@@ -497,14 +497,14 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 If the response content length is exceeded, the response will be aborted, and an exception will be thrown by method `get(\...)`.
 
-You can buffer the response content in memory also using the <<non-blocking,non-blocking APIs>>, via the `BufferingResponseListener` utility class:
+You can accumulate the response content in memory also using the <<non-blocking,non-blocking APIs>>, via the `RetainingResponseListener` utility class:
 
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=bufferingResponseListener]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=retainingResponseListener]
 ----
 
-If you want to avoid buffering, you can wait for the response and then stream the content using the `InputStreamResponseListener` utility class:
+If you want to avoid accumulation, you can wait for the response and then stream the content using the `InputStreamResponseListener` utility class:
 
 [,java,indent=0]
 ----
