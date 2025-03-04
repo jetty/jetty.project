@@ -15,10 +15,13 @@ package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Random;
 
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -141,8 +144,20 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             assertThat("Class URL for: " + clazz, classUrl, notNullValue());
             Path destFile = classesDir.resolve(endpointPath);
             FS.ensureDirExists(destFile.getParent());
-            File srcFile = new File(classUrl.toURI());
-            IO.copy(srcFile.toPath(), destFile);
+            URI uri = classUrl.toURI();
+
+            if ("jar".equalsIgnoreCase(uri.getScheme()))
+            {
+                try (InputStream in = classUrl.openStream())
+                {
+                    Files.copy(in, destFile, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            else
+            {
+                File srcFile = new File(uri);
+                IO.copy(srcFile.toPath(), destFile);
+            }
         }
 
         public void copyLib(Class<?> clazz, String jarFileName) throws URISyntaxException, IOException
