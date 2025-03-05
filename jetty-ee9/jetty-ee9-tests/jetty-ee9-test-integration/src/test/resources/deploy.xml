@@ -1,4 +1,5 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
@@ -13,39 +14,39 @@
         </Set>
 
         <Call name="addBean">
-         <Arg>
-           <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
-             <Arg name="server">
-               <Ref refid="Server" />
-             </Arg>
-             <Arg name="contextHandlerDeployer">
-               <Ref refid="DeploymentManager" />
-             </Arg>
-             <Call name="addMonitoredDirectory">
-               <Arg>
-                 <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
-                   <Arg>target</Arg>
-                   <Arg>webapps</Arg>
-                 </Call>
-               </Arg>
-             </Call>
-            <Set name="scanInterval">1</Set>
+          <Arg>
+            <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
+              <Arg name="server">
+                <Ref refid="Server" />
+              </Arg>
+              <Arg name="contextHandlerDeployer">
+                <Ref refid="DeploymentManager" />
+              </Arg>
+              <Call name="addMonitoredDirectory">
+                <Arg>
+                  <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
+                    <Arg>target</Arg>
+                    <Arg>webapps</Arg>
+                  </Call>
+                </Arg>
+              </Call>
+              <Set name="scanInterval">1</Set>
 
-            <Call name="configureEnvironment">
-              <Arg>ee9</Arg>
-              <Set name="defaultContextHandlerClass">org.eclipse.jetty.ee9.webapp.WebAppContext</Set>
-              <Set name="extractWars">true</Set>
-              <Set name="containerScanJarPattern">
-                <Property name="jetty.deploy.containerScanJarPattern">
-                  <Default>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
-                </Property>
-              </Set>
-              <Set name="webInfScanJarPattern" property="jetty.deploy.webInfScanJarPattern" />
-              <Set name="servletContainerInitializerExclusionPattern" property="jetty.deploy.servletContainerInitializerExclusionPattern" />
-              <Set name="servletContainerInitializerOrder" property="jetty.deploy.servletContainerInitializerOrder" />
-            </Call>
-          </New>
-         </Arg>
+              <Call name="configureEnvironment">
+                <Arg>ee9</Arg>
+                <Set name="defaultContextHandlerClass">org.eclipse.jetty.ee9.webapp.WebAppContext</Set>
+                <Set name="extractWars">true</Set>
+                <Set name="containerScanJarPattern">
+                  <Property name="jetty.deploy.containerScanJarPattern">
+                    <Default>.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
+                  </Property>
+                </Set>
+                <Set name="webInfScanJarPattern" property="jetty.deploy.webInfScanJarPattern" />
+                <Set name="servletContainerInitializerExclusionPattern" property="jetty.deploy.servletContainerInitializerExclusionPattern" />
+                <Set name="servletContainerInitializerOrder" property="jetty.deploy.servletContainerInitializerOrder" />
+              </Call>
+            </New>
+          </Arg>
         </Call>
       </New>
     </Arg>

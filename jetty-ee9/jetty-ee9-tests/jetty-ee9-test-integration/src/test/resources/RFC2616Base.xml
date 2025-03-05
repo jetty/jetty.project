@@ -1,18 +1,20 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
 <!--                                                                 -->
 <!-- Documentation of this file format can be found at:              -->
-<!-- http://docs.codehaus.org/display/JETTY/jetty.xml                -->
-<!--                                                                 -->
+<!-- https://jetty.org/docs/                                         -->
 <!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
     <Set name="secureScheme">https</Set>
-    <Set name="securePort"><Property name="jetty.secure.port" default="8443" /></Set>
+    <Set name="securePort">
+      <Property name="jetty.secure.port" default="8443" />
+    </Set>
     <Set name="outputBufferSize">32768</Set>
     <Set name="requestHeaderSize">8192</Set>
     <Set name="responseHeaderSize">8192</Set>
@@ -42,23 +44,31 @@
                   <Item>VirtualHost</Item>
                 </Array>
               </Set>
-              <Set name="baseResourceAsString"><Property name="test.docroot.base"/>/virtualhost</Set>
-              <Set name="Handler"><New id="reshandler1" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+              <Set name="baseResourceAsString"><Property name="test.docroot.base" />/virtualhost
+              </Set>
+              <Set name="Handler">
+                <New id="reshandler1" class="org.eclipse.jetty.server.handler.ResourceHandler" />
+              </Set>
               <Set name="DisplayName">virtual</Set>
             </New>
           </Item>
           <Item>
             <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
               <Set name="contextPath">/tests</Set>
-              <Set name="baseResourceAsString"><Property name="test.docroot.base"/>/default</Set>
-              <Set name="Handler"><New id="reshandler2" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+              <Set name="baseResourceAsString"><Property name="test.docroot.base" />/default
+              </Set>
+              <Set name="Handler">
+                <New id="reshandler2" class="org.eclipse.jetty.server.handler.ResourceHandler" />
+              </Set>
               <Set name="DisplayName">default</Set>
             </New>
           </Item>
           <Item>
             <New id="echocontext" class="org.eclipse.jetty.server.handler.ContextHandler">
               <Set name="contextPath">/echo</Set>
-              <Set name="Handler"><New id="echohandler" class="org.eclipse.jetty.ee9.test.rfcs.RFC2616BaseTest$EchoHandler"/></Set>
+              <Set name="Handler">
+                <New id="echohandler" class="org.eclipse.jetty.ee9.test.rfcs.RFC2616BaseTest$EchoHandler" />
+              </Set>
               <Set name="DisplayName">echo</Set>
             </New>
           </Item>
@@ -67,11 +77,11 @@
     </New>
   </Set>
 
-   <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
+  <Call id="Environment" class="org.eclipse.jetty.util.component.Environment" name="ensure">
     <Arg>ee9</Arg>
-   </Call>
+  </Call>
 
-   <Call name="addBean">
+  <Call name="addBean">
     <Arg>
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
@@ -79,43 +89,43 @@
         </Set>
 
         <Call name="addBean">
-         <Arg>
-           <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
-             <Arg name="server">
-               <Ref refid="Server" />
-             </Arg>
-             <Arg name="contextHandlerDeployer">
-               <Ref refid="DeploymentManager" />
-             </Arg>
-             <Call name="addMonitoredDirectory">
-               <Arg>
-                 <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
-                   <Arg>src/test/resources/</Arg>
-                   <Arg>webapp-contexts/RFC2616/</Arg>
-                 </Call>
-               </Arg>
-             </Call>
-            <Set name="scanInterval">1</Set>
+          <Arg>
+            <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
+              <Arg name="server">
+                <Ref refid="Server" />
+              </Arg>
+              <Arg name="contextHandlerDeployer">
+                <Ref refid="DeploymentManager" />
+              </Arg>
+              <Call name="addMonitoredDirectory">
+                <Arg>
+                  <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
+                    <Arg>src/test/resources/</Arg>
+                    <Arg>webapp-contexts/RFC2616/</Arg>
+                  </Call>
+                </Arg>
+              </Call>
+              <Set name="scanInterval">1</Set>
 
-            <Call name="configureEnvironment">
-              <Arg>ee9</Arg>
-              <Set name="defaultContextHandlerClass">org.eclipse.jetty.ee9.webapp.WebAppContext</Set>
-              <Set name="extractWars">true</Set>
-              <Set name="containerScanJarPattern">
-                <Property name="jetty.deploy.containerScanJarPattern">
-                  <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
-                </Property>
-              </Set>
-              <Set name="webInfScanJarPattern" property="jetty.deploy.webInfScanJarPattern" />
-              <Set name="servletContainerInitializerExclusionPattern" property="jetty.deploy.servletContainerInitializerExclusionPattern" />
-              <Set name="servletContainerInitializerOrder" property="jetty.deploy.servletContainerInitializerOrder" />
-            </Call>
-          </New>
-        </Arg>
-      </Call>
-     </New>
+              <Call name="configureEnvironment">
+                <Arg>ee9</Arg>
+                <Set name="defaultContextHandlerClass">org.eclipse.jetty.ee9.webapp.WebAppContext</Set>
+                <Set name="extractWars">true</Set>
+                <Set name="containerScanJarPattern">
+                  <Property name="jetty.deploy.containerScanJarPattern">
+                    <Default>.*/jakarta.servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-.*\.jar$</Default>
+                  </Property>
+                </Set>
+                <Set name="webInfScanJarPattern" property="jetty.deploy.webInfScanJarPattern" />
+                <Set name="servletContainerInitializerExclusionPattern" property="jetty.deploy.servletContainerInitializerExclusionPattern" />
+                <Set name="servletContainerInitializerOrder" property="jetty.deploy.servletContainerInitializerOrder" />
+              </Call>
+            </New>
+          </Arg>
+        </Call>
+      </New>
     </Arg>
-   </Call>
+  </Call>
 
   <!-- =========================================================== -->
   <!-- extra options                                               -->

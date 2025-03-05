@@ -1,15 +1,13 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
 <!--                                                                 -->
 <!-- Documentation of this file format can be found at:              -->
-<!-- http://docs.codehaus.org/display/JETTY/jetty.xml                -->
-<!--                                                                 -->
+<!-- https://jetty.org/docs/                                         -->
 <!-- =============================================================== -->
-
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
   <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
     <Set name="secureScheme">https</Set>
     <Set name="securePort">
