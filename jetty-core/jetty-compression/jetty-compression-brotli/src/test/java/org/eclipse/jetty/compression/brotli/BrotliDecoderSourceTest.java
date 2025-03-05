@@ -16,12 +16,15 @@ package org.eclipse.jetty.compression.brotli;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.compression.brotli.internal.BrotliDecoderSource;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BrotliDecoderSourceTest extends AbstractBrotliTest
 {
@@ -36,9 +39,69 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
 
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
         Content.Source decoderSource = brotli.newDecoderSource(fileSource);
+        assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
 
         String result = Content.Source.asString(decoderSource);
         String expected = Files.readString(uncompressed);
         assertEquals(expected, result);
+        assertEquals("DONE", ((BrotliDecoderSource)decoderSource).getStatus());
+        assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk eof = decoderSource.read();
+        assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
+
+        decoderSource.fail(new Throwable());
+        assertEquals("FAILED", ((BrotliDecoderSource)decoderSource).getStatus());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
+    }
+
+    @ParameterizedTest
+    @MethodSource("textResources")
+    public void testImmediateFailReleaseAllResources(String textResourceName) throws Exception
+    {
+        startBrotli();
+        String compressedName = String.format("%s.%s", textResourceName, brotli.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source decoderSource = brotli.newDecoderSource(fileSource);
+        assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
+
+        decoderSource.fail(new Throwable());
+        assertEquals("FAILED", ((BrotliDecoderSource)decoderSource).getStatus());
+        assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
+    }
+
+    @ParameterizedTest
+    @MethodSource("textResources")
+    public void testFailAfterReadReleaseAllResources(String textResourceName) throws Exception
+    {
+        startBrotli();
+        String compressedName = String.format("%s.%s", textResourceName, brotli.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source decoderSource = brotli.newDecoderSource(fileSource);
+        assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk chunk = decoderSource.read();
+        // skip empty chunks
+        while (chunk.isEmpty() && !chunk.isLast())
+            chunk = decoderSource.read();
+        assertTrue(chunk.hasRemaining());
+        chunk.release();
+        assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
+
+        decoderSource.fail(new Throwable());
+        assertEquals("FAILED", ((BrotliDecoderSource)decoderSource).getStatus());
+        assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
     }
 }
