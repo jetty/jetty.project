@@ -236,6 +236,7 @@
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
+    <junit.platform.version>1.12.0</junit.platform.version>
     <junit.version>5.12.0</junit.version>
     <kerb-simplekdc.version>2.1.0</kerb-simplekdc.version>
     <license.maven.plugin.version>4.5</license.maven.plugin.version>
@@ -1603,6 +1604,11 @@
             </statelessTestsetInfoReporter>
           </configuration>
           <dependencies>
+            <dependency>
+              <groupId>org.junit.platform</groupId>
+              <artifactId>junit-platform-engine</artifactId>
+              <version>${junit.platform.version}</version>
+            </dependency>
             <dependency>
               <groupId>org.ow2.asm</groupId>
               <artifactId>asm-commons</artifactId>
