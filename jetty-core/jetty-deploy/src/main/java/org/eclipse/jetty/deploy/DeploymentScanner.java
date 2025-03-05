@@ -137,23 +137,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
     /**
      * <p>
-     * Convenience constructor to have DeploymentScanner participate in DeploymentManager startup behaviors,
-     * allowing failures in DeploymentScanner.start() to trigger a failure to start DeploymentManager.
-     * </p>
-     *
-     * @param server the server reference to use for any XML based deployments.
-     * @param deploymentManager the DeploymentManager instance that is being used by this DeploymentScanner.
-     */
-    public DeploymentScanner(
-        @Name("server") Server server,
-        @Name("deploymentManager") DeploymentManager deploymentManager)
-    {
-        this(server, deploymentManager, null);
-        deploymentManager.addBean(this);
-    }
-
-    /**
-     * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
      * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
      * it's configured destination.

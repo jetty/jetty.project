@@ -12,7 +12,7 @@
   <Arg name="server">
     <Ref refid="Server" />
   </Arg>
-  <Arg name="deploymentManager">
+  <Arg name="contextHandlerDeployer">
     <Ref refid="deploymentManager" />
   </Arg>
   <Call name="addMonitoredDirectory">
@@ -39,4 +39,11 @@
   </Set>
   <Set name="deferInitialScan" property="jetty.deploy.deferInitialScan" />
   <Set name="scanInterval" property="jetty.deploy.scanInterval" />
+  <Ref refid="deploymentManager">
+    <Call name="addBean">
+      <Arg>
+        <Ref refid="deploymentScanner" />
+      </Arg>
+    </Call>
+  </Ref>
 </Configure>

@@ -165,6 +165,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         defaultProvider.addMonitoredDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
+        deploymentManager.addBean(defaultProvider);
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class))
         {
@@ -223,6 +224,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         defaultProvider.addMonitoredDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
+        deploymentManager.addBean(defaultProvider);
 
         try (StacklessLogging ignore = new StacklessLogging(
             // screwy name courtesy of SerializedInvoker.onError() logic
@@ -284,6 +286,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         defaultProvider.addMonitoredDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
+        deploymentManager.addBean(defaultProvider);
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentManager.class))
         {
