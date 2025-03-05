@@ -34,6 +34,7 @@ import org.eclipse.jetty.ee11.websocket.jakarta.common.messages.DecodedBinaryMes
 import org.eclipse.jetty.ee11.websocket.jakarta.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
@@ -139,6 +141,8 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
             closeHandle = InvokerUtils.bindTo(closeHandle, session);
             errorHandle = InvokerUtils.bindTo(errorHandle, session);
             pongHandle = InvokerUtils.bindTo(pongHandle, session);
+            if (pongHandle != null)
+                pongHandle = JakartaWebSocketFrameHandlerFactory.wrapNonVoidReturnType(pongHandle, session);
 
             JakartaWebSocketMessageMetadata actualTextMetadata = JakartaWebSocketMessageMetadata.copyOf(textMetadata);
             if (actualTextMetadata != null)
@@ -161,10 +165,10 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
                 if (actualBinaryMetadata.isMaxMessageSizeSet())
                     session.setMaxBinaryMessageBufferSize(actualBinaryMetadata.getMaxMessageSize());
 
-                MethodHolder methodHandle = actualBinaryMetadata.getMethodHolder();
-                methodHandle = InvokerUtils.bindTo(methodHandle, endpointInstance, endpointConfig, session);
-                methodHandle = JakartaWebSocketFrameHandlerFactory.wrapNonVoidReturnType(methodHandle, session);
-                actualBinaryMetadata.setMethodHolder(methodHandle);
+                MethodHolder methodHolder = actualBinaryMetadata.getMethodHolder();
+                methodHolder = InvokerUtils.bindTo(methodHolder, endpointInstance, endpointConfig, session);
+                methodHolder = JakartaWebSocketFrameHandlerFactory.wrapNonVoidReturnType(methodHolder, session);
+                actualBinaryMetadata.setMethodHolder(methodHolder);
 
                 binarySink = JakartaWebSocketFrameHandlerFactory.createMessageSink(session, actualBinaryMetadata);
                 binaryMetadata = actualBinaryMetadata;
@@ -228,9 +232,51 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         return wrappedConfig;
     }
 
+    public void handleError(Throwable error)
+    {
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            onError(error, callback);
+            callback.block();
+        }
+        catch (Throwable t)
+        {
+            t.addSuppressed(error);
+            CloseStatus closeStatus = new CloseStatus(CloseStatus.SERVER_ERROR, t);
+            getSession().getCoreSession().close(closeStatus, Callback.NOOP);
+        }
+    }
+
+    public void handleError(Throwable error, Callback callback)
+    {
+        Throwable unwrappedError = error;
+        if (unwrappedError instanceof WebSocketException webSocketException && webSocketException.getCause() != null)
+            unwrappedError = webSocketException.getCause();
+        onError(unwrappedError, callback);
+        if (error instanceof CloseException closeException)
+        {
+            CloseStatus closeStatus = new CloseStatus(closeException.getStatusCode(), closeException);
+            getSession().getCoreSession().close(closeStatus, Callback.NOOP);
+        }
+        coreSession.demand();
+    }
+
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
+        Callback frameCallback = callback;
+        callback = Callback.from(frameCallback::succeeded, x ->
+        {
+            // If it is a recoverable error, we can continue processing frames.
+            if (session.isOpen())
+            {
+                handleError(x, frameCallback);
+                return;
+            }
+
+            frameCallback.failed(x);
+        });
+
         switch (frame.getOpCode())
         {
             case OpCode.TEXT:

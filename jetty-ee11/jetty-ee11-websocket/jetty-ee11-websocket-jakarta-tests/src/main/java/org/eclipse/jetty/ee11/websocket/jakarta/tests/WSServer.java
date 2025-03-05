@@ -31,6 +31,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +78,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     public class WebApp
     {
         private final WebAppContext context;
+        private final ResourceFactory resourceFactory;
         private final Path contextDir;
         private final Path webInf;
         private final Path classesDir;
@@ -103,6 +105,8 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             context.setBaseResourceAsPath(contextDir);
             context.setAttribute("org.eclipse.jetty.websocket.jakarta", Boolean.TRUE);
             context.addConfiguration(new JakartaWebSocketConfiguration());
+
+            resourceFactory = ResourceFactory.of(context);
         }
 
         public WebAppContext getWebAppContext()
@@ -141,8 +145,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             assertThat("Class URL for: " + clazz, classUrl, notNullValue());
             Path destFile = classesDir.resolve(endpointPath);
             FS.ensureDirExists(destFile.getParent());
-            File srcFile = new File(classUrl.toURI());
-            IO.copy(srcFile.toPath(), destFile);
+            resourceFactory.newResource(classUrl).copyTo(destFile);
         }
 
         public void copyLib(Class<?> clazz, String jarFileName) throws URISyntaxException, IOException

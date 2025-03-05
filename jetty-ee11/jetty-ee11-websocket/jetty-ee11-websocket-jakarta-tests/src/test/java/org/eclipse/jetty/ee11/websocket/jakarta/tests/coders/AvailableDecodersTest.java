@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.TimeZone;
 
@@ -322,9 +323,16 @@ public class AvailableDecodersTest
     @Test
     public void testCustomDecoderRegisterDuplicate()
     {
-        // has duplicated support for the same target Type
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> init(BadDualDecoder.class));
-        assertThat(e.getMessage(), containsString("Multiple decoders with different interface types"));
+        init(BadDualDecoder.class);
+        System.err.println(availableDecoders);
+
+        List<RegisteredDecoder> binaryDecoders = availableDecoders.getBinaryDecoders(Fruit.class);
+        assertThat(binaryDecoders.size(), is(1));
+        assertThat(binaryDecoders.get(0).decoder, equalTo(BadDualDecoder.class));
+
+        List<RegisteredDecoder> textDecoders = availableDecoders.getTextDecoders(Fruit.class);
+        assertThat(textDecoders.size(), is(1));
+        assertThat(textDecoders.get(0).decoder, equalTo(BadDualDecoder.class));
     }
 
     @Test
