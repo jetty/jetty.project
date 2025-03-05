@@ -1863,12 +1863,18 @@ public class XmlConfiguration
             // For all arguments, load properties
             if (LOG.isDebugEnabled())
                 LOG.debug("args={}", Arrays.asList(args));
-            for (String arg : args)
+
+            List<String> remainingArgs = new ArrayList<>(Arrays.asList(args));
+
+            // Process properties first, as the XML needs them.
+            // We don't want to start processing the XML then come across a property that is needed.
+            for (String arg : remainingArgs)
             {
                 if (arg.indexOf('=') >= 0)
                 {
                     int i = arg.indexOf('=');
                     properties.put(arg.substring(0, i), arg.substring(i + 1));
+                    remainingArgs.remove(arg); // remove, now that we've seen/handled this arg.
                 }
                 else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                 {
@@ -1876,13 +1882,15 @@ public class XmlConfiguration
                     {
                         properties.load(inputStream);
                     }
+                    remainingArgs.remove(arg); // remove, now that we've seen/handled this arg.
                 }
+                // all other args are processed later.
             }
 
-            // For all arguments, parse XMLs
+            // For all remaining arguments, parse XMLs
             XmlConfiguration last = null;
             List<Object> objects = new ArrayList<>(args.length);
-            for (String arg : args)
+            for (String arg : remainingArgs)
             {
                 if (arg.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                 {
@@ -1901,6 +1909,10 @@ public class XmlConfiguration
                     if (obj != null && !objects.contains(obj))
                         objects.add(obj);
                     last = configuration;
+                }
+                else
+                {
+                    LOG.warn("Ignoring unrecognized arg [{}]", arg);
                 }
             }
 
