@@ -255,7 +255,7 @@ public class GzipDecoderSource extends DecoderSource
                             // RFC 1952: Section 2.3.1; ISIZE is the input size modulo 2^32
                             if (value != (inflater.getBytesWritten() & UINT_MAX))
                                 throw new ZipException("Invalid input size");
-                            state = State.FINISHED;
+                            state = State.INITIAL;
                             size = 0;
                             value = 0;
                             return Content.Chunk.EOF;
@@ -270,19 +270,6 @@ public class GzipDecoderSource extends DecoderSource
             state = State.ERROR;
             return Content.Chunk.from(x, true);
         }
-    }
-
-    @Override
-    public void fail(Throwable failure)
-    {
-        super.fail(failure);
-        state = State.ERROR;
-    }
-
-    // Only used for testing.
-    public String getState()
-    {
-        return state.toString();
     }
 
     // Only used for testing.
