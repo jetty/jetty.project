@@ -42,23 +42,56 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
 public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 {
+    private final boolean upgraded;
     private final URI requestURI;
     private final String queryString;
     private final ServerUpgradeRequest upgradeRequest;
     private final HttpServletRequest httpServletRequest;
     private final Principal userPrincipal;
+    private final String origin;
+    private final boolean isSecure;
     private final Map<String, List<String>> headers;
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
 
     public DelegatedServerUpgradeRequest(ServerUpgradeRequest request)
     {
+        this(request, false);
+    }
+
+    public DelegatedServerUpgradeRequest(ServerUpgradeRequest request, boolean upgraded)
+    {
+        this.upgraded = upgraded;
         this.httpServletRequest = (HttpServletRequest)request
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
         this.upgradeRequest = request;
+        this.headers = HttpFields.asMap(upgradeRequest.getHeaders());
         this.queryString = httpServletRequest.getQueryString();
         this.userPrincipal = httpServletRequest.getUserPrincipal();
-        this.headers = HttpFields.asMap(upgradeRequest.getHeaders());
+        this.origin = httpServletRequest.getHeader(HttpHeader.ORIGIN.asString());
+        this.isSecure = httpServletRequest.isSecure();
+
+        Map<String, String[]> requestParams = httpServletRequest.getParameterMap();
+        if (requestParams != null)
+        {
+            parameterMap = new HashMap<>(requestParams.size());
+            for (Map.Entry<String, String[]> entry : requestParams.entrySet())
+            {
+                parameterMap.put(entry.getKey(), Arrays.asList(entry.getValue()));
+            }
+        }
+
+        Cookie[] reqCookies = httpServletRequest.getCookies();
+        if (reqCookies != null)
+        {
+            cookies = Arrays.stream(reqCookies)
+                .map(c -> new HttpCookie(c.getName(), c.getValue()))
+                .collect(Collectors.toList());
+        }
+        else
+        {
+            cookies = Collections.emptyList();
+        }
 
         try
         {
@@ -82,21 +115,6 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public List<HttpCookie> getCookies()
     {
-        if (cookies == null)
-        {
-            Cookie[] reqCookies = httpServletRequest.getCookies();
-            if (reqCookies != null)
-            {
-                cookies = Arrays.stream(reqCookies)
-                    .map(c -> new HttpCookie(c.getName(), c.getValue()))
-                    .collect(Collectors.toList());
-            }
-            else
-            {
-                cookies = Collections.emptyList();
-            }
-        }
-
         return cookies;
     }
 
@@ -153,24 +171,12 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public String getOrigin()
     {
-        return httpServletRequest.getHeader(HttpHeader.ORIGIN.asString());
+        return origin;
     }
 
     @Override
     public Map<String, List<String>> getParameterMap()
     {
-        if (parameterMap == null)
-        {
-            Map<String, String[]> requestParams = httpServletRequest.getParameterMap();
-            if (requestParams != null)
-            {
-                parameterMap = new HashMap<>(requestParams.size());
-                for (Map.Entry<String, String[]> entry : requestParams.entrySet())
-                {
-                    parameterMap.put(entry.getKey(), Arrays.asList(entry.getValue()));
-                }
-            }
-        }
         return parameterMap;
     }
 
@@ -195,6 +201,9 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public HttpSession getSession()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return httpServletRequest.getSession();
     }
 
@@ -219,42 +228,60 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public boolean isSecure()
     {
-        return httpServletRequest.isSecure();
+        return isSecure;
     }
 
     @Override
     public X509Certificate[] getCertificates()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return (X509Certificate[])httpServletRequest.getAttribute("jakarta.servlet.request.X509Certificate");
     }
 
     @Override
     public HttpServletRequest getHttpServletRequest()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return httpServletRequest;
     }
 
     @Override
     public Locale getLocale()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return httpServletRequest.getLocale();
     }
 
     @Override
     public Enumeration<Locale> getLocales()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return httpServletRequest.getLocales();
     }
 
     @Override
     public SocketAddress getLocalSocketAddress()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return upgradeRequest.getConnectionMetaData().getLocalSocketAddress();
     }
 
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return upgradeRequest.getConnectionMetaData().getRemoteSocketAddress();
     }
 
@@ -267,12 +294,18 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public Object getServletAttribute(String name)
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return upgradeRequest.getAttribute(name);
     }
 
     @Override
     public Map<String, Object> getServletAttributes()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         Map<String, Object> attributes = new HashMap<>(2);
         Enumeration<String> attributeNames = httpServletRequest.getAttributeNames();
         while (attributeNames.hasMoreElements())
@@ -286,18 +319,27 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public Map<String, List<String>> getServletParameters()
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return getParameterMap();
     }
 
     @Override
     public boolean isUserInRole(String role)
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         return httpServletRequest.isUserInRole(role);
     }
 
     @Override
     public void setServletAttribute(String name, Object value)
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         upgradeRequest.setAttribute(name, value);
     }
 }

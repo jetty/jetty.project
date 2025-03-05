@@ -24,6 +24,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
@@ -32,36 +33,54 @@ import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse
 {
+    private final boolean upgraded;
     private final ServerUpgradeResponse upgradeResponse;
     private final HttpServletResponse httpServletResponse;
     private final Map<String, List<String>> headers;
+    private final int status;
 
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
-        upgradeResponse = response;
-        ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
-        this.httpServletResponse = (HttpServletResponse)servletContextResponse.getRequest()
+        this(response, false);
+    }
+
+    public DelegatedServerUpgradeResponse(ServerUpgradeResponse response, boolean upgraded)
+    {
+        this.upgraded = upgraded;
+        this.upgradeResponse = response;
+        this.httpServletResponse = (HttpServletResponse)Response.as(response, ServletContextResponse.class).getRequest()
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
-        this.headers = HttpFields.asMap(upgradeResponse.getHeaders());
+        this.headers = HttpFields.asMap(upgraded ? upgradeResponse.getHeaders().asImmutable() : upgradeResponse.getHeaders());
+
+        // Fake status code if already upgraded, as it not set at the time this is created.
+        HttpVersion httpVersion = response.getRequest().getConnectionMetaData().getHttpVersion();
+        this.status = (httpVersion == HttpVersion.HTTP_1_1) ? HttpStatus.SWITCHING_PROTOCOLS_101 : HttpStatus.OK_200;
     }
 
     @Override
     public void addHeader(String name, String value)
     {
-        // TODO: This should go to the httpServletResponse for headers but then it won't do interception of the websocket headers
-        //  which are done through the jetty-core Response wrapping ServerUpgradeResponse done by websocket-core.
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         upgradeResponse.getHeaders().add(name, value);
     }
 
     @Override
     public void setHeader(String name, String value)
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         headers.put(name, List.of(value));
     }
 
     @Override
     public void setHeader(String name, List<String> values)
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         headers.put(name, values);
     }
 
@@ -104,24 +123,36 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public int getStatusCode()
     {
-        return httpServletResponse.getStatus();
+        if (upgraded)
+            return status;
+        else
+            return httpServletResponse.getStatus();
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         httpServletResponse.sendError(HttpStatus.FORBIDDEN_403, message);
     }
 
     @Override
     public void setAcceptedSubProtocol(String protocol)
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         upgradeResponse.setAcceptedSubProtocol(protocol);
     }
 
     @Override
     public void setExtensions(List<ExtensionConfig> configs)
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         upgradeResponse.setExtensions(configs.stream()
             .map(c -> new org.eclipse.jetty.websocket.core.ExtensionConfig(c.getName(), c.getParameters()))
             .collect(Collectors.toList()));
@@ -130,18 +161,27 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void setStatusCode(int statusCode)
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         httpServletResponse.setStatus(statusCode);
     }
 
     @Override
     public boolean isCommitted()
     {
+        if (upgraded)
+            return true;
+
         return httpServletResponse.isCommitted();
     }
 
     @Override
     public void sendError(int statusCode, String message) throws IOException
     {
+        if (upgraded)
+            throw new IllegalStateException("Already Upgraded to WebSocket");
+
         httpServletResponse.sendError(statusCode, message);
     }
 }

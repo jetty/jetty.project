@@ -36,19 +36,26 @@ class UpgradeRequestDelegate implements UpgradeRequest
 {
     private final ServerUpgradeRequest request;
     private final Map<String, List<String>> headers;
+    private final List<HttpCookie> cookies;
+    private final Principal userPrincipal;
 
     UpgradeRequestDelegate(ServerUpgradeRequest request)
     {
         this.request = request;
         this.headers = HttpFields.asMap(request.getHeaders());
+
+        Request.AuthenticationState authenticationState = Request.getAuthenticationState(request);
+        userPrincipal = (authenticationState == null) ? null : authenticationState.getUserPrincipal();
+
+        this.cookies = Request.getCookies(request).stream()
+            .map(org.eclipse.jetty.http.HttpCookie::asJavaNetHttpCookie)
+            .toList();
     }
 
     @Override
     public List<HttpCookie> getCookies()
     {
-        return Request.getCookies(request).stream()
-            .map(org.eclipse.jetty.http.HttpCookie::asJavaNetHttpCookie)
-            .toList();
+        return cookies;
     }
 
     @Override
@@ -149,8 +156,7 @@ class UpgradeRequestDelegate implements UpgradeRequest
     @Override
     public Principal getUserPrincipal()
     {
-        // TODO: no Principal concept in Jetty core.
-        return null;
+        return userPrincipal;
     }
 
     @Override

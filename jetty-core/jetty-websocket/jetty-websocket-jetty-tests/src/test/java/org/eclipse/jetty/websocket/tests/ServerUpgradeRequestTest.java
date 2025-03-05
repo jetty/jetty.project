@@ -11,24 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.websocket.tests;
+package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.RolePrincipal;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
@@ -45,6 +41,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,30 +123,26 @@ public class ServerUpgradeRequestTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        ServletContextHandler servletContextHandler = new ServletContextHandler();
-        JettyWebSocketServletContainerInitializer.configure(servletContextHandler, (servletContext, container) ->
-            container.addMapping("/", (req, resp) ->
+        WebSocketUpgradeHandler upgradeHandler = WebSocketUpgradeHandler.from(_server, container ->
+        {
+            container.addMapping("/", (req, resp, cb) ->
             {
-                resp.setHeader("customHeader", "customHeaderValue");
+                resp.getHeaders().put("customHeader", "customHeaderValue");
                 resp.setAcceptedSubProtocol(req.getSubProtocols().get(0));
+
                 return new ServerSocket();
-            }));
+            });
+        });
 
+        SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
+        securityHandler.put("/*", Constraint.ANY_USER);
         DefaultIdentityService identityService = new DefaultIdentityService();
-        LoginService loginService = new TestLoginService(identityService);
-
-        ConstraintMapping constraintMapping = new ConstraintMapping();
-        constraintMapping.setPathSpec("/*");
-        constraintMapping.setConstraint(Constraint.ANY_USER);
-
-        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
-        securityHandler.setConstraintMappings(List.of(constraintMapping));
-        securityHandler.setLoginService(loginService);
+        securityHandler.setLoginService(new TestLoginService(identityService));
         securityHandler.setIdentityService(identityService);
-        servletContextHandler.setSecurityHandler(securityHandler);
         securityHandler.setAuthenticator(new TestAuthenticator());
+        securityHandler.setHandler(upgradeHandler);
 
-        _server.setHandler(servletContextHandler);
+        _server.setHandler(securityHandler);
         _server.start();
 
         _client = new WebSocketClient();
@@ -237,7 +230,7 @@ public class ServerUpgradeRequestTest
         assertThat(received, containsString("getQueryString: queryParam1=queryParamValue1"));
         assertThat(received, containsString("getSubProtocols: [subProtocol1, subProtocol2]"));
         assertThat(received, containsString("getProtocolVersion: 13"));
-        assertThat(received, containsString("getCookies: [cookieHeader1=\"cookieValue1\"]"));
+        assertThat(received, containsString("getCookies: [cookieHeader1=cookieValue1]"));
         assertThat(received, containsString("getUserPrincipal: user123"));
         assertThat(received, containsString("getOrigin: jetty-test"));
         assertThat(received, containsString("isSecure: false"));

@@ -19,6 +19,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
@@ -28,11 +30,16 @@ class UpgradeResponseDelegate implements UpgradeResponse
 {
     private final ServerUpgradeResponse response;
     private final Map<String, List<String>> headers;
+    private final int status;
 
     UpgradeResponseDelegate(ServerUpgradeResponse response)
     {
         this.response = response;
-        this.headers = HttpFields.asMap(response.getHeaders());
+        this.headers = HttpFields.asMap(response.getHeaders().asImmutable());
+
+        // Fake status code as it not set at the time this is created.
+        HttpVersion httpVersion = response.getRequest().getConnectionMetaData().getHttpVersion();
+        this.status = (httpVersion == HttpVersion.HTTP_1_1) ? HttpStatus.SWITCHING_PROTOCOLS_101 : HttpStatus.OK_200;
     }
 
     @Override
@@ -76,6 +83,6 @@ class UpgradeResponseDelegate implements UpgradeResponse
     @Override
     public int getStatusCode()
     {
-        return response.getStatus();
+        return status;
     }
 }
