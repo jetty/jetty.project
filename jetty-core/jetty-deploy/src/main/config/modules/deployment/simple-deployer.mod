@@ -1,8 +1,11 @@
 [description]
-This module enables the DeploymentManager
+This module enables the Simple Deployer
 
 [tags]
 deployment
+
+[provides]
+deployment/deployer
 
 [depend]
 server
@@ -11,5 +14,5 @@ server
 lib/jetty-deploy-${jetty.version}.jar
 
 [xml]
-etc/jetty-deployment-manager.xml
+etc/jetty-simple-deployer.xml
 

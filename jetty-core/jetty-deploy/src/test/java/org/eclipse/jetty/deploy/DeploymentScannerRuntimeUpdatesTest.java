@@ -81,7 +81,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
     {
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty.xml"));
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-http.xml"));
-        jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-manager.xml"));
+        jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-goal-deployer.xml"));
         jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-scanner.xml"));
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-core-deploy-custom.xml"));
 
@@ -92,8 +92,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
         jetty.start();
 
         // monitor tick
-        DeploymentManager dm = jetty.getServer().getBean(DeploymentManager.class);
-        Collection<DeploymentScanner> defaultProviders = dm.getBeans(DeploymentScanner.class);
+        Collection<DeploymentScanner> defaultProviders = jetty.getServer().getBeans(DeploymentScanner.class);
         for (DeploymentScanner provider : defaultProviders)
         {
             _providerCount++;

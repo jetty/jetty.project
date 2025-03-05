@@ -4,16 +4,13 @@
 <!-- Create the deployment manager                                   -->
 <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 <!-- The deployment manager handles the lifecycle of deploying web   -->
-<!-- applications. Apps are provided by instances of the             -->
-<!-- AppProvider interface.                                          -->
+<!-- applications via instances of ContextHandler.                   -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
     <Arg>
-      <New id="deploymentManager" class="org.eclipse.jetty.deploy.GoalDeployer">
-        <Set name="contexts">
-          <Ref refid="Contexts" />
-        </Set>
+      <New id="Deployer" class="org.eclipse.jetty.deploy.GoalDeployer">
+        <Arg name="contexts"><Ref refid="Contexts"/></Arg>
 
         <!-- Add a customize step to the deployment lifecycle -->
         <!-- uncomment and replace DebugBinding with your extended ContextHandlerLifeCycle.Binding class

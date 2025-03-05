@@ -36,5 +36,5 @@ public interface DeploymentNodeBinding
      * @param contextHandler the contextHandler being processed
      * @throws Exception if any problem severe enough to halt the ContextHandler  processing
      */
-    void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception;
+    void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler) throws Exception;
 }

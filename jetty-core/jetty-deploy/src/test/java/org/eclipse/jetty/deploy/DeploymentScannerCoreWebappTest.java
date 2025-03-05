@@ -34,6 +34,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -51,21 +52,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTest
 {
     public WorkDir workDir;
-    private Server server;
+    private final Server server = new Server();
+    private final ContextHandlerCollection contexts = new ContextHandlerCollection();
 
-    public void startServer(DeploymentManager deploymentManager) throws Exception
+    public void startServer(Deployer deployer, Object... beans) throws Exception
     {
-        server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
-
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-
-        deploymentManager.setContexts(contexts);
-        server.addBean(deploymentManager);
-
+        server.addBean(deployer);
+        for (Object bean : beans)
+            server.addBean(bean);
         server.start();
     }
 
@@ -107,13 +105,22 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        DeploymentManager deploymentManager = new DeploymentManager();
-        DeploymentScanner defaultProvider = new DeploymentScanner(server, deploymentManager);
-        defaultProvider.addMonitoredDirectory(webapps);
-        DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
+        server.setHandler(contexts);
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        GoalDeployer goalDeployer = new GoalDeployer(contexts);
+        server.addBean(goalDeployer);
+
+        DeploymentScanner deploymentScanner = new DeploymentScanner(server, goalDeployer);
+        deploymentScanner.addMonitoredDirectory(webapps);
+        server.addBean(deploymentScanner);
+        DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
-        deploymentManager.addBean(defaultProvider);
-        startServer(deploymentManager);
+
+        server.start();
+        deploymentScanner.start();
 
         URI destURI = server.getURI().resolve("/demo/");
         HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
@@ -158,23 +165,21 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
               </Set>
             </Configure>
             """;
+        GoalDeployer goalDeployer = new GoalDeployer(contexts);
+        DeploymentScanner scanner = new DeploymentScanner(server, goalDeployer);
         Files.writeString(demoXml, demoXmlStr);
 
-        DeploymentManager deploymentManager = new DeploymentManager();
-        DeploymentScanner defaultProvider = new DeploymentScanner(server, deploymentManager);
-        defaultProvider.addMonitoredDirectory(webapps);
-        DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
+        scanner.addMonitoredDirectory(webapps);
+        DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(deploymentManager));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(goalDeployer, scanner));
 
             // unwrap any ExecutionExceptions
-            while (throwable instanceof ExecutionException ee)
-            {
-                throwable = ee.getCause();
-            }
+            while (throwable.getCause() != null)
+                throwable = throwable.getCause();
 
             // Verify that we saw the message
             assertThat(throwable, instanceOf(ClassNotFoundException.class));
@@ -218,24 +223,24 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        DeploymentManager deploymentManager = new DeploymentManager();
-        DeploymentScanner defaultProvider = new DeploymentScanner(server, deploymentManager);
-        defaultProvider.addMonitoredDirectory(webapps);
-        DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
+        GoalDeployer goalDeployer = new GoalDeployer(contexts);
+        DeploymentScanner scanner = new DeploymentScanner(server, goalDeployer);
+        scanner.addMonitoredDirectory(webapps);
+        DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
         try (StacklessLogging ignore = new StacklessLogging(
             // screwy name courtesy of SerializedInvoker.onError() logic
             "org.eclipse.jetty.server.handler.ContextHandlerCollection$1",
-            DeploymentManager.class.getName()))
+            GoalDeployer.class.getName(),
+            DeploymentScanner.class.getName(),
+            Scanner.class.getName()))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(deploymentManager));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(goalDeployer, scanner));
 
             // unwrap any ExecutionExceptions
-            while (throwable instanceof ExecutionException ee)
-            {
-                throwable = ee.getCause();
-            }
+            while (throwable.getCause() != null)
+                throwable = throwable.getCause();
 
             // Verify that we saw the message
             assertThat(throwable, instanceOf(RuntimeException.class));
@@ -279,15 +284,15 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        DeploymentManager deploymentManager = new DeploymentManager();
-        DeploymentScanner defaultProvider = new DeploymentScanner(server, deploymentManager);
-        defaultProvider.addMonitoredDirectory(webapps);
-        DeploymentScanner.EnvironmentConfig coreConfig = defaultProvider.configureEnvironment("core");
+        GoalDeployer goalDeployer = new GoalDeployer(contexts);
+        DeploymentScanner scanner = new DeploymentScanner(server, goalDeployer);
+        scanner.addMonitoredDirectory(webapps);
+        DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
-        try (StacklessLogging ignore = new StacklessLogging(DeploymentManager.class))
+        try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class, GoalDeployer.class))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(deploymentManager));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(goalDeployer, scanner));
 
             // unwrap any ExecutionExceptions
             while (throwable instanceof ExecutionException ee)

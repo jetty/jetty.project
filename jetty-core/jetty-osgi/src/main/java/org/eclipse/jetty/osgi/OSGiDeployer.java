@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.osgi;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.osgi.util.EventSender;
 import org.eclipse.jetty.osgi.util.Util;
@@ -37,7 +37,7 @@ public class OSGiDeployer extends StandardDeployer
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception
+    public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler) throws Exception
     {
         //TODO  how to NOT send this event if its not a webapp:
         //OSGi Enterprise Spec only wants an event sent if its a webapp bundle (ie not a ContextHandler)
@@ -46,7 +46,7 @@ public class OSGiDeployer extends StandardDeployer
         if (bundle == null)
         {
             // Not an OSGI based ContextHandler
-            doProcessBinding(deploymentManager, nodeName, contextHandler);
+            doProcessBinding(goalDeployer, nodeName, contextHandler);
         }
         else
         {
@@ -55,7 +55,7 @@ public class OSGiDeployer extends StandardDeployer
             EventSender.getInstance().send(EventSender.DEPLOYING_EVENT, bundle, contextPath);
             try
             {
-                doProcessBinding(deploymentManager, nodeName, contextHandler);
+                doProcessBinding(goalDeployer, nodeName, contextHandler);
                 Util.registerAsOSGiService(contextHandler);
                 EventSender.getInstance().send(EventSender.DEPLOYED_EVENT, bundle, contextPath);
             }
@@ -67,14 +67,14 @@ public class OSGiDeployer extends StandardDeployer
         }
     }
 
-    protected void doProcessBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler app) throws Exception
+    protected void doProcessBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler app) throws Exception
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         ClassLoader cl = (ClassLoader)_server.getAttribute(OSGiServerConstants.SERVER_CLASSLOADER);
         Thread.currentThread().setContextClassLoader(cl);
         try
         {
-            super.processBinding(deploymentManager, nodeName, app);
+            super.processBinding(goalDeployer, nodeName, app);
         }
         finally
         {

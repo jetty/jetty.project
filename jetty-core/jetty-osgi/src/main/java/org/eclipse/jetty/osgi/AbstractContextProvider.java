@@ -15,7 +15,7 @@ package org.eclipse.jetty.osgi;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.deploy.ContextHandlerDeployer;
+import org.eclipse.jetty.deploy.Deployer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -35,15 +35,15 @@ import org.osgi.framework.ServiceReference;
 public abstract class AbstractContextProvider extends AbstractLifeCycle
 {
     private final Server _server;
-    private final ContextHandlerDeployer _contextHandlerDeployer;
+    private final Deployer _deployer;
     private ContextFactory _contextFactory;
     private String _environment;
     private final Attributes _attributes = new Attributes.Mapped();
 
-    public AbstractContextProvider(Server server, ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public AbstractContextProvider(Server server, Deployer contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
         _server = server;
-        _contextHandlerDeployer = contextHandlerManagement;
+        _deployer = contextHandlerManagement;
         _environment = Objects.requireNonNull(environment);
         _contextFactory = Objects.requireNonNull(contextFactory);
     }
@@ -72,9 +72,9 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
         return _environment;
     }
 
-    public ContextHandlerDeployer getContextHandlerManagement()
+    public Deployer getContextHandlerManagement()
     {
-        return _contextHandlerDeployer;
+        return _deployer;
     }
 
     /**

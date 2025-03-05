@@ -15,8 +15,8 @@ package org.eclipse.jetty.deploy.bindings;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 
@@ -29,11 +29,11 @@ public class StandardDeployer implements DeploymentNodeBinding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception
+    public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler) throws Exception
     {
         Objects.requireNonNull(contextHandler);
         Callback.Completable blocker = new Callback.Completable();
-        deploymentManager.getContexts().deployHandler(contextHandler, blocker);
+        goalDeployer.getContexts().deployHandler(contextHandler, blocker);
         blocker.get();
     }
 }

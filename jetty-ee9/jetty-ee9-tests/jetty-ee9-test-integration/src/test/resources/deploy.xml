@@ -7,7 +7,7 @@
 
   <Call name="addBean">
     <Arg>
-      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.GoalDeployer">
         <Set name="contexts">
           <Ref refid="contexts" />
         </Set>

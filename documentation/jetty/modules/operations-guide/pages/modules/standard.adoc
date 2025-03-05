@@ -142,7 +142,7 @@ include::{jetty-home}/modules/console-capture.mod[tags=documentation]
 
 include::{jetty-home}/modules/ee11-deploy.mod[tags=description]
 
-Deployment is managed via a `DeploymentManager` component that watches a directory for changes.
+Deployment is managed via a `GoalDeployer` component that watches a directory for changes.
 See xref:deploy/index.adoc[how to deploy web applications] for more information.
 
 TODO
@@ -216,10 +216,10 @@ include::{jetty-home}/modules/eager-content.mod[tags=documentation]
 
 include::{jetty-home}/modules/ee11-deploy.mod[tags=description]
 
-Deployment is managed via a `DeploymentManager` component that watches a directory for changes.
+Deployment is managed via a `GoalDeployer` component that watches a directory for changes.
 See xref:deploy/index.adoc[how to deploy web applications] for more information.
 
-Adding files or directories to this monitored directory will cause the `DeploymentManager` to deploy them as web applications; updating files already existing in this monitored directory will cause the `DeploymentManager` to re-deploy the corresponding web application; removing files in this monitored directory will cause the `DeploymentManager` to "undeploy" the corresponding web application.
+Adding files or directories to this monitored directory will cause the `GoalDeployer` to deploy them as web applications; updating files already existing in this monitored directory will cause the `GoalDeployer` to re-deploy the corresponding web application; removing files in this monitored directory will cause the `GoalDeployer` to "undeploy" the corresponding web application.
 (You can find a more detailed discussion of these rules in the xref:deploy/index.adoc#rules[deployment rules] section.)
 
 Multiple versions of this module exist (`{ee-all}-deploy`) to support each Jakarta EE platform's version of the Java Servlet specification.
@@ -234,7 +234,7 @@ Among the configurable properties, the most relevant are:
 `jetty.deploy.monitoredDir`::
 The name of the monitored directory.
 `jetty.deploy.scanInterval`::
-The scan period in seconds, that is how frequently the `DeploymentManager` wakes up to scan the monitored directory for changes.
+The scan period in seconds, that is how frequently the `GoalDeployer` wakes up to scan the monitored directory for changes.
 Setting `jetty.deploy.scanInterval=0` disabled _hot_ deployment so that only static deployment will be possible (see also xref:deploy/index.adoc#hot-static[here] for more information).
 
 [[eeN-webapp]]

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.ee.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
@@ -132,7 +132,7 @@ public class EE9Activator implements BundleActivator
                 server.setAttribute(OSGiServerConstants.SERVER_CLASSPATH_BUNDLES, contributedBundles);
             }
 
-            Optional<DeploymentManager> deployer = getDeploymentManager(server);
+            Optional<GoalDeployer> deployer = getDeploymentManager(server);
             BundleWebAppProvider webAppProvider = null;
             BundleContextProvider contextProvider = null;
 
@@ -146,8 +146,8 @@ public class EE9Activator implements BundleActivator
 
             if (deployer.isPresent())
             {
-                DeploymentManager deploymentManager = deployer.get();
-                Collection<AbstractContextProvider> osgiProviders = deploymentManager.getBeans(AbstractContextProvider.class);
+                GoalDeployer goalDeployer = deployer.get();
+                Collection<AbstractContextProvider> osgiProviders = goalDeployer.getBeans(AbstractContextProvider.class);
 
                 for (AbstractContextProvider provider : osgiProviders)
                 {
@@ -165,14 +165,14 @@ public class EE9Activator implements BundleActivator
 
                 if (contextProvider == null)
                 {
-                    contextProvider = new BundleContextProvider(server, deploymentManager, ENVIRONMENT, new EE9ContextFactory(_myBundle));
-                    deploymentManager.addBean(contextProvider);
+                    contextProvider = new BundleContextProvider(server, goalDeployer, ENVIRONMENT, new EE9ContextFactory(_myBundle));
+                    goalDeployer.addBean(contextProvider);
                 }
 
                 if (webAppProvider == null)
                 {
-                    webAppProvider = new BundleWebAppProvider(server, deploymentManager, ENVIRONMENT, new EE9WebAppFactory(_myBundle));
-                    deploymentManager.addBean(webAppProvider);
+                    webAppProvider = new BundleWebAppProvider(server, goalDeployer, ENVIRONMENT, new EE9WebAppFactory(_myBundle));
+                    goalDeployer.addBean(webAppProvider);
                 }
 
                 //ensure the providers are configured with the extra bundles that must be scanned from the container classpath
@@ -208,9 +208,9 @@ public class EE9Activator implements BundleActivator
         {
         }
 
-        private Optional<DeploymentManager> getDeploymentManager(Server server)
+        private Optional<GoalDeployer> getDeploymentManager(Server server)
         {
-            Collection<DeploymentManager> deployers = server.getBeans(DeploymentManager.class);
+            Collection<GoalDeployer> deployers = server.getBeans(GoalDeployer.class);
             return deployers.stream().findFirst();
         }
 

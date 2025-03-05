@@ -1094,7 +1094,7 @@ public class XmlConfiguration
                 }
             }
 
-            throw new NoSuchMethodException(methodName);
+            throw new NoSuchMethodException(obj + " . " + methodName + "(" + args + ")");
         }
 
         /**

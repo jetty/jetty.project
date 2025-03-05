@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.ContextHandlerDeployer;
+import org.eclipse.jetty.deploy.Deployer;
 import org.eclipse.jetty.osgi.util.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -95,7 +95,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         }
     }
 
-    public BundleWebAppProvider(Server server, ContextHandlerDeployer contextHandlerManagement, String environment, ContextFactory contextFactory)
+    public BundleWebAppProvider(Server server, Deployer contextHandlerManagement, String environment, ContextFactory contextFactory)
     {
         super(server, contextHandlerManagement, environment, contextFactory);
     }

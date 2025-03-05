@@ -25,9 +25,9 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
 import org.eclipse.jetty.deploy.DeploymentScanner;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.deploy.internal.DeploymentGraph;
 import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee11.webapp.Configuration;
@@ -70,11 +70,11 @@ public class DeploymentErrorTest
 
     private StacklessLogging stacklessLogging;
     private Server server;
-    private DeploymentManager deploymentManager;
+    private GoalDeployer _goalDeployer;
 
     public Path startServer(Consumer<Path> docrootSetupConsumer) throws Exception
     {
-        stacklessLogging = new StacklessLogging(WebAppContext.class, DeploymentManager.class, NoClassDefFoundError.class);
+        stacklessLogging = new StacklessLogging(WebAppContext.class, GoalDeployer.class, NoClassDefFoundError.class);
 
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -88,8 +88,8 @@ public class DeploymentErrorTest
         Environment.ensure("ee11");
 
         // Deployment Manager
-        deploymentManager = new DeploymentManager();
-        deploymentManager.setContexts(contexts);
+        _goalDeployer = new GoalDeployer();
+        _goalDeployer.setContexts(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
 
@@ -102,14 +102,14 @@ public class DeploymentErrorTest
         }
 
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server, deploymentManager);
+        DeploymentScanner deploymentScanner = new DeploymentScanner(server, _goalDeployer);
         DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee11");
         envConfig.setContextHandlerClass("org.eclipse.jetty.ee11.webapp.WebAppContext");
         deploymentScanner.setScanInterval(1);
         deploymentScanner.addMonitoredDirectory(docroots);
-        deploymentManager.addBean(deploymentScanner);
+        _goalDeployer.addBean(deploymentScanner);
 
-        server.addBean(deploymentManager);
+        server.addBean(_goalDeployer);
 
         // Server handlers
         server.setHandler(new Handler.Sequence(contexts, new DefaultHandler()));
@@ -175,7 +175,7 @@ public class DeploymentErrorTest
     {
         startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots));
 
-        List<ContextHandler> contexts = deploymentManager.getContextHandlers().stream().toList();
+        List<ContextHandler> contexts = _goalDeployer.getContextHandlers().stream().toList();
         assertThat("Contexts tracked", contexts.size(), is(1));
         String contextPath = "/badapp-uaf";
         ContextHandler context = findContext(contextPath, contexts);
@@ -213,15 +213,15 @@ public class DeploymentErrorTest
 
         String contextPath = "/badapp";
         AppLifeCycleTrackingBinding startTracking = new AppLifeCycleTrackingBinding(contextPath);
-        DeploymentManager deploymentManager = server.getBean(DeploymentManager.class);
-        deploymentManager.addLifeCycleBinding(startTracking);
+        GoalDeployer goalDeployer = server.getBean(GoalDeployer.class);
+        goalDeployer.addLifeCycleBinding(startTracking);
 
         copyBadApp("badapp.xml", docroots);
 
         // Wait for deployment manager to do its thing
         assertThat("ContextHandlerLifeCycle.FAILED event occurred", startTracking.failedLatch.await(3, TimeUnit.SECONDS), is(true));
 
-        List<ContextHandler> apps = deploymentManager.getContextHandlers().stream().toList();
+        List<ContextHandler> apps = goalDeployer.getContextHandlers().stream().toList();
         assertThat("Contexts tracked", apps.size(), is(1));
         ContextHandler context = findContext(contextPath, apps);
         assertNotNull(context);
@@ -258,15 +258,15 @@ public class DeploymentErrorTest
 
         String contextPath = "/badapp-uaf";
         AppLifeCycleTrackingBinding startTracking = new AppLifeCycleTrackingBinding(contextPath);
-        DeploymentManager deploymentManager = server.getBean(DeploymentManager.class);
-        deploymentManager.addLifeCycleBinding(startTracking);
+        GoalDeployer goalDeployer = server.getBean(GoalDeployer.class);
+        goalDeployer.addLifeCycleBinding(startTracking);
 
         copyBadApp("badapp-unavailable-false.xml", docroots);
 
         // Wait for deployment manager to do its thing
         assertTrue(startTracking.startedLatch.await(3, TimeUnit.SECONDS));
 
-        List<ContextHandler> apps = deploymentManager.getContextHandlers().stream().toList();
+        List<ContextHandler> apps = goalDeployer.getContextHandlers().stream().toList();
         assertThat("Contexts tracked", apps.size(), is(1));
         ContextHandler context = findContext(contextPath, apps);
         assertNotNull(context);
@@ -372,7 +372,7 @@ public class DeploymentErrorTest
         }
 
         @Override
-        public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler)
+        public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler)
         {
             if (contextHandler.getContextPath().equalsIgnoreCase(expectedContextPath))
             {

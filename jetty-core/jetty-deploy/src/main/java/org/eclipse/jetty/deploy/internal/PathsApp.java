@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.DeploymentScanner;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.FileID;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A representation of all the filesystem components that are used to
- * create a {@link ContextHandler} and push it through the {@link org.eclipse.jetty.deploy.DeploymentManager}.
+ * create a {@link ContextHandler} and push it through the {@link GoalDeployer}.
  */
 public class PathsApp
 {

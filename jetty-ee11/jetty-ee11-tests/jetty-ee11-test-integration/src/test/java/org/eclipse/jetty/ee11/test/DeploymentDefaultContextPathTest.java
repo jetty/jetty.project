@@ -23,8 +23,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentScanner;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
@@ -58,18 +58,18 @@ public class DeploymentDefaultContextPathTest
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        DeploymentManager deploymentManager = new DeploymentManager();
-        deploymentManager.setContexts(contexts);
-        server.addBean(deploymentManager);
+        GoalDeployer goalDeployer = new GoalDeployer();
+        goalDeployer.setContexts(contexts);
+        server.addBean(goalDeployer);
 
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server, deploymentManager);
+        DeploymentScanner deploymentScanner = new DeploymentScanner(server, goalDeployer);
         deploymentScanner.addMonitoredDirectory(webappsDir);
         deploymentScanner.setScanInterval(1);
 
         DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("ee11");
         environmentConfig.setDefaultContextHandlerClass(WebAppContext.class.getName());
 
-        deploymentManager.addBean(deploymentScanner);
+        goalDeployer.addBean(deploymentScanner);
 
         server.setHandler(contexts);
         server.start();

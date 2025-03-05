@@ -8,35 +8,38 @@
 <!-- provided directories for web applications and hot deploying     -->
 <!-- through the DeploymentManager.                                  -->
 <!-- =============================================================== -->
-<Configure id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
-  <Arg name="server">
-    <Ref refid="Server" />
-  </Arg>
-  <Arg name="deploymentManager">
-    <Ref refid="deploymentManager" />
-  </Arg>
-  <Call name="addMonitoredDirectory">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
     <Arg>
-      <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
-        <Arg>
-          <Property name="jetty.base" />
-        </Arg>
-        <Arg>
-          <Property name="jetty.deploy.monitoredDir" default="webapps" />
-        </Arg>
-      </Call>
+      <New id="deploymentScanner" class="org.eclipse.jetty.deploy.DeploymentScanner">
+        <Arg name="server"><Ref refid="Server"/></Arg>
+        <Arg name="deployer"><Ref refid="Deployer"/></Arg>
+        <Call name="addMonitoredDirectory">
+          <Arg>
+            <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
+              <Arg>
+                <Property name="jetty.base" />
+              </Arg>
+              <Arg>
+                <Property name="jetty.deploy.monitoredDir" default="webapps" />
+              </Arg>
+            </Call>
+          </Arg>
+        </Call>
+        <Set name="environmentsDirectory">
+          <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
+            <Arg>
+              <Property name="jetty.base" />
+            </Arg>
+            <Arg>
+              <Property name="jetty.deploy.environmentsDir" default="environments" />
+            </Arg>
+          </Call>
+        </Set>
+        <Set name="deferInitialScan" property="jetty.deploy.deferInitialScan" />
+        <Set name="scanInterval" property="jetty.deploy.scanInterval" />
+      </New>
     </Arg>
   </Call>
-  <Set name="environmentsDirectory">
-    <Call name="resolvedPath" class="org.eclipse.jetty.xml.XmlConfiguration">
-      <Arg>
-        <Property name="jetty.base" />
-      </Arg>
-      <Arg>
-        <Property name="jetty.deploy.environmentsDir" default="environments" />
-      </Arg>
-    </Call>
-  </Set>
-  <Set name="deferInitialScan" property="jetty.deploy.deferInitialScan" />
-  <Set name="scanInterval" property="jetty.deploy.scanInterval" />
 </Configure>
