@@ -715,19 +715,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void succeeded()
         {
-            HttpStream stream;
-            boolean completeStream;
-            try (AutoLock ignored = _lock.lock())
-            {
-                assert _callbackCompleted;
-                assert _callbackFailure == null;
-                _streamSendState = StreamSendState.LAST_COMPLETE;
-                completeStream = _handling == null;
-                stream = _stream;
-            }
-
-            if (completeStream)
-                completeStream(stream, null);
+            complete(null);
         }
 
         /**
@@ -735,6 +723,11 @@ public class HttpChannelState implements HttpChannel, Components
          */
         @Override
         public void failed(Throwable failure)
+        {
+            complete(failure);
+        }
+
+        private void complete(Throwable failure)
         {
             HttpStream stream;
             boolean completeStream;
