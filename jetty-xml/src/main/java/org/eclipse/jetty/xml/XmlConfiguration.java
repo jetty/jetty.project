@@ -1884,7 +1884,7 @@ public class XmlConfiguration
             List<Object> objects = new ArrayList<>(args.length);
             for (String arg : args)
             {
-                if (!arg.toLowerCase(Locale.ENGLISH).endsWith(".properties") && (arg.indexOf('=') < 0))
+                if (arg.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                 {
                     XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(arg));
                     if (last != null)
