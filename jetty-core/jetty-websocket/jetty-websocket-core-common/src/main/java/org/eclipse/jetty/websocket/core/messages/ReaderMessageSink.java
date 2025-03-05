@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.util.function.Consumer;
+
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
 

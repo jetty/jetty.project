@@ -115,7 +115,7 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
 
         public Stream(CoreSession coreSession, MethodHolder methodHolder, List<RegisteredDecoder> decoders)
         {
-            this(coreSession, methodHandle, decoders, null);
+            this(coreSession, methodHolder, decoders, null);
         }
 
         public Stream(CoreSession coreSession, MethodHolder methodHolder, List<RegisteredDecoder> decoders, Consumer<Throwable> onError)

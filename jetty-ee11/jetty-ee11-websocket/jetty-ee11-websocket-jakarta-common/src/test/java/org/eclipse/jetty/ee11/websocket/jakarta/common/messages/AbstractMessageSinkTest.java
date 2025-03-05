@@ -44,7 +44,7 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
         return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build(), components, false));
     }
 
-    public <T> MethodHandle getAcceptHandle(Consumer<T> copy, Class<T> type)
+    public <T> MethodHolder getAcceptHandle(Consumer<T> copy, Class<T> type)
     {
         try
         {
@@ -52,7 +52,7 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
             String name = "accept";
             MethodType methodType = MethodType.methodType(void.class, type);
             MethodHandle handle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(refc, name, methodType);
-            return handle.bindTo(copy);
+            return MethodHolder.from(handle.bindTo(copy));
         }
         catch (NoSuchMethodException | IllegalAccessException e)
         {
