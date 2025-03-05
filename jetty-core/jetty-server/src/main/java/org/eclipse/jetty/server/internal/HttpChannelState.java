@@ -615,6 +615,8 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    // HandlerInvoker is used as the Response's _writeCallback when ChannelCallback is succeeded and the last send still
+    // needs to be done, i.e.: _streamSendState set to LAST_SENDING by lockedLastStreamSend().
     private class HandlerInvoker implements Invocable.Task, Callback
     {
         @Override
