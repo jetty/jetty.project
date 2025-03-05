@@ -38,6 +38,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     private final HttpServletResponse httpServletResponse;
     private final Map<String, List<String>> headers;
     private final int status;
+    private final HttpFields.Mutable httpFields;
 
     public DelegatedServerUpgradeResponse(ServerUpgradeResponse response)
     {
@@ -50,7 +51,9 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
         this.upgradeResponse = response;
         this.httpServletResponse = (HttpServletResponse)Response.as(response, ServletContextResponse.class).getRequest()
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
-        this.headers = HttpFields.asMap(upgraded ? upgradeResponse.getHeaders().asImmutable() : upgradeResponse.getHeaders());
+
+        this.httpFields = upgradeResponse.getHeaders();
+        this.headers = HttpFields.asMap(upgraded ? httpFields.asImmutable() : httpFields);
 
         // Fake status code if already upgraded, as it not set at the time this is created.
         HttpVersion httpVersion = response.getRequest().getConnectionMetaData().getHttpVersion();
@@ -63,7 +66,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
         if (upgraded)
             throw new IllegalStateException("Already Upgraded to WebSocket");
 
-        upgradeResponse.getHeaders().add(name, value);
+        httpFields.add(name, value);
     }
 
     @Override
@@ -72,7 +75,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
         if (upgraded)
             throw new IllegalStateException("Already Upgraded to WebSocket");
 
-        headers.put(name, List.of(value));
+        httpFields.put(name, List.of(value));
     }
 
     @Override
@@ -81,7 +84,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
         if (upgraded)
             throw new IllegalStateException("Already Upgraded to WebSocket");
 
-        headers.put(name, values);
+        httpFields.put(name, values);
     }
 
     @Override
@@ -99,13 +102,13 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public String getHeader(String name)
     {
-        return upgradeResponse.getHeaders().get(name);
+        return httpFields.get(name);
     }
 
     @Override
     public Set<String> getHeaderNames()
     {
-        return upgradeResponse.getHeaders().getFieldNamesCollection();
+        return httpFields.getFieldNamesCollection();
     }
 
     @Override
@@ -117,7 +120,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public List<String> getHeaders(String name)
     {
-        return upgradeResponse.getHeaders().getValuesList(name);
+        return httpFields.getValuesList(name);
     }
 
     @Override
