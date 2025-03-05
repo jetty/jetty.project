@@ -125,7 +125,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private final Server server;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
-    private final PathsContextHandlerFactory contextHandlerFactory = new PathsContextHandlerFactory();
+    private final ContextHandlerFactory contextHandlerFactory;
     private final Map<String, PathsApp> trackedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
 
@@ -185,12 +185,33 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         @Name("deployer") Deployer deployer,
         @Name("filenameFilter") FilenameFilter filter)
     {
-        installBean(contextHandlerFactory);
-        installBean(new DumpableCollection("monitored", monitoredDirs));
+        this(server, deployer, filter, null);
+    }
+
+    /**
+     * <p>
+     * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
+     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * it's configured destination.
+     * </p>
+     *
+     * @param server the server reference to use for any XML based deployments.
+     * @param deployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
+     * @param filter A custom FilenameFilter to control what files the {@link Scanner} monitors for changes.
+     */
+    public DeploymentScanner(
+        @Name("server") Server server,
+        @Name("deployer") Deployer deployer,
+        @Name("filenameFilter") FilenameFilter filter,
+        @Name("contextHandlerFactory") ContextHandlerFactory contextHandlerFactory)
+    {
+        this.contextHandlerFactory = contextHandlerFactory == null ? new PathsContextHandlerFactory() : contextHandlerFactory;
+        installBean(this.contextHandlerFactory);
         this.server = Objects.requireNonNull(server);
         this.deployer = deployer == null ? server.getBean(Deployer.class) : deployer;
         addBean(deployer);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
+        installBean(new DumpableCollection("monitored", monitoredDirs));
     }
 
     /**
@@ -743,7 +764,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         PathsContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
-                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app, deployAttributes);
+                        Path mainPath = app.getMainPath();
+                        if (mainPath == null)
+                            throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app.getEnvironment(), mainPath, app.getPaths().keySet(), deployAttributes);
                         app.setContextHandler(contextHandler);
 
                         // Introduce the ContextHandler to the DeploymentManager
