@@ -73,7 +73,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final long _maxHeapMemory;
     private final long _maxDirectMemory;
     private final IntUnaryOperator _bucketIndexFor;
-    private final IntUnaryOperator _bucketCapacity;
+    private final IntUnaryOperator _bucketCapacityFor;
     private final AtomicBoolean _evictor = new AtomicBoolean(false);
     private final AtomicLong _reserved = new AtomicLong();
     private final ConcurrentMap<Integer, Long> _noBucketDirectAcquires = new ConcurrentHashMap<>();
@@ -141,30 +141,27 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param bucketIndexFor a {@link IntUnaryOperator} that takes a capacity and returns a bucket index
-     * @param bucketCapacity a {@link IntUnaryOperator} that takes a bucket index and returns a capacity
+     * @param bucketCapacityFor a {@link IntUnaryOperator} that takes a bucket index and returns a capacity
      */
-    protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
+    protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacityFor)
     {
         if (minCapacity <= 0)
             minCapacity = 0;
         factor = factor <= 0 ? DEFAULT_FACTOR : factor;
         if (maxCapacity <= 0)
             maxCapacity = DEFAULT_MAX_CAPACITY_BY_FACTOR * factor;
-        if ((maxCapacity % factor) != 0 || factor >= maxCapacity)
-            throw new IllegalArgumentException(String.format("The capacity factor(%d) must be a divisor of maxCapacity(%d)", factor, maxCapacity));
 
-        int f = factor;
         if (bucketIndexFor == null)
-            bucketIndexFor = c -> (c - 1) / f;
-        if (bucketCapacity == null)
-            bucketCapacity = i -> (i + 1) * f;
+            bucketIndexFor = defaultBucketIndexFor(minCapacity, factor);
+        if (bucketCapacityFor == null)
+            bucketCapacityFor = defaultBucketCapacityFor(minCapacity, factor);
 
         int length = bucketIndexFor.applyAsInt(maxCapacity) + 1;
         RetainedBucket[] directArray = new RetainedBucket[length];
         RetainedBucket[] indirectArray = new RetainedBucket[length];
         for (int i = 0; i < directArray.length; i++)
         {
-            int capacity = Math.min(bucketCapacity.applyAsInt(i), maxCapacity);
+            int capacity = bucketCapacityFor.applyAsInt(i);
             directArray[i] = new RetainedBucket(capacity, maxBucketSize);
             indirectArray[i] = new RetainedBucket(capacity, maxBucketSize);
         }
@@ -176,7 +173,20 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         _maxHeapMemory = maxMemory(maxHeapMemory);
         _maxDirectMemory = maxMemory(maxDirectMemory);
         _bucketIndexFor = bucketIndexFor;
-        _bucketCapacity = bucketCapacity;
+        _bucketCapacityFor = bucketCapacityFor;
+    }
+
+    private static IntUnaryOperator defaultBucketIndexFor(int minCapacity, int factor)
+    {
+        int minCapIdx = (minCapacity - 1) / factor;
+        return capacity -> ((capacity - 1) / factor) - minCapIdx;
+    }
+
+    private static IntUnaryOperator defaultBucketCapacityFor(int minCapacity, int factor)
+    {
+        int minCapIdx = (minCapacity - 1) / factor;
+        // Add 1 because indexes are zero-based.
+        return idx -> (idx + minCapIdx + 1) * factor;
     }
 
     private long maxMemory(long maxMemory)
@@ -252,7 +262,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             ConcurrentMap<Integer, Long> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
             int idx = _bucketIndexFor.applyAsInt(size);
-            int key = _bucketCapacity.applyAsInt(idx);
+            int key = _bucketCapacityFor.applyAsInt(idx);
             map.compute(key, (k, v) ->
             {
                 if (v == null)
@@ -367,12 +377,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private RetainedBucket bucketFor(int capacity, boolean direct)
     {
-        if (capacity < getMinCapacity())
+        if (capacity < getMinCapacity() || capacity > getMaxCapacity())
             return null;
         int idx = _bucketIndexFor.applyAsInt(capacity);
         RetainedBucket[] buckets = direct ? _direct : _indirect;
-        if (idx >= buckets.length)
-            return null;
         return buckets[idx];
     }
 
@@ -795,8 +803,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         public WithBucketCapacities(long maxHeapMemory, long maxDirectMemory, int... capacities)
         {
-            super(-1, 1, sort(capacities)[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
-                c -> floorBucketIndexFor(c, capacities), i -> bucketCapacityForIndex(i, capacities));
+            this(sort(Arrays.copyOf(capacities, capacities.length)), maxHeapMemory, maxDirectMemory);
+        }
+
+        private WithBucketCapacities(int[] capacities, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(0, -1, capacities[capacities.length - 1], Integer.MAX_VALUE, maxHeapMemory, maxDirectMemory,
+                bucketIndexFor(capacities), bucketCapacityFor(capacities));
         }
 
         private static int[] sort(int... values)
@@ -807,43 +820,48 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return values;
         }
 
-        private static int bucketCapacityForIndex(int idx, int... capacities)
+        private static IntUnaryOperator bucketIndexFor(int[] capacities)
         {
-            if (idx >= capacities.length)
+            return capacity ->
             {
-                // An index over the capacities array's length is considered
-                // to refer to a multiple of the largest configured capacity;
-                // this logic is only meant for recordNoBucketAcquire().
-                int largestCapacity = capacities[capacities.length - 1];
-                int virtualIdx = idx - (capacities.length - 1);
-                return (virtualIdx + 1) * largestCapacity;
-            }
-            return capacities[idx];
-        }
-
-        private static int floorBucketIndexFor(int capacity, int... capacities)
-        {
-            int largestCapacity = capacities[capacities.length - 1];
-            if (capacity > largestCapacity)
-            {
+                int maxIdx = capacities.length - 1;
+                int largestCapacity = capacities[maxIdx];
+                if (capacity <= largestCapacity)
+                {
+                    for (int i = 0; i <= maxIdx; i++)
+                    {
+                        if (capacities[i] > capacity)
+                            return i;
+                    }
+                    return maxIdx;
+                }
                 // A capacity over the largest configured capacity returns an
                 // index that corresponds to where in the capacities array it
                 // would stand if the latter had more entries that would all
                 // be multiples of the largest configured capacity;
                 // this logic is only meant for recordNoBucketAcquire().
-                int remainder = capacity % largestCapacity != 0 ? 1 : 0;
-                int overLargestCapacityFactor = (capacity / largestCapacity) + remainder;
-                return overLargestCapacityFactor - 1 + capacities.length - 1;
-            }
+                int remainder = (capacity % largestCapacity) != 0 ? 1 : 0;
+                // The index of the virtual bucket, starting from maxIdx;
+                // the first virtual bucket would have idx=1, and so on.
+                int overMaxIdx = (capacity / largestCapacity) + remainder;
+                return maxIdx + overMaxIdx - 1;
+            };
+        }
 
-            int idx = 0;
-            for (int i = 0; i < capacities.length; i++)
+        private static IntUnaryOperator bucketCapacityFor(int[] capacities)
+        {
+            return idx ->
             {
-                idx = i;
-                if (capacities[i] > capacity)
-                    break;
-            }
-            return idx;
+                int maxIdx = capacities.length - 1;
+                if (idx <= maxIdx)
+                    return capacities[idx];
+                // An index over the capacities array's length is considered
+                // to refer to a multiple of the largest configured capacity;
+                // this logic is only meant for recordNoBucketAcquire().
+                int largestCapacity = capacities[maxIdx];
+                int overMaxIdx = idx - maxIdx + 1;
+                return overMaxIdx * largestCapacity;
+            };
         }
     }
 
@@ -866,17 +884,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
-            super(minCapacity,
-                computeMinCapacity(minCapacity),
+            super(computeMinCapacity(minCapacity),
+                -1,
                 computeMaxCapacity(maxCapacity),
                 maxBucketSize,
                 maxHeapMemory,
                 maxDirectMemory,
-                // The bucket indices are the powers of 2, but those powers up to minCapacity are skipped so they must be
-                // substracted when computing the index and added when computing the capacity; so if minCapacity is 1024, any
-                // number from 0 to 1024 must return index 0, and index 0 must return capacity 1024.
-                c -> Integer.SIZE - Integer.numberOfLeadingZeros(c - 1) - MathUtils.ceilLog2(computeMinCapacity(minCapacity)),
-                i -> 1 << i + MathUtils.ceilLog2(computeMinCapacity(minCapacity))
+                bucketIndexFor(computeMinCapacity(minCapacity)),
+                bucketCapacityFor(computeMinCapacity(minCapacity))
             );
         }
 
@@ -888,6 +903,18 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private static int computeMaxCapacity(int maxCapacity)
         {
             return maxCapacity <= 0 ? 65536 : maxCapacity;
+        }
+
+        private static IntUnaryOperator bucketIndexFor(int minCapacity)
+        {
+            int minCapIdx = MathUtils.ceilLog2(minCapacity);
+            return c -> MathUtils.ceilLog2(c) - minCapIdx;
+        }
+
+        private static IntUnaryOperator bucketCapacityFor(int minCapacity)
+        {
+            int minCapIdx = MathUtils.ceilLog2(minCapacity);
+            return i -> 1 << (i + minCapIdx);
         }
     }
 
