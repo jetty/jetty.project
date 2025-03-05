@@ -88,8 +88,7 @@ public class DeploymentErrorTest
         Environment.ensure("ee11");
 
         // Deployment Manager
-        _goalDeployer = new GoalDeployer();
-        _goalDeployer.setContexts(contexts);
+        _goalDeployer = new GoalDeployer(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
 
@@ -107,7 +106,7 @@ public class DeploymentErrorTest
         envConfig.setContextHandlerClass("org.eclipse.jetty.ee11.webapp.WebAppContext");
         deploymentScanner.setScanInterval(1);
         deploymentScanner.addMonitoredDirectory(docroots);
-        _goalDeployer.addBean(deploymentScanner);
+        server.addBean(deploymentScanner);
 
         server.addBean(_goalDeployer);
 

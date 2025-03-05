@@ -13,6 +13,7 @@ lib/jetty-deploy-${jetty.version}.jar
 
 [files]
 webapps/
+environments/
 
 [xml]
 etc/jetty-deployment-scanner.xml

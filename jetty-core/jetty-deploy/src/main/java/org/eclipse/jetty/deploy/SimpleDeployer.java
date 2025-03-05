@@ -50,8 +50,6 @@ public class SimpleDeployer extends ContainerLifeCycle implements Deployer
             _contexts.deployHandler(contextHandler, blocker);
             blocker.get();
 
-            System.err.println("Deploy " + contextHandler + " to " + _contexts);
-            new Throwable(Thread.currentThread().getName()).printStackTrace();
             if (_contexts.isRunning())
                 contextHandler.start();
             _contexts.manage(contextHandler);

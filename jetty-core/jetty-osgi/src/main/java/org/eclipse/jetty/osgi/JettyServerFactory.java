@@ -210,8 +210,7 @@ public class JettyServerFactory
 
        if (goalDeployer == null)
        {
-           goalDeployer = new GoalDeployer();
-           goalDeployer.setContexts(getContextHandlerCollection(server));
+           goalDeployer = new GoalDeployer(getContextHandlerCollection(server));
            server.addBean(goalDeployer);
        }
        

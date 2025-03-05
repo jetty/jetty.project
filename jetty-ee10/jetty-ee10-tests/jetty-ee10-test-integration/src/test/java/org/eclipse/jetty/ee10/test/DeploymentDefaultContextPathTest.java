@@ -58,8 +58,7 @@ public class DeploymentDefaultContextPathTest
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        GoalDeployer goalDeployer = new GoalDeployer();
-        goalDeployer.setContexts(contexts);
+        GoalDeployer goalDeployer = new GoalDeployer(contexts);
         server.addBean(goalDeployer);
 
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, goalDeployer);
@@ -69,7 +68,7 @@ public class DeploymentDefaultContextPathTest
         DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("ee10");
         environmentConfig.setDefaultContextHandlerClass(WebAppContext.class.getName());
 
-        goalDeployer.addBean(deploymentScanner);
+        server.addBean(deploymentScanner);
 
         server.setHandler(contexts);
         server.start();

@@ -68,7 +68,6 @@ public class DeploymentErrorTest
     private StacklessLogging stacklessLogging;
     private Server server;
     private GoalDeployer _goalDeployer;
-    private ContextHandlerCollection contexts;
 
     public Path startServer(Consumer<Path> docrootSetupConsumer, Path docroots) throws Exception
     {
@@ -80,14 +79,13 @@ public class DeploymentErrorTest
         server.addConnector(connector);
         
         // Empty contexts collections
-        contexts = new ContextHandlerCollection();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
 
         // Environment
         Environment.ensure("ee9");
 
         // Deployment Manager
-        _goalDeployer = new GoalDeployer();
-        _goalDeployer.setContexts(contexts);
+        _goalDeployer = new GoalDeployer(contexts);
         Path testClasses = MavenTestingUtils.getTargetPath("test-classes");
         System.setProperty("maven.test.classes", testClasses.toAbsolutePath().toString());
 
@@ -102,8 +100,8 @@ public class DeploymentErrorTest
         envConfig.setContextHandlerClass("org.eclipse.jetty.ee9.webapp.WebAppContext");
         deploymentScanner.setScanInterval(1);
         deploymentScanner.addMonitoredDirectory(docroots);
-        _goalDeployer.addBean(deploymentScanner);
         server.addBean(_goalDeployer);
+        server.addBean(deploymentScanner);
 
         // Server handlers
         server.setHandler(contexts);

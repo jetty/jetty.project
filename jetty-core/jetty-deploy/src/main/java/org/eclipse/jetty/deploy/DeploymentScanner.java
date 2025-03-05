@@ -41,6 +41,7 @@ import org.eclipse.jetty.deploy.internal.PathsContextHandlerFactory;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathCollators;
@@ -121,13 +123,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private final Server server;
-    private final Deployer _deployer;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
     private final PathsContextHandlerFactory contextHandlerFactory = new PathsContextHandlerFactory();
     private final Map<String, PathsApp> trackedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
 
+    private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
     private Path environmentsDir;
     private int scanInterval = 10;
@@ -183,12 +185,12 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         @Name("deployer") Deployer deployer,
         @Name("filenameFilter") FilenameFilter filter)
     {
+        installBean(contextHandlerFactory);
+        installBean(new DumpableCollection("monitored", monitoredDirs));
         this.server = Objects.requireNonNull(server);
-        if (deployer == null)
-            deployer = server.getBean(Deployer.class);
-        this._deployer = Objects.requireNonNull(deployer);
+        this.deployer = deployer == null ? server.getBean(Deployer.class) : deployer;
+        addBean(deployer);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
-        addBean(_deployer);
     }
 
     /**
@@ -549,6 +551,24 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (LOG.isDebugEnabled())
             LOG.debug("{} doStart()", this);
 
+        if (deployer == null)
+        {
+            deployer = server.getBean(Deployer.class);
+            if (deployer == null)
+            {
+                Collection<ContextHandlerCollection> chcs = server.getContainedBeans(ContextHandlerCollection.class);
+                if (chcs.size() == 1)
+                {
+                    deployer = new SimpleDeployer(chcs.iterator().next());
+                    addBean(deployer, true);
+                    LifeCycle.start(deployer);
+                }
+            }
+
+            if (deployer == null)
+                throw new IllegalStateException("No deployer available");
+        }
+
         if (monitoredDirs.isEmpty())
             throw new IllegalStateException("No monitored dir specified");
 
@@ -696,7 +716,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                     {
                         // Track removal
                         removedApps.add(app);
-                        _deployer.undeploy(app.getContextHandler());
+                        deployer.undeploy(app.getContextHandler());
                     }
                     case ADD ->
                     {
@@ -728,7 +748,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
 
                         // Introduce the ContextHandler to the DeploymentManager
                         startTracking(app);
-                        _deployer.deploy(app.getContextHandler());
+                        deployer.deploy(app.getContextHandler());
                     }
                 }
             }

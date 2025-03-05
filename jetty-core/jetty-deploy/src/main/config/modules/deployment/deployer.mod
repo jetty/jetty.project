@@ -7,6 +7,8 @@ deployment
 [provides]
 deployment/deployer
 
-[depend]
-simple-deployer
+[lib]
+lib/jetty-deploy-${jetty.version}.jar
 
+[xml]
+etc/jetty-simple-deployer.xml
