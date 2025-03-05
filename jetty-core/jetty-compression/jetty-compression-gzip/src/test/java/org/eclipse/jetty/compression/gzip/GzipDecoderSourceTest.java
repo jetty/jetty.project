@@ -16,12 +16,16 @@ package org.eclipse.jetty.compression.gzip;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.compression.gzip.internal.GzipDecoderSource;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GzipDecoderSourceTest extends AbstractGzipTest
 {
@@ -36,9 +40,66 @@ public class GzipDecoderSourceTest extends AbstractGzipTest
 
         Content.Source fileSource = Content.Source.from(sizedPool, compressed);
         Content.Source decoderSource = gzip.newDecoderSource(fileSource);
+        assertFalse(((GzipDecoderSource)decoderSource).isReleased());
 
         String result = Content.Source.asString(decoderSource);
         String expected = Files.readString(uncompressed);
         assertEquals(expected, result);
+        assertEquals("FINISHED", ((GzipDecoderSource)decoderSource).getState());
+        assertTrue(((GzipDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk eof = decoderSource.read();
+        assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
+
+        decoderSource.fail(new Throwable());
+        assertEquals("ERROR", ((GzipDecoderSource)decoderSource).getState());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
+    }
+
+    @ParameterizedTest
+    @MethodSource("textResources")
+    public void testImmediateFailReleaseAllResources(String textResourceName) throws Exception
+    {
+        startGzip();
+        String compressedName = String.format("%s.%s", textResourceName, gzip.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source decoderSource = gzip.newDecoderSource(fileSource);
+        assertFalse(((GzipDecoderSource)decoderSource).isReleased());
+
+        decoderSource.fail(new Throwable());
+        assertEquals("ERROR", ((GzipDecoderSource)decoderSource).getState());
+        assertTrue(((GzipDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
+    }
+
+    @ParameterizedTest
+    @MethodSource("textResources")
+    public void testFailAfterReadReleaseAllResources(String textResourceName) throws Exception
+    {
+        startGzip();
+        String compressedName = String.format("%s.%s", textResourceName, gzip.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source decoderSource = gzip.newDecoderSource(fileSource);
+        assertFalse(((GzipDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk chunk = decoderSource.read();
+        assertTrue(chunk.hasRemaining());
+        chunk.release();
+        assertFalse(((GzipDecoderSource)decoderSource).isReleased());
+
+        decoderSource.fail(new Throwable());
+        assertEquals("ERROR", ((GzipDecoderSource)decoderSource).getState());
+        assertTrue(((GzipDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
     }
 }

@@ -72,10 +72,7 @@ public abstract class ContentSourceTransformer implements Content.Source
                 rawChunk = Content.Chunk.next(rawChunk);
                 needsRawRead = rawChunk == null;
                 if (rawChunk != null)
-                {
-                    finished = true;
-                    release();
-                }
+                    finish();
                 return failure;
             }
 
@@ -129,10 +126,7 @@ public abstract class ContentSourceTransformer implements Content.Source
                 transformedChunk = Content.Chunk.next(result);
 
                 if (terminated || terminalFailure)
-                {
-                    finished = true;
-                    release();
-                }
+                    finish();
 
                 return result;
             }
@@ -158,7 +152,25 @@ public abstract class ContentSourceTransformer implements Content.Source
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Failing {}", this, failure);
+
         rawSource.fail(failure);
+        needsRawRead = false;
+        if (rawChunk != null)
+            rawChunk.release();
+        rawChunk = Content.Chunk.from(failure, true);
+        if (transformedChunk != null)
+            transformedChunk.release();
+        transformedChunk = rawChunk;
+        finish();
+    }
+
+    private void finish()
+    {
+        if (!finished)
+        {
+            finished = true;
+            release();
+        }
     }
 
     private Content.Chunk process(Content.Chunk rawChunk)

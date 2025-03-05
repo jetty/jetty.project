@@ -43,6 +43,7 @@ public class GzipDecoderSource extends DecoderSource
     private int size;
     private long value;
     private byte flags;
+    private boolean released;
 
     public GzipDecoderSource(Content.Source source, GzipCompression compression, GzipDecoderConfig config)
     {
@@ -254,7 +255,7 @@ public class GzipDecoderSource extends DecoderSource
                             // RFC 1952: Section 2.3.1; ISIZE is the input size modulo 2^32
                             if (value != (inflater.getBytesWritten() & UINT_MAX))
                                 throw new ZipException("Invalid input size");
-                            state = State.INITIAL;
+                            state = State.FINISHED;
                             size = 0;
                             value = 0;
                             return Content.Chunk.EOF;
@@ -272,8 +273,31 @@ public class GzipDecoderSource extends DecoderSource
     }
 
     @Override
+    public void fail(Throwable failure)
+    {
+        super.fail(failure);
+        state = State.ERROR;
+    }
+
+    // Only used for testing.
+    public String getState()
+    {
+        return state.toString();
+    }
+
+    // Only used for testing.
+    public boolean isReleased()
+    {
+        return released;
+    }
+
+    @Override
     protected void release()
     {
-        inflaterEntry.release();
+        if (!released)
+        {
+            inflaterEntry.release();
+            released = true;
+        }
     }
 }
