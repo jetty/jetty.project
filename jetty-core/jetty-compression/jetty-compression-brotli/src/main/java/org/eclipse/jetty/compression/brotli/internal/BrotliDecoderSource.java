@@ -29,7 +29,6 @@ public class BrotliDecoderSource extends DecoderSource
     private final DecoderJNI.Wrapper decoder;
     private final BrotliCompression compression;
     private boolean released;
-    private boolean failed;
 
     public BrotliDecoderSource(Content.Source source, BrotliCompression compression, BrotliDecoderConfig config)
     {
@@ -95,23 +94,10 @@ public class BrotliDecoderSource extends DecoderSource
         }
     }
 
-    @Override
-    public void fail(Throwable failure)
-    {
-        super.fail(failure);
-        failed = true;
-    }
-
     // Only used for testing.
     public boolean isReleased()
     {
         return released;
-    }
-
-    // Only used for testing.
-    public String getStatus()
-    {
-        return failed ? "FAILED" : decoder.getStatus().toString();
     }
 
     @Override

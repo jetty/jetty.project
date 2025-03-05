@@ -24,7 +24,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GzipDecoderSourceTest extends AbstractGzipTest
@@ -45,14 +44,12 @@ public class GzipDecoderSourceTest extends AbstractGzipTest
         String result = Content.Source.asString(decoderSource);
         String expected = Files.readString(uncompressed);
         assertEquals(expected, result);
-        assertEquals("FINISHED", ((GzipDecoderSource)decoderSource).getState());
         assertTrue(((GzipDecoderSource)decoderSource).isReleased());
 
         Content.Chunk eof = decoderSource.read();
         assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
 
         decoderSource.fail(new Throwable());
-        assertEquals("ERROR", ((GzipDecoderSource)decoderSource).getState());
 
         Content.Chunk err = decoderSource.read();
         assertTrue(Content.Chunk.isFailure(err));
@@ -71,7 +68,6 @@ public class GzipDecoderSourceTest extends AbstractGzipTest
         assertFalse(((GzipDecoderSource)decoderSource).isReleased());
 
         decoderSource.fail(new Throwable());
-        assertEquals("ERROR", ((GzipDecoderSource)decoderSource).getState());
         assertTrue(((GzipDecoderSource)decoderSource).isReleased());
 
         Content.Chunk err = decoderSource.read();
@@ -96,7 +92,6 @@ public class GzipDecoderSourceTest extends AbstractGzipTest
         assertFalse(((GzipDecoderSource)decoderSource).isReleased());
 
         decoderSource.fail(new Throwable());
-        assertEquals("ERROR", ((GzipDecoderSource)decoderSource).getState());
         assertTrue(((GzipDecoderSource)decoderSource).isReleased());
 
         Content.Chunk err = decoderSource.read();

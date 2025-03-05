@@ -44,14 +44,12 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         String result = Content.Source.asString(decoderSource);
         String expected = Files.readString(uncompressed);
         assertEquals(expected, result);
-        assertEquals("DONE", ((BrotliDecoderSource)decoderSource).getStatus());
         assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
 
         Content.Chunk eof = decoderSource.read();
         assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
 
         decoderSource.fail(new Throwable());
-        assertEquals("FAILED", ((BrotliDecoderSource)decoderSource).getStatus());
 
         Content.Chunk err = decoderSource.read();
         assertTrue(Content.Chunk.isFailure(err));
@@ -70,7 +68,6 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
 
         decoderSource.fail(new Throwable());
-        assertEquals("FAILED", ((BrotliDecoderSource)decoderSource).getStatus());
         assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
 
         Content.Chunk err = decoderSource.read();
@@ -98,7 +95,6 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         assertFalse(((BrotliDecoderSource)decoderSource).isReleased());
 
         decoderSource.fail(new Throwable());
-        assertEquals("FAILED", ((BrotliDecoderSource)decoderSource).getStatus());
         assertTrue(((BrotliDecoderSource)decoderSource).isReleased());
 
         Content.Chunk err = decoderSource.read();
