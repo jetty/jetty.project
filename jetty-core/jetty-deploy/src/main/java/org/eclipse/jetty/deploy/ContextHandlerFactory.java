@@ -21,10 +21,34 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.component.Environment;
 
+/**
+ * A factory to create a ContextHandler from a set of associated files.
+ * @see DeploymentScanner
+ */
 public interface ContextHandlerFactory
 {
+    String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
+    String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
+    String ENVIRONMENT = "environment";
+    String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
+    String ENVIRONMENT_XML_PATHS = "jetty.deploy.paths.environmentXmls";
+
     /**
-     * TODO: DOCUMENT THIS
+     * @param server The server for the context.
+     * @param environment The environment for the context
+     * @param mainPath The {@link Path} of the main file of the context (e.g. a WAR file or XML}
+     * @param otherPaths Other files associated with the context (e.g. property files)
+     * @param deployAttributes Attributes describing the details of the deployment and that are made available to the
+     *                         {@link org.eclipse.jetty.xml.XmlConfiguration}.  The attribute names can be <UL>
+     *                             <li>Attributes defined in {@link org.eclipse.jetty.server.Deployable}</li>
+     *                             <li>{@link #CONTEXT_HANDLER_CLASS}</li>
+     *                             <li>{@link #CONTEXT_HANDLER_CLASS_DEFAULT}</li>
+     *                             <li>{@link #ENVIRONMENT}</li>
+     *                             <li>{@link #ENVIRONMENT_XML}</li>
+     *                             <li>{@link #ENVIRONMENT_XML_PATHS}</li>
+     *                         </UL>
+     * @return The created {@link ContextHandler}
+     * @throws Exception If there is a problem creating the {@link ContextHandler}
      */
     ContextHandler newContextHandler(Server server, Environment environment, Path mainPath, Set<Path> otherPaths, Attributes deployAttributes) throws Exception;
 }

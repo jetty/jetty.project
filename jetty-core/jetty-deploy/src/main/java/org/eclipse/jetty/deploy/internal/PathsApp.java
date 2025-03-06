@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.deploy.ContextHandlerFactory;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -97,12 +98,12 @@ public class PathsApp
 
     public Environment getEnvironment()
     {
-        return (Environment)getAttributes().getAttribute(PathsContextHandlerFactory.ENVIRONMENT);
+        return (Environment)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT);
     }
 
     public void setEnvironment(Environment env)
     {
-        getAttributes().setAttribute(PathsContextHandlerFactory.ENVIRONMENT, env);
+        getAttributes().setAttribute(ContextHandlerFactory.ENVIRONMENT, env);
     }
 
     public String getEnvironmentName()
@@ -242,7 +243,7 @@ public class PathsApp
         }
 
         // Look for simple old school environment name.
-        String environmentName = (String)getAttributes().getAttribute(PathsContextHandlerFactory.ENVIRONMENT);
+        String environmentName = (String)getAttributes().getAttribute(ContextHandlerFactory.ENVIRONMENT);
         if (StringUtil.isNotBlank(environmentName))
         {
             setEnvironment(Environment.get(environmentName));

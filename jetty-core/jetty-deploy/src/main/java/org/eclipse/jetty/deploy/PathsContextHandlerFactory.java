@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.internal;
+package org.eclipse.jetty.deploy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.deploy.internal.PathsApp;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -40,13 +41,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Creates a {@link ContextHandler} from a {@link PathsApp}.
  */
-public class PathsContextHandlerFactory implements org.eclipse.jetty.deploy.ContextHandlerFactory
+public class PathsContextHandlerFactory implements ContextHandlerFactory
 {
-    public static final String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
-    public static final String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
-    public static final String ENVIRONMENT = "environment";
-    public static final String ENVIRONMENT_XML = "jetty.deploy.environmentXml";
-    public static final String ENVIRONMENT_XML_PATHS = "jetty.deploy.paths.environmentXmls";
     private static final Logger LOG = LoggerFactory.getLogger(PathsContextHandlerFactory.class);
 
     private static Map<String, String> asProperties(Attributes attributes)
@@ -80,12 +76,12 @@ public class PathsContextHandlerFactory implements org.eclipse.jetty.deploy.Cont
     public static List<Path> getEnvironmentXmlPaths(Attributes attributes)
     {
         //noinspection unchecked
-        return (List<Path>)attributes.getAttribute(ENVIRONMENT_XML_PATHS);
+        return (List<Path>)attributes.getAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS);
     }
 
     public static void setEnvironmentXmlPaths(Attributes attributes, List<Path> paths)
     {
-        attributes.setAttribute(ENVIRONMENT_XML_PATHS, paths);
+        attributes.setAttribute(ContextHandlerFactory.ENVIRONMENT_XML_PATHS, paths);
     }
 
     @Override
@@ -406,7 +402,7 @@ public class PathsContextHandlerFactory implements org.eclipse.jetty.deploy.Cont
         if (LOG.isDebugEnabled())
             LOG.debug("newContextInstance({}, {}, {}, {})", server, environment, app, path);
 
-        Object context = newInstance((String)attributes.getAttribute(CONTEXT_HANDLER_CLASS));
+        Object context = newInstance((String)attributes.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS));
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);
@@ -444,7 +440,7 @@ public class PathsContextHandlerFactory implements org.eclipse.jetty.deploy.Cont
             return context;
 
         // fallback to default from environment.
-        context = newInstance((String)environment.getAttribute(CONTEXT_HANDLER_CLASS_DEFAULT));
+        context = newInstance((String)environment.getAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT));
         if (context != null)
         {
             ContextHandler contextHandler = getContextHandler(context);

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.deploy;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
 
 /**
  * Deployer for ContextHandlers
@@ -21,19 +22,26 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 public interface Deployer
 {
     /**
-     * Add a ContextHandler to the graph and then move it a deployed state.
+     * Deploy a web application to the server, and start it if appropriate.
      *
-     * @param contextHandler the ContextHandler to deploy.
+     * @param contextHandler the {@link ContextHandler} to deploy.
+     *
      */
+    @ManagedOperation(value = "Deploy the ContextHandler",  impact = "ACTION")
     void deploy(ContextHandler contextHandler);
 
     /**
-     * Move a ContextHandler int the graph to an undeployed state, and then remove it from the graph.
+     * Undeploy and stop a web application.
      *
-     * @param contextHandler the ContextHandler to undeploy.
+     * @param contextHandler the {@link ContextHandler} to undeploy.
+     *
      */
+    @ManagedOperation(value = "Undeploy the ContextHandler",  impact = "ACTION")
     void undeploy(ContextHandler contextHandler);
 
+    /**
+     * A Goal Oriented Deployer that will allow deployment in steps.
+     */
     interface GoalOriented extends Deployer
     {
         /**

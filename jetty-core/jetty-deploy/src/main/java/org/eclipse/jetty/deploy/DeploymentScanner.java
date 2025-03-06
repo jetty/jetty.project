@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.internal.PathsApp;
-import org.eclipse.jetty.deploy.internal.PathsContextHandlerFactory;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -61,28 +60,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>Default Jetty Environment WebApp Hot Deployment Provider.</p>
+ * <p>Jetty WebApp Hot Deployment Scanner.</p>
  *
- * <p>This provider scans one or more directories (typically "webapps") for contexts to
+ * <p>This class scans one or more directories (typically "webapps") for web applications to
  * deploy, which may be:</p>
  * <ul>
- * <li>A standard WAR file (must end in ".war")</li>
- * <li>A directory containing an expanded WAR file</li>
- * <li>A directory containing static content</li>
- * <li>An XML descriptor in {@link XmlConfiguration} format that configures a {@link ContextHandler} instance</li>
+ *     <li>A standard WAR file (must end in ".war")</li>
+ *     <li>A directory containing an expanded WAR file</li>
+ *     <li>A directory containing static content</li>
+ *     <li>An XML descriptor in {@link XmlConfiguration} format that configures a {@link ContextHandler} instance</li>
+ * </ul>
+ * Once a collection of files that represent a web application is found, an instance of `{@link ContextHandlerFactory}
+ * is used to create a {@link ContextHandler}, which is then deployed/undeployed via an {@link Deployer} instance.
+ * The instances of the {@link Deployer} and {@link ContextHandlerFactory} used can be:<ul>
+ *     <li>passed into a constructor;</li>
+ *     <li>or, discovered as a singleton {{@link org.eclipse.jetty.util.component.Container#getBean(Class)} bean} on
+ *     the {@link Server}</li>;
+ *     <li>or, a default implementation instantiated by this scanner.</li>
  * </ul>
  * <p>To avoid double deployments and allow flexibility of the content of the scanned directories, the provider
  * implements some heuristics to ignore some files found in the scans:
  * </p>
  * <ul>
- * <li>Hidden files (starting with {@code "."}) are ignored</li>
- * <li>Directories with names ending in {@code ".d"} are ignored</li>
- * <li>Property files with names ending in {@code ".properties"} are not deployed.</li>
- * <li>If a directory and a WAR file exist (eg: {@code foo/} and {@code foo.war}) then the directory is assumed to be
+ *     <li>Hidden files (starting with {@code "."}) are ignored</li>
+ *     <li>Directories with names ending in {@code ".d"} are ignored</li>
+ *     <li>Property files with names ending in {@code ".properties"} are not deployed.</li>
+ *     <li>If a directory and a WAR file exist (eg: {@code foo/} and {@code foo.war}) then the directory is assumed to be
  * the unpacked WAR and only the WAR file is deployed (which may reuse the unpacked directory)</li>
- * <li>If a directory and a matching XML file exist (eg: {@code foo/} and {@code foo.xml}) then the directory is assumed to be
+ *     <li>If a directory and a matching XML file exist (eg: {@code foo/} and {@code foo.xml}) then the directory is assumed to be
  * an unpacked WAR and only the XML file is deployed (which may use the directory in its configuration)</li>
- * <li>If a WAR file and a matching XML file exist (eg: {@code foo.war} and {@code foo.xml}) then the WAR file is assumed to
+ *     <li>If a WAR file and a matching XML file exist (eg: {@code foo.war} and {@code foo.xml}) then the WAR file is assumed to
  * be configured by the XML file and only the XML file is deployed.
  * </ul>
  * <p>For XML configured contexts, the following is available.</p>
@@ -114,7 +121,6 @@ import org.slf4j.LoggerFactory;
  * env10config.setParentLoaderPriority(false);
  * }</pre>
  */
-// TODO: fix dumpable to show details about monitored dirs, environments dir, configured environment attributes, scan interval, etc ...
 @ManagedObject("Provider for dynamic deployment of contexts (and webapps) based on presence in directory")
 public class DeploymentScanner extends ContainerLifeCycle implements Scanner.BulkListener
 {
@@ -806,7 +812,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     {
         List<Path> rawEnvXmlPaths = deployAttributes.getAttributeNameSet()
             .stream()
-            .filter(k -> k.startsWith(PathsContextHandlerFactory.ENVIRONMENT_XML))
+            .filter(k -> k.startsWith(ContextHandlerFactory.ENVIRONMENT_XML))
             .map(k -> Path.of((String)deployAttributes.getAttribute(k)))
             .toList();
 
@@ -1102,7 +1108,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          */
         public void setContextHandlerClass(String classname)
         {
-            _environment.setAttribute(PathsContextHandlerFactory.CONTEXT_HANDLER_CLASS, classname);
+            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS, classname);
         }
 
         /**
@@ -1119,7 +1125,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
          */
         public void setDefaultContextHandlerClass(String classname)
         {
-            _environment.setAttribute(PathsContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT, classname);
+            _environment.setAttribute(ContextHandlerFactory.CONTEXT_HANDLER_CLASS_DEFAULT, classname);
         }
 
         /**
