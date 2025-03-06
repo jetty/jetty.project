@@ -10,7 +10,7 @@ start
 server
 
 [before]
-deployment/deployment-scanner
+deployment-scanner
 
 [xml]
 etc/jetty-state.xml

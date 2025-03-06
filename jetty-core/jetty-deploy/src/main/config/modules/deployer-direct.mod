@@ -1,11 +1,11 @@
 [description]
-This module enables the default Deployer
+This module enables the direct Deployer
 
 [tags]
 deployment
 
 [provides]
-deployment/deployerImpl
+deployer
 
 [lib]
 lib/jetty-deploy-${jetty.version}.jar

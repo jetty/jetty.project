@@ -5,7 +5,7 @@ This module enables the Goal oriented Deployer
 deployment
 
 [provides]
-deployment/deployerImpl|default
+deployer|default
 
 [depend]
 server

@@ -10,7 +10,7 @@ deployment
 core
 
 [depend]
-deployment/deployment-scanner
+deployment-scanner
 
 [xml]
 etc/jetty-core-deploy.xml

@@ -10,7 +10,7 @@ deployment
 ee9
 
 [depend]
-deployment/deployment-scanner
+deployment-scanner
 ee9-webapp
 
 [xml]

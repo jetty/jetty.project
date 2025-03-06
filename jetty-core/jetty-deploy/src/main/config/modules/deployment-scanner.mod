@@ -6,7 +6,7 @@ deployment
 
 [depend]
 server
-deployment/deployerImpl
+deployer
 
 [lib]
 lib/jetty-deploy-${jetty.version}.jar

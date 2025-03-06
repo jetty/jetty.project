@@ -10,7 +10,7 @@ deployment
 ee8
 
 [depend]
-deployment/deployment-scanner
+deployment-scanner
 ee8-webapp
 
 [xml]

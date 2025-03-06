@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  *     <li>A directory containing static content</li>
  *     <li>An XML descriptor in {@link XmlConfiguration} format that configures a {@link ContextHandler} instance</li>
  * </ul>
- * Once a collection of files that represent a web application is found, an instance of `{@link ContextHandlerFactory}
+ * Once a collection of files that represent a web application is found (or updated), an instance of `{@link ContextHandlerFactory}
  * is used to create a {@link ContextHandler}, which is then deployed/undeployed via an {@link Deployer} instance.
  * The instances of the {@link Deployer} and {@link ContextHandlerFactory} used can be:<ul>
  *     <li>passed into a constructor;</li>
