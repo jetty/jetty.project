@@ -184,12 +184,12 @@ public interface AuthenticationState extends Request.AuthenticationState
     {
         if (request.getContext().getErrorHandler() instanceof ErrorHandler errorHandler)
         {
-            return errorHandler.writeError(request, response, callback, HttpStatus.FORBIDDEN_403)
+            return errorHandler.writeError(request, response, callback, code)
                     ? AuthenticationState.SEND_FAILURE 
                     : new AuthenticationState.ServeAs(request.getHttpURI());
         }
 
-        Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+        Response.writeError(request, response, callback, code);
         return AuthenticationState.SEND_FAILURE;
     }
 
