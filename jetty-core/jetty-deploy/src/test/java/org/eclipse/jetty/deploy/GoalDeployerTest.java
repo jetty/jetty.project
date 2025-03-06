@@ -83,10 +83,9 @@ public class GoalDeployerTest extends AbstractCleanEnvironmentTest
     public void testDeploy() throws Exception
     {
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+        contextHandlerCollection.start();
         GoalDeployer goalDeployer = new GoalDeployer(contextHandlerCollection);
         goalDeployer.addBean(contextHandlerCollection);
-
-        // Start DepMan
         goalDeployer.start();
 
         try
@@ -126,10 +125,9 @@ public class GoalDeployerTest extends AbstractCleanEnvironmentTest
     public void testUndeploy() throws Exception
     {
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+        contextHandlerCollection.start();
         GoalDeployer goalDeployer = new GoalDeployer(contextHandlerCollection);
         goalDeployer.addBean(contextHandlerCollection);
-
-        // Start DepMan
         goalDeployer.start();
 
         try
@@ -174,10 +172,9 @@ public class GoalDeployerTest extends AbstractCleanEnvironmentTest
     public void testMove() throws Exception
     {
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+        contextHandlerCollection.start();
         GoalDeployer goalDeployer = new GoalDeployer(contextHandlerCollection);
         goalDeployer.addBean(contextHandlerCollection);
-
-        // Start DepMan
         goalDeployer.start();
 
         try

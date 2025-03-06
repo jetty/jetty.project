@@ -54,7 +54,7 @@ public interface Deployer
         }
 
         /**
-         * Advanced usage, move a ContextHandler through the DeploymentManager graph by name.
+         * Advanced usage, move a ContextHandler through the Deployment graph by name.
          *
          * @param contextHandler the ContextHandler to move
          * @param goalName the goal graph node by name

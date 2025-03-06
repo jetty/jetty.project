@@ -10,10 +10,8 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
     <Arg>
-      <New id="deploymentManager" class="org.eclipse.jetty.deploy.GoalDeployer">
-        <Arg name="contexts">
-          <Ref refid="Contexts" />
-        </Arg>
+      <New id="Deployer" class="org.eclipse.jetty.deploy.GoalDeployer">
+        <Arg name="contexts"><Ref refid="Contexts"/></Arg>
 
         <!-- Add a customize step to the deployment lifecycle -->
         <!-- uncomment and replace DebugBinding with your extended ContextHandlerLifeCycle.Binding class

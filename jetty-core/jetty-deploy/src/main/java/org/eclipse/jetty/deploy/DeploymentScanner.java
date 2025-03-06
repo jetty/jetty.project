@@ -147,7 +147,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
-     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
      * it's configured destination.
      * </p>
      *
@@ -161,7 +161,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
-     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
      * it's configured destination.
      * </p>
      *
@@ -179,7 +179,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
-     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
      * it's configured destination.
      * </p>
      *
@@ -200,7 +200,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
-     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
      * it's configured destination.
      * </p>
      *
@@ -221,7 +221,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     /**
      * <p>
      * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
-     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * used to construct webapps that will be submitted to the {@link Deployer} for eventual deployment to
      * it's configured destination.
      * </p>
      *
@@ -804,7 +804,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app.getEnvironment(), mainPath, app.getPaths().keySet(), deployAttributes);
                         app.setContextHandler(contextHandler);
 
-                        // Introduce the ContextHandler to the DeploymentManager
+                        // Introduce the ContextHandler to the Deployer
                         startTracking(app);
                         deployer.deploy(app.getContextHandler());
                     }

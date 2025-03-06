@@ -151,7 +151,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a Deployer has a WebAppProvider pointing
      * to a directory that already has a webapp that will deploy with an error.
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=true;}.
      */
@@ -165,7 +165,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a Deployer has a WebAppProvider pointing
      * to a directory that already has a webapp that will deploy with an error.
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=false;}.
      */
@@ -199,7 +199,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a Deployer has a WebAppProvider pointing
      * to a directory that already has no initial webapps that will deploy.
      * A webapp is added (by filesystem copies) into the monitored docroot.
      * The webapp will have a deployment error.
@@ -244,7 +244,7 @@ public class DeploymentErrorTest
     }
 
     /**
-     * Test of a server startup, where a DeploymentManager has a WebAppProvider pointing
+     * Test of a server startup, where a Deployer has a WebAppProvider pointing
      * to a directory that already has no initial webapps that will deploy.
      * A webapp is added (by filesystem copies) into the monitored docroot.
      * The webapp will have a deployment error.

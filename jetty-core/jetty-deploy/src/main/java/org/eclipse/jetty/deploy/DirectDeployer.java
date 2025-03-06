@@ -20,6 +20,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -43,6 +44,7 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     public DirectDeployer(@Name("contexts") ContextHandlerCollection contexts)
     {
         _contexts = Objects.requireNonNull(contexts);
+        installBean(_contexts, false);
     }
 
     public ContextHandlerCollection getContexts()
@@ -55,6 +57,8 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     {
         try
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("deploy: {} {}", this, contextHandler);
             Objects.requireNonNull(_contexts);
             Objects.requireNonNull(contextHandler);
             Callback.Completable blocker = new Callback.Completable();
@@ -77,6 +81,9 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
     @Override
     public void undeploy(ContextHandler contextHandler)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("undeploy: {} {}", this, contextHandler);
+
         if (_contexts.getHandlers().contains(contextHandler))
         {
             try
@@ -89,5 +96,11 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
                 throw new RuntimeException(t);
             }
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x{contexts=%s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), _contexts);
     }
 }

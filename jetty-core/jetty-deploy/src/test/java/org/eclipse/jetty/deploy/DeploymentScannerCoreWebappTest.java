@@ -128,7 +128,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
     }
 
     /**
-     * Test of a core deployment that will fail the DeploymentManager startup due to an exception triggered from the XML.
+     * Test of a core deployment that will fail the Deployer startup due to an exception triggered from the XML.
      * This is at a point in time before the Core app is even added to the ContextHandlerCollection
      */
     @Test
@@ -183,7 +183,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
     }
 
     /**
-     * Test of a core deployment that will fail DeploymentManager startup due to an exception during the
+     * Test of a core deployment that will fail Deployer startup due to an exception during the
      * ContextHandlerCollection.deployHandler() step of the core app.
      */
     @Test
@@ -243,7 +243,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
     }
 
     /**
-     * Test of a core deployment that will fail DeploymentManager startup due to an exception during the
+     * Test of a core deployment that will fail Deployer startup due to an exception during the
      * ContextHandler.doStart() step of the core app.
      */
     @Test

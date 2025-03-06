@@ -35,29 +35,29 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Deployment Manager.
+ * A Goal oriented Deployer.
  * <p>
  * Responsibilities:
  * <p>
- * <img alt="deployment manager roles graph" src="doc-files/DeploymentManager_Roles.png">
  * <ol>
  * <li>Tracking ContextHandlers and their location in the Deployment graph.</li>
  * <li>Moving ContextHandlers through the Deployment graph (eg: DEPLOYED, STARTED, UNDEPLOYED, etc.).</li>
  * </ol>
  * <p>
- * <img alt="deployment manager graph" src="doc-files/DeploymentManager.png">
  */
 // TODO: fix dumpable to show things like context-handler-collection, contexts being tracked, etc...
-@ManagedObject("Deployment Manager")
+@ManagedObject("Goal Oriented Deployer")
 public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOriented
 {
     private static final Logger LOG = LoggerFactory.getLogger(GoalDeployer.class);
@@ -69,6 +69,9 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
     public GoalDeployer(@Name("contexts") ContextHandlerCollection contexts)
     {
         _contexts = contexts;
+        installBean(_lifecycle);
+        installBean(new DumpableCollection("tracked", _tracked));
+        installBean(_contexts, false);
     }
 
     /**
@@ -104,7 +107,7 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
     public void deploy(ContextHandler contextHandler)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("deploy: {}", contextHandler);
+            LOG.debug("deploy: {} {}", this, contextHandler);
         TrackedContext trackedContext = startTracking(contextHandler);
 
         if (getContexts().isRunning())
@@ -138,7 +141,7 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
     }
 
     /**
-     * Get the list of tracked {@link ContextHandler} in the DeploymentManager graph.
+     * Get the list of tracked {@link ContextHandler} in the Deployment graph.
      *
      * @return the list of tracked ContextHandlers
      */
@@ -176,7 +179,7 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
         return _contexts;
     }
 
-    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
+    @ManagedOperation(value = "list nodes that are tracked by GoalDeployer", impact = "INFO")
     public Set<String> getNodeNames()
     {
         Set<String> names = new TreeSet<>(String::compareToIgnoreCase);
@@ -221,7 +224,7 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
     }
 
     /**
-     * Advanced usage, move a ContextHandler through the DeploymentManager graph by name.
+     * Advanced usage, move a ContextHandler through the Deployment graph by name.
      *
      * @param contextHandler the ContextHandler to move
      * @param goalName the goal graph node by name
@@ -258,13 +261,13 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
     public void undeploy(ContextHandler contextHandler)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("undeploy: {}", contextHandler);
+            LOG.debug("undeploy: {} {}", this, contextHandler);
         TrackedContext trackedContext = findTrackedContext(contextHandler);
         requestContextHandlerGoal(trackedContext, DeploymentGraph.UNDEPLOYED);
         stopTracking(trackedContext);
     }
 
-    @ManagedOperation(value = "undeploy all ContextHandlers being tracked by DeploymentManager")
+    @ManagedOperation(value = "undeploy all ContextHandlers being tracked by GoalDeployer")
     public void undeployAll()
     {
         LOG.debug("Undeploy All");
@@ -282,7 +285,7 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
 
         if (_useStandardBindings)
         {
-            LOG.debug("DeploymentManager using standard bindings");
+            LOG.debug("GoalDeployer using standard bindings");
             addLifeCycleBinding(new StandardDeployer());
             addLifeCycleBinding(new StandardStarter());
             addLifeCycleBinding(new StandardStopper());
@@ -423,6 +426,12 @@ public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOri
         void setLifeCycleNode(Node node)
         {
             this.lifecyleNode = node;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s, %s}".formatted(TypeUtil.toShortName(getClass()), hashCode(), contextHandler, lifecyleNode);
         }
     }
 }

@@ -2,11 +2,11 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <!-- =============================================================== -->
-<!-- Create Default Deployment Provider                              -->
+<!-- Create Deployment Scanner                                       -->
 <!--                                                                 -->
 <!-- The Default Deployment Provider is responsible for monitoring   -->
 <!-- provided directories for web applications and hot deploying     -->
-<!-- through the DeploymentManager.                                  -->
+<!-- through the Deployer         .                                  -->
 <!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">

@@ -92,6 +92,7 @@ public class GoalDeployerLifeCycleRouteTest
         pathtracker.assertExpected("Test StateTransition / New only", expected);
     }
 
+    // TODO enable
     @Test
     @Disabled("Not working yet, need to figure out how to reference the ContextHandler mbean")
     public void testMBeanStateTransitionToUndeployed() throws Exception
@@ -129,7 +130,7 @@ public class GoalDeployerLifeCycleRouteTest
         jmxConnection.connect();
 
         MBeanServerConnection mbsConnection = jmxConnection.getConnection();
-        ObjectName dmObjName = new ObjectName("org.eclipse.jetty.deploy:type=deploymentmanager,id=0");
+        ObjectName dmObjName = new ObjectName("org.eclipse.jetty.deploy:type=goaldeployer,id=0");
         String[] params = new String[]{"foo-webapp-1", "undeployed"};
         String[] signature = new String[]{"java.lang.String", "java.lang.String"};
         mbsConnection.invoke(dmObjName, "requestContextHandlerGoal", params, signature);

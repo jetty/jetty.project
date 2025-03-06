@@ -1,5 +1,5 @@
 [description]
-This module enables the direct Deployer
+This module enables the direct Deployer, which simply adds and starts a context.
 
 [tags]
 deployment

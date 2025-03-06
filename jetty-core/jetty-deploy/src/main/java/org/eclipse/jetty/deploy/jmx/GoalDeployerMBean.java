@@ -20,12 +20,12 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
 @SuppressWarnings("unused")
-@ManagedObject("MBean Wrapper for DeploymentManager")
-public class DeploymentManagerMBean extends ObjectMBean
+@ManagedObject("MBean Wrapper for GoalDeployer")
+public class GoalDeployerMBean extends ObjectMBean
 {
     private final GoalDeployer _manager;
 
-    public DeploymentManagerMBean(Object managedObject)
+    public GoalDeployerMBean(Object managedObject)
     {
         super(managedObject);
         _manager = (GoalDeployer)managedObject;

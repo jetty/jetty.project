@@ -1,5 +1,5 @@
 [description]
-This module enables the Goal oriented Deployer
+This module enables the Goal oriented Deployer, which allows bindings of actions to deployment event triggers
 
 [tags]
 deployment

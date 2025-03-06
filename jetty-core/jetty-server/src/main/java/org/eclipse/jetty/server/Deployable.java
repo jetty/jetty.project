@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.Attributes;
 
 /**
  * Interface that can be implemented by a {@link ContextHandler}
- * to allow configuration to be passed from the DeploymentManager without
+ * to allow configuration to be passed from a {@code Deployer} without
  * dependencies on the jetty-deploy module itself.
  */
 public interface Deployable
