@@ -155,7 +155,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      */
     public DeploymentScanner(@Name("server") Server server)
     {
-        this(server, null, null);
+        this(server, null, null, null);
     }
 
     /**
@@ -166,13 +166,14 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
-     * @param deployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
+     * @param deployer the {@link Deployer} to use for deploying the created {@link ContextHandler}s,
+     *                 or {@code null} for a default.
      */
     public DeploymentScanner(
         @Name("server") Server server,
         @Name("deployer") Deployer deployer)
     {
-        this(server, deployer, null);
+        this(server, deployer, null, null);
     }
 
     /**
@@ -183,8 +184,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
-     * @param deployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
-     * @param filter A custom FilenameFilter to control what files the {@link Scanner} monitors for changes.
+     * @param deployer the {@link Deployer} to use for deploying the created {@link ContextHandler}s,
+     *                 or {@code null} for a default.
+     * @param filter A custom {@link FilenameFilter} to control what files the {@link Scanner} monitors for changes,
+     *               or {@code null} for a default.
      */
     public DeploymentScanner(
         @Name("server") Server server,
@@ -202,8 +205,33 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
-     * @param deployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
-     * @param filter A custom FilenameFilter to control what files the {@link Scanner} monitors for changes.
+     * @param deployer the {@link Deployer} to use for deploying the created {@link ContextHandler}s,
+     *                 or {@code null} for a default.
+     * @param contextHandlerFactory The factory to use to create {@link ContextHandler}s,
+     *                              or {@code null} for a default.
+     */
+    public DeploymentScanner(
+        @Name("server") Server server,
+        @Name("deployer") Deployer deployer,
+        @Name("contextHandlerFactory") ContextHandlerFactory contextHandlerFactory)
+    {
+        this(server, deployer, null, contextHandlerFactory);
+    }
+
+    /**
+     * <p>
+     * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
+     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * it's configured destination.
+     * </p>
+     *
+     * @param server the server reference to use for any XML based deployments.
+     * @param deployer the {@link Deployer} to use for deploying the created {@link ContextHandler}s,
+     *                 or {@code null} for a default.
+     * @param filter A custom {@link FilenameFilter} to control what files the {@link Scanner} monitors for changes,
+     *               or {@code null} for a default
+     * @param contextHandlerFactory The factory to use to create {@link ContextHandler}s,
+     *                              or {@code null} for a default.
      */
     public DeploymentScanner(
         @Name("server") Server server,

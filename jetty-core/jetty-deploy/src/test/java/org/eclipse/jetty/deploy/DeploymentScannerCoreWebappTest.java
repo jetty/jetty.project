@@ -55,13 +55,12 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
     private final Server server = new Server();
     private final ContextHandlerCollection contexts = new ContextHandlerCollection();
 
-    public void startServer(Deployer deployer, Object... beans) throws Exception
+    public void startServer(Object... beans) throws Exception
     {
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
         server.setHandler(contexts);
-        server.addBean(deployer);
         for (Object bean : beans)
             server.addBean(bean);
         server.start();
@@ -110,10 +109,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
         connector.setPort(0);
         server.addConnector(connector);
 
-        GoalDeployer goalDeployer = new GoalDeployer(contexts);
-        server.addBean(goalDeployer);
-
-        DeploymentScanner deploymentScanner = new DeploymentScanner(server, goalDeployer);
+        DeploymentScanner deploymentScanner = new DeploymentScanner(server);
         deploymentScanner.addMonitoredDirectory(webapps);
         server.addBean(deploymentScanner);
         DeploymentScanner.EnvironmentConfig coreConfig = deploymentScanner.configureEnvironment("core");
@@ -165,8 +161,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
               </Set>
             </Configure>
             """;
-        GoalDeployer goalDeployer = new GoalDeployer(contexts);
-        DeploymentScanner scanner = new DeploymentScanner(server, goalDeployer);
+        DeploymentScanner scanner = new DeploymentScanner(server);
         Files.writeString(demoXml, demoXmlStr);
 
         scanner.addMonitoredDirectory(webapps);
@@ -175,7 +170,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(goalDeployer, scanner));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(scanner));
 
             // unwrap any ExecutionExceptions
             while (throwable.getCause() != null)
@@ -223,8 +218,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        GoalDeployer goalDeployer = new GoalDeployer(contexts);
-        DeploymentScanner scanner = new DeploymentScanner(server, goalDeployer);
+        DeploymentScanner scanner = new DeploymentScanner(server);
         scanner.addMonitoredDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
@@ -236,7 +230,7 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
             DeploymentScanner.class.getName(),
             Scanner.class.getName()))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(goalDeployer, scanner));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(scanner));
 
             // unwrap any ExecutionExceptions
             while (throwable.getCause() != null)
@@ -284,15 +278,14 @@ public class DeploymentScannerCoreWebappTest extends AbstractCleanEnvironmentTes
             """;
         Files.writeString(demoXml, demoXmlStr);
 
-        GoalDeployer goalDeployer = new GoalDeployer(contexts);
-        DeploymentScanner scanner = new DeploymentScanner(server, goalDeployer);
+        DeploymentScanner scanner = new DeploymentScanner(server);
         scanner.addMonitoredDirectory(webapps);
         DeploymentScanner.EnvironmentConfig coreConfig = scanner.configureEnvironment("core");
         coreConfig.setContextHandlerClass(CoreContextHandler.class.getName());
 
         try (StacklessLogging ignore = new StacklessLogging(DeploymentScanner.class, GoalDeployer.class))
         {
-            Throwable throwable = assertThrows(Throwable.class, () -> startServer(goalDeployer, scanner));
+            Throwable throwable = assertThrows(Throwable.class, () -> startServer(scanner));
 
             // unwrap any ExecutionExceptions
             while (throwable instanceof ExecutionException ee)

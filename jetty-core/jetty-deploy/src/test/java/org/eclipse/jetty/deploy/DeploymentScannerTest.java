@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.deploy.DeploymentScanner.DeployAction;
 import org.eclipse.jetty.deploy.internal.PathsApp;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
@@ -50,7 +51,7 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
 
         public AssertActionListDeploymentScanner()
         {
-            super(new Server(), new AbstractDeployer());
+            super(new Server(), new DirectDeployer(new ContextHandlerCollection()));
         }
 
         @Override

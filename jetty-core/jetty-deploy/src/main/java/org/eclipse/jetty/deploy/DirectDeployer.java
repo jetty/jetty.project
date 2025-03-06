@@ -67,10 +67,10 @@ public class DirectDeployer extends ContainerLifeCycle implements Deployer
         }
         catch (Throwable t)
         {
-            if (isStarting())
-                ExceptionUtil.ifExceptionThrowUnchecked(t);
-            else
-                LOG.warn("Deploy failed {}", contextHandler, t);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} Deploy failed {}", this, contextHandler, t);
+
+            ExceptionUtil.ifExceptionThrowUnchecked(t);
         }
     }
 
