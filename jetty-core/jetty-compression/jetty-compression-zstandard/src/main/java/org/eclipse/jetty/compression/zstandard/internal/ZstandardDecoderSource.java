@@ -26,6 +26,7 @@ public class ZstandardDecoderSource extends DecoderSource
 {
     private final ZstandardCompression compression;
     private final ZstdDecompressCtx decompressCtx;
+    private boolean released;
 
     public ZstandardDecoderSource(Content.Source source, ZstandardCompression compression, ZstandardDecoderConfig config)
     {
@@ -51,5 +52,16 @@ public class ZstandardDecoderSource extends DecoderSource
             last = false;
         dst.getByteBuffer().flip();
         return Content.Chunk.asChunk(dst.getByteBuffer(), last, dst);
+    }
+
+    @Override
+    protected void release()
+    {
+        released = true;
+    }
+
+    public boolean isReleased()
+    {
+        return released;
     }
 }

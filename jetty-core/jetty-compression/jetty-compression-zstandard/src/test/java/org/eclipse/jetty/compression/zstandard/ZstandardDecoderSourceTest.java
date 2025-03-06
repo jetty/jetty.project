@@ -16,12 +16,15 @@ package org.eclipse.jetty.compression.zstandard;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.compression.zstandard.internal.ZstandardDecoderSource;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ZstandardDecoderSourceTest extends AbstractZstdTest
 {
@@ -41,5 +44,62 @@ public class ZstandardDecoderSourceTest extends AbstractZstdTest
         String result = Content.Source.asString(decoderSource);
         String expected = Files.readString(uncompressed);
         assertEquals(expected, result);
+        assertTrue(((ZstandardDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk eof = decoderSource.read();
+        assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
+
+        decoderSource.fail(new Throwable());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("textResources")
+    public void testImmediateFailReleaseAllResources(String textResourceName) throws Exception
+    {
+        startZstd();
+        String compressedName = String.format("%s.%s", textResourceName, zstd.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+
+        // TODO: sizedPool config of size 1?
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source decoderSource = zstd.newDecoderSource(fileSource);
+        assertFalse(((ZstandardDecoderSource)decoderSource).isReleased());
+
+        decoderSource.fail(new Throwable());
+        assertTrue(((ZstandardDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
+    }
+
+    @ParameterizedTest
+    @MethodSource("textResources")
+    public void testFailAfterReadReleaseAllResources(String textResourceName) throws Exception
+    {
+        startZstd();
+        String compressedName = String.format("%s.%s", textResourceName, zstd.getFileExtensionNames().get(0));
+        Path compressed = MavenPaths.findTestResourceFile(compressedName);
+
+        // TODO: sizedPool config of size 1?
+        Content.Source fileSource = Content.Source.from(sizedPool, compressed);
+        Content.Source decoderSource = zstd.newDecoderSource(fileSource);
+        assertFalse(((ZstandardDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk chunk = decoderSource.read();
+        // skip empty chunks
+        while (chunk.isEmpty() && !chunk.isLast())
+            chunk = decoderSource.read();
+        assertTrue(chunk.hasRemaining());
+        chunk.release();
+
+        decoderSource.fail(new Throwable());
+        assertTrue(((ZstandardDecoderSource)decoderSource).isReleased());
+
+        Content.Chunk err = decoderSource.read();
+        assertTrue(Content.Chunk.isFailure(err));
     }
 }
