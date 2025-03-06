@@ -60,6 +60,6 @@ public class EnvironmentBuilder
 
     public Environment build() throws Exception
     {
-        return Environment.ensure(_name, new URLClassLoader(_classpath.toArray(new URL[0]), EnvironmentBuilder.class.getClassLoader()));
+        return Environment.create(_name, new URLClassLoader(_classpath.toArray(new URL[0]), EnvironmentBuilder.class.getClassLoader()));
     }
 }

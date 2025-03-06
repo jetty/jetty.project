@@ -8,7 +8,8 @@ import org.eclipse.jetty.util.TypeUtil;
 
 class NamedEnvironment extends Attributes.Mapped implements Environment, Dumpable
 {
-    static final Map<String, Environment> __environments = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
+    static final Map<String, Environment> ENVIRONMENTS = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
+    static final ClassLoader DEFAULT_CLASSLOADER = NamedEnvironment.class.getClassLoader();
 
     private final String _name;
     private final ClassLoader _classLoader;
@@ -16,7 +17,7 @@ class NamedEnvironment extends Attributes.Mapped implements Environment, Dumpabl
     NamedEnvironment(String name, ClassLoader classLoader)
     {
         _name = name;
-        _classLoader = classLoader == null ? this.getClass().getClassLoader() : classLoader;
+        _classLoader = classLoader == null ? DEFAULT_CLASSLOADER : classLoader;
     }
 
     @Override

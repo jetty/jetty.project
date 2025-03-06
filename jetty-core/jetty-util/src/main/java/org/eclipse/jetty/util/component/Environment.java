@@ -26,24 +26,58 @@ public interface Environment extends Attributes
     // Ensure there is a core environment for possible later deployments to it
     Environment CORE = ensure("core");
 
+    /**
+     * Gets all existing environments.
+     * @return the environments
+     */
     static Collection<Environment> getAll()
     {
-        return Collections.unmodifiableCollection(NamedEnvironment.__environments.values());
+        return Collections.unmodifiableCollection(NamedEnvironment.ENVIRONMENTS.values());
     }
-    
+
+    /**
+     * Gets the environment with the given name.
+     * @param name the environment name
+     * @return the environment, or null if no environment with such name exists
+     */
     static Environment get(String name)
     {
-        return NamedEnvironment.__environments.get(name);
+        return NamedEnvironment.ENVIRONMENTS.get(name);
     }
 
-    static Environment ensure(String name)
+    /**
+     * Gets the environment with the given name, creating it with the default classloader if necessary.
+     * @param name the environment name
+     * @return the environment
+     * @throws IllegalStateException if an environment with the given name but a non-default classloader already exists
+     */
+    static Environment ensure(String name) throws IllegalStateException
     {
-        return ensure(name, null);
+        return NamedEnvironment.ENVIRONMENTS.compute(name, (n, environment) ->
+        {
+            if (environment == null)
+                return new NamedEnvironment(n, null);
+            if (environment.getClassLoader() != NamedEnvironment.DEFAULT_CLASSLOADER)
+                throw new IllegalStateException("Environment with non-default classloader already exists: " + n);
+            return environment;
+        });
     }
 
-    static Environment ensure(String name, ClassLoader classLoader)
+    /**
+     * Creates an environment with the given name and classloader.
+     * @param name the environment name
+     * @param classLoader the environment classloader
+     * @return the environment
+     * @throws IllegalStateException if an environment with the given name already exists
+     */
+    static Environment create(String name, ClassLoader classLoader) throws IllegalStateException
     {
-        return NamedEnvironment.__environments.computeIfAbsent(name, n -> new NamedEnvironment(n, classLoader));
+        return NamedEnvironment.ENVIRONMENTS.compute(name, (n, environment) ->
+        {
+            if (environment != null)
+                throw new IllegalStateException("Environment already exists: " + n);
+            return new NamedEnvironment(n, classLoader);
+        });
     }
 
     /**

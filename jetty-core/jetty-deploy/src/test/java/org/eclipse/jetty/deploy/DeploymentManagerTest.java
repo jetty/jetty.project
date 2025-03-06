@@ -25,6 +25,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.Environment;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,13 +40,14 @@ public class DeploymentManagerTest
 {
 
     @Test
-    public void testReceiveApp() throws Exception
+    public void testReceiveApp(TestInfo testInfo) throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        MockAppProvider mockProvider = new MockAppProvider();
+        String environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
+        MockAppProvider mockProvider = new MockAppProvider(environmentName);
 
         depman.addLifeCycleBinding(pathtracker);
         depman.addAppProvider(mockProvider);
@@ -92,58 +94,23 @@ public class DeploymentManagerTest
         assertThat(depman.getDefaultEnvironmentName(), Matchers.nullValue());
 
         Environment.ensure("ee7");
-        depman.addAppProvider(new MockAppProvider()
-        {
-            @Override
-            public String getEnvironmentName()
-            {
-                return "ee7";
-            }
-        });
+        depman.addAppProvider(new MockAppProvider("ee7"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee7"));
 
         Environment.ensure("ee12");
-        depman.addAppProvider(new MockAppProvider()
-        {
-            @Override
-            public String getEnvironmentName()
-            {
-                return "ee12";
-            }
-        });
+        depman.addAppProvider(new MockAppProvider("ee12"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
         Environment.ensure("ee11");
-        depman.addAppProvider(new MockAppProvider()
-        {
-            @Override
-            public String getEnvironmentName()
-            {
-                return "ee11";
-            }
-        });
+        depman.addAppProvider(new MockAppProvider("ee11"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
         Environment.ensure("somethingElse");
-        depman.addAppProvider(new MockAppProvider()
-        {
-            @Override
-            public String getEnvironmentName()
-            {
-                return "somethingElse";
-            }
-        });
+        depman.addAppProvider(new MockAppProvider("somethingElse"));
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
 
         Environment.ensure("other");
-        depman.addAppProvider(new MockAppProvider()
-        {
-            @Override
-            public String getEnvironmentName()
-            {
-                return "other";
-            }
-        });
+        depman.addAppProvider(new MockAppProvider("other"));
 
         assertThat(depman.getAppProviders().stream().map(AppProvider::getEnvironmentName).sorted(Deployable.ENVIRONMENT_COMPARATOR).toList(),
             contains(

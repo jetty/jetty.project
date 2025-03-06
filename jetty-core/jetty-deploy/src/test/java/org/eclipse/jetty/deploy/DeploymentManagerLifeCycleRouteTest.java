@@ -22,17 +22,19 @@ import javax.management.ObjectName;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 public class DeploymentManagerLifeCycleRouteTest
 {
     @Test
-    public void testStateTransitionNewToDeployed() throws Exception
+    public void testStateTransitionNewToDeployed(TestInfo testInfo) throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        MockAppProvider mockProvider = new MockAppProvider();
+        String environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
+        MockAppProvider mockProvider = new MockAppProvider(environmentName);
 
         depman.addLifeCycleBinding(pathtracker);
         depman.addAppProvider(mockProvider);
@@ -58,13 +60,14 @@ public class DeploymentManagerLifeCycleRouteTest
     }
 
     @Test
-    public void testStateTransitionReceive() throws Exception
+    public void testStateTransitionReceive(TestInfo testInfo) throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        MockAppProvider mockProvider = new MockAppProvider();
+        String environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
+        MockAppProvider mockProvider = new MockAppProvider(environmentName);
 
         depman.addLifeCycleBinding(pathtracker);
         depman.addAppProvider(mockProvider);
@@ -84,12 +87,13 @@ public class DeploymentManagerLifeCycleRouteTest
     }
 
     @Test
-    public void testStateTransitionDeployedToUndeployed() throws Exception
+    public void testStateTransitionDeployedToUndeployed(TestInfo testInfo) throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setDefaultLifeCycleGoal(null); // no default
         AppLifeCyclePathCollector pathtracker = new AppLifeCyclePathCollector();
-        MockAppProvider mockProvider = new MockAppProvider();
+        String environmentName = testInfo.getTestClass().orElseThrow().getName() + "." + testInfo.getTestMethod().orElseThrow().getName();
+        MockAppProvider mockProvider = new MockAppProvider(environmentName);
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
