@@ -316,8 +316,9 @@ public class ArrayByteBufferPoolTest
         assertTrue(bufMax.release()); // pooled
         assertTrue(bufOver.release()); // not pooled, > maxCapacity
 
-        assertThat(pool.getDirectByteBufferCount(), is(3L));
-        assertThat(pool.getAvailableDirectByteBufferCount(), is(3L));
+        long bufferCount = 3;
+        assertThat(pool.getDirectByteBufferCount(), is(bufferCount));
+        assertThat(pool.getAvailableDirectByteBufferCount(), is(bufferCount));
 
         Map<Integer, Long> noBucketAcquires = pool.getNoBucketDirectAcquires();
         assertEquals(2, noBucketAcquires.size());
@@ -450,7 +451,7 @@ public class ArrayByteBufferPoolTest
         }
 
         if (minCapacity < 0)
-            minCapacity = (int)stats.get(0).get("capacity");
+            minCapacity = 0;
         if (maxCapacity < 0)
             maxCapacity = (int)stats.get(stats.size() - 1).get("capacity");
 
@@ -465,17 +466,19 @@ public class ArrayByteBufferPoolTest
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getAvailableDirectMemory(), is(0L));
 
-        assertTrue(bufUnder.release()); // not pooled, < minCapacity
+        assertTrue(bufUnder.release()); // pooled = minCapacity < 1
         assertTrue(bufMin.release()); // pooled
         assertTrue(bufMid.release()); // pooled
         assertTrue(bufMax.release()); // pooled
         assertTrue(bufOver.release()); // not pooled, > maxCapacity
 
-        assertThat(pool.getHeapByteBufferCount(), is(3L));
-        assertThat(pool.getAvailableHeapByteBufferCount(), is(3L));
+        boolean bufUnderIsPooled = minCapacity < 1;
+        long bufferCount = bufUnderIsPooled ? 4L : 3L;
+        assertThat(pool.getHeapByteBufferCount(), is(bufferCount));
+        assertThat(pool.getAvailableHeapByteBufferCount(), is(bufferCount));
 
         Map<Integer, Long> noBucketAcquires = pool.getNoBucketHeapAcquires();
-        assertEquals(2, noBucketAcquires.size());
+        assertEquals(bufUnderIsPooled ? 1 : 2, noBucketAcquires.size());
     }
 
     @Test

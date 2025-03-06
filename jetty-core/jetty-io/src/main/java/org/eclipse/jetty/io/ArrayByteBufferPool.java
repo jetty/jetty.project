@@ -872,48 +872,66 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      */
     public static class Quadratic extends ArrayByteBufferPool
     {
+        // Allows to skip tiny buckets of capacity 1, 2, 4, 8, etc.
+        private static final int DEFAULT_MIN_CAPACITY = 1024;
+
+        /**
+         * Creates a pool with buckets starting at 1 KiB up to 64 KiB.
+         */
         public Quadratic()
         {
             this(-1, -1, Integer.MAX_VALUE);
         }
 
+        /**
+         * <p>Creates a pool with the specified {@code minCapacity}, {@code maxCapacity}
+         * and {@code maxBucketSize}, see {@link #Quadratic(int, int, int, long, long)}.</p>
+         *
+         * @param minCapacity the capacity under which buffers will not be pooled
+         * @param maxCapacity the capacity above which buffers will not be pooled
+         * @param maxBucketSize the max number of buffers in a bucket
+         */
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize)
         {
             this(minCapacity, maxCapacity, maxBucketSize, 0L, 0L);
         }
 
+        /**
+         * <p>Creates a pool with buckets starting at the closest power of 2 larger than {@code minCapacity},
+         * up to the closest power of 2 larger than {@code maxCapacity}.</p>
+         * <p>For example, with {@code minCapacity=100} and {@code maxCapacity=800}, the buckets will have
+         * capacities {@code 128, 256, 512, 1024}.</p>
+         * <p>A non-positive {@code minCapacity} establishes the first bucket at 1 KiB.</p>
+         * <p>A non-positive {@code maxCapacity} establishes the last bucket at 64 KiB.</p>
+         *
+         * @param minCapacity the capacity under which buffers will not be pooled
+         * @param maxCapacity the capacity above which buffers will not be pooled
+         * @param maxBucketSize the max number of buffers in a bucket
+         * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+         * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
+         */
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
-            super(computeMinCapacity(minCapacity),
+            super(minCapacity,
                 -1,
-                computeMaxCapacity(maxCapacity),
+                maxCapacity,
                 maxBucketSize,
                 maxHeapMemory,
                 maxDirectMemory,
-                bucketIndexFor(computeMinCapacity(minCapacity)),
-                bucketCapacityFor(computeMinCapacity(minCapacity))
+                bucketIndexFor(minCapacity),
+                bucketCapacityFor(minCapacity)
             );
-        }
-
-        private static int computeMinCapacity(int minCapacity)
-        {
-            return minCapacity <= 0 ? 1024 : minCapacity;
-        }
-
-        private static int computeMaxCapacity(int maxCapacity)
-        {
-            return maxCapacity <= 0 ? 65536 : maxCapacity;
         }
 
         private static IntUnaryOperator bucketIndexFor(int minCapacity)
         {
-            int minCapIdx = MathUtils.ceilLog2(minCapacity);
-            return c -> MathUtils.ceilLog2(c) - minCapIdx;
+            int minCapIdx = MathUtils.ceilLog2(minCapacity <= 0 ? DEFAULT_MIN_CAPACITY : minCapacity);
+            return c -> Math.max(0, MathUtils.ceilLog2(c) - minCapIdx);
         }
 
         private static IntUnaryOperator bucketCapacityFor(int minCapacity)
         {
-            int minCapIdx = MathUtils.ceilLog2(minCapacity);
+            int minCapIdx = MathUtils.ceilLog2(minCapacity <= 0 ? DEFAULT_MIN_CAPACITY : minCapacity);
             return i -> 1 << (i + minCapIdx);
         }
     }
