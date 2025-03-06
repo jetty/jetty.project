@@ -86,7 +86,7 @@ public class TestOSGiUtil
             xmlReferences.add(resolveFile(etc, "jetty-https.xml"));
         }
         xmlReferences.add(resolveFile(etc, jettySelectorFileName));
-        xmlReferences.add(resolveFile(etc, "jetty-deployment-manager.xml"));
+        xmlReferences.add(resolveFile(etc, "jetty-deploy.xml"));
         xmlReferences.add(resolveFile(etc, "jetty-testrealm.xml"));
 
         // Convert list of XML URI Reference to String separated by ";" (separator is not OS specific, but OSGI specific)
