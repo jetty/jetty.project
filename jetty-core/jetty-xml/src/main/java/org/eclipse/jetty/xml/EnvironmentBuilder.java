@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
@@ -61,6 +60,6 @@ public class EnvironmentBuilder
 
     public Environment build() throws Exception
     {
-        return new Environment.Named(_name, new URLClassLoader(_classpath.toArray(new URL[0]), EnvironmentBuilder.class.getClassLoader()));
+        return Environment.ensure(_name, new URLClassLoader(_classpath.toArray(new URL[0]), EnvironmentBuilder.class.getClassLoader()));
     }
 }
