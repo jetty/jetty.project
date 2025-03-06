@@ -436,8 +436,6 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         }
 
         Set<String> changedBaseNames = new HashSet<>();
-        Set<String> availableEnvironmentNames = Environment.getAll().stream()
-            .map(Environment::getName).collect(Collectors.toUnmodifiableSet());
         Set<String> changedEnvironments = new HashSet<>();
 
         for (Map.Entry<Path, Scanner.Notification> entry : changeSet.entrySet())
@@ -469,8 +467,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             else if (isEnvironmentConfigPath(path))
             {
                 String envname = null;
-                for (String name : availableEnvironmentNames)
+
+                for (Environment environment : Environment.getAll())
                 {
+                    String name = environment.getName();
                     if (basename.startsWith(name))
                         envname = name;
                 }
@@ -1024,14 +1024,8 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 return diff;
             return switch (o1.type())
             {
-                case REMOVE ->
-                {
-                    yield basenameComparator.compare(o2, o1);
-                }
-                case ADD ->
-                {
-                    yield basenameComparator.compare(o1, o2);
-                }
+                case REMOVE -> basenameComparator.compare(o2, o1);
+                case ADD -> basenameComparator.compare(o1, o2);
             };
         }
     }
