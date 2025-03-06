@@ -39,6 +39,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -1868,13 +1869,16 @@ public class XmlConfiguration
 
             // Process properties first, as the XML needs them.
             // We don't want to start processing the XML then come across a property that is needed.
-            for (String arg : remainingArgs)
+            ListIterator<String> argIter = remainingArgs.listIterator();
+            while (argIter.hasNext())
             {
+                String arg = argIter.next();
                 if (arg.indexOf('=') >= 0)
                 {
                     int i = arg.indexOf('=');
                     properties.put(arg.substring(0, i), arg.substring(i + 1));
-                    remainingArgs.remove(arg); // remove, now that we've seen/handled this arg.
+                    // remove, now that we've seen/handled this arg.
+                    argIter.remove();
                 }
                 else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                 {
@@ -1882,7 +1886,8 @@ public class XmlConfiguration
                     {
                         properties.load(inputStream);
                     }
-                    remainingArgs.remove(arg); // remove, now that we've seen/handled this arg.
+                    // remove, now that we've seen/handled this arg.
+                    argIter.remove();
                 }
                 // all other args are processed later.
             }
