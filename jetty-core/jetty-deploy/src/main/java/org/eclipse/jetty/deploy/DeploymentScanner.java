@@ -580,7 +580,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                 Collection<ContextHandlerCollection> chcs = server.getContainedBeans(ContextHandlerCollection.class);
                 if (chcs.size() == 1)
                 {
-                    deployer = new SimpleDeployer(chcs.iterator().next());
+                    deployer = new DirectDeployer(chcs.iterator().next());
                     addBean(deployer, true);
                     LifeCycle.start(deployer);
                 }

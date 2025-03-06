@@ -9,7 +9,7 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
     <Arg>
-      <New id="Deployer" class="org.eclipse.jetty.deploy.SimpleDeployer">
+      <New id="Deployer" class="org.eclipse.jetty.deploy.DirectDeployer">
         <Arg name="contexts"><Ref refid="Contexts"/></Arg>
       </New>
     </Arg>

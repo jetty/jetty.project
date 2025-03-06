@@ -15,23 +15,34 @@ package org.eclipse.jetty.deploy;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SimpleDeployer extends ContainerLifeCycle implements Deployer
+/**
+ * A Direct {@link Deployer} implementation.
+ * This {@code Deployer} will {@link ContextHandlerCollection#deployHandler(Handler, Callback) deploy}
+ * a {@link ContextHandler} directly to the {@link ContextHandlerCollection} and {@link LifeCycle#start() start} it if
+ * appropriate.
+ */
+public class DirectDeployer extends ContainerLifeCycle implements Deployer
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SimpleDeployer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DirectDeployer.class);
     private final ContextHandlerCollection _contexts;
 
-    public SimpleDeployer(@Name("contexts") ContextHandlerCollection contexts)
+    /**
+     * @param contexts The {@link ContextHandlerCollection} to which to deploy {@link ContextHandler}s.
+     */
+    public DirectDeployer(@Name("contexts") ContextHandlerCollection contexts)
     {
-        _contexts = contexts;
+        _contexts = Objects.requireNonNull(contexts);
     }
 
     public ContextHandlerCollection getContexts()
@@ -78,12 +89,5 @@ public class SimpleDeployer extends ContainerLifeCycle implements Deployer
                 throw new RuntimeException(t);
             }
         }
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        Objects.requireNonNull(_contexts);
-        super.doStart();
     }
 }

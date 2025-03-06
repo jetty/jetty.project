@@ -5,10 +5,10 @@ This module enables the default Deployer
 deployment
 
 [provides]
-deployment/deployer
+deployment/deployerImpl
 
 [lib]
 lib/jetty-deploy-${jetty.version}.jar
 
 [xml]
-etc/jetty-simple-deployer.xml
+etc/jetty-direct-deployer.xml
