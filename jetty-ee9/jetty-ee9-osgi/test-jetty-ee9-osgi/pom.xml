@@ -243,7 +243,7 @@
       <artifactId>geronimo-atinject_1.0_spec</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!-- dependency>
       <groupId>org.conscrypt</groupId>
       <artifactId>conscrypt-openjdk-uber</artifactId>
       <scope>test</scope>
@@ -257,7 +257,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-conscrypt-server</artifactId>
       <scope>test</scope>
-    </dependency>
+    </dependency -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-java-client</artifactId>
@@ -544,12 +544,7 @@
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
-            <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
             <!-- TODO -->
-            <excludes>
-              <exclude>**/TestJettyOSGiBootHTTP2Conscrypt.java</exclude>
-              <exclude>**/TestJettyOSGiBootHTTP2JDK9.java</exclude>
-            </excludes>
           </configuration>
           <!-- paxexam still using junit 4 so we have to force the provider here -->
           <dependencies>
