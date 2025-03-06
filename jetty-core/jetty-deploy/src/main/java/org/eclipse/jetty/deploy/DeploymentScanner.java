@@ -41,7 +41,9 @@ import org.eclipse.jetty.deploy.internal.PathsContextHandlerFactory;
 import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
@@ -50,6 +52,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathCollators;
@@ -120,13 +123,13 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     private static final String ATTRIBUTE_PREFIX = "jetty.deploy.attribute.";
 
     private final Server server;
-    private final ContextHandlerDeployer contextHandlerDeployer;
     private final FilenameFilter filenameFilter;
     private final List<Path> monitoredDirs = new CopyOnWriteArrayList<>();
-    private final PathsContextHandlerFactory contextHandlerFactory = new PathsContextHandlerFactory();
+    private final ContextHandlerFactory contextHandlerFactory;
     private final Map<String, PathsApp> trackedApps = new HashMap<>();
     private final Map<String, Attributes> environmentAttributesMap = new HashMap<>();
 
+    private Deployer deployer;
     private Comparator<DeployAction> actionComparator = new DeployActionComparator();
     private Path environmentsDir;
     private int scanInterval = 10;
@@ -143,13 +146,10 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
-     * @param contextHandlerDeployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
      */
-    public DeploymentScanner(
-        @Name("server") Server server,
-        @Name("contextHandlerDeployer") ContextHandlerDeployer contextHandlerDeployer)
+    public DeploymentScanner(@Name("server") Server server)
     {
-        this(server, contextHandlerDeployer, null);
+        this(server, null, null);
     }
 
     /**
@@ -160,17 +160,58 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
      * </p>
      *
      * @param server the server reference to use for any XML based deployments.
-     * @param contextHandlerDeployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
+     * @param deployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
+     */
+    public DeploymentScanner(
+        @Name("server") Server server,
+        @Name("deployer") Deployer deployer)
+    {
+        this(server, deployer, null);
+    }
+
+    /**
+     * <p>
+     * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
+     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * it's configured destination.
+     * </p>
+     *
+     * @param server the server reference to use for any XML based deployments.
+     * @param deployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
      * @param filter A custom FilenameFilter to control what files the {@link Scanner} monitors for changes.
      */
     public DeploymentScanner(
         @Name("server") Server server,
-        @Name("contextHandlerDeployer") ContextHandlerDeployer contextHandlerDeployer,
+        @Name("deployer") Deployer deployer,
         @Name("filenameFilter") FilenameFilter filter)
     {
-        this.server = server;
-        this.contextHandlerDeployer = Objects.requireNonNull(contextHandlerDeployer);
+        this(server, deployer, filter, null);
+    }
+
+    /**
+     * <p>
+     * Construct a raw DeploymentScanner that will (periodically) scan specific directories for paths that can be
+     * used to construct webapps that will be submitted to the DeploymentManager for eventual deployment to
+     * it's configured destination.
+     * </p>
+     *
+     * @param server the server reference to use for any XML based deployments.
+     * @param deployer the ContextHandlerDeployer to use for deploying the created ContextHandlers.
+     * @param filter A custom FilenameFilter to control what files the {@link Scanner} monitors for changes.
+     */
+    public DeploymentScanner(
+        @Name("server") Server server,
+        @Name("deployer") Deployer deployer,
+        @Name("filenameFilter") FilenameFilter filter,
+        @Name("contextHandlerFactory") ContextHandlerFactory contextHandlerFactory)
+    {
+        this.contextHandlerFactory = contextHandlerFactory == null ? new PathsContextHandlerFactory() : contextHandlerFactory;
+        installBean(this.contextHandlerFactory);
+        this.server = Objects.requireNonNull(server);
+        this.deployer = deployer == null ? server.getBean(Deployer.class) : deployer;
+        addBean(deployer);
         this.filenameFilter = Objects.requireNonNullElse(filter, new MonitoredPathFilter(monitoredDirs));
+        installBean(new DumpableCollection("monitored", monitoredDirs));
     }
 
     /**
@@ -531,6 +572,24 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
         if (LOG.isDebugEnabled())
             LOG.debug("{} doStart()", this);
 
+        if (deployer == null)
+        {
+            deployer = server.getBean(Deployer.class);
+            if (deployer == null)
+            {
+                Collection<ContextHandlerCollection> chcs = server.getContainedBeans(ContextHandlerCollection.class);
+                if (chcs.size() == 1)
+                {
+                    deployer = new SimpleDeployer(chcs.iterator().next());
+                    addBean(deployer, true);
+                    LifeCycle.start(deployer);
+                }
+            }
+
+            if (deployer == null)
+                throw new IllegalStateException("No deployer available");
+        }
+
         if (monitoredDirs.isEmpty())
             throw new IllegalStateException("No monitored dir specified");
 
@@ -678,7 +737,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                     {
                         // Track removal
                         removedApps.add(app);
-                        contextHandlerDeployer.undeploy(app.getContextHandler());
+                        deployer.undeploy(app.getContextHandler());
                     }
                     case ADD ->
                     {
@@ -705,20 +764,22 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
                         PathsContextHandlerFactory.setEnvironmentXmlPaths(deployAttributes, envXmlPaths);
 
                         // Create the Context Handler
-                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app, deployAttributes);
+                        Path mainPath = app.getMainPath();
+                        if (mainPath == null)
+                            throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
+                        ContextHandler contextHandler = contextHandlerFactory.newContextHandler(server, app.getEnvironment(), mainPath, app.getPaths().keySet(), deployAttributes);
                         app.setContextHandler(contextHandler);
 
                         // Introduce the ContextHandler to the DeploymentManager
                         startTracking(app);
-                        contextHandlerDeployer.deploy(app.getContextHandler());
+                        deployer.deploy(app.getContextHandler());
                     }
                 }
             }
             catch (Throwable t)
             {
                 LOG.warn("Failed to to perform action {} on {}", step.type(), app, t);
-                if (isStarting())
-                    contextHandlerDeployer.reportStartupFailure(t);
+                ExceptionUtil.ifExceptionThrowUnchecked(t);
             }
             finally
             {

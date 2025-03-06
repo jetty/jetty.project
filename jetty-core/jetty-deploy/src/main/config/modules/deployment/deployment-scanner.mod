@@ -6,13 +6,14 @@ deployment
 
 [depend]
 server
-deployment/deployment-manager
+deployment/deployer
 
 [lib]
 lib/jetty-deploy-${jetty.version}.jar
 
 [files]
 webapps/
+environments/
 
 [xml]
 etc/jetty-deployment-scanner.xml

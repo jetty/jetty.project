@@ -41,34 +41,33 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
-public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
+public class GoalDeployerTest extends AbstractCleanEnvironmentTest
 {
     @Test
     public void testAddUndeployed() throws Exception
     {
-        DeploymentManager deploymentManager = new DeploymentManager();
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
-        deploymentManager.setContexts(contextHandlerCollection);
-        deploymentManager.addBean(contextHandlerCollection);
+        GoalDeployer goalDeployer = new GoalDeployer(contextHandlerCollection);
+        goalDeployer.addBean(contextHandlerCollection);
 
         // Start DepMan
-        deploymentManager.start();
+        goalDeployer.start();
 
         try
         {
             // Trigger new context
             ContextHandler foo = Util.createContextHandler("foo-webapp-1.war");
-            deploymentManager.addUndeployed(foo);
+            goalDeployer.addUndeployed(foo);
             assertFalse(foo.isStarted());
 
             // Test context tracking
-            Collection<ContextHandler> contextHandlers = deploymentManager.getContextHandlers();
+            Collection<ContextHandler> contextHandlers = goalDeployer.getContextHandlers();
             assertThat("contextHandlers.size", contextHandlers.size(), is(1));
             ContextHandler first = contextHandlers.iterator().next();
             assertThat("contextHandler", first, equalTo(foo));
 
             // Verify that context is in expected graph node
-            List<ContextHandler> undeployedContexts = deploymentManager.getContextHandlers("undeployed")
+            List<ContextHandler> undeployedContexts = goalDeployer.getContextHandlers("undeployed")
                 .stream()
                 .toList();
             List<ContextHandler> expectedContexts = List.of(foo);
@@ -76,43 +75,42 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
         }
         finally
         {
-            LifeCycle.stop(deploymentManager);
+            LifeCycle.stop(goalDeployer);
         }
     }
 
     @Test
     public void testDeploy() throws Exception
     {
-        DeploymentManager deploymentManager = new DeploymentManager();
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
-        deploymentManager.setContexts(contextHandlerCollection);
-        deploymentManager.addBean(contextHandlerCollection);
+        GoalDeployer goalDeployer = new GoalDeployer(contextHandlerCollection);
+        goalDeployer.addBean(contextHandlerCollection);
 
         // Start DepMan
-        deploymentManager.start();
+        goalDeployer.start();
 
         try
         {
             // Trigger new context
             ContextHandler foo = Util.createContextHandler("foo-webapp-1.war");
-            deploymentManager.deploy(foo);
+            goalDeployer.deploy(foo);
             assertTrue(foo.isStarted());
 
             // Test context tracking
-            Collection<ContextHandler> contextHandlers = deploymentManager.getContextHandlers();
+            Collection<ContextHandler> contextHandlers = goalDeployer.getContextHandlers();
             assertThat("contextHandlers.size", contextHandlers.size(), is(1));
             ContextHandler first = contextHandlers.iterator().next();
             assertThat("contextHandler", first, equalTo(foo));
 
             // Verify that context is in expected graph node
-            List<ContextHandler> startedContexts = deploymentManager.getContextHandlers("started")
+            List<ContextHandler> startedContexts = goalDeployer.getContextHandlers("started")
                 .stream()
                 .toList();
             List<ContextHandler> expectedContexts = List.of(foo);
             assertThat(startedContexts, ordered(expectedContexts));
 
             // Verify that the graph only has one entry, and it's on started.
-            List<String> state = getGraphState(deploymentManager);
+            List<String> state = getGraphState(goalDeployer);
             List<String> expected = List.of(
                 "started|/foo-webapp-1"
             );
@@ -120,30 +118,29 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
         }
         finally
         {
-            LifeCycle.stop(deploymentManager);
+            LifeCycle.stop(goalDeployer);
         }
     }
 
     @Test
     public void testUndeploy() throws Exception
     {
-        DeploymentManager deploymentManager = new DeploymentManager();
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
-        deploymentManager.setContexts(contextHandlerCollection);
-        deploymentManager.addBean(contextHandlerCollection);
+        GoalDeployer goalDeployer = new GoalDeployer(contextHandlerCollection);
+        goalDeployer.addBean(contextHandlerCollection);
 
         // Start DepMan
-        deploymentManager.start();
+        goalDeployer.start();
 
         try
         {
             // Trigger deploy
             ContextHandler foo = Util.createContextHandler("foo-webapp-1.war");
-            deploymentManager.deploy(foo);
+            goalDeployer.deploy(foo);
             assertTrue(foo.isStarted());
 
             // Test context tracking
-            Collection<ContextHandler> contextHandlers = deploymentManager.getContextHandlers();
+            Collection<ContextHandler> contextHandlers = goalDeployer.getContextHandlers();
             assertThat("contextHandlers.size", contextHandlers.size(), is(1));
             ContextHandler first = contextHandlers.iterator().next();
             assertThat("contextHandler", first, equalTo(foo));
@@ -151,48 +148,47 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
             List<ContextHandler> expectedContexts = List.of(foo);
 
             // Verify that context is in expected graph node
-            List<ContextHandler> startedContexts = deploymentManager.getContextHandlers("started")
+            List<ContextHandler> startedContexts = goalDeployer.getContextHandlers("started")
                 .stream()
                 .toList();
             assertThat(startedContexts, ordered(expectedContexts));
 
             // Trigger undeploy
-            deploymentManager.undeploy(foo);
+            goalDeployer.undeploy(foo);
 
             // Test context tracking (the context should have been removed)
-            contextHandlers = deploymentManager.getContextHandlers();
+            contextHandlers = goalDeployer.getContextHandlers();
             assertThat("contextHandlers.size", contextHandlers.size(), is(0));
 
             // Verify that the graph is empty now (that was the last context undeployed)
-            List<String> graphState = getGraphState(deploymentManager);
+            List<String> graphState = getGraphState(goalDeployer);
             assertTrue(graphState.isEmpty());
         }
         finally
         {
-            LifeCycle.stop(deploymentManager);
+            LifeCycle.stop(goalDeployer);
         }
     }
 
     @Test
     public void testMove() throws Exception
     {
-        DeploymentManager deploymentManager = new DeploymentManager();
         ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
-        deploymentManager.setContexts(contextHandlerCollection);
-        deploymentManager.addBean(contextHandlerCollection);
+        GoalDeployer goalDeployer = new GoalDeployer(contextHandlerCollection);
+        goalDeployer.addBean(contextHandlerCollection);
 
         // Start DepMan
-        deploymentManager.start();
+        goalDeployer.start();
 
         try
         {
             // Trigger deploy
             ContextHandler foo = Util.createContextHandler("foo-webapp-1.war");
-            deploymentManager.deploy(foo);
+            goalDeployer.deploy(foo);
             assertTrue(foo.isStarted());
 
             // Test context tracking
-            Collection<ContextHandler> contextHandlers = deploymentManager.getContextHandlers();
+            Collection<ContextHandler> contextHandlers = goalDeployer.getContextHandlers();
             assertThat("contextHandlers.size", contextHandlers.size(), is(1));
             ContextHandler first = contextHandlers.iterator().next();
             assertThat("contextHandler", first, equalTo(foo));
@@ -200,22 +196,22 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
             List<ContextHandler> expectedContexts = List.of(foo);
 
             // Verify that context is in expected graph node
-            List<ContextHandler> startedContexts = deploymentManager.getContextHandlers("started")
+            List<ContextHandler> startedContexts = goalDeployer.getContextHandlers("started")
                 .stream()
                 .toList();
             assertThat(startedContexts, ordered(expectedContexts));
 
             // Trigger undeploy
-            deploymentManager.move(foo, "deployed");
+            goalDeployer.move(foo, "deployed");
 
             // Test context tracking (the context should have been removed)
-            contextHandlers = deploymentManager.getContextHandlers();
+            contextHandlers = goalDeployer.getContextHandlers();
             assertThat("contextHandlers.size", contextHandlers.size(), is(1));
             first = contextHandlers.iterator().next();
             assertThat("contextHandler", first, equalTo(foo));
 
             // Verify that the graph only has one entry, and it's on deployed.
-            List<String> state = getGraphState(deploymentManager);
+            List<String> state = getGraphState(goalDeployer);
             List<String> expected = List.of(
                 "deployed|/foo-webapp-1"
             );
@@ -223,16 +219,16 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
         }
         finally
         {
-            LifeCycle.stop(deploymentManager);
+            LifeCycle.stop(goalDeployer);
         }
     }
 
-    private List<String> getGraphState(DeploymentManager deploymentManager)
+    private List<String> getGraphState(GoalDeployer goalDeployer)
     {
         List<String> state = new ArrayList<>();
-        for (String nodeName : deploymentManager.getNodeNames())
+        for (String nodeName : goalDeployer.getNodeNames())
         {
-            for (ContextHandler contextHandler : deploymentManager.getContextHandlers(nodeName))
+            for (ContextHandler contextHandler : goalDeployer.getContextHandlers(nodeName))
             {
                 state.add("%s|%s".formatted(nodeName, contextHandler.getContextPath()));
             }
@@ -244,16 +240,17 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
     @Test
     public void testBinding()
     {
-        DeploymentManager deploymentManager = new DeploymentManager();
+        ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
+        GoalDeployer goalDeployer = new GoalDeployer(contextHandlerCollection);
 
         // Add a binding that isn't part of the standard set here.
-        deploymentManager.addLifeCycleBinding(new DeploymentGraphNodeOrderCollector());
+        goalDeployer.addLifeCycleBinding(new DeploymentGraphNodeOrderCollector());
 
-        Set<DeploymentNodeBinding> allBindings = deploymentManager.getBindings();
+        Set<DeploymentNodeBinding> allBindings = goalDeployer.getBindings();
         assertNotNull(allBindings, "All Bindings should never be null");
         assertEquals(1, allBindings.size(), "All Bindings.size");
 
-        Set<DeploymentNodeBinding> deployBindings = deploymentManager.getBindings("deploying");
+        Set<DeploymentNodeBinding> deployBindings = goalDeployer.getBindings("deploying");
         assertNotNull(deployBindings, "'deploying' Bindings should not be null");
         assertEquals(1, deployBindings.size(), "'deploying' Bindings.size");
     }
@@ -268,7 +265,7 @@ public class DeploymentManagerTest extends AbstractCleanEnvironmentTest
             jetty = new XmlConfiguredJetty(testDir);
             jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty.xml"));
             jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-http.xml"));
-            jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-manager.xml"));
+            jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-goal-deployer.xml"));
             jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-scanner.xml"));
             jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-core-deploy-custom.xml"));
 

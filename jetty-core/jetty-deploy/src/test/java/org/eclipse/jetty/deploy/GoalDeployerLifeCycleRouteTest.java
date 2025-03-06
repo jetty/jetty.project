@@ -31,17 +31,15 @@ import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class DeploymentManagerLifeCycleRouteTest
+public class GoalDeployerLifeCycleRouteTest
 {
     @Test
     public void testStateTransitionNewToDeployed() throws Exception
     {
-        DeploymentManager depman = new DeploymentManager();
-        depman.setContexts(new ContextHandlerCollection());
+        GoalDeployer depman = new GoalDeployer(new ContextHandlerCollection());
         DeploymentGraphNodeOrderCollector pathtracker = new DeploymentGraphNodeOrderCollector();
 
         depman.addLifeCycleBinding(pathtracker);
-        depman.setContexts(new ContextHandlerCollection());
 
         // Start DepMan
         depman.start();
@@ -75,8 +73,7 @@ public class DeploymentManagerLifeCycleRouteTest
     @Test
     public void testStateTransitionReceive() throws Exception
     {
-        DeploymentManager depman = new DeploymentManager();
-        depman.setContexts(new ContextHandlerCollection());
+        GoalDeployer depman = new GoalDeployer(new ContextHandlerCollection());
         DeploymentGraphNodeOrderCollector pathtracker = new DeploymentGraphNodeOrderCollector();
         depman.addLifeCycleBinding(pathtracker);
 
@@ -99,7 +96,7 @@ public class DeploymentManagerLifeCycleRouteTest
     @Disabled("Not working yet, need to figure out how to reference the ContextHandler mbean")
     public void testMBeanStateTransitionToUndeployed() throws Exception
     {
-        DeploymentManager depman = new DeploymentManager();
+        GoalDeployer depman = new GoalDeployer(new ContextHandlerCollection());
         DeploymentGraphNodeOrderCollector pathtracker = new DeploymentGraphNodeOrderCollector();
 
         // Setup JMX
@@ -107,7 +104,6 @@ public class DeploymentManagerLifeCycleRouteTest
         depman.addBean(mbContainer);
 
         depman.addLifeCycleBinding(pathtracker);
-        depman.setContexts(new ContextHandlerCollection());
 
         // Start DepMan
         depman.start();

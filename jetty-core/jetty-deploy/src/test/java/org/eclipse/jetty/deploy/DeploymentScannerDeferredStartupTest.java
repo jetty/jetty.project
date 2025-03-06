@@ -65,7 +65,7 @@ public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironme
         jetty = new XmlConfiguredJetty(realBase);
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty.xml"));
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-http.xml"));
-        jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-manager.xml"));
+        jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-goal-deployer.xml"));
         jetty.addConfiguration(MavenPaths.projectBase().resolve("src/main/config/etc/jetty-deployment-scanner.xml"));
         jetty.addConfiguration(MavenPaths.findTestResourceFile("jetty-core-deploy-custom.xml"));
 
@@ -109,8 +109,9 @@ public class DeploymentScannerDeferredStartupTest extends AbstractCleanEnvironme
 
             server.addEventListener(eventCaptureListener);
 
-            DeploymentManager deploymentManager = server.getBean(DeploymentManager.class);
-            DeploymentScanner defaultProvider = deploymentManager.getBean(DeploymentScanner.class);
+            GoalDeployer goalDeployer = server.getBean(GoalDeployer.class);
+            assertNotNull(goalDeployer, "Should have found GoalDeployer");
+            DeploymentScanner defaultProvider = server.getBean(DeploymentScanner.class);
             assertNotNull(defaultProvider, "Should have found DeploymentScanner");
             assertTrue(defaultProvider.isDeferInitialScan(), "The DeferInitialScan configuration should be true");
 

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Creates a {@link ContextHandler} from a {@link PathsApp}.
  */
-public class PathsContextHandlerFactory
+public class PathsContextHandlerFactory implements org.eclipse.jetty.deploy.ContextHandlerFactory
 {
     public static final String CONTEXT_HANDLER_CLASS = "jetty.deploy.contextHandlerClass";
     public static final String CONTEXT_HANDLER_CLASS_DEFAULT = "jetty.deploy.default.contextHandlerClass";
@@ -87,25 +88,11 @@ public class PathsContextHandlerFactory
         attributes.setAttribute(ENVIRONMENT_XML_PATHS, paths);
     }
 
-    /**
-     * TODO: DOCUMENT THIS
-     *
-     * @param server the server reference (used by XML configurations)
-     * @param app the tracked app
-     * @param deployAttributes the attributes to use for creation of this ContextHandler
-     * @return the ContextHandler
-     * @throws Exception if unable to create the ContextHandler
-     */
-    public ContextHandler newContextHandler(Server server, PathsApp app, Attributes deployAttributes) throws Exception
+    @Override
+    public ContextHandler newContextHandler(Server server, Environment environment, Path mainPath, Set<Path> otherPaths, Attributes deployAttributes) throws Exception
     {
-        Path mainPath = app.getMainPath();
-        if (mainPath == null)
-        {
-            throw new IllegalStateException("Unable to create ContextHandler for app with no main path defined: " + app);
-        }
-
         // Resolve real file (hopefully eliminating alias issues)
-        mainPath = mainPath.toRealPath();
+        mainPath = Objects.requireNonNull(mainPath).toRealPath();
 
         // Can happen if the file existed when notified by scanner (as either an ADD or CHANGE),
         // and then the file was deleted before reaching this code.
@@ -113,13 +100,12 @@ public class PathsContextHandlerFactory
             throw new IllegalStateException("Main path does not exist " + mainPath);
 
         deployAttributes.setAttribute(Deployable.MAIN_PATH, mainPath);
-        deployAttributes.setAttribute(Deployable.OTHER_PATHS, app.getPaths().keySet());
+        deployAttributes.setAttribute(Deployable.OTHER_PATHS, otherPaths);
 
-        Environment environment = app.getEnvironment();
         if (environment == null)
         {
             String error = String.format("Environment not declared for app [%s].  The available environments are: %s",
-                app,
+                mainPath,
                 Environment.getAll().stream()
                     .map(Environment::getName)
                     .collect(Collectors.joining(", ", "[", "]"))
@@ -128,7 +114,7 @@ public class PathsContextHandlerFactory
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("createContextHandler {} in {}", app, environment.getName());
+            LOG.debug("createContextHandler {} in {}", mainPath, environment.getName());
 
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
@@ -143,12 +129,12 @@ public class PathsContextHandlerFactory
              *    a. use the app attributes to figure out the context handler class.
              *    b. use the environment attributes default context handler class.
              */
-            Object context = newContextInstance(server, environment, app, deployAttributes, mainPath);
+            Object context = newContextInstance(server, environment, mainPath, deployAttributes, mainPath);
             if (context == null)
-                throw new IllegalStateException("unable to create ContextHandler for " + app);
+                throw new IllegalStateException("unable to create ContextHandler for " + mainPath);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Context {} created from app {}", context.getClass().getName(), app);
+                LOG.debug("Context {} created from app {}", context.getClass().getName(), mainPath);
 
             // Apply environment properties and XML to context
             if (applyEnvironmentXml(server, context, environment, deployAttributes))
@@ -415,7 +401,7 @@ public class PathsContextHandlerFactory
      * @return the Context Object.
      * @throws Exception if unable to create Object instance.
      */
-    private Object newContextInstance(Server server, Environment environment, PathsApp app, Attributes attributes, Path path) throws Exception
+    private Object newContextInstance(Server server, Environment environment, Path app, Attributes attributes, Path path) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("newContextInstance({}, {}, {}, {})", server, environment, app, path);

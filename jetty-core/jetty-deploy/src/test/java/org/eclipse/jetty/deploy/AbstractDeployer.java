@@ -18,7 +18,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 /**
  * Abstract ContextHandlerDeployer for testing purposes
  */
-public class AbstractContextHandlerDeployer implements ContextHandlerDeployer
+public class AbstractDeployer implements Deployer
 {
     @Override
     public void deploy(ContextHandler contextHandler)

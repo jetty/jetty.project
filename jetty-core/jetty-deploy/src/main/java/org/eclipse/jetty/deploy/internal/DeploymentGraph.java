@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.deploy.internal.graph.Graph;
 import org.eclipse.jetty.deploy.internal.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A pre-defined graph representing the lifecycle of a {@link ContextHandler} in the {@link DeploymentManager}.
+ * A pre-defined graph representing the lifecycle of a {@link ContextHandler} in the {@link GoalDeployer}.
  * <p>
  * Sets up the default {@link Graph}, and manages the bindings of actions for each node
  * via the {@link DeploymentNodeBinding} implementation.
@@ -158,13 +158,13 @@ public class DeploymentGraph extends Graph
         return boundset;
     }
 
-    public void runBindings(Node node, ContextHandler contextHandler, DeploymentManager deploymentManager) throws Throwable
+    public void runBindings(Node node, ContextHandler contextHandler, GoalDeployer goalDeployer) throws Throwable
     {
         for (DeploymentNodeBinding binding : getBindings(node))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Calling {} for {}", binding.getClass().getName(), contextHandler);
-            binding.processBinding(deploymentManager, node.getName(), contextHandler);
+            binding.processBinding(goalDeployer, node.getName(), contextHandler);
         }
     }
 }

@@ -58,14 +58,18 @@ import org.slf4j.LoggerFactory;
  */
 // TODO: fix dumpable to show things like context-handler-collection, contexts being tracked, etc...
 @ManagedObject("Deployment Manager")
-public class DeploymentManager extends ContainerLifeCycle implements ContextHandlerDeployer
+public class GoalDeployer extends ContainerLifeCycle implements Deployer.GoalOriented
 {
-    private static final Logger LOG = LoggerFactory.getLogger(DeploymentManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GoalDeployer.class);
     private final DeploymentGraph _lifecycle = new DeploymentGraph();
     private final Queue<TrackedContext> _tracked = new ConcurrentLinkedQueue<>();
-    private ContextHandlerCollection _contexts;
+    private final ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
-    private Throwable _onStartupErrors;
+
+    public GoalDeployer(@Name("contexts") ContextHandlerCollection contexts)
+    {
+        _contexts = contexts;
+    }
 
     /**
      * Add a DeploymentNodeBinding to the graph.
@@ -170,11 +174,6 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
     public ContextHandlerCollection getContexts()
     {
         return _contexts;
-    }
-
-    public void setContexts(ContextHandlerCollection contexts)
-    {
-        this._contexts = contexts;
     }
 
     @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
@@ -291,8 +290,6 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
 
         super.doStart();
-
-        ExceptionUtil.ifExceptionThrow(_onStartupErrors);
     }
 
     private TrackedContext findTrackedContext(ContextHandler contextHandler)
@@ -363,22 +360,12 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         {
             String message = nodeName.toUpperCase(Locale.ENGLISH) + " Deployment failed for " + tracked.contextHandler;
             LOG.warn(message, t);
-            fail(tracked);
-
-            if (isStarting())
-            {
-                reportStartupFailure(t);
-            }
+            fail(tracked, t);
+            ExceptionUtil.ifExceptionThrowUnchecked(t);
         }
     }
 
-    @Override
-    public void reportStartupFailure(Throwable cause)
-    {
-        _onStartupErrors = ExceptionUtil.combine(_onStartupErrors, cause);
-    }
-
-    private void fail(TrackedContext tracked)
+    private void fail(TrackedContext tracked, Throwable t)
     {
         Node failed = _lifecycle.getNodeByName(DeploymentGraph.FAILED);
         tracked.setLifeCycleNode(failed);
@@ -388,6 +375,7 @@ public class DeploymentManager extends ContainerLifeCycle implements ContextHand
         }
         catch (Throwable cause)
         {
+            ExceptionUtil.addSuppressedIfNotAssociated(t, cause);
             // The runBindings failed for 'failed' node
             LOG.trace("IGNORED", cause);
         }

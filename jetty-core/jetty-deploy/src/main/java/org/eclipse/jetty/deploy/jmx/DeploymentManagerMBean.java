@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.deploy.jmx;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -23,12 +23,12 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 @ManagedObject("MBean Wrapper for DeploymentManager")
 public class DeploymentManagerMBean extends ObjectMBean
 {
-    private final DeploymentManager _manager;
+    private final GoalDeployer _manager;
 
     public DeploymentManagerMBean(Object managedObject)
     {
         super(managedObject);
-        _manager = (DeploymentManager)managedObject;
+        _manager = (GoalDeployer)managedObject;
     }
 
     @ManagedOperation(value = "list ContextHandlers that are located at specified ContextHandlerLifeCycle nodes", impact = "ACTION")

@@ -26,8 +26,8 @@ import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
@@ -175,14 +175,14 @@ public class JettyServerFactory
             }
 
             //ensure DeploymentManager
-            DeploymentManager deploymentManager = ensureDeploymentManager(server);
-            deploymentManager.setUseStandardBindings(false);
+            GoalDeployer goalDeployer = ensureDeploymentManager(server);
+            goalDeployer.setUseStandardBindings(false);
             List<DeploymentNodeBinding> deploymentLifeCycleBindings = new ArrayList<>();
             deploymentLifeCycleBindings.add(new OSGiDeployer(server));
             deploymentLifeCycleBindings.add(new StandardStarter());
             deploymentLifeCycleBindings.add(new StandardStopper());
             deploymentLifeCycleBindings.add(new OSGiUndeployer(server));
-            deploymentManager.setLifeCycleBindings(deploymentLifeCycleBindings);
+            goalDeployer.setLifeCycleBindings(deploymentLifeCycleBindings);
             
             server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
             server.setAttribute(OSGiServerConstants.JETTY_BASE, properties.get(OSGiServerConstants.JETTY_BASE));
@@ -212,24 +212,23 @@ public class JettyServerFactory
         }
     }
 
-   private static DeploymentManager ensureDeploymentManager(Server server)
+   private static GoalDeployer ensureDeploymentManager(Server server)
    {
-       Collection<DeploymentManager> deployers = server.getBeans(DeploymentManager.class);
-       DeploymentManager deploymentManager = null;
+       Collection<GoalDeployer> deployers = server.getBeans(GoalDeployer.class);
+       GoalDeployer goalDeployer = null;
 
        if (deployers != null)
        {
-           deploymentManager = deployers.stream().findFirst().orElse(null);
+           goalDeployer = deployers.stream().findFirst().orElse(null);
        }
 
-       if (deploymentManager == null)
+       if (goalDeployer == null)
        {
-           deploymentManager = new DeploymentManager();
-           deploymentManager.setContexts(getContextHandlerCollection(server));
-           server.addBean(deploymentManager);
+           goalDeployer = new GoalDeployer(getContextHandlerCollection(server));
+           server.addBean(goalDeployer);
        }
        
-       return deploymentManager;
+       return goalDeployer;
    }
    
    private static ContextHandlerCollection getContextHandlerCollection(Server server)

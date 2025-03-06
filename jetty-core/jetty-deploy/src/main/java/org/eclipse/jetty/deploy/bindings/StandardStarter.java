@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.DeploymentNodeBinding;
+import org.eclipse.jetty.deploy.GoalDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 
@@ -27,9 +27,9 @@ public class StandardStarter implements DeploymentNodeBinding
     }
 
     @Override
-    public void processBinding(DeploymentManager deploymentManager, String nodeName, ContextHandler contextHandler) throws Exception
+    public void processBinding(GoalDeployer goalDeployer, String nodeName, ContextHandler contextHandler) throws Exception
     {
-        ContextHandlerCollection contexts = deploymentManager.getContexts();
+        ContextHandlerCollection contexts = goalDeployer.getContexts();
 
         if (contexts.isStarted() && contextHandler.isStopped())
         {

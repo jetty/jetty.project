@@ -18,7 +18,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 /**
  * Deployer for ContextHandlers
  */
-public interface ContextHandlerDeployer
+public interface Deployer
 {
     /**
      * Add a ContextHandler to the graph and then move it a deployed state.
@@ -34,31 +34,25 @@ public interface ContextHandlerDeployer
      */
     void undeploy(ContextHandler contextHandler);
 
-    /**
-     * Add a ContextHandler int the graph but perform no actions on it, leaving it in undeployed state.
-     *
-     * @param contextHandler the ContextHandler to add to the graph.
-     */
-    default void addUndeployed(ContextHandler contextHandler)
+    interface GoalOriented extends Deployer
     {
-    }
+        /**
+         * Add a ContextHandler int the graph but perform no actions on it, leaving it in undeployed state.
+         *
+         * @param contextHandler the ContextHandler to add to the graph.
+         */
+        default void addUndeployed(ContextHandler contextHandler)
+        {
+        }
 
-    /**
-     * Advanced usage, move a ContextHandler through the DeploymentManager graph by name.
-     *
-     * @param contextHandler the ContextHandler to move
-     * @param goalName the goal graph node by name
-     */
-    default void move(ContextHandler contextHandler, String goalName)
-    {
-    }
-
-    /**
-     * Report a failure to the ContextHandlerDeployer to fail startup.
-     *
-     * @param cause the cause of the failure
-     */
-    default void reportStartupFailure(Throwable cause)
-    {
+        /**
+         * Advanced usage, move a ContextHandler through the DeploymentManager graph by name.
+         *
+         * @param contextHandler the ContextHandler to move
+         * @param goalName the goal graph node by name
+         */
+        default void move(ContextHandler contextHandler, String goalName)
+        {
+        }
     }
 }
