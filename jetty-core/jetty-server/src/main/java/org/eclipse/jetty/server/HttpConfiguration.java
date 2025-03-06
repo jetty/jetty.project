@@ -62,7 +62,7 @@ public class HttpConfiguration implements Dumpable
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
     private int _responseHeaderSize = 8 * 1024;
-    private int _maxResponseHeaderSize = 16 * 1024;
+    private int _maxResponseHeaderSize = -1;
     private int _headerCacheSize = 1024;
     private boolean _headerCacheCaseSensitive = false;
     private int _securePort;
