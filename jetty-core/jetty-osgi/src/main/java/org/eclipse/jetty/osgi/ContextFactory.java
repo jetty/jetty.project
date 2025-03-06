@@ -15,6 +15,9 @@ package org.eclipse.jetty.osgi;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 
+/**
+ * Factory to create a ContextHandler instance based on data contained in an osgi bundle
+ */
 public interface ContextFactory
 {
     ContextHandler createContextHandler(AbstractContextProvider provider, BundleMetadata osgiBundleDeployment) throws Exception;

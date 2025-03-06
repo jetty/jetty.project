@@ -18,7 +18,7 @@ import org.osgi.framework.Bundle;
 /**
  * BundleProvider
  *
- * Jetty DeploymentManager Provider api for webapps or ContextHandlers that are discovered as osgi bundles.
+ * Interfaces the deployment of a bundle in osgi to the deployment of a ContextHandler for it
  */
 public interface BundleProvider
 {

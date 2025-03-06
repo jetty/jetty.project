@@ -28,7 +28,7 @@ import org.osgi.framework.ServiceReference;
  * AbstractContextProvider
  *
  * <p>
- * Base class for DeploymentManager Providers that can deploy ContextHandlers into
+ * Base class for deployers that can deploy ContextHandlers into
  * Jetty that have been discovered via OSGI either as bundles or services.
  * </p>
  */

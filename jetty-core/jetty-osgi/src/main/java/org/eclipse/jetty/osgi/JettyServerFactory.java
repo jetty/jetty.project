@@ -174,8 +174,8 @@ public class JettyServerFactory
                 server.setHandler(contextHandlerCollection);
             }
 
-            //ensure DeploymentManager
-            GoalDeployer goalDeployer = ensureDeploymentManager(server);
+            //ensure a deployer
+            GoalDeployer goalDeployer = ensureDeployer(server);
             goalDeployer.setUseStandardBindings(false);
             List<DeploymentNodeBinding> deploymentLifeCycleBindings = new ArrayList<>();
             deploymentLifeCycleBindings.add(new OSGiDeployer(server));
@@ -212,7 +212,7 @@ public class JettyServerFactory
         }
     }
 
-   private static GoalDeployer ensureDeploymentManager(Server server)
+   private static GoalDeployer ensureDeployer(Server server)
    {
        Collection<GoalDeployer> deployers = server.getBeans(GoalDeployer.class);
        GoalDeployer goalDeployer = null;
